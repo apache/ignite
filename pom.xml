@@ -61,6 +61,7 @@
         <module>modules/storage-api</module>
         <module>modules/storage-rocksdb</module>
         <module>modules/table</module>
+        <module>modules/transactions</module>
         <module>modules/vault</module>
     </modules>
 
