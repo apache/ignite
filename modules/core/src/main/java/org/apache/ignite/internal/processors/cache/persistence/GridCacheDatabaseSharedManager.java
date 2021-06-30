@@ -19,15 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -306,7 +301,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
      * In this case lock is held on PDS resover manager and it is not required to manage locking here
      */
-    @Nullable private FileLockHolder fileLockHolder;
+    @Nullable private NodeFileLockHolder fileLockHolder;
 
     /** Lock wait time. */
     private final long lockWaitTime;
@@ -560,7 +555,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 () -> cpFreqDeviation.getOrDefault(DEFAULT_CHECKPOINT_DEVIATION)
             );
 
-            final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
+            final NodeFileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
                 .getLockedFileLockHolder();
 
@@ -744,12 +739,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param preLocked Pre-locked file lock holder.
      */
-    private void acquireFileLock(FileLockHolder preLocked) throws IgniteCheckedException {
+    private void acquireFileLock(NodeFileLockHolder preLocked) throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())
             return;
 
         fileLockHolder = preLocked == null ?
-            new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log) : preLocked;
+            new NodeFileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log) : preLocked;
 
         if (!fileLockHolder.isLocked()) {
             if (log.isDebugEnabled())
@@ -2547,6 +2542,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 switch (rec.type()) {
                     case MVCC_DATA_RECORD:
                     case DATA_RECORD:
+                    case DATA_RECORD_V2:
                         checkpointReadLock();
 
                         try {
@@ -2697,8 +2693,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     case MVCC_DATA_RECORD:
                     case DATA_RECORD:
+                    case DATA_RECORD_V2:
                     case ENCRYPTED_DATA_RECORD:
                     case ENCRYPTED_DATA_RECORD_V2:
+                    case ENCRYPTED_DATA_RECORD_V3:
                         DataRecord dataRec = (DataRecord)rec;
 
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
@@ -3008,53 +3006,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * Node file lock holder.
      */
-    public static class FileLockHolder implements AutoCloseable {
-        /** Lock file name. */
-        private static final String lockFileName = "lock";
-
-        /** File. */
-        private final File file;
-
-        /** Channel. */
-        private final RandomAccessFile lockFile;
-
-        /** Lock. */
-        private volatile FileLock lock;
-
+    public static class NodeFileLockHolder extends FileLockHolder {
         /** Kernal context to generate Id of locked node in file. */
         @NotNull private final GridKernalContext ctx;
 
-        /** Logger. */
-        private final IgniteLogger log;
-
         /**
-         * @param path Path.
+         * @param rootDir Root directory for lock file.
+         * @param ctx Kernal context.
+         * @param log Log.
          */
-        public FileLockHolder(String path, @NotNull GridKernalContext ctx, IgniteLogger log) {
-            try {
-                file = Paths.get(path, lockFileName).toFile();
+        public NodeFileLockHolder(String rootDir, @NotNull GridKernalContext ctx, IgniteLogger log) {
+            super(rootDir, log);
 
-                lockFile = new RandomAccessFile(file, "rw");
-
-                this.ctx = ctx;
-                this.log = log;
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
-            }
+            this.ctx = ctx;
         }
 
-        /**
-         * @param lockWaitTimeMillis During which time thread will try capture file lock.
-         * @throws IgniteCheckedException If failed to capture file lock.
-         */
-        public void tryLock(long lockWaitTimeMillis) throws IgniteCheckedException {
-            assert lockFile != null;
-
-            FileChannel ch = lockFile.getChannel();
-
+        /** {@inheritDoc} */
+        @Override public String lockInfo() {
             SB sb = new SB();
 
             //write node id
@@ -3085,108 +3055,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             sb.a("]");
 
-            String failMsg;
-
-            try {
-                String content = null;
-
-                // Try to get lock, if not available wait 1 sec and re-try.
-                for (int i = 0; i < lockWaitTimeMillis; i += 1000) {
-                    try {
-                        lock = ch.tryLock(0, 1, false);
-
-                        if (lock != null && lock.isValid()) {
-                            writeContent(sb.toString());
-
-                            return;
-                        }
-                    }
-                    catch (OverlappingFileLockException ignore) {
-                        if (content == null)
-                            content = readContent();
-
-                        log.warning("Failed to acquire file lock. Will try again in 1s " +
-                            "[nodeId=" + ctx.localNodeId() + ", holder=" + content +
-                            ", path=" + file.getAbsolutePath() + ']');
-                    }
-
-                    U.sleep(1000);
-                }
-
-                if (content == null)
-                    content = readContent();
-
-                failMsg = "Failed to acquire file lock [holder=" + content + ", time=" + (lockWaitTimeMillis / 1000) +
-                    " sec, path=" + file.getAbsolutePath() + ']';
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
-
-            if (failMsg != null)
-                throw new IgniteCheckedException(failMsg);
+            return sb.toString();
         }
 
-        /**
-         * Write node id (who captured lock) into lock file.
-         *
-         * @param content Node id.
-         * @throws IOException if some fail while write node it.
-         */
-        private void writeContent(String content) throws IOException {
-            FileChannel ch = lockFile.getChannel();
-
-            byte[] bytes = content.getBytes();
-
-            ByteBuffer buf = ByteBuffer.allocate(bytes.length);
-            buf.put(bytes);
-
-            buf.flip();
-
-            ch.write(buf, 1);
-
-            ch.force(false);
-        }
-
-        /**
-         *
-         */
-        private String readContent() throws IOException {
-            FileChannel ch = lockFile.getChannel();
-
-            ByteBuffer buf = ByteBuffer.allocate((int)(ch.size() - 1));
-
-            ch.read(buf, 1);
-
-            String content = new String(buf.array());
-
-            buf.clear();
-
-            return content;
-        }
-
-        /** Locked or not. */
-        public boolean isLocked() {
-            return lock != null && lock.isValid();
-        }
-
-        /** Releases file lock */
-        public void release() {
-            U.releaseQuiet(lock);
-        }
-
-        /** Closes file channel */
-        @Override public void close() {
-            release();
-
-            U.closeQuiet(lockFile);
-        }
-
-        /**
-         * @return Absolute path to lock file.
-         */
-        private String lockPath() {
-            return file.getAbsolutePath();
+        /** {@inheritDoc} */
+        @Override protected String warningMessage(String lockInfo) {
+            return "Failed to acquire file lock. Will try again in 1s " +
+                "[nodeId=" + ctx.localNodeId() + ", holder=" + lockInfo +
+                ", path=" + lockPath() + ']';
         }
     }
 
