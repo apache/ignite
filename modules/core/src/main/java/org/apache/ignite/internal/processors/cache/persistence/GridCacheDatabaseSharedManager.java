@@ -41,7 +41,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -312,11 +311,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @Nullable private WALPointer reservedForExchange;
 
-    /**
-     * This is the earliest WAL pointer that was reserved during preloading.
-     * Guarded by {@link #reservedForPreloadingLock}.
-     */
-    @Nullable private WALPointer reservedForPreloading;
+    /** This is the earliest WAL pointer that was reserved during preloading. */
+    private final AtomicReference<WALPointer> reservedForPreloading = new AtomicReference<>();
 
     /** Snapshot manager. */
     private IgniteCacheSnapshotManager snapshotMgr;
@@ -348,9 +344,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Page list cache limits per data region. */
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
-
-    /** Lock for {@link #reservedForPreloading}. */
-    private final ReentrantLock reservedForPreloadingLock = new ReentrantLock();
 
     /** */
     private CachePartitionDefragmentationManager defrgMgr;
@@ -1774,65 +1767,43 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
-        reservedForPreloadingLock.lock();
+        Map<GroupPartitionId, CheckpointEntry> entries = checkpointHistory().searchCheckpointEntry(reservationMap);
 
-        try {
-            Map<GroupPartitionId, CheckpointEntry> entries = checkpointHistory().searchCheckpointEntry(reservationMap);
+        if (F.isEmpty(entries))
+            return false;
 
-            if (F.isEmpty(entries))
+        WALPointer oldestWALPointerToReserve = null;
+
+        for (CheckpointEntry cpE : entries.values()) {
+            WALPointer ptr = cpE.checkpointMark();
+
+            if (ptr == null)
                 return false;
 
-            WALPointer oldestWALPointerToReserve = null;
-
-            for (CheckpointEntry cpE : entries.values()) {
-                WALPointer ptr = cpE.checkpointMark();
-
-                if (ptr == null)
-                    return false;
-
-                if (oldestWALPointerToReserve == null || ptr.compareTo(oldestWALPointerToReserve) < 0)
-                    oldestWALPointerToReserve = ptr;
-            }
-
-            if (cctx.wal().reserve(oldestWALPointerToReserve)) {
-                reservedForPreloading = oldestWALPointerToReserve;
-
-                return true;
-            }
-            else
-                return false;
+            if (oldestWALPointerToReserve == null || ptr.compareTo(oldestWALPointerToReserve) < 0)
+                oldestWALPointerToReserve = ptr;
         }
-        finally {
-            reservedForPreloadingLock.unlock();
+
+        if (cctx.wal().reserve(oldestWALPointerToReserve)) {
+            reservedForPreloading.set(oldestWALPointerToReserve);
+
+            return true;
         }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */
     @Override public void releaseHistoryForPreloading() {
-        reservedForPreloadingLock.lock();
+        WALPointer prev = reservedForPreloading.getAndSet(null);
 
-        try {
-            if (reservedForPreloading != null) {
-                cctx.wal().release(reservedForPreloading);
-
-                reservedForPreloading = null;
-            }
-        }
-        finally {
-            reservedForPreloadingLock.unlock();
-        }
+        if (prev != null)
+            cctx.wal().release(prev);
     }
 
     /** {@inheritDoc} */
     @Override public WALPointer latestWalPointerReservedForPreloading() {
-        reservedForPreloadingLock.lock();
-
-        try {
-            return reservedForPreloading;
-        }
-        finally {
-            reservedForPreloadingLock.unlock();
-        }
+        return reservedForPreloading.get();
     }
 
     /**

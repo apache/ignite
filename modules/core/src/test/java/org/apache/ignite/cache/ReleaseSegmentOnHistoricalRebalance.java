@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistoryResult;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
@@ -190,7 +192,7 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
                 CheckpointHistory cpHist = dbMgr(n).checkpointHistory();
 
                 for (Long cp : cpHist.checkpoints())
-                    release(n, cpHist.entry(cp).checkpointMark());
+                    release(n, entry(cpHist, cp).checkpointMark());
 
                 return m.callRealMethod();
             }).when(spy).rebalanceIterator(any(), any());
@@ -357,6 +359,19 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
      */
     private GridCacheOffheapManager offheapMgr(IgniteInternalCache cache) {
         return (GridCacheOffheapManager)cache.context().group().offheap();
+    }
+
+    /**
+     * Invoke the {@code CheckpointHistory#entry}.
+     *
+     * @param cpHist Checkpoint history.
+     * @param cpTs Checkpoint timestamp.
+     * @return Checkpoint entry.
+     */
+    private CheckpointEntry entry(CheckpointHistory cpHist, Long cpTs) throws Exception {
+        Method entry = U.getNonPublicMethod(cpHist.getClass(), "entry", cpTs.getClass());
+
+        return (CheckpointEntry)entry.invoke(cpHist, cpTs);
     }
 
     /**

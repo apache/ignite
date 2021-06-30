@@ -100,9 +100,6 @@ public abstract class AbstractWalRecordsIterator
     /** Position of last read valid record. */
     private WALPointer lastRead;
 
-    /** Exception to be thrown on the next {@link #onHasNext}. */
-    @Nullable protected IgniteCheckedException onHasNextEx;
-
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
@@ -146,8 +143,8 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected boolean onHasNext() throws IgniteCheckedException {
-        if (onHasNextEx != null)
-            throw onHasNextEx;
+        if (curException != null)
+            throw curException;
 
         return curRec != null;
     }
