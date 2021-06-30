@@ -91,6 +91,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .setFields(new LinkedHashMap<>(
                 F.asMap("id", Integer.class.getName(), "descId", Integer.class.getName()))
             )
+            .setAliases(F.asMap("id", "asId", "descId", "asDescId"))
             .setIndexes(Arrays.asList(idIdx, descIdIdx));
 
         CacheConfiguration<?, ?> ccfg1 = new CacheConfiguration<>()
@@ -183,6 +184,38 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         // Lt, desc index.
         descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
             .setCriteria(lt("descId", pivot));
+
+        check(cache.query(descQry), 0, pivot);
+    }
+
+    /** */
+    @Test
+    public void testAliasRangeQueries() {
+        insertData(cache);
+
+        int pivot = new Random().nextInt(CNT);
+
+        // Lt.
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("asId", pivot));
+
+        check(cache.query(qry), 0, pivot);
+
+        // Lt, desc index.
+        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("asDescId", pivot));
+
+        check(cache.query(descQry), 0, pivot);
+
+        // Lt.
+        qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
+            .setCriteria(lt("asId", pivot));
+
+        check(cache.query(qry), 0, pivot);
+
+        // Lt, desc index.
+        descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("asDescId", pivot));
 
         check(cache.query(descQry), 0, pivot);
     }
