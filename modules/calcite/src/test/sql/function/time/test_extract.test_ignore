@@ -1,6 +1,7 @@
 # name: test/sql/function/time/test_extract.test
 # description: Extract function
 # group: [time]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
 
 statement ok
 CREATE TABLE times(id INTEGER, i TIME)
@@ -34,6 +35,33 @@ SELECT EXTRACT(hour FROM i) FROM times ORDER BY id
 20
 20
 20
+NULL
+
+query I
+SELECT EXTRACT(milliseconds FROM i) FROM times ORDER BY id
+----
+20000
+10998
+10330
+10001
+NULL
+
+query I
+SELECT EXTRACT(microseconds FROM i) FROM times ORDER BY id
+----
+20000000
+10998000
+10330000
+10001000
+NULL
+
+query I
+SELECT EXTRACT(epoch FROM i) FROM times ORDER BY id
+----
+20
+10
+10
+10
 NULL
 
 # time gives errors for date-only parts

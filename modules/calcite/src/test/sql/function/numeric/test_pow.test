@@ -3,9 +3,6 @@
 # group: [numeric]
 
 statement ok
-PRAGMA enable_verification
-
-statement ok
 CREATE TABLE powerme(a DOUBLE, b INTEGER)
 
 statement ok
@@ -17,22 +14,22 @@ select power(a, 0) from powerme
 1.000000
 
 query R
-select power(b, -2) from powerme
+select power(b, -2)::REAL from powerme
 ----
-0.111111
+0.11111111
 
 query R
-select power(a, b) from powerme
+select power(a, b)::REAL from powerme
 ----
 9.261000
 
 query R
-select power(b, a) from powerme
+select power(b, a)::REAL from powerme
 ----
 10.045109
 
 query R
-select power(b, a) from powerme
+select power(b, a)::REAL from powerme
 ----
 10.045109
 

@@ -1,0 +1,13 @@
+# name: test/sql/function/timestamp/current_time.test
+# description: Test current_time/current_date/etc
+# group: [timestamp]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15037
+
+#statement ok
+#SELECT CAST(CURRENT_TIME AS VARCHAR)
+
+#statement ok
+#SELECT CAST(CURRENT_DATE AS VARCHAR)
+
+statement ok
+SELECT CAST(CURRENT_TIMESTAMP AS VARCHAR)
