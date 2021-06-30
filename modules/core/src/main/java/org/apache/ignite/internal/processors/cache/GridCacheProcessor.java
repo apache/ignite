@@ -192,7 +192,6 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
@@ -221,8 +220,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
@@ -667,13 +664,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 MetricRegistry mreg = ctx.metric().registry(metricName(IoStatisticsType.CACHE_GROUP.metricGroupName(),
                     grpCtx.cacheOrGroupName()));
 
-                boolean hasMetrics = mreg.findMetric("grpId") != null;
-
-                return new CacheGroupIoView(
-                    grpCtx,
-                    hasMetrics ? mreg.<LongMetric>findMetric(PHYSICAL_READS).value() : 0,
-                    hasMetrics ? mreg.<LongMetric>findMetric(LOGICAL_READS).value() : 0
-                );
+                return new CacheGroupIoView(grpCtx, mreg);
             }
         );
     }

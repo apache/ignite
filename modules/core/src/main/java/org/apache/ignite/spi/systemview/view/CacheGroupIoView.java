@@ -19,6 +19,11 @@ package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.LongMetric;
+
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
 
 /**
  * Cache group IO statistics representation for a {@link SystemView}.
@@ -27,21 +32,16 @@ public class CacheGroupIoView {
     /** Cache group. */
     private final CacheGroupContext grpCtx;
 
-    /** Physical reads. */
-    private final long physicalReads;
-
-    /** Logical reads. */
-    private final long logicalReads;
+    /** Metric registry for current cache group IO statistics. */
+    private final MetricRegistry mreg;
 
     /**
      * @param grpCtx Cache group context.
-     * @param physicalReads Physical reads.
-     * @param logicalReads Logical reads.
+     * @param mreg Metric registry for current cache group IO statistics.
      */
-    public CacheGroupIoView(CacheGroupContext grpCtx, long physicalReads, long logicalReads) {
+    public CacheGroupIoView(CacheGroupContext grpCtx, MetricRegistry mreg) {
         this.grpCtx = grpCtx;
-        this.physicalReads = physicalReads;
-        this.logicalReads = logicalReads;
+        this.mreg = mreg;
     }
 
     /**
@@ -65,7 +65,9 @@ public class CacheGroupIoView {
      */
     @Order(2)
     public long physicalReads() {
-        return physicalReads;
+        LongMetric metric = mreg.findMetric(PHYSICAL_READS);
+
+        return metric != null ? metric.value() : 0;
     }
 
     /**
@@ -73,6 +75,8 @@ public class CacheGroupIoView {
      */
     @Order(3)
     public long logicalReads() {
-        return logicalReads;
+        LongMetric metric = mreg.findMetric(LOGICAL_READS);
+
+        return metric != null ? metric.value() : 0;
     }
 }
