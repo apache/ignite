@@ -14,5 +14,5 @@
 // limitations under the License.
 
 // tag::command[]
-curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite.exe" -o ignite.exe
+curl "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha2/apache-ignite-3.0.0-alpha2.zip" -o apache-ignite-3.0.0-alpha2.zip
 // end::command[]

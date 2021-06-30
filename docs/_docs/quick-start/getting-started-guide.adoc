@@ -14,17 +14,17 @@
 // limitations under the License.
 = Getting Started Guide
 
-This guide provides essential details on how to start working with Ignite 3.0 by using the Ignite CLI tool,
-including the following information:
+This guide provides essential details on how to start working with Ignite 3.0 alpha 2 by using the Ignite CLI tool, including the following information:
 
-* How to download and install the tool
-* How to manage nodes using the Ignite CLI tool
-* Additional information regarding the use of the tool
+* How to download and install the tool.
+* How to use the Ignite CLI tool to manage nodes.
+* How to run built-in examples.
+* Additional information regarding the use of the tool.
 
 == Prerequisites
 
 
-Ignite 3.0 was officially tested on:
+Ignite 3.0 alpha 2 was officially tested on:
 
 include::../includes/prereqs.adoc[]
 
@@ -34,37 +34,14 @@ include::../includes/prereqs.adoc[]
 
 To download and install the Ignite CLI Tool, follow the steps below:
 
-. Create a folder. For example, use a Linux command similar to the following:
+. Download the archive with the Ignite CLI tool:
 +
 [tabs]
 --
 tab:Unix[]
 [source,shell]
 ----
-mkdir ignite3 && cd ignite3
-----
-
-tab:Windows (PowerShell)[]
-[source,shell]
-----
-(mkdir ignite3) -AND (cd ignite3)
-----
-
-tab:Windows (CMD)[]
-[source,shell]
-----
-mkdir ignite3 & cd ignite3
-----
---
-
-. Download the Ignite CLI tool and set required execute permissions:
-+
-[tabs]
---
-tab:Unix[]
-[source,shell]
-----
-curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite" -o ignite && chmod +x ignite
+curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha2/apache-ignite-3.0.0-alpha2.zip" -o apache-ignite-3.0.0-alpha2.zip
 ----
 
 tab:Windows (PowerShell)[]
@@ -77,6 +54,29 @@ tab:Windows (CMD)[]
 [source,shell]
 ----
 include::../includes/ignite-cli-download-windows.adoc[tag=command,indent=0]
+----
+--
+
+. Unpack the archive:
++
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+unzip apache-ignite-3.0.0-alpha2.zip && cd apache-ignite-3.0.0-alpha2
+----
+
+tab:Windows (PowerShell)[]
+[source,shell]
+----
+Expand-Archive apache-ignite-3.0.0-alpha2.zip -DestinationPath . ; cd apache-ignite-3.0.0-alpha2
+----
+
+tab:Windows (CMD)[]
+[source,shell]
+----
+tar -xf apache-ignite-3.0.0-alpha2.zip & cd apache-ignite-3.0.0-alpha2
 ----
 --
 
@@ -109,15 +109,14 @@ permanently update the `PATH` environment variable by adding a full path to the 
 
 == Using Ignite CLI Tool
 
-Ignite CLI is a single entry point for all the Ignite operations. For example, it allows you to perform the following
-actions:
+Ignite CLI is a single entry point for all the Ignite operations. You can perform the following actions with it:
 
-* Manage existing nodes
-* Install new nodes
-* Update old nodes to new versions
-* Install or remove optional modules
+* Manage existing nodes.
+* Install new nodes.
+* Update old nodes to new versions.
+* Install or remove optional modules.
 
-Let's use some of the <<Ignite CLI Tool Commands>>.
+Let's use some of the \<<Ignite CLI Tool Commands>>.
 
 . Use the command below to see the full list:
 +
@@ -137,7 +136,7 @@ ignite init --help
 
 Ignite CLI allows to install Ignite modules and 3rd party Maven dependencies.
 
-. To start an Ignite 3.0 cluster, you need to install Ignite core artifacts first:
+. To start an Ignite 3.0 alpha 2 cluster, you need to install Ignite core artifacts first:
 +
 [source, shell]
 ----
@@ -162,11 +161,11 @@ ignite module list
 
 This section explains how to start a node, how to stop, and perform other basic operations with it.
 
-. Start a cluster node setting `myFirstNode` as a node unique identifier:
+. Start a cluster node setting `node-1` as a node unique identifier:
 +
 [source, shell]
 ----
-ignite node start myFirstNode
+ignite node start --config=examples/config/ignite-config.json node-1
 ----
 
 . Confirm the node is started and running:
@@ -181,33 +180,21 @@ This command also displays the path to the log file.
 . To view the log, use the log file path from the previous step result. To open the log file, use any suitable approach.
 For example, use the `cat` command on a Unix operating system.
 
-== Working With the Cluster
+== Built-in Examples
 
-The Ignite CLI tool also allows to perform some operations with a cluster using the `config` command.
+Ignite 3.0 alpha 2 comes with examples that are configured as a separate Maven project located in the `examples` folder.
 
-See some of the examples below:
+The project includes the following examples:
 
-. Read the cluster configuration:
-+
-[source, shell]
-----
-ignite config get
-----
-+
-It can be performed either for the whole tree or filtered via the `--selector` option.
+* `TableExample` demonstrates the usage of the `org.apache.ignite.table.Table` API to create a table. It also shows how to get data from a table, or insert a line into a table.
+* `KeyValueBinaryViewExample` - demonstrates the usage of the `org.apache.ignite.table.KeyValueBinaryView` API to insert a line into a table.
 
-. Update the baseline topology auto-adjustment timeout:
-+
-[source, shell]
-----
-ignite config set local.baseline.autoAdjust.timeout=20000
-----
-. Confirm the change is applied:
-+
-[source, shell]
-----
-ignite config get --selector=local.baseline.autoAdjust.timeout
-----
+To run an example:
+
+1. Import the `examples` folder into your IDE as a Maven project.
+
+2. Follow the steps in the specific example to start it.
+
 
 == Stopping the Cluster
 
@@ -216,6 +203,7 @@ To stop the node, use the command below passing `myFirstNode` as a node unique i
 ----
 ignite node stop myFirstNode
 ----
+
 
 == Next Steps
 

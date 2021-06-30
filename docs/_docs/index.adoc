@@ -39,3 +39,18 @@ which means that the schema is defined for a cache/table before its creation.
 
 * See a link:https://cwiki.apache.org/confluence/display/IGNITE/Proposals+for+Ignite+3.0[full list of improvements,window=_blank].
 
+
+== New in Alpha 2
+
+Apache Ignite Alpha 2 comes with the following new features:
+
+- Added replication infrastructure based on Raft.
+- New in-memory atomic storage with the basic insert-read functionality.
+- New schema management engine and API.
+
+== Known Issues
+
+Due to changes between alpha 1 and alpha 2, Ignite cluster configuration commands no longer work. This will be fixed in alpha 3.
+
+Affected commands: `config`, `config get`, `config set`.
+
