@@ -34,12 +34,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.StripedExecutor.Stripe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -48,6 +51,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_VIEW;
 
 /**
  * This manager should provide {@link ReadOnlySystemViewRegistry} for each configured {@link SystemViewExporterSpi}.
@@ -240,10 +244,83 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param name Name.
      * @param sysView System view.
      */
-    private void registerView0(String name, SystemView sysView) {
+    private void registerView0(String name, SystemView<?> sysView) {
+        if (ctx.security() != null && ctx.security().enabled())
+            sysView = secureSystemView(sysView, ctx.security());
+
         systemViews.put(name, sysView);
 
         notifyListeners(sysView, viewCreationLsnrs, log);
+    }
+
+    /**
+     * Adds {@link SecurityPermission#ADMIN_VIEW} authorization to data accessors of existing {@link SystemView}.
+     *
+     * @param view Existing view.
+     * @param security Security processor.
+     * @return Wrapped view.
+     */
+    private <T> SystemView<T> secureSystemView(SystemView<T> view, IgniteSecurity security) {
+        if (view instanceof FiltrableSystemView) {
+            return new FiltrableSystemView<T>() {
+                @Override public Iterator<T> iterator(Map<String, Object> filter) {
+                    security.authorize(ADMIN_VIEW);
+
+                    return ((FiltrableSystemView<T>)view).iterator(filter);
+                }
+
+                @Override public SystemViewRowAttributeWalker<T> walker() {
+                    return view.walker();
+                }
+
+                @Override public String name() {
+                    return view.name();
+                }
+
+                @Override public String description() {
+                    return view.description();
+                }
+
+                @Override public int size() {
+                    security.authorize(ADMIN_VIEW);
+
+                    return view.size();
+                }
+
+                @NotNull @Override public Iterator<T> iterator() {
+                    security.authorize(ADMIN_VIEW);
+
+                    return view.iterator();
+                }
+            };
+        }
+        else {
+            return new SystemView<T>() {
+                @Override public SystemViewRowAttributeWalker<T> walker() {
+                    return view.walker();
+                }
+
+                @Override public String name() {
+                    return view.name();
+                }
+
+                @Override public String description() {
+                    return view.description();
+                }
+
+                @Override public int size() {
+                    security.authorize(ADMIN_VIEW);
+
+                    return view.size();
+                }
+
+                @NotNull @Override public Iterator<T> iterator() {
+                    security.authorize(ADMIN_VIEW);
+
+                    return view.iterator();
+                }
+            };
+        }
     }
 
     /**
