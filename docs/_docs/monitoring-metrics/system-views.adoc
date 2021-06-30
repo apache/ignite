@@ -326,8 +326,8 @@ The BASELINE_NODE_ATTRIBUTES view exposes node attributes fixed at a moment when
 |===
 | Column | Data Type | Description
 | NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
-| NAME | VARCHAR | Name of the user attribute.
-| VALUE | VARCHAR | User attribute value.
+| NAME | VARCHAR | Name of the node attribute.
+| VALUE | VARCHAR | Attribute value.
 
 |===
 
