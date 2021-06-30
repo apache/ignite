@@ -987,7 +987,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     s2.close();
 
-                    assertTrue(s.removed());
+                    assertTrue(waitForCondition(s::removed, getTestTimeout()));
                 }
             }
 
@@ -1005,7 +1005,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             s1.close();
 
-            assertTrue(s.removed());
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
 
             assertEquals(0, seqs0.size());
             assertEquals(0, seqs1.size());
@@ -1047,7 +1047,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     l2.close();
 
-                    assertTrue(l.removed());
+                    assertTrue(waitForCondition(l::removed, getTestTimeout()));
                 }
             }
 
@@ -1064,7 +1064,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l1.close();
 
-            assertTrue(l.removed());
+            assertTrue(waitForCondition(l::removed, getTestTimeout()));
 
             assertEquals(0, longs0.size());
             assertEquals(0, longs1.size());
@@ -1106,7 +1106,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     l2.close();
 
-                    assertTrue(r.removed());
+                    assertTrue(waitForCondition(r::removed, getTestTimeout()));
                 }
             }
 
@@ -1123,7 +1123,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l1.close();
 
-            assertTrue(l.removed());
+            assertTrue(waitForCondition(l::removed, getTestTimeout()));
 
             assertEquals(0, refs0.size());
             assertEquals(0, refs1.size());
@@ -1168,7 +1168,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     s2.close();
 
-                    assertTrue(s.removed());
+                    assertTrue(waitForCondition(s::removed, getTestTimeout()));
                 }
             }
 
@@ -1231,7 +1231,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     l2.countDown();
                     l2.close();
 
-                    assertTrue(l.removed());
+                    assertTrue(waitForCondition(l::removed, getTestTimeout()));
                 }
 
                 assertEquals(grpName, l.groupName());
@@ -1255,7 +1255,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             l3.countDown();
             l3.close();
 
-            assertTrue(l.removed());
+            assertTrue(waitForCondition(l::removed, getTestTimeout()));
 
             assertEquals(0, latches0.size());
             assertEquals(0, latches1.size());
@@ -1317,7 +1317,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     s2.close();
 
-                    assertTrue(s.removed());
+                    assertTrue(waitForCondition(s::removed, getTestTimeout()));
                 }
 
                 assertEquals(grpName, s.groupName());
@@ -1342,7 +1342,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l3.close();
 
-            assertTrue(s.removed());
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
 
             assertEquals(0, semaphores0.size());
             assertEquals(0, semaphores1.size());
@@ -1403,7 +1403,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     l2.close();
 
-                    assertTrue(l.removed());
+                    assertTrue(waitForCondition(l::removed, getTestTimeout()));
                 }
 
                 assertEquals(grpName, l.groupName());
@@ -1430,7 +1430,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l3.close();
 
-            assertTrue(s.removed());
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
 
             assertEquals(0, locks0.size());
             assertEquals(0, locks1.size());
