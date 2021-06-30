@@ -317,6 +317,21 @@ The BASELINE_NODES view contains information about the nodes that are part of th
 |===
 
 
+== BASELINE_NODE_ATTRIBUTES
+
+
+The BASELINE_NODE_ATTRIBUTES view exposes node attributes fixed at a moment when a current baseline topology was set.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
+| NAME | VARCHAR | Name of the node attribute.
+| VALUE | VARCHAR | Attribute value.
+
+|===
+
+
 == CLIENT_CONNECTIONS
 
 This view exposes information about currently opened client connections: JDBC, ODBC, Thin clients.
