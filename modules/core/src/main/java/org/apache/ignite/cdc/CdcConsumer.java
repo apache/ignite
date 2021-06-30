@@ -35,14 +35,14 @@ import org.apache.ignite.resources.LoggerResource;
  * </ul>
  *
  * In case consumer implementation wants to user {@link IgniteLogger}, please, use, {@link LoggerResource} annotation:
- * <pre> {@code
+ * <pre>
  * public class ChangeDataCaptureConsumer implements ChangeDataCaptureConsumer {
- *     @LoggerReource
+ *     &#64;LoggerResource
  *     private IgniteLogger log;
  *
  *     ...
  * }
- * }</pre>
+ * </pre>
  *
  * Note, consumption of the {@link CdcEvent} will be started from the last saved offset.
  * The offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
