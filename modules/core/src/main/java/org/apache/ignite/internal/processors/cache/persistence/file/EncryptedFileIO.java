@@ -23,6 +23,7 @@ import java.nio.MappedByteBuffer;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -213,7 +214,7 @@ public class EncryptedFileIO implements FileIO {
         assert position() >= headerSize;
 
         try {
-            encUtil.encrypt(srcBuf, res, grpKey(groupId, 0));
+            encUtil.encrypt(srcBuf, res, grpKey(groupId, null));
         }
         catch (EncryptionKeyNotFoundException e) {
             throw new IOException("Failed to encrypt data for cache group " + groupId + '.', e);
@@ -223,11 +224,13 @@ public class EncryptedFileIO implements FileIO {
     /**
      * Finds encryption key for cache group {@code grpId}.
      *
+     * @param grpId Cache group id.
+     * @param keyId Key id. If {@code null}, the active key is used.
      * @return Encryption key if found.
      * @throws {@code EncryptionKeyNotFoundException} if the key isn't found.
      */
-    private GroupKey grpKey(int grpId, int keyId) throws EncryptionKeyNotFoundException {
-        GroupKey key = keyProvider.groupKey(grpId, keyId);
+    private GroupKey grpKey(int grpId, @Nullable Integer keyId) throws EncryptionKeyNotFoundException {
+        GroupKey key = keyId == null ? keyProvider.getActiveKey(grpId) : keyProvider.groupKey(grpId, keyId);
 
         if (key == null)
             throw new EncryptionKeyNotFoundException(grpId, keyId);

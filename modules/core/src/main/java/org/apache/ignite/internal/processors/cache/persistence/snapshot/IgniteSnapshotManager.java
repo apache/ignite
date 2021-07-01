@@ -564,6 +564,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
+        System.err.println("TEST | initLocalSnapshotStartStage on " + cctx.localNodeId() + ". is clisent: " + cctx.localNode().isClient());
+
         if (cctx.kernalContext().clientNode() ||
             !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
@@ -582,6 +584,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!leftNodes.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of baseline nodes left the cluster " +
                 "prior to snapshot operation start: " + leftNodes));
+        }
+
+        if (!cctx.localNode().isClient() && cctx.kernalContext().encryption().isMasterKeyChangeInProgress()
+            || cctx.kernalContext().encryption().reencryptionInProgress()) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Master key changing or " +
+                "caches re-encryption process is not finished yet."));
         }
 
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
@@ -721,6 +729,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
+        System.err.println("TEST | initLocalSnapshotEndStage on " + cctx.localNodeId());
+
         if (clusterSnpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
@@ -1102,6 +1112,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
+        System.err.println("TEST | createSnapshot on " + cctx.localNodeId() + ". is client: " + cctx.localNode().isClient());
+
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 

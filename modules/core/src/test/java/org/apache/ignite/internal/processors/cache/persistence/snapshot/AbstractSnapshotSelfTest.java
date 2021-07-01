@@ -139,6 +139,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean encryption;
 
+    /** Cache value builder. */
+    protected Function<Integer, Object> valBuilder = String::valueOf;
+
+    /**
+     * @return Cache value builder.
+     */
+    protected Function<Integer, Object> valueBuilder() {
+        return valBuilder;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -445,6 +455,28 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param nodesCnt Nodes count.
+     * @param keysCnt Number of keys to create.
+     * @param startClient {@code True} to start an additional client node.
+     * @return Ignite coordinator instance.
+     * @throws Exception if failed.
+     */
+    protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
+        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg);
+
+        if (startClient)
+            ignite = startClientGrid("client");
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        ignite.cache(dfltCacheCfg.getName()).destroy();
+
+        awaitPartitionMapExchange();
+
+        return ignite;
+    }
+
+    /**
      * @param ignite Ignite instance.
      * @return Snapshot manager related to given ignite instance.
      */
@@ -472,6 +504,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         assertTrue("Snapshot must contains pre-created cache data " +
             "[cache=" + cache.getName() + ", keysLeft=" + keys + ']', keys.isEmpty());
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keysCnt Expected number of keys.
+     */
+    protected void assertCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
+        assertEquals(keysCnt, cache.size());
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals(valueBuilder().apply(i), cache.get(i));
     }
 
     /**

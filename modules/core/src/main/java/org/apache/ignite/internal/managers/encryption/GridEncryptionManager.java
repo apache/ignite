@@ -814,6 +814,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * @return {@code True} If some cache groups are under re-encryption process.
+     */
+    public boolean reencryptionInProgress() {
+        return !reencryptGroups.isEmpty();
+    }
+
+    /**
      * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
      */
     public double getReencryptionRate() {
@@ -1503,6 +1510,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The previous change was not completed."));
+        }
+
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                "Snapshot operation is in progress."));
         }
 
         masterKeyChangeRequest = req;

@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -32,6 +37,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
  * Snapshot test only for encrypted-related cases.
  */
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
+
+    private static String SECOND_CACHE_NAME = "encryptedCache";
+
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption is always enabled.")
     public static Iterable<Boolean> enableEncryption() {
@@ -63,6 +71,82 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         }
 
         throw new IllegalStateException("Snapshot validation must contain error due to different master key.");
+    }
+
+    /**
+     * Checks re-encryption fails during snapshot restoration.
+     */
+    @Test
+    public void testReencryptDuringRestore() throws Exception {
+        testActionDuringSnapshotOperation(true, chageCacheGroupKey(), "Cache group key change was " +
+            "rejected.", IgniteException.class);
+    }
+
+    /**
+     * Checks re-encryption fails during snapshot creation.
+     */
+    @Test
+    public void testReencryptDuringSnapshot() throws Exception {
+        testActionDuringSnapshotOperation(false, chageCacheGroupKey(), "Cache group key change was " +
+            "rejected.", IgniteException.class);
+    }
+
+    /**
+     * Checks master key changing failes during snapshot restoration.
+     */
+    @Test
+    public void testMasterKeyChangeDuringRestore() throws Exception {
+        testActionDuringSnapshotOperation(true, chageMasterKey(), "Master key change was rejected.",
+            IgniteException.class);
+    }
+
+    /**
+     * Checks master key changing fails during snapshot creation.
+     */
+    @Test
+    public void testMasterKeyChangeDuringSnapshot() throws Exception {
+        testActionDuringSnapshotOperation(false, chageMasterKey(), "Master key change was rejected.",
+            IgniteException.class);
+    }
+
+    /**
+     * Checks snapshot-related action is blocked with {@code errPrefix} and {@code errEncrypType} during snapshot restoration or creation.
+     *
+     * @param restore If {@code true}, snapshot restoration is activated during the test. Snapshot creation otherwise.
+     */
+    private void testActionDuringSnapshotOperation(boolean restore, Callable<?> action, String errPrefix,
+        Class<? extends Exception> errType) throws Exception {
+        startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), defaultCacheConfiguration(),
+            defaultCacheConfiguration().setName(SECOND_CACHE_NAME));
+
+        BlockingCustomMessageDiscoverySpi discoSpi = discoSpi(grid(0));
+
+        IgniteFuture<Void> fut;
+
+        if (restore) {
+            grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+            grid(1).cache(dfltCacheCfg.getName()).destroy();
+
+            awaitPartitionMapExchange();
+
+            discoSpi.block((msg) -> msg instanceof DynamicCacheChangeBatch);
+
+            fut = grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME));
+        }
+        else {
+            discoSpi.block((msg) -> msg instanceof FullMessage && ((FullMessage)msg).error().isEmpty());
+
+            fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
+        }
+
+        discoSpi.waitBlocked(TIMEOUT);
+
+        GridTestUtils.assertThrowsAnyCause( log, action, errType, errPrefix + " Snapshot operation is in progress.");
+
+        discoSpi.unblock();
+
+        fut.get(TIMEOUT);
     }
 
     /** Checks snapshot restoration fails if different master key is used. */
@@ -137,5 +221,19 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             IgniteCheckedException.class,
             "bad key is used during decryption"
         );
+    }
+
+    /**
+     * @return change cache group key action.
+     */
+    private Callable<?> chageCacheGroupKey() {
+        return ()->grid(1).encryption().changeCacheGroupKey(Collections.singletonList(SECOND_CACHE_NAME)).get(TIMEOUT);
+    }
+
+    /**
+     * @return change cache group key action.
+     */
+    private Callable<?> chageMasterKey() {
+        return () -> grid(1).encryption().changeMasterKey(AbstractEncryptionTest.MASTER_KEY_NAME_2).get(TIMEOUT);
     }
 }

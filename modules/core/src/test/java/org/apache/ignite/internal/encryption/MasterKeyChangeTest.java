@@ -81,6 +81,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         stopAllGrids();
 
+        System.err.println("TEST | Start grids again");
+
         startTestGrids(false);
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));

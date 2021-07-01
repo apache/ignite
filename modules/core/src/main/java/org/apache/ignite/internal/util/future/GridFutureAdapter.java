@@ -499,6 +499,9 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     protected boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
         Object newState = cancel ? CANCELLED : err != null ? new ErrorWrapper(err) : res;
 
+        if(err != null && err.getMessage().contains("rejected"))
+            System.err.println("TEST | onDone on: " + this);
+
         while (true) {
             final Object oldState = state;
 

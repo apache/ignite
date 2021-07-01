@@ -119,8 +119,8 @@ class GroupKeyChangeProcess {
         IgniteInternalFuture<Void> fut0 = fut;
 
         if (fut0 != null && !fut0.isDone()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
-                "The previous change was not completed."));
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. "
+                + "The previous change was not completed."));
         }
 
         int[] grpIds = new int[cacheOrGrpNames.size()];
@@ -195,6 +195,12 @@ class GroupKeyChangeProcess {
         if (inProgress()) {
             return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
                 "The previous change was not completed."));
+        }
+
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
+                "Snapshot operation is in progress."));
         }
 
         this.req = req;
@@ -330,7 +336,7 @@ class GroupKeyChangeProcess {
     }
 
     /** Cache group key change future. */
-    private static class GroupKeyChangeFuture extends KeyChangeFuture {
+    static class GroupKeyChangeFuture extends KeyChangeFuture {
         /** Request. */
         private final ChangeCacheEncryptionRequest req;
 

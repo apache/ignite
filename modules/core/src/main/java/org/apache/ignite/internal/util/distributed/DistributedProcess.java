@@ -146,7 +146,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             if (crd.isLocal())
                 initCoordinator(p, topVer);
 
-            IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
+            IgniteInternalFuture<R> fut;
+
+            fut = exec.apply((I)msg.request());
 
             fut.listen(f -> {
                 if (f.error() != null)
