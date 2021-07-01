@@ -24,7 +24,7 @@ import java.io.Serializable;
  */
 public interface IndexQueryCriterion extends Serializable {
     /**
-     * @return Index field name.x
+     * @return Index field name.
      */
     public String field();
 }

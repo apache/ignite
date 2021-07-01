@@ -147,35 +147,17 @@ public class IndexQueryProcessor {
         // Check all indexes by cache to find best index match: count of index fields equals to count of index criteria fields.
         Collection<Index> idxs = idxProc.indexes(cctx);
 
-        Index idx = null;
-        int idxFieldsCnt = 0;
-
         for (Index i: idxs) {
             IndexDefinition idxDef = idxProc.indexDefinition(i.id());
 
             if (!tableName.equals(idxDef.idxName().tableName()))
                 continue;
 
-            int fldsCnt = idxDef.indexKeyDefinitions().size();
-
-            if (checkIndex(idxDef, idxQryDesc.criteria())) {
-                if (idx == null) {
-                    idx = i;
-                    idxFieldsCnt = fldsCnt;
-                }
-                else if (fldsCnt < idxFieldsCnt) {
-                    idx = i;
-                    idxFieldsCnt = fldsCnt;
-                }
-                else continue;
-
-                // Best match. Index query criteria matches full index.
-                if (idxQryDesc.criteria().size() == idxDef.indexKeyDefinitions().size())
-                    break;
-            }
+            if (checkIndex(idxDef, idxQryDesc.criteria()))
+                return i;
         }
 
-        return idx;
+        return null;
     }
 
     /** Checks that specified index matches index query criteria. */

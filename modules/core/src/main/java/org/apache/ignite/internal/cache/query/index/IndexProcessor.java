@@ -388,9 +388,9 @@ public class IndexProcessor extends GridProcessorAdapter {
      * Returns index for specified name.
      *
      * @param idxName Index name.
-     * @return Index for specified index name.
+     * @return Index for specified index name or {@code null} if not found.
      */
-    public Index index(IndexName idxName) {
+    public @Nullable Index index(IndexName idxName) {
         ddlLock.readLock().lock();
 
         try {
