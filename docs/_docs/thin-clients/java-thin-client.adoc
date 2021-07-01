@@ -197,10 +197,10 @@ include::{sourceCodeFile}[tag=binary-example,indent=0]
 
 Refer to the link:key-value-api/binary-objects[Working with Binary Objects] page for detailed information.
 
-=== Cache entry listening
+=== Cache Entry Listening
 
-When a cache gets modified (an entry is inserted, updated, deleted or expired), an event can be sent to notify the client.
-To listen to these events two approaches can be used:
+When a cache is modified (an entry is inserted, updated, deleted, or expired), an event can be sent to notify the client.
+To listen to these events, you can use one of the following approaches:
 
 * Continuous queries
 * Cache `registerCacheEntryListener` methods
@@ -213,7 +213,7 @@ NOTE: The classes of the remote filter factory must be available on the server n
 
 Refer to the link:key-value-api/continuous-queries[thick client continuous queries] page for more information about continuous queries.
 
-In case of connection to server failure, a thin client can't silently reconnect with guarantees that no events were lost, so continuous queries and registered cache event listeners are closed after the server disconnection. There are methods exist with the additional parameter: disconnect listener. This listener allows to catch server disconnection events and react appropriately.
+In case of connection to server failure, a thin client cannot silently reconnect with guarantees that no events are lost, so continuous queries and registered cache event listeners are closed after the server disconnection. There are also several methods with the additional parameter: disconnect listener. This listener allows to catch server disconnection events and react appropriately.
 
 [source, java]
 -------------------------------------------------------------------------------
