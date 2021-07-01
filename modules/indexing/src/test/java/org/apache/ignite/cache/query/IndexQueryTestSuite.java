@@ -30,6 +30,7 @@ import org.junit.runners.Suite;
     IndexQueryKeepBinaryTest.class,
     IndexQueryLocalTest.class,
     IndexQueryQueryEntityTest.class,
+    IndexQueryAliasTest.class,
     IndexQuerySqlIndexTest.class,
     IndexQueryRangeTest.class,
     MultifieldIndexQueryTest.class,
