@@ -26,9 +26,9 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQuery;
-import org.apache.ignite.cache.query.IndexQueryCriteria;
 import org.apache.ignite.cache.query.IndexQueryCriteriaBuilder;
-import org.apache.ignite.internal.cache.query.RangeIndexQueryCriteria;
+import org.apache.ignite.cache.query.IndexQueryCriterion;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -170,7 +170,7 @@ public class IndexQueryProcessor {
                 else continue;
 
                 // Best match. Index query criteria matches full index.
-                if (idxQryDesc.criteria().fields().size() == idxDef.indexKeyDefinitions().size())
+                if (idxQryDesc.criteria().size() == idxDef.indexKeyDefinitions().size())
                     break;
             }
         }
@@ -179,12 +179,12 @@ public class IndexQueryProcessor {
     }
 
     /** Checks that specified index matches index query criteria. */
-    private boolean checkIndex(IndexDefinition idxDef, IndexQueryCriteria criteria) {
-        if (criteria.fields().size() > idxDef.indexKeyDefinitions().size())
+    private boolean checkIndex(IndexDefinition idxDef, List<IndexQueryCriterion> criteria) {
+        if (criteria.size() > idxDef.indexKeyDefinitions().size())
             return false;
 
-        for (int i = 0; i < criteria.fields().size(); i++) {
-            if (!idxDef.indexKeyDefinitions().get(i).name().equalsIgnoreCase(criteria.fields().get(i)))
+        for (int i = 0; i < criteria.size(); i++) {
+            if (!idxDef.indexKeyDefinitions().get(i).name().equalsIgnoreCase(criteria.get(i).field()))
                 return false;
         }
 
@@ -204,7 +204,7 @@ public class IndexQueryProcessor {
     }
 
     /** Runs a query and return single cursor or cursor over multiple index segments. */
-    private GridCursor<IndexRow> query(GridCacheContext cctx, Index idx, IndexQueryCriteria criteria, IndexQueryContext qryCtx)
+    private GridCursor<IndexRow> query(GridCacheContext cctx, Index idx, List<IndexQueryCriterion> criteria, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
         int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
@@ -222,11 +222,13 @@ public class IndexQueryProcessor {
     }
 
     /** Coordinate query criteria. */
-    private GridCursor<IndexRow> query(int segment, Index idx, IndexQueryCriteria criteria, IndexQueryContext qryCtx)
+    private GridCursor<IndexRow> query(int segment, Index idx, List<IndexQueryCriterion> criteria, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
-        if (criteria instanceof RangeIndexQueryCriteria)
-            return treeIndexRange((InlineIndex) idx, (RangeIndexQueryCriteria) criteria, segment, qryCtx);
+        assert !criteria.isEmpty() : "Index qury criteria list has not to be empty.";
+
+        if (criteria.get(0) instanceof RangeIndexQueryCriterion)
+            return treeIndexRange((InlineIndex) idx, criteria, segment, qryCtx);
 
         throw new IllegalStateException("Doesn't support index query criteria: " + criteria.getClass().getName());
     }
@@ -241,7 +243,7 @@ public class IndexQueryProcessor {
      * 2. To apply criteria on non-first index fields. Tree apply boundaries field by field, if first field match
      * a boundary, then second field isn't checked within traversing.
      */
-    private GridCursor<IndexRow> treeIndexRange(InlineIndex idx, RangeIndexQueryCriteria criteria, int segment,
+    private GridCursor<IndexRow> treeIndexRange(InlineIndex idx, List<IndexQueryCriterion> criteria, int segment,
         IndexQueryContext qryCtx) throws IgniteCheckedException {
 
         InlineIndexRowHandler hnd = idx.segment(0).rowHandler();
@@ -253,17 +255,17 @@ public class IndexQueryProcessor {
         boolean lowerAllNulls = true;
         boolean upperAllNulls = true;
 
-        List<RangeIndexQueryCriteria.RangeCriterion> treeCriteria = new ArrayList<>();
+        List<RangeIndexQueryCriterion> treeCriteria = new ArrayList<>();
 
-        for (int i = 0; i < criteria.fields().size(); i++) {
-            String f = criteria.fields().get(i);
+        for (int i = 0; i < criteria.size(); i++) {
+            String f = criteria.get(i).field();
 
             IndexKeyDefinition def = hnd.indexKeyDefinitions().get(i);
 
             if (!def.name().equalsIgnoreCase(f))
                 throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
 
-            RangeIndexQueryCriteria.RangeCriterion c = criteria.criteria().get(i);
+            RangeIndexQueryCriterion c = (RangeIndexQueryCriterion) criteria.get(i);
 
             // If index is desc, then we need to swap boundaries as user declare criteria in straight manner.
             // For example, there is an idx (int Val desc). It means that index stores data in reverse order (1 < 0).
@@ -332,7 +334,7 @@ public class IndexQueryProcessor {
                 int criteriaKeysCnt = treeCriteria.size();
 
                 for (int i = 0; i < criteriaKeysCnt; i++) {
-                    RangeIndexQueryCriteria.RangeCriterion c = treeCriteria.get(i);
+                    RangeIndexQueryCriterion c = treeCriteria.get(i);
 
                     // Include all values on this field.
                     if (boundary.key(i) == null)

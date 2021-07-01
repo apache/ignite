@@ -18,22 +18,13 @@
 package org.apache.ignite.cache.query;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
- * Basic interface for all {@link IndexQuery} criteria.
+ * Basic interface for {@link IndexQuery} criterion.
  */
-public interface IndexQueryCriteria extends Serializable {
+public interface IndexQueryCriterion extends Serializable {
     /**
-     * @return List of fields that this query criteria applies to.
+     * @return Index field name.x
      */
-    public List<String> fields();
-
-    /**
-     * Merges multiple criteria.
-     *
-     * @param criteria Criteria to merge.
-     * @return New criteria.
-     */
-    public IndexQueryCriteria and(IndexQueryCriteria criteria);
+    public String field();
 }

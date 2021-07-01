@@ -17,67 +17,54 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Collections;
-import org.apache.ignite.internal.cache.query.RangeIndexQueryCriteria;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-import static org.apache.ignite.internal.cache.query.RangeIndexQueryCriteria.RangeCriterion;
-
 /**
- * Factory of {@link IndexQueryCriteria} for {@link IndexQuery}.
+ * Factory of {@link IndexQueryCriterion} for {@link IndexQuery}.
  */
 public class IndexQueryCriteriaBuilder {
     /** Object to mark a boundary if {@code null} is explicitly specified. */
     private static final Object NULL = new Null();
 
     /** Equal To. */
-    public static IndexQueryCriteria eq(String field, Object val) {
+    public static IndexQueryCriterion eq(String field, Object val) {
         return between(field, val, val);
     }
 
     /** Less Then. */
-    public static IndexQueryCriteria lt(String field, Object val) {
+    public static IndexQueryCriterion lt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriteria(Collections.singletonList(
-            new RangeCriterion(field, null, wrapNull(val), true, false)
-        ));
+        return new RangeIndexQueryCriterion(field, null, wrapNull(val), true, false);
     }
 
     /** Less Then or Equal. */
-    public static IndexQueryCriteria lte(String field, Object val) {
+    public static IndexQueryCriterion lte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriteria(Collections.singletonList(
-            new RangeCriterion(field, null, wrapNull(val), true, true)
-        ));
+        return new RangeIndexQueryCriterion(field, null, wrapNull(val), true, true);
     }
 
     /** Greater Then. */
-    public static IndexQueryCriteria gt(String field, Object val) {
+    public static IndexQueryCriterion gt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriteria(Collections.singletonList(
-            new RangeCriterion(field, wrapNull(val), null, false, true)
-        ));
+        return new RangeIndexQueryCriterion(field, wrapNull(val), null, false, true);
     }
 
     /** Greater Then or Equal. */
-    public static IndexQueryCriteria gte(String field, Object val) {
+    public static IndexQueryCriterion gte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriteria(Collections.singletonList(
-            new RangeCriterion(field, wrapNull(val), null, true, true)
-        ));
+        return new RangeIndexQueryCriterion(field, wrapNull(val), null, true, true);
     }
 
     /** Between. Lower and upper boundaries are inclusive. */
-    public static IndexQueryCriteria between(String field, Object lower, Object upper) {
+    public static IndexQueryCriterion between(String field, Object lower, Object upper) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriteria(Collections.singletonList(
-            new RangeCriterion(field, wrapNull(lower), wrapNull(upper), true, true)
-        ));
+        return new RangeIndexQueryCriterion(field, wrapNull(lower), wrapNull(upper), true, true);
     }
 
     /** */

@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.IndexQuery;
-import org.apache.ignite.cache.query.IndexQueryCriteria;
+import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /** Internal representation of {@link IndexQuery}. */
@@ -28,7 +30,7 @@ public class IndexQueryDesc implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IndexQueryCriteria criteria;
+    private final List<IndexQueryCriterion> criteria;
 
     /** */
     private final String idxName;
@@ -37,7 +39,7 @@ public class IndexQueryDesc implements Serializable {
     private final String valCls;
 
     /** */
-    public IndexQueryDesc(IndexQueryCriteria criteria, String idxName, String valCls) {
+    public IndexQueryDesc(List<IndexQueryCriterion> criteria, String idxName, String valCls) {
         A.notNull(criteria, "criteria");
 
         this.criteria = criteria;
@@ -46,7 +48,7 @@ public class IndexQueryDesc implements Serializable {
     }
 
     /** */
-    public IndexQueryCriteria criteria() {
+    public List<IndexQueryCriterion> criteria() {
         return criteria;
     }
 
@@ -62,9 +64,11 @@ public class IndexQueryDesc implements Serializable {
 
     /** */
     @Override public String toString() {
+        List<String> fields = criteria.stream().map(IndexQueryCriterion::field).collect(Collectors.toList());
+
         return "IndexQuery[" +
             "idxName=" + idxName + ", " +
             "valCls=" + valCls + ", " +
-            "fields=" + criteria.fields() + "]";
+            "fields=" + fields + "]";
     }
 }

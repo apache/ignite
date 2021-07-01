@@ -17,6 +17,12 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -31,7 +37,7 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     private static final long serialVersionUID = 0L;
 
     /** Index query criteria. */
-    private IndexQueryCriteria criteria;
+    private List<IndexQueryCriterion> criteria;
 
     /** Cache Value class. Describes a table within a cache that runs a query. */
     private final String valCls;
@@ -50,7 +56,7 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Specify index with cache value class and index name. If {@code idxName} is {@code null} then Ignite checks
-     * all indexes to find best match by {@link #valCls} and {@link IndexQueryCriteria#fields()}.
+     * all indexes to find best match by {@link #valCls} and {@link #criteria} fields.
      *
      * @param valCls Cache value class.
      * @param idxName Optional Index name.
@@ -66,24 +72,30 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
-     * Provide multiple index query criteria joint with AND.
+     * Provide multiple index query criterion joint with AND.
      */
-    public IndexQuery<K, V> setCriteria(IndexQueryCriteria criterion, IndexQueryCriteria... criteria) {
-        A.notNull(criterion, "criterion");
+    public IndexQuery<K, V> setCriteria(IndexQueryCriterion criterion, IndexQueryCriterion... criteria) {
+        List<IndexQueryCriterion> cc = new ArrayList<>();
 
-        this.criteria = criterion;
+        cc.add(criterion);
+        cc.addAll(Arrays.asList(criteria));
 
-        for (IndexQueryCriteria c: criteria) {
-            A.notNull(c, "criteria");
+        validateAndSetCriteria(cc);
 
-            this.criteria = this.criteria.and(c);
-        }
+        return this;
+    }
+
+    /**
+     * Provide multiple index query criterion joint with AND.
+     */
+    public IndexQuery<K, V> setCriteria(List<IndexQueryCriterion> criteria) {
+        validateAndSetCriteria(new ArrayList<>(criteria));
 
         return this;
     }
 
     /** Index query criteria. */
-    public IndexQueryCriteria getCriteria() {
+    public List<IndexQueryCriterion> getCriteria() {
         return criteria;
     }
 
@@ -95,5 +107,27 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Index name. */
     public @Nullable String getIndexName() {
         return idxName;
+    }
+
+    /** */
+    private void validateAndSetCriteria(List<IndexQueryCriterion> criteria) {
+        A.notEmpty(criteria, "criteria");
+        A.notNull(criteria.get(0), "criteria");
+
+        Class<?> critCls = criteria.get(0).getClass();
+
+        Set<String> fields = new HashSet<>();
+
+        for (IndexQueryCriterion c: criteria) {
+            A.notNull(c, "criteria");
+            A.ensure(c.getClass() == critCls,
+                "Expect a the same criteria class for merging criteria. Exp=" + critCls + ", act=" + c.getClass());
+
+            A.ensure(!fields.contains(c.field()), "Duplicated field in criteria: " + c.field() + ".");
+
+            fields.add(c.field());
+        }
+
+        this.criteria = Collections.unmodifiableList(criteria);
     }
 }
