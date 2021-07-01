@@ -106,20 +106,21 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
             boolean failed = false;
 
-            try {
-                while (it.hasNext()) {
-
+            while (it.hasNext()) {
+                try {
                     IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                     ptr = tup.get1();
                 }
-            }
-            catch (IgniteException e) {
-                Assert.assertNotNull(ptr);
-                Assert.assertEquals(failOnPtr.index(), ptr.index());
-                Assert.assertTrue(ptr.compareTo(failOnPtr) < 0);
+                catch (IgniteException e) {
+                    Assert.assertNotNull(ptr);
+                    Assert.assertEquals(failOnPtr.index(), ptr.index());
+                    Assert.assertTrue(ptr.compareTo(failOnPtr) < 0);
 
-                failed = X.hasCause(e, TestRuntimeException.class);
+                    failed = X.hasCause(e, TestRuntimeException.class);
+
+                    break;
+                }
             }
 
             assertTrue(failed);
