@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,8 +30,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
@@ -65,6 +64,7 @@ import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -505,7 +505,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected <T extends RelNode> Predicate<IgniteTableScan> isTableScan(String tableName) {
         return isInstanceOf(IgniteTableScan.class).and(
             n -> {
-                String scanTableName = n.getTable().unwrap(TestTable.class).name();
+                String scanTableName = Util.last(n.getTable().getQualifiedName());
 
                 if (tableName.equalsIgnoreCase(scanTableName))
                     return true;

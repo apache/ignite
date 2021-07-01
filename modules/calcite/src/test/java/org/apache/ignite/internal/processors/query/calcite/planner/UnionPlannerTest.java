@@ -53,9 +53,9 @@ public class UnionPlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceAggregateBase.class)
             .and(hasChildThat(isInstanceOf(Union.class)
-                    .and(input(0, isTableScan(((TestTable)publicSchema.getTable("TABLE1")).name()))
-                    .and(input(1, isTableScan(((TestTable)publicSchema.getTable("TABLE2")).name())))
-                    .and(input(2, isTableScan(((TestTable)publicSchema.getTable("TABLE3")).name()))))
+                    .and(input(0, isTableScan("TABLE1")))
+                    .and(input(1, isTableScan("TABLE2")))
+                    .and(input(2, isTableScan("TABLE3")))
             )));
     }
 
@@ -74,9 +74,9 @@ public class UnionPlannerTest extends AbstractPlannerTest {
             "SELECT * FROM table3 ";
 
         assertPlan(sql, publicSchema, isInstanceOf(IgniteUnionAll.class)
-                .and(input(0, hasChildThat(isTableScan(((TestTable)publicSchema.getTable("TABLE1")).name())))
-                .and(input(1, hasChildThat(isTableScan(((TestTable)publicSchema.getTable("TABLE2")).name()))))
-                .and(input(2, hasChildThat(isTableScan(((TestTable)publicSchema.getTable("TABLE3")).name()))))));
+                .and(input(0, hasChildThat(isTableScan("TABLE1"))))
+                .and(input(1, hasChildThat(isTableScan("TABLE2"))))
+                .and(input(2, hasChildThat(isTableScan("TABLE3")))));
     }
 
     /**
