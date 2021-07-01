@@ -669,6 +669,7 @@ class RelJson {
         map.put("operands", node.getArgList());
         map.put("filter", node.filterArg);
         map.put("name", node.getName());
+        map.put("coll", toJson(node.getCollation()));
         return map;
     }
 
