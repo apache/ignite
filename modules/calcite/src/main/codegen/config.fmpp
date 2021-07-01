@@ -492,6 +492,7 @@ data: {
       "SYSTEM"
       "SYSTEM_TIME"
       "SYSTEM_USER"
+      "STRING_AGG"
 #     "TABLE"
 #     "TABLESAMPLE"
       "TEMPORARY"

@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -38,6 +41,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
@@ -152,13 +156,14 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         ExecutionContext<Row> ctx,
         AggregateType type,
         List<AggregateCall> aggCalls,
+        Map<AggregateCall, Comparator<Row>> callCompMap,
         RelDataType inputRowType
     ) {
         this.ctx = ctx;
         this.type = type;
         this.inputRowType = inputRowType;
 
-        prototypes = Commons.transform(aggCalls, WrapperPrototype::new);
+        prototypes = Commons.transform(aggCalls, (call) -> new WrapperPrototype(call, callCompMap.get(call)));
     }
 
     /** {@inheritDoc} */
@@ -175,20 +180,25 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         private final AggregateCall call;
 
         /** */
+        private final Comparator<Row> comp;
+
+        /** */
         private Function<Object[], Object[]> inAdapter;
 
         /** */
         private Function<Object, Object> outAdapter;
 
         /** */
-        private WrapperPrototype(AggregateCall call) {
+        private WrapperPrototype(AggregateCall call, Comparator<Row> comp) {
             this.call = call;
+            this.comp = comp;
         }
 
         /** {@inheritDoc} */
         @Override public AccumulatorWrapper<Row> get() {
             Accumulator accumulator = accumulator();
-
+            if (comp != null)
+                return new OrderingAccumulatorWrapperImpl(accumulator, call, comp, inAdapter, outAdapter);
             return new AccumulatorWrapperImpl(accumulator, call, inAdapter, outAdapter);
         }
 
@@ -309,6 +319,105 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         /** {@inheritDoc} */
         @Override public Object end() {
             assert type != AggregateType.MAP;
+
+            return outAdapter.apply(accumulator.end());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator accumulator) {
+            assert type == AggregateType.REDUCE;
+
+            this.accumulator.apply(accumulator);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Accumulator accumulator() {
+            assert type == AggregateType.MAP;
+
+            return accumulator;
+        }
+    }
+
+
+    /** */
+    private final class OrderingAccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
+        /** */
+        private final Accumulator accumulator;
+
+        /** */
+        private final Function<Object[], Object[]> inAdapter;
+
+        /** */
+        private final Function<Object, Object> outAdapter;
+
+        /** */
+        private final List<Integer> argList;
+
+        /** */
+        private final int filterArg;
+
+        /** */
+        private final boolean ignoreNulls;
+
+        /** */
+        private final RowHandler<Row> handler;
+
+        /** Rows buffer. */
+        private final PriorityQueue<Row> rows;
+
+        /** */
+        OrderingAccumulatorWrapperImpl(
+            Accumulator accumulator,
+            AggregateCall call,
+            Comparator<Row> comp,
+            Function<Object[], Object[]> inAdapter,
+            Function<Object, Object> outAdapter
+        ) {
+            this.accumulator = accumulator;
+            this.inAdapter = inAdapter;
+            this.outAdapter = outAdapter;
+
+            argList = call.getArgList();
+            ignoreNulls = call.ignoreNulls();
+            filterArg = call.hasFilter() ? call.filterArg : -1;
+
+            handler = ctx.rowHandler();
+
+            rows = new PriorityQueue<>(comp);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            assert type != AggregateType.REDUCE;
+
+            if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
+                return;
+
+            rows.add(row);
+        }
+
+        private void extracted(Row row) {
+            Object[] args = new Object[argList.size()];
+            for (int i = 0; i < argList.size(); i++) {
+                args[i] = handler.get(argList.get(i), row);
+
+                if (ignoreNulls && args[i] == null)
+                    return;
+            }
+
+            accumulator.add(inAdapter.apply(args));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            assert type != AggregateType.MAP;
+
+            while (!rows.isEmpty()) {
+                Row poll = rows.poll();
+                System.out.println(poll);
+                extracted(poll);
+
+            }
 
             return outAdapter.apply(accumulator.end());
         }

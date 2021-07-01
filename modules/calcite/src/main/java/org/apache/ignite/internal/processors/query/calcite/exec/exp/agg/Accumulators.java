@@ -19,9 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -36,6 +40,7 @@ import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.sql.type.SqlTypeName.DOUBLE;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
+import static org.apache.calcite.sql.type.SqlTypeName.CHAR;
 
 /**
  *
@@ -47,6 +52,9 @@ public class Accumulators {
             return accumulatorFunctionFactory(call);
 
         Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
+
+        if ("LISTAGG".equals(call.getAggregation().getName()))
+            return () -> new DistinctMultivalueAccumulator(fac);
 
         return () -> new DistinctAccumulator(fac);
     }
@@ -68,6 +76,8 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
+            case "LISTAGG":
+                return ListAggAccumulator::new;
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -1018,6 +1028,57 @@ public class Accumulators {
     }
 
     /** */
+    private static class DistinctMultivalueAccumulator implements Accumulator {
+        /** */
+        private final Accumulator acc;
+
+        /** */
+        private final Map<Object, Object> map = new LinkedHashMap<>();
+
+        /** */
+        private DistinctMultivalueAccumulator(Supplier<Accumulator> accSup) {
+            this.acc = accSup.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            Object in1 = args[0];
+            Object in2 = args[1];
+
+
+            if (in1 == null)
+                return;
+
+            map.putIfAbsent(in1, in2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            DistinctMultivalueAccumulator other0 = (DistinctMultivalueAccumulator)other;
+
+            map.putAll(other0.map);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            for (Map.Entry<Object, Object> entry : map.entrySet())
+                acc.add(entry.getKey(), entry.getValue());
+
+            return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return acc.argumentTypes(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return acc.returnType(typeFactory);
+        }
+    }
+
+    /** */
     private static class DistinctAccumulator implements Accumulator {
         /** */
         private final Accumulator acc;
@@ -1063,6 +1124,56 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
+        }
+    }
+
+    /** */
+    private static class ListAggAccumulator implements Accumulator {
+        /** */
+        private List<Object> list = new ArrayList<>();
+        private List<Object> seps = new ArrayList<>();
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            Object in = args[0];
+            Object sep = (String)args[1];
+
+            if (in == null || args[1] == null)
+                return;
+
+            list.add(in);
+            seps.add(sep);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            ListAggAccumulator other0 = (ListAggAccumulator)other;
+
+            list.addAll(other0.list);
+            seps.addAll(other0.seps);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            if (list.isEmpty() || seps.isEmpty())
+                return null;
+
+            StringBuilder builder = new StringBuilder(list.size());
+            for (int i = 0; i < list.size() - 1; i++)
+                builder.append(list.get(i)).append(seps.get(i + 1));
+            builder.append(list.get(list.size() - 1));
+
+            return builder.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true), typeFactory.createTypeWithNullability(typeFactory.createSqlType(CHAR), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true);
         }
     }
 }

@@ -111,7 +111,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         if (calls.isEmpty())
             return null;
 
-        return new AccumulatorsFactory<>(ctx, type, calls, rowType);
+        Map<AggregateCall, Comparator<Row>> callCompMap = new HashMap<>();
+        for (AggregateCall call : calls) {
+            if (call.getCollation() != null)
+                callCompMap.put(call, comparator(call.getCollation()));
+        }
+
+        return new AccumulatorsFactory<>(ctx, type, calls, callCompMap, rowType);
     }
 
     /** {@inheritDoc} */
