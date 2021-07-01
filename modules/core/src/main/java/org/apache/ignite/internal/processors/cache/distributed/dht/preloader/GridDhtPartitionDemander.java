@@ -937,6 +937,7 @@ public class GridDhtPartitionDemander {
                 topVer,
                 cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
                 false,
+                false,
                 row
             )) {
                 cached.touch(); // Start tracking.
