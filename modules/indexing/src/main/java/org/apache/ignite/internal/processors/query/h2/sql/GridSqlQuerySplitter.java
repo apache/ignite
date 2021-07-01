@@ -1273,15 +1273,14 @@ public class GridSqlQuerySplitter {
 
         setupParameters(map, mapQry, paramsCnt);
 
+        QueryPartitionsChecker checker = new QueryPartitionsChecker(mapQry, distributedJoins, log);
+        checker.check();
+
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
-        map.partitioned(SplitterUtils.hasPartitionedTables(mapQry));
-        map.hasSubQueries(SplitterUtils.hasSubQueries(mapQry));
-        map.hasOuterJoinReplicatedPartitioned(SplitterUtils.hasOuterJoinReplicatedPartitioned(mapQry.from()));
-
-        // TODO: join in subqueries? Subqueries through this process too.
-        if (map.isPartitioned() && !distributedJoins)
-            SplitterUtils.lookForPartitionedJoin(mapQry, null, log);
+        map.partitioned(checker.hasPartitionedTables());
+        map.hasSubQueries(checker.hasSubQueries());
+        map.hasOuterJoinReplicatedPartitioned(checker.hasOuterJoinReplicatedPartitioned());
 
         if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));

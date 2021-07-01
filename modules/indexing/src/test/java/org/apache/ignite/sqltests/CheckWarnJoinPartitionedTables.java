@@ -204,10 +204,12 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
 
         checkLogListener(false,
-            "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE and a1.COMMENT = a2.COMMENT;");
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 on " +
+                "a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE and a1.COMMENT = a2.COMMENT;");
 
         checkLogListener(false,
-            "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE and a1.COMMENT != a2.COMMENT;");
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 on " +
+                "a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE and a1.COMMENT != a2.COMMENT;");
 
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.PRICE = a2.PRICE and a1.TITLE = a2.TITLE and a1.ID = a2.ID;");
