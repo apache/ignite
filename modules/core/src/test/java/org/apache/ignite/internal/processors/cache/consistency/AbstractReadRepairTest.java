@@ -259,6 +259,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 false,
                 AffinityTopologyVersion.NONE,
                 GridDrType.DR_NONE,
+                false,
                 false);
 
             assertTrue("iterableKey " + key + " already inited", init);

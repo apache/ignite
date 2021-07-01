@@ -83,8 +83,10 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
+import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -141,6 +143,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
@@ -189,6 +192,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
@@ -220,6 +224,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -247,6 +252,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** System view description for partition states. */
     public static final String PART_STATES_VIEW_DESC = "Distribution of cache group partitions across cluster nodes";
+
+    /** System view name for cache group IO. */
+    public static final String CACHE_GRP_IO_VIEW = metricName("local", "cache", "groups", "io");
+
+    /** System view description for cache group IO. */
+    public static final String CACHE_GRP_IO_VIEW_DESC = "Local node IO statistics for cache groups";
 
     /** @see IgniteSystemProperties#IGNITE_ALLOW_START_CACHES_IN_PARALLEL */
     public static final boolean DFLT_ALLOW_START_CACHES_IN_PARALLEL = true;
@@ -642,6 +653,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             new PartitionStateViewWalker(),
             this::partStatesViewSupplier,
             Function.identity()
+        );
+
+        ctx.systemView().registerView(
+            CACHE_GRP_IO_VIEW,
+            CACHE_GRP_IO_VIEW_DESC,
+            new CacheGroupIoViewWalker(),
+            () -> F.view(cacheGrps.values(), grp -> !grp.systemCache()),
+            grpCtx -> {
+                MetricRegistry mreg = ctx.metric().registry(metricName(IoStatisticsType.CACHE_GROUP.metricGroupName(),
+                    grpCtx.cacheOrGroupName()));
+
+                return new CacheGroupIoView(grpCtx, mreg);
+            }
         );
     }
 

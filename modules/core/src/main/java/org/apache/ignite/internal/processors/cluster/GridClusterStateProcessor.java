@@ -59,6 +59,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
@@ -96,6 +97,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
+import org.apache.ignite.spi.systemview.view.BaselineNodeView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -127,6 +129,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** Warning of unsafe cluster deactivation. */
     public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Deactivation clears " +
         "in-memory caches (without persistence) including the system caches.";
+
+    /** */
+    public static final String BASELINE_NODES_SYS_VIEW = metricName("baseline", "nodes");
+
+    /** */
+    public static final String BASELINE_NODES_SYS_VIEW_DESC = "Baseline topology nodes";
 
     /** */
     public static final String BASELINE_NODE_ATTRIBUTES_SYS_VIEW = metricName("baseline", "node", "attributes");
@@ -224,6 +232,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         distributedBaselineConfiguration.listenAutoAdjustTimeout(makeEventListener(
             EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED
         ));
+
+        ctx.systemView().registerView(
+            BASELINE_NODES_SYS_VIEW,
+            BASELINE_NODES_SYS_VIEW_DESC,
+            new BaselineNodeViewWalker(),
+            this::nodeViewSupplier,
+            Function.identity()
+        );
 
         ctx.systemView().registerFiltrableView(
             BASELINE_NODE_ATTRIBUTES_SYS_VIEW,
@@ -1858,6 +1874,29 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
+     * Baseline topology nodes view supplier.
+     */
+    private Collection<BaselineNodeView> nodeViewSupplier() {
+        BaselineTopology blt = globalState.baselineTopology();
+
+        if (blt == null)
+            return Collections.emptyList();
+
+        Set<Object> consistentIds = blt.consistentIds();
+
+        List<BaselineNodeView> rows = new ArrayList<>(consistentIds.size());
+
+        Collection<ClusterNode> srvNodes = ctx.discovery().aliveServerNodes();
+
+        Set<Object> aliveNodeIds = new HashSet<>(F.nodeConsistentIds(srvNodes));
+
+        for (Object consistentId : consistentIds)
+            rows.add(new BaselineNodeView(consistentId, aliveNodeIds.contains(consistentId)));
+
+        return rows;
+    }
+
+    /**
      * Baseline node attributes view supplier.
      *
      * @param filter Filter.
@@ -1886,9 +1925,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 attrs = F.asMap(attrName, attrs.get(attrName));
             }
 
-            return F.iterator(attrs.entrySet(),
+            return F.iterator(
+                attrs.entrySet(),
                 na -> new BaselineNodeAttributeView(node.consistentId(), na.getKey(), na.getValue()),
-                true);
+                true
+            );
         }, true));
     }
 

@@ -2008,6 +2008,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 true,
                                 topVer,
                                 drType,
+                                false,
                                 false)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
