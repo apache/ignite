@@ -24,10 +24,12 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 
 import org.apache.calcite.rel.core.AggregateCall;
@@ -1034,11 +1036,12 @@ public class Accumulators {
         private final Accumulator acc;
 
         /** */
-        private final Map<Object, Object> map = new LinkedHashMap<>();
+        private final Set<Object[]> set;
 
         /** */
         private DistinctMultivalueAccumulator(Supplier<Accumulator> accSup) {
             this.acc = accSup.get();
+            set = new LinkedHashSet<>();
         }
 
         /** {@inheritDoc} */
@@ -1050,20 +1053,34 @@ public class Accumulators {
             if (in1 == null)
                 return;
 
-            map.putIfAbsent(in1, in2);
+            set.add(args);
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
             DistinctMultivalueAccumulator other0 = (DistinctMultivalueAccumulator)other;
 
-            map.putAll(other0.map);
+            set.addAll(other0.set);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other, Comparator cmp) {
+            DistinctMultivalueAccumulator other0 = (DistinctMultivalueAccumulator)other;
+
+            Set<Object[]> set = new TreeSet<>(cmp);
+
+            set.addAll(this.set);
+            set.addAll(other0.set);
+
+            this.set.clear();
+
+            this.set.addAll(set);
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            for (Map.Entry<Object, Object> entry : map.entrySet())
-                acc.add(entry.getKey(), entry.getValue());
+            for (Object[] objects : set)
+                acc.add(objects);
 
             return acc.end();
         }
