@@ -27,7 +27,7 @@ Eviction is used in following cases:
 
 When Native Persistence is on, a similar process — called _page replacement_ — is used to free up off-heap memory when Ignite cannot allocate a new page.
 The difference is that the data is not lost (because it is stored in the persistent storage), and therefore you are less concerned about losing data than about efficiency.
-Refer to link:memory-configuration/replacement-policies[Replacement Policies] page for information about page replacement configuration.
+Refer to the link:memory-configuration/replacement-policies[Replacement Policies] page for information about page replacement configuration.
 
 == Off-Heap Memory Eviction
 
