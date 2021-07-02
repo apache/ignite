@@ -225,6 +225,16 @@ public class ITTransferableObjectProcessorTest {
     }
 
     /**
+     * Tests that if a message getter clashes with a getter in a superinterface, an appropriate error is displayed.
+     */
+    @Test
+    void testInheritedMessageClash() {
+        Compilation compilation = compile("InheritedMessageClash");
+
+        assertThat(compilation).hadErrorContaining("Getter with name 'x' is already defined");
+    }
+
+    /**
      * Compiles the given network message.
      */
     private Compilation compile(String messageSource) {

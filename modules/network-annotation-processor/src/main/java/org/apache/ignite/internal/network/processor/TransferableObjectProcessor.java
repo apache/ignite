@@ -64,17 +64,17 @@ public class TransferableObjectProcessor extends AbstractProcessor {
 
     /** {@inheritDoc} */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        List<MessageClass> messages = annotations.stream()
-            .map(roundEnv::getElementsAnnotatedWith)
-            .flatMap(Collection::stream)
-            .map(TypeElement.class::cast)
-            .map(MessageClass::new)
-            .collect(Collectors.toList());
-
-        if (messages.isEmpty())
-            return true;
-
         try {
+            List<MessageClass> messages = annotations.stream()
+                .map(roundEnv::getElementsAnnotatedWith)
+                .flatMap(Collection::stream)
+                .map(TypeElement.class::cast)
+                .map(e -> new MessageClass(processingEnv, e))
+                .collect(Collectors.toList());
+
+            if (messages.isEmpty())
+                return true;
+
             validateMessages(messages);
 
             MessageGroupWrapper messageGroup = getMessageGroup(roundEnv);

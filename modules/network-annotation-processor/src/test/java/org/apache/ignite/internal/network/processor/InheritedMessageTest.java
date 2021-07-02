@@ -32,64 +32,62 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Test class for checking that writing and reading fields in the generated (de-)serializers is ordered
- * alphanumerically.
+ * Tests for support of network message inheritance hierarchies.
+ *
+ * @see InheritedMessage
  */
-public class SerializationOrderTest {
+public class InheritedMessageTest {
     /** */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
     /** */
-    private final SerializationOrderMessageSerializationFactory serializationFactory =
-        new SerializationOrderMessageSerializationFactory(messageFactory);
+    private final InheritedMessageSerializationFactory serializationFactory =
+        new InheritedMessageSerializationFactory(messageFactory);
 
     /**
-     * Tests that a generated {@link MessageSerializer} writes message fields in alphanumerical order.
+     * Tests that the generated message implementation contains all fields from the superinterfaces and is serialized
+     * in the correct order.
      */
     @Test
-    void testSerializationOrder() {
-        SerializationOrderMessage msg = messageFactory.serializationOrderMessage()
-            .a(1).b("2").c(3).d("4")
+    void testSerialization() {
+        InheritedMessage msg = messageFactory.inheritedMessage()
+            .x(1).y(2).z(3)
             .build();
 
-        MessageSerializer<SerializationOrderMessage> serializer = serializationFactory.createSerializer();
+        MessageSerializer<InheritedMessage> serializer = serializationFactory.createSerializer();
 
         var mockWriter = mock(MessageWriter.class);
 
         when(mockWriter.isHeaderWritten()).thenReturn(true);
         when(mockWriter.writeInt(anyString(), anyInt())).thenReturn(true);
-        when(mockWriter.writeString(anyString(), anyString())).thenReturn(true);
 
         serializer.writeMessage(msg, mockWriter);
 
         InOrder inOrder = inOrder(mockWriter);
 
-        inOrder.verify(mockWriter).writeInt(eq("a"), eq(1));
-        inOrder.verify(mockWriter).writeString(eq("b"), eq("2"));
-        inOrder.verify(mockWriter).writeInt(eq("c"), eq(3));
-        inOrder.verify(mockWriter).writeString(eq("d"), eq("4"));
+        inOrder.verify(mockWriter).writeInt(eq("x"), eq(1));
+        inOrder.verify(mockWriter).writeInt(eq("y"), eq(2));
+        inOrder.verify(mockWriter).writeInt(eq("z"), eq(3));
     }
 
     /**
-     * Tests that a generated {@link MessageDeserializer} reads message fields in alphanumerical order.
+     * Tests that the generated message implementation is deserialized in the correct order.
      */
     @Test
-    void testDeserializationOrder() {
-        MessageDeserializer<SerializationOrderMessage> deserializer = serializationFactory.createDeserializer();
+    void testDeserialization() {
+        MessageDeserializer<InheritedMessage> deserializer = serializationFactory.createDeserializer();
 
         var mockReader = mock(MessageReader.class);
 
         when(mockReader.beforeMessageRead()).thenReturn(true);
         when(mockReader.isLastRead()).thenReturn(true);
-        when(mockReader.readString(anyString())).thenReturn("foobar");
 
         deserializer.readMessage(mockReader);
 
         InOrder inOrder = inOrder(mockReader);
 
-        inOrder.verify(mockReader).readInt(eq("a"));
-        inOrder.verify(mockReader).readString(eq("b"));
-        inOrder.verify(mockReader).readInt(eq("c"));
-        inOrder.verify(mockReader).readString(eq("d"));
+        inOrder.verify(mockReader).readInt(eq("x"));
+        inOrder.verify(mockReader).readInt(eq("y"));
+        inOrder.verify(mockReader).readInt(eq("z"));
     }
 }

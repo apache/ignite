@@ -43,9 +43,7 @@ public class MessageBuilderGenerator {
      * @param processingEnvironment processing environment
      * @param messageGroup message group
      */
-    public MessageBuilderGenerator(
-        ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup
-    ) {
+    public MessageBuilderGenerator(ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup) {
         this.processingEnvironment = processingEnvironment;
         this.messageGroup = messageGroup;
     }

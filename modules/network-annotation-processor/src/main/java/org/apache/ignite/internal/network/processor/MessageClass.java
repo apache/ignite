@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.network.processor;
 
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import com.squareup.javapoet.ClassName;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
@@ -50,18 +53,43 @@ public class MessageClass {
     /**
      * @param messageElement element marked with the {@link Transferable} annotation.
      */
-    MessageClass(TypeElement messageElement) {
+    MessageClass(ProcessingEnvironment processingEnv, TypeElement messageElement) {
         element = messageElement;
         className = ClassName.get(messageElement);
-        annotation = element.getAnnotation(Transferable.class);
-        getters = element.getEnclosedElements().stream()
-            .filter(element -> element.getKind() == ElementKind.METHOD)
-            .sorted(Comparator.comparing(element -> element.getSimpleName().toString()))
-            .map(ExecutableElement.class::cast)
-            .collect(Collectors.toUnmodifiableList());
+        annotation = messageElement.getAnnotation(Transferable.class);
+        getters = extractGetters(processingEnv, messageElement);
 
         if (annotation.value() < 0)
             throw new ProcessingException("Message type must not be negative", null, element);
+    }
+
+    /**
+     * Finds all getters in the given element and all of its superinterfaces.
+     */
+    private static List<ExecutableElement> extractGetters(ProcessingEnvironment processingEnv, TypeElement element) {
+        var typeUtils = new TypeUtils(processingEnv);
+
+        Map<String, ExecutableElement> gettersByName = typeUtils.allInterfaces(element)
+            // this algorithm is suboptimal, since we have to scan over the same interfaces over and over again,
+            // but this shouldn't be an issue, because it is not expected to have deep inheritance hierarchies
+            .filter(e -> typeUtils.hasSuperInterface(e, NetworkMessage.class))
+            // remove the NetworkMessage interface itself
+            .filter(e -> !typeUtils.isSameType(e.asType(), NetworkMessage.class))
+            .flatMap(e -> e.getEnclosedElements().stream())
+            .filter(e -> e.getKind() == ElementKind.METHOD)
+            // use a tree map to sort getters by name and remove duplicates
+            .collect(Collectors.toMap(
+                e -> e.getSimpleName().toString(),
+                ExecutableElement.class::cast,
+                (e1, e2) -> {
+                    throw new ProcessingException(
+                        String.format("Getter with name '%s' is already defined", e2.getSimpleName()), null, e2
+                    );
+                },
+                TreeMap::new
+            ));
+
+        return List.copyOf(gettersByName.values());
     }
 
     /**

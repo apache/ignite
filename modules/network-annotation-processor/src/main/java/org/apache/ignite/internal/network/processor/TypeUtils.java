@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.network.processor;
 
 import java.util.ArrayDeque;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,13 +33,17 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TypeUtils {
     /** */
-    private final ProcessingEnvironment processingEnvironment;
+    private final Types types;
+
+    /** */
+    private final Elements elements;
 
     /**
      * @param processingEnvironment processing environment
      */
     public TypeUtils(ProcessingEnvironment processingEnvironment) {
-        this.processingEnvironment = processingEnvironment;
+        this.types = processingEnvironment.getTypeUtils();
+        this.elements = processingEnvironment.getElementUtils();
     }
 
     /**
@@ -50,7 +56,7 @@ public class TypeUtils {
     public boolean isSameType(TypeMirror type1, Class<?> type2) {
         TypeMirror type2Mirror = typeMirrorFromClass(type2);
 
-        return processingEnvironment.getTypeUtils().isSameType(erasure(type1), erasure(type2Mirror));
+        return types.isSameType(erasure(type1), erasure(type2Mirror));
     }
 
     /**
@@ -63,7 +69,7 @@ public class TypeUtils {
     @Nullable
     public PrimitiveType unboxedType(TypeMirror type) {
         try {
-            return processingEnvironment.getTypeUtils().unboxedType(type);
+            return types.unboxedType(type);
         }
         catch (IllegalArgumentException ignored) {
             return null;
@@ -79,38 +85,41 @@ public class TypeUtils {
      * @return {@code true} if the given {@code element} is a subtype of {@code cls}
      */
     public boolean hasSuperInterface(TypeElement element, Class<?> cls) {
-        // perform BFS to find the given interface among all possible superinterfaces
-        var queue = new ArrayDeque<Element>();
+        return allInterfaces(element).anyMatch(e -> isSameType(e.asType(), cls));
+    }
 
-        queue.add(element);
+    /**
+     * Creates a stream of elements representing all superinterfaces of the given element, including the element itself.
+     *
+     * @param start starting element for exploring the inheritance hierarchy
+     * @return stream of superinterfaces
+     */
+    public Stream<TypeElement> allInterfaces(TypeElement start) {
+        // perform BFS to explore all superinterfaces
+        var queue = new ArrayDeque<TypeElement>();
 
-        while (!queue.isEmpty()) {
-            Element currentElement = queue.pop();
-
-            if (isSameType(currentElement.asType(), cls))
-                return true;
-
-            ((TypeElement)currentElement).getInterfaces().stream()
-                .map(processingEnvironment.getTypeUtils()::asElement)
+        return Stream.iterate(start, Objects::nonNull, currentElement -> {
+            currentElement.getInterfaces().stream()
+                .map(types::asElement)
+                .map(TypeElement.class::cast)
                 .forEach(queue::add);
-        }
 
-        return false;
+            return queue.poll();
+        });
     }
 
     /**
      * Shortcut for the {@link Types#erasure(TypeMirror)} method.
      */
     private TypeMirror erasure(TypeMirror type) {
-        return processingEnvironment.getTypeUtils().erasure(type);
+        return types.erasure(type);
     }
 
     /**
      * Creates a {@link TypeMirror} represented by the given {@link Class}.
      */
     private TypeMirror typeMirrorFromClass(Class<?> cls) {
-        return processingEnvironment
-            .getElementUtils()
+        return elements
             .getTypeElement(cls.getCanonicalName())
             .asType();
     }

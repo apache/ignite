@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.network.processor;
 
-import org.apache.ignite.network.annotations.MessageGroup;
+import java.io.Serializable;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 
-/**
- * Message group for tests.
- */
-@MessageGroup(groupType = 1, groupName = "TestMessages")
-public class TestMessageGroup {
-    /** Type of {@link SerializationOrderMessage} */
-    public static final short SERIALIZATION_ORDER_MESSAGE = 1;
+/** */
+interface NetworkMessage1 extends NetworkMessage {
+    /** */
+    int y();
+}
 
-    public static final short INHERITED_MESSAGE = 2;
+/** */
+interface NetworkMessage2 extends NetworkMessage1, Serializable {
+    /** */
+    int x();
+}
+
+/** */
+@Transferable(TestMessageGroup.INHERITED_MESSAGE)
+public interface InheritedMessage extends NetworkMessage2 {
+    /** */
+    int z();
 }
