@@ -438,6 +438,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     for (int i = 0; i < segments.length; i++) {
                         InlineIndexTree tree = segments[i];
 
+                        // TODO: 02.07.2021 тут надо дерево переименовать и надо понять как это сделать
+
                         // Just mark it as destroyed. Actual destroy later in background task.
                         tree.markDestroyed();
 

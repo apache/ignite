@@ -156,6 +156,34 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private void execute(GridKernalContext ctx) {
         List<InlineIndexTree> trees0 = trees;
 
+        if (1 == 1) {
+            int grpId = CU.cacheGroupId(cacheName, cacheGrpName);
+
+            CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
+
+            IgniteCacheOffheapManager offheap = grpCtx.offheap();
+
+            int cacheId = CU.cacheId(cacheName);
+
+            List<RootPage> rootPages = new ArrayList<>();
+
+            for (int segment = 0; segment < this.rootPages.size(); segment++) {
+                try {
+                    RootPage rootPage = offheap.findRootPageForIndex(cacheId, treeName, segment);
+
+                    if (rootPage != null)
+                        rootPages.add(rootPage);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            System.out.println(rootPages);
+
+            return;
+        }
+
         if (trees0 == null) {
             trees0 = new ArrayList<>(rootPages.size());
 

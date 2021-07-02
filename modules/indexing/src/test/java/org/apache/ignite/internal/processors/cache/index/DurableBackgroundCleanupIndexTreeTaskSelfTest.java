@@ -36,6 +36,17 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Class for testing the {@link DurableBackgroundCleanupIndexTreeTask}.
  */
 public class DurableBackgroundCleanupIndexTreeTaskSelfTest extends AbstractRebuildIndexTest {
+    /**
+     * // TODO: 02.07.2021 План
+     * 1)Сделать переименование дерева
+     * 2)Сделать удаление индекса так, чтобы можно было с любого места продолжить:
+     *      обход в глубину??
+     *      или уже реализовано??
+     * 3)Сделать удаление безопасным для сценария:
+     *      создали IDX0 -> удалили IDX0 -> создали IDX0
+     *      кажется это можно сделать остановкой таски и удаления ее из metastorage
+     */
+
     @Test
     public void test0() throws Exception {
         IgniteEx n = startGrid(0);
@@ -44,11 +55,13 @@ public class DurableBackgroundCleanupIndexTreeTaskSelfTest extends AbstractRebui
 
         populate(cache, 100);
 
-        enableCheckpoints(n, getTestIgniteInstanceName(), false);
+        //enableCheckpoints(n, getTestIgniteInstanceName(), false);
 
         String idxName = "IDX0";
 
         createIdx(cache, idxName);
+
+        enableCheckpoints(n, getTestIgniteInstanceName(), false);
 
         dropIdx(cache, idxName);
 
