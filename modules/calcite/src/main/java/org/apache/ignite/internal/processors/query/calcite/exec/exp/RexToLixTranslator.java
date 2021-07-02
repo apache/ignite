@@ -647,6 +647,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 return Expressions.call(
                     IgniteSqlFunctions.class,
                     "toBigDecimal",
+                    /*
+                    The ConstantExpression class, when converting from BigDecimal to Bigdecimal,
+                    removes trailing zeros from the original object, regardless of the original scale value.
+                    Therefore, BigDecimal must be converted to a string to avoid this.
+                     */
                     Expressions.constant(bd.toString()),
                     Expressions.constant(type.getPrecision()),
                     Expressions.constant(type.getScale()));
