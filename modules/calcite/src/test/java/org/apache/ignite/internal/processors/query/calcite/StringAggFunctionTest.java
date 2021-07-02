@@ -40,7 +40,7 @@ public class StringAggFunctionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        startGrids(2);
 
         client = startClientGrid();
     }
@@ -85,9 +85,18 @@ public class StringAggFunctionTest extends GridCommonAbstractTest {
     @Test
     public void test4() throws InterruptedException {
         execute(client, "CREATE TABLE strings(s VARCHAR);");
-        execute(client, "INSERT INTO strings VALUES ('a'), ('b'), ('a');");
+        execute(client, "INSERT INTO strings VALUES ('a'), ('b'), ('c');");
 
         System.out.println(execute(client, "SELECT STRING_AGG(s, ',' ORDER BY s DESC) FROM strings"));
+    }
+
+    /** */
+    @Test
+    public void test5() throws InterruptedException {
+        execute(client, "CREATE TABLE strings(s VARCHAR, z VARCHAR);");
+        execute(client, "INSERT INTO strings VALUES ('a', 'a'), ('a', 'a'),  ('b', 'b'), ('c', 'c');");
+
+        System.out.println(execute(client, "SELECT STRING_AGG(DISTINCT s, z ORDER BY z DESC) FROM strings"));
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.calcite.rel.type.RelDataType;
@@ -32,6 +33,11 @@ public interface Accumulator extends Serializable {
 
     /** */
     void apply(Accumulator other);
+
+    /** */
+    default void apply(Accumulator other, Comparator cmp) {
+        throw new UnsupportedOperationException();
+    }
 
     /** */
     Object end();

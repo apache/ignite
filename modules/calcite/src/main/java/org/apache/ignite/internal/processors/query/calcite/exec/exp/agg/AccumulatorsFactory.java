@@ -41,7 +41,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
@@ -196,19 +195,20 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         /** {@inheritDoc} */
         @Override public AccumulatorWrapper<Row> get() {
-            Accumulator accumulator = accumulator();
+            Accumulator accumulator = accumulator(comp);
             if (comp != null)
                 return new OrderingAccumulatorWrapperImpl(accumulator, call, comp, inAdapter, outAdapter);
             return new AccumulatorWrapperImpl(accumulator, call, inAdapter, outAdapter);
         }
 
-        /** */
-        @NotNull private Accumulator accumulator() {
+        /**
+         * @param comp */
+        @NotNull private Accumulator accumulator(Comparator<Row> comp) {
             if (accFactory != null)
                 return accFactory.get();
 
             // init factory and adapters
-            accFactory = Accumulators.accumulatorFactory(call);
+            accFactory = Accumulators.accumulatorFactory(call, (Comparator<Object[]>)comp);
             Accumulator accumulator = accFactory.get();
 
             inAdapter = createInAdapter(accumulator);
@@ -344,6 +344,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         /** */
         private final Accumulator accumulator;
 
+        private Comparator<Row> comp;
         /** */
         private final Function<Object[], Object[]> inAdapter;
 
@@ -374,6 +375,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             Function<Object, Object> outAdapter
         ) {
             this.accumulator = accumulator;
+            this.comp = comp;
             this.inAdapter = inAdapter;
             this.outAdapter = outAdapter;
 
@@ -396,7 +398,8 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             rows.add(row);
         }
 
-        private void extracted(Row row) {
+        /** */
+        private void addToAccumulator(Row row) {
             Object[] args = new Object[argList.size()];
             for (int i = 0; i < argList.size(); i++) {
                 args[i] = handler.get(argList.get(i), row);
@@ -412,12 +415,8 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         @Override public Object end() {
             assert type != AggregateType.MAP;
 
-            while (!rows.isEmpty()) {
-                Row poll = rows.poll();
-                System.out.println(poll);
-                extracted(poll);
-
-            }
+            while (!rows.isEmpty())
+                addToAccumulator(rows.poll());
 
             return outAdapter.apply(accumulator.end());
         }
@@ -425,13 +424,15 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         /** {@inheritDoc} */
         @Override public void apply(Accumulator accumulator) {
             assert type == AggregateType.REDUCE;
-
-            this.accumulator.apply(accumulator);
+            this.accumulator.apply(accumulator, comp);
         }
 
         /** {@inheritDoc} */
         @Override public Accumulator accumulator() {
             assert type == AggregateType.MAP;
+
+            while (!rows.isEmpty())
+                addToAccumulator(rows.poll());
 
             return accumulator;
         }

@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -47,11 +48,11 @@ import static org.apache.calcite.sql.type.SqlTypeName.CHAR;
  */
 public class Accumulators {
     /** */
-    public static Supplier<Accumulator> accumulatorFactory(AggregateCall call) {
+    public static Supplier<Accumulator> accumulatorFactory(AggregateCall call, Comparator<Object[]> comp) {
         if (!call.isDistinct())
-            return accumulatorFunctionFactory(call);
+            return accumulatorFunctionFactory(call, comp);
 
-        Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
+        Supplier<Accumulator> fac = accumulatorFunctionFactory(call, comp);
 
         if ("LISTAGG".equals(call.getAggregation().getName()))
             return () -> new DistinctMultivalueAccumulator(fac);
@@ -60,7 +61,7 @@ public class Accumulators {
     }
 
     /** */
-    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call) {
+    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call, Comparator<Object[]> comp) {
         switch (call.getAggregation().getName()) {
             case "COUNT":
                 return LongCount.FACTORY;
@@ -77,7 +78,7 @@ public class Accumulators {
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
             case "LISTAGG":
-                return ListAggAccumulator::new;
+                return () -> new ListAggAccumulator();
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -1130,19 +1131,18 @@ public class Accumulators {
     /** */
     private static class ListAggAccumulator implements Accumulator {
         /** */
-        private List<Object> list = new ArrayList<>();
-        private List<Object> seps = new ArrayList<>();
+        private final List<Object[]> list;
+
+        public ListAggAccumulator() {
+            list = new ArrayList<>();
+        }
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Object in = args[0];
-            Object sep = (String)args[1];
-
-            if (in == null || args[1] == null)
+            if (args[0] == null || args[1] == null)
                 return;
 
-            list.add(in);
-            seps.add(sep);
+            list.add(args);
         }
 
         /** {@inheritDoc} */
@@ -1150,18 +1150,33 @@ public class Accumulators {
             ListAggAccumulator other0 = (ListAggAccumulator)other;
 
             list.addAll(other0.list);
-            seps.addAll(other0.seps);
+        }
+
+        @Override public void apply(Accumulator other, Comparator cmp) {
+            ListAggAccumulator other0 = (ListAggAccumulator)other;
+
+            list.addAll(other0.list);
+
+            list.sort(cmp);
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            if (list.isEmpty() || seps.isEmpty())
+            if (list.isEmpty())
                 return null;
 
-            StringBuilder builder = new StringBuilder(list.size());
-            for (int i = 0; i < list.size() - 1; i++)
-                builder.append(list.get(i)).append(seps.get(i + 1));
-            builder.append(list.get(list.size() - 1));
+            List<Object> data = new ArrayList<>();
+            List<Object> seps = new ArrayList<>();
+
+            for (Object[] objects : list) {
+                data.add(objects[0]);
+                seps.add(objects[1]);
+            }
+
+            StringBuilder builder = new StringBuilder(data.size());
+            for (int i = 0; i < data.size() - 1; i++)
+                builder.append(data.get(i)).append(seps.get(i + 1));
+            builder.append(data.get(data.size() - 1));
 
             return builder.toString();
         }
