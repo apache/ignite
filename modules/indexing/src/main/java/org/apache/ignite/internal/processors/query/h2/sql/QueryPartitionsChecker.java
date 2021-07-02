@@ -127,7 +127,8 @@ class QueryPartitionsChecker {
         else {
             left = leftTable.dataTable();
 
-            if (left.isPartitioned())
+            // Data table is NULL for views.
+            if (left != null && left.isPartitioned())
                 hasPartitionedTables = true;
         }
 
@@ -145,10 +146,11 @@ class QueryPartitionsChecker {
 
         GridH2Table right = rightTable.dataTable();
 
-        if (right.isPartitioned())
+        if (right != null && right.isPartitioned())
             hasPartitionedTables = true;
 
-        if (left == null)
+        // Skip check of views.
+        if (left == null || right == null)
             return;
 
         if (join.isLeftOuter() && !left.isPartitioned() && right.isPartitioned())
