@@ -118,6 +118,9 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " (select a2.ID from A a2) a3 on a1.ID = a3.ID;");
 
         checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " (select ID from A) a2 where a1.ID = a2.ID;");
+
+        checkLogListener(false,
             "SELECT a1.* FROM A a1 where a1.ID in (select a2.ID from A a2 " + joinType + " A a3 on a2.ID = a3.ID);");
 
         checkLogListener(false,
@@ -155,6 +158,12 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
         // Actually this is correct query. But this AST is too complex to analyze, and also it could be simplified.
         checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID OR (a1.ID = a2.ID AND a1.TITLE = a2.TITLE);");
+
+        checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " (select ID from A) a2 on a1.ID > a2.ID;");
+
+        checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " (select ID from A) a2 where a1.ID > a2.ID;");
 
         if (!joinType.contains("RIGHT"))
             checkLogListener(true,
@@ -198,10 +207,16 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1._KEY = a2._KEY;");
 
         checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1._KEY = a2._KEY;");
+
+        checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a2._KEY = a1._KEY;");
 
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
+
+        checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID = a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
 
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on " +
@@ -215,6 +230,9 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.PRICE = a2.PRICE and a1.TITLE = a2.TITLE and a1.ID = a2.ID;");
 
         checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.PRICE = a2.PRICE and a1.TITLE = a2.TITLE and a1.ID = a2.ID;");
+
+        checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID where a1.PRICE = a2.PRICE and a1.TITLE = a2.TITLE;");
 
         checkLogListener(false,
@@ -223,6 +241,10 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
         checkLogListener(false,
             "SELECT a1.* FROM A a1 where a1.ID in (" +
                 "   select a2.ID from A a2 " + joinType + " A a3 on a2.ID = a3.ID and a2.TITLE = a3.TITLE and a2.PRICE = a3.PRICE);");
+
+        checkLogListener(false,
+            "SELECT a1.* FROM A a1 where a1.ID in (" +
+                "   select a2.ID from A a2 " + joinType + " A a3 where a2.ID = a3.ID and a2.TITLE = a3.TITLE and a2.PRICE = a3.PRICE);");
 
         if (!joinType.contains("RIGHT"))
             checkLogListener(false,
@@ -234,13 +256,25 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a2._KEY != a1._KEY;");
 
         checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a2._KEY != a1._KEY;");
+
+        checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID != a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
+
+        checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID != a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
 
         checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID != a2.ID and a1.TITLE != a2.TITLE and a1.PRICE != a2.PRICE;");
 
         checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID != a2.ID and a1.TITLE != a2.TITLE and a1.PRICE != a2.PRICE;");
+
+        checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID and a1.PRICE = a2.PRICE;");
+
+        checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID = a2.ID and a1.PRICE = a2.PRICE;");
 
         if (!joinType.contains("RIGHT")) {
             // For inner join we can check it because join conditions are parsed to WHERE clause.
@@ -273,10 +307,19 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID;");
 
         checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID = a2.ID;");
+
+        checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID and a1.TITLE != a2.TITLE;");
 
         checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID = a2.ID and a1.TITLE != a2.TITLE;");
+
+        checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.TITLE != a2.TITLE and a1.ID = a2.ID;");
+
+        checkLogListener(false,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.TITLE != a2.TITLE and a1.ID = a2.ID;");
 
         checkLogListener(false,
             "SELECT a1.* FROM A a1 where a1.ID in (select a2.ID from A a2 " + joinType + " A a3 on a2.ID = a3.ID);");
@@ -295,13 +338,25 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1._KEY = a2._KEY;");
 
         checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1._KEY = a2._KEY;");
+
+        checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID != a2.ID;");
+
+        checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID != a2.ID;");
 
         checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID != a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
 
         checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.ID != a2.ID and a1.TITLE = a2.TITLE and a1.PRICE = a2.PRICE;");
+
+        checkLogListener(true,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.TITLE = a2.TITLE;");
+
+        checkLogListener(true,
+            "SELECT a1.* FROM A a1 " + joinType + " A a2 where a1.TITLE = a2.TITLE;");
 
         if (!joinType.contains("RIGHT")) {
             // For inner join we can check it because join conditions are parsed to WHERE clause.
@@ -356,13 +411,25 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a.* FROM A a " + joinType + " B b on 1 = 1;");
 
         checkLogListener(true,
+            "SELECT a.* FROM A a " + joinType + " B b where 1 = 1;");
+
+        checkLogListener(true,
             "SELECT a.* FROM A a " + joinType + " B b on a.ID != b.ID;");
+
+        checkLogListener(true,
+            "SELECT a.* FROM A a " + joinType + " B b where a.ID != b.ID;");
 
         checkLogListener(true,
             "SELECT a.* FROM A a " + joinType + " B b on b.ID = 1;");
 
         checkLogListener(true,
+            "SELECT a.* FROM A a " + joinType + " B b where b.ID = 1;");
+
+        checkLogListener(true,
             "SELECT a.* FROM A a " + joinType + " B b on a.ID = b.PRICE;");
+
+        checkLogListener(true,
+            "SELECT a.* FROM A a " + joinType + " B b where a.ID = b.PRICE;");
     }
 
 

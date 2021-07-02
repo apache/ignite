@@ -101,7 +101,7 @@ class QueryPartitionsChecker {
         else if (ast instanceof GridSqlTable)
             hasPartitionedTables |= ((GridSqlTable) ast).dataTable().isPartitioned();
 
-        // Traverse AST deeper.
+        // No joins on this level. Traverse AST deeper.
         if (join == null) {
             for (int i = 0; i < ast.size(); i++)
                 lookForPartitionedJoin(ast.child(i), null);
@@ -109,34 +109,47 @@ class QueryPartitionsChecker {
             return;
         }
 
-        // Also checks WHERE condition.
+        // Check WHERE clause first.
         lookForPartitionedJoin(where, null);
 
+        // Check left side of join.
         GridSqlTable leftTable = getTable(join.leftTable());
+
+        GridH2Table left = null;
 
         // Left side of join is a subquery.
         if (leftTable == null) {
             hasSubQueries = true;
 
+            // Check subquery on left side.
             lookForPartitionedJoin(join.leftTable(), where);
-            return;
+        }
+        else {
+            left = leftTable.dataTable();
+
+            if (left.isPartitioned())
+                hasPartitionedTables = true;
         }
 
+        // Check right side of join.
         GridSqlTable rightTable = getTable(join.rightTable());
 
         // Right side of join is a subquery.
         if (rightTable == null) {
             hasSubQueries = true;
 
+            // Check subquery and return (can't exctract more info there).
             lookForPartitionedJoin(join.rightTable(), where);
             return;
         }
 
-        GridH2Table left = leftTable.dataTable();
-        GridH2Table right = leftTable.dataTable();
+        GridH2Table right = rightTable.dataTable();
 
-        if (left.isPartitioned() || right.isPartitioned())
+        if (right.isPartitioned())
             hasPartitionedTables = true;
+
+        if (left == null)
+            return;
 
         if (join.isLeftOuter() && !left.isPartitioned() && right.isPartitioned())
             hasOuterJoinReplicatedPartitioned = true;
