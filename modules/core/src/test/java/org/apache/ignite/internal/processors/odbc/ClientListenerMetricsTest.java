@@ -172,17 +172,14 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param value Metric value to wait for.
      * @param timeout Timeout.
      */
-    private void waitForMetricValue(MetricRegistry mreg, String metric, long value, long timeout) {
-        try {
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return mreg.<IntMetric>findMetric(metric).value() == value;
-                }
-            }, timeout);
-            assertEquals(mreg.<IntMetric>findMetric(metric).value(), value);
-        } catch (IgniteInterruptedCheckedException e) {
-            fail("Interrupted while waiting for metric change");
-        }
+    private void waitForMetricValue(MetricRegistry mreg, String metric, long value, long timeout)
+        throws IgniteInterruptedCheckedException {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return mreg.<IntMetric>findMetric(metric).value() == value;
+            }
+        }, timeout);
+        assertEquals(mreg.<IntMetric>findMetric(metric).value(), value);
     }
 
     /**
@@ -192,7 +189,8 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param rejectedAuth Expected number of connection attepmts rejected because of failed authentication.
      * @param rejectedTotal Expected number of connection attepmts rejected in total.
      */
-    private void checkRejectMetrics(MetricRegistry mreg, int rejectedTimeout, int rejectedAuth, int rejectedTotal) {
+    private void checkRejectMetrics(MetricRegistry mreg, int rejectedTimeout, int rejectedAuth, int rejectedTotal)
+        throws IgniteInterruptedCheckedException {
         waitForMetricValue(mreg, "rejectedTotal", rejectedTotal, 10_000);
         assertEquals(rejectedTimeout, mreg.<IntMetric>findMetric("rejectedByTimeout").value());
         assertEquals(rejectedAuth, mreg.<IntMetric>findMetric("rejectedAuthentication").value());
@@ -206,7 +204,8 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param accepted Expected number of accepted connections.
      * @param active Expected number of active connections.
      */
-    private void checkConnectionsMetrics(MetricRegistry mreg, int accepted, int active) {
+    private void checkConnectionsMetrics(MetricRegistry mreg, int accepted, int active)
+        throws IgniteInterruptedCheckedException {
         waitForMetricValue(mreg, "thin.active", active, 10_000);
         assertEquals(accepted, mreg.<IntMetric>findMetric("thin.accepted").value());
         assertEquals(0, mreg.<IntMetric>findMetric("rejectedByTimeout").value());
