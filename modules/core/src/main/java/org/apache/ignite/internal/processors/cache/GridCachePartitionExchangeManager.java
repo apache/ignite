@@ -781,7 +781,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             A.notEmpty(evts, "events " + exchActions);
 
-            cctx.kernalContext().getSystemExecutorService()
+            cctx.kernalContext().pools().getSystemExecutorService()
                 .submit(() -> evts.forEach(e -> cctx.kernalContext().event().record(e)));
         }
 
@@ -789,7 +789,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (baselineChanging) {
-            ctx.getStripedExecutorService().execute(new Runnable() {
+            ctx.pools().getStripedExecutorService().execute(new Runnable() {
                 @Override public void run() {
                     if (ctx.event().isRecordable(EventType.EVT_BASELINE_CHANGED)) {
                         ctx.event().record(new BaselineChangedEvent(
