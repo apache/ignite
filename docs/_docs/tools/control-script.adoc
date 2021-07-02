@@ -919,7 +919,7 @@ Command [SYSTEM-VIEW] finished with code: 0
 
 == Performance Statistics
 
-Ignite provides a built-in tool for cluster profiling.
+Ignite provides a built-in tool for cluster profiling. Read link:monitoring-metrics/performance-statistics[Performance Statistics] for more information.
 
 
 [tabs]
