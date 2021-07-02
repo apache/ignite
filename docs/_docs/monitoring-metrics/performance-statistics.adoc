@@ -25,7 +25,7 @@ link:#building-the-report[build] the performance report.
 
 == Collecting Statistics
 
-link:#jmx[JMX interface] is used to start and stop statistics collecting.
+link:#jmx[JMX interface] and link:#control-script[Control Script] is used to start and stop statistics collecting.
 
 Each node collects performance statistics in a binary file. This file is placed under
 the `Ignite_work_directory/perf_stat/` directory. The name mask is `node-{nodeId}-{index}.prf`.
@@ -69,7 +69,7 @@ the report.
 
 == Management
 
-The following section provides information on JMX interface and system properties.
+The following section provides information on JMX, command line interface and system properties.
 
 === JMX
 
