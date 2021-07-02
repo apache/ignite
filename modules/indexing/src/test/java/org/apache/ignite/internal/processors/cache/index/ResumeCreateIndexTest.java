@@ -337,11 +337,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      * @return Index creation future.
      */
     private IgniteInternalFuture<List<List<?>>> createIdxAsync(IgniteCache<Integer, Person> cache, String idxName) {
-        return runAsync(() -> {
-            String sql = "CREATE INDEX " + idxName + " ON Person(name)";
-
-            return cache.query(new SqlFieldsQuery(sql)).getAll();
-        });
+        return runAsync(() -> createIdx(cache, idxName));
     }
 
     /**

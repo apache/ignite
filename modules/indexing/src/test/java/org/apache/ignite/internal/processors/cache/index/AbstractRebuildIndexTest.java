@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -294,5 +295,19 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      */
     protected ConcurrentMap<String, IndexBuildStatusHolder> statuses(IgniteEx n) {
         return getFieldValue(indexBuildStatusStorage(n), "statuses");
+    }
+
+    /**
+     * Creation of a new index for the cache of {@link Person}.
+     * SQL: CREATE INDEX " + idxName + " ON Person(name)
+     *
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index creation result.
+     */
+    protected List<List<?>> createIdx(IgniteCache<Integer, Person> cache, String idxName) {
+        String sql = "CREATE INDEX " + idxName + " ON Person(name)";
+
+        return cache.query(new SqlFieldsQuery(sql)).getAll();
     }
 }
