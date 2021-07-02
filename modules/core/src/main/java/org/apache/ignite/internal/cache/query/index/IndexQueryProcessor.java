@@ -207,7 +207,7 @@ public class IndexQueryProcessor {
     private GridCursor<IndexRow> query(int segment, Index idx, List<IndexQueryCriterion> criteria, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
-        assert !criteria.isEmpty() : "Index qury criteria list has not to be empty.";
+        assert !criteria.isEmpty() : "Index query criteria list has not to be empty.";
 
         if (criteria.get(0) instanceof RangeIndexQueryCriterion)
             return treeIndexRange((InlineIndex) idx, criteria, segment, qryCtx);
