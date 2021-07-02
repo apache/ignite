@@ -21,7 +21,6 @@ import java.lang.reflect.Modifier;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -258,15 +257,15 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     }
 
     /** */
-    private final class AccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
+    private class AccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
         /** */
-        private final Accumulator accumulator;
+        protected final Accumulator accumulator;
+
+        /** */
+        protected final Function<Object, Object> outAdapter;
 
         /** */
         private final Function<Object[], Object[]> inAdapter;
-
-        /** */
-        private final Function<Object, Object> outAdapter;
 
         /** */
         private final List<Integer> argList;
@@ -340,31 +339,8 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
 
     /** */
-    private final class OrderingAccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
-        /** */
-        private final Accumulator accumulator;
-
+    private final class OrderingAccumulatorWrapperImpl extends AccumulatorWrapperImpl {
         private Comparator<Row> comp;
-        /** */
-        private final Function<Object[], Object[]> inAdapter;
-
-        /** */
-        private final Function<Object, Object> outAdapter;
-
-        /** */
-        private final List<Integer> argList;
-
-        /** */
-        private final int filterArg;
-
-        /** */
-        private final boolean ignoreNulls;
-
-        /** */
-        private final RowHandler<Row> handler;
-
-        /** Rows buffer. */
-        private final PriorityQueue<Row> rows;
 
         /** */
         OrderingAccumulatorWrapperImpl(
@@ -374,67 +350,15 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             Function<Object[], Object[]> inAdapter,
             Function<Object, Object> outAdapter
         ) {
-            this.accumulator = accumulator;
+            super(accumulator, call, inAdapter, outAdapter);
             this.comp = comp;
-            this.inAdapter = inAdapter;
-            this.outAdapter = outAdapter;
-
-            argList = call.getArgList();
-            ignoreNulls = call.ignoreNulls();
-            filterArg = call.hasFilter() ? call.filterArg : -1;
-
-            handler = ctx.rowHandler();
-
-            rows = new PriorityQueue<>(comp);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Row row) {
-            assert type != AggregateType.REDUCE;
-
-            if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
-                return;
-
-            rows.add(row);
-        }
-
-        /** */
-        private void addToAccumulator(Row row) {
-            Object[] args = new Object[argList.size()];
-            for (int i = 0; i < argList.size(); i++) {
-                args[i] = handler.get(argList.get(i), row);
-
-                if (ignoreNulls && args[i] == null)
-                    return;
-            }
-
-            accumulator.add(inAdapter.apply(args));
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
             assert type != AggregateType.MAP;
 
-            while (!rows.isEmpty())
-                addToAccumulator(rows.poll());
-
-            return outAdapter.apply(accumulator.end());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator accumulator) {
-            assert type == AggregateType.REDUCE;
-            this.accumulator.apply(accumulator, comp);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Accumulator accumulator() {
-            assert type == AggregateType.MAP;
-
-            while (!rows.isEmpty())
-                addToAccumulator(rows.poll());
-
-            return accumulator;
+            return outAdapter.apply(accumulator.end(comp));
         }
     }
 }

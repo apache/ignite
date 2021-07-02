@@ -114,10 +114,28 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         Map<AggregateCall, Comparator<Row>> callCompMap = new HashMap<>();
         for (AggregateCall call : calls) {
             if (call.getCollation() != null)
-                callCompMap.put(call, comparator(call.getCollation()));
+                callCompMap.put(call, comparator(call.getCollation(), call.getArgList()));
         }
 
         return new AccumulatorsFactory<>(ctx, type, calls, callCompMap, rowType);
+    }
+
+    /**
+     * The location of fields in the query and in the accumulator may be different.
+     * Since not all fields are presented in the accumulator,
+     * it is necessary to calculate in advance their correct position for sorting.
+     * */
+    private Comparator<Row> comparator(RelCollation collation, List<Integer> list) {
+        if (collation == null || collation.getFieldCollations().isEmpty())
+            return null;
+        else if (collation.getFieldCollations().size() == 1) {
+            RelFieldCollation rfCol = collation.getFieldCollations().get(0);
+            return comparator(rfCol, list.indexOf(rfCol.getFieldIndex()));
+        }
+        return Ordering.compound(collation.getFieldCollations()
+            .stream()
+            .map(field -> comparator(field, list.indexOf(field.getFieldIndex())))
+            .collect(Collectors.toList()));
     }
 
     /** {@inheritDoc} */
@@ -147,10 +165,14 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    @SuppressWarnings("rawtypes")
     private Comparator<Row> comparator(RelFieldCollation fieldCollation) {
+        return comparator(fieldCollation, fieldCollation.getFieldIndex());
+    }
+
+    /** */
+    @SuppressWarnings("rawtypes")
+    private Comparator<Row> comparator(RelFieldCollation fieldCollation, int x) {
         final int nullComparison = fieldCollation.nullDirection.nullComparison;
-        final int x = fieldCollation.getFieldIndex();
         RowHandler<Row> handler = ctx.rowHandler();
 
         if (fieldCollation.direction == RelFieldCollation.Direction.ASCENDING) {

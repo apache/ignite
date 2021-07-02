@@ -35,7 +35,7 @@ public interface Accumulator extends Serializable {
     void apply(Accumulator other);
 
     /** */
-    default void apply(Accumulator other, Comparator cmp) {
+    default Object end(Comparator cmp) {
         throw new UnsupportedOperationException();
     }
 

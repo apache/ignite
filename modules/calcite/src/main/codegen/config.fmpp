@@ -493,6 +493,7 @@ data: {
       "SYSTEM_TIME"
       "SYSTEM_USER"
       "STRING_AGG"
+      "GROUP_CONCAT"
 #     "TABLE"
 #     "TABLESAMPLE"
       "TEMPORARY"

@@ -2,7 +2,6 @@
 # description: Test scalar aggregates with many different types
 # group: [aggregates]
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14597
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14636
 
 query IIIII
 SELECT COUNT(1), COUNT(*), COUNT(NULL), COUNT('hello'), COUNT(DATE '1992-02-02')
@@ -93,20 +92,3 @@ SELECT AVG()
 
 statement error
 SELECT AVG(1, 2)
-
-query T
-SELECT STRING_AGG('hello')
-----
-hello
-
-query TTTTT
-SELECT STRING_AGG('hello', ' '), STRING_AGG('hello', NULL), STRING_AGG(NULL, ' '), STRING_AGG(NULL, NULL), STRING_AGG('', '')
-----
-hello	NULL	NULL	NULL	(empty)
-
-statement error
-SELECT STRING_AGG()
-
-statement error
-SELECT STRING_AGG(1, 2, 3)
-
