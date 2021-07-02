@@ -22,9 +22,12 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
@@ -43,9 +46,35 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
 
         SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
 
+        assertExistIndexRoot(cache, idxDef.treeName(), idxDef.segments(), true);
+
         // TODO: 02.07.2021 continue
 
-        log.warning("idxDef=" + idxDef);
+        log.warning(idxDef.toString());
+    }
+
+    /**
+     * Checking for the existence of root pages for an index.
+     *
+     * @param cache Cache.
+     * @param treeName Index tree name.
+     * @param segments Segment count.
+     * @param expExist Expectation of existence.
+     * @throws Exception If failed.
+     */
+    private void assertExistIndexRoot(
+        IgniteCache<Integer, Person> cache,
+        String treeName,
+        int segments,
+        boolean expExist
+    ) throws Exception {
+        GridCacheContext<Integer, Person> cacheCtx = cacheContext(cache);
+
+        for (int i = 0; i < segments; i++) {
+            RootPage rootPage = cacheCtx.offheap().findRootPageForIndex(cacheCtx.cacheId(), treeName, i);
+
+            assertEquals(expExist, rootPage != null);
+        }
     }
 
     /**
@@ -67,7 +96,7 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
      * @return Index.
      */
     @Nullable private Index index(IgniteEx n, IgniteCache<Integer, Person> cache, String idxName) {
-        return n.context().indexProcessor().indexes(n.cachex(cache.getName()).context()).stream()
+        return n.context().indexProcessor().indexes(cacheContext(cache)).stream()
             .filter(i -> idxName.equals(i.name()))
             .findAny()
             .orElse(null);
