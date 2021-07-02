@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -47,17 +48,20 @@ class ContinuousRoutinesInfo {
     }
 
     /**
-     * @param dataBag Discovery data bag.
+     * @param joiningNodeId Joining node id.
      */
-    void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+    Collection<ContinuousRoutineInfo> collectJoiningNodeData(UUID joiningNodeId) {
         synchronized (startedRoutines) {
+            final List<ContinuousRoutineInfo> res = new ArrayList<>();
+
             for (ContinuousRoutineInfo info : startedRoutines.values()) {
                 if (info.disconnected)
-                    info.sourceNodeId(dataBag.joiningNodeId());
+                    info.sourceNodeId(joiningNodeId);
+
+                res.add(info);
             }
 
-            dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(),
-                new ContinuousRoutinesJoiningNodeDiscoveryData(new ArrayList<>(startedRoutines.values())));
+            return res;
         }
     }
 

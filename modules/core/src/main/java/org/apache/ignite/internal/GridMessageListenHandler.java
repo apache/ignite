@@ -42,6 +42,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.IgniteUtils.validateDeploymentInfo;
+
 /**
  * Continuous handler for message subscription.
  */
@@ -204,6 +206,11 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         }
 
         ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean p2pContextValid(GridKernalContext ctx) throws IgniteCheckedException {
+        return depInfo == null || validateDeploymentInfo(ctx, depInfo, clsName);
     }
 
     /** {@inheritDoc} */

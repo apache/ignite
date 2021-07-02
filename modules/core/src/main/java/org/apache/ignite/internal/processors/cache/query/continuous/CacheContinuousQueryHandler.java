@@ -1314,6 +1314,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean p2pContextValid(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
+        assert ctx.config().isPeerClassLoadingEnabled();
+
+        return rmtFilterDep == null || rmtFilterDep.isValid(ctx);
+    }
+
     /**
      * @return Whether the handler is marshalled for peer class loading.
      */

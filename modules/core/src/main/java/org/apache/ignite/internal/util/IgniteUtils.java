@@ -12233,4 +12233,16 @@ public abstract class IgniteUtils {
             return size;
         }
     }
+    
+    /**
+     * @param ctx Kernel context.
+     * @param depInfo Deployment info.
+     * @param clsName Class name.
+     * @return Whether the {@code depObj} is valid for the {@code clsName} in the current context.
+     */
+    public static boolean validateDeploymentInfo(GridKernalContext ctx, GridDeploymentInfo depInfo, String clsName) {
+        GridDeployment dep = ctx.deploy().getDeployment(clsName);
+
+        return dep == null || dep.classLoaderId().equals(depInfo.classLoaderId());
+    }
 }

@@ -57,6 +57,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
+import static org.apache.ignite.internal.util.IgniteUtils.validateDeploymentInfo;
 
 /**
  * Continuous routine handler for remote event listening.
@@ -432,6 +433,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean p2pContextValid(GridKernalContext ctx) throws IgniteCheckedException {
+        return depInfo == null || validateDeploymentInfo(ctx, depInfo, clsName);
     }
 
     /** {@inheritDoc} */
