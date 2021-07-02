@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -96,7 +95,6 @@ import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -104,7 +102,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -404,16 +401,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService utilityCachePool() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCacheObjectProcessor cacheObjects() {
         return cacheObjProcessor;
     }
@@ -558,81 +545,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getServiceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getSystemExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public StripedExecutor getStripedExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getManagementExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getPeerClassLoadingExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public StripedExecutor getDataStreamerExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getRestExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getAffinityExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService getIndexingExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getQueryExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<String, ? extends ExecutorService> customExecutors() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getSchemaExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getRebalanceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return null;
     }
@@ -729,11 +641,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public DurableBackgroundTasksProcessor durableBackgroundTask() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService buildIndexExecutorService() {
         return null;
     }
 

@@ -3753,7 +3753,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            ctx.kernalContext().getStripedExecutorService().execute(part, this);
+            ctx.kernalContext().pools().getStripedExecutorService().execute(part, this);
         }
     }
 }

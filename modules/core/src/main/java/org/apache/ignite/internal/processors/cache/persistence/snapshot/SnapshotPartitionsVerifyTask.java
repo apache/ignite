@@ -240,7 +240,7 @@ public class SnapshotPartitionsVerifyTask
 
             try {
                 U.doInParallel(
-                    ignite.context().getSystemExecutorService(),
+                    ignite.context().pools().getSystemExecutorService(),
                     partFiles,
                     part -> {
                         String grpName = cacheGroupName(part.getParentFile());

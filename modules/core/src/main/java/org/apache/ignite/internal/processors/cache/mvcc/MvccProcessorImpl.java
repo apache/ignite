@@ -598,7 +598,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             prevQueries.init(nodes, ctx.discovery()::alive);
         }
         else if (sndQrys) {
-            ctx.getSystemExecutorService().submit(() -> {
+            ctx.pools().getSystemExecutorService().submit(() -> {
                 try {
                     sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
                 }
