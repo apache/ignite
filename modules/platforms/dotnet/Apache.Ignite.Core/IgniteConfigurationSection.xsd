@@ -263,6 +263,18 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="timestampConverter" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default date time converter.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
@@ -272,6 +284,11 @@
                         <xs:attribute name="compactFooter" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Compact footer flag.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="forceTimestamp" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Force timestamp flag.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -915,7 +932,7 @@
                 </xs:element>
                 <xs:element name="assemblies" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>List of additional .Net assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
+                        <xs:documentation>List of additional .NET assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>

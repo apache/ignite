@@ -279,4 +279,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         if (qryMgr != null)
             qryMgr.removeQueryFuture(reqId);
     }
+
+    /** @return Request ID. */
+    long requestId() {
+        return reqId;
+    }
 }

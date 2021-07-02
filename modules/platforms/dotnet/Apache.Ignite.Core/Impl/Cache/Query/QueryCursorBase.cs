@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** Read func. */
         private readonly Func<BinaryReader, T> _readFunc;
-        
+
         /** Lock object. */
         private readonly object _syncRoot = new object();
 
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readFunc">The read function.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
-        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc, 
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc,
             IBinaryStream initialBatchStream = null)
         {
             Debug.Assert(marsh != null);
@@ -87,6 +87,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** <inheritdoc /> */
         public IList<T> GetAll()
+        {
+            return WithReg(() => GetAll0(), _keepBinary);
+        }
+
+        private IList<T> GetAll0()
         {
             if (_getAllCalled)
                 throw new InvalidOperationException("Failed to get all entries because GetAll() " +
@@ -220,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             lock (_syncRoot)
             {
                 ThrowIfDisposed();
-                
+
                 _batch = _hasNext ? GetBatch() : null;
 
                 _batchPos = 0;
@@ -257,6 +262,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
         protected T[] ConvertGetBatch(IBinaryStream stream)
+        {
+            return WithReg(() => ConvertGetBatch0(stream), _keepBinary);
+        }
+
+        /// <summary>
+        /// Converter for GET_BATCH operation.
+        /// </summary>
+        private T[] ConvertGetBatch0(IBinaryStream stream)
         {
             var reader = _marsh.StartUnmarshal(stream, _keepBinary);
 
@@ -323,6 +336,31 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
+            }
+        }
+
+        /// <summary>
+        /// Enables Register Same Java Type mode is keepBinary = false.
+        /// </summary>
+        /// <param name="action">Action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        /// <returns></returns>
+        private static K WithReg<K>(Func<K> action, bool keepBinary)
+        {
+            if (keepBinary)
+                return action.Invoke();
+
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                return action.Invoke();
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
             }
         }
     }

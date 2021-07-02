@@ -76,10 +76,19 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
             case OP_REGISTER_TYPE: {
                 int typeId = reader.readInt();
                 String typeName = reader.readString();
+                boolean registerSameJavaType = reader.readBoolean();
 
-                return platformContext().kernalContext().marshallerContext()
+                int res = platformContext().kernalContext().marshallerContext()
                     .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName, false)
                     ? TRUE : FALSE;
+
+                if (registerSameJavaType && res == TRUE) {
+                    res = platformContext().kernalContext().marshallerContext()
+                        .registerClassName(MarshallerPlatformIds.JAVA_ID, typeId, typeName, false)
+                        ? TRUE : FALSE;
+                }
+
+                return res;
             }
         }
 
@@ -125,10 +134,11 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
             case OP_GET_TYPE: {
                 int typeId = reader.readInt();
+                byte platformId = reader.readByte();
 
                 try {
                     String typeName = platformContext().kernalContext().marshallerContext()
-                        .getClassName(MarshallerPlatformIds.DOTNET_ID, typeId);
+                        .getClassName(platformId, typeId);
 
                     writer.writeString(typeName);
                 }

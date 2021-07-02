@@ -262,6 +262,15 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             assertThrowsWithCause(() -> runOperation(CLIENT, op), ClientAuthorizationException.class);
     }
 
+    /** */
+    @Test
+    public void testAllowedOperationAfterSecurityViolation() throws Exception {
+        try (IgniteClient client = startClient(CLIENT_READ)) {
+            assertThrowsWithCause(() -> client.cache(CACHE).put("key", "value"), ClientAuthorizationException.class);
+            assertNull(client.cache(CACHE).get("key"));
+        }
+    }
+
     /**
      * Gets all operations.
      *

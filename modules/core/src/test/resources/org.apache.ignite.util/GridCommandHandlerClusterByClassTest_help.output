@@ -162,6 +162,15 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration.
     control.(sh|bat) --tracing-configuration set (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX [--label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX])
 
+  Start collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics start
+
+  Stop collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics stop
+
+  Get status of collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics status
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

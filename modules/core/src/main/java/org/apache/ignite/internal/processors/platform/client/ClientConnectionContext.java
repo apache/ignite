@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
@@ -185,13 +187,24 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         EnumSet<ClientBitmaskFeature> features = null;
 
+        boolean ise281Compatible = false;
         if (ClientProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES)) {
-            byte[] cliFeatures = reader.readByteArray();
+            BinaryInputStream stream = reader.in();
+            int initPos = stream.position();
+            byte flag = stream.readByte();
+            stream.position(initPos);
+            if (flag == GridBinaryMarshaller.BYTE_ARR) {
+                byte[] cliFeatures = reader.readByteArray();
 
-            features = ClientBitmaskFeature.enumSet(cliFeatures);
+                features = ClientBitmaskFeature.enumSet(cliFeatures);
+            }
+            else {
+                features = EnumSet.of(USER_ATTRIBUTES);
+                ise281Compatible = true;
+            }
         }
 
-        currentProtocolContext = new ClientProtocolContext(ver, features);
+        currentProtocolContext = new ClientProtocolContext(ver, features, ise281Compatible);
 
         String user = null;
         String pwd = null;
@@ -214,7 +227,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
+        AuthorizationContext authCtx = authenticate(ses, user, pwd);
 
         handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
         parser = new ClientMessageParser(this, currentProtocolContext);

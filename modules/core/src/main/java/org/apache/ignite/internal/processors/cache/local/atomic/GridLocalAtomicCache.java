@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.LockedEntriesInfo;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -89,6 +90,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
     /** */
     private GridCachePreloader preldr;
+
+    /** Locked entries info for each thread. */
+    private final LockedEntriesInfo lockedEntriesInfo = new LockedEntriesInfo();
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -1476,11 +1480,13 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @return Collection of locked entries.
      */
     private List<GridCacheEntryEx> lockEntries(Collection<? extends K> keys) {
-        List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
+        GridCacheEntryEx[] locked = new GridCacheEntryEx[keys.size()];
 
         boolean nullKeys = false;
 
         while (true) {
+            int i = 0;
+
             for (K key : keys) {
                 if (key == null) {
                     nullKeys = true;
@@ -1490,40 +1496,24 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                 GridCacheEntryEx entry = entryEx(ctx.toCacheKeyObject(key));
 
-                locked.add(entry);
+                locked[i++] = entry;
             }
 
             if (nullKeys)
                 break;
 
-            for (int i = 0; i < locked.size(); i++) {
-                GridCacheEntryEx entry = locked.get(i);
-
-                entry.lockEntry();
-
-                if (entry.obsolete()) {
-                    // Unlock all locked.
-                    for (int j = 0; j <= i; j++)
-                        locked.get(j).unlockEntry();
-
-                    // Clear entries.
-                    locked.clear();
-
-                    // Retry.
-                    break;
-                }
-            }
-
-            if (!locked.isEmpty())
-                return locked;
+            if (lockedEntriesInfo.tryLockEntries(locked))
+                return Arrays.asList(locked);
         }
 
         assert nullKeys;
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        for (GridCacheEntryEx entry : locked)
-            entry.touch();
+        for (GridCacheEntryEx entry : locked) {
+            if (entry != null)
+                entry.touch();
+        }
 
         throw new NullPointerException("Null key.");
     }

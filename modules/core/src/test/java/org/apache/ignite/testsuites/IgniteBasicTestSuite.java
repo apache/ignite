@@ -131,6 +131,7 @@ import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
+import org.apache.ignite.util.PerformanceStatisticsCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -304,7 +305,8 @@ import org.junit.runners.Suite;
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
 
-    GridCommandHandlerTracingConfigurationTest.class
+    GridCommandHandlerTracingConfigurationTest.class,
+    PerformanceStatisticsCommandTest.class
 })
 public class IgniteBasicTestSuite {
 }
