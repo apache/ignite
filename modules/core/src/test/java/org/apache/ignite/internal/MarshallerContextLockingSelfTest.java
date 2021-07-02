@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteInterruptedException;
@@ -65,9 +66,14 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ctx.setSystemExecutorService(Executors.newFixedThreadPool(THREADS));
+        ctx.add(new PoolProcessor(ctx) {
+            final ExecutorService sysExecSvc = Executors.newFixedThreadPool(THREADS);
 
-        ctx.add(new PoolProcessor(ctx));
+            @Override public ExecutorService getSystemExecutorService() {
+                return sysExecSvc;
+            }
+        });
+
         ctx.add(new GridClosureProcessor(ctx));
     }
 

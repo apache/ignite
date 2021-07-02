@@ -1498,11 +1498,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
                         "thread pool): " + jobWorker.executorName());
 
-                    ctx.getExecutorService().execute(jobWorker);
+                    ctx.pools().getExecutorService().execute(jobWorker);
                 }
             }
             else
-                ctx.getExecutorService().execute(jobWorker);
+                ctx.pools().getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();
