@@ -25,10 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -116,6 +113,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param backups Number of backups.
      * @throws Exception If failed.
      */
     @Test
@@ -130,32 +128,6 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
             e.getMessage().contains("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testEqualsToString() throws Exception {
-        Ignite ignite = startGrid();
-
-        AffinityFunction aff0 = affinityFunction();
-
-        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAffinity(aff0);
-
-        IgniteCache<?, ?> cache = ignite.createCache(cfg);
-
-        CacheConfiguration<?, ?> cacheCfg = cache.getConfiguration(cfg.getClass());
-
-        AffinityFunction aff1 = cacheCfg.getAffinity();
-
-        assertEquals(aff0, aff1);
-
-        String strAff = aff1.toString();
-
-        for (int i = 0; i < 1000; i++)
-            assertEquals(strAff, aff1.toString());
     }
 
     /**

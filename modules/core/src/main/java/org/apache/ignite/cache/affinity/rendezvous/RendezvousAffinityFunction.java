@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -69,7 +70,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
-public class RendezvousAffinityFunction implements AffinityFunction {
+public class RendezvousAffinityFunction implements AffinityFunction, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -276,7 +277,7 @@ public class RendezvousAffinityFunction implements AffinityFunction {
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}. 
      *
      * @return Optional backup filter.
      */
@@ -289,9 +290,9 @@ public class RendezvousAffinityFunction implements AffinityFunction {
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.     
      * <p>
-     * For an example filter, see {@link ClusterNodeAttributeAffinityBackupFilter }.
+     * For an example filter, see {@link ClusterNodeAttributeAffinityBackupFilter }.  
      *
      * @param affinityBackupFilter Optional backup filter.
      * @return {@code this} for chaining.
@@ -624,12 +625,6 @@ public class RendezvousAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "RendezvousAffinityFunction{" +
-            "parts=" + parts +
-            ", mask=" + mask +
-            ", exclNeighbors=" + exclNeighbors +
-            ", backupFilter=" + backupFilter +
-            ", affinityBackupFilter=" + affinityBackupFilter +
-            '}';
+        return S.toString(RendezvousAffinityFunction.class, this);
     }
 }
