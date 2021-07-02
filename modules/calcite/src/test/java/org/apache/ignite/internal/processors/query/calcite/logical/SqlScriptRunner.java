@@ -543,7 +543,8 @@ public class SqlScriptRunner {
         private void checkResultTuples(List<List<?>> res) {
             if (expectedRes.size() != res.size()) {
                 throw new AssertionError("Invalid results rows count at: " + posDesc +
-                    ". [expectedRows=" + expectedRes.size() + ", actualRows=" + res.size() + " expected=" + expectedRes + ", actual=" + res + ']');
+                    ". [expectedRows=" + expectedRes.size() + ", actualRows=" + res.size() +
+                    ", expected=" + expectedRes + ", actual=" + res + ']');
             }
 
             for (int i = 0; i < expectedRes.size(); ++i) {
