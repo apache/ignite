@@ -113,11 +113,13 @@ its locks. This means in the case of split-brain, some keys will be locked until
 tx recovery protocol will converge.
 
 ## Leaserholder fail
-An enlisted node asks a coordinator if it can commit or not.
+If a tx is not started to COMMIT, the coordinator reverts a transaction on remaining leaseholders.
+Then a new leasholder is elected, it check for its pending transactions and asks a coordinator if it's possible to commit.
 
 ## Coordinator fail
-Broadcast recovery is necessary (because we don't have full tx topology on each enlisted node).
-All nodes are requested about local txs state. If at least one is commiting, it's safe to commit.
+Broadcast recovery (various strategies are possible: via gossip or dedicated node) is necessary (because we don't have 
+full tx topology on each enlisted node - because it's unknown until commit). All nodes are requested about local txs state. 
+If at least one is commiting, it's safe to commit.
 
 <em id="f1">[1]</em> CockroachDB: The Resilient Geo-Distributed SQL Database, 2020 [↩](#a1)<br/>
 <em id="f2">[2]</em> Concurrency Control in Distributed Database Systems, 1981 [↩](#a2)

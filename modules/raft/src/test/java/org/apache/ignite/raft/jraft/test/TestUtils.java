@@ -38,6 +38,7 @@ import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.util.Endpoint;
+import org.mockito.ArgumentCaptor;
 
 import static java.lang.Thread.sleep;
 
@@ -173,5 +174,21 @@ public class TestUtils {
         }
 
         return false;
+    }
+
+    /**
+     * @param captor The captor.
+     * @param timeout The timeout.
+     * @return {@code True} if condition has happened within the timeout.
+     */
+    public static boolean waitForArgumentCapture(ArgumentCaptor<?> captor, long timeout) {
+        return waitForCondition(() -> {
+            try {
+                return captor.getValue() != null;
+            }
+            catch (Exception e) {
+                return false;
+            }
+        }, timeout);
     }
 }

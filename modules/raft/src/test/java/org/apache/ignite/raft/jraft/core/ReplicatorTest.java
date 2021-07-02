@@ -362,7 +362,7 @@ public class ReplicatorTest {
             Utils.monotonicMs());
 
         assertEquals(r.statInfo.runningState, Replicator.RunningState.IDLE);
-        this.id.unlock();
+        this.id.unlock(); // TODO asch fix bad unlock IGNITE-14832
         assertEquals(11, Replicator.getNextIndex(this.id));
         assertEquals(99, r.getWaitId());
         latch.await(); //make sure catch up closure is invoked.

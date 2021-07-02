@@ -18,7 +18,7 @@ package org.apache.ignite.raft.jraft.storage.snapshot.local;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.core.Scheduler;
@@ -37,6 +37,7 @@ import org.apache.ignite.raft.jraft.rpc.RpcResponseClosure;
 import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.snapshot.Snapshot;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
+import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
@@ -72,6 +73,7 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
     @Mock
     private LocalSnapshotStorage snapshotStorage;
     private Scheduler timerManager;
+    private NodeOptions nodeOptions;
 
     @Override
     @Before
@@ -93,7 +95,7 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
         this.copier = new LocalSnapshotCopier();
         this.copyOpts = new CopyOptions();
         Mockito.when(this.raftClientService.connect(new Endpoint("localhost", 8081))).thenReturn(true);
-        NodeOptions nodeOptions = new NodeOptions();
+        nodeOptions = new NodeOptions();
         nodeOptions.setCommonExecutor(JRaftUtils.createExecutor("test-executor", Utils.cpus()));
         assertTrue(this.copier.init(this.uri, new SnapshotCopierOptions(this.raftClientService, this.timerManager,
             this.raftOptions, nodeOptions)));
@@ -104,8 +106,9 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
     @After
     public void teardown() throws Exception {
         super.teardown();
-        this.copier.close();
-        this.timerManager.shutdown();
+        copier.close();
+        timerManager.shutdown();
+        nodeOptions.getCommonExecutor().shutdown();
     }
 
     @Test
@@ -117,12 +120,14 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
             .setReadPartly(true);
 
         //mock get metadata
-        final ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
+        ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
         Mockito.when(
             this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb.build()),
                 eq(this.copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
         this.copier.start();
-        Thread.sleep(500);
+
+        assertTrue(TestUtils.waitForArgumentCapture(argument, 5_000));
+
         final RpcResponseClosure<RpcRequests.GetFileResponse> closure = argument.getValue();
 
         closure.run(new Status(RaftError.ECANCELED, "test cancel"));
@@ -143,19 +148,13 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
             .setReadPartly(true);
 
         //mock get metadata
-        final ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
+        ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
         Mockito.when(
             this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb.build()),
                 eq(this.copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
         this.copier.start();
-        Thread.sleep(10);
 
-        Utils.runInThread(Executors.newSingleThreadExecutor(), new Runnable() {
-            @Override
-            public void run() {
-                LocalSnapshotCopierTest.this.copier.cancel();
-            }
-        });
+        Utils.runInThread(ForkJoinPool.commonPool(), () -> LocalSnapshotCopierTest.this.copier.cancel());
 
         this.copier.join();
         //start timer
@@ -179,7 +178,7 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
             this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb.build()),
                 eq(this.copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
         this.copier.start();
-        Thread.sleep(500);
+        assertTrue(TestUtils.waitForArgumentCapture(argument, 5_000));
         RpcResponseClosure<RpcRequests.GetFileResponse> closure = argument.getValue();
         final ByteBuffer metaBuf = this.table.saveToByteBufferAsRemote();
         closure.setResponse(RpcRequests.GetFileResponse.newBuilder().setReadSize(metaBuf.remaining()).setEof(true)
@@ -195,7 +194,7 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
 
         closure.run(Status.OK());
 
-        Thread.sleep(500);
+        assertTrue(TestUtils.waitForArgumentCapture(argument, 5_000));
         closure = argument.getValue();
         closure.setResponse(RpcRequests.GetFileResponse.newBuilder().setReadSize(100).setEof(true)
             .setData(new ByteString(new byte[100])).build());

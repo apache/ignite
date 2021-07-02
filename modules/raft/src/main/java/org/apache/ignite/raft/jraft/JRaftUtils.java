@@ -62,10 +62,11 @@ public final class JRaftUtils {
      * @param prefix thread name prefix
      * @param number thread number
      * @return a new {@link ThreadPoolExecutor} instance
+     * @throws IllegalArgumentException If a number of threads is incorrect.
      */
     public static ExecutorService createExecutor(final String prefix, final int number) {
         if (number <= 0) {
-            return null;
+            throw new IllegalArgumentException();
         }
         return ThreadPoolUtil.newBuilder() //
             .poolName(prefix) //
