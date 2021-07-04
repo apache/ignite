@@ -49,8 +49,6 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
         assertExistIndexRoot(cache, idxDef.treeName(), idxDef.segments(), true);
 
         // TODO: 02.07.2021 continue
-
-        log.warning(idxDef.toString());
     }
 
     /**
