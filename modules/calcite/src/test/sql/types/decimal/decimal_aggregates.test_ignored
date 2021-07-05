@@ -1,7 +1,6 @@
 # name: test/sql/types/decimal/decimal_aggregates.test
 # description: Test decimal aggregates
 # group: [decimal]
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14589
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14555
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14596
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14597
