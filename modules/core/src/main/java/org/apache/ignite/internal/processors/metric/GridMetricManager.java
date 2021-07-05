@@ -385,28 +385,32 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
-        ReadOnlyMetricRegistry mreg = registries.remove(regName);
+        GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
-        if (mreg == null)
-            return;
+        registries.computeIfPresent(regName, (key, mreg) -> {
+            notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
-        notifyListeners(mreg, metricRegRemoveLsnrs, log);
+            DistributedMetaStorage metastorage0 = metastorage;
 
-        DistributedMetaStorage metastorage0 = metastorage;
+            if (metastorage0 == null)
+                return null;
 
-        if (metastorage0 == null)
-            return;
-
-        try {
-            GridCompoundFuture opsFut = new GridCompoundFuture<>();
-
-            for (Metric m : mreg) {
-                if (m instanceof HitRateMetric)
-                    opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
-                else if (m instanceof HistogramMetric)
-                    opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+            try {
+                for (Metric m : mreg) {
+                    if (m instanceof HitRateMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
+                    else if (m instanceof HistogramMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
 
+            return null;
+        });
+
+        try {
             opsFut.markInitialized();
             opsFut.get();
         }

@@ -22,7 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.StreamSupport;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -34,14 +36,20 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -359,6 +367,87 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(new T2<>("org.apache", "ignite"), fromFullName("org.apache.ignite"));
 
         assertEquals(new T2<>("org", "apache"), fromFullName("org.apache"));
+    }
+
+    /** */
+    @Test
+    public void testAddBeforeRemoveCompletes() throws Exception {
+        MetricExporterSpi checkSpi = new NoopMetricExporterSpi() {
+            private ReadOnlyMetricManager registry;
+
+            private Set<String> names = new HashSet<>();
+
+            @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+                registry.addMetricRegistryCreationListener(mreg -> {
+                    assertFalse(mreg.name() + " should be unique", names.contains(mreg.name()));
+
+                    names.add(mreg.name());
+                });
+
+                registry.addMetricRegistryRemoveListener(mreg -> names.remove(mreg.name()));
+            }
+
+            @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
+                this.registry = registry;
+            }
+        };
+
+        CountDownLatch rmvStarted = new CountDownLatch(1);
+        CountDownLatch rmvCompleted = new CountDownLatch(1);
+
+        MetricExporterSpi blockingSpi = new NoopMetricExporterSpi() {
+            private ReadOnlyMetricManager registry;
+
+            @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+                registry.addMetricRegistryRemoveListener(mreg -> {
+                    rmvStarted.countDown();
+                    try {
+                        rmvCompleted.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
+                this.registry = registry;
+            }
+        };
+
+        IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(blockingSpi, checkSpi);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log(), cfg);
+
+        ctx.start();
+
+        // Add metric registry.
+        ctx.metric().registry("test");
+
+        // Removes it async, blockingSpi will block remove procedure.
+        IgniteInternalFuture rmvFut = runAsync(() -> ctx.metric().remove("test"));
+
+        rmvStarted.await();
+
+        CountDownLatch addStarted = new CountDownLatch(1);
+
+        IgniteInternalFuture addFut = runAsync(() -> {
+            addStarted.countDown();
+
+            ctx.metric().registry("test");
+        });
+
+        // Waiting for creation to start.
+        addStarted.await();
+
+        Thread.sleep(100);
+
+        // Complete removal.
+        rmvCompleted.countDown();
+
+        rmvFut.get(getTestTimeout());
+
+        addFut.get(getTestTimeout());
     }
 
     /** */
