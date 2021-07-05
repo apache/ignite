@@ -337,7 +337,6 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         }
     }
 
-
     /** */
     private final class OrderingAccumulatorWrapperImpl extends AccumulatorWrapperImpl {
         private Comparator<Row> comp;

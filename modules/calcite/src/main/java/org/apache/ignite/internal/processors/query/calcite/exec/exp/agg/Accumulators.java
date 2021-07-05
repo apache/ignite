@@ -35,11 +35,11 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
+import static org.apache.calcite.sql.type.SqlTypeName.CHAR;
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.sql.type.SqlTypeName.DOUBLE;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
-import static org.apache.calcite.sql.type.SqlTypeName.CHAR;
 
 /**
  *
@@ -1027,73 +1027,6 @@ public class Accumulators {
     }
 
     /** */
-    private static class DistinctPairAccumulator implements Accumulator {
-        /** */
-        private final Accumulator acc;
-
-        /** */
-        private final Map<Object, Set<Object>> map;
-
-        /** */
-        private DistinctPairAccumulator(Supplier<Accumulator> accSup) {
-            this.acc = accSup.get();
-            map = new HashMap<>();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Object in1 = args[0];
-            Object in2 = args[1];
-
-            if (in1 == null || in2 == null)
-                return;
-
-            map.computeIfAbsent(in1, (obj) -> new HashSet<>()).add(in2);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DistinctPairAccumulator other0 = (DistinctPairAccumulator)other;
-
-            for (Map.Entry<Object, Set<Object>> entry : other0.map.entrySet()) {
-                map.computeIfAbsent(entry.getKey(), (obj) -> new HashSet<>()).addAll(entry.getValue());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
-                for (Object values : entry.getValue()) {
-                    acc.add(entry.getKey(), values);
-                }
-            }
-
-            return acc.end();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end(Comparator cmp) {
-            for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
-                for (Object values : entry.getValue()) {
-                    acc.add(entry.getKey(), values);
-                }
-            }
-
-            return acc.end(cmp);
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return acc.argumentTypes(typeFactory);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return acc.returnType(typeFactory);
-        }
-    }
-
-    /** */
     private static class DistinctAccumulator implements Accumulator {
         /** */
         private final Accumulator acc;
@@ -1129,6 +1062,78 @@ public class Accumulators {
                 acc.add(o);
 
             return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return acc.argumentTypes(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return acc.returnType(typeFactory);
+        }
+    }
+
+    /** */
+    private static class DistinctPairAccumulator implements Accumulator {
+        /** */
+        private final Accumulator acc;
+
+        /** */
+        private final Map<Object, Set<Object>> map;
+
+        /** */
+        private DistinctPairAccumulator(Supplier<Accumulator> accSup) {
+            this.acc = accSup.get();
+            map = new HashMap<>();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            Object in1 = args[0];
+            Object in2;
+
+            if (args.length > 1)
+                 in2 = args[1];
+            else
+                in2 = null;
+
+            if (in1 == null)
+                return;
+
+            map.computeIfAbsent(in1, (obj) -> new HashSet<>()).add(in2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            DistinctPairAccumulator other0 = (DistinctPairAccumulator)other;
+
+            for (Map.Entry<Object, Set<Object>> entry : other0.map.entrySet()) {
+                map.computeIfAbsent(entry.getKey(), (obj) -> new HashSet<>()).addAll(entry.getValue());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
+                for (Object values : entry.getValue()) {
+                    acc.add(entry.getKey(), values);
+                }
+            }
+
+            return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end(Comparator cmp) {
+            for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
+                for (Object values : entry.getValue()) {
+                    acc.add(entry.getKey(), values);
+                }
+            }
+
+            return acc.end(cmp);
         }
 
         /** {@inheritDoc} */
@@ -1190,7 +1195,7 @@ public class Accumulators {
 
             for (Object[] objects : list) {
                 data.add(objects[0]);
-                if (objects.length > 1)
+                if (objects.length > 1 && objects[1] != null)
                     seps.add(objects[1]);
                 else
                     seps.add(DEFAULT_SEPARATOR);
@@ -1206,7 +1211,8 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true), typeFactory.createTypeWithNullability(typeFactory.createSqlType(CHAR), true));
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true),
+                typeFactory.createTypeWithNullability(typeFactory.createSqlType(CHAR), true));
         }
 
         /** {@inheritDoc} */

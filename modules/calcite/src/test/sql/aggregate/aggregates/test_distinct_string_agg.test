@@ -14,3 +14,8 @@ SELECT STRING_AGG(s,',' ORDER BY s ASC), STRING_AGG(DISTINCT s, ',' ORDER BY s A
 a,a,b
 a,b
 
+query TT
+SELECT STRING_AGG(s ORDER BY s ASC), STRING_AGG(DISTINCT s ORDER BY s ASC) FROM strings
+----
+a,a,b
+a,b
