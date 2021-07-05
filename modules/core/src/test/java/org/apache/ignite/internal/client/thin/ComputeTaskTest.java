@@ -40,6 +40,7 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -103,6 +104,18 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             assertEquals(nodeId(0), val.get1());
             assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     * Test that custom user type can be returned by task.
+     */
+    @Test
+    public void testExecuteWithCustomUserType() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            Person val = client.compute().execute(TestTaskCustomType.class.getName(), "person");
+
+            assertEquals("person", val.getName());
         }
     }
 

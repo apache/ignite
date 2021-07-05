@@ -160,6 +160,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets namespace name part.
+        /// </summary>
+        public string GetNamespace()
+        {
+            return NameStart == 0 ? null : _typeName.Substring(_start, NameStart - 1);
+        }
+
+        /// <summary>
         /// Parses this instance.
         /// </summary>
         private void Parse()

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -1325,6 +1326,35 @@ public final class IgniteSystemProperties {
      * Default is 1000 ms.
      */
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    /**
+     * Performance statistics maximum file size in bytes. Performance statistics will be stopped when the size exceeded.
+     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
+     */
+    public static final String IGNITE_PERF_STAT_FILE_MAX_SIZE = "IGNITE_PERF_STAT_FILE_MAX_SIZE";
+
+    /**
+     * Performance statistics off heap buffer size in bytes. The default value is
+     * {@link FilePerformanceStatisticsWriter#DFLT_BUFFER_SIZE}.
+     */
+    public static final String IGNITE_PERF_STAT_BUFFER_SIZE = "IGNITE_PERF_STAT_BUFFER_SIZE";
+
+    /**
+     * Performance statistics minimal batch size to flush in bytes. The default value is
+     * {@link FilePerformanceStatisticsWriter#DFLT_FLUSH_SIZE}.
+     */
+    public static final String IGNITE_PERF_STAT_FLUSH_SIZE = "IGNITE_PERF_STAT_FLUSH_SIZE";
+
+    /**
+     * Performance statistics maximum cached strings threshold. String caching will stop on threshold excess.
+     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
+     */
+    public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
+
+    /** Thin client compatibility flag for Ignite SE 4.290 clients with Ignite SE 4.281 servers.
+     * NOTE: in order to enable client compatibility mode, this option must be set to <code>true</code>
+     * on the <em>thin client side</em>. Default value is <code>false</code>. */
+    public static final String IGNITE_SE_281_THIN_CLIENT_COMPATIBLE = "IGNITE_SE_281_THIN_CLIENT_COMPATIBLE";
 
     /**
      * Enforces singleton.

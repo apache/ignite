@@ -54,9 +54,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.Double] = new BinarySystemReader<double>(s => s.ReadDouble());
             ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemReader<decimal?>(BinaryUtils.ReadDecimal);
 
-            // 2. Date.
-            ReadHandlers[BinaryTypeId.Timestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
-
             // 3. String.
             ReadHandlers[BinaryTypeId.String] = new BinarySystemReader<string>(BinaryUtils.ReadString);
 
@@ -92,10 +89,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.ArrayDecimal] =
                 new BinarySystemReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
 
-            // 6. Date array.
-            ReadHandlers[BinaryTypeId.ArrayTimestamp] =
-                new BinarySystemReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
-
             // 7. String array.
             ReadHandlers[BinaryTypeId.ArrayString] = new BinarySystemTypedArrayReader<string>();
 
@@ -122,9 +115,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Try getting write handler for type.
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="forceTimestamp"></param>
         /// <returns></returns>
-        public static IBinarySystemWriteHandler GetWriteHandler(Type type)
+        public static IBinarySystemWriteHandler GetWriteHandler(Type type, bool forceTimestamp)
         {
+            if (forceTimestamp)
+            {
+                if (type == typeof(DateTime))
+                    return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
+                if (type == typeof(DateTime?[]))
+                    return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
+            }
+
             return WriteHandlers.GetOrAdd(type, t =>
             {
                 return FindWriteHandler(t);
@@ -249,6 +251,20 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (handler == null)
             {
+                if (typeId == BinaryTypeId.Timestamp)
+                {
+                    // Date.
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    return true;
+                }
+
+                if (typeId == BinaryTypeId.ArrayTimestamp)
+                {
+                    // Date array.
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    return true;
+                }
+
                 res = default(T);
                 return false;
             }
@@ -291,6 +307,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryTypeId.Guid);
 
             BinaryUtils.WriteGuid(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write Date.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestamp(BinaryWriter ctx, DateTime obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
+
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream, ctx.Marshaller.TimestampConverter);
         }
 
         /// <summary>
@@ -423,6 +451,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryTypeId.ArrayGuid);
 
             BinaryUtils.WriteGuidArray(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write nullable Date array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestampArray(BinaryWriter ctx, DateTime?[] obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayTimestamp);
+
+            BinaryUtils.WriteTimestampArray(obj, ctx.Stream, ctx.Marshaller.TimestampConverter);
         }
 
         /// <summary>

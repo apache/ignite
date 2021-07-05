@@ -133,6 +133,7 @@
       <Link>Cache\OptimisticTransactionTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\PersistenceTest.cs" Link="Cache\PersistenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\LoadCacheTest.cs" Link="Cache\LoadCacheTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\FailingCacheStore.cs">
       <Link>Cache\Platform\FailingCacheStore.cs</Link>
     </Compile>
@@ -296,6 +297,7 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Common\IgniteProductVersionTests.cs" Link="Common\IgniteProductVersionTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTypeAutoRegisterTest.cs" Link="Compute\ComputeApiTypeAutoRegisterTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeWithExecutorTest.cs" Link="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Dataload\DataStreamerTest.cs">
@@ -343,11 +345,15 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\TestIgnitePluginException.cs" Link="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\TestIgnitePluginProvider.cs" Link="Plugin\TestIgnitePluginProvider.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\Model.cs" Link="Services\Model.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\IJavaService.cs" Link="Services\IJavaService.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\JavaServiceDynamicProxy.cs" Link="Services\JavaServiceDynamicProxy.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\CallPlatformServiceTest.cs" Link="Services\CallPlatformServiceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServiceProxyTest.cs" Link="Services\ServiceProxyTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesAsyncWrapper.cs" Link="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTest.cs" Link="Services\ServicesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTypeAutoResolveTest.cs" Link="Services\ServicesTypeAutoResolveTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EnvVar.cs" Link="Common\EnvVar.cs" />
@@ -384,6 +390,10 @@
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\Affinity\affinity-function2.xml">
       <Link>Config\Cache\Affinity\affinity-function2.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\load-cache-config.xml">
+      <Link>Config\Cache\load-cache-config.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\Store\cache-store-session-shared-factory.xml">

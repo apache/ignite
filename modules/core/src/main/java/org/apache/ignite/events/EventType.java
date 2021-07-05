@@ -22,7 +22,9 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
@@ -878,6 +880,84 @@ public interface EventType {
      * @see IgniteCluster#baselineAutoAdjustTimeout(long)
      */
     public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
+
+    /**
+     * Built-in event type: Cluster snapshot has been started event.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#cancelSnapshot(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_STARTED = 149;
+
+    /**
+     * Built-in event type: Cluster snapshot has been finished event.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#cancelSnapshot(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_FINISHED = 150;
+
+    /**
+     * Built-in event type: Cluster snapshot has been failed event.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#cancelSnapshot(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_FAILED = 151;
+
+    /**
+     * Built-in event type: node validation failed.
+     * <br>
+     * This event is triggered if a node join fails due to a node validation failure.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see NodeValidationFailedEvent
+     * @see GridComponent#validateNode
+     */
+    public static final int EVT_NODE_VALIDATION_FAILED = 999;
+
+    /**
+     * Built-in event type: query execution.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheQueryExecutedEvent
+     */
+    public static final int EVT_QUERY_EXECUTION = 1000;
+
+    /**
+     * All cluster snapshot events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all cluster snapshot events.
+     *
+     * @see SnapshotEvent
+     */
+    public static final int[] EVTS_CLUSTER_SNAPSHOT = {
+        EVT_CLUSTER_SNAPSHOT_STARTED,
+        EVT_CLUSTER_SNAPSHOT_FINISHED,
+        EVT_CLUSTER_SNAPSHOT_FAILED
+    };
 
     /**
      * All checkpoint events. This array can be directly passed into

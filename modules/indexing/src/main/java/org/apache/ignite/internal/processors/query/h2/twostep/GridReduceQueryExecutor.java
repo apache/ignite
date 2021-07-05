@@ -407,6 +407,8 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = qryIdGen.incrementAndGet();
 
+            h2.runningQueryManager().trackRequestId(qryReqId);
+
             boolean retry = false;
             boolean release = true;
 
@@ -853,6 +855,8 @@ public class GridReduceQueryExecutor {
         }
 
         final long reqId = qryIdGen.incrementAndGet();
+
+        h2.runningQueryManager().trackRequestId(reqId);
 
         final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(nodes.size());
 

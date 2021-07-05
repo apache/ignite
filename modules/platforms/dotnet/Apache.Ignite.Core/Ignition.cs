@@ -897,7 +897,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Value object to pass data between .Net methods during startup bypassing Java.
+        /// Value object to pass data between .NET methods during startup bypassing Java.
         /// </summary>
         private class Startup
         {

@@ -49,6 +49,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
@@ -164,7 +166,7 @@ final class ClientUtils {
 
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
+        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
             int typeId = reader.readInt();
             String typeName = reader.readString();
             String affKeyFieldName = reader.readString();
@@ -380,7 +382,7 @@ final class ClientUtils {
     /** Deserialize configuration from stream. */
     ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolCtx)
         throws IOException {
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
+        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
 
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
@@ -534,6 +536,21 @@ final class ClientUtils {
      */
     BinaryRawWriterEx createBinaryWriter(BinaryOutputStream out) {
         return new BinaryWriterExImpl(marsh.context(), out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
+    /**
+     * @param in Input stream.
+     */
+    BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+        return createBinaryReader(marsh.context(), in);
+    }
+
+    /**
+     * @param binaryCtx Binary context.
+     * @param in Input stream.
+     */
+    static BinaryReaderExImpl createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
+        return new BinaryReaderExImpl(binaryCtx, in, null, null, true, true);
     }
 
     /** Read Ignite binary object from input stream. */

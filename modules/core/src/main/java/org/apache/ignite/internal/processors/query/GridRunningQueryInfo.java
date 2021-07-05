@@ -42,6 +42,9 @@ public class GridRunningQueryInfo {
     /** */
     private final long startTime;
 
+    /** Query start time in nanoseconds to measure duration. */
+    private final long startTimeNanos;
+
     /** */
     private final GridQueryCancel cancel;
 
@@ -50,6 +53,9 @@ public class GridRunningQueryInfo {
 
     /** */
     private final QueryRunningFuture fut = new QueryRunningFuture();
+
+    /** Request ID. */
+    private long reqId;
 
     /**
      * Constructor.
@@ -60,6 +66,7 @@ public class GridRunningQueryInfo {
      * @param qryType Query type.
      * @param schemaName Schema name.
      * @param startTime Query start time.
+     * @param startTimeNanos Query start time in nanoseconds.
      * @param cancel Query cancel.
      * @param loc Local query flag.
      */
@@ -70,6 +77,7 @@ public class GridRunningQueryInfo {
         GridCacheQueryType qryType,
         String schemaName,
         long startTime,
+        long startTimeNanos,
         GridQueryCancel cancel,
         boolean loc
     ) {
@@ -79,6 +87,7 @@ public class GridRunningQueryInfo {
         this.qryType = qryType;
         this.schemaName = schemaName;
         this.startTime = startTime;
+        this.startTimeNanos = startTimeNanos;
         this.cancel = cancel;
         this.loc = loc;
     }
@@ -126,6 +135,13 @@ public class GridRunningQueryInfo {
     }
 
     /**
+     * @return Query start time in nanoseconds.
+     */
+    public long startTimeNanos() {
+        return startTimeNanos;
+    }
+
+    /**
      * @param curTime Current time.
      * @param duration Duration of long query.
      * @return {@code true} if this query should be considered as long running query.
@@ -168,5 +184,15 @@ public class GridRunningQueryInfo {
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /** @return Request ID. */
+    public long requestId() {
+        return reqId;
+    }
+
+    /** @param reqId Request ID. */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
     }
 }

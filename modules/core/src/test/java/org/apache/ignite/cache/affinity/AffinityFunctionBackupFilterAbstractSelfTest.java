@@ -51,7 +51,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     public static final String FIRST_NODE_GROUP = "A";
 
     /** Backup count. */
-    private int backups = 1;
+    protected int backups = 1;
 
     /** Test backup filter. */
     protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
@@ -87,7 +87,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      * @param nodes List of cluster nodes.
      * @return Statistic.
      */
-    @NotNull private static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
+    @NotNull protected static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
         Map<String, Integer> backupAssignedAttribute = new HashMap<>();
 
         backupAssignedAttribute.put(FIRST_NODE_GROUP, 0);
@@ -235,7 +235,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
-    private void checkPartitionsWithAffinityBackupFilter() throws Exception {
+    protected void checkPartitionsWithAffinityBackupFilter() throws Exception {
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();

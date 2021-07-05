@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -160,6 +162,9 @@ class TcpClientChannel implements ClientChannel {
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
+    /** Executor for async operation listeners. */
+    private final Executor asyncContinuationExecutor;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -176,6 +181,8 @@ class TcpClientChannel implements ClientChannel {
         }
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+        asyncContinuationExecutor = ForkJoinPool.commonPool();
     }
 
     /** {@inheritDoc} */
@@ -373,21 +380,26 @@ class TcpClientChannel implements ClientChannel {
 
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
-        byte[] res = null;
-        Exception err = null;
+        byte[] res;
+        Exception err;
 
         if (status == 0) {
-            if (msgSize > hdrSize)
-                res = dataInput.read(msgSize - hdrSize);
+            err = null;
+            res = msgSize > hdrSize ? dataInput.read(msgSize - hdrSize) : null;
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION)
+        else if (status == ClientStatus.SECURITY_VIOLATION) {
+            dataInput.read(msgSize - hdrSize); // Read message to the end.
+
             err = new ClientAuthorizationException();
+            res = null;
+        }
         else {
             resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
 
-            String errMsg = new BinaryReaderExImpl(null, resIn, null, true).readString();
+            String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
             err = new ClientServerError(errMsg, status, resId);
+            res = null;
         }
 
         if (notificationOp == null) { // Respone received.
@@ -399,8 +411,12 @@ class TcpClientChannel implements ClientChannel {
             pendingReq.onDone(res, err);
         }
         else { // Notification received.
-            for (NotificationListener lsnr : notificationLsnrs)
-                lsnr.acceptNotification(this, notificationOp, resId, res, err);
+            ClientOperation notificationOp0 = notificationOp;
+
+            asyncContinuationExecutor.execute(() -> {
+                for (NotificationListener lsnr : notificationLsnrs)
+                    lsnr.acceptNotification(this, notificationOp0, resId, res, err);
+            });
         }
     }
 
@@ -493,7 +509,7 @@ class TcpClientChannel implements ClientChannel {
 
             writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
-            if (protocolCtx.isFeatureSupported(BITMAP_FEATURES)) {
+            if (protocolCtx.isFeatureSupported(BITMAP_FEATURES) && !protocolCtx.isIse281Compatible()) {
                 byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());
                 writer.writeByteArray(features);
             }
@@ -520,10 +536,17 @@ class TcpClientChannel implements ClientChannel {
      */
     private ProtocolContext protocolContextFromVersion(ProtocolVersion ver) {
         EnumSet<ProtocolBitmaskFeature> features = null;
-        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES))
-            features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
 
-        return new ProtocolContext(ver, features);
+        final boolean isIse281Compatible = ProtocolContext.isIse281Compatible(ver);
+
+        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES)) {
+            if (isIse281Compatible)
+                features = EnumSet.of(USER_ATTRIBUTES);
+            else
+                features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
+        }
+
+        return new ProtocolContext(ver, features, isIse281Compatible);
     }
 
     /** Receive and handle handshake response. */
@@ -536,16 +559,22 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, true)) {
+        try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
             boolean success = res.readBoolean();
 
             if (success) {
-                byte[] features = new byte[0];
+                EnumSet<ProtocolBitmaskFeature> features = null;
 
-                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES))
-                    features = reader.readByteArray();
+                final boolean ise281Compatible = ProtocolContext.isIse281Compatible(proposedVer);
 
-                protocolCtx = new ProtocolContext(proposedVer, ProtocolBitmaskFeature.enumSet(features));
+                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES)) {
+                    if (ise281Compatible)
+                        features = EnumSet.of(USER_ATTRIBUTES);
+                    else
+                        features = ProtocolBitmaskFeature.enumSet(reader.readByteArray());
+                }
+
+                protocolCtx = new ProtocolContext(proposedVer, features, ise281Compatible);
 
                 if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
                     // Reading server UUID

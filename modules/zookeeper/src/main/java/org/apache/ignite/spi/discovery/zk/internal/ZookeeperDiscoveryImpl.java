@@ -52,6 +52,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -2062,6 +2063,8 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (err != null) {
+            spi.getSpiContext().recordEvent(new NodeValidationFailedEvent(locNode, node, err));
+
             LT.warn(log, err.message());
 
             res.err = err.sendMessage();

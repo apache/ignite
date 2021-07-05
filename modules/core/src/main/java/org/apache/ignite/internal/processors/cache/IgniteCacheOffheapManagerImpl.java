@@ -1146,13 +1146,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return null;
         }
 
-        CacheDataStore data = partitionData(part);
-
-        final GridCursor<? extends CacheDataRow> cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
+        final CacheDataStore data = partitionData(part);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private CacheDataRow next;
+
+            /** */
+            private GridCursor<? extends CacheDataRow> cur;
 
             @Override protected CacheDataRow onNext() {
                 CacheDataRow res = next;
@@ -1163,13 +1164,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (cur == null)
+                    cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
+
                 if (next != null)
                     return true;
 
                 if (cur.next())
                     next = cur.get();
 
-                return next != null;
+                boolean hasNext = next != null;
+
+                if (!hasNext)
+                    cur = null;
+
+                return hasNext;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
@@ -1177,6 +1186,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     : "Partition should be in OWNING state and has at least 1 reservation: " + loc;
 
                 loc.release();
+
+                cur = null;
             }
         };
     }

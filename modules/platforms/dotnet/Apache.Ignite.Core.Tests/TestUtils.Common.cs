@@ -544,5 +544,22 @@ namespace Apache.Ignite.Core.Tests
             var socket = GetPrivateField<ClientSocket>(failoverSocket, "_socket");
             return GetPrivateField<ICollection>(socket, "_notificationListeners");
         }
+
+        /// <summary>
+        /// Deploys the Java service.
+        /// </summary>
+        public static string DeployJavaService(IIgnite ignite)
+        {
+            const string serviceName = "javaService";
+
+            ignite.GetCompute()
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
+
+            var services = ignite.GetServices();
+
+            WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
+
+            return serviceName;
+        }
     }
 }

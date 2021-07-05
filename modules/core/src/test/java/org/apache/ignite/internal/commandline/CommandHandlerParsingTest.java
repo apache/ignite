@@ -836,6 +836,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.KILL ||
             cmd == CommandList.SNAPSHOT ||
             cmd == CommandList.CLUSTER_CHANGE_TAG ||
-            cmd == CommandList.METADATA;
+            cmd == CommandList.METADATA ||
+            cmd == CommandList.PERFORMANCE_STATISTICS;
     }
 }

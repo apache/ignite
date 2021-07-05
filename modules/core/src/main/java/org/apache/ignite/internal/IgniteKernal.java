@@ -166,6 +166,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
@@ -1247,6 +1248,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+                startProcessor(new PerformaceStatisticsProcessor(ctx));
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -1350,6 +1352,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
 
             registerMetrics();
+
+            ctx.cluster().registerMetrics();
 
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,

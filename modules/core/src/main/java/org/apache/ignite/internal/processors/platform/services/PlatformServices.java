@@ -271,6 +271,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 assert arg != null;
                 assert arg instanceof ServiceProxyHolder;
 
+                ServiceProxyHolder svc = (ServiceProxyHolder)arg;
+
                 String mthdName = reader.readString();
 
                 Object[] args;
@@ -279,13 +281,13 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = new Object[reader.readInt()];
 
                     for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached();
+                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
                 }
                 else
                     args = null;
 
                 try {
-                    Object result = ((ServiceProxyHolder)arg).invoke(mthdName, srvKeepBinary, args);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -583,7 +585,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
             throws IgniteCheckedException, NoSuchMethodException {
-            if (proxy instanceof PlatformService)
+            if (isPlatformService())
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
             else {
                 assert proxy instanceof GridServiceProxy;
@@ -706,6 +708,11 @@ public class PlatformServices extends PlatformAbstractTarget {
          */
         private static Class wrap(Class c) {
             return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
+        }
+
+        /** @return {@code True} if service is platform service. */
+        public boolean isPlatformService() {
+            return proxy instanceof PlatformService;
         }
     }
 

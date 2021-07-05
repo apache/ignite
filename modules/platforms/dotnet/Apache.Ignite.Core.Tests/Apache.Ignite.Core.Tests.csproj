@@ -262,6 +262,9 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Services\Model.cs" />
+    <Compile Include="Services\IJavaService.cs" />
+    <Compile Include="Services\JavaServiceDynamicProxy.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
@@ -288,6 +291,7 @@
     <Compile Include="Cache\CachePartitionedTest.cs" />
     <Compile Include="Cache\CacheReplicatedAtomicTest.cs" />
     <Compile Include="Cache\CacheReplicatedTest.cs" />
+    <Compile Include="Cache\LoadCacheTest.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAbstractTest.cs" />
@@ -312,6 +316,7 @@
     <Compile Include="Compute\AbstractTaskTest.cs" />
     <Compile Include="Compute\ClosureTaskTest.cs" />
     <Compile Include="Compute\ComputeApiTest.cs" />
+    <Compile Include="Compute\ComputeApiTypeAutoRegisterTest.cs" />
     <Compile Include="Compute\ComputeMultithreadedTest.cs" />
     <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
@@ -374,6 +379,7 @@
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
+    <Compile Include="Services\ServicesTypeAutoResolveTest.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="Unmanaged\JniThreadDetachTest.cs" />
     <Compile Include="Unmanaged\UnmanagedThreadTest.cs" />
@@ -432,6 +438,9 @@
     <Content Include="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Config\Cache\load-cache-config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Cache\Affinity\affinity-function2.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -657,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Timestamp);
-                BinaryUtils.WriteTimestamp(val.Value, _stream);
+                BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.TimestampConverter);
             }
         }
         
@@ -672,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Timestamp);
-                BinaryUtils.WriteTimestamp(val.Value, _stream);
+                BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.TimestampConverter);
             }
         }
 
@@ -690,7 +690,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-                BinaryUtils.WriteTimestampArray(val, _stream);
+                BinaryUtils.WriteTimestampArray(val, _stream, _marsh.TimestampConverter);
             }
         }
 
@@ -705,7 +705,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-                BinaryUtils.WriteTimestampArray(val, _stream);
+                BinaryUtils.WriteTimestampArray(val, _stream, _marsh.TimestampConverter);
             }
         }
 
@@ -875,7 +875,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     throw new BinaryObjectException("Type is not an enum: " + type);
                 }
 
-                var handler = BinarySystemHandlers.GetWriteHandler(type);
+                var handler = BinarySystemHandlers.GetWriteHandler(type, _marsh.ForceTimestamp);
 
                 if (handler != null)
                 {
@@ -1163,7 +1163,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
 
             // Are we dealing with a well-known type?
-            var handler = BinarySystemHandlers.GetWriteHandler(type);
+            var handler = BinarySystemHandlers.GetWriteHandler(type, _marsh.ForceTimestamp);
 
             if (handler != null)
             {

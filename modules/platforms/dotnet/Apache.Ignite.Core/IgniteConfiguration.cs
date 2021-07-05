@@ -1074,7 +1074,7 @@ namespace Apache.Ignite.Core
         public ICollection<string> JvmOptions { get; set; }
 
         /// <summary>
-        /// List of additional .Net assemblies to load on Ignite start. Each item can be either
+        /// List of additional .NET assemblies to load on Ignite start. Each item can be either
         /// fully qualified assembly name, path to assembly to DLL or path to a directory when
         /// assemblies reside.
         /// </summary>
