@@ -55,7 +55,7 @@ public class Accumulators {
         Supplier<Accumulator> fac = accumulatorFunctionFactory(call, comp);
 
         if ("LISTAGG".equals(call.getAggregation().getName()))
-            return () -> new DistinctPairAccumulator(fac);
+            return () -> new DistinctArrayAccumulator(fac);
 
         return () -> new DistinctAccumulator(fac);
     }
@@ -1099,7 +1099,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class DistinctPairAccumulator implements Accumulator {
+    private static class DistinctArrayAccumulator implements Accumulator {
         /** */
         private final Accumulator acc;
 
@@ -1107,7 +1107,7 @@ public class Accumulators {
         Set<Object[]> set;
 
         /** */
-        private DistinctPairAccumulator(Supplier<Accumulator> accSup) {
+        private DistinctArrayAccumulator(Supplier<Accumulator> accSup) {
             acc = accSup.get();
             set = new TreeSet<>(new ArraysComparator());
         }
@@ -1122,7 +1122,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DistinctPairAccumulator other0 = (DistinctPairAccumulator)other;
+            DistinctArrayAccumulator other0 = (DistinctArrayAccumulator)other;
 
             set.addAll(other0.set);
         }
