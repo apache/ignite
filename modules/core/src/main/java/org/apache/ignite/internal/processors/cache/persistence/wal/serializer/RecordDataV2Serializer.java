@@ -56,8 +56,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
-
 /**
  * Record data V2 serializer.
  */
@@ -95,7 +93,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case MVCC_DATA_RECORD:
                 return 4/*entry count*/ + 8/*timestamp*/ + dataSize((DataRecord)rec);
 
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 return super.plainSize(rec) + 8/*timestamp*/;
 
             case SNAPSHOT:
@@ -160,13 +158,14 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 return cpRec;
 
             case DATA_RECORD:
+            case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
                 long timeStamp = in.readLong();
 
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in));
+                    entries.add(readPlainDataEntry(in, type));
 
                 return new DataRecord(entries, timeStamp);
 
@@ -183,13 +182,14 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case ENCRYPTED_DATA_RECORD:
             case ENCRYPTED_DATA_RECORD_V2:
+            case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
                 timeStamp = in.readLong();
 
                 entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type == ENCRYPTED_DATA_RECORD_V2));
+                    entries.add(readEncryptedDataEntry(in, type));
 
                 return new DataRecord(entries, timeStamp);
 
@@ -260,7 +260,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 break;
 
             case MVCC_DATA_RECORD:
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());
