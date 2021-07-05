@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.Slowd
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -309,5 +310,27 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         String sql = "CREATE INDEX " + idxName + " ON Person(name)";
 
         return cache.query(new SqlFieldsQuery(sql)).getAll();
+    }
+
+    /**
+     * Enable checkpoints.
+     *
+     * @param n Node.
+     * @param reason Reason for checkpoint wakeup if it would be required.
+     * @param enable Enable/disable.
+     */
+    protected Void enableCheckpoints(IgniteEx n, String reason, boolean enable) throws Exception {
+        if (enable) {
+            dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+
+            forceCheckpoint(F.asList(n), reason);
+        }
+        else {
+            forceCheckpoint(F.asList(n), reason);
+
+            dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+        }
+
+        return null;
     }
 }

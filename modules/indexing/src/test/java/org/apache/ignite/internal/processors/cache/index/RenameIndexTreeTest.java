@@ -47,11 +47,11 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRenameIndexRootPage() throws Exception {
+    public void testRenamingIndexRootPage() throws Exception {
         IgniteEx n = startGrid(0);
 
         IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
-        populate(cache, 1_000);
+        populate(cache, 100);
 
         String idxName = "IDX0";
         createIdx(cache, idxName);
@@ -77,6 +77,76 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
 
         assertExistIndexRoot(cache, oldTreeName, segments, false);
         assertExistIndexRoot(cache, newTreeName, segments, true);
+    }
+
+    /**
+     * Checking that the renamed index root pages after the checkpoint will be
+     * correctly restored and found after the node is restarted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistRenamingIndexRootPage() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
+
+        String oldTreeName = idxDef.treeName();
+        String newTreeName = UUID.randomUUID().toString();
+
+        int segments = idxDef.segments();
+        assertEquals(segments, renameIndexRoot(cache, oldTreeName, newTreeName, segments).size());
+
+        forceCheckpoint();
+
+        stopGrid(0);
+
+        n = startGrid(0);
+        cache = n.cache(DEFAULT_CACHE_NAME);
+
+        assertExistIndexRoot(cache, oldTreeName, segments, true);
+        assertExistIndexRoot(cache, newTreeName, segments, true);
+    }
+
+    /**
+     * Checking that if the renaming of root pages is not a checkpoint,
+     * then after restarting the node they will not be found.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNotPersistRenamingIndexRootPage() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        enableCheckpoints(n, getTestIgniteInstanceName(), false);
+
+        SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
+
+        String oldTreeName = idxDef.treeName();
+        String newTreeName = UUID.randomUUID().toString();
+
+        int segments = idxDef.segments();
+        assertEquals(segments, renameIndexRoot(cache, oldTreeName, newTreeName, segments).size());
+
+        stopGrid(0);
+
+        n = startGrid(0);
+        cache = n.cache(DEFAULT_CACHE_NAME);
+
+        assertExistIndexRoot(cache, oldTreeName, segments, true);
+        assertExistIndexRoot(cache, newTreeName, segments, false);
     }
 
     /**
