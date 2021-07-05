@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,6 +39,8 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Metadata storage.
@@ -132,14 +133,12 @@ public class IndexStorageImpl implements IndexStorage {
 
     /** {@inheritDoc} */
     @Override public RootPage allocateIndex(String idxName) throws IgniteCheckedException {
-        final MetaTree tree = metaTree;
+        byte[] idxNameBytes = idxName.getBytes(UTF_8);
+
+        checkIndexName(idxNameBytes);
 
         synchronized (this) {
-            byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
-
-            if (idxNameBytes.length > MAX_IDX_NAME_LEN)
-                throw new IllegalArgumentException("Too long encoded indexName [maxAllowed=" + MAX_IDX_NAME_LEN +
-                    ", currentLength=" + idxNameBytes.length + ", name=" + idxName + "]");
+            final MetaTree tree = metaTree;
 
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0));
 
@@ -169,7 +168,7 @@ public class IndexStorageImpl implements IndexStorage {
     {
         idxName = maskCacheIndexName(cacheId, idxName, segment);
 
-        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
+        byte[] idxNameBytes = idxName.getBytes(UTF_8);
 
         final IndexItem row = metaTree.findOne(new IndexItem(idxNameBytes, 0));
 
@@ -186,7 +185,7 @@ public class IndexStorageImpl implements IndexStorage {
 
     /** {@inheritDoc} */
     @Override public RootPage dropIndex(final String idxName) throws IgniteCheckedException {
-        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
+        byte[] idxNameBytes = idxName.getBytes(UTF_8);
 
         final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
 
@@ -199,14 +198,35 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable RootPage renameCacheIndex(
+        Integer cacheId,
+        String oldIdxName,
+        String newIdxName,
+        int segment
+    ) throws IgniteCheckedException {
+        byte[] oldIdxNameBytes = maskCacheIndexName(cacheId, oldIdxName, segment).getBytes(UTF_8);
+        byte[] newIdxNameBytes = maskCacheIndexName(cacheId, newIdxName, segment).getBytes(UTF_8);
+
+        checkIndexName(newIdxNameBytes);
+
+        IndexItem rmv = metaTree.remove(new IndexItem(oldIdxNameBytes, 0));
+
+        if (rmv != null) {
+            metaTree.putx(new IndexItem(newIdxNameBytes, rmv.pageId));
+
+            return new RootPage(new FullPageId(rmv.pageId, grpId), false);
+        }
+        else
+            return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
         metaTree.destroy();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> getIndexNames() throws IgniteCheckedException {
-        assert metaTree != null;
-
         GridCursor<IndexItem> cursor = metaTree.find(null, null);
 
         ArrayList<String> names = new ArrayList<>((int)metaTree.size());
@@ -233,7 +253,7 @@ public class IndexStorageImpl implements IndexStorage {
      * @return Masked name.
      */
     private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
-        return (grpShared ? (Integer.toString(cacheId) + "_") : "") + idxName + "%" + segment;
+        return (grpShared ? cacheId + "_" : "") + idxName + "%" + segment;
     }
 
     /**
@@ -331,10 +351,10 @@ public class IndexStorageImpl implements IndexStorage {
      */
     public static class IndexItem {
         /** */
-        private byte[] idxName;
+        private final byte[] idxName;
 
         /** */
-        private long pageId;
+        private final long pageId;
 
         /**
          * @param idxName Index name.
@@ -357,7 +377,7 @@ public class IndexStorageImpl implements IndexStorage {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "I [idxName=" + new String(idxName) + ", pageId=" + U.hexLong(pageId) + ']';
+            return "I [idxName=" + nameString() + ", pageId=" + U.hexLong(pageId) + ']';
         }
     }
 
@@ -530,6 +550,18 @@ public class IndexStorageImpl implements IndexStorage {
         /** {@inheritDoc} */
         @Override public int getOffset(long pageAddr, final int idx) {
             return offset(idx);
+        }
+    }
+
+    /**
+     * Checking the name of the index.
+     *
+     * @param idxName Index name bytes.
+     */
+    public static void checkIndexName(byte[] idxName) {
+        if (idxName.length > MAX_IDX_NAME_LEN) {
+            throw new IllegalArgumentException("Too long encoded indexName [maxAllowed=" + MAX_IDX_NAME_LEN +
+                ", currentLength=" + idxName.length + ", name=" + idxName + "]");
         }
     }
 }

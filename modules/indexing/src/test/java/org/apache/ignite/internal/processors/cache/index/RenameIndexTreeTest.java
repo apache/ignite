@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
@@ -27,6 +32,8 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl.MAX_IDX_NAME_LEN;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -34,8 +41,13 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  * Class for testing index tree renaming.
  */
 public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
+    /**
+     * Checking the correct renaming of the index root pages.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test0() throws Exception {
+    public void testRenameIndexRootPage() throws Exception {
         IgniteEx n = startGrid(0);
 
         IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
@@ -46,9 +58,67 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
 
         SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
 
-        assertExistIndexRoot(cache, idxDef.treeName(), idxDef.segments(), true);
+        int segments = idxDef.segments();
 
-        // TODO: 02.07.2021 continue
+        String oldTreeName = idxDef.treeName();
+        assertExistIndexRoot(cache, oldTreeName, segments, true);
+
+        String newTreeName = UUID.randomUUID().toString();
+
+        // There will be no renaming.
+        assertExistIndexRoot(cache, newTreeName, segments, false);
+        assertTrue(renameIndexRoot(cache, newTreeName, newTreeName, segments).isEmpty());
+
+        // Checking the validation of the new index name.
+        String moreMaxLenName = Arrays.toString(new byte[MAX_IDX_NAME_LEN + 1]);
+        assertThrows(log, () -> renameIndexRoot(cache, oldTreeName, moreMaxLenName, segments), Exception.class, null);
+
+        assertEquals(segments, renameIndexRoot(cache, oldTreeName, newTreeName, segments).size());
+
+        assertExistIndexRoot(cache, oldTreeName, segments, false);
+        assertExistIndexRoot(cache, newTreeName, segments, true);
+    }
+
+    /**
+     * Renaming index trees.
+     *
+     * @param cache Cache.
+     * @param oldTreeName Old index tree name.
+     * @param newTreeName Old index tree name.
+     * @param segments Segment count.
+     * @return Root pages of renamed trees.
+     * @throws Exception If failed.
+     */
+    private Collection<RootPage> renameIndexRoot(
+        IgniteCache<Integer, Person> cache,
+        String oldTreeName,
+        String newTreeName,
+        int segments
+    ) throws Exception {
+        GridCacheContext<Integer, Person> cacheCtx = cacheContext(cache);
+
+        List<RootPage> res = new ArrayList<>();
+
+        cacheCtx.shared().database().checkpointReadLock();
+
+        try {
+            for (int i = 0; i < segments; i++) {
+                RootPage rootPage = cacheCtx.offheap().renameRootPageForIndex(
+                    cacheCtx.cacheId(),
+                    oldTreeName,
+                    newTreeName,
+                    i
+                );
+
+                if (rootPage != null)
+                    res.add(rootPage);
+            }
+        }
+        finally {
+            cacheCtx.shared().database().checkpointReadUnlock();
+        }
+
+        return res;
     }
 
     /**

@@ -570,6 +570,23 @@ public interface IgniteCacheOffheapManager {
     public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
+     * Renaming the root page of the index tree.
+     *
+     * @param cacheId Cache id.
+     * @param oldIdxName Old name of the index tree.
+     * @param newIdxName New name of the index tree.
+     * @param segment Segment number.
+     * @return Renamed root page of the index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable RootPage renameRootPageForIndex(
+        int cacheId,
+        String oldIdxName,
+        String newIdxName,
+        int segment
+    ) throws IgniteCheckedException;
+
+    /**
      * @param idxName Index name.
      * @return Reuse list for index tree.
      * @throws IgniteCheckedException If failed.
