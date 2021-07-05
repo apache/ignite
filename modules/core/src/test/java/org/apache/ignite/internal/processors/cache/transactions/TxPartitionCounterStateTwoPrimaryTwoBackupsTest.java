@@ -215,7 +215,10 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
         assertEqualsCollections(expKeys, keys);
 
         // Expect only one committed tx.
-        assertEquals(PRELOAD_KEYS_CNT + SIZES[finishedTxIdx] + 1 /** Key for part2. */, grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(
+            PRELOAD_KEYS_CNT + SIZES[finishedTxIdx] + 1 /** Key for part2. */,
+            grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size()
+        );
 
         // Expect consistent partitions.
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));

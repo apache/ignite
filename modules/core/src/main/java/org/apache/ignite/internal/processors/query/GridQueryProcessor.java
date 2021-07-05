@@ -87,6 +87,8 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
+import org.apache.ignite.internal.processors.query.aware.IndexRebuildFutureStorage;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -156,7 +158,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final String INLINE_SIZES_DISCO_BAG_KEY = "inline_sizes";
 
     /** Warn message if some indexes have different inline sizes on the nodes. */
-    public static final String INLINE_SIZES_DIFFER_WARN_MSG_FORMAT = "Inline sizes on local node and node %s are different. Please drop and create again these indexes to avoid performance problems with SQL queries. Problem indexes: %s";
+    public static final String INLINE_SIZES_DIFFER_WARN_MSG_FORMAT = "Inline sizes on local node and node %s are different. " +
+        "Please drop and create again these indexes to avoid performance problems with SQL queries. Problem indexes: %s";
 
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
@@ -241,10 +244,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
     private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
-    /** Index rebuild aware. */
-    private final IndexRebuildAware idxRebuildAware = new IndexRebuildAware();
+    /** Index rebuild futures. */
+    private final IndexRebuildFutureStorage idxRebuildFutStorage = new IndexRebuildFutureStorage();
+
+    /** Index build statuses. */
+    private final IndexBuildStatusStorage idxBuildStatusStorage;
 
     /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      */
     public GridQueryProcessor(GridKernalContext ctx) throws IgniteCheckedException {
@@ -256,25 +264,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idxCls = null;
         }
         else
-            idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+            idx = INDEXING.inClassPath() ? U.newInstance(INDEXING.className()) : null;
 
         idxProc = ctx.indexProcessor();
 
         valCtx = new CacheQueryObjectValueContext(ctx);
 
-        ioLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (msg instanceof SchemaOperationStatusMessage) {
-                    SchemaOperationStatusMessage msg0 = (SchemaOperationStatusMessage)msg;
+        ioLsnr = (nodeId, msg, plc) -> {
+            if (msg instanceof SchemaOperationStatusMessage) {
+                SchemaOperationStatusMessage msg0 = (SchemaOperationStatusMessage)msg;
 
-                    msg0.senderNodeId(nodeId);
+                msg0.senderNodeId(nodeId);
 
-                    processStatusMessage(msg0);
-                }
-                else
-                    U.warn(log, "Unsupported IO message: " + msg);
+                processStatusMessage(msg0);
             }
+            else
+                U.warn(log, "Unsupported IO message: " + msg);
         };
+
+        idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
     }
 
     /** {@inheritDoc} */
@@ -290,12 +298,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ctx.io().addMessageListener(TOPIC_SCHEMA, ioLsnr);
 
         // Schedule queries detail metrics eviction.
-        qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                for (GridCacheContext ctxs : ctx.cache().context().cacheContexts())
-                    ctxs.queries().evictDetailMetrics();
-            }
+        qryDetailMetricsEvictTask = ctx.timeout().schedule(() -> {
+            for (GridCacheContext ctxs : ctx.cache().context().cacheContexts())
+                ctxs.queries().evictDetailMetrics();
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
+
+        idxBuildStatusStorage.start();
+
+        registerMetadataForRegisteredCaches(false);
     }
 
     /** {@inheritDoc} */
@@ -317,6 +327,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         busyLock.block();
+
+        idxBuildStatusStorage.stop();
     }
 
     /** {@inheritDoc} */
@@ -337,8 +349,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheKernalStart() throws IgniteCheckedException {
-        registerMetadataForRegisteredCaches();
-
         synchronized (stateMux) {
             exchangeReady = true;
 
@@ -346,6 +356,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             for (SchemaOperation schemaOp : schemaOps.values())
                 onSchemaPropose(schemaOp.proposeMessage());
         }
+
+        idxBuildStatusStorage.onCacheKernalStart();
     }
 
     /**
@@ -458,7 +470,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void beforeExchange(GridDhtPartitionsExchangeFuture fut) {
         Set<Integer> cacheIds = rebuildIndexCacheIds(fut);
 
-        Set<Integer> rejected = idxRebuildAware.prepareRebuildIndexes(cacheIds, fut.initialVersion());
+        Set<Integer> rejected = idxRebuildFutStorage.prepareRebuildIndexes(cacheIds, fut.initialVersion());
 
         if (log.isDebugEnabled()) {
             log.debug("Preparing features of rebuilding indexes for caches on exchange [requested=" + cacheIds +
@@ -1128,10 +1140,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Register metadata locally for already registered caches.
+     *
+     * @param platformOnly Whether to register non-Java platformOnly types only.
      */
-    private void registerMetadataForRegisteredCaches() {
+    public void registerMetadataForRegisteredCaches(boolean platformOnly) {
         for (DynamicCacheDescriptor cacheDescriptor : ctx.cache().cacheDescriptors().values())
-            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema());
+            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema(), platformOnly);
     }
 
     /**
@@ -1145,7 +1159,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 continue;
 
             try {
-                registerBinaryMetadata(req.startCacheConfiguration(), req.schema());
+                registerBinaryMetadata(req.startCacheConfiguration(), req.schema(), false);
             }
             catch (BinaryObjectException e) {
                 ctx.cache().completeCacheStartFuture(req, false, e);
@@ -1158,9 +1172,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param ccfg Cache configuration.
      * @param schema Schema for which register metadata is required.
+     * @param platformOnly Whether to register non-Java platformOnly types only.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema) throws BinaryObjectException {
+    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema, boolean platformOnly) throws BinaryObjectException {
         if (schema != null) {
             Collection<QueryEntity> qryEntities = schema.entities();
 
@@ -1169,8 +1184,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (binaryEnabled) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        registerTypeLocally(qryEntity.findKeyType());
-                        registerTypeLocally(qryEntity.findValueType());
+                        registerTypeLocally(qryEntity.findKeyType(), platformOnly);
+                        registerTypeLocally(qryEntity.findValueType(), platformOnly);
                     }
                 }
             }
@@ -1258,9 +1273,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Register class metadata locally if it didn't do it earlier.
      *
      * @param clsName Class name for which the metadata should be registered.
+     * @param platformOnly Whether to only register non-Java platform types only.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerTypeLocally(String clsName) throws BinaryObjectException {
+    private void registerTypeLocally(String clsName, boolean platformOnly) throws BinaryObjectException {
         if (clsName == null)
             return;
 
@@ -1271,8 +1287,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             Class<?> cls = U.box(U.classForName(clsName, null, true));
 
-            if (cls != null)
-                binProc.binaryContext().registerClass(cls, true, false, true);
+            if (cls != null) {
+                if (!platformOnly)
+                    binProc.binaryContext().registerClass(cls, true, false, true);
+            }
             else
                 registerPlatformTypeLocally(clsName, binProc);
         }
@@ -1287,9 +1305,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void registerPlatformTypeLocally(String clsName, CacheObjectBinaryProcessorImpl binProc) {
         PlatformProcessor platformProc = ctx.platform();
 
-        assert platformProc != null : "Platform processor must be initialized";
-
-        if (!platformProc.hasContext())
+        if (platformProc == null || !platformProc.hasContext())
             return;
 
         PlatformContext platformCtx = platformProc.context();
@@ -1888,20 +1904,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>();
 
+                    GridCacheContext<?, ?> cacheCtx = cacheInfo.cacheContext();
+
                     visitor = new SchemaIndexCacheVisitorImpl(
-                        cacheInfo.cacheContext(),
+                        cacheCtx,
                         cancelTok,
                         createIdxFut
                     ) {
                         /** {@inheritDoc} */
                         @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
-                            super.visit(clo);
+                            idxBuildStatusStorage.onStartBuildNewIndex(cacheCtx);
 
                             try {
+                                super.visit(clo);
+
                                 buildIdxFut.get();
                             }
                             catch (Exception e) {
                                 throw new IgniteException(e);
+                            } finally {
+                                idxBuildStatusStorage.onFinishBuildNewIndex(cacheName);
                             }
                         }
                     };
@@ -1946,7 +1968,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
                 }
 
-                if (idxRebuildAware.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
+                if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
                     rebuildIndexesFromHash0(cacheInfo.cacheContext(), false);
                 else {
                     if (log.isInfoEnabled())
@@ -2376,7 +2398,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Nullable IgniteInternalFuture<?> idxFut,
         GridCacheContext<?, ?> cctx
     ) {
-        GridFutureAdapter<Void> res = idxRebuildAware.indexRebuildFuture(cctx.cacheId());
+        GridFutureAdapter<Void> res = idxRebuildFutStorage.indexRebuildFuture(cctx.cacheId());
 
         assert res != null;
 
@@ -2394,13 +2416,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 else if (!(err instanceof NodeStoppingException))
                     log.error("Failed to rebuild indexes for cache " + cacheInfo, err);
 
-                idxRebuildAware.onFinishRebuildIndexes(cctx.cacheId(), err);
+                idxRebuildFutStorage.onFinishRebuildIndexes(cctx.cacheId(), err);
             });
 
             return res;
         }
         else {
-            idxRebuildAware.onFinishRebuildIndexes(cctx.cacheId(), null);
+            idxRebuildFutStorage.onFinishRebuildIndexes(cctx.cacheId(), null);
 
             return null;
         }
@@ -2410,7 +2432,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when indexes for given cache are restored.
      */
     @Nullable public IgniteInternalFuture<?> indexRebuildFuture(int cacheId) {
-        return idxRebuildAware.indexRebuildFuture(cacheId);
+        return idxRebuildFutStorage.indexRebuildFuture(cacheId);
     }
 
     /**
@@ -2481,7 +2503,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Key-value pair is not inserted into any SQL table [cacheName=" + cacheName +
                         ", " + describeTypeMismatch(cacheName, val) + "]");
 
-                    LT.warn(log, "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
+                    LT.warn(
+                        log,
+                        "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities"
+                    );
                     LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache");
                     LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
                 }
@@ -3807,7 +3832,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         GridDhtPartitionsExchangeFuture fut,
         @Nullable Set<Integer> cacheIds
     ) {
-        idxRebuildAware.cancelRebuildIndexesOnExchange(
+        idxRebuildFutStorage.cancelRebuildIndexesOnExchange(
             cacheIds != null ? cacheIds : rebuildIndexCacheIds(fut),
             fut.initialVersion()
         );
@@ -3821,7 +3846,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return {@code True} if need to rebuild.
      */
     public boolean rebuildIndexOnExchange(int cacheId, GridDhtPartitionsExchangeFuture fut) {
-        return idxRebuildAware.rebuildIndexesOnExchange(cacheId, fut.initialVersion());
+        return idxRebuildFutStorage.rebuildIndexesOnExchange(cacheId, fut.initialVersion());
     }
 
     /**
@@ -3832,7 +3857,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cache ids for which features have not been added.
      */
     public Set<Integer> prepareRebuildIndexes(Set<Integer> cacheIds) {
-        return idxRebuildAware.prepareRebuildIndexes(cacheIds, null);
+        return idxRebuildFutStorage.prepareRebuildIndexes(cacheIds, null);
     }
 
     /**
@@ -3860,5 +3885,58 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return cacheIds;
+    }
+
+    /**
+     * Callback on start of rebuild cache indexes.
+     * <p/>
+     * Adding an entry that rebuilding the cache indexes in progress.
+     * If the cache is persistent, then add this entry to the MetaStorage.
+     * <p/>
+     * When restarting/reactivating the node, it will be possible to check if
+     * the rebuilding of the indexes has been {@link #rebuildIndexesCompleted}.
+     *
+     * @param cacheCtx Cache context.
+     * @see #onFinishRebuildIndexes
+     * @see #rebuildIndexesCompleted
+     */
+    public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
+        idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx);
+    }
+
+    /**
+     * Callback on finish of rebuild cache indexes.
+     * <p/>
+     * If the cache is persistent, then we mark that the rebuilding of the
+     * indexes is completed and the entry will be deleted from the MetaStorage
+     * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
+     *
+     * @param cacheCtx Cache context.
+     */
+    public void onFinishRebuildIndexes(GridCacheContext cacheCtx) {
+        idxBuildStatusStorage.onFinishRebuildIndexes(cacheCtx.name());
+    }
+
+    /**
+     * Check if rebuilding of indexes for the cache has been completed.
+     *
+     * @param cacheCtx Cache context.
+     * @return {@code True} if completed.
+     */
+    public boolean rebuildIndexesCompleted(GridCacheContext cacheCtx) {
+        return idxBuildStatusStorage.rebuildCompleted(cacheCtx.name());
+    }
+
+    /**
+     * Force a mark that the index rebuild for the cache has completed.
+     * <p/>
+     * If the cache is persistent, then we mark that the rebuilding of the
+     * indexes is completed and the entry will be deleted from the MetaStorage
+     * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
+     *
+     * @param cacheName Cache name.
+     */
+    public void completeRebuildIndexes(String cacheName) {
+        idxBuildStatusStorage.onFinishRebuildIndexes(cacheName);
     }
 }

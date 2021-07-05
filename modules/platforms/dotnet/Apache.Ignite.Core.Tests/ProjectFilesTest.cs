@@ -151,6 +151,7 @@ namespace Apache.Ignite.Core.Tests
             var excludedFiles = new[]
             {
                 "IgnitionStartTest.cs",
+                "ShellTests.cs",
                 "Common\\TestFixtureSetUp.cs",
                 "Common\\TestFixtureTearDown.cs",
                 "Client\\Cache\\CacheTestAsyncAwait.cs",
@@ -242,7 +243,8 @@ namespace Apache.Ignite.Core.Tests
                 "BinaryStringTest.cs",
                 "BinarySelfTest.cs",
                 "CacheDmlQueriesTest.cs",
-                "CacheTest.cs"
+                "CacheTest.cs",
+                "PartitionAwarenessTest.cs"
             };
 
             var srcFiles = TestUtils.GetDotNetSourceDir()

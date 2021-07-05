@@ -37,9 +37,6 @@ public class JvmConfigurationSuggestions {
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
 
     /** */
-    private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
-
-    /** */
     private static final String NOT_USE_TLAB = "-XX:-UseTLAB";
 
     /** */
@@ -76,9 +73,6 @@ public class JvmConfigurationSuggestions {
 
         if (args.contains(NOT_USE_TLAB))
             suggestions.add("Enable thread-local allocation buffer (add '-XX:+UseTLAB' to JVM options)");
-
-        if (!args.contains(DISABLE_EXPLICIT_GC))
-            suggestions.add("Disable processing of calls to System.gc() (add '" + DISABLE_EXPLICIT_GC + "' to JVM options)");
 
         return suggestions;
     }

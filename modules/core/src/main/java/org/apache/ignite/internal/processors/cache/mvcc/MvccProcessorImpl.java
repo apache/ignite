@@ -79,9 +79,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -403,9 +405,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private void txLogPageStoreInit(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
+        DataRegion dataRegion = mgr.dataRegion(TX_LOG_CACHE_NAME);
+        PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(TX_LOG_CACHE_ID);
+
         //noinspection ConstantConditions
-        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0,
-            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics().totalAllocatedPages()::add);
+        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0, TX_LOG_CACHE_NAME, pageMetrics);
     }
 
     /** {@inheritDoc} */
@@ -2381,7 +2385,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         private boolean actualize(GridCacheContext cctx, MvccDataRow row,
             MvccSnapshot snapshot) throws IgniteCheckedException {
             return isVisible(cctx, snapshot, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter(), false)
-                && (row.mvccTxState() == TxState.NA || (row.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA && row.newMvccTxState() == TxState.NA));
+                && (row.mvccTxState() == TxState.NA ||
+                    (row.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA && row.newMvccTxState() == TxState.NA));
         }
 
         /**

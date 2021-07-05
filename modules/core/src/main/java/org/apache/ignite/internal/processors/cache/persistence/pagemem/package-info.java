@@ -24,7 +24,8 @@
  *  <li>Pages replacement with disk.</li>
  * </ul>
  *
- * See also
- * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence/pagemem">Package description</a>
+ * See also <a href="
+ * https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence/pagemem">
+ * Package description</a>
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;

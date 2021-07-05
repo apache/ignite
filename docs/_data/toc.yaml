@@ -129,6 +129,8 @@
       url: memory-configuration/data-regions
     - title: Eviction Policies
       url: memory-configuration/eviction-policies        
+    - title: Replacement Policies
+      url: memory-configuration/replacement-policies
 - title: Configuring Persistence
   items:
     - title: Ignite Persistence

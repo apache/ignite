@@ -173,7 +173,9 @@ public class ReliableChannelTest {
      */
     @Test
     public void testNodeChannelsAreNotCleaned() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
+        ClientConfiguration ccfg = new ClientConfiguration()
+                .setAddresses(dfltAddrs)
+                .setPartitionAwarenessEnabled(false);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
@@ -236,7 +238,9 @@ public class ReliableChannelTest {
             .nextAddresesResponse(dfltAddrs)
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804");
 
-        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
+        ClientConfiguration ccfg = new ClientConfiguration()
+                .setAddressesFinder(finder)
+                .setPartitionAwarenessEnabled(false);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 

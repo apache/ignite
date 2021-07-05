@@ -540,7 +540,8 @@ public class GridNioServerWrapper {
                         ses = null;
                     }
 
-                    eRegistrySupplier.get().onException("Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
+                    eRegistrySupplier.get().onException(
+                        "Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())
@@ -878,9 +879,12 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
-                    GridNioSslFilter sslFilter =
-                        new GridNioSslFilter(igniteCfg.getSslContextFactory().create(),
-                            true, ByteOrder.LITTLE_ENDIAN, log);
+                    GridNioSslFilter sslFilter = new GridNioSslFilter(
+                        igniteCfg.getSslContextFactory().create(),
+                        true,
+                        ByteOrder.LITTLE_ENDIAN,
+                        log,
+                        metricMgr == null ? null : metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
 
                     sslFilter.directMode(true);
 

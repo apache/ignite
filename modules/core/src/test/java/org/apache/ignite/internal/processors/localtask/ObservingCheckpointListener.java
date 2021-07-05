@@ -30,17 +30,24 @@ public class ObservingCheckpointListener implements CheckpointListener {
     /** On mark checkpoint begin consumer. */
     volatile IgniteThrowableConsumer<Context> onMarkCheckpointBeginConsumer;
 
+    /** Repeat {@link #onMarkCheckpointBeginConsumer}. */
+    volatile boolean repeatOnMarkCheckpointBeginConsumer;
+
     /** After checkpoint end consumer. */
     volatile IgniteThrowableConsumer<Context> afterCheckpointEndConsumer;
+
+    /** Repeat {@link #afterCheckpointEndConsumer}. */
+    volatile boolean repeatAfterCheckpointEndConsumer;
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         IgniteThrowableConsumer<Context> consumer = onMarkCheckpointBeginConsumer;
 
         if (consumer != null) {
-            onMarkCheckpointBeginConsumer = null;
-
             consumer.accept(ctx);
+
+            if (!repeatOnMarkCheckpointBeginConsumer)
+                onMarkCheckpointBeginConsumer = null;
         }
     }
 
@@ -59,9 +66,10 @@ public class ObservingCheckpointListener implements CheckpointListener {
         IgniteThrowableConsumer<Context> consumer = afterCheckpointEndConsumer;
 
         if (consumer != null) {
-            afterCheckpointEndConsumer = null;
-
             consumer.accept(ctx);
+
+            if (!repeatAfterCheckpointEndConsumer)
+                afterCheckpointEndConsumer = null;
         }
     }
 

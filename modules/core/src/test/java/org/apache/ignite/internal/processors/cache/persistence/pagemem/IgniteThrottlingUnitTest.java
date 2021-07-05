@@ -45,7 +45,6 @@ import org.junit.rules.Timeout;
 import org.mockito.Mockito;
 
 import static java.lang.Thread.State.TIMED_WAITING;
-import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -82,10 +81,7 @@ public class IgniteThrottlingUnitTest {
         ctx.add(new GridMetricManager(ctx));
         ctx.add(new PerformanceStatisticsProcessor(ctx));
 
-        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(),
-            ctx.metric(),
-            ctx.performanceStatistics(),
-            NO_OP_METRICS);
+        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(), ctx);
 
         when(pageMemory2g.metrics()).thenReturn(metrics);
     }
@@ -122,6 +118,29 @@ public class IgniteThrottlingUnitTest {
             23103);
 
         assertTrue(time == 0);
+    }
+
+    /**
+     * Test that time to park is calculated according to both cpSpeed and mark dirty speed (in case if
+     * checkpoint buffer is not full).
+     */
+    @Test
+    public void testCorrectTimeToPark() {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+
+        int markDirtySpeed = 34422;
+        int cpWriteSpeed = 19416;
+        long time = throttle.getParkTime(0.04,
+                ((903150 + 227217) / 2),
+                903150,
+                1,
+                markDirtySpeed,
+                cpWriteSpeed);
+
+        long mdSpeed = TimeUnit.SECONDS.toNanos(1) / markDirtySpeed;
+        long cpSpeed = TimeUnit.SECONDS.toNanos(1) / cpWriteSpeed;
+
+        assertEquals((cpSpeed - mdSpeed), time);
     }
 
     /**

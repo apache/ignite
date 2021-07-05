@@ -34,6 +34,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -617,7 +618,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -636,6 +639,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -727,7 +733,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 try {
                     prepare0();
                 }
-                catch (IgniteTxRollbackCheckedException e) {
+                catch (IgniteTxRollbackCheckedException | IgniteException e) {
                     onError(e);
                 }
             else {
@@ -1040,7 +1046,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.setRollbackOnly();
         }
         else if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
-            tx.state(PREPARED);
+            try {
+                tx.state(PREPARED);
+            }
+            catch (IgniteException e) {
+                tx.setRollbackOnly();
+
+                res.error(e);
+            }
 
         if (super.onDone(res, res == null ? err : null)) {
             // Don't forget to clean up.
@@ -1995,6 +2008,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 true,
                                 topVer,
                                 drType,
+                                false,
                                 false)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,

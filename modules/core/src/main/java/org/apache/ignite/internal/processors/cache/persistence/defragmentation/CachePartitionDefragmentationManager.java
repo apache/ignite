@@ -970,7 +970,11 @@ public class CachePartitionDefragmentationManager {
         }
 
         /** */
-        public PageStore createPageStore(IgniteOutClosure<Path> pathProvider, AtomicLong pagesAllocated, PageMemoryEx pageMemory) throws IgniteCheckedException {
+        public PageStore createPageStore(
+            IgniteOutClosure<Path> pathProvider,
+            AtomicLong pagesAllocated,
+            PageMemoryEx pageMemory
+        ) throws IgniteCheckedException {
             PageStore partPageStore;
 
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();

@@ -89,7 +89,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(
+        IndexRow lower,
+        IndexRow upper,
+        int segment,
+        IndexQueryContext qryCtx
+    ) throws IgniteCheckedException {
         InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
         // If it is known that only one row will be returned an optimization is employed
@@ -342,11 +347,20 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /**
-     * @param row cache row.
-     * @return Segment ID for given key
+     * @param row Сache row.
+     * @return Segment ID for given key.
      */
     public int segmentForRow(CacheDataRow row) {
-        return segmentsCount() == 1 ? 0 : (rowHnd.partition(row) % segmentsCount());
+        return calculateSegment(segmentsCount(), segmentsCount() == 1 ? 0 : rowHnd.partition(row));
+    }
+
+    /**
+     * @param segmentsCnt Сount of segments in cache.
+     * @param part Partition.
+     * @return Segment ID for given segment count and partition.
+     */
+    public static int calculateSegment(int segmentsCnt, int part) {
+        return segmentsCnt == 1 ? 0 : (part % segmentsCnt);
     }
 
     /** */
@@ -449,7 +463,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     treeName
                 );
 
-                cctx.kernalContext().durableBackgroundTasksProcessor().executeAsync(task, cctx.config());
+                cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
             }
         }
         catch (IgniteCheckedException e) {

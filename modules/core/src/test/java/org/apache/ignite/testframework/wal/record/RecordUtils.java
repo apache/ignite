@@ -112,8 +112,10 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_SET_FREE_LIST_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
@@ -159,7 +161,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.tree.DataInnerIO.VERSIONS;
 
 /**
- * Class contains builder methods for at least one record of each type{@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
+ * Class contains builder methods for at least one record of each type
+ * {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
  * NOTE!!: It is better to rewrite these builder methods to the builder of each record for flexible use where it is
  * required.
  */
@@ -170,6 +173,7 @@ public class RecordUtils {
             put(TX_RECORD, RecordUtils::buildTxRecord);
             put(PAGE_RECORD, RecordUtils::buildPageSnapshot);
             put(DATA_RECORD, RecordUtils::buildDataRecord);
+            put(DATA_RECORD_V2, RecordUtils::buildDataRecord);
             put(CHECKPOINT_RECORD, RecordUtils::buildCheckpointRecord);
             put(HEADER_RECORD, RecordUtils::buildHeaderRecord);
             put(INIT_NEW_PAGE_RECORD, RecordUtils::buildInitNewPageRecord);
@@ -231,6 +235,7 @@ public class RecordUtils {
             put(ENCRYPTED_DATA_RECORD, RecordUtils::buildEncryptedDataRecord);
             put(ENCRYPTED_RECORD_V2, RecordUtils::buildEncryptedRecordV2);
             put(ENCRYPTED_DATA_RECORD_V2, RecordUtils::buildEncryptedDataRecordV2);
+            put(ENCRYPTED_DATA_RECORD_V3, RecordUtils::buildEncryptedDataRecordV3);
             put(MVCC_DATA_RECORD, RecordUtils::buildMvccDataRecord);
             put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
             put(CONSISTENT_CUT, RecordUtils::buildConsistentCutRecord);
@@ -591,6 +596,11 @@ public class RecordUtils {
     /** **/
     public static UnsupportedWalRecord buildEncryptedDataRecordV2() {
         return new UnsupportedWalRecord(ENCRYPTED_DATA_RECORD_V2);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildEncryptedDataRecordV3() {
+        return new UnsupportedWalRecord(ENCRYPTED_DATA_RECORD_V3);
     }
 
     /** **/

@@ -200,6 +200,7 @@ namespace Apache.Ignite.Core.Configuration
             SystemRegionMaxSize = DefaultSystemRegionMaxSize;
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
+            WalForceArchiveTimeout = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
             WalPageCompression = DefaultWalPageCompression;
             ConcurrencyLevel = DefaultConcurrencyLevel;
@@ -241,6 +242,7 @@ namespace Apache.Ignite.Core.Configuration
             PageSize = reader.ReadInt();
             ConcurrencyLevel = reader.ReadInt();
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
+            WalForceArchiveTimeout = reader.ReadLongAsTimespan();
             CheckpointReadLockTimeout = reader.ReadTimeSpanNullable();
             WalPageCompression = (DiskPageCompression)reader.ReadInt();
             WalPageCompressionLevel = reader.ReadIntNullable();
@@ -296,6 +298,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(PageSize);
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
+            writer.WriteTimeSpanAsLong(WalForceArchiveTimeout);
             writer.WriteTimeSpanAsLongNullable(CheckpointReadLockTimeout);
             writer.WriteInt((int)WalPageCompression);
             writer.WriteIntNullable(WalPageCompressionLevel);
@@ -499,6 +502,12 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "-00:00:00.001")]
         public TimeSpan WalAutoArchiveAfterInactivity { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time for running auto archiving for incompletely WAL segment.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "-00:00:00.001")]
+        public TimeSpan WalForceArchiveTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout for checkpoint read lock acquisition.

@@ -650,10 +650,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         lastFut = null;
     }
 
-    /** Remove cache metrics. */
-    public void removeMetrics() {
+    /**
+     * Remove cache metrics.
+     *
+     * @param destroy Group destroy flag.
+     */
+    public void removeMetrics(boolean destroy) {
         if (!ctx.kernalContext().isStopping())
-            ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()));
+            ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()), destroy);
     }
 
     /**
@@ -2885,7 +2889,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 assert ret != null;
 
-                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+                return ret.value() != null ? ret.value() : Collections.emptyMap();
             }
         });
     }
@@ -2933,7 +2937,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 assert ret != null;
 
-                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+                return ret.value() != null
+                    ? ret.<Map<K, EntryProcessorResult<T>>>value()
+                    : Collections.<K, EntryProcessorResult<T>>emptyMap();
             }
         });
     }
@@ -3858,7 +3864,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 false,
                 topVer,
                 replicate ? DR_LOAD : DR_NONE,
-                true);
+                true,
+                false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to put cache value: " + entry, e);

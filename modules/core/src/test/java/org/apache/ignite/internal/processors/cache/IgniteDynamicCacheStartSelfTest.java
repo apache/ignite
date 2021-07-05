@@ -1440,7 +1440,13 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         StoredCacheData storedCacheData = new StoredCacheData(ccfg);
 
         try {
-            kernal.context().cache().dynamicStartCachesByStoredConf(Collections.singleton(storedCacheData), true, true, false, IgniteUuid.randomUuid()).get();
+            kernal.context().cache().dynamicStartCachesByStoredConf(
+                Collections.singleton(storedCacheData),
+                true,
+                true,
+                false,
+                IgniteUuid.randomUuid()
+            ).get();
 
             fail();
         }

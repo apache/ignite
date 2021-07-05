@@ -256,6 +256,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -1663,7 +1666,8 @@ public abstract class IgniteUtils {
      *
      * @param cls Class.
      * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @param includePrimitiveTypes Whether class resolution should include primitive types
+     *                              (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
     @Nullable public static Class<?> classForName(
@@ -4636,6 +4640,130 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Resolves work directory.
+     * @param cfg Ignite configuration.
+     */
+    public static void initWorkDir(IgniteConfiguration cfg) throws IgniteCheckedException {
+        String igniteHome = cfg.getIgniteHome();
+
+        // Set Ignite home.
+        if (igniteHome == null)
+            igniteHome = U.getIgniteHome();
+
+        String userProvidedWorkDir = cfg.getWorkDirectory();
+
+        // Correctly resolve work directory and set it back to configuration.
+        cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param app Application name.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static IgniteLogger initLogger(IgniteConfiguration cfg, String app) throws IgniteCheckedException {
+        return initLogger(
+            cfg.getGridLogger(),
+            app,
+            cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
+            cfg.getWorkDirectory()
+        );
+    }
+
+    /**
+     * @param cfgLog Configured logger.
+     * @param app Application name.
+     * @param workDir Work directory.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ErrorNotRethrown")
+    public static IgniteLogger initLogger(
+        @Nullable IgniteLogger cfgLog,
+        @Nullable String app,
+        UUID nodeId,
+        String workDir
+    ) throws IgniteCheckedException {
+        try {
+            Exception log4jInitErr = null;
+
+            if (cfgLog == null) {
+                Class<?> log4jCls;
+
+                try {
+                    log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
+                }
+                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                    log4jCls = null;
+                }
+
+                if (log4jCls != null) {
+                    try {
+                        URL url = U.resolveIgniteUrl("config/ignite-log4j.xml");
+
+                        if (url == null) {
+                            File cfgFile = new File("config/ignite-log4j.xml");
+
+                            if (!cfgFile.exists())
+                                cfgFile = new File("../config/ignite-log4j.xml");
+
+                            if (cfgFile.exists()) {
+                                try {
+                                    url = cfgFile.toURI().toURL();
+                                }
+                                catch (MalformedURLException ignore) {
+                                    // No-op.
+                                }
+                            }
+                        }
+
+                        if (url != null) {
+                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                            if (configured)
+                                url = null;
+                        }
+
+                        if (url != null) {
+                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                            cfgLog = (IgniteLogger)ctor.newInstance(url);
+                        }
+                        else
+                            cfgLog = (IgniteLogger)log4jCls.newInstance();
+                    }
+                    catch (Exception e) {
+                        log4jInitErr = e;
+                    }
+                }
+
+                if (log4jCls == null || log4jInitErr != null)
+                    cfgLog = new JavaLogger();
+            }
+
+            // Special handling for Java logger which requires work directory.
+            if (cfgLog instanceof JavaLogger)
+                ((JavaLogger)cfgLog).setWorkDirectory(workDir);
+
+            // Set node IDs for all file appenders.
+            if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
+                ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
+            else if (cfgLog instanceof LoggerNodeIdAware)
+                ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+            if (log4jInitErr != null)
+                U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
+                    + log4jInitErr.getCause());
+
+            return cfgLog;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to create logger.", e);
+        }
+    }
+
+    /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INF0 message.
      * <p>
@@ -6021,6 +6149,20 @@ public abstract class IgniteUtils {
         ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
 
         return nameAnn == null ? taskCls.getName() : nameAnn.value();
+    }
+
+    /**
+     * Gets resource name.
+     * Returns a task name if it is a Compute task or a class name otherwise.
+     *
+     * @param rscCls Class of resource.
+     * @return Name of resource.
+     */
+    public static String getResourceName(Class rscCls) {
+        if (ComputeTask.class.isAssignableFrom(rscCls))
+            return getTaskName(rscCls);
+
+        return rscCls.getName();
     }
 
     /**
@@ -8979,7 +9121,11 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter
+    ) throws ClassNotFoundException {
         return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
     }
 
@@ -8988,11 +9134,16 @@ public abstract class IgniteUtils {
      *
      * @param clsName Class name.
      * @param ldr Class loader.
-    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter,
+        boolean useCache
+    ) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -9317,8 +9468,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link org.apache.ignite.lifecycle.LifecycleAware}
+     * interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.
@@ -12082,4 +12233,16 @@ public abstract class IgniteUtils {
             return size;
         }
     }
+
+    /**
+     * Maps object hash to some index between 0 and specified size via modulo operation.
+     *
+     * @param hash Object hash.
+     * @param size Size greater than 0.
+     * @return Calculated index in range [0..size).
+     */
+    public static int hashToIndex(int hash, int size) {
+        return safeAbs(hash % size);
+    }
+
 }
