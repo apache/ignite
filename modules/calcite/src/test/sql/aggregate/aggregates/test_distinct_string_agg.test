@@ -19,3 +19,15 @@ SELECT STRING_AGG(s ORDER BY s ASC), STRING_AGG(DISTINCT s ORDER BY s ASC) FROM 
 ----
 a,a,b
 a,b
+
+statement ok
+CREATE TABLE integers(s INT);
+
+statement ok
+INSERT INTO integers VALUES (1), (2), (2);
+
+query TT
+SELECT STRING_AGG(s,',' ORDER BY s ASC), STRING_AGG(DISTINCT s, ',' ORDER BY s ASC) FROM integers
+----
+1,2,2
+1,2

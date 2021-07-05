@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
@@ -233,7 +235,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             return new Function<Object[], Object[]>() {
                 @Override public Object[] apply(Object[] args) {
                     for (int i = 0; i < args.length; i++)
-                        args[i] = casts.get(i).apply(args[i]);
+                        args[i] = casts.size() > i ? casts.get(i).apply(args[i]) : args[i];
                     return args;
                 }
             };
@@ -290,7 +292,17 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             this.inAdapter = inAdapter;
             this.outAdapter = outAdapter;
 
-            argList = call.getArgList();
+            argList = new ArrayList<>(call.getArgList());
+
+            if (call.getCollation() != null && call.getCollation().getFieldCollations() != null
+                && !call.getCollation().getFieldCollations().isEmpty()) {
+                List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
+                for (RelFieldCollation collation : collations) {
+                    if (!argList.contains(collation.getFieldIndex()))
+                        argList.add(collation.getFieldIndex());
+                }
+            }
+
             ignoreNulls = call.ignoreNulls();
             filterArg = call.hasFilter() ? call.filterArg : -1;
 

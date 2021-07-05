@@ -130,12 +130,17 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             return null;
         else if (collation.getFieldCollations().size() == 1) {
             RelFieldCollation rfCol = collation.getFieldCollations().get(0);
-            return comparator(rfCol, list.indexOf(rfCol.getFieldIndex()));
+            int idx = list.indexOf(rfCol.getFieldIndex());
+            return comparator(rfCol, idx == -1 ? list.size() : idx);
         }
-        return Ordering.compound(collation.getFieldCollations()
-            .stream()
-            .map(field -> comparator(field, list.indexOf(field.getFieldIndex())))
-            .collect(Collectors.toList()));
+        int len = list.size();
+        List<Comparator<Row>> comparators = new ArrayList<>();
+        for (RelFieldCollation field : collation.getFieldCollations()) {
+            int idx = list.indexOf(field.getFieldIndex());
+            comparators.add(comparator(field, idx == -1 ? len : idx));
+            len++;
+        }
+        return Ordering.compound(comparators);
     }
 
     /** {@inheritDoc} */

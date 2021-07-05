@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -76,7 +78,7 @@ public class Accumulators {
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
             case "LISTAGG":
-                return ListAggAccumulator::new;
+                return listAggFactory(call);
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -169,6 +171,18 @@ public class Accumulators {
             default:
                 return LongMinMax.MAX_FACTORY;
         }
+    }
+
+    /** */
+    private static Supplier<Accumulator> listAggFactory(AggregateCall call) {
+        List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
+        long count;
+        if (collations != null && !collations.isEmpty())
+            count = collations.stream().filter(field -> !call.getArgList().contains(field.getFieldIndex())).count();
+        else
+            count = 0;
+
+        return () -> new ListAggAccumulator((int)count);
     }
 
     /** */
@@ -1076,50 +1090,47 @@ public class Accumulators {
     }
 
     /** */
+    private static class ArraysComparator implements Comparator<Object[]>, Serializable {
+
+        /** {@inheritDoc} */
+        @Override public int compare(Object[] o1, Object[] o2) {
+            return Arrays.equals(o1, o2) ? 0 : -1;
+        }
+    }
+
+    /** */
     private static class DistinctPairAccumulator implements Accumulator {
         /** */
         private final Accumulator acc;
 
         /** */
-        private final Map<Object, Set<Object>> map;
+        Set<Object[]> set;
 
         /** */
         private DistinctPairAccumulator(Supplier<Accumulator> accSup) {
-            this.acc = accSup.get();
-            map = new HashMap<>();
+            acc = accSup.get();
+            set = new TreeSet<>(new ArraysComparator());
         }
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Object in1 = args[0];
-            Object in2;
-
-            if (args.length > 1)
-                 in2 = args[1];
-            else
-                in2 = null;
-
-            if (in1 == null)
+            if (args == null || args.length == 0)
                 return;
 
-            map.computeIfAbsent(in1, (obj) -> new HashSet<>()).add(in2);
+            set.add(args);
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
             DistinctPairAccumulator other0 = (DistinctPairAccumulator)other;
 
-            for (Map.Entry<Object, Set<Object>> entry : other0.map.entrySet()) {
-                map.computeIfAbsent(entry.getKey(), (obj) -> new HashSet<>()).addAll(entry.getValue());
-            }
+            set.addAll(other0.set);
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
-                for (Object values : entry.getValue()) {
-                    acc.add(entry.getKey(), values);
-                }
+            for (Object[] objects : set) {
+                acc.add(objects);
             }
 
             return acc.end();
@@ -1127,10 +1138,8 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public Object end(Comparator cmp) {
-            for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
-                for (Object values : entry.getValue()) {
-                    acc.add(entry.getKey(), values);
-                }
+            for (Object[] objects : set) {
+                acc.add(objects);
             }
 
             return acc.end(cmp);
@@ -1156,8 +1165,12 @@ public class Accumulators {
         private final List<Object[]> list;
 
         /** */
-        public ListAggAccumulator() {
+        private final int numOfCollocationFields;
+
+        /** */
+        public ListAggAccumulator(int numOfCollocationFields) {
             list = new ArrayList<>();
+            this.numOfCollocationFields = numOfCollocationFields;
         }
 
         /** {@inheritDoc} */
@@ -1195,7 +1208,7 @@ public class Accumulators {
 
             for (Object[] objects : list) {
                 data.add(objects[0]);
-                if (objects.length > 1 && objects[1] != null)
+                if (objects.length > 1 && objects[1] != null && objects.length - 1 != numOfCollocationFields)
                     seps.add(objects[1]);
                 else
                     seps.add(DEFAULT_SEPARATOR);
