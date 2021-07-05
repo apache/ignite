@@ -814,10 +814,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @return {@code True} If some cache groups are under re-encryption process.
+     * @return {@code True} If reencryption is active in the cluster.
      */
     public boolean reencryptionInProgress() {
-        return !reencryptGroups.isEmpty();
+        return grpKeyChangeProc.inProgress();
     }
 
     /**

@@ -107,6 +107,8 @@ class GroupKeyChangeProcess {
      * @param cacheOrGrpNames Cache or group names.
      */
     public IgniteFuture<Void> start(Collection<String> cacheOrGrpNames) {
+        System.err.println("TEST | re-encryption start on " + ctx.localNodeId());
+
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
@@ -189,6 +191,8 @@ class GroupKeyChangeProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<EmptyResult> prepare(ChangeCacheEncryptionRequest req) {
+        System.err.println("TEST | re-encryption prepare on " + ctx.localNodeId());
+
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -291,6 +295,8 @@ class GroupKeyChangeProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<EmptyResult> perform(ChangeCacheEncryptionRequest req) {
+        System.err.println("TEST | re-encryption prepare on " + ctx.localNodeId());
+
         if (this.req == null || !this.req.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown cache group key change was rejected."));
 
