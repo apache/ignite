@@ -53,7 +53,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Schema Manager.
- *
+ * <p>
  * Schemas MUST be registered in a version ascending order incrementing by {@code 1} with NO gaps,
  * otherwise an exception will be thrown. The version numbering starts from the {@code 1}.
  * <p>
@@ -113,7 +113,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                     if (verPos == -1) {
                         final UUID tblId = UUID.fromString(keyTail);
 
-                        SchemaRegistry reg = schemaRegistryForTable(tblId);
+                        SchemaRegistryImpl reg = schemaRegistryForTable(tblId);
 
                         assert reg != null : "Table schema was not initialized or table has been dropped: " + tblId;
 
@@ -123,6 +123,13 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                             schemaRegs.remove(tblId);
 
                             onEvent(SchemaEvent.DROPPED, new SchemaEventParameters(tblId, null), null);
+                        }
+                        else {
+                            int v = (int)ByteUtils.bytesToLong(evt.newEntry().value(),0);
+
+                            assert reg.lastSchemaVersion() == v;
+
+                            onEvent(SchemaEvent.CHANGED, new SchemaEventParameters(tblId, reg), null);
                         }
 
                         return true; // Ignore last table schema version.
@@ -191,6 +198,42 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
     }
 
     /**
+     * Creates schema registry for the table with existed schema or
+     * registers initial schema from configuration.
+     *
+     * @param tblId Table id.
+     * @param tblName Table name.
+     * @return Operation future.
+     */
+    public CompletableFuture<Boolean> updateSchemaForTable(final UUID tblId, String tblName) {
+        return vaultMgr.get(ByteArray.fromString(INTERNAL_PREFIX + tblId)).
+            thenCompose(entry -> {
+                TableConfiguration tblConfig = configurationMgr.configurationRegistry().
+                    getConfiguration(TablesConfiguration.KEY).tables().get(tblName);
+
+                assert !entry.empty();
+
+                final int oldVer = (int)ByteUtils.bytesToLong(entry.value(), 0);
+                final int newVer = oldVer + 1;
+
+                final ByteArray lastVerKey = new ByteArray(INTERNAL_PREFIX + tblId);
+                final ByteArray schemaKey = new ByteArray(INTERNAL_PREFIX + tblId + INTERNAL_VER_SUFFIX + newVer);
+
+                SchemaTable schemaTable = SchemaConfigurationConverter.convert(tblConfig);
+                final SchemaDescriptor desc = SchemaDescriptorConverter.convert(tblId, newVer, schemaTable);
+
+                return metaStorageMgr.invoke(Conditions.notExists(schemaKey),
+                    Operations.put(schemaKey, ByteUtils.toBytes(desc)),
+                    Operations.noop())
+                    //TODO: IGNITE-14679 Serialize schema.
+                    .thenCompose(res -> metaStorageMgr.invoke(
+                        Conditions.value(lastVerKey).eq(ByteUtils.longToBytes(oldVer)),
+                        Operations.put(lastVerKey, ByteUtils.longToBytes(newVer)),
+                        Operations.noop()));
+            });
+    }
+
+    /**
      * Return table schema of certain version from history.
      *
      * @param tblId Table id.
@@ -231,8 +274,8 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
      * @param tableId Table id.
      * @return Schema registry for the table.
      */
-    private SchemaRegistry schemaRegistryForTable(UUID tableId) {
-        final SchemaRegistry reg = schemaRegs.get(tableId);
+    private SchemaRegistryImpl schemaRegistryForTable(UUID tableId) {
+        final SchemaRegistryImpl reg = schemaRegs.get(tableId);
 
         if (reg == null)
             throw new SchemaRegistryException("No schema was ever registered for the table: " + tableId);

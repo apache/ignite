@@ -300,6 +300,7 @@ public class Processor extends AbstractProcessor {
             .addModifiers(PUBLIC);
 
         TypeSpec.Builder changeClsBuilder = TypeSpec.interfaceBuilder(changeClsName)
+            .addSuperinterface(viewClsName)
             .addModifiers(PUBLIC);
 
         ClassName consumerClsName = ClassName.get(Consumer.class);
@@ -337,9 +338,6 @@ public class Processor extends AbstractProcessor {
                     .returns(viewFieldType);
 
                 viewClsBuilder.addMethod(getMtdBuilder.build());
-
-                if (valAnnotation != null)
-                    changeClsBuilder.addMethod(getMtdBuilder.build());
             }
 
             {

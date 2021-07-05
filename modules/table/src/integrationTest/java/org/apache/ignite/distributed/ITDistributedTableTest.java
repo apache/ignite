@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.affinity.RendezvousAffinityFunction;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
@@ -253,8 +254,16 @@ public class ITDistributedTableTest {
                 return SCHEMA;
             }
 
+            @Override public int lastSchemaVersion() {
+                return SCHEMA.version();
+            }
+
             @Override public SchemaDescriptor schema(int ver) {
                 return SCHEMA;
+            }
+
+            @Override public Row resolve(BinaryRow row) {
+                return new Row(SCHEMA, row);
             }
         });
 

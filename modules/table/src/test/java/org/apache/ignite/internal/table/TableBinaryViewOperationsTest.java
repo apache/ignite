@@ -53,8 +53,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -88,8 +88,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -124,8 +124,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -157,8 +157,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -188,8 +188,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -240,8 +240,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -276,8 +276,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -313,8 +313,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{
                 new Column("val", NativeTypes.LONG, true),
                 new Column("str", NativeTypes.stringOf(3), true),
                 new Column("blob", NativeTypes.blobOf(3), true)
@@ -326,7 +326,7 @@ public class TableBinaryViewOperationsTest {
         final Tuple keyTuple0 = new TestTupleBuilder().set("id", 0).set("id1", 0).build();
         final Tuple keyTuple1 = new TestTupleBuilder().set("id1", 0).build();
         final Tuple tuple0 = new TestTupleBuilder().set("id", 1L).set("str", "qweqweqwe").set("val", 11L).build();
-        final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[] {0, 1, 2, 3}).set("val", 22L).build();
+        final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[]{0, 1, 2, 3}).set("val", 22L).build();
 
         assertThrows(InvalidTypeException.class, () -> tbl.get(keyTuple0));
         assertThrows(IllegalArgumentException.class, () -> tbl.get(keyTuple1));
@@ -349,11 +349,11 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {
+            new Column[]{new Column("id", NativeTypes.LONG, false)},
+            new Column[]{
                 new Column("val", NativeTypes.LONG, true, () -> 28L),
                 new Column("str", NativeTypes.stringOf(3), true, () -> "ABC"),
-                new Column("blob", NativeTypes.blobOf(3), true, () -> new byte[] {0, 1, 2})
+                new Column("blob", NativeTypes.blobOf(3), true, () -> new byte[]{0, 1, 2})
             }
         );
 
@@ -363,7 +363,7 @@ public class TableBinaryViewOperationsTest {
         final Tuple keyTuple1 = tbl.tupleBuilder().set("id", 1L).build();
 
         final Tuple tuple0 = tbl.tupleBuilder().set("id", 0L).build();
-        final Tuple tupleExpected0 = tbl.tupleBuilder().set("id", 0L).set("val", 28L).set("str", "ABC").set("blob", new byte[] {0, 1, 2}).build();
+        final Tuple tupleExpected0 = tbl.tupleBuilder().set("id", 0L).set("val", 28L).set("str", "ABC").set("blob", new byte[]{0, 1, 2}).build();
         final Tuple tuple1 = tbl.tupleBuilder().set("id", 1L).set("val", null).set("str", null).set("blob", null).build();
 
         tbl.insert(tuple0);
@@ -427,7 +427,7 @@ public class TableBinaryViewOperationsTest {
             if (val1 instanceof byte[] && val2 instanceof byte[])
                 Assertions.assertArrayEquals((byte[])val1, (byte[])val2, "Equality check failed: colIdx=" + col.schemaIndex());
             else
-               Assertions.assertEquals(val1, val2, "Equality check failed: colIdx=" + col.schemaIndex());
+                Assertions.assertEquals(val1, val2, "Equality check failed: colIdx=" + col.schemaIndex());
         }
     }
 }

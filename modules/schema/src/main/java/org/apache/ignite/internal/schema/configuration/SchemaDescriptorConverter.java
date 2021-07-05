@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaTable;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
@@ -86,7 +86,7 @@ public class SchemaDescriptorConverter {
                 return UUID;
 
             case BITMASK:
-                return NativeTypes.bitmaskOf(((ColumnType.VarLenColumnType) colType).length());
+                return NativeTypes.bitmaskOf(((ColumnType.VarLenColumnType)colType).length());
 
             case STRING:
                 int strLen = ((ColumnType.VarLenColumnType)colType).length();
@@ -116,7 +116,7 @@ public class SchemaDescriptorConverter {
      * @return Internal Column.
      */
     private static Column convert(org.apache.ignite.schema.Column colCfg) {
-        return new Column(colCfg.name(), convert(colCfg.type()), colCfg.nullable());
+        return new Column(colCfg.name(), convert(colCfg.type()), colCfg.nullable(), new ConstantSupplier((Serializable)colCfg.defaultValue()));
     }
 
     /**
@@ -132,7 +132,7 @@ public class SchemaDescriptorConverter {
 
         Column[] keyCols = new Column[keyColsCfg.size()];
 
-        for (int i = 0;i < keyCols.length;i++)
+        for (int i = 0; i < keyCols.length; i++)
             keyCols[i] = convert(keyColsCfg.get(i));
 
         String[] affCols = tblCfg.affinityColumns().stream().map(org.apache.ignite.schema.Column::name)
@@ -142,9 +142,29 @@ public class SchemaDescriptorConverter {
 
         Column[] valCols = new Column[valColsCfg.size()];
 
-        for (int i = 0;i < valCols.length;i++)
+        for (int i = 0; i < valCols.length; i++)
             valCols[i] = convert(valColsCfg.get(i));
 
         return new SchemaDescriptor(tblId, schemaVer, keyCols, affCols, valCols);
+    }
+
+    /**
+     * Constant value supplier.
+     */
+    private static class ConstantSupplier implements Supplier<Object>, Serializable {
+        /** Value. */
+        private final Serializable val;
+
+        /**
+         * @param val Value.
+         */
+        ConstantSupplier(Serializable val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc */
+        @Override public Object get() {
+            return val;
+        }
     }
 }

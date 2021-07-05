@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Row;
-import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.table.InvokeProcessor;
@@ -307,9 +306,9 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
         if (row == null)
             return null;
 
-        final SchemaDescriptor schema = schemaReg.schema(row.schemaVersion());
+        final Row wrapped = schemaReg.resolve(row);
 
-        return new TableRow(schema, new Row(schema, row));
+        return new TableRow(wrapped.rowSchema(), wrapped);
     }
 
     /**

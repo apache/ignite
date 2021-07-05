@@ -31,13 +31,20 @@ import org.apache.ignite.table.Table;
 public interface IgniteTables {
     /**
      * Creates a cluster table.
-     * The table changes if already exists.
      *
      * @param name Table name.
      * @param tableInitChange Table changer.
      * @return Table.
      */
     Table createTable(String name, Consumer<TableChange> tableInitChange);
+
+    /**
+     * Alter a cluster table.
+     *
+     * @param name Table name.
+     * @param tableChange Table changer.
+     */
+    void alterTable(String name, Consumer<TableChange> tableChange);
 
     /**
      * Drops a table with the name specified.

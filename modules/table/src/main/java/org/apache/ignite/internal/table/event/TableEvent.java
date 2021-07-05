@@ -26,6 +26,9 @@ public enum TableEvent implements Event {
     /** This event is fired when a table was created. */
     CREATE,
 
+    /** This event is fired when a table config was changed. */
+    ALTER,
+
     /** This event is fired when a table was dropped. */
     DROP
 }

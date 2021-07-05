@@ -26,6 +26,9 @@ public enum SchemaEvent implements Event {
     /** This event is fired when a schema was initialized. */
     INITIALIZED,
 
+    /** This event is fired when a schema was changed. */
+    CHANGED,
+
     /** This event is fired when a schema was dropped. */
     DROPPED
 }

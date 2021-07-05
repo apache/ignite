@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
+import org.jetbrains.annotations.Nullable;
 import java.io.Serializable;
 import java.util.function.Supplier;
-import org.apache.ignite.internal.tostring.S;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Column description for a type schema. Column contains a column name, a column type and a nullability flag.
@@ -75,7 +75,7 @@ public class Column implements Comparable<Column>, Serializable {
         String name,
         NativeType type,
         boolean nullable,
-        @NotNull Supplier<Object> defValSup
+        @Nullable Supplier<Object> defValSup
     ) {
         this(-1, name, type, nullable, defValSup);
     }
@@ -87,12 +87,12 @@ public class Column implements Comparable<Column>, Serializable {
      * @param nullable If {@code false}, null values will not be allowed for this column.
      * @param defValSup Default value supplier.
      */
-    Column(
+    private Column(
         int schemaIndex,
         String name,
         NativeType type,
         boolean nullable,
-        @NotNull Supplier<Object> defValSup
+        @Nullable Supplier<Object> defValSup
     ) {
         this.schemaIndex = schemaIndex;
         this.name = name;
@@ -137,9 +137,10 @@ public class Column implements Comparable<Column>, Serializable {
     public Object defaultValue() {
         Object val = defValSup.get();
 
-        assert nullable || val != null : "Null value is not accepted for not nullable column: [col=" + this + ']';
+        if (nullable || val != null)
+            return val;
 
-        return val;
+        throw new IllegalStateException("Null value is not accepted for not nullable column: [col=" + this + ']');
     }
 
     /** {@inheritDoc} */
@@ -173,6 +174,7 @@ public class Column implements Comparable<Column>, Serializable {
 
     /**
      * Validate the object by column's constraint.
+     *
      * @param val Object to validate.
      */
     public void validate(Object val) {
