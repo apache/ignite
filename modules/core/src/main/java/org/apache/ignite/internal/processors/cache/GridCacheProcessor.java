@@ -3803,8 +3803,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         restartId,
                         disabledAfterStart,
                         ccfg.queryEntities(),
-                        ccfg.config().isEncryptionEnabled() ? (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) :
-                            null,
+                        ccfg.config().isEncryptionEnabled() ?
+                            (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) : null,
                         ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
                     if (req != null) {

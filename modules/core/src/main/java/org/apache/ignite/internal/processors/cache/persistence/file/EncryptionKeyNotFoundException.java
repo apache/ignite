@@ -33,6 +33,6 @@ public class EncryptionKeyNotFoundException extends IgniteCheckedException {
      * @param keyId Encryption key id.
      */
     public EncryptionKeyNotFoundException(int cacheGrpId, int keyId) {
-        super("No encryption key found for cache group " + cacheGrpId + " and key id " + keyId +'.');
+        super("No encryption key found for cache group " + cacheGrpId + " and key id " + keyId + '.');
     }
 }

@@ -2022,8 +2022,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
-            FileIOFactory ioFactory = encrypted ?
-                ((FilePageStoreManager)cctx.pageStore()).getEncryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
+            FileIOFactory ioFactory = encrypted ? ((FilePageStoreManager)cctx.pageStore())
+                .getEncryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
             try (FileIO fileIo = ioFactory.create(delta, READ);

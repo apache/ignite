@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -116,15 +117,15 @@ public class SnapshotMetadata implements Serializable {
     /**
      * @return Additional meta-record by {@code name}. {@code Null} if not found.
      */
-    public Serializable metaRecord(String name){
+    public Serializable metaRecord(String name) {
         return metaRecords.get(name);
     }
 
     /**
      * @return All stored additional meta-records.
      */
-    public Map<String, Serializable> allMetaRecords(){
-        return metaRecords;
+    public Map<String, Serializable> allMetaRecords() {
+        return Collections.unmodifiableMap(metaRecords);
     }
 
     /**
