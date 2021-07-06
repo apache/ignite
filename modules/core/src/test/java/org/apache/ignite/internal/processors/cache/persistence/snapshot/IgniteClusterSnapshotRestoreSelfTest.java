@@ -500,7 +500,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> startGrid(3),
-            IgniteSpiException.class,
+            encryption ? IgniteCheckedException.class : IgniteSpiException.class,
             "to add the node to cluster - remove directories with the caches"
         );
     }
