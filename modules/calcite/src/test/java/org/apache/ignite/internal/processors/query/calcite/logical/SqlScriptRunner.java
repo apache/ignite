@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -137,15 +138,9 @@ public class SqlScriptRunner {
 
         /** */
         String nextLine() throws IOException {
-            if (r.ready()) {
-                String s = r.readLine();
+            String ret = nextLineWithoutTrim();
 
-                lineNum++;
-
-                return s.trim();
-            }
-
-            return null;
+            return ret == null ? null : ret.trim();
         }
 
         /** */
