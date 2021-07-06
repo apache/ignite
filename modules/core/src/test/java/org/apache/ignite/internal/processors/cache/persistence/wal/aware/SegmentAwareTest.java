@@ -26,7 +26,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.hamcrest.CoreMatchers.is;
@@ -1029,23 +1028,6 @@ public class SegmentAwareTest {
             compactionEnabled,
             minWalArchiveSize,
             maxWalArchiveSize
-        );
-    }
-
-    /**
-     * Checking that an exception will be thrown on creation {@link SegmentArchiveSizeStorage}.
-     *
-     * @param minWalArchiveSize Minimum size of the WAL archive in bytes
-     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
-     * @param maxWalArchiveSize Maximum size of the WAL archive in bytes
-     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
-     */
-    private void assertThrowsOnCreateSegmentArchiveSizeStorage(long minWalArchiveSize, long maxWalArchiveSize) {
-        assertThrows(
-            null,
-            () -> segmentAware(1, false, minWalArchiveSize, maxWalArchiveSize),
-            AssertionError.class,
-            null
         );
     }
 

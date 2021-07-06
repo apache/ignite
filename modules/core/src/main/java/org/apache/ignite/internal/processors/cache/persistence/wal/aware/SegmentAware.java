@@ -332,10 +332,10 @@ public class SegmentAware {
      * Adding the WAL segment size in the archive.
      *
      * @param idx Absolut segment index.
-     * @param curr Current WAL archive size in bytes.
+     * @param sizeChange Segment size in bytes.
      */
-    public void addSize(long idx, long curr) {
-        archiveSizeStorage.addSize(idx, curr);
+    public void addSize(long idx, long sizeChange) {
+        archiveSizeStorage.addSize(idx, sizeChange);
     }
 
     /**

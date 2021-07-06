@@ -31,7 +31,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED
  */
 class SegmentArchiveSizeStorage {
     /** Current WAL archive size in bytes. Guarded by {@code this}. */
-    private long curr;
+    private long walArchiveSize;
 
     /** Flag of interrupt waiting on this object. Guarded by {@code this}. */
     private boolean interrupted;
@@ -42,15 +42,18 @@ class SegmentArchiveSizeStorage {
     /** Maximum size of the WAL archive in bytes. */
     private final long maxWalArchiveSize;
 
+    /** WAL archive size unlimited. */
+    private final boolean walArchiveUnlimited;
+
     /**
      * Segment sizes. Mapping: segment idx -> size in bytes. Guarded by {@code this}.
-     * {@code null} if {@link #maxWalArchiveSize} == {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * {@code null} if {@link #walArchiveUnlimited} == {@code true}.
      */
-    @Nullable private final Map<Long, Long> segmentSize;
+    @Nullable private final Map<Long, Long> segmentSizes;
 
     /**
      * Segment reservations storage.
-     * {@code null} if {@link #maxWalArchiveSize} == {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * {@code null} if {@link #walArchiveUnlimited} == {@code true}.
      */
     @Nullable private final SegmentReservationStorage reservationStorage;
 
@@ -71,11 +74,15 @@ class SegmentArchiveSizeStorage {
         this.maxWalArchiveSize = maxWalArchiveSize;
 
         if (maxWalArchiveSize != UNLIMITED_WAL_ARCHIVE) {
-            segmentSize = new TreeMap<>();
+            walArchiveUnlimited = false;
+
+            segmentSizes = new TreeMap<>();
             this.reservationStorage = reservationStorage;
         }
         else {
-            segmentSize = null;
+            walArchiveUnlimited = true;
+
+            segmentSizes = null;
             this.reservationStorage = null;
         }
     }
@@ -84,30 +91,30 @@ class SegmentArchiveSizeStorage {
      * Adding the WAL segment size in the archive.
      *
      * @param idx Absolut segment index.
-     * @param curr Current WAL archive size in bytes.
+     * @param sizeChange Segment size in bytes.
      */
-    void addSize(long idx, long curr) {
+    void addSize(long idx, long sizeChange) {
         long releaseIdx = -1;
 
         synchronized (this) {
-            this.curr += curr;
+            walArchiveSize += sizeChange;
 
-            if (segmentSize != null) {
-                segmentSize.compute(idx, (i, size) -> {
-                    long res = (size == null ? 0 : size) + curr;
+            if (!walArchiveUnlimited) {
+                segmentSizes.compute(idx, (i, size) -> {
+                    long res = (size == null ? 0 : size) + sizeChange;
 
                     return res == 0 ? null : res;
                 });
             }
 
-            if (curr > 0) {
-                if (segmentSize != null && this.curr >= maxWalArchiveSize) {
+            if (sizeChange > 0) {
+                if (!walArchiveUnlimited && walArchiveSize >= maxWalArchiveSize) {
                     long size = 0;
 
-                    for (Map.Entry<Long, Long> e : segmentSize.entrySet()) {
+                    for (Map.Entry<Long, Long> e : segmentSizes.entrySet()) {
                         releaseIdx = e.getKey();
 
-                        if (this.curr - (size += e.getValue()) < minWalArchiveSize)
+                        if (walArchiveSize - (size += e.getValue()) < minWalArchiveSize)
                             break;
                     }
                 }
@@ -116,21 +123,18 @@ class SegmentArchiveSizeStorage {
             }
         }
 
-        if (releaseIdx != -1) {
-            assert reservationStorage != null;
-
+        if (releaseIdx != -1)
             reservationStorage.forceRelease(releaseIdx);
-        }
     }
 
     /**
      * Reset the current and reserved WAL archive sizes.
      */
     synchronized void resetSizes() {
-        curr = 0;
+        walArchiveSize = 0;
 
-        if (segmentSize != null)
-            segmentSize.clear();
+        if (!walArchiveUnlimited)
+            segmentSizes.clear();
     }
 
     /**
@@ -142,7 +146,7 @@ class SegmentArchiveSizeStorage {
      */
     synchronized void awaitExceedMaxSize(long max) throws IgniteInterruptedCheckedException {
         try {
-            while (max - curr > 0 && !interrupted)
+            while (max - walArchiveSize > 0 && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -175,7 +179,7 @@ class SegmentArchiveSizeStorage {
      * @return Size in bytes.
      */
     synchronized long currentSize() {
-        return curr;
+        return walArchiveSize;
     }
 
     /**
@@ -184,11 +188,11 @@ class SegmentArchiveSizeStorage {
      * @return Size in bytes or {@code null} if the segment is absent or the archive is unlimited.
      */
     @Nullable Long segmentSize(long idx) {
-        if (segmentSize == null)
+        if (walArchiveUnlimited)
             return null;
         else {
             synchronized (this) {
-                return segmentSize.get(idx);
+                return segmentSizes.get(idx);
             }
         }
     }
