@@ -151,8 +151,6 @@ public class SnapshotRestoreProcess {
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
     public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames) {
-        System.err.println("TEST | snp start on " + ctx.localNodeId());
-
         ClusterSnapshotFuture fut0;
 
         try {
@@ -424,8 +422,6 @@ public class SnapshotRestoreProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<ArrayList<StoredCacheData>> prepare(SnapshotOperationRequest req) {
-        System.err.println("TEST | snp prepare on " + ctx.localNodeId() + ". Is client: " + ctx.cache().context().localNode().isClient());
-
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -602,8 +598,6 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If failed.
      */
     private SnapshotRestoreContext prepareContext(SnapshotOperationRequest req) throws IgniteCheckedException {
-        System.err.println("TEST | prepareContext snp on " + ctx.localNodeId());
-
         if (opCtx != null) {
             throw new IgniteCheckedException(OP_REJECT_MSG +
                 "The previous snapshot restore operation was not completed.");

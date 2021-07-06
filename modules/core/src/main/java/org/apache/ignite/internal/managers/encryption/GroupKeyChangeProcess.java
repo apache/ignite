@@ -107,8 +107,6 @@ class GroupKeyChangeProcess {
      * @param cacheOrGrpNames Cache or group names.
      */
     public IgniteFuture<Void> start(Collection<String> cacheOrGrpNames) {
-        System.err.println("TEST | re-encryption start on " + ctx.localNodeId());
-
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
@@ -121,8 +119,8 @@ class GroupKeyChangeProcess {
         IgniteInternalFuture<Void> fut0 = fut;
 
         if (fut0 != null && !fut0.isDone()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. "
-                + "The previous change was not completed."));
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
+                "The previous change was not completed."));
         }
 
         int[] grpIds = new int[cacheOrGrpNames.size()];
@@ -191,8 +189,6 @@ class GroupKeyChangeProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<EmptyResult> prepare(ChangeCacheEncryptionRequest req) {
-        System.err.println("TEST | re-encryption prepare on " + ctx.localNodeId());
-
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -295,8 +291,6 @@ class GroupKeyChangeProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<EmptyResult> perform(ChangeCacheEncryptionRequest req) {
-        System.err.println("TEST | re-encryption prepare on " + ctx.localNodeId());
-
         if (this.req == null || !this.req.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown cache group key change was rejected."));
 
@@ -342,7 +336,7 @@ class GroupKeyChangeProcess {
     }
 
     /** Cache group key change future. */
-    static class GroupKeyChangeFuture extends KeyChangeFuture {
+    private static class GroupKeyChangeFuture extends KeyChangeFuture {
         /** Request. */
         private final ChangeCacheEncryptionRequest req;
 

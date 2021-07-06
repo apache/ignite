@@ -292,7 +292,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-    /** File manager to create page store for restore. */
+    /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
 
     /** Snapshot thread pool to perform local partition snapshots. */
@@ -564,8 +564,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        System.err.println("TEST | initLocalSnapshotStartStage on " + cctx.localNodeId() + ". is clisent: " + cctx.localNode().isClient());
-
         if (cctx.kernalContext().clientNode() ||
             !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
@@ -729,8 +727,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
-        System.err.println("TEST | initLocalSnapshotEndStage on " + cctx.localNodeId());
-
         if (clusterSnpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
@@ -1112,8 +1108,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        System.err.println("TEST | createSnapshot on " + cctx.localNodeId() + ". is client: " + cctx.localNode().isClient());
-
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 

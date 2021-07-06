@@ -62,6 +62,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -2114,12 +2117,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     public static CacheConfiguration defaultCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        if (MvccFeatureChecker.forcedMvcc())
-            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        else
+//        if (MvccFeatureChecker.forcedMvcc())
+//            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+//        else
             cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
+
+//        cfg.setCacheMode(CacheMode.PARTITIONED)
+//            cfg.setBackups(2)
+//            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            cfg.setAffinity(new RendezvousAffinityFunction(false, 8));
 
         return cfg;
     }

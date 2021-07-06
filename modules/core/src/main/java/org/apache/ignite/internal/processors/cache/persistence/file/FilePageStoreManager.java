@@ -676,9 +676,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param grpId Cache group id.
+     * @param grpId     Cache group id.
      * @param encrypted {@code true} if cache group encryption enabled.
-     * @return Factory to create page stores with stored internal encription keys.
+     * @return Factory to create page stores with default internal encription keys.
      */
     public FileVersionCheckingFactory getPageStoreFactory(int grpId, boolean encrypted) {
         return getPageStoreFactory(grpId, encrypted ? cctx.kernalContext().encryption() : null);
@@ -712,6 +712,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         return pageStoreFactory;
+    }
+
+    /**
+     * @return Encrypted file IO factory.
+     */
+    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId,
+        EncryptionCacheKeyProvider encrKeyProvider) {
+        return new EncryptedFileIOFactory(
+            plainFileIOFactory,
+            cacheGrpId,
+            pageSize(),
+            encrKeyProvider,
+            cctx.gridConfig().getEncryptionSpi());
+    }
+
+    /**
+     * @return Encrypted file IO factory with stored internal encryption keys.
+     */
+    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+        return getEncryptedFileIoFactory(plainFileIOFactory, cacheGrpId, cctx.kernalContext().encryption());
     }
 
     /**
@@ -1399,26 +1419,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FileIOFactory getPageStoreFileIoFactory() {
         return pageStoreFileIoFactory;
-    }
-
-    /**
-     * @return Encrypted file IO factory.
-     */
-    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId,
-        EncryptionCacheKeyProvider encrKeyProvider) {
-        return new EncryptedFileIOFactory(
-            plainFileIOFactory,
-            cacheGrpId,
-            pageSize(),
-            encrKeyProvider,
-            cctx.gridConfig().getEncryptionSpi());
-    }
-
-    /**
-     * @return Encrypted file IO factory with stored internal encryption keys.
-     */
-    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
-        return getEncryptedFileIoFactory(plainFileIOFactory, cacheGrpId, cctx.kernalContext().encryption());
     }
 
     /**

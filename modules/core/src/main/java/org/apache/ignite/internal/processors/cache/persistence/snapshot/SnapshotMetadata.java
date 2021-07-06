@@ -69,7 +69,7 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
-    /** Additional named meta records to store with snapshot meta. */
+    /** Additional named records to store with snapshot meta. */
     private final Map<String, Serializable> metaRecords = new HashMap<>();
 
     /**

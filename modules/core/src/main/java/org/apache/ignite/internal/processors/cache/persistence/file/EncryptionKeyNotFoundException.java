@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
  * This exception is used to notify the caller of absense of cache group encryption key.
  */
 public class EncryptionKeyNotFoundException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Constructor.
      *

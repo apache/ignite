@@ -825,7 +825,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** Partition delta file to store delta pages into. */
         private final File deltaFile;
 
-        /** Id of related encrypted cache group. If {@code Null}, no encrypted IO is used. */
+        /** Id of related encrypted cache group. If {@code null}, no encrypted IO is used. */
         private final Integer encryptedGrpId;
 
         /** Busy lock to protect write operations. */
@@ -852,9 +852,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
-         * @param encryptedGrpId Id of related encrypted cache group. If {@code Null}, no encrypted IO is used.
+         * @param encryptedGrpId Id of related encrypted cache group. If {@code null}, no encrypted IO is used.
          */
-        public PageStoreSerialWriter(PageStore store, File deltaFile, Integer encryptedGrpId) {
+        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
             assert store != null;
             assert cctx.database().checkpointLockIsHeldByThread();
 
