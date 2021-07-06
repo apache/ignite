@@ -3792,6 +3792,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
 
+                    // Reuse encrtption key if passed for this group. Take next generated otherwise.
+                    byte[] encrKey = ccfg.config().isEncryptionEnabled() ?
+                        (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) : null;
+
                     DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                         ccfg.config(),
                         ccfg.config().getName(),
@@ -3803,8 +3807,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         restartId,
                         disabledAfterStart,
                         ccfg.queryEntities(),
-                        ccfg.config().isEncryptionEnabled() ?
-                            (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) : null,
+                        encrKey,
                         ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
                     if (req != null) {
