@@ -53,6 +53,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -91,7 +92,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -131,12 +131,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
 
 /**
  *
@@ -784,8 +784,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fail.
      */
     private File cacheDir(final String cacheName, final String consId) throws IgniteCheckedException {
-        final String subfolderName
-            = PdsConsistentIdProcessor.genNewStyleSubfolderName(0, UUID.fromString(consId));
+        final String subfolderName = genNewStyleSubfolderName(0, UUID.fromString(consId));
 
         final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
@@ -1565,8 +1564,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnTransactionalAndPartitionedCache() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
-        ignite.cluster().active(true);
+        IgniteEx ignite = startGrids(3);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         final String cacheName = "transactional";
 
@@ -1618,8 +1617,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        ignite = (IgniteEx)startGrids(3);
-        ignite.cluster().active(true);
+        ignite = startGrids(3);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cache = ignite.cache(cacheName);
 
@@ -1636,10 +1635,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If any fail.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
     public void testTxRecordsConsistency() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
-        ignite.cluster().active(true);
+        IgniteEx ignite = startGrids(3);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         final String cacheName = "transactional";
 
@@ -1682,12 +1680,10 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 cache.put(key, value);
             }
 
-            if (random.nextBoolean()) {
+            if (random.nextBoolean())
                 tx.commit();
-            }
-            else {
+            else
                 tx.rollback();
-            }
 
             if (t % 50 == 0)
                 log.info("Finished transaction " + t);

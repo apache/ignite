@@ -182,6 +182,7 @@
     <Compile Include="Client\Cache\TestKeyWithAffinity.cs" />
     <Compile Include="Client\ClientFeaturesTest.cs" />
     <Compile Include="Client\ClientProtocolVersionTest.cs" />
+    <Compile Include="Client\ClientSecurityPermissionsTest.cs" />
     <Compile Include="Client\ClientServerCacheAdapter.cs" />
     <Compile Include="Client\ClientServerCacheAdapterExtensions.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
@@ -197,6 +198,10 @@
     <Compile Include="Client\Compatibility\ClientServerCompatibilityTest.cs" />
     <Compile Include="Client\Compute\ComputeClientDisabledTests.cs" />
     <Compile Include="Client\Compute\ComputeClientTests.cs" />
+    <Compile Include="Client\Datastream\DataStreamerClientTest.cs" />
+    <Compile Include="Client\Datastream\DataStreamerClientTestPartitionAware.cs" />
+    <Compile Include="Client\Datastream\DataStreamerClientTopologyChangeTest.cs" />
+    <Compile Include="Client\Datastream\DataStreamerClientTopologyChangeTestPartitionAware.cs" />
     <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />

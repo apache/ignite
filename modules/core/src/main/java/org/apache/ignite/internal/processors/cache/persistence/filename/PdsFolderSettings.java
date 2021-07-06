@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.Serializable;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.FileLockHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class holds information required for folder generation for ignite persistent store
  */
-public class PdsFolderSettings {
+public class PdsFolderSettings<L extends FileLockHolder> {
     /**
      * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
      * configuration. <br>
@@ -48,7 +48,7 @@ public class PdsFolderSettings {
      * directory. This value is to be used at activate instead of locking. <br> May be null in case preconfigured
      * consistent ID is used or in case lock holder was already taken by other processor.
      */
-    @Nullable private final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
+    @Nullable private final L fileLockHolder;
 
     /**
      * Indicates if compatible mode is enabled, in that case all sub folders are generated from consistent ID without
@@ -68,7 +68,7 @@ public class PdsFolderSettings {
     public PdsFolderSettings(@Nullable final File persistentStoreRootPath,
         final String folderName,
         final Serializable consistentId,
-        @Nullable final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
+        @Nullable final L fileLockHolder,
         final boolean compatible) {
 
         this.consistentId = consistentId;
@@ -125,7 +125,7 @@ public class PdsFolderSettings {
      *
      * @return File lock holder with prelocked db directory.
      */
-    @Nullable public GridCacheDatabaseSharedManager.FileLockHolder getLockedFileLockHolder() {
+    @Nullable public L getLockedFileLockHolder() {
         return fileLockHolder;
     }
 

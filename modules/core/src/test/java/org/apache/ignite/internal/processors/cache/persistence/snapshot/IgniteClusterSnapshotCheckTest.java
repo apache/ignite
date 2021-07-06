@@ -416,6 +416,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         topVer,
                         DR_NONE,
                         false,
+                        false,
                         null);
 
                     assertTrue(success);

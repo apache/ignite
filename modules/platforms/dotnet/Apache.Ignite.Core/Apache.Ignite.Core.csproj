@@ -28,7 +28,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -37,7 +36,6 @@
     <DocumentationFile>bin\Release\Apache.Ignite.Core.xml</DocumentationFile>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DebugType>none</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -66,6 +64,8 @@
     <Compile Include="Client\Cache\Query\Continuous\ContinuousQueryDisconnectedEventArgs.cs" />
     <Compile Include="Client\Cache\Query\Continuous\IContinuousQueryHandleClient.cs" />
     <Compile Include="Client\Compute\IComputeClient.cs" />
+    <Compile Include="Client\Datastream\DataStreamerClientOptions.cs" />
+    <Compile Include="Client\Datastream\IDataStreamerClient.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
     <Compile Include="Client\IClientClusterNode.cs" />
@@ -124,6 +124,7 @@
     <Compile Include="Impl\Client\ClientDiscoveryNode.cs" />
     <Compile Include="Impl\Client\ClientFeatures.cs" />
     <Compile Include="Impl\Client\ClientNotificationHandler.cs" />
+    <Compile Include="Impl\Client\ClientPlatformId.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
     <Compile Include="Impl\Client\ClientResponseContext.cs" />
     <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
@@ -137,6 +138,10 @@
     <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
     <Compile Include="Impl\Client\Compute\ComputeClient.cs" />
     <Compile Include="Impl\Client\Compute\ComputeClientFlags.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClient.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientBuffer.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientEntry.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientPerNodeBuffer.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\Services\ServicesClient.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
@@ -619,7 +624,6 @@
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="IgniteClientConfigurationSection.xsd">
