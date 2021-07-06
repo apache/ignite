@@ -547,6 +547,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             true,
                             topVer,
                             replicate ? DR_PRELOAD : DR_NONE,
+                            false,
                             false
                         )) {
                             if (rec && !entry.isInternal())

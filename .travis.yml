@@ -13,11 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+_ducktape-tox: &ducktape-tox
+  install: pip install tox
+  before_script: cd modules/ducktests/tests
+
 matrix:
   include:
     - language: java
       os: linux
-      dist: trusty
+      dist: xenial
       install: skip
       jdk: openjdk8
       before_script:
@@ -28,7 +32,7 @@ matrix:
 
     - language: java
       os: linux
-      dist: trusty
+      dist: xenial
       install: skip
       jdk: openjdk11
       before_script:
@@ -54,9 +58,21 @@ matrix:
     - language: java
       name: "Check test suites"
       os: linux
-      dist: trusty
+      dist: xenial
       install: skip
       jdk: openjdk8
       script: mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
       before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
       cache: { directories: [ $HOME/.m2/repository ] }
+
+    - language: python
+      python: 3.7.9
+      <<: *ducktape-tox
+      script:
+        - tox -e py37
+
+    - language: python
+      python: 3.8.5
+      <<: *ducktape-tox
+      script:
+        - tox -e linter,codestyle,py38

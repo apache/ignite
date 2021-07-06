@@ -2162,14 +2162,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws IgniteCheckedException If checkpoint was failed.
      */
     protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
+        forceCheckpoint(nodes, "test");
+    }
+
+    /**
+     * Forces checkpoint on all specified nodes.
+     *
+     * @param nodes Nodes to force checkpoint on them.
+     * @param reason Reason for checkpoint wakeup if it would be required.
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint(Collection<Ignite> nodes, String reason) throws IgniteCheckedException {
         for (Ignite ignite : nodes) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
+            if (!ignite.cluster().localNode().isClient())
+                dbMgr((IgniteEx)ignite).waitForCheckpoint(reason);
         }
     }
 

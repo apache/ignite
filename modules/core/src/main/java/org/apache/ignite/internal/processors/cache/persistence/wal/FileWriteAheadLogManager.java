@@ -274,6 +274,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL archive directory (including consistent ID as subfolder). */
     private File walArchiveDir;
 
+    /** WAL cdc directory (including consistent ID as subfolder) */
+    private File walCdcDir;
+
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
 
@@ -327,12 +330,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final long walAutoArchiveAfterInactivity;
 
+    /** Positive (non-0) value indicates WAL must be archived even if not complete. */
+    private final long walForceArchiveTimeout;
+
     /**
      * Container with last WAL record logged timestamp.<br> Zero value means there was no records logged to current
      * segment, skip possible archiving for this case<br> Value is filled only for case {@link
      * #walAutoArchiveAfterInactivity} > 0<br>
      */
     private final AtomicLong lastRecordLoggedMs = new AtomicLong();
+
+    /** Last rollover time. */
+    private AtomicLong lastRolloverMs;
 
     /**
      * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown.
@@ -402,8 +411,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = mode == WALMode.FSYNC ? dsCfg.getFileIOFactory() : new RandomAccessFileIOFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
+        walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
 
-        timeoutRolloverMux = walAutoArchiveAfterInactivity > 0 ? new Object() : null;
+        timeoutRolloverMux = (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) ? new Object() : null;
+
+        if (walForceArchiveTimeout > 0)
+            lastRolloverMs = new AtomicLong();
 
         maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
 
@@ -455,6 +468,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
+
+            if (dsCfg.isCdcEnabled()) {
+                walCdcDir = initDirectory(
+                    dsCfg.getCdcWalPath(),
+                    DataStorageConfiguration.DFLT_WAL_CDC_PATH,
+                    resolveFolders.folderName(),
+                    "change data capture directory"
+                );
+            }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
@@ -756,24 +778,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.BACKGROUND)
             backgroundFlushSchedule = cctx.time().schedule(this::doFlush, flushFreq, flushFreq);
 
-        if (walAutoArchiveAfterInactivity > 0)
-            scheduleNextInactivityPeriodElapsedCheck();
+        if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
+            scheduleNextRolloverCheck();
     }
 
     /**
-     * Schedules next check of inactivity period expired. Based on current record update timestamp. At timeout method
-     * does check of inactivity period and schedules new launch.
+     * Schedules next rollover check.
+     * If {@link DataStorageConfiguration#getWalForceArchiveTimeout()} configured rollover happens forcefully.
+     * Else check based on current record update timestamp and at timeout method does check of inactivity period and schedules new launch.
      */
-    private void scheduleNextInactivityPeriodElapsedCheck() {
-        assert walAutoArchiveAfterInactivity > 0;
+    private void scheduleNextRolloverCheck() {
+        assert walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0;
         assert timeoutRolloverMux != null;
 
         synchronized (timeoutRolloverMux) {
-            long lastRecMs = lastRecordLoggedMs.get();
-            long nextEndTime = lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs + walAutoArchiveAfterInactivity;
+            long nextEndTime = walForceArchiveTimeout > 0
+                ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
+                : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
 
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
         }
+    }
+
+    /** */
+    private long nextTimeout(long lastEvt, long timeout) {
+        return lastEvt <= 0 ? U.currentTimeMillis() : lastEvt + timeout;
     }
 
     /** {@inheritDoc} */
@@ -782,25 +811,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Checks if there was elapsed significant period of inactivity. If WAL auto-archive is enabled using
-     * {@link #walAutoArchiveAfterInactivity} > 0 this method will activate roll over by timeout.<br>
+     * Checks if there was elapsed significant period of inactivity or force archive timeout.
+     * If WAL auto-archive is enabled using {@link #walAutoArchiveAfterInactivity} > 0 or {@link #walForceArchiveTimeout}
+     * this method will activate roll over by timeout.
      */
-    private void checkWalRolloverRequiredDuringInactivityPeriod() {
-        if (walAutoArchiveAfterInactivity <= 0)
-            return; // feature not configured, nothing to do
+    private void checkWalRolloverRequired() {
+        if (walAutoArchiveAfterInactivity <= 0 && walForceArchiveTimeout <= 0)
+            return; // feature not configured, nothing to do.
 
-        final long lastRecMs = lastRecordLoggedMs.get();
+        if (lastRecordLoggedMs.get() == 0)
+            return; //no records were logged to current segment, does not consider inactivity.
 
-        if (lastRecMs == 0)
-            return; //no records were logged to current segment, does not consider inactivity
-
-        final long elapsedMs = U.currentTimeMillis() - lastRecMs;
-
-        if (elapsedMs <= walAutoArchiveAfterInactivity)
-            return; // not enough time elapsed since last write
-
-        if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
-            return; // record write occurred concurrently
+        if (walForceArchiveTimeout > 0) {
+            if (!checkTimeout(lastRolloverMs, walForceArchiveTimeout))
+                return;
+        }
+        else if (!checkTimeout(lastRecordLoggedMs, walAutoArchiveAfterInactivity))
+            return;
 
         final FileWriteHandle handle = currentHandle();
 
@@ -812,6 +839,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
+    }
+
+    /** */
+    private boolean checkTimeout(AtomicLong lastEvt, long timeout) {
+        final long lastEvtMs = lastEvt.get();
+
+        final long elapsedMs = U.currentTimeMillis() - lastEvtMs;
+
+        if (elapsedMs <= timeout)
+            return false; // not enough time elapsed since last write.
+
+        // Will return false if record write occurred concurrently.
+        return lastEvt.compareAndSet(lastEvtMs, 0);
     }
 
     /** {@inheritDoc} */
@@ -889,7 +929,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (ptr != null) {
                 metrics.onWalRecordLogged(rec.size());
 
-                if (walAutoArchiveAfterInactivity > 0)
+                if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
 
                 return ptr;
@@ -1317,8 +1357,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert updated : "Concurrent updates on rollover are not allowed";
 
-            if (walAutoArchiveAfterInactivity > 0)
+            if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) {
                 lastRecordLoggedMs.set(0);
+
+                if (walForceArchiveTimeout > 0)
+                    lastRolloverMs.set(U.currentTimeMillis());
+            }
 
             // Let other threads to proceed with new segment.
             hnd.signalNextAvailable();
@@ -2005,6 +2049,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Files.copy(origFile.toPath(), dstTmpFile.toPath());
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
+
+                if (dsCfg.isCdcEnabled())
+                    Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
 
                 if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
@@ -3459,7 +3506,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            assert walAutoArchiveAfterInactivity > 0;
+            assert walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0;
             assert timeoutRolloverMux != null;
 
             synchronized (timeoutRolloverMux) {
@@ -3469,9 +3516,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             new Time(U.currentTimeMillis()).toString() + ")");
                     }
 
-                    checkWalRolloverRequiredDuringInactivityPeriod();
+                    checkWalRolloverRequired();
 
-                    scheduleNextInactivityPeriodElapsedCheck();
+                    scheduleNextRolloverCheck();
                 }
             }
         }
@@ -3480,7 +3527,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Cancel auto rollover.
          */
         public void cancel() {
-            assert walAutoArchiveAfterInactivity > 0;
+            assert walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0;
             assert timeoutRolloverMux != null;
 
             synchronized (timeoutRolloverMux) {
@@ -3496,7 +3543,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Stop auto rollover.
      */
     private void stopAutoRollover() {
-        if (walAutoArchiveAfterInactivity > 0) {
+        if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) {
             assert timeoutRolloverMux != null;
 
             synchronized (timeoutRolloverMux) {

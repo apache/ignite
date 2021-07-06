@@ -129,13 +129,13 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         startParams.put("group1,...groupN", "Cache group names.");
 
         Command.usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
-            VisorSnapshotRestoreTaskAction.START.cmdName(), "snapshot_name", optional("group1,...groupN"));
+            "snapshot_name", VisorSnapshotRestoreTaskAction.START.cmdName(), optional("group1,...groupN"));
 
         Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
-            VisorSnapshotRestoreTaskAction.STATUS.cmdName(), "snapshot_name");
+            "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
 
         Command.usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
-            VisorSnapshotRestoreTaskAction.CANCEL.cmdName(), "snapshot_name");
+            "snapshot_name", VisorSnapshotRestoreTaskAction.CANCEL.cmdName());
     }
 
     /** {@inheritDoc} */
