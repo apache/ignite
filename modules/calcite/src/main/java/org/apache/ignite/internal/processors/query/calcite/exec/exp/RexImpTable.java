@@ -991,10 +991,10 @@ public class RexImpTable {
             final Expression expression;
             Class clazz = method.getDeclaringClass();
             if (Modifier.isStatic(method.getModifiers()))
-                expression = EnumUtils.call(clazz, method.getName(), argValueList);
+                expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
             else {
-                expression = EnumUtils.call(clazz, method.getName(),
-                    Util.skip(argValueList, 1), argValueList.get(0));
+                expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
+                    Util.skip(argValueList, 1));
             }
             return expression;
         }
@@ -1060,7 +1060,7 @@ public class RexImpTable {
             newOperands.add(errorBehavior);
             newOperands.add(defaultValueOnError);
             Class clazz = method.getDeclaringClass();
-            final Expression expression = EnumUtils.call(clazz, method.getName(), newOperands);
+            final Expression expression = EnumUtils.call(null, clazz, method.getName(), newOperands);
 
             final Type returnType =
                 translator.typeFactory.getJavaClass(call.getType());
@@ -1094,6 +1094,7 @@ public class RexImpTable {
         @Override Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList) {
             return EnumUtils.call(
+                null,
                 SqlFunctions.class,
                 methodName,
                 argValueList);

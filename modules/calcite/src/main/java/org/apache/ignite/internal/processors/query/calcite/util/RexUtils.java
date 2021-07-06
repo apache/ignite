@@ -382,7 +382,7 @@ public class RexUtils {
     }
 
     /** */
-    private static boolean isBinaryComparison(RexNode exp) {
+    public static boolean isBinaryComparison(RexNode exp) {
         return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
             (exp instanceof RexCall) &&
             ((RexCall)exp).getOperands().size() == 2;

@@ -73,12 +73,12 @@
         <typesafe.version>1.4.1</typesafe.version>
         <hamcrest.version>2.2</hamcrest.version>
         <scalecube.version>2.6.6</scalecube.version>
-        <calcite.version>1.26.0</calcite.version>
-        <janino.version>3.0.11</janino.version>
-        <avatica.version>1.17.0</avatica.version>
+        <calcite.version>1.27.0</calcite.version>
+        <janino.version>3.1.4</janino.version>
+        <avatica.version>1.18.0</avatica.version>
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.9.10</reflections.version>
-        <javassist.version>3.27.0-GA</javassist.version>
+        <javassist.version>3.28.0-GA</javassist.version>
         <esri.geometry.version>2.2.3</esri.geometry.version>
         <rocksdb.version>6.20.3</rocksdb.version>
         <disruptor.version>3.3.7</disruptor.version>

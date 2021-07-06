@@ -1720,8 +1720,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
         assertEquals("" +
-                "IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1], DEPTNO0=[$2])\n" +
-                "  IgniteSort(sort0=[$1], sort1=[$3], dir0=[ASC], dir1=[ASC])\n" +
+                "IgniteSort(sort0=[$3], sort1=[$0], dir0=[ASC], dir1=[ASC])\n" +
+                "  IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1], DEPTNO0=[$2])\n" +
                 "    IgniteNestedLoopJoin(condition=[AND(=($3, $2), >=($1, $4))], joinType=[inner])\n" +
                 "      IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n" +
                 "      IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n",
