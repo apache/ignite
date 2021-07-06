@@ -575,7 +575,7 @@ public interface IgniteCacheOffheapManager {
      * @param cacheId Cache id.
      * @param oldIdxName Old name of the index tree.
      * @param newIdxName New name of the index tree.
-     * @param segment Segment number.
+     * @param segment Segment index.
      * @return Renamed root page of the index tree.
      * @throws IgniteCheckedException If failed.
      */

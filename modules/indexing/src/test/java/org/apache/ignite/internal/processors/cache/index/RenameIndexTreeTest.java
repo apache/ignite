@@ -115,8 +115,8 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking that if the renaming of root pages is not a checkpoint,
-     * then after restarting the node they will not be found.
+     * Checking that if we rename the index root pages without a checkpoint,
+     * then after restarting the node we will not find them.
      *
      * @throws Exception If failed.
      */
