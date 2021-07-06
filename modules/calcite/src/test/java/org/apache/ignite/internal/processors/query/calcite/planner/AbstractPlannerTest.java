@@ -664,7 +664,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
                 /** {@inheritDoc */
                 @Override public RelDistribution getDistribution() {
-                    throw new AssertionError();
+                    return IgniteDistributions.single();
                 }
             };
         }
