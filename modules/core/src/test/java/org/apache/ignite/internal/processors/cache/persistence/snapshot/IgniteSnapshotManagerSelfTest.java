@@ -98,7 +98,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // encryption before writting to the snapshot partition file. Thus, page in original partition and in snapshot partiton has
         // different encrypted CRC and same de-crypted CRC. Different encrypted CRC looks like different data in point of view of
         // third-party observer.
-        if(encryption)
+        if (encryption)
             return;
 
         IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
