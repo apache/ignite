@@ -25,16 +25,16 @@ import org.apache.ignite.schema.ColumnType;
  */
 public class NativeTypes {
     /** */
-    public static final NativeType BYTE = new NativeType(NativeTypeSpec.BYTE, 1);
+    public static final NativeType INT8 = new NativeType(NativeTypeSpec.INT8, 1);
 
     /** */
-    public static final NativeType SHORT = new NativeType(NativeTypeSpec.SHORT, 2);
+    public static final NativeType INT16 = new NativeType(NativeTypeSpec.INT16, 2);
 
     /** */
-    public static final NativeType INTEGER = new NativeType(NativeTypeSpec.INTEGER, 4);
+    public static final NativeType INT32 = new NativeType(NativeTypeSpec.INT32, 4);
 
     /** */
-    public static final NativeType LONG = new NativeType(NativeTypeSpec.LONG, 8);
+    public static final NativeType INT64 = new NativeType(NativeTypeSpec.INT64, 8);
 
     /** */
     public static final NativeType FLOAT = new NativeType(NativeTypeSpec.FLOAT, 4);
@@ -108,17 +108,17 @@ public class NativeTypes {
             return null;
 
         switch (spec) {
-            case BYTE:
-                return BYTE;
+            case INT8:
+                return INT8;
 
-            case SHORT:
-                return SHORT;
+            case INT16:
+                return INT16;
 
-            case INTEGER:
-                return INTEGER;
+            case INT32:
+                return INT32;
 
-            case LONG:
-                return LONG;
+            case INT64:
+                return INT64;
 
             case FLOAT:
                 return FLOAT;
@@ -154,16 +154,16 @@ public class NativeTypes {
     public static NativeType from(ColumnType type) {
         switch (type.typeSpec()) {
             case INT8:
-                return BYTE;
+                return INT8;
 
             case INT16:
-                return SHORT;
+                return INT16;
 
             case INT32:
-                return INTEGER;
+                return INT32;
 
             case INT64:
-                return LONG;
+                return INT64;
 
             case UINT8:
             case UINT16:

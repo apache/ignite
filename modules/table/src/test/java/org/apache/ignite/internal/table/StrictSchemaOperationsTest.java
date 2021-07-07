@@ -43,8 +43,8 @@ public class StrictSchemaOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -60,7 +60,7 @@ public class StrictSchemaOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {
                 new Column("valString", NativeTypes.stringOf(3), true),
                 new Column("valBytes", NativeTypes.blobOf(3), true)
@@ -87,7 +87,7 @@ public class StrictSchemaOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {
                 new Column("valString", NativeTypes.stringOf(3), true)
             }
@@ -113,7 +113,7 @@ public class StrictSchemaOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {
                 new Column("valUnlimited", NativeTypes.BYTES, true),
                 new Column("valLimited", NativeTypes.blobOf(2), true)

@@ -101,8 +101,8 @@ public class ITDistributedTableTest {
     /** Schema. */
     public static SchemaDescriptor SCHEMA = new SchemaDescriptor(UUID.randomUUID(),
         1,
-        new Column[] {new Column("key", NativeTypes.LONG, false)},
-        new Column[] {new Column("value", NativeTypes.LONG, false)}
+        new Column[] {new Column("key", NativeTypes.INT64, false)},
+        new Column[] {new Column("value", NativeTypes.INT64, false)}
     );
 
     /** Cluster. */

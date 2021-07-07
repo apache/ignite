@@ -19,9 +19,9 @@ package org.apache.ignite.internal.schema;
 
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.LONG;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
@@ -40,8 +40,8 @@ public class ColumnsTest {
     public void fixSizedColumnsIndex() {
         Columns cols = new Columns(
             0,
-            new Column("intCol2", INTEGER, false),
-            new Column("intCol1", INTEGER, false),
+            new Column("intCol2", INT32, false),
+            new Column("intCol1", INT32, false),
             new Column("uuidCol", UUID, false)
         );
 
@@ -85,8 +85,8 @@ public class ColumnsTest {
         Columns cols = new Columns(
             0,
             new Column("stringCol", STRING, false),
-            new Column("intCol2", INTEGER, false),
-            new Column("intCol1", INTEGER, false),
+            new Column("intCol2", INT32, false),
+            new Column("intCol1", INT32, false),
             new Column("uuidCol", UUID, false)
         );
 
@@ -133,8 +133,8 @@ public class ColumnsTest {
             Columns cols = new Columns(
                 0,
                 new Column("uuidCol", UUID, false),
-                new Column("intCol2", INTEGER, false),
-                new Column("intCol1", INTEGER, false)
+                new Column("intCol2", INT32, false),
+                new Column("intCol1", INT32, false)
             );
 
             assertEquals("intCol1", cols.column(0).name());
@@ -150,8 +150,8 @@ public class ColumnsTest {
             Columns cols = new Columns(
                 3,
                 new Column("uuidCol", UUID, false),
-                new Column("intCol2", INTEGER, false),
-                new Column("intCol1", INTEGER, false)
+                new Column("intCol2", INT32, false),
+                new Column("intCol1", INT32, false)
             );
 
             assertEquals("intCol1", cols.column(0).name());
@@ -171,13 +171,13 @@ public class ColumnsTest {
     @Test
     public void foldSizeNoVarlenIncomplete1Byte() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", LONG, false),    // 8
-            new Column("e", LONG, false),    // 8
-            new Column("f", LONG, false),    // 8
-            new Column("g", UUID, false)     // 16
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT64, false), // 8
+            new Column("e", INT64, false), // 8
+            new Column("f", INT64, false), // 8
+            new Column("g", UUID, false)   // 16
         };
 
         checkColumnFolding(colDef);
@@ -189,14 +189,14 @@ public class ColumnsTest {
     @Test
     public void foldSizeNoVarlenFull1Byte() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", LONG, false),    // 8
-            new Column("f", LONG, false),    // 8
-            new Column("g", UUID, false),    // 16
-            new Column("h", UUID, false)     // 16
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT64, false), // 8
+            new Column("f", INT64, false), // 8
+            new Column("g", UUID, false),  // 16
+            new Column("h", UUID, false)   // 16
         };
 
         checkColumnFolding(colDef);
@@ -208,16 +208,16 @@ public class ColumnsTest {
     @Test
     public void foldSizeNoVarlenIncomplete2Bytes() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", SHORT, false),   // 2
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", INTEGER, false), // 4
-            new Column("f", INTEGER, false), // 4
-            new Column("g", LONG, false),    // 8
-            new Column("h", LONG, false),    // 8
-            new Column("i", UUID, false),    // 16
-            new Column("j", UUID, false)     // 16
+            new Column("a", INT16, false), // 2
+            new Column("b", INT16, false), // 2
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT32, false), // 4
+            new Column("f", INT32, false), // 4
+            new Column("g", INT64, false), // 8
+            new Column("h", INT64, false), // 8
+            new Column("i", UUID, false),  // 16
+            new Column("j", UUID, false)   // 16
         };
 
         checkColumnFolding(colDef);
@@ -229,22 +229,22 @@ public class ColumnsTest {
     @Test
     public void foldSizeNoVarlenFull2Bytes() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", SHORT, false),   // 2
-            new Column("c", SHORT, false),   // 2
-            new Column("d", SHORT, false),   // 2
-            new Column("e", INTEGER, false), // 4
-            new Column("f", INTEGER, false), // 4
-            new Column("g", INTEGER, false), // 4
-            new Column("h", INTEGER, false), // 4
-            new Column("i", INTEGER, false), // 4
-            new Column("j", INTEGER, false), // 4
-            new Column("k", LONG, false),    // 8
-            new Column("l", LONG, false),    // 8
-            new Column("m", LONG, false),    // 8
-            new Column("n", UUID, false),    // 16
-            new Column("o", UUID, false),    // 16
-            new Column("p", UUID, false)     // 16
+            new Column("a", INT16, false), // 2
+            new Column("b", INT16, false), // 2
+            new Column("c", INT16, false), // 2
+            new Column("d", INT16, false), // 2
+            new Column("e", INT32, false), // 4
+            new Column("f", INT32, false), // 4
+            new Column("g", INT32, false), // 4
+            new Column("h", INT32, false), // 4
+            new Column("i", INT32, false), // 4
+            new Column("j", INT32, false), // 4
+            new Column("k", INT64, false), // 8
+            new Column("l", INT64, false), // 8
+            new Column("m", INT64, false), // 8
+            new Column("n", UUID, false),  // 16
+            new Column("o", UUID, false),  // 16
+            new Column("p", UUID, false)   // 16
         };
 
         checkColumnFolding(colDef);
@@ -256,11 +256,11 @@ public class ColumnsTest {
     @Test
     public void foldSizeVarlenIncomplete1Byte() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", LONG, false),    // 8
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT64, false), // 8
             new Column("f", STRING, false),
             new Column("g", BYTES, false)
         };
@@ -274,11 +274,11 @@ public class ColumnsTest {
     @Test
     public void foldSizeVarlenFull1Byte() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", LONG, false),    // 8
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT64, false), // 8
             new Column("f", STRING, false),
             new Column("g", STRING, false),
             new Column("h", BYTES, false)
@@ -293,12 +293,12 @@ public class ColumnsTest {
     @Test
     public void foldSizeVarlenIncomplete2Bytes1() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", INTEGER, false), // 4
-            new Column("f", LONG, false),    // 8
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT32, false), // 4
+            new Column("f", INT64, false), // 8
             new Column("g", STRING, false),
             new Column("h", STRING, false),
             new Column("i", BYTES, false)
@@ -313,14 +313,14 @@ public class ColumnsTest {
     @Test
     public void foldSizeVarlenIncomplete2Bytes2() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", INTEGER, false), // 4
-            new Column("f", INTEGER, false), // 4
-            new Column("g", INTEGER, false), // 4
-            new Column("h", LONG, false),    // 8
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT32, false), // 4
+            new Column("f", INT32, false), // 4
+            new Column("g", INT32, false), // 4
+            new Column("h", INT64, false), // 8
             new Column("i", STRING, false),
             new Column("j", STRING, false),
             new Column("k", BYTES, false)
@@ -335,15 +335,15 @@ public class ColumnsTest {
     @Test
     public void foldSizeVarlenIncomplete2Bytes3() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", INTEGER, false), // 4
-            new Column("f", INTEGER, false), // 4
-            new Column("g", INTEGER, false), // 4
-            new Column("h", LONG, false),    // 8
-            new Column("i", LONG, false),    // 8
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT32, false), // 4
+            new Column("f", INT32, false), // 4
+            new Column("g", INT32, false), // 4
+            new Column("h", INT64, false), // 8
+            new Column("i", INT64, false), // 8
             new Column("j", STRING, false),
             new Column("k", BYTES, false)
         };
@@ -357,15 +357,15 @@ public class ColumnsTest {
     @Test
     public void foldSizeVarlenFull2Bytes() {
         Column[] colDef = {
-            new Column("a", SHORT, false),   // 2
-            new Column("b", INTEGER, false), // 4
-            new Column("c", INTEGER, false), // 4
-            new Column("d", INTEGER, false), // 4
-            new Column("e", INTEGER, false), // 4
-            new Column("f", INTEGER, false), // 4
-            new Column("g", INTEGER, false), // 4
-            new Column("h", INTEGER, false), // 4
-            new Column("i", LONG, false),    // 8
+            new Column("a", INT16, false), // 2
+            new Column("b", INT32, false), // 4
+            new Column("c", INT32, false), // 4
+            new Column("d", INT32, false), // 4
+            new Column("e", INT32, false), // 4
+            new Column("f", INT32, false), // 4
+            new Column("g", INT32, false), // 4
+            new Column("h", INT32, false), // 4
+            new Column("i", INT64, false), // 8
             new Column("j", STRING, false),
             new Column("k", BYTES, false),
             new Column("l", BYTES, false),
@@ -443,7 +443,7 @@ public class ColumnsTest {
 
         for (int i = 0; i < ret.length; i++) {
             if (i % 3 == 0)
-                ret[i] = new Column("column-" + i, LONG, true);
+                ret[i] = new Column("column-" + i, INT64, true);
             else
                 ret[i] = new Column("column-" + i, STRING, true);
         }

@@ -33,14 +33,14 @@ public class SchemaDescriptorTest {
     public void columnIndexedAccess() {
         SchemaDescriptor desc = new SchemaDescriptor(UUID.randomUUID(), 1,
             new Column[] {
-                new Column("columnA", NativeTypes.BYTE, false),
+                new Column("columnA", NativeTypes.INT8, false),
                 new Column("columnB", NativeTypes.UUID, false),
-                new Column("columnC", NativeTypes.INTEGER, false),
+                new Column("columnC", NativeTypes.INT32, false),
             },
             new Column[] {
-                new Column("columnD", NativeTypes.BYTE, false),
+                new Column("columnD", NativeTypes.INT8, false),
                 new Column("columnE", NativeTypes.UUID, false),
-                new Column("columnF", NativeTypes.INTEGER, false),
+                new Column("columnF", NativeTypes.INT32, false),
             }
         );
 

@@ -37,12 +37,12 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.LONG;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
@@ -75,17 +75,17 @@ public class FieldAccessorTest {
     @Test
     public void fieldAccessor() throws Exception {
         Column[] cols = new Column[] {
-            new Column("pByteCol", BYTE, false),
-            new Column("pShortCol", SHORT, false),
-            new Column("pIntCol", INTEGER, false),
-            new Column("pLongCol", LONG, false),
+            new Column("pByteCol", INT8, false),
+            new Column("pShortCol", INT16, false),
+            new Column("pIntCol", INT32, false),
+            new Column("pLongCol", INT64, false),
             new Column("pFloatCol", FLOAT, false),
             new Column("pDoubleCol", DOUBLE, false),
 
-            new Column("byteCol", BYTE, false),
-            new Column("shortCol", SHORT, false),
-            new Column("intCol", INTEGER, false),
-            new Column("longCol", LONG, false),
+            new Column("byteCol", INT8, false),
+            new Column("shortCol", INT16, false),
+            new Column("intCol", INT32, false),
+            new Column("longCol", INT64, false),
             new Column("floatCol", FLOAT, false),
             new Column("doubleCol", DOUBLE, false),
 
@@ -142,8 +142,8 @@ public class FieldAccessorTest {
     @Test
     public void nullableFieldsAccessor() throws Exception {
         Column[] cols = new Column[] {
-            new Column("intCol", INTEGER, true),
-            new Column("longCol", LONG, true),
+            new Column("intCol", INT32, true),
+            new Column("longCol", INT64, true),
 
             new Column("stringCol", STRING, true),
             new Column("bytesCol", BYTES, true),

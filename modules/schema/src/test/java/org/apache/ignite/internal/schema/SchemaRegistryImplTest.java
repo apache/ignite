@@ -27,7 +27,7 @@ import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
-import static org.apache.ignite.internal.schema.NativeTypes.LONG;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.apache.ignite.internal.schema.registry.SchemaRegistryImpl.INITIAL_SCHEMA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,15 +48,15 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV0 = new SchemaDescriptor(tableId, INITIAL_SCHEMA_VERSION,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 0,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
@@ -96,18 +96,18 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
@@ -152,18 +152,18 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor wrongSchema = new SchemaDescriptor(tableId, 1,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
@@ -216,24 +216,24 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
@@ -332,24 +332,24 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
@@ -398,29 +398,29 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valStringCol", STRING, true)});
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV5 = new SchemaDescriptor(tableId, 5,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {new Column("valStringCol", STRING, true)});
 
         Map<Integer, SchemaDescriptor> history = schemaHistory(schemaV2, schemaV3);
@@ -472,20 +472,20 @@ public class SchemaRegistryImplTest {
         UUID tableId = UUID.randomUUID();
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valStringCol", STRING, true)
             });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
-            new Column[] {new Column("keyLongCol", LONG, true)},
+            new Column[] {new Column("keyLongCol", INT64, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)

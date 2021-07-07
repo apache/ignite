@@ -74,8 +74,8 @@ public class PartitionCommandListenerTest {
     /** Schema. */
     public static SchemaDescriptor SCHEMA = new SchemaDescriptor(UUID.randomUUID(),
         1,
-        new Column[] {new Column("key", NativeTypes.INTEGER, false)},
-        new Column[] {new Column("value", NativeTypes.INTEGER, false)}
+        new Column[] {new Column("key", NativeTypes.INT32, false)},
+        new Column[] {new Column("value", NativeTypes.INT32, false)}
     );
 
     /** Table command listener. */

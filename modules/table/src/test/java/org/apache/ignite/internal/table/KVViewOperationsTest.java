@@ -52,8 +52,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -95,8 +95,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -128,8 +128,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -163,8 +163,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -206,8 +206,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -263,8 +263,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -309,8 +309,8 @@ public class KVViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[] {new Column("id", NativeTypes.LONG, false)},
-            new Column[] {new Column("val", NativeTypes.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));

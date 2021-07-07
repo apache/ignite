@@ -110,10 +110,10 @@ public class SchemaDescriptorConverterTest {
         testCol(tblDscr.keyColumns(), "ID", NativeTypeSpec.UUID, nullable);
 
         assertEquals(columns - 1, tblDscr.valueColumns().length());
-        testCol(tblDscr.valueColumns(), "INT8", NativeTypeSpec.BYTE, nullable);
-        testCol(tblDscr.valueColumns(), "INT16", NativeTypeSpec.SHORT, nullable);
-        testCol(tblDscr.valueColumns(), "INT32", NativeTypeSpec.INTEGER, nullable);
-        testCol(tblDscr.valueColumns(), "INT64", NativeTypeSpec.LONG, nullable);
+        testCol(tblDscr.valueColumns(), "INT8", NativeTypeSpec.INT8, nullable);
+        testCol(tblDscr.valueColumns(), "INT16", NativeTypeSpec.INT16, nullable);
+        testCol(tblDscr.valueColumns(), "INT32", NativeTypeSpec.INT32, nullable);
+        testCol(tblDscr.valueColumns(), "INT64", NativeTypeSpec.INT64, nullable);
         testCol(tblDscr.valueColumns(), "FLOAT", NativeTypeSpec.FLOAT, nullable);
         testCol(tblDscr.valueColumns(), "DOUBLE", NativeTypeSpec.DOUBLE, nullable);
         testCol(tblDscr.valueColumns(), "UUID", NativeTypeSpec.UUID, nullable);

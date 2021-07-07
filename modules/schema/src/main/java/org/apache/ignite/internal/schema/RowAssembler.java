@@ -226,14 +226,14 @@ public class RowAssembler {
      * @return {@code this} for chaining.
      */
     public RowAssembler appendByte(byte val) {
-        checkType(NativeTypes.BYTE);
+        checkType(NativeTypes.INT8);
 
         buf.put(curOff, val);
 
         if (isKeyColumn())
             keyHash = 31 * keyHash + Byte.hashCode(val);
 
-        shiftColumn(NativeTypes.BYTE);
+        shiftColumn(NativeTypes.INT8);
 
         return this;
     }
@@ -245,14 +245,14 @@ public class RowAssembler {
      * @return {@code this} for chaining.
      */
     public RowAssembler appendShort(short val) {
-        checkType(NativeTypes.SHORT);
+        checkType(NativeTypes.INT16);
 
         buf.putShort(curOff, val);
 
         if (isKeyColumn())
             keyHash = 31 * keyHash + Short.hashCode(val);
 
-        shiftColumn(NativeTypes.SHORT);
+        shiftColumn(NativeTypes.INT16);
 
         return this;
     }
@@ -264,14 +264,14 @@ public class RowAssembler {
      * @return {@code this} for chaining.
      */
     public RowAssembler appendInt(int val) {
-        checkType(NativeTypes.INTEGER);
+        checkType(NativeTypes.INT32);
 
         buf.putInt(curOff, val);
 
         if (isKeyColumn())
             keyHash = 31 * keyHash + Integer.hashCode(val);
 
-        shiftColumn(NativeTypes.INTEGER);
+        shiftColumn(NativeTypes.INT32);
 
         return this;
     }
@@ -283,14 +283,14 @@ public class RowAssembler {
      * @return {@code this} for chaining.
      */
     public RowAssembler appendLong(long val) {
-        checkType(NativeTypes.LONG);
+        checkType(NativeTypes.INT64);
 
         buf.putLong(curOff, val);
 
         if (isKeyColumn())
             keyHash += 31 * keyHash + Long.hashCode(val);
 
-        shiftColumn(NativeTypes.LONG);
+        shiftColumn(NativeTypes.INT64);
 
         return this;
     }

@@ -51,12 +51,12 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.LONG;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
@@ -104,7 +104,7 @@ public class JavaSerializerTest {
      */
     @TestFactory
     public Stream<DynamicNode> testBasicTypes() {
-        NativeType[] types = new NativeType[] {BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, UUID, STRING, BYTES, NativeTypes.bitmaskOf(5)};
+        NativeType[] types = new NativeType[] {INT8, INT16, INT32, INT64, FLOAT, DOUBLE, UUID, STRING, BYTES, NativeTypes.bitmaskOf(5)};
 
         return serializerFactoryProvider().stream().map(factory ->
             dynamicContainer(
@@ -117,10 +117,10 @@ public class JavaSerializerTest {
 
                     // Test pairs of mixed types.
                     Stream.of(
-                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, LONG, INTEGER)),
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, INT64, INT32)),
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, FLOAT, DOUBLE)),
-                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, INTEGER, BYTES)),
-                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, STRING, LONG)),
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, INT32, BYTES)),
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, STRING, INT64)),
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, NativeTypes.bitmaskOf(9), BYTES))
                     )
                 )
@@ -134,18 +134,18 @@ public class JavaSerializerTest {
     @MethodSource("serializerFactoryProvider")
     public void complexType(SerializerFactory factory) throws SerializationException {
         Column[] cols = new Column[] {
-            new Column("pByteCol", BYTE, false),
-            new Column("pShortCol", SHORT, false),
-            new Column("pIntCol", INTEGER, false),
-            new Column("pLongCol", LONG, false),
+            new Column("pByteCol", INT8, false),
+            new Column("pShortCol", INT16, false),
+            new Column("pIntCol", INT32, false),
+            new Column("pLongCol", INT64, false),
             new Column("pFloatCol", FLOAT, false),
             new Column("pDoubleCol", DOUBLE, false),
 
-            new Column("byteCol", BYTE, true),
-            new Column("shortCol", SHORT, true),
-            new Column("intCol", INTEGER, true),
-            new Column("longCol", LONG, true),
-            new Column("nullLongCol", LONG, true),
+            new Column("byteCol", INT8, true),
+            new Column("shortCol", INT16, true),
+            new Column("intCol", INT32, true),
+            new Column("longCol", INT64, true),
+            new Column("nullLongCol", INT64, true),
             new Column("floatCol", FLOAT, true),
             new Column("doubleCol", DOUBLE, true),
 
@@ -208,7 +208,7 @@ public class JavaSerializerTest {
     @MethodSource("serializerFactoryProvider")
     public void classWithIncorrectBitmaskSize(SerializerFactory factory) {
         Column[] cols = new Column[] {
-            new Column("pLongCol", LONG, false),
+            new Column("pLongCol", INT64, false),
             new Column("bitmaskCol", NativeTypes.bitmaskOf(9), true),
         };
 
@@ -233,7 +233,7 @@ public class JavaSerializerTest {
     @MethodSource("serializerFactoryProvider")
     public void classWithPrivateConstructor(SerializerFactory factory) throws SerializationException {
         Column[] cols = new Column[] {
-            new Column("pLongCol", LONG, false),
+            new Column("pLongCol", INT64, false),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
@@ -262,7 +262,7 @@ public class JavaSerializerTest {
     @MethodSource("serializerFactoryProvider")
     public void classWithNoDefaultConstructor(SerializerFactory factory) {
         Column[] cols = new Column[] {
-            new Column("pLongCol", LONG, false),
+            new Column("pLongCol", INT64, false),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
@@ -280,7 +280,7 @@ public class JavaSerializerTest {
     @MethodSource("serializerFactoryProvider")
     public void privateClass(SerializerFactory factory) throws SerializationException {
         Column[] cols = new Column[] {
-            new Column("pLongCol", LONG, false),
+            new Column("pLongCol", INT64, false),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
@@ -310,13 +310,13 @@ public class JavaSerializerTest {
             Thread.currentThread().setContextClassLoader(new DynamicClassLoader(getClass().getClassLoader()));
 
             Column[] keyCols = new Column[] {
-                new Column("key", LONG, false)
+                new Column("key", INT64, false)
             };
 
             Column[] valCols = new Column[] {
-                new Column("col0", LONG, false),
-                new Column("col1", LONG, false),
-                new Column("col2", LONG, false),
+                new Column("col0", INT64, false),
+                new Column("col1", INT64, false),
+                new Column("col2", INT64, false),
             };
 
             SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, keyCols, valCols);

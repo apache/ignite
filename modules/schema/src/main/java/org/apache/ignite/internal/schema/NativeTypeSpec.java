@@ -32,7 +32,7 @@ public enum NativeTypeSpec {
     /**
      * Native type representing a single-byte signed value.
      */
-    BYTE("byte", true) {
+    INT8("int8", true) {
         /** {@inheritDoc} */
         @Override public Object objectValue(Row tup, int colIdx) {
             return tup.byteValueBoxed(colIdx);
@@ -42,7 +42,7 @@ public enum NativeTypeSpec {
     /**
      * Native type representing a two-bytes signed value.
      */
-    SHORT("short", true) {
+    INT16("int16", true) {
         /** {@inheritDoc} */
         @Override public Object objectValue(Row tup, int colIdx) {
             return tup.shortValueBoxed(colIdx);
@@ -52,7 +52,7 @@ public enum NativeTypeSpec {
     /**
      * Native type representing a four-bytes signed value.
      */
-    INTEGER("integer", true) {
+    INT32("int32", true) {
         /** {@inheritDoc} */
         @Override public Object objectValue(Row tup, int colIdx) {
             return tup.intValueBoxed(colIdx);
@@ -62,7 +62,7 @@ public enum NativeTypeSpec {
     /**
      * Native type representing an eight-bytes signed value.
      */
-    LONG("long", true) {
+    INT64("int64", true) {
         /** {@inheritDoc} */
         @Override public Object objectValue(Row tup, int colIdx) {
             return tup.longValueBoxed(colIdx);
@@ -195,13 +195,13 @@ public enum NativeTypeSpec {
 
         // Primitives.
         if (cls == byte.class)
-            return NativeTypeSpec.BYTE;
+            return NativeTypeSpec.INT8;
         else if (cls == short.class)
-            return NativeTypeSpec.SHORT;
+            return NativeTypeSpec.INT16;
         else if (cls == int.class)
-            return NativeTypeSpec.INTEGER;
+            return NativeTypeSpec.INT32;
         else if (cls == long.class)
-            return NativeTypeSpec.LONG;
+            return NativeTypeSpec.INT64;
         else if (cls == float.class)
             return NativeTypeSpec.FLOAT;
         else if (cls == double.class)
@@ -209,13 +209,13 @@ public enum NativeTypeSpec {
 
         // Boxed primitives.
         else if (cls == Byte.class)
-            return NativeTypeSpec.BYTE;
+            return NativeTypeSpec.INT8;
         else if (cls == Short.class)
-            return NativeTypeSpec.SHORT;
+            return NativeTypeSpec.INT16;
         else if (cls == Integer.class)
-            return NativeTypeSpec.INTEGER;
+            return NativeTypeSpec.INT32;
         else if (cls == Long.class)
-            return NativeTypeSpec.LONG;
+            return NativeTypeSpec.INT64;
         else if (cls == Float.class)
             return NativeTypeSpec.FLOAT;
         else if (cls == Double.class)

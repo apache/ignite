@@ -21,10 +21,10 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
@@ -42,14 +42,14 @@ public class RowAssemblerAdvancedSchemaTest {
     public void fixedNullableColumns() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
             new Column[] {
-                new Column("keyCol2", BYTE, true),
-                new Column("keyCol1", SHORT, true),
-                new Column("keyCol3", INTEGER, true)
+                new Column("keyCol2", INT8, true),
+                new Column("keyCol1", INT16, true),
+                new Column("keyCol3", INT32, true)
             },
             new Column[] {
-                new Column("valCol2", BYTE, true),
-                new Column("valCol1", INTEGER, true),
-                new Column("valCol3", SHORT, true)
+                new Column("valCol2", INT8, true),
+                new Column("valCol1", INT32, true),
+                new Column("valCol3", INT16, true)
             });
 
         // Last col null
@@ -200,14 +200,14 @@ public class RowAssemblerAdvancedSchemaTest {
     public void mixedTypes() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
             new Column[] {
-                new Column("keyCol1", BYTE, true),
-                new Column("keyCol1", SHORT, true),
+                new Column("keyCol1", INT8, true),
+                new Column("keyCol1", INT16, true),
                 new Column("keyCol2", BYTES, true),
                 new Column("keyCol3", STRING, true)
             },
             new Column[] {
-                new Column("valCol1", BYTE, true),
-                new Column("valCol1", SHORT, true),
+                new Column("valCol1", INT8, true),
+                new Column("valCol1", INT16, true),
                 new Column("valCol2", BYTES, true),
                 new Column("valCol3", STRING, true)
             });

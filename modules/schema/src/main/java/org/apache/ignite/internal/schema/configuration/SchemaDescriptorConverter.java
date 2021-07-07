@@ -33,12 +33,12 @@ import org.apache.ignite.internal.schema.SchemaException;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaTable;
 
-import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.LONG;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 
 /**
@@ -58,16 +58,16 @@ public class SchemaDescriptorConverter {
 
         switch (type) {
             case INT8:
-                return BYTE;
+                return INT8;
 
             case INT16:
-                return SHORT;
+                return INT16;
 
             case INT32:
-                return INTEGER;
+                return INT32;
 
             case INT64:
-                return LONG;
+                return INT64;
 
             case UINT8:
             case UINT16:
@@ -138,13 +138,13 @@ public class SchemaDescriptorConverter {
         assert dflt instanceof String;
 
         switch (type.spec()) {
-            case BYTE:
+            case INT8:
                 return Byte.parseByte(dflt);
-            case SHORT:
+            case INT16:
                 return Short.parseShort(dflt);
-            case INTEGER:
+            case INT32:
                 return Integer.parseInt(dflt);
-            case LONG:
+            case INT64:
                 return Long.parseLong(dflt);
             case FLOAT:
                 return Float.parseFloat(dflt);

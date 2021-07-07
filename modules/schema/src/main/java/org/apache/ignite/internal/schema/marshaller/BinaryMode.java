@@ -24,16 +24,16 @@ import org.apache.ignite.internal.schema.NativeTypeSpec;
  */
 public enum BinaryMode {
     /** Primitive byte. */
-    P_BYTE(NativeTypeSpec.BYTE),
+    P_BYTE(NativeTypeSpec.INT8),
 
     /** Primitive short. */
-    P_SHORT(NativeTypeSpec.SHORT),
+    P_SHORT(NativeTypeSpec.INT16),
 
     /** Primitive int. */
-    P_INT(NativeTypeSpec.INTEGER),
+    P_INT(NativeTypeSpec.INT32),
 
     /** Primitive long. */
-    P_LONG(NativeTypeSpec.LONG),
+    P_LONG(NativeTypeSpec.INT64),
 
     /** Primitive float. */
     P_FLOAT(NativeTypeSpec.FLOAT),
@@ -42,16 +42,16 @@ public enum BinaryMode {
     P_DOUBLE(NativeTypeSpec.DOUBLE),
 
     /** Boxed byte. */
-    BYTE(NativeTypeSpec.BYTE),
+    BYTE(NativeTypeSpec.INT8),
 
     /** Boxed short. */
-    SHORT(NativeTypeSpec.SHORT),
+    SHORT(NativeTypeSpec.INT16),
 
     /** Boxed int. */
-    INT(NativeTypeSpec.INTEGER),
+    INT(NativeTypeSpec.INT32),
 
     /** Boxed long. */
-    LONG(NativeTypeSpec.LONG),
+    LONG(NativeTypeSpec.INT64),
 
     /** Boxed float. */
     FLOAT(NativeTypeSpec.FLOAT),

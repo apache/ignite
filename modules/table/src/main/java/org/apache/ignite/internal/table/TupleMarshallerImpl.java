@@ -137,22 +137,22 @@ public class TupleMarshallerImpl implements TupleMarshaller {
         }
 
         switch (col.type().spec()) {
-            case BYTE: {
+            case INT8: {
                 rowAsm.appendByte((byte)val);
 
                 break;
             }
-            case SHORT: {
+            case INT16: {
                 rowAsm.appendShort((short)val);
 
                 break;
             }
-            case INTEGER: {
+            case INT32: {
                 rowAsm.appendInt((int)val);
 
                 break;
             }
-            case LONG: {
+            case INT64: {
                 rowAsm.appendLong((long)val);
 
                 break;

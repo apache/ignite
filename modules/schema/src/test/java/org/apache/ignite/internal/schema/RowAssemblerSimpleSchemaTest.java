@@ -21,10 +21,10 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -45,8 +45,8 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyIntCol", INTEGER, false)},
-            new Column[] {new Column("valIntCol", INTEGER, true)});
+            new Column[] {new Column("keyIntCol", INT32, false)},
+            new Column[] {new Column("valIntCol", INT32, true)});
 
         assertRowBytesEquals(
             new byte[] {42, 0, 26, 0, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0, 9, 0, 0, 0, 0, -71, -1, -1, -1},
@@ -77,8 +77,8 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", SHORT, false)},
-            new Column[] {new Column("valShortCol", SHORT, false)});
+            new Column[] {new Column("keyShortCol", INT16, false)},
+            new Column[] {new Column("valShortCol", INT16, false)});
 
         // With value.
         assertRowBytesEquals(
@@ -102,7 +102,7 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyVarlenNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", SHORT, false)},
+            new Column[] {new Column("keyShortCol", INT16, false)},
             new Column[] {new Column("valStrCol", STRING, true)});
 
         assertRowBytesEquals(
@@ -134,7 +134,7 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyVarlenValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", SHORT, false)},
+            new Column[] {new Column("keyShortCol", INT16, false)},
             new Column[] {new Column("valStrCol", STRING, false)});
 
         assertRowBytesEquals(
@@ -158,8 +158,8 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", SHORT, true)},
-            new Column[] {new Column("valByteCol", BYTE, false)});
+            new Column[] {new Column("keyShortCol", INT16, true)},
+            new Column[] {new Column("valByteCol", INT8, false)});
 
         assertRowBytesEquals(
             new byte[] {42, 0, 28, 0, -33, -1, -1, -1, 7, 0, 0, 0, 0, -33, -1, 5, 0, 0, 0, 71},
@@ -190,8 +190,8 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", SHORT, true)},
-            new Column[] {new Column("valShortCol", SHORT, true)});
+            new Column[] {new Column("keyShortCol", INT16, true)},
+            new Column[] {new Column("valShortCol", INT16, true)});
 
         // Null key.
         assertRowBytesEquals(
@@ -232,7 +232,7 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyVarlenNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyIntCol", SHORT, true)},
+            new Column[] {new Column("keyIntCol", INT16, true)},
             new Column[] {new Column("valStrCol", STRING, true)});
 
         assertRowBytesEquals(
@@ -280,7 +280,7 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyVarlenValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyByteCol", BYTE, true)},
+            new Column[] {new Column("keyByteCol", INT8, true)},
             new Column[] {new Column("valStrCol", STRING, false)});
 
         assertRowBytesEquals(
@@ -431,7 +431,7 @@ public class RowAssemblerSimpleSchemaTest {
     public void varlenNullableKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
             new Column[] {new Column("keyStrCol", STRING, true)},
-            new Column[] {new Column("valShortCol", SHORT, true)});
+            new Column[] {new Column("valShortCol", INT16, true)});
 
         assertRowBytesEquals(
             new byte[] {42, 0, 24, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 7, 0, 0, 0, 0, -71, -1},
@@ -480,7 +480,7 @@ public class RowAssemblerSimpleSchemaTest {
     public void varlenNullableKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
             new Column[] {new Column("keyStrCol", STRING, true)},
-            new Column[] {new Column("valShortCol", SHORT, false)});
+            new Column[] {new Column("valShortCol", INT16, false)});
 
         assertRowBytesEquals(
             new byte[] {42, 0, 28, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 6, 0, 0, 0, -71, -1},
@@ -592,11 +592,11 @@ public class RowAssemblerSimpleSchemaTest {
     public void mixedTypes() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
             new Column[] {
-                new Column("keyShortCol", SHORT, false),
+                new Column("keyShortCol", INT16, false),
                 new Column("keyStrCol", STRING, false)
             },
             new Column[] {
-                new Column("valIntCol", INTEGER, true),
+                new Column("valIntCol", INT32, true),
                 new Column("valStrCol", STRING, true)
             });
 

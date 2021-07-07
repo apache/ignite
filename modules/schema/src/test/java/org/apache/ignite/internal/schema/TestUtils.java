@@ -33,16 +33,16 @@ public final class TestUtils {
      */
     public static Object generateRandomValue(Random rnd, NativeType type) {
         switch (type.spec()) {
-            case BYTE:
+            case INT8:
                 return (byte)rnd.nextInt(255);
 
-            case SHORT:
+            case INT16:
                 return (short)rnd.nextInt(65535);
 
-            case INTEGER:
+            case INT32:
                 return rnd.nextInt();
 
-            case LONG:
+            case INT64:
                 return rnd.nextLong();
 
             case FLOAT:

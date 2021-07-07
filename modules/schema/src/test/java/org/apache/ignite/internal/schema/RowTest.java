@@ -24,12 +24,12 @@ import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.LONG;
-import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
@@ -61,10 +61,10 @@ public class RowTest {
     @Test
     public void nullableFixSizedColumns() {
         Column[] keyCols = new Column[] {
-            new Column("keyByteCol", BYTE, false),
-            new Column("keyShortCol", SHORT, false),
-            new Column("keyIntCol", INTEGER, false),
-            new Column("keyLongCol", LONG, false),
+            new Column("keyByteCol", INT8, false),
+            new Column("keyShortCol", INT16, false),
+            new Column("keyIntCol", INT32, false),
+            new Column("keyLongCol", INT64, false),
             new Column("keyFloatCol", FLOAT, false),
             new Column("keyDoubleCol", DOUBLE, false),
             new Column("keyUuidCol", UUID, false),
@@ -73,10 +73,10 @@ public class RowTest {
         };
 
         Column[] valCols = new Column[] {
-            new Column("valByteCol", BYTE, false),
-            new Column("valShortCol", SHORT, false),
-            new Column("valIntCol", INTEGER, false),
-            new Column("valLongCol", LONG, false),
+            new Column("valByteCol", INT8, false),
+            new Column("valShortCol", INT16, false),
+            new Column("valIntCol", INT32, false),
+            new Column("valLongCol", INT64, false),
             new Column("valFloatCol", FLOAT, false),
             new Column("valDoubleCol", DOUBLE, false),
             new Column("valUuidCol", UUID, false),
@@ -93,10 +93,10 @@ public class RowTest {
     @Test
     public void fixSizedColumns() {
         Column[] keyCols = new Column[] {
-            new Column("keyByteCol", BYTE, true),
-            new Column("keyShortCol", SHORT, true),
-            new Column("keyIntCol", INTEGER, true),
-            new Column("keyLongCol", LONG, true),
+            new Column("keyByteCol", INT8, true),
+            new Column("keyShortCol", INT16, true),
+            new Column("keyIntCol", INT32, true),
+            new Column("keyLongCol", INT64, true),
             new Column("keyFloatCol", FLOAT, true),
             new Column("keyDoubleCol", DOUBLE, true),
             new Column("keyUuidCol", UUID, true),
@@ -105,10 +105,10 @@ public class RowTest {
         };
 
         Column[] valCols = new Column[] {
-            new Column("valByteCol", BYTE, true),
-            new Column("valShortCol", SHORT, true),
-            new Column("valIntCol", INTEGER, true),
-            new Column("valLongCol", LONG, true),
+            new Column("valByteCol", INT8, true),
+            new Column("valShortCol", INT16, true),
+            new Column("valIntCol", INT32, true),
+            new Column("valLongCol", INT64, true),
             new Column("valFloatCol", FLOAT, true),
             new Column("valDoubleCol", DOUBLE, true),
             new Column("valUuidCol", UUID, true),
@@ -125,19 +125,19 @@ public class RowTest {
     @Test
     public void mixedColumns() {
         Column[] keyCols = new Column[] {
-            new Column("keyByteCol", BYTE, false),
-            new Column("keyShortCol", SHORT, false),
-            new Column("keyIntCol", INTEGER, false),
-            new Column("keyLongCol", LONG, false),
+            new Column("keyByteCol", INT8, false),
+            new Column("keyShortCol", INT16, false),
+            new Column("keyIntCol", INT32, false),
+            new Column("keyLongCol", INT64, false),
             new Column("keyBytesCol", BYTES, false),
             new Column("keyStringCol", STRING, false),
         };
 
         Column[] valCols = new Column[] {
-            new Column("keyByteCol", BYTE, true),
-            new Column("keyShortCol", SHORT, true),
-            new Column("keyIntCol", INTEGER, true),
-            new Column("keyLongCol", LONG, true),
+            new Column("keyByteCol", INT8, true),
+            new Column("keyShortCol", INT16, true),
+            new Column("keyIntCol", INT32, true),
+            new Column("keyLongCol", INT64, true),
             new Column("valBytesCol", BYTES, true),
             new Column("valStringCol", STRING, true),
         };
@@ -307,19 +307,19 @@ public class RowTest {
                 NativeType type = schema.column(i).type();
 
                 switch (type.spec()) {
-                    case BYTE:
+                    case INT8:
                         asm.appendByte((Byte)vals[i]);
                         break;
 
-                    case SHORT:
+                    case INT16:
                         asm.appendShort((Short)vals[i]);
                         break;
 
-                    case INTEGER:
+                    case INT32:
                         asm.appendInt((Integer)vals[i]);
                         break;
 
-                    case LONG:
+                    case INT64:
                         asm.appendLong((Long)vals[i]);
                         break;
 
