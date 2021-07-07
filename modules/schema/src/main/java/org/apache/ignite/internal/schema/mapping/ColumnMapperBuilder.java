@@ -15,30 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.registry;
-
-import org.apache.ignite.internal.schema.SchemaException;
+package org.apache.ignite.internal.schema.mapping;
 
 /**
- * Schema registration exception.
+ * Column mapper builder interface.
  */
-public class SchemaRegistryException extends SchemaException {
+public interface ColumnMapperBuilder {
     /**
-     * Constructor with error message.
+     * Add column mapping.
      *
-     * @param msg Message.
+     * @param from Source column index.
+     * @param to Target column index.
      */
-    public SchemaRegistryException(String msg) {
-        super(msg);
-    }
+    public void add(int from, int to);
 
     /**
-     * Constructor with error message and cause.
-     *
-     * @param msg Message.
-     * @param cause Cause.
+     * @return Column mapper.
      */
-    public SchemaRegistryException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    ColumnMapper build();
 }

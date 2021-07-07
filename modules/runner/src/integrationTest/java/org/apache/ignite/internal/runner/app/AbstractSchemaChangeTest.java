@@ -34,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 
 import static org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter.convert;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Ignition interface tests.
@@ -106,7 +105,6 @@ abstract class AbstractSchemaChangeTest {
         for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
             clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
 
-        assertEquals(3, clusterNodes.size());
         return clusterNodes;
     }
 
@@ -134,8 +132,8 @@ abstract class AbstractSchemaChangeTest {
     protected void addColumn(List<Ignite> nodes, Column columnToAdd) {
         nodes.get(0).tables().alterTable(TABLE,
             chng -> chng.changeColumns(cols -> {
-                final int colIdx = chng.columns().size();
-                //TODO: avoid 'colIdx' or replace with correct last colIdx.
+                int colIdx = chng.columns().namedListKeys().stream().mapToInt(Integer::parseInt).max().getAsInt() + 1;
+
                 cols.create(String.valueOf(colIdx), colChg -> convert(columnToAdd, colChg));
             }));
     }
@@ -153,6 +151,27 @@ abstract class AbstractSchemaChangeTest {
                     .orElseThrow(() -> {
                         throw new IllegalStateException("Column not found.");
                     }));
+            }));
+    }
+
+    /**
+     * @param nodes Cluster nodes.
+     * @param oldName Old column name.
+     * @param newName New column name.
+     */
+    protected void renameColumn(List<Ignite> nodes, String oldName, String newName) {
+        nodes.get(0).tables().alterTable(TABLE,
+            tblChanger -> tblChanger.changeColumns(cols -> {
+                final String colKey = tblChanger.columns().namedListKeys().stream()
+                    .filter(c -> oldName.equals(tblChanger.columns().get(c).name()))
+                    .findFirst()
+                    .orElseThrow(() -> {
+                        throw new IllegalStateException("Column not found.");
+                    });
+
+                tblChanger.changeColumns(listChanger ->
+                    listChanger.update(colKey, colChanger -> colChanger.changeName(newName))
+                );
             }));
     }
 }

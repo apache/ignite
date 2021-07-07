@@ -188,7 +188,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
                         if (!e.key().equals(MASTER_KEY)) {
                             data.put(e.key().toString().substring((DISTRIBUTED_PREFIX).length()),
-                                (Serializable)ByteUtils.fromBytes(e.value()));
+                                e.value() == null ? null : (Serializable)ByteUtils.fromBytes(e.value()));
 
                             if (maxRevision < e.revision())
                                 maxRevision = e.revision();

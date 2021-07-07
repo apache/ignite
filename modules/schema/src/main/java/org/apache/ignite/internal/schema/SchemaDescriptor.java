@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.schema.mapping.ColumnMapper;
+import org.apache.ignite.internal.schema.mapping.ColumnMapping;
 import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.internal.util.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * Full schema descriptor containing key columns chunk, value columns chunk, and schema version.
  */
 public class SchemaDescriptor implements Serializable {
-    /** Table identifier.*/
+    /** Table identifier. */
     private final UUID tableId;
 
     /** Schema version. Incremented on each schema modification. */
@@ -49,6 +51,9 @@ public class SchemaDescriptor implements Serializable {
 
     /** Mapping 'Column name' -&gt; Column. */
     private final Map<String, Column> colMap;
+
+    /** Column mapper. */
+    private ColumnMapper colMapper = ColumnMapping.identityMapping();
 
     /**
      * @param tableId Table id.
@@ -160,6 +165,22 @@ public class SchemaDescriptor implements Serializable {
      */
     public @Nullable Column column(@NotNull String name) {
         return colMap.get(name);
+    }
+
+    /**
+     * Sets column mapper for previous schema version.
+     *
+     * @param colMapper Column mapper.
+     */
+    public void columnMapping(ColumnMapper colMapper) {
+        this.colMapper = colMapper;
+    }
+
+    /**
+     * @return Column mapper.
+     */
+    public ColumnMapper columnMapping() {
+        return colMapper;
     }
 
     /** {@inheritDoc} */

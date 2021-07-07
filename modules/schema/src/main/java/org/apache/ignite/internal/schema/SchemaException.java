@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.registry;
+package org.apache.ignite.internal.schema;
 
-import org.apache.ignite.internal.schema.SchemaException;
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
- * Schema registration exception.
+ * Base class for schema exceptions.
  */
-public class SchemaRegistryException extends SchemaException {
+public class SchemaException extends IgniteInternalException {
     /**
      * Constructor with error message.
      *
      * @param msg Message.
      */
-    public SchemaRegistryException(String msg) {
+    public SchemaException(String msg) {
         super(msg);
     }
 
@@ -38,7 +38,7 @@ public class SchemaRegistryException extends SchemaException {
      * @param msg Message.
      * @param cause Cause.
      */
-    public SchemaRegistryException(String msg, Throwable cause) {
+    public SchemaException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

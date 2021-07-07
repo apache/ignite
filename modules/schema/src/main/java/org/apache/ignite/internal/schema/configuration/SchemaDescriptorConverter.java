@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema.configuration;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -25,8 +26,10 @@ import java.util.function.Supplier;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaException;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaTable;
 
@@ -116,7 +119,46 @@ public class SchemaDescriptorConverter {
      * @return Internal Column.
      */
     private static Column convert(org.apache.ignite.schema.Column colCfg) {
-        return new Column(colCfg.name(), convert(colCfg.type()), colCfg.nullable(), new ConstantSupplier((Serializable)colCfg.defaultValue()));
+        NativeType type = convert(colCfg.type());
+
+        return new Column(colCfg.name(), type, colCfg.nullable(), new ConstantSupplier(convertDefault(type, (String)colCfg.defaultValue())));
+    }
+
+    /**
+     * TODO: https://issues.apache.org/jira/browse/IGNITE-14479 Fix default conversion.
+     *
+     * @param type Column type.
+     * @param dflt Column default value.
+     * @return Parsed object.
+     */
+    private static Serializable convertDefault(NativeType type, String dflt) {
+        if (dflt == null || dflt.isEmpty() && type.spec() != NativeTypeSpec.STRING)
+            return null;
+
+        assert dflt instanceof String;
+
+        switch (type.spec()) {
+            case BYTE:
+                return Byte.parseByte(dflt);
+            case SHORT:
+                return Short.parseShort(dflt);
+            case INTEGER:
+                return Integer.parseInt(dflt);
+            case LONG:
+                return Long.parseLong(dflt);
+            case FLOAT:
+                return Float.parseFloat(dflt);
+            case DOUBLE:
+                return Double.parseDouble(dflt);
+            case DECIMAL:
+                return new BigDecimal(dflt);
+            case STRING:
+                return dflt;
+            case UUID:
+                return java.util.UUID.fromString(dflt);
+            default:
+                throw new SchemaException("Default value is not supported for type: type=" + type.toString());
+        }
     }
 
     /**

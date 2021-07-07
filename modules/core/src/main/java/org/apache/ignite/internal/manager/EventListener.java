@@ -31,8 +31,8 @@ public interface EventListener<P extends EventParameters> {
      *
      * @param parameters Parameters provide a properties of the event. This attribute cannot be {@code null}.
      * @param exception Exception which is happened during the event produced or {@code null}.
-     * @return True means that the event is handled and a listener will be removed,
-     * false is the listener will stay listen.
+     * @return {@code True} means that the event is handled and a listener will be removed,
+     * {@code false} is the listener will stay listen.
      */
     boolean notify(@NotNull P parameters, @Nullable Throwable exception);
 

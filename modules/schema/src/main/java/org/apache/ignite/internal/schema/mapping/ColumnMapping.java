@@ -15,30 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.registry;
+package org.apache.ignite.internal.schema.mapping;
 
-import org.apache.ignite.internal.schema.SchemaException;
+import java.io.Serializable;
 
 /**
- * Schema registration exception.
+ * Column mapping helper.
  */
-public class SchemaRegistryException extends SchemaException {
+public class ColumnMapping {
+    /** Identity mapper. */
+    private static final IdentityMapper IDENTITY_MAPPER = new IdentityMapper();
+
     /**
-     * Constructor with error message.
-     *
-     * @param msg Message.
+     * @return Identity mapper instance.
      */
-    public SchemaRegistryException(String msg) {
-        super(msg);
+    public static ColumnMapper identityMapping() {
+        return IDENTITY_MAPPER;
     }
 
     /**
-     * Constructor with error message and cause.
-     *
-     * @param msg Message.
-     * @param cause Cause.
+     * @param cols Number of columns.
      */
-    public SchemaRegistryException(String msg, Throwable cause) {
-        super(msg, cause);
+    public static ColumnMapperBuilder mapperBuilder(int cols) {
+        return new ColumnMapperImpl(cols);
+    }
+
+    /**
+     * Stub.
+     */
+    private ColumnMapping() {
+    }
+
+    /**
+     * Identity column mapper.
+     */
+    private static class IdentityMapper implements ColumnMapper, Serializable {
+        /** {@inheritDoc} */
+        @Override public int map(int idx) {
+            return idx;
+        }
     }
 }

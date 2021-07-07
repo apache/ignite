@@ -20,12 +20,15 @@ package org.apache.ignite.internal.schema;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import org.apache.ignite.configuration.schemas.table.ColumnView;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
+import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.manager.Producer;
@@ -40,6 +43,9 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.internal.schema.configuration.SchemaDescriptorConverter;
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
+import org.apache.ignite.internal.schema.mapping.ColumnMapper;
+import org.apache.ignite.internal.schema.mapping.ColumnMapping;
+import org.apache.ignite.internal.schema.mapping.ColumnMapperBuilder;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryException;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
 import org.apache.ignite.internal.util.ByteUtils;
@@ -125,7 +131,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                             onEvent(SchemaEvent.DROPPED, new SchemaEventParameters(tblId, null), null);
                         }
                         else {
-                            int v = (int)ByteUtils.bytesToLong(evt.newEntry().value(),0);
+                            int v = (int)ByteUtils.bytesToLong(evt.newEntry().value());
 
                             assert reg.lastSchemaVersion() == v;
 
@@ -150,7 +156,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                             reg.onSchemaDropped(ver);
                         }
                         else
-                            throw new SchemaRegistryException("Schema of concrete version can't be changed.");
+                            throw new SchemaModificationException("Schema of concrete version can't be changed.");
                     }
                 }
 
@@ -219,7 +225,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                 final ByteArray lastVerKey = new ByteArray(INTERNAL_PREFIX + tblId);
                 final ByteArray schemaKey = new ByteArray(INTERNAL_PREFIX + tblId + INTERNAL_VER_SUFFIX + newVer);
 
-                SchemaTable schemaTable = SchemaConfigurationConverter.convert(tblConfig);
+                SchemaTable schemaTable = SchemaConfigurationConverter.convert(tblConfig.value());
                 final SchemaDescriptor desc = SchemaDescriptorConverter.convert(tblId, newVer, schemaTable);
 
                 return metaStorageMgr.invoke(Conditions.notExists(schemaKey),
@@ -231,6 +237,106 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                         Operations.put(lastVerKey, ByteUtils.longToBytes(newVer)),
                         Operations.noop()));
             });
+    }
+
+    /**
+     * Creates schema registry for the table with existed schema or
+     * registers initial schema from configuration.
+     *
+     * @param tblId Table id.
+     * @param tblName Table name.
+     * @param oldTbl Old table configuration.
+     * @param newTbl New table configuraiton.
+     * @return Operation future.
+     */
+    public CompletableFuture<Boolean> updateSchemaForTable(
+        final UUID tblId,
+        String tblName,
+        TableView oldTbl,
+        TableView newTbl
+    ) {
+        return vaultMgr.get(ByteArray.fromString(INTERNAL_PREFIX + tblId)).
+            thenCompose(entry -> {
+                assert !entry.empty();
+
+                final int oldVer = (int)ByteUtils.bytesToLong(entry.value());
+                final int newVer = oldVer + 1;
+
+                final ByteArray lastVerKey = new ByteArray(INTERNAL_PREFIX + tblId);
+                final ByteArray schemaKey = new ByteArray(INTERNAL_PREFIX + tblId + INTERNAL_VER_SUFFIX + newVer);
+
+                final SchemaDescriptor desc = SchemaDescriptorConverter.convert(tblId, newVer, SchemaConfigurationConverter.convert(newTbl));
+
+                desc.columnMapping(columnMapper(
+                    schemaRegistryForTable(tblId).schema(oldVer),
+                    oldTbl,
+                    desc,
+                    newTbl));
+
+                return metaStorageMgr.invoke(Conditions.notExists(schemaKey),
+                    Operations.put(schemaKey, ByteUtils.toBytes(desc)),
+                    Operations.noop())
+                    //TODO: IGNITE-14679 Serialize schema.
+                    .thenCompose(res -> metaStorageMgr.invoke(
+                        Conditions.value(lastVerKey).eq(ByteUtils.longToBytes(oldVer)),
+                        Operations.put(lastVerKey, ByteUtils.longToBytes(newVer)),
+                        Operations.noop()));
+            });
+    }
+
+    /**
+     * @param oldDesc Old schema descriptor.
+     * @param oldTbl Old table configuration.
+     * @param newDesc New schema descriptor.
+     * @param newTbl New table configuration.
+     * @return Column mapper.
+     */
+    private ColumnMapper columnMapper(
+        SchemaDescriptor oldDesc,
+        TableView oldTbl,
+        SchemaDescriptor newDesc,
+        TableView newTbl) {
+        ColumnMapperBuilder mapper = null;
+
+        for (String s : newTbl.columns().namedListKeys()) {
+            final ColumnView newColView = newTbl.columns().get(s);
+            final ColumnView oldColView = oldTbl.columns().get(s);
+
+            if (oldColView == null) {
+                assert !newDesc.isKeyColumn(newDesc.column(newColView.name()).schemaIndex());
+
+                if (mapper == null)
+                    mapper = ColumnMapping.mapperBuilder(newDesc.length());
+
+                mapper.add(newDesc.column(newColView.name()).schemaIndex(), -1); // New column added.
+            }
+            else {
+                final Column newCol = newDesc.column(newColView.name());
+                final Column oldCol = oldDesc.column(oldColView.name());
+
+                if (!newCol.type().equals(oldCol.type()) || newCol.nullable() != oldCol.nullable())
+                    throw new InvalidTypeException("Column of incompatible type: [schemaVer=" + newDesc.version() + ", col=" + newCol);
+
+                if (newCol.schemaIndex() == oldCol.schemaIndex())
+                    continue;
+
+                if (mapper == null)
+                    mapper = ColumnMapping.mapperBuilder(newDesc.length());
+
+                mapper.add(newCol.schemaIndex(), oldCol.schemaIndex());
+            }
+        }
+
+        final Optional<Column> droppedKeyCol = oldTbl.columns().namedListKeys().stream()
+            .filter(k -> newTbl.columns().get(k) == null)
+            .map(k -> oldDesc.column(oldTbl.columns().get(k).name()))
+            .filter(c -> oldDesc.isKeyColumn(c.schemaIndex()))
+            .findAny();
+
+        if (droppedKeyCol.isPresent())
+            throw new SchemaModificationException("Dropping of key column is forbidden: [schemaVer=" + newDesc.version() + ", col=" + droppedKeyCol.get());
+
+        return mapper == null ? ColumnMapping.identityMapping() : mapper.build();
     }
 
     /**
@@ -246,7 +352,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                 .thenApply(e -> e.empty() ? null : (SchemaDescriptor)ByteUtils.fromBytes(e.value())).get();
         }
         catch (InterruptedException | ExecutionException e) {
-            throw new SchemaRegistryException("Can't read schema from vault: ver=" + schemaVer, e);
+            throw new SchemaException("Can't read schema from vault: ver=" + schemaVer, e);
         }
     }
 

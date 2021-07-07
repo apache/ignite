@@ -15,30 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.registry;
-
-import org.apache.ignite.internal.schema.SchemaException;
+package org.apache.ignite.internal.schema.mapping;
 
 /**
- * Schema registration exception.
+ * Column mapper implementation.
  */
-public class SchemaRegistryException extends SchemaException {
-    /**
-     * Constructor with error message.
-     *
-     * @param msg Message.
-     */
-    public SchemaRegistryException(String msg) {
-        super(msg);
-    }
+class ColumnMapperImpl implements ColumnMapper, ColumnMapperBuilder {
+    /** Mapping. */
+    private final int[] mapping;
 
     /**
-     * Constructor with error message and cause.
-     *
-     * @param msg Message.
-     * @param cause Cause.
+     * @param cols Number of columns.
      */
-    public SchemaRegistryException(String msg, Throwable cause) {
-        super(msg, cause);
+    ColumnMapperImpl(int cols) {
+        mapping = new int[cols];
+
+        for (int i = 0; i < mapping.length; i++)
+            mapping[i] = i;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void add(int from, int to) {
+        mapping[from] = to;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int map(int idx) {
+        if (idx > mapping.length)
+            return -1;
+
+        return mapping[idx];
+    }
+
+    /** {@inheritDoc} */
+    @Override public ColumnMapper build() {
+        return this;
     }
 }

@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.registry;
-
-import org.apache.ignite.internal.schema.SchemaException;
+package org.apache.ignite.internal.schema;
 
 /**
- * Schema registration exception.
+ * An exception thrown when an attempt to modification schema was failed or forbidden,
  */
-public class SchemaRegistryException extends SchemaException {
+public class SchemaModificationException extends SchemaException {
     /**
      * Constructor with error message.
      *
      * @param msg Message.
      */
-    public SchemaRegistryException(String msg) {
+    public SchemaModificationException(String msg) {
         super(msg);
     }
 
@@ -38,7 +36,7 @@ public class SchemaRegistryException extends SchemaException {
      * @param msg Message.
      * @param cause Cause.
      */
-    public SchemaRegistryException(String msg, Throwable cause) {
+    public SchemaModificationException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

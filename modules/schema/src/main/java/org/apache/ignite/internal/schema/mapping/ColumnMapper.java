@@ -15,30 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.registry;
+package org.apache.ignite.internal.schema.mapping;
 
-import org.apache.ignite.internal.schema.SchemaException;
+import java.io.Serializable;
 
 /**
- * Schema registration exception.
+ * Column mapper interface.
  */
-public class SchemaRegistryException extends SchemaException {
+public interface ColumnMapper extends Serializable {
     /**
-     * Constructor with error message.
+     * Map column idx in source schema to column idx in target schema.
      *
-     * @param msg Message.
+     * @param idx Column index in source schema.
+     * @return Column index in target schema or {@code -1} if no column exists in target schema.
      */
-    public SchemaRegistryException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Constructor with error message and cause.
-     *
-     * @param msg Message.
-     * @param cause Cause.
-     */
-    public SchemaRegistryException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    int map(int idx);
 }

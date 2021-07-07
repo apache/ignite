@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.schema;
 
-import org.apache.ignite.lang.IgniteInternalException;
-
 /**
  * An exception thrown when an attempt to read an invalid type from a row is performed.
  */
-public class InvalidTypeException extends IgniteInternalException {
+public class InvalidTypeException extends SchemaException {
     /**
      * @param msg Error message.
      */

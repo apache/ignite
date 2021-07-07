@@ -20,7 +20,6 @@ package org.apache.ignite.configuration.schemas.table;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.validation.Immutable;
 
 /**
  * Configuration for single column in SQL table.
@@ -29,7 +28,6 @@ import org.apache.ignite.configuration.validation.Immutable;
 public class ColumnConfigurationSchema {
     /** Column name. */
     @Value
-    @Immutable
     public String name;
 
     /** Column type. */
