@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot metadata file.
@@ -70,8 +71,12 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
-    /** Additional named records to store with snapshot meta. */
-    private final Map<String, Serializable> metaRecords = new HashMap<>();
+    /**
+     * Additional named records to store with snapshot meta.
+     * Can be null even if final because might be deserialized from previous class version.
+     */
+    @Nullable
+    private Map<String, Serializable> metaRecords;
 
     /**
      * @param rqId Unique snapshot request id.
@@ -106,10 +111,32 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
+     * Prevents from NullPointerException when accessing the meta records. The records do not exists in previous class version. This
+     * collection might be null after deserealization, reading snapshot of previous version.
+     *
+     * @param canCreate If {@code true} and the metas map is null, it will be created.
+     * @return Map of the additional meta records.
+     */
+    private Map<String, Serializable> metaRecords0(boolean canCreate) {
+        if (metaRecords == null) {
+            if (canCreate) {
+                synchronized (this) {
+                    if (metaRecords == null)
+                        metaRecords = new HashMap<>();
+                }
+            }
+            else
+                return Collections.emptyMap();
+        }
+
+        return metaRecords;
+    }
+
+    /**
      * @return Current snapshot metadata.
      */
     public SnapshotMetadata addMetaRecord(String name, Serializable meta) {
-        metaRecords.put(name, meta);
+        metaRecords0(true).put(name, meta);
 
         return this;
     }
@@ -118,14 +145,14 @@ public class SnapshotMetadata implements Serializable {
      * @return Additional meta-record by {@code name}. {@code Null} if not found.
      */
     public Serializable metaRecord(String name) {
-        return metaRecords.get(name);
+        return metaRecords0(false).get(name);
     }
 
     /**
      * @return All stored additional meta-records.
      */
     public Map<String, Serializable> allMetaRecords() {
-        return Collections.unmodifiableMap(metaRecords);
+        return Collections.unmodifiableMap(metaRecords0(false));
     }
 
     /**
