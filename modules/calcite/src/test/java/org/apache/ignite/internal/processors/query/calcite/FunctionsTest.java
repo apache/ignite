@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.function.LongFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -46,6 +52,47 @@ public class FunctionsTest extends GridCommonAbstractTest {
     public void testLength() {
         checkQuery("SELECT LENGTH('TEST')").returns(4).check();
         checkQuery("SELECT LENGTH(NULL)").returns(new Object[] { null }).check();
+    }
+
+    /** */
+    @Test
+    public void testCurrentDateTimeTimeStamp() {
+        checkDateTimeQuery("SELECT CURRENT_DATE", Date::new);
+        checkDateTimeQuery("SELECT CURRENT_TIME", Time::new);
+        checkDateTimeQuery("SELECT CURRENT_TIMESTAMP", Timestamp::new);
+        checkDateTimeQuery("SELECT LOCALTIME", Time::new);
+        checkDateTimeQuery("SELECT LOCALTIMESTAMP", Timestamp::new);
+        checkDateTimeQuery("SELECT {fn CURDATE()}", Date::new);
+        checkDateTimeQuery("SELECT {fn CURTIME()}", Time::new);
+        checkDateTimeQuery("SELECT {fn NOW()}", Timestamp::new);
+    }
+
+    /** */
+    private <T> void checkDateTimeQuery(String sql, LongFunction<T> func) {
+        while (true) {
+            long tsBeg = U.currentTimeMillis();
+
+            List<List<?>> res = qryEngine.query(null, "PUBLIC", sql).get(0).getAll();
+
+            long tsEnd = U.currentTimeMillis();
+
+            assertEquals(1, res.size());
+            assertEquals(1, res.get(0).size());
+
+            String strBeg = func.apply(tsBeg).toString();
+            String strEnd = func.apply(tsEnd).toString();
+
+            // Date changed, time comparison may return wrong result.
+            if (strBeg.compareTo(strEnd) > 0)
+                continue;
+
+            String strRes = res.get(0).get(0).toString();
+
+            assertTrue(strBeg.compareTo(strRes) <= 0);
+            assertTrue(strEnd.compareTo(strRes) >= 0);
+
+            return;
+        }
     }
 
     /** */
