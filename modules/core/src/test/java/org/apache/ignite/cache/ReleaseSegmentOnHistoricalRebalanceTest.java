@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  * Testing the release of WAL segments during historical rebalance.
  */
 @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest {
+public class ReleaseSegmentOnHistoricalRebalanceTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -133,7 +133,7 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
                 return m.callRealMethod();
             }).when(spy).releaseHistoryForExchange();
 
-            dbMgr(n, spy);
+            databaseManager(n, spy);
         });
     }
 
@@ -150,7 +150,7 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
 
             when(spy.reserveHistoryForPreloading(any())).thenAnswer(m -> false);
 
-            dbMgr(n, spy);
+            databaseManager(n, spy);
         });
     }
 
@@ -171,7 +171,7 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
                 return m.callRealMethod();
             }).when(spy).releaseHistoryForPreloading();
 
-            dbMgr(n, spy);
+            databaseManager(n, spy);
         });
     }
 
@@ -273,14 +273,14 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
     }
 
     /**
-     * Populate the cache.
+     * Populates the given cache and forces a new checkpoint every 100 updates.
      *
      * @param cache Cache.
      * @param cnt Entry count.
      * @param o Key offset.
      * @throws Exception If failed.
      */
-    private void populate(IgniteCache<? super Object, ? super Object> cache, int cnt, int o) throws Exception {
+    private void populate(IgniteCache<Integer, ? super Object> cache, int cnt, int o) throws Exception {
         for (int i = 0; i < cnt; i++) {
             if (i % 100 == 0)
                 forceCheckpoint();
@@ -307,7 +307,7 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
      * @param n Node.
      * @param spy Spy.
      */
-    private void dbMgr(IgniteEx n, GridCacheDatabaseSharedManager spy) {
+    private void databaseManager(IgniteEx n, GridCacheDatabaseSharedManager spy) {
         setFieldValue(n.context().cache().context(), "dbMgr", spy);
     }
 

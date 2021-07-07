@@ -2522,7 +2522,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (!success) {
                     log.warning("Could not reserve history for historical rebalance " +
-                        "(possible it happened because WAL space is exhausted)");
+                        "(possible it happened because WAL space is exhausted).");
                 }
             }
 

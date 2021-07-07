@@ -59,7 +59,7 @@ public class CheckpointHistoryResult {
     }
 
     /**
-     * Getting the oldest reserved checkpoint marker.
+     * Returns the oldest reserved checkpoint marker.
      *
      * @return Checkpoint mark.
      */
