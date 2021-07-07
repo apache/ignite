@@ -244,8 +244,9 @@ The snapshot procedure has some limitations that you should be aware of before u
 
 * Snapshotting of specific caches/tables is unsupported. You always create a full cluster snapshot.
 * Caches/tables that are not persisted in Ignite Persistence are not included into the snapshot.
-* Encrypted caches are not included in the snapshot.
+* Encrypted caches in the snapshot must be encrypted with same master key.
 * You can have only one snapshotting operation running at a time.
+* Any snapshot operation is unallowed during master key change and/or cache group key change.
 * The snapshot procedure is interrupted if a server node leaves the cluster.
 * Snapshot may be restored only at the same cluster topology with the same node IDs;
 * The automatic restore procedure is not available yet. You have to restore it manually.
