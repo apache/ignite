@@ -167,6 +167,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private volatile MvccCoordinator curCrd = MvccCoordinator.UNASSIGNED_COORDINATOR;
 
     /** */
+    @Nullable
     private TxLog txLog;
 
     /** */
@@ -356,6 +357,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void stopTxLog() {
         stopVacuumWorkers();
+
+        if (txLog != null)
+            txLog.close();
 
         txLog = null;
 
