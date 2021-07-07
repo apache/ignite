@@ -1662,7 +1662,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     reservedForExchange = null;
 
                     grpPartsWithCnts.clear();
-                    break;
+                    
+                    return grpPartsWithCnts;
                 }
 
                 try {
