@@ -17,7 +17,7 @@ matrix:
   include:
     - language: java
       os: linux
-      dist: trusty
+      dist: xenial
       install: skip
       jdk: openjdk8
       before_script:
@@ -28,7 +28,7 @@ matrix:
 
     - language: java
       os: linux
-      dist: trusty
+      dist: xenial
       install: skip
       jdk: openjdk11
       before_script:
@@ -54,7 +54,7 @@ matrix:
     - language: java
       name: "Check test suites"
       os: linux
-      dist: trusty
+      dist: xenial
       install: skip
       jdk: openjdk8
       script: mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
