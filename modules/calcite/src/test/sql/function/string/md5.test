@@ -2,9 +2,6 @@
 # description: Test the md5 function
 # group: [string]
 
-statement ok
-PRAGMA enable_verification
-
 query II
 select md5('hello'), md5(NULL)
 ----
@@ -12,7 +9,10 @@ select md5('hello'), md5(NULL)
 NULL
 
 statement ok
-CREATE TABLE strings AS SELECT s::VARCHAR s FROM generate_series(0,10,1) t(s)
+CREATE TABLE strings (s VARCHAR);
+
+statement ok
+INSERT INTO strings SELECT x::VARCHAR s FROM table(system_range(0, 10))
 
 query II
 select md5(s), md5('1') from strings ORDER BY s

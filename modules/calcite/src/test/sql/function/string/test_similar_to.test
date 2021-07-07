@@ -5,116 +5,84 @@
 query T
 SELECT 'aaa' SIMILAR TO 'bbb'
 ----
-0
+false
 
 query T
 SELECT 'aaa' SIMILAR TO 'aaa'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO '.*'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO 'a.*'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO '.*a'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO '.*b'
 ----
-0
+false
 
 query T
 SELECT 'aaa' SIMILAR TO 'b.*'
 ----
-0
+false
 
 query T
 SELECT 'aaa' SIMILAR TO 'a[a-z]a'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO 'a[a-z]{2}'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO 'a[a-z].*'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO '[a-z][a-z].*'
 ----
-1
+true
 
 query T
 SELECT 'aaa' SIMILAR TO '[a-z]{3}'
 ----
-1
+true
 
 query T
 SELECT 'aaa' NOT SIMILAR TO '[b-z]{3}'
 ----
-1
+true
 
-query T
-SELECT 'aaa' ~ 'aaa'
-----
-1
-
-query T
-SELECT 'aaa' !~ 'bbb'
-----
-1
-
-# similar to must match entire expression
-query T
-SELECT 'aaa' ~ '^a'
-----
-0
-
-query T
-SELECT 'aaa' ~ '^a+'
-----
-1
-
-query T
-SELECT 'aaa' ~ '(a|b)*'
-----
-1
-
-query T
-SELECT 'abc' ~ '^(b|c)'
-----
-0
 
 # Test SIMILAR TO statement with expressions
 statement ok
-CREATE TABLE strings (s STRING, p STRING);
+CREATE TABLE strings (id INTEGER, s VARCHAR, p VARCHAR);
 
 statement ok
-INSERT INTO strings VALUES('aaa', 'a[a-z]a'), ('abab', 'ab.*'), ('aaa', 'a[a-z]a'), ('aaa', '.*b.*');
-
-statement ok
+INSERT INTO strings VALUES(0, 'aaa', 'a[a-z]a'), (1, 'abab', 'ab.*'), (2, 'aaa', 'a[a-z]a'), (3, 'aaa', '.*b.*');
 
 
 query T
-SELECT s FROM strings WHERE s SIMILAR TO 'ab.*'
+SELECT s FROM strings WHERE s SIMILAR TO 'ab.*' ORDER BY id
 ----
 abab
 
 query T
-SELECT s FROM strings WHERE 'aba' SIMILAR TO p
+SELECT s FROM strings WHERE 'aba' SIMILAR TO p ORDER BY id
 ----
 aaa
 abab
@@ -122,14 +90,14 @@ aaa
 aaa
 
 query T
-SELECT s FROM strings WHERE s SIMILAR TO p
+SELECT s FROM strings WHERE s SIMILAR TO p ORDER BY id
 ----
 aaa
 abab
 aaa
 
 query T
-SELECT s FROM strings WHERE s NOT SIMILAR TO p
+SELECT s FROM strings WHERE s NOT SIMILAR TO p ORDER BY id
 ----
 aaa
 
