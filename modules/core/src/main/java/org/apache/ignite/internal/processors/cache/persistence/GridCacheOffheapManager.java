@@ -1169,9 +1169,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
 
                 return new Metas(
-                        new RootPage(new FullPageId(metastoreRoot, grpId), allocated),
-                        new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
-                        null,
+                    new RootPage(new FullPageId(metastoreRoot, grpId), allocated),
+                    new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
+                    null,
                     null);
             }
             finally {

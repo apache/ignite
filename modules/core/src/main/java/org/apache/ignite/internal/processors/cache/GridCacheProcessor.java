@@ -3758,7 +3758,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param reuseEncrKeys Encryption keys by cache group id. If not empty, will be added instead of new keys generation.
+     * @param reuseEncrKeys Encryption keys by cache group id. If not empty, will be added instead of new generated keys.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
