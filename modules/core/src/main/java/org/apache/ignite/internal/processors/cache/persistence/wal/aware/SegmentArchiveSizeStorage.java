@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
@@ -30,6 +32,9 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED
  * Allows to track the exceeding of the maximum archive size.
  */
 class SegmentArchiveSizeStorage {
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Current WAL archive size in bytes. Guarded by {@code this}. */
     private long walArchiveSize;
 
@@ -66,10 +71,13 @@ class SegmentArchiveSizeStorage {
      * @param reservationStorage Segment reservations storage.
      */
     public SegmentArchiveSizeStorage(
+        IgniteLogger log,
         long minWalArchiveSize,
         long maxWalArchiveSize,
         SegmentReservationStorage reservationStorage
     ) {
+        this.log = log;
+
         this.minWalArchiveSize = minWalArchiveSize;
         this.maxWalArchiveSize = maxWalArchiveSize;
 
@@ -95,6 +103,7 @@ class SegmentArchiveSizeStorage {
      */
     void addSize(long idx, long sizeChange) {
         long releaseIdx = -1;
+        int releaseCnt = 0;
 
         synchronized (this) {
             walArchiveSize += sizeChange;
@@ -113,6 +122,7 @@ class SegmentArchiveSizeStorage {
 
                     for (Map.Entry<Long, Long> e : segmentSizes.entrySet()) {
                         releaseIdx = e.getKey();
+                        releaseCnt++;
 
                         if (walArchiveSize - (size += e.getValue()) < minWalArchiveSize)
                             break;
@@ -123,8 +133,15 @@ class SegmentArchiveSizeStorage {
             }
         }
 
-        if (releaseIdx != -1)
+        if (releaseIdx != -1) {
+            if (log.isInfoEnabled()) {
+                log.info("Maximum size of the WAL archive exceeded, the segments will be forcibly released [" +
+                    "maxWalArchiveSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ", releasedSegmentCnt=" +
+                    releaseCnt + ", lastReleasedSegmentIdx=" + releaseIdx + ']');
+            }
+
             reservationStorage.forceRelease(releaseIdx);
+        }
     }
 
     /**

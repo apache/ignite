@@ -69,7 +69,13 @@ public class SegmentAware {
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
         segmentCompressStorage = new SegmentCompressStorage(log, compactionEnabled);
 
-        archiveSizeStorage = new SegmentArchiveSizeStorage(minWalArchiveSize, maxWalArchiveSize, reservationStorage);
+        archiveSizeStorage = new SegmentArchiveSizeStorage(
+            log,
+            minWalArchiveSize,
+            maxWalArchiveSize,
+            reservationStorage
+        );
+
         truncateStorage = new SegmentTruncateStorage();
 
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
