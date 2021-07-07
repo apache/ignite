@@ -26,6 +26,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class CorrelatedNestedLoopJoinRule extends ConverterRule {
@@ -84,10 +86,21 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         final Set<CorrelationId> correlationIds = new HashSet<>();
         final ArrayList<RexNode> corrVar = new ArrayList<>();
 
-        for (int i = 0; i < batchSize; i++) {
-            CorrelationId correlationId = cluster.createCorrel();
-            correlationIds.add(correlationId);
-            corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), correlationId));
+        final Set<CorrelationId> corrIds = RelOptUtil.getVariablesUsed(rel.getRight());
+
+        // TODO: remove all near 'if' scope after https://issues.apache.org/jira/browse/CALCITE-4673 will be merged.
+        if (corrIds.size() > 1) {
+            CorrelationId corr0 = F.first(corrIds);
+            corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), corr0));
+            correlationIds.add(corr0);
+        }
+
+        if (corrVar.isEmpty()) {
+            for (int i = 0; i < batchSize; i++) {
+                CorrelationId correlationId = cluster.createCorrel();
+                correlationIds.add(correlationId);
+                corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), correlationId));
+            }
         }
 
         // Generate first condition

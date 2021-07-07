@@ -220,23 +220,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
-        RelNode rootRel = root.rel;
 
-        final Set<CorrelationId> correlatedVariables = RelOptUtil.getVariablesUsed(root.rel);
+        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
 
-        if (correlatedVariables.size() > 1) {
-            final List<CorrelationId> correlNames = U.arrayList(correlatedVariables);
-
-            correlNames.addAll(correlatedVariables);
-
-            rootRel = DeduplicateCorrelateVariables.go(rexBuilder, correlNames.get(0), Util.skip(correlNames), root.rel);
-        }
-
-        root = root.withRel(sqlToRelConverter.decorrelate(sql, rootRel));
-
-        root = trimUnusedFields(root);
-
-        return root;
+        return trimUnusedFields(root);
     }
 
     /** {@inheritDoc} */
