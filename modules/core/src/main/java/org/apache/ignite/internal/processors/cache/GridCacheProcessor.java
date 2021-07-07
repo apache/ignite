@@ -3851,6 +3851,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         int encGrpCnt = 0;
 
         for (StoredCacheData ccfg : storedCacheDataList) {
+            // Do not generate extra key if reuse-key is set.
             int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
 
             if (ccfg.config().isEncryptionEnabled() && !reuseEncrKeys.containsKey(gid))

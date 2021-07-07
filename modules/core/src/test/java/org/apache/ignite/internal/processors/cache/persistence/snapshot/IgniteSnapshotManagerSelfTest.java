@@ -93,10 +93,18 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
-        IgniteEx ig = startGridsWithCache(1, 0, key -> new Account(key, key),
+        // Writting deltas causes several page writes into file. Every page write calls encrypt(). Every repatable encrypt() produces
+        // different record even for same original data. Re-writting pages from delta to partition file in the shanpshot leads to additional
+        // encryption before writting to the snapshot partition file. Thus, page in original partition and in snapshot partiton has
+        // different encrypted CRC and same de-crypted CRC. Different encrypted CRC looks like different data in point of view of
+        // third-party observer.
+        if(encryption)
+            return;
+
+        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 4096; i < 8192; i++) {
             ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
                 @Override public String toString() {
                     return "_" + super.toString();

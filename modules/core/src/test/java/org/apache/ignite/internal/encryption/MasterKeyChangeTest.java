@@ -81,8 +81,6 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         stopAllGrids();
 
-        System.err.println("TEST | Start grids again");
-
         startTestGrids(false);
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
@@ -147,8 +145,6 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         commSpi.waitForBlocked();
-
-        grids.get2().context().cache().context().snapshotMgr().createSnapshot("testSnapshot");
 
         assertThrowsWithCause(() -> {
             grids.get1().getOrCreateCache(new CacheConfiguration<>("newCache").setEncryptionEnabled(true));

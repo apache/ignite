@@ -650,8 +650,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
-                        //Store encryption keys to have ability to verify/restore snapshot without restart and without
-                        //manual data files (and metastore) replacing.
+                        // Store encryption keys to have ability to verify/restore snapshot without restart and without
+                        // manual data files (and metastore) replacing.
                         addEncrKeys(new SnapshotMetadata(req.requestId(),
                             req.snapshotName(),
                             cctx.localNode().consistentId().toString(),
