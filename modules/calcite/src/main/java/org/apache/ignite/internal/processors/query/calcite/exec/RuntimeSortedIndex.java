@@ -17,26 +17,23 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Runtime sorted index based on on-heap tree.
+ * Runtime sorted index.
  */
-public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> {
+public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> {
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -47,12 +44,12 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> 
     private final RelCollation collation;
 
     /** Rows. */
-    private TreeMap<Row, List<Row>> rows;
+    private final ArrayList<Row> rows = new ArrayList<>();
 
     /**
      *
      */
-    public RuntimeTreeIndex(
+    public RuntimeSortedIndex(
         ExecutionContext<Row> ectx,
         RelCollation collation,
         Comparator<Row> comp
@@ -63,19 +60,13 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> 
         assert Objects.nonNull(collation);
 
         this.collation = collation;
-        rows = new TreeMap<>(comp);
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row r) {
-        List<Row> newEqRows = new ArrayList<>();
+        assert rows.isEmpty() || comp.compare(r, rows.get(rows.size() - 1)) >= 0 : "Not sorted input";
 
-        List<Row> eqRows = rows.putIfAbsent(r, newEqRows);
-
-        if (eqRows != null)
-            eqRows.add(r);
-        else
-            newEqRows.add(r);
+        rows.add(r);
     }
 
     /** {@inheritDoc} */
@@ -90,13 +81,13 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> 
         int firstCol = F.first(collation.getKeys());
 
         if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) != null)
-            return new Cursor(rows.subMap(lower, true, upper, true));
+            return new Cursor(rows, lower, upper);
         else if (ectx.rowHandler().get(firstCol, lower) == null && ectx.rowHandler().get(firstCol, upper) != null)
-            return new Cursor(rows.headMap(upper, true));
+            return new Cursor(rows, null, upper);
         else if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) == null)
-            return new Cursor(rows.tailMap(lower, true));
+            return new Cursor(rows, lower, null);
         else
-            return new Cursor(rows);
+            return new Cursor(rows, null, null);
     }
 
     /**
@@ -113,49 +104,65 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> 
     }
 
     /**
-     *
+     * Cursor to navigate through a sorted list with duplicates.
      */
     private class Cursor implements GridCursor<Row> {
-        /** Sub map iterator. */
-        private final Iterator<Map.Entry<Row, List<Row>>> mapIt;
+        /** List of rows. */
+        private final List<Row> rows;
 
-        /** Iterator over rows with equal index keys. */
-        private Iterator<Row> listIt;
+        /** Upper bound. */
+        private final Row upper;
 
-        /** */
+        /** Current row. */
         private Row row;
 
-        /** */
-        Cursor(SortedMap<Row, List<Row>> subMap) {
-            mapIt = subMap.entrySet().iterator();
-            listIt = null;
+        /** Current index of list element. */
+        private int idx;
+
+        /**
+         * @param rows List of rows.
+         * @param lower Lower bound (inclusive).
+         * @param upper Upper bound (inclusive).
+         */
+        Cursor(List<Row> rows, @Nullable Row lower, @Nullable Row upper) {
+            this.rows = rows;
+            this.upper = upper;
+
+            idx = computeStartIdx(rows, lower) - 1;
         }
 
+        /**
+         * @param rows List of rows.
+         * @param lower Lower bound.
+         * @return Lower bound position in the list.
+         */
+        private int computeStartIdx(List<Row> rows, @Nullable Row lower) {
+            int fromIdx = lower == null ? -1 : Collections.binarySearch(rows, lower, comp);
+
+            if (fromIdx < 0)
+                fromIdx = -fromIdx - 1;
+            else {
+                // Skip duplcates.
+                while (fromIdx > 0 && comp.compare(rows.get(fromIdx - 1), rows.get(fromIdx)) == 0)
+                    --fromIdx;
+            }
+
+            return fromIdx;
+        }
+
+
         /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            if (!hasNext())
+        @Override public boolean next() {
+            if (idx == (rows.size() - 1) || (upper != null && comp.compare(upper, rows.get(idx + 1)) < 0))
                 return false;
 
-            next0();
+            row = rows.get(++idx);
 
             return true;
         }
 
-        /** */
-        private boolean hasNext() {
-            return listIt != null && listIt.hasNext() || mapIt.hasNext();
-        }
-
-        /** */
-        private void next0() {
-            if (listIt == null || !listIt.hasNext())
-                listIt = mapIt.next().getValue().iterator();
-
-            row = listIt.next();
-        }
-
         /** {@inheritDoc} */
-        @Override public Row get() throws IgniteCheckedException {
+        @Override public Row get() {
             return row;
         }
     }
@@ -177,7 +184,7 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> 
             Predicate<Row> filter,
             Supplier<Row> lowerBound,
             Supplier<Row> upperBound) {
-            super(RuntimeTreeIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
+            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
         }
 
         /** {@inheritDoc} */
