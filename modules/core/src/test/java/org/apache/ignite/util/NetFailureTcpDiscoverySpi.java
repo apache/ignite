@@ -31,9 +31,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The TcpDiscovery able to simulate network failure.
+ * Tcp Discovery able to simulate network failure.
  */
-public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
+public class NetFailureTcpDiscoverySpi extends TcpDiscoverySpi {
     /**
      * If not {@code null}, enables network timeout simulation. First value switches traffic droppage: negative for all
      * incoming, positive for all outgoing, 0 for both.
@@ -51,21 +51,19 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
      * @param direction If negative, enables timeout simulation for incomming traffic. If positive, enables timeout
      *                  simulation for outgoing traffic. Set 0 to simlate failure for both traffics.
      * @param delay     Milliseconds of awaiting before raising {@code SocketTimeoutException}.
-     * @see SocketWrap#simulateTimeout(Socket, int)
+     * @see SocketWrap#simulateTimeout(Socket)
      */
-    public void enableNetworkTimeoutSimulation(int direction, int delay) {
+    public void setNetworkTimeout(int direction, int delay) {
         simulatedTimeout = new IgnitePair<>(direction, delay);
     }
 
     /**
      * Simulates network timeout if enabled, raises {@code SocketTimeoutException}.
      *
-     * @param sock         The socket to simulate failure at.
-     * @param forceTimeout If positive of 0, overrides the delay preset in {@link #enableNetworkTimeoutSimulation(int,
-     *                     int)}.
-     * @see #enableNetworkTimeoutSimulation(int, int)
+     * @param sock The socket to simulate failure at.
+     * @see #setNetworkTimeout(int, int)
      */
-    private void simulateTimeout(Socket sock, int forceTimeout) throws SocketTimeoutException {
+    private void simulateTimeout(Socket sock) throws SocketTimeoutException {
         IgnitePair<Integer> simulatedTimeout = this.simulatedTimeout;
 
         if (simulatedTimeout == null)
@@ -76,23 +74,14 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
         if (isClientSock && simulatedTimeout.get1() < 0 || !isClientSock && simulatedTimeout.get1() > 0)
             return;
 
-        int timeout = forceTimeout >= 0 ? forceTimeout : simulatedTimeout.get2();
-
         try {
-            Thread.sleep(timeout);
+            Thread.sleep(simulatedTimeout.get2());
         }
         catch (InterruptedException ignored) {
             // No-op.
         }
 
-        throw new SocketTimeoutException("Simulated failure after delay: " + timeout + "ms.");
-    }
-
-    /**
-     * @see #simulateTimeout(Socket, int)
-     */
-    private void simulateTimeout(Socket sock) throws SocketTimeoutException {
-        simulateTimeout(sock, -1);
+        throw new SocketTimeoutException("Simulated failure after delay: " + simulatedTimeout.get2() + "ms.");
     }
 
     /**

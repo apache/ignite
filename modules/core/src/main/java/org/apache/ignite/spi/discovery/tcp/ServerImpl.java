@@ -8253,16 +8253,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Maximal time point for any recovery operation. Nanos. */
         private final long absoluteTimeout;
 
-        /** Time of the failure in nanos. */
-        private final long failTime;
-
         /**
          * @param failTime Time of the failure in nanos.
          */
         CrossRingMessageSendState(long failTime) {
-            this.failTime = failTime;
-
-            this.absoluteTimeout = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + this.failTime;
+            absoluteTimeout = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + failTime;
         }
 
         /**

@@ -93,7 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.util.FailureSimulatingTcpDiscoverySpi;
+import org.apache.ignite.util.NetFailureTcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -430,7 +430,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrids(gridCnt - 1);
 
-            nodeSpi.set(new FailureSimulatingTcpDiscoverySpi());
+            nodeSpi.set(new NetFailureTcpDiscoverySpi());
 
             startGrid(gridCnt - 1);
 
@@ -450,13 +450,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }, EVT_NODE_FAILED);
             }
 
-            FailureSimulatingTcpDiscoverySpi failSpi = ((FailureSimulatingTcpDiscoverySpi)grid(gridCnt - 1)
+            U.sleep(failureDetectionTimeout * 2);
+
+            NetFailureTcpDiscoverySpi failSpi = ((NetFailureTcpDiscoverySpi)grid(gridCnt - 1)
                 .configuration().getDiscoverySpi());
 
             long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
                 .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / gridCnt;
 
-            failSpi.enableNetworkTimeoutSimulation(1, (int)simulatedNetDelay);
+            failSpi.setNetworkTimeout(1, (int)simulatedNetDelay);
 
             testWaiter.await(failureDetectionTimeout * 3, MILLISECONDS);
 
