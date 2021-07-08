@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cdc.CdcCacheVersionTest;
 import org.apache.ignite.cdc.CdcSelfTest;
@@ -39,5 +40,17 @@ public class IgnitePdsTestSuite2 {
         }
 
         return tests;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * NOTE: These tests are also executed using I/O plugins.
+     *
+     * @param suite suite to add tests into.
+     * @param ignoredTests Ignored tests.
+     */
+    public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
+        // No-op.
     }
 }
