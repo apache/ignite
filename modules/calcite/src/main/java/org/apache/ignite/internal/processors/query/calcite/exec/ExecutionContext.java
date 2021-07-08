@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -73,6 +74,12 @@ public class ExecutionContext<Row> implements DataContext {
     /** */
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
+    /**
+     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value
+     * throughout the query.
+     */
+    private final long startTs;
+
     /** */
     private Object[] correlations = new Object[16];
 
@@ -99,6 +106,9 @@ public class ExecutionContext<Row> implements DataContext {
         this.params = params;
 
         expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
+
+        long ts = U.currentTimeMillis();
+        startTs = ts + TIME_ZONE.getOffset(ts);
     }
 
     /**
@@ -195,6 +205,10 @@ public class ExecutionContext<Row> implements DataContext {
             return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
             return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
+        if (Variable.CURRENT_TIMESTAMP.camelName.equals(name))
+            return startTs;
+        if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))
+            return startTs;
         if (name.startsWith("?"))
             return TypeUtils.toInternal(this, params.get(name));
 
