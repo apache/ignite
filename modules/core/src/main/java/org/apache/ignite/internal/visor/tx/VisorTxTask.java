@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -180,15 +179,16 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                             it.remove();
                     }
                 }
+
+                if (infos.size() > limit)
+                    infos.subList(limit, infos.size()).clear();
             }
         }
 
         return mapRes;
     }
 
-    /**
-     *
-     */
+    /** */
     private static class VisorTxJob extends VisorJob<VisorTxTaskArg, VisorTxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -551,9 +551,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         return locTxKeys;
     }
 
-    /**
-     *
-     */
+    /** */
     private static class TxStartTimeComparator implements Comparator<VisorTxInfo> {
         /** Instance. */
         public static final TxStartTimeComparator INSTANCE = new TxStartTimeComparator();
@@ -564,9 +562,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class TxDurationComparator implements Comparator<VisorTxInfo> {
         /** Instance. */
         public static final TxDurationComparator INSTANCE = new TxDurationComparator();
@@ -577,9 +573,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class TxSizeComparator implements Comparator<VisorTxInfo> {
         /** Instance. */
         public static final TxSizeComparator INSTANCE = new TxSizeComparator();
