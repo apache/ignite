@@ -16,15 +16,15 @@
  */
 package org.apache.ignite.raft.jraft.storage.snapshot;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ThroughputSnapshotThrottleTest {
     private ThroughputSnapshotThrottle snapshotThrottle;
 
-    @Before
+    @BeforeEach
     public void setup() {
         //1K every seconds
         this.snapshotThrottle = new ThroughputSnapshotThrottle(1024, 1);

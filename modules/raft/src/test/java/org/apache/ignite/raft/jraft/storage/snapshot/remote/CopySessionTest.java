@@ -32,20 +32,20 @@ import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CopySessionTest {
     private CopySession session;
     @Mock
@@ -57,7 +57,7 @@ public class CopySessionTest {
     private NodeOptions nodeOptions;
     private TimerManager timerManager;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.timerManager = new TimerManager(5);
         this.copyOpts = new CopyOptions();
@@ -71,7 +71,7 @@ public class CopySessionTest {
         this.session.setCopyOptions(copyOpts);
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         Utils.closeQuietly(this.session);
         this.timerManager.shutdown();

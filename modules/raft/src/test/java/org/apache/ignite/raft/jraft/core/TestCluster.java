@@ -53,9 +53,9 @@ import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.jetbrains.annotations.Nullable;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test cluster for NodeTest
@@ -531,7 +531,7 @@ public class TestCluster {
 
             LOG.info("End ensureSame, leader={}", leader1);
 
-            assertSame("Leader shouldn't change while comparing fsms", leader, leader1);
+            assertSame(leader, leader1, "Leader shouldn't change while comparing fsms");
         }
     }
 }

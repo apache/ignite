@@ -26,9 +26,9 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.ResetLearnersRequest;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class ResetLearnersRequestProcessorTest extends AbstractCliRequestProcessorTest<ResetLearnersRequest> {
 

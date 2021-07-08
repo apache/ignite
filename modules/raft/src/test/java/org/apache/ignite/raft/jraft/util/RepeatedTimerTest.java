@@ -17,11 +17,11 @@
 package org.apache.ignite.raft.jraft.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RepeatedTimerTest {
     private static class TestTimer extends RepeatedTimer {
@@ -57,12 +57,12 @@ public class RepeatedTimerTest {
 
     private TestTimer timer;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.timer = new TestTimer("test", 50);
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         this.timer.destroy();
     }

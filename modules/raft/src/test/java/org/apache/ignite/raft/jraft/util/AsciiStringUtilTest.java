@@ -16,8 +16,10 @@
  */
 package org.apache.ignite.raft.jraft.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -29,10 +31,10 @@ public class AsciiStringUtilTest {
         final String asciiText = "127.0.0.1:8080";
         final byte[] bytes1 = AsciiStringUtil.unsafeEncode(asciiText);
         final byte[] bytes2 = asciiText.getBytes();
-        Assert.assertArrayEquals(bytes1, bytes2);
+        assertArrayEquals(bytes1, bytes2);
 
         final String s1 = new String(bytes1);
         final String s2 = AsciiStringUtil.unsafeDecode(bytes2);
-        Assert.assertEquals(s1, s2);
+        assertEquals(s1, s2);
     }
 }

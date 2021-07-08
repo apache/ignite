@@ -19,12 +19,12 @@ package org.apache.ignite.raft.jraft.util;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ThreadIdTest implements ThreadId.OnError {
     private ThreadId id;
@@ -37,7 +37,7 @@ public class ThreadIdTest implements ThreadId.OnError {
         id.unlock();
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.id = new ThreadId(this, this);
     }

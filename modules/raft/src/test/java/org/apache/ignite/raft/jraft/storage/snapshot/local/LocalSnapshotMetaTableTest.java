@@ -24,20 +24,19 @@ import org.apache.ignite.raft.jraft.entity.RaftOutter;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LocalSnapshotMetaTableTest {
     private LocalSnapshotMetaTable table;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.table = new LocalSnapshotMetaTable(new RaftOptions());
     }
@@ -84,9 +83,9 @@ public class LocalSnapshotMetaTableTest {
             assertNull(newTable.getFileMeta("data1"));
             assertNull(newTable.getFileMeta("data2"));
             assertTrue(newTable.loadFromFile(filePath));
-            Assert.assertEquals(meta1, newTable.getFileMeta("data1"));
-            Assert.assertEquals(meta2, newTable.getFileMeta("data2"));
-            Assert.assertEquals(meta, newTable.getMeta());
+            assertEquals(meta1, newTable.getFileMeta("data1"));
+            assertEquals(meta2, newTable.getFileMeta("data2"));
+            assertEquals(meta, newTable.getMeta());
         }
         finally {
             Utils.delete(new File(path));
@@ -110,7 +109,7 @@ public class LocalSnapshotMetaTableTest {
         assertNull(newTable.getFileMeta("data1"));
         assertNull(newTable.getFileMeta("data2"));
         assertTrue(newTable.loadFromIoBufferAsRemote(buf));
-        Assert.assertEquals(meta1, newTable.getFileMeta("data1"));
-        Assert.assertEquals(meta2, newTable.getFileMeta("data2"));
+        assertEquals(meta1, newTable.getFileMeta("data1"));
+        assertEquals(meta2, newTable.getFileMeta("data2"));
     }
 }

@@ -23,8 +23,8 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.GetPeersRequest;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.GetPeersResponse;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class GetPeersRequestProcessorTest extends AbstractCliRequestProcessorTest<GetPeersRequest> {
 

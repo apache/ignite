@@ -23,13 +23,14 @@ import java.util.concurrent.Executors;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -50,24 +51,24 @@ public class UtilsTest {
         latch.await();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void tetsVerifyGroupId1() {
-        Utils.verifyGroupId("");
+        assertThrows(IllegalArgumentException.class, () -> Utils.verifyGroupId(""));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void tetsVerifyGroupId2() {
-        Utils.verifyGroupId(null);
+        assertThrows(IllegalArgumentException.class, () -> Utils.verifyGroupId(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void tetsVerifyGroupId3() {
-        Utils.verifyGroupId("1abc");
+        assertThrows(IllegalArgumentException.class, () -> Utils.verifyGroupId("1abc"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void tetsVerifyGroupId4() {
-        Utils.verifyGroupId("*test");
+        assertThrows(IllegalArgumentException.class, () -> Utils.verifyGroupId("*test"));
     }
 
     @Test
@@ -103,7 +104,7 @@ public class UtilsTest {
             @Override
             public void run(Status status) {
                 assertFalse(status.isOk());
-                Assert.assertEquals(RaftError.EACCES.getNumber(), status.getCode());
+                assertEquals(RaftError.EACCES.getNumber(), status.getCode());
                 assertEquals("test 99", status.getErrorMsg());
                 latch.countDown();
             }
@@ -144,38 +145,38 @@ public class UtilsTest {
         String pid = "192.168.1.88:5566";
         String[] result = Utils.parsePeerId(pid);
         String[] expecteds = {"192.168.1.88", "5566"};
-        Assert.assertTrue(result.length == 2);
-        Assert.assertArrayEquals(expecteds, result);
+        assertTrue(result.length == 2);
+        assertArrayEquals(expecteds, result);
 
         pid = "[fe80:0:0:0:6450:aa3c:cd98:ed0f]:8847";
         result = Utils.parsePeerId(pid);
         expecteds = new String[] {"[fe80:0:0:0:6450:aa3c:cd98:ed0f]", "8847"};
-        Assert.assertTrue(result.length == 2);
-        Assert.assertArrayEquals(expecteds, result);
+        assertTrue(result.length == 2);
+        assertArrayEquals(expecteds, result);
 
         pid = "192.168.1.88:5566:9";
         result = Utils.parsePeerId(pid);
         expecteds = new String[] {"192.168.1.88", "5566", "9"};
-        Assert.assertTrue(result.length == 3);
-        Assert.assertArrayEquals(expecteds, result);
+        assertTrue(result.length == 3);
+        assertArrayEquals(expecteds, result);
 
         pid = "[fe80:0:0:0:6450:aa3c:cd98:ed0f]:8847:9";
         result = Utils.parsePeerId(pid);
         expecteds = new String[] {"[fe80:0:0:0:6450:aa3c:cd98:ed0f]", "8847", "9"};
-        Assert.assertTrue(result.length == 3);
-        Assert.assertArrayEquals(expecteds, result);
+        assertTrue(result.length == 3);
+        assertArrayEquals(expecteds, result);
 
         pid = "192.168.1.88:5566:0:6";
         result = Utils.parsePeerId(pid);
         expecteds = new String[] {"192.168.1.88", "5566", "0", "6"};
-        Assert.assertTrue(result.length == 4);
-        Assert.assertArrayEquals(expecteds, result);
+        assertTrue(result.length == 4);
+        assertArrayEquals(expecteds, result);
 
         pid = "[fe80:0:0:0:6450:aa3c:cd98:ed0f]:8847:0:6";
         result = Utils.parsePeerId(pid);
         expecteds = new String[] {"[fe80:0:0:0:6450:aa3c:cd98:ed0f]", "8847", "0", "6"};
-        Assert.assertTrue(result.length == 4);
-        Assert.assertArrayEquals(expecteds, result);
+        assertTrue(result.length == 4);
+        assertArrayEquals(expecteds, result);
 
         boolean ex1 = false;
         try {
@@ -185,7 +186,7 @@ public class UtilsTest {
         catch (Exception e) {
             ex1 = true;
         }
-        Assert.assertTrue(ex1);
+        assertTrue(ex1);
 
         boolean ex2 = false;
         try {
@@ -195,7 +196,7 @@ public class UtilsTest {
         catch (Exception e) {
             ex2 = true;
         }
-        Assert.assertTrue(ex2);
+        assertTrue(ex2);
 
     }
 

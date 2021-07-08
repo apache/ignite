@@ -19,28 +19,28 @@ package org.apache.ignite.raft.jraft.storage.snapshot.local;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class LocalSnapshotWriterTest extends BaseStorageTest {
     private LocalSnapshotWriter writer;
     @Mock
     private LocalSnapshotStorage snapshotStorage;
 
     @Override
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
         this.writer = new LocalSnapshotWriter(path, snapshotStorage, new RaftOptions());

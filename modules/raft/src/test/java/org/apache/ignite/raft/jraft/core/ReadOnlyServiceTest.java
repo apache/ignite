@@ -36,23 +36,26 @@ import org.apache.ignite.raft.jraft.rpc.RpcResponseClosure;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Bytes;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class ReadOnlyServiceTest {
     private ReadOnlyServiceImpl readOnlyServiceImpl;
 
@@ -62,7 +65,7 @@ public class ReadOnlyServiceTest {
     @Mock
     private FSMCaller fsmCaller;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.readOnlyServiceImpl = new ReadOnlyServiceImpl();
         final ReadOnlyServiceOptions opts = new ReadOnlyServiceOptions();
@@ -82,7 +85,7 @@ public class ReadOnlyServiceTest {
         assertTrue(this.readOnlyServiceImpl.init(opts));
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         this.readOnlyServiceImpl.shutdown();
         this.readOnlyServiceImpl.join();

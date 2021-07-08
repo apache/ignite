@@ -25,9 +25,9 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.RemovePeerResponse;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class RemovePeerRequestProcessorTest extends AbstractCliRequestProcessorTest<RemovePeerRequest> {
 
@@ -46,7 +46,7 @@ public class RemovePeerRequestProcessorTest extends AbstractCliRequestProcessorT
 
     @Override
     public void verify(String interest, Node node, ArgumentCaptor<Closure> doneArg) {
-        assertEquals(interest, RemovePeerRequest.class.getName());
+        assertEquals(RemovePeerRequest.class.getName(), interest);
         Mockito.verify(node).removePeer(eq(new PeerId("localhost", 8082)), doneArg.capture());
         Closure done = doneArg.getValue();
         assertNotNull(done);

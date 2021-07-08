@@ -19,9 +19,9 @@ package org.apache.ignite.raft.jraft.rpc.impl;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.ErrorResponse;
 import org.apache.ignite.raft.jraft.test.MockAsyncContext;
 import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PingRequestProcessorTest {
     @Test

@@ -20,15 +20,14 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.raft.jraft.entity.codec.DefaultLogEntryCodecFactory;
 import org.apache.ignite.raft.jraft.entity.codec.v1.LogEntryV1CodecFactory;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LogEntryTest {
     @Test
@@ -51,7 +50,7 @@ public class LogEntryTest {
 
         assertEquals(100, nentry.getId().getIndex());
         assertEquals(3, nentry.getId().getTerm());
-        Assert.assertEquals(EnumOutter.EntryType.ENTRY_TYPE_NO_OP, nentry.getType());
+        assertEquals(EnumOutter.EntryType.ENTRY_TYPE_NO_OP, nentry.getType());
         assertEquals(2, nentry.getPeers().size());
         assertEquals("localhost:99:1", nentry.getPeers().get(0).toString());
         assertEquals("localhost:100:2", nentry.getPeers().get(1).toString());

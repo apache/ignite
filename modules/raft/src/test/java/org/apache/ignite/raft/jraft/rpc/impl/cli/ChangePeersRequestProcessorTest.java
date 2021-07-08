@@ -26,9 +26,9 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.ChangePeersResponse;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class ChangePeersRequestProcessorTest extends AbstractCliRequestProcessorTest<ChangePeersRequest> {
 
@@ -47,7 +47,7 @@ public class ChangePeersRequestProcessorTest extends AbstractCliRequestProcessor
 
     @Override
     public void verify(String interest, Node node, ArgumentCaptor<Closure> doneArg) {
-        assertEquals(interest, ChangePeersRequest.class.getName());
+        assertEquals(ChangePeersRequest.class.getName(), interest);
         Mockito.verify(node).changePeers(eq(JRaftUtils.getConfiguration("localhost:8084,localhost:8085")),
             doneArg.capture());
         Closure done = doneArg.getValue();

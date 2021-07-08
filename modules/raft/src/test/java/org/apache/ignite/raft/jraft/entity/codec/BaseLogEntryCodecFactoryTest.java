@@ -23,22 +23,21 @@ import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.LogEntry;
 import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class BaseLogEntryCodecFactoryTest {
 
     protected LogEntryEncoder encoder;
     protected LogEntryDecoder decoder;
 
-    @Before
+    @BeforeEach
     public void setup() {
         LogEntryCodecFactory factory = newFactory();
         this.encoder = factory.encoder();
@@ -78,7 +77,7 @@ public abstract class BaseLogEntryCodecFactoryTest {
 
         assertEquals(100, nentry.getId().getIndex());
         assertEquals(3, nentry.getId().getTerm());
-        Assert.assertEquals(EnumOutter.EntryType.ENTRY_TYPE_NO_OP, nentry.getType());
+        assertEquals(EnumOutter.EntryType.ENTRY_TYPE_NO_OP, nentry.getType());
         assertEquals(2, nentry.getPeers().size());
         assertEquals("localhost:99:1", nentry.getPeers().get(0).toString());
         assertEquals("localhost:100:2", nentry.getPeers().get(1).toString());

@@ -16,8 +16,11 @@
  */
 package org.apache.ignite.raft.jraft.util.concurrent;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -27,42 +30,42 @@ public class AdjustableSemaphoreTest {
     @Test
     public void updateMaxPermitsTest() {
         final AdjustableSemaphore semaphore = new AdjustableSemaphore(5);
-        Assert.assertEquals(5, semaphore.availablePermits());
-        Assert.assertEquals(5, semaphore.getMaxPermits());
+        assertEquals(5, semaphore.availablePermits());
+        assertEquals(5, semaphore.getMaxPermits());
         for (int i = 0; i < 5; i++) {
-            Assert.assertTrue(semaphore.tryAcquire());
+            assertTrue(semaphore.tryAcquire());
         }
-        Assert.assertFalse(semaphore.tryAcquire());
-        Assert.assertEquals(0, semaphore.availablePermits());
-        Assert.assertEquals(5, semaphore.getMaxPermits());
+        assertFalse(semaphore.tryAcquire());
+        assertEquals(0, semaphore.availablePermits());
+        assertEquals(5, semaphore.getMaxPermits());
         for (int i = 0; i < 5; i++) {
             semaphore.release();
         }
-        Assert.assertEquals(5, semaphore.availablePermits());
+        assertEquals(5, semaphore.availablePermits());
 
         // decrease
         semaphore.setMaxPermits(2);
-        Assert.assertEquals(2, semaphore.getMaxPermits());
-        Assert.assertEquals(2, semaphore.availablePermits());
+        assertEquals(2, semaphore.getMaxPermits());
+        assertEquals(2, semaphore.availablePermits());
         for (int i = 0; i < 2; i++) {
-            Assert.assertTrue(semaphore.tryAcquire());
+            assertTrue(semaphore.tryAcquire());
         }
-        Assert.assertFalse(semaphore.tryAcquire());
-        Assert.assertEquals(0, semaphore.availablePermits());
-        Assert.assertEquals(2, semaphore.getMaxPermits());
+        assertFalse(semaphore.tryAcquire());
+        assertEquals(0, semaphore.availablePermits());
+        assertEquals(2, semaphore.getMaxPermits());
 
         for (int i = 0; i < 2; i++) {
             semaphore.release();
         }
         // increase
         semaphore.setMaxPermits(10);
-        Assert.assertEquals(10, semaphore.getMaxPermits());
-        Assert.assertEquals(10, semaphore.availablePermits());
+        assertEquals(10, semaphore.getMaxPermits());
+        assertEquals(10, semaphore.availablePermits());
         for (int i = 0; i < 10; i++) {
-            Assert.assertTrue(semaphore.tryAcquire());
+            assertTrue(semaphore.tryAcquire());
         }
-        Assert.assertFalse(semaphore.tryAcquire());
-        Assert.assertEquals(0, semaphore.availablePermits());
-        Assert.assertEquals(10, semaphore.getMaxPermits());
+        assertFalse(semaphore.tryAcquire());
+        assertEquals(0, semaphore.availablePermits());
+        assertEquals(10, semaphore.getMaxPermits());
     }
 }

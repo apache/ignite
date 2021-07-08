@@ -20,11 +20,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CountDownEventTest {
     private static final Logger LOG = LoggerFactory.getLogger(CountDownEventTest.class);
@@ -59,7 +60,7 @@ public class CountDownEventTest {
         assertEquals(2000, cost.get(), 50);
     }
 
-    @Test(expected = InterruptedException.class)
+    @Test
     public void testInterrupt() throws Exception {
         CountDownEvent e = new CountDownEvent();
         e.incrementAndGet();
@@ -78,6 +79,6 @@ public class CountDownEventTest {
                 }
             }
         });
-        e.await();
+        assertThrows(InterruptedException.class, () -> e.await());
     }
 }

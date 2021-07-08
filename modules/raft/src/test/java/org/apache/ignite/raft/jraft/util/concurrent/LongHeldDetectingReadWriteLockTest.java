@@ -20,10 +20,14 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -44,10 +48,10 @@ public class LongHeldDetectingReadWriteLockTest {
                     " queuedThreads= " + queuedThreads +
                     " blockedMs=" + TimeUnit.NANOSECONDS.toMillis(blockedNanos));
 
-                Assert.assertTrue(Thread.currentThread().getName().contains("read-lock-thread"));
-                Assert.assertSame(AcquireMode.Read, acquireMode);
-                Assert.assertEquals("write-lock-thread", owner.getName());
-                Assert.assertEquals(2000, TimeUnit.NANOSECONDS.toMillis(blockedNanos), 100);
+                assertTrue(Thread.currentThread().getName().contains("read-lock-thread"));
+                assertSame(AcquireMode.Read, acquireMode);
+                assertEquals("write-lock-thread", owner.getName());
+                assertEquals(2000, TimeUnit.NANOSECONDS.toMillis(blockedNanos), 100);
             }
         };
 
@@ -98,10 +102,10 @@ public class LongHeldDetectingReadWriteLockTest {
                     " queuedThreads= " + queuedThreads +
                     " blockedMs=" + TimeUnit.NANOSECONDS.toMillis(blockedNanos));
 
-                Assert.assertTrue(Thread.currentThread().getName().contains("write-lock-thread"));
-                Assert.assertSame(AcquireMode.Write, acquireMode);
-                Assert.assertNull(owner);
-                Assert.assertEquals(2000, TimeUnit.NANOSECONDS.toMillis(blockedNanos), 100);
+                assertTrue(Thread.currentThread().getName().contains("write-lock-thread"));
+                assertSame(AcquireMode.Write, acquireMode);
+                assertNull(owner);
+                assertEquals(2000, TimeUnit.NANOSECONDS.toMillis(blockedNanos), 100);
             }
         };
 

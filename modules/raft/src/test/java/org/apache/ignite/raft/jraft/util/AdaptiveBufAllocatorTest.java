@@ -16,10 +16,10 @@
  */
 package org.apache.ignite.raft.jraft.util;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -37,7 +37,7 @@ public class AdaptiveBufAllocatorTest {
      * 1073741824]
      */
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.handle = new AdaptiveBufAllocator(64, 512, 524288).newHandle();
     }

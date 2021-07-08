@@ -23,10 +23,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -40,10 +43,10 @@ public class MpscSingleThreadExecutorTest {
     public void testExecutorIsShutdownWithoutTask() {
         final MpscSingleThreadExecutor executor = new MpscSingleThreadExecutor(1024, THREAD_FACTORY);
 
-        Assert.assertTrue(executor.shutdownGracefully());
+        assertTrue(executor.shutdownGracefully());
         executeShouldFail(executor);
         executeShouldFail(executor);
-        Assert.assertTrue(executor.isTerminated());
+        assertTrue(executor.isTerminated());
     }
 
     @Test
@@ -63,12 +66,12 @@ public class MpscSingleThreadExecutorTest {
                 }
             });
         }
-        Assert.assertTrue(executor.shutdownGracefully());
+        assertTrue(executor.shutdownGracefully());
         executeShouldFail(executor);
         executeShouldFail(executor);
-        Assert.assertTrue(executor.isTerminated());
+        assertTrue(executor.isTerminated());
         latch.await();
-        Assert.assertEquals(10, ret.get());
+        assertEquals(10, ret.get());
     }
 
     @Test
@@ -80,11 +83,11 @@ public class MpscSingleThreadExecutorTest {
             hookCalled.set(true);
             latch.countDown();
         });
-        Assert.assertTrue(executor.shutdownGracefully());
+        assertTrue(executor.shutdownGracefully());
         executeShouldFail(executor);
         executeShouldFail(executor);
-        Assert.assertTrue(executor.isTerminated());
-        Assert.assertTrue(hookCalled.get());
+        assertTrue(executor.isTerminated());
+        assertTrue(hookCalled.get());
     }
 
     @Test
@@ -109,11 +112,11 @@ public class MpscSingleThreadExecutorTest {
                 }
             });
         }
-        Assert.assertTrue(executor.shutdownGracefully());
+        assertTrue(executor.shutdownGracefully());
         executeShouldFail(executor);
         executeShouldFail(executor);
-        Assert.assertTrue(executor.isTerminated());
-        Assert.assertTrue(hookCalled.get());
+        assertTrue(executor.isTerminated());
+        assertTrue(hookCalled.get());
     }
 
     @Test
@@ -158,7 +161,7 @@ public class MpscSingleThreadExecutorTest {
             executor.execute(() -> {
                 // Noop.
             });
-            Assert.fail();
+            fail();
         }
         catch (final RejectedExecutionException expected) {
             // expected

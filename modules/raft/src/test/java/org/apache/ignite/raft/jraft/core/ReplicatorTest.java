@@ -46,29 +46,30 @@ import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.ThreadId;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class ReplicatorTest {
 
     private ThreadId id;
@@ -87,7 +88,7 @@ public class ReplicatorTest {
     private ReplicatorOptions opts;
     private final PeerId peerId = new PeerId("localhost", 8081);
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.timerManager = new TimerManager(5);
         this.opts = new ReplicatorOptions();
@@ -147,7 +148,7 @@ public class ReplicatorTest {
         return rb.build();
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         this.timerManager.shutdown();
     }
@@ -158,7 +159,7 @@ public class ReplicatorTest {
         final Replicator r = getReplicator();
         assertNotNull(r);
         assertNotNull(r.getRpcInFly());
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.APPENDING_ENTRIES);
+        assertEquals(Replicator.RunningState.APPENDING_ENTRIES, r.statInfo.runningState);
         assertSame(r.getOpts(), this.opts);
         this.id.unlock();
         assertEquals(0, Replicator.getNextIndex(this.id));
@@ -203,7 +204,7 @@ public class ReplicatorTest {
 
         Replicator.onRpcReturned(this.id, Replicator.RequestType.AppendEntries, new Status(-1, "test error"), request,
             response, 0, 0, Utils.monotonicMs());
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.BLOCKING);
+        assertEquals(Replicator.RunningState.BLOCKING, r.statInfo.runningState);
         assertNotNull(r.getBlockTimer());
         return r;
     }
@@ -223,7 +224,7 @@ public class ReplicatorTest {
         r.getInflights().add(new Replicator.Inflight(RequestType.AppendEntries, r.getNextSendIndex(), 0, 0, 1, null));
         Replicator.onRpcReturned(this.id, Replicator.RequestType.AppendEntries, new Status(-1, "test error"), request,
             response, 1, 1, Utils.monotonicMs());
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.BLOCKING);
+        assertEquals(Replicator.RunningState.BLOCKING, r.statInfo.runningState);
         assertNotNull(r.getBlockTimer());
         // the same timer
         assertSame(timer, r.getBlockTimer());
@@ -232,7 +233,7 @@ public class ReplicatorTest {
         r.getInflights().add(new Replicator.Inflight(RequestType.AppendEntries, r.getNextSendIndex(), 0, 0, 1, null));
         Replicator.onRpcReturned(this.id, Replicator.RequestType.AppendEntries, new Status(-1, "test error"), request,
             response, 1, 2, Utils.monotonicMs());
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.BLOCKING);
+        assertEquals(Replicator.RunningState.BLOCKING, r.statInfo.runningState);
         assertNotNull(r.getBlockTimer());
         // the same timer
         assertNotSame(timer, r.getBlockTimer());
@@ -290,7 +291,7 @@ public class ReplicatorTest {
 
         assertNotNull(r.getRpcInFly());
         assertNotSame(r.getRpcInFly(), rpcInFly);
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.APPENDING_ENTRIES);
+        assertEquals(Replicator.RunningState.APPENDING_ENTRIES, r.statInfo.runningState);
         this.id.unlock();
         assertEquals(0, Replicator.getNextIndex(this.id));
         assertEquals(10, r.getRealNextIndex());
@@ -329,7 +330,7 @@ public class ReplicatorTest {
 
         assertNotNull(r.getRpcInFly());
         assertNotSame(r.getRpcInFly(), rpcInFly);
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.APPENDING_ENTRIES);
+        assertEquals(Replicator.RunningState.APPENDING_ENTRIES, r.statInfo.runningState);
         this.id.unlock();
         assertEquals(0, Replicator.getNextIndex(this.id));
         assertEquals(9, r.getRealNextIndex());
@@ -361,7 +362,7 @@ public class ReplicatorTest {
         Replicator.onRpcReturned(this.id, Replicator.RequestType.AppendEntries, Status.OK(), request, response, 0, 0,
             Utils.monotonicMs());
 
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.IDLE);
+        assertEquals(Replicator.RunningState.IDLE, r.statInfo.runningState);
         this.id.unlock(); // TODO asch fix bad unlock IGNITE-14832
         assertEquals(11, Replicator.getNextIndex(this.id));
         assertEquals(99, r.getWaitId());
@@ -454,7 +455,7 @@ public class ReplicatorTest {
         assertEquals(11, r.statInfo.firstLogIndex);
         assertEquals(20, r.statInfo.lastLogIndex);
         assertEquals(0, r.getWaitId());
-        assertEquals(r.statInfo.runningState, Replicator.RunningState.IDLE);
+        assertEquals(Replicator.RunningState.IDLE, r.statInfo.runningState);
     }
 
     @Test
@@ -547,7 +548,7 @@ public class ReplicatorTest {
 
         final RpcRequests.TimeoutNowRequest request = createTimeoutnowRequest();
         Mockito.when(
-            this.rpcService.timeoutNow(Matchers.eq(this.opts.getPeerId().getEndpoint()), eq(request), eq(-1),
+            this.rpcService.timeoutNow(eq(this.opts.getPeerId().getEndpoint()), eq(request), eq(-1),
                 Mockito.any())).thenReturn(new CompletableFuture<>());
 
         assertTrue(Replicator.transferLeadership(this.id, 10));
@@ -593,7 +594,7 @@ public class ReplicatorTest {
         assertEquals(0, r.getTimeoutNowIndex());
         assertNull(r.getTimeoutNowInFly());
         final RpcRequests.TimeoutNowRequest request = createTimeoutnowRequest();
-        Mockito.verify(this.rpcService).timeoutNow(Matchers.eq(this.opts.getPeerId().getEndpoint()), eq(request),
+        Mockito.verify(this.rpcService).timeoutNow(eq(this.opts.getPeerId().getEndpoint()), eq(request),
             eq(10), Mockito.any());
     }
 
@@ -626,8 +627,8 @@ public class ReplicatorTest {
         r.installSnapshot();
         final ArgumentCaptor<RaftException> errArg = ArgumentCaptor.forClass(RaftException.class);
         Mockito.verify(this.node).onError(errArg.capture());
-        Assert.assertEquals(RaftError.EIO, errArg.getValue().getStatus().getRaftError());
-        Assert.assertEquals("Fail to open snapshot", errArg.getValue().getStatus().getErrorMsg());
+        assertEquals(RaftError.EIO, errArg.getValue().getStatus().getRaftError());
+        assertEquals("Fail to open snapshot", errArg.getValue().getStatus().getErrorMsg());
     }
 
     @Test
@@ -659,13 +660,13 @@ public class ReplicatorTest {
         rb.setUri(uri);
 
         Mockito.when(
-            this.rpcService.installSnapshot(Matchers.eq(this.opts.getPeerId().getEndpoint()), eq(rb.build()),
+            this.rpcService.installSnapshot(eq(this.opts.getPeerId().getEndpoint()), eq(rb.build()),
                 Mockito.any())).thenReturn(new CompletableFuture<>());
 
         r.installSnapshot();
         assertNotNull(r.getRpcInFly());
         assertNotSame(r.getRpcInFly(), rpcInFly);
-        Assert.assertEquals(Replicator.RunningState.INSTALLING_SNAPSHOT, r.statInfo.runningState);
+        assertEquals(Replicator.RunningState.INSTALLING_SNAPSHOT, r.statInfo.runningState);
         assertEquals(11, r.statInfo.lastLogIncluded);
         assertEquals(1, r.statInfo.lastTermIncluded);
     }

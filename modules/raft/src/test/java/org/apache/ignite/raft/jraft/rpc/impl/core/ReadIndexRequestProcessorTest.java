@@ -21,8 +21,8 @@ import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.ReadIndexRequest;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class ReadIndexRequestProcessorTest extends BaseNodeRequestProcessorTest<ReadIndexRequest> {
     private ReadIndexRequest request;

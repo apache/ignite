@@ -23,19 +23,18 @@ import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.snapshot.Snapshot;
 import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SnapshotFileReaderTest extends BaseStorageTest {
     private SnapshotFileReader reader;
     private LocalSnapshotMetaTable metaTable;
 
     @Override
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
         this.reader = new SnapshotFileReader(path, null);
@@ -53,7 +52,7 @@ public class SnapshotFileReaderTest extends BaseStorageTest {
         buf.flip();
         final LocalSnapshotMetaTable newTable = new LocalSnapshotMetaTable(new RaftOptions());
         newTable.loadFromIoBufferAsRemote(buf);
-        Assert.assertEquals(meta, newTable.getFileMeta("data"));
+        assertEquals(meta, newTable.getFileMeta("data"));
     }
 
     private LocalFileMetaOutter.LocalFileMeta addDataMeta() {

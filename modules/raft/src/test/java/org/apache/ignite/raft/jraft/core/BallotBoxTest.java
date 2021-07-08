@@ -25,27 +25,28 @@ import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.BallotBoxOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class BallotBoxTest {
     private BallotBox box;
     @Mock
     private FSMCaller waiter;
     private ClosureQueueImpl closureQueue;
 
-    @Before
+    @BeforeEach
     public void setup() {
         BallotBoxOptions opts = new BallotBoxOptions();
         NodeOptions options = new NodeOptions();
@@ -57,7 +58,7 @@ public class BallotBoxTest {
         assertTrue(box.init(opts));
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         box.shutdown();
     }
@@ -137,10 +138,10 @@ public class BallotBoxTest {
         Mockito.verify(this.waiter, Mockito.only()).onCommitted(1);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSetLastCommittedIndexHasPending() {
         assertTrue(box.resetPendingIndex(1));
-        assertFalse(this.box.setLastCommittedIndex(1));
+        assertThrows(IllegalArgumentException.class, () -> this.box.setLastCommittedIndex(1));
     }
 
     @Test

@@ -29,14 +29,14 @@ import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.entity.codec.v1.V1Decoder;
 import org.apache.ignite.raft.jraft.entity.codec.v1.V1Encoder;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class LogEntryCodecPerfTest {
     private static final Logger LOG = LoggerFactory.getLogger(LogEntryCodecPerfTest.class);
@@ -53,7 +53,7 @@ public class LogEntryCodecPerfTest {
 
     private final AtomicLong logSize = new AtomicLong(0);
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         this.logSize.set(0);
         System.gc();

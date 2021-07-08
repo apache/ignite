@@ -18,12 +18,13 @@ package org.apache.ignite.raft.jraft.util;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -40,12 +41,12 @@ public class RecyclersTest {
         };
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testMultipleRecycle() {
         final Recyclers<RecyclableObject> recyclers = newRecyclers(16);
         final RecyclableObject object = recyclers.get();
         recyclers.recycle(object, object.handle);
-        recyclers.recycle(object, object.handle);
+        assertThrows(IllegalStateException.class, () -> recyclers.recycle(object, object.handle));
     }
 
     @Test
@@ -58,7 +59,7 @@ public class RecyclersTest {
         assertSame(object, recyclers.get());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testRecycleMoreThanOnceAtDifferentThread() throws InterruptedException {
         final Recyclers<RecyclableObject> recyclers = newRecyclers(1024);
         final RecyclableObject object = recyclers.get();
@@ -78,10 +79,8 @@ public class RecyclersTest {
         });
         thread2.start();
         thread2.join();
-        IllegalStateException exception = exceptionStore.get();
-        if (exception != null) {
-            throw exception;
-        }
+
+        assertNotNull(exceptionStore.get());
     }
 
     @Test
@@ -90,7 +89,7 @@ public class RecyclersTest {
         final RecyclableObject object = recyclers.get();
         recyclers.recycle(object, object.handle);
         final RecyclableObject object2 = recyclers.get();
-        Assert.assertSame(object, object2);
+        assertSame(object, object2);
         recyclers.recycle(object2, object2.handle);
     }
 
@@ -125,9 +124,11 @@ public class RecyclersTest {
             objects[i] = null;
         }
 
-        assertTrue("The threadLocalCapacity (" + recyclers.threadLocalCapacity() + ") must be <= maxCapacity ("
-                + maxCapacity + ") as we not pool all new handles internally",
-            maxCapacity >= recyclers.threadLocalCapacity());
+        assertTrue(
+            maxCapacity >= recyclers.threadLocalCapacity(),
+            "The threadLocalCapacity (" + recyclers.threadLocalCapacity() + ") must be <= maxCapacity ("
+                + maxCapacity + ") as we not pool all new handles internally"
+        );
     }
 
     static final class RecyclableObject {

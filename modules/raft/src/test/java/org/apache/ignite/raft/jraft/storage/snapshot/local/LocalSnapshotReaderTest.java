@@ -23,19 +23,19 @@ import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.FileService;
 import org.apache.ignite.raft.jraft.storage.snapshot.Snapshot;
 import org.apache.ignite.raft.jraft.util.Endpoint;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class LocalSnapshotReaderTest extends BaseStorageTest {
     private LocalSnapshotReader reader;
     @Mock
@@ -44,7 +44,7 @@ public class LocalSnapshotReaderTest extends BaseStorageTest {
     private final int snapshotIndex = 99;
 
     @Override
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
         String snapPath = this.path + File.separator + Snapshot.JRAFT_SNAPSHOT_PREFIX + snapshotIndex;
@@ -58,7 +58,7 @@ public class LocalSnapshotReaderTest extends BaseStorageTest {
     }
 
     @Override
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         super.teardown();
         this.reader.close();

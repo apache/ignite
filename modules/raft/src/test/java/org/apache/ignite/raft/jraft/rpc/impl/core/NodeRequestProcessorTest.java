@@ -29,13 +29,13 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.ErrorResponse;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.PingRequest;
 import org.apache.ignite.raft.jraft.test.MockAsyncContext;
 import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.withSettings;
 
 public class NodeRequestProcessorTest {
@@ -75,13 +75,13 @@ public class NodeRequestProcessorTest {
     private MockRequestProcessor processor;
     private MockAsyncContext asyncContext;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.asyncContext = new MockAsyncContext();
         this.processor = new MockRequestProcessor("localhost:8081", "test");
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         // No-op.
     }

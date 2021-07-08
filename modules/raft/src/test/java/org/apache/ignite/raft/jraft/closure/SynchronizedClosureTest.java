@@ -19,21 +19,21 @@ package org.apache.ignite.raft.jraft.closure;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.raft.jraft.Status;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SynchronizedClosureTest {
     private static final Logger LOG = LoggerFactory.getLogger(SynchronizedClosureTest.class);
 
     private SynchronizedClosure done;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.done = new SynchronizedClosure(1);
     }

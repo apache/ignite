@@ -22,26 +22,25 @@ import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.option.SnapshotCopierOptions;
 import org.apache.ignite.raft.jraft.rpc.RaftClientService;
 import org.apache.ignite.raft.jraft.util.Endpoint;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RemoteFileCopierTest {
     private RemoteFileCopier copier;
     @Mock
     private RaftClientService rpcService;
     private TimerManager timerManager;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.timerManager = new TimerManager(5);
         copier = new RemoteFileCopier();
@@ -53,8 +52,8 @@ public class RemoteFileCopierTest {
         assertTrue(copier.init("remote://localhost:8081/999", null, new SnapshotCopierOptions(rpcService, timerManager,
             new RaftOptions(), new NodeOptions())));
         assertEquals(999, copier.getReaderId());
-        Assert.assertEquals("localhost", copier.getEndpoint().getIp());
-        Assert.assertEquals(8081, copier.getEndpoint().getPort());
+        assertEquals("localhost", copier.getEndpoint().getIp());
+        assertEquals(8081, copier.getEndpoint().getPort());
     }
 
     @Test

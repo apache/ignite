@@ -23,8 +23,8 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.SnapshotRequest;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SnapshotRequestProcessorTest extends AbstractCliRequestProcessorTest<SnapshotRequest> {
 

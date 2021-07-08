@@ -32,26 +32,29 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.storage.LogManager;
 import org.apache.ignite.raft.jraft.storage.SnapshotStorage;
 import org.apache.ignite.raft.jraft.util.ByteString;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class ReplicatorGroupTest {
 
     static final Logger LOG = LoggerFactory.getLogger(ReplicatorGroupTest.class);
@@ -77,7 +80,7 @@ public class ReplicatorGroupTest {
     private final AtomicInteger stoppedCounter = new AtomicInteger(0);
     private final AtomicInteger startedCounter = new AtomicInteger(0);
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.timerManager = new TimerManager(5);
         this.replicatorGroup = new ReplicatorGroupImpl();
@@ -103,14 +106,14 @@ public class ReplicatorGroupTest {
     public void testAddReplicatorAndFailed() {
         this.replicatorGroup.resetTerm(1);
         assertFalse(this.replicatorGroup.addReplicator(this.peerId1));
-        assertEquals(this.replicatorGroup.getFailureReplicators().get(this.peerId1), ReplicatorType.Follower);
+        assertEquals(ReplicatorType.Follower, this.replicatorGroup.getFailureReplicators().get(this.peerId1));
     }
 
     @Test
     public void testAddLearnerFailure() {
         this.replicatorGroup.resetTerm(1);
         assertFalse(this.replicatorGroup.addReplicator(this.peerId1, ReplicatorType.Learner));
-        assertEquals(this.replicatorGroup.getFailureReplicators().get(this.peerId1), ReplicatorType.Learner);
+        assertEquals(ReplicatorType.Learner, this.replicatorGroup.getFailureReplicators().get(this.peerId1));
     }
 
     @Test
@@ -201,10 +204,10 @@ public class ReplicatorGroupTest {
         long logIndex = 8;
         assertTrue(this.replicatorGroup.transferLeadershipTo(this.peerId1, 8));
         final Replicator r = (Replicator) this.replicatorGroup.getReplicator(this.peerId1).lock();
-        assertEquals(r.getTimeoutNowIndex(), logIndex);
+        assertEquals(logIndex, r.getTimeoutNowIndex());
         this.replicatorGroup.getReplicator(this.peerId1).unlock();
         assertTrue(this.replicatorGroup.stopTransferLeadership(this.peerId1));
-        assertEquals(r.getTimeoutNowIndex(), 0);
+        assertEquals(0, r.getTimeoutNowIndex());
     }
 
     @Test
@@ -243,7 +246,7 @@ public class ReplicatorGroupTest {
         assertEquals(p3, p);
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         this.timerManager.shutdown();
         this.errorCounter.set(0);

@@ -17,17 +17,17 @@
 package org.apache.ignite.raft.jraft.entity;
 
 import org.apache.ignite.raft.jraft.JRaftUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BallotTest {
 
     private Ballot ballot;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.ballot = new Ballot();
         this.ballot.init(JRaftUtils.getConfiguration("localhost:8081,localhost:8082,localhost:8083"), null);

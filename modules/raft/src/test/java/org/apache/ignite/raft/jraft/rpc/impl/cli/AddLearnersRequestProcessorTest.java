@@ -26,9 +26,9 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.LearnersOpResponse;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class AddLearnersRequestProcessorTest extends AbstractCliRequestProcessorTest<AddLearnersRequest> {
 
@@ -49,7 +49,7 @@ public class AddLearnersRequestProcessorTest extends AbstractCliRequestProcessor
 
     @Override
     public void verify(final String interest, final Node node, final ArgumentCaptor<Closure> doneArg) {
-        assertEquals(interest, AddLearnersRequest.class.getName());
+        assertEquals(AddLearnersRequest.class.getName(), interest);
         Mockito.verify(node).addLearners(
             eq(Arrays.asList(new PeerId("learner", 8082), new PeerId("test", 8182), new PeerId("test", 8183))),
             doneArg.capture());

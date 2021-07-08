@@ -20,11 +20,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationEntryTest {
     @Test
@@ -36,9 +36,9 @@ public class ConfigurationEntryTest {
         assertTrue(entry.contains(new PeerId("localhost", 8082)));
         assertTrue(entry.contains(new PeerId("localhost", 8083)));
         assertEquals(
-            entry.listPeers(),
             new HashSet<>(Arrays.asList(new PeerId("localhost", 8081), new PeerId("localhost", 8082), new PeerId(
-                "localhost", 8083))));
+                "localhost", 8083))),
+            entry.listPeers());
 
     }
 
@@ -52,9 +52,9 @@ public class ConfigurationEntryTest {
         assertTrue(entry.contains(new PeerId("localhost", 8082, 0, 100)));
         assertTrue(entry.contains(new PeerId("localhost", 8083, 0, 100)));
         assertEquals(
-            entry.listPeers(),
             new HashSet<>(Arrays.asList(new PeerId("localhost", 8081, 0, 100), new PeerId("localhost", 8082, 0, 100),
-                new PeerId("localhost", 8083, 0, 100))));
+                new PeerId("localhost", 8083, 0, 100))),
+            entry.listPeers());
 
     }
 

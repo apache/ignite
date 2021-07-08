@@ -16,11 +16,11 @@
  */
 package org.apache.ignite.raft.jraft.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  *
@@ -41,11 +41,11 @@ public class ByteBufferCollectorTest {
         assertEquals(Utils.RAFT_DATA_BUF_SIZE, ByteBufferCollector.allocateByRecyclers().capacity());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testMultipleRecycle() {
         final ByteBufferCollector object = ByteBufferCollector.allocateByRecyclers();
         object.recycle();
-        object.recycle();
+        assertThrows(IllegalStateException.class, () -> object.recycle());
     }
 
     @Test
@@ -62,7 +62,7 @@ public class ByteBufferCollectorTest {
         final ByteBufferCollector object = ByteBufferCollector.allocateByRecyclers();
         object.recycle();
         final ByteBufferCollector object2 = ByteBufferCollector.allocateByRecyclers();
-        Assert.assertSame(object, object2);
+        assertSame(object, object2);
         object2.recycle();
     }
 }

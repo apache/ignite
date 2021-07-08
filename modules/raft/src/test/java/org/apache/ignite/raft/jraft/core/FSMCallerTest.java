@@ -41,20 +41,20 @@ import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class FSMCallerTest {
     private FSMCallerImpl fsmCaller;
     @Mock
@@ -65,7 +65,7 @@ public class FSMCallerTest {
     private LogManager logManager;
     private ClosureQueueImpl closureQueue;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.fsmCaller = new FSMCallerImpl();
         NodeOptions options = new NodeOptions();
@@ -83,7 +83,7 @@ public class FSMCallerTest {
         assertTrue(this.fsmCaller.init(opts));
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         if (this.fsmCaller != null) {
             this.fsmCaller.shutdown();
@@ -106,7 +106,7 @@ public class FSMCallerTest {
         assertTrue(this.fsmCaller.onCommitted(11));
 
         this.fsmCaller.flush();
-        assertEquals(this.fsmCaller.getLastAppliedIndex(), 10);
+        assertEquals(10, this.fsmCaller.getLastAppliedIndex());
         Mockito.verify(this.logManager).setAppliedId(new LogId(10, 1));
         assertFalse(this.fsmCaller.getError().getStatus().isOk());
         assertEquals("Fail to get entry at index=11 while committed_index=11", this.fsmCaller.getError().getStatus()

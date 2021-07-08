@@ -30,18 +30,18 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.ErrorResponse;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.PingRequest;
 import org.apache.ignite.raft.jraft.test.MockAsyncContext;
 import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class BaseCliRequestProcessorTest {
     private static class MockCliRequestProcessor extends BaseCliRequestProcessor<PingRequest> {
         private String peerId;
@@ -83,14 +83,14 @@ public class BaseCliRequestProcessorTest {
     private PeerId peer;
     private MockAsyncContext asyncContext;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.asyncContext = new MockAsyncContext();
         this.peer = JRaftUtils.getPeerId("localhost:8081");
         this.processor = new MockCliRequestProcessor(this.peer.toString(), "test");
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         // No-op.
     }

@@ -29,20 +29,23 @@ import org.apache.ignite.raft.jraft.entity.LogEntry;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.storage.LogManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class IteratorTest {
 
     private IteratorImpl iterImpl;
@@ -55,7 +58,7 @@ public class IteratorTest {
     private List<Closure> closures;
     private AtomicLong applyingIndex;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.applyingIndex = new AtomicLong(0);
         this.closures = new ArrayList<>();
@@ -91,9 +94,9 @@ public class IteratorTest {
         assertEquals(i, 11);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSetErrorAndRollbackInvalid() {
-        this.iter.setErrorAndRollback(-1, null);
+        assertThrows(IllegalArgumentException.class, () -> iter.setErrorAndRollback(-1, null));
     }
 
     @Test
@@ -102,12 +105,11 @@ public class IteratorTest {
         assertFalse(iterImpl.hasError());
         this.iter.setErrorAndRollback(5, new Status(-1, "test"));
         assertTrue(iterImpl.hasError());
-        Assert.assertEquals(EnumOutter.ErrorType.ERROR_TYPE_STATE_MACHINE, iterImpl.getError().getType());
-        Assert.assertEquals(RaftError.ESTATEMACHINE.getNumber(), iterImpl.getError().getStatus().getCode());
-        Assert
-            .assertEquals(
-                "StateMachine meet critical error when applying one or more tasks since index=6, Status[UNKNOWN<-1>: test]",
-                iterImpl.getError().getStatus().getErrorMsg());
+        assertEquals(EnumOutter.ErrorType.ERROR_TYPE_STATE_MACHINE, iterImpl.getError().getType());
+        assertEquals(RaftError.ESTATEMACHINE.getNumber(), iterImpl.getError().getStatus().getCode());
+        assertEquals(
+            "StateMachine meet critical error when applying one or more tasks since index=6, Status[UNKNOWN<-1>: test]",
+            iterImpl.getError().getStatus().getErrorMsg());
         assertEquals(6, iter.getIndex());
     }
 }

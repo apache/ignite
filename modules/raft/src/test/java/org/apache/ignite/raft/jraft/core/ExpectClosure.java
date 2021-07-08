@@ -21,7 +21,7 @@ import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExpectClosure implements Closure {
     private int expectedErrCode;

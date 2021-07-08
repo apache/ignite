@@ -27,16 +27,16 @@ import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.test.MockAsyncContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public abstract class AbstractCliRequestProcessorTest<T extends Message> {
     @Mock
     private Node node;
@@ -64,12 +64,12 @@ public abstract class AbstractCliRequestProcessorTest<T extends Message> {
         Mockito.lenient().when(this.node.listLearners()).thenReturn(learners);
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.asyncContext = new MockAsyncContext();
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         nodeManager.clear();
     }

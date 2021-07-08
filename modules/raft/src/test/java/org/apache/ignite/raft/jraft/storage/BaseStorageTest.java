@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 public class BaseStorageTest {
     protected String path;
@@ -31,7 +31,7 @@ public class BaseStorageTest {
         new File(this.path).mkdirs();
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         Utils.delete(new File(this.path));
     }

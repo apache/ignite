@@ -25,9 +25,9 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.AddPeerResponse;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class AddPeerRequestProcessorTest extends AbstractCliRequestProcessorTest<AddPeerRequest> {
 
@@ -46,7 +46,7 @@ public class AddPeerRequestProcessorTest extends AbstractCliRequestProcessorTest
 
     @Override
     public void verify(String interest, Node node, ArgumentCaptor<Closure> doneArg) {
-        assertEquals(interest, AddPeerRequest.class.getName());
+        assertEquals(AddPeerRequest.class.getName(), interest);
         Mockito.verify(node).addPeer(eq(new PeerId("test", 8181)), doneArg.capture());
         Closure done = doneArg.getValue();
         assertNotNull(done);

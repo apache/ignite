@@ -22,17 +22,17 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class LocalFileReaderTest extends BaseStorageTest {
     private LocalDirReader fileReader;
 
     @Override
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
         this.fileReader = new LocalDirReader(path);

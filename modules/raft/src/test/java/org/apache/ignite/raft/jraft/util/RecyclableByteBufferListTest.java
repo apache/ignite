@@ -16,21 +16,21 @@
  */
 package org.apache.ignite.raft.jraft.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  *
  */
 public class RecyclableByteBufferListTest {
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testMultipleRecycle() {
         final RecyclableByteBufferList object = RecyclableByteBufferList.newInstance();
         object.recycle();
-        object.recycle();
+        assertThrows(IllegalStateException.class, () -> object.recycle());
     }
 
     @Test
@@ -47,7 +47,7 @@ public class RecyclableByteBufferListTest {
         final RecyclableByteBufferList object = RecyclableByteBufferList.newInstance();
         object.recycle();
         final RecyclableByteBufferList object2 = RecyclableByteBufferList.newInstance();
-        Assert.assertSame(object, object2);
+        assertSame(object, object2);
         object2.recycle();
     }
 }

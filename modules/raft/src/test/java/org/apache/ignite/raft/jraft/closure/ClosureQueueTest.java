@@ -21,16 +21,16 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClosureQueueTest {
     private ClosureQueueImpl queue;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.queue = new ClosureQueueImpl(new NodeOptions());
     }

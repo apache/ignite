@@ -23,13 +23,13 @@ import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.snapshot.Snapshot;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LocalSnapshotStorageTest extends BaseStorageTest {
     private LocalSnapshotStorage snapshotStorage;
@@ -37,7 +37,7 @@ public class LocalSnapshotStorageTest extends BaseStorageTest {
     private int lastSnapshotIndex = 99;
 
     @Override
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
 
@@ -53,7 +53,7 @@ public class LocalSnapshotStorageTest extends BaseStorageTest {
     }
 
     @Override
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         super.teardown();
         this.snapshotStorage.shutdown();

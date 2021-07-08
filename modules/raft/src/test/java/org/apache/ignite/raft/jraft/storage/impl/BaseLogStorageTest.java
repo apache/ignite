@@ -32,16 +32,15 @@ import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.LogStorage;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class BaseLogStorageTest extends BaseStorageTest {
     protected LogStorage logStorage;
@@ -49,7 +48,7 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
     private LogEntryCodecFactory logEntryCodecFactory;
 
     @Override
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
         this.confManager = new ConfigurationManager();
@@ -71,7 +70,7 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
     }
 
     @Override
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         this.logStorage.shutdown();
         super.teardown();
@@ -92,7 +91,7 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
 
         assertEquals(100, this.logStorage.getFirstLogIndex());
         assertEquals(100, this.logStorage.getLastLogIndex());
-        Assert.assertEquals(entry1, this.logStorage.getEntry(100));
+        assertEquals(entry1, this.logStorage.getEntry(100));
         assertEquals(1, this.logStorage.getTerm(100));
 
         final LogEntry entry2 = TestUtils.mockEntry(200, 2);
@@ -100,8 +99,8 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
 
         assertEquals(100, this.logStorage.getFirstLogIndex());
         assertEquals(200, this.logStorage.getLastLogIndex());
-        Assert.assertEquals(entry1, this.logStorage.getEntry(100));
-        Assert.assertEquals(entry2, this.logStorage.getEntry(200));
+        assertEquals(entry1, this.logStorage.getEntry(100));
+        assertEquals(entry2, this.logStorage.getEntry(200));
         assertEquals(1, this.logStorage.getTerm(100));
         assertEquals(2, this.logStorage.getTerm(200));
     }
@@ -176,7 +175,7 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
                 assertNull(this.logStorage.getEntry(i));
             }
             else {
-                Assert.assertEquals(entries.get(i), this.logStorage.getEntry(i));
+                assertEquals(entries.get(i), this.logStorage.getEntry(i));
             }
         }
     }
@@ -232,7 +231,7 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
         assertEquals(5, this.logStorage.getLastLogIndex());
         for (int i = 0; i < 10; i++) {
             if (i <= 5) {
-                Assert.assertEquals(entries.get(i), this.logStorage.getEntry(i));
+                assertEquals(entries.get(i), this.logStorage.getEntry(i));
             }
             else {
                 assertNull(this.logStorage.getEntry(i));

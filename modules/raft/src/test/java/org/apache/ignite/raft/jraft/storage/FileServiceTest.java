@@ -28,18 +28,16 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.storage.io.LocalDirReader;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.internal.ArrayComparisonFailure;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FileServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(FileServiceTest.class);
@@ -47,13 +45,13 @@ public class FileServiceTest {
     private String path;
     private LocalDirReader fileReader;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         this.path = TestUtils.mkTempDir();
         this.fileReader = new LocalDirReader(path);
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         Utils.delete(new File(this.path));
         FileService.getInstance().clear();
@@ -74,7 +72,7 @@ public class FileServiceTest {
         Message msg = FileService.getInstance().handleGetFile(request, new RpcRequestClosure(asyncContext));
         assertTrue(msg instanceof RpcRequests.ErrorResponse);
         RpcRequests.ErrorResponse response = (RpcRequests.ErrorResponse) msg;
-        Assert.assertEquals(RaftError.ENOENT.getNumber(), response.getErrorCode());
+        assertEquals(RaftError.ENOENT.getNumber(), response.getErrorCode());
         assertEquals("Fail to find reader=1", response.getErrorMsg());
     }
 
@@ -148,9 +146,9 @@ public class FileServiceTest {
                 final byte[] respArray = new byte[length];
                 System.arraycopy(respData, offset, respArray, 0, length);
                 try {
-                    assertArrayEquals("Offset: " + fileOffset, sourceArray, respArray);
+                    assertArrayEquals(sourceArray, respArray, "Offset: " + fileOffset);
                 }
-                catch (ArrayComparisonFailure e) {
+                catch (AssertionError e) {
                     LOG.error("arrayComparisonFailure", e);
                 }
                 offset += length;

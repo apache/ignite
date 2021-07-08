@@ -27,16 +27,18 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.PingRequest;
 import org.apache.ignite.raft.jraft.rpc.impl.core.AppendEntriesRequestProcessor.PeerPair;
 import org.apache.ignite.raft.jraft.rpc.impl.core.AppendEntriesRequestProcessor.PeerRequestContext;
 import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class AppendEntriesRequestProcessorTest extends BaseNodeRequestProcessorTest<AppendEntriesRequest> {
 
@@ -58,9 +60,8 @@ public class AppendEntriesRequestProcessorTest extends BaseNodeRequestProcessorT
         return this.request;
     }
 
-    @Override
-    public void setup() {
-        super.setup();
+    @BeforeEach
+    public void setupNodeManager() {
         this.nodeManager = this.asyncContext.getNodeManager();
     }
 
@@ -72,9 +73,8 @@ public class AppendEntriesRequestProcessorTest extends BaseNodeRequestProcessorT
         return new AppendEntriesRequestProcessor(this.executor);
     }
 
-    @Override
+    @AfterEach
     public void teardown() {
-        super.teardown();
         if (this.executor != null) {
             this.executor.shutdownNow();
         }
