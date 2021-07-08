@@ -73,7 +73,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -89,7 +91,10 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
+import org.apache.ignite.spi.systemview.view.BaselineNodeView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
+import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -99,6 +104,8 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
+import org.apache.ignite.spi.systemview.view.NodeAttributeView;
+import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
@@ -123,11 +130,14 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_IO_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
@@ -135,6 +145,8 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODES_SYS_VIEW;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DEFAULT_DS_GROUP_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DEFAULT_VOLATILE_DS_GROUP_NAME;
@@ -619,6 +631,99 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testNodeAttributes() throws Exception {
+        try (
+            IgniteEx ignite0 = startGrid(getConfiguration(getTestIgniteInstanceName(0))
+                .setUserAttributes(F.asMap("name", "val0")));
+            IgniteEx ignite1 = startGrid(getConfiguration(getTestIgniteInstanceName(1))
+                .setUserAttributes(F.asMap("name", "val1")))
+        ) {
+            awaitPartitionMapExchange();
+
+            SystemView<NodeAttributeView> view = ignite0.context().systemView().view(NODE_ATTRIBUTES_SYS_VIEW);
+
+            assertEquals(ignite0.cluster().localNode().attributes().size() +
+                ignite1.cluster().localNode().attributes().size(), view.size());
+
+            assertEquals(1, F.size(view.iterator(), row -> "name".equals(row.name()) && "val0".equals(row.value())));
+            assertEquals(1, F.size(view.iterator(), row -> "name".equals(row.name()) && "val1".equals(row.value())));
+
+            // Test filtering.
+            assertTrue(view instanceof FiltrableSystemView);
+
+            Iterator<NodeAttributeView> iter = ((FiltrableSystemView<NodeAttributeView>)view)
+                .iterator(F.asMap(NodeAttributeViewWalker.NODE_ID_FILTER, ignite0.cluster().localNode().id()));
+
+            assertEquals(1, F.size(iter, row -> "name".equals(row.name()) && "val0".equals(row.value())));
+
+            iter = ((FiltrableSystemView<NodeAttributeView>)view).iterator(
+                F.asMap(NodeAttributeViewWalker.NODE_ID_FILTER, ignite1.cluster().localNode().id().toString()));
+
+            assertEquals(1, F.size(iter, row -> "name".equals(row.name()) && "val1".equals(row.value())));
+
+            iter = ((FiltrableSystemView<NodeAttributeView>)view).iterator(
+                F.asMap(NodeAttributeViewWalker.NODE_ID_FILTER, "malformed-id"));
+
+            assertEquals(0, F.size(iter));
+
+            iter = ((FiltrableSystemView<NodeAttributeView>)view).iterator(
+                F.asMap(NodeAttributeViewWalker.NAME_FILTER, "name"));
+
+            assertEquals(2, F.size(iter));
+
+            iter = ((FiltrableSystemView<NodeAttributeView>)view)
+                .iterator(F.asMap(NodeAttributeViewWalker.NODE_ID_FILTER, ignite0.cluster().localNode().id(),
+                    NodeAttributeViewWalker.NAME_FILTER, "name"));
+
+            assertEquals(1, F.size(iter));
+        }
+    }
+
+    /** */
+    @Test
+    public void testNodeMetrics() throws Exception {
+        long ts = U.currentTimeMillis();
+
+        try (IgniteEx ignite0 = startGrid(0); IgniteEx ignite1 = startGrid(1)) {
+            awaitPartitionMapExchange();
+
+            SystemView<NodeMetricsView> view = ignite0.context().systemView().view(NODE_METRICS_SYS_VIEW);
+
+            assertEquals(2, view.size());
+            assertEquals(1, F.size(view.iterator(), row -> row.nodeId().equals(ignite0.cluster().localNode().id())));
+            assertEquals(1, F.size(view.iterator(), row -> row.nodeId().equals(ignite1.cluster().localNode().id())));
+            assertEquals(2, F.size(view.iterator(), row -> row.lastUpdateTime().getTime() >= ts));
+        }
+    }
+
+    /** */
+    @Test
+    public void testCacheGroupIo() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration().setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true))))
+        ) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Object, Object> cache = ignite.createCache("cache");
+
+            cache.put(0, 0);
+            cache.get(0);
+
+            SystemView<CacheGroupIoView> view = ignite.context().systemView().view(CACHE_GRP_IO_VIEW);
+
+            CacheGroupIoView row = F.find(view, null,
+                (IgnitePredicate<CacheGroupIoView>)r -> "cache".equals(r.cacheGroupName()));
+
+            assertNotNull(row);
+            assertTrue(row.logicalReads() > 0);
+        }
+    }
+
+    /** */
     private void checkViewsState(SystemView<ClusterNodeView> views, ClusterNode loc, ClusterNode rmt) {
         assertEquals(2, views.size());
 
@@ -984,7 +1089,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     s2.close();
 
-                    assertTrue(s.removed());
+                    assertTrue(waitForCondition(s::removed, getTestTimeout()));
                 }
             }
 
@@ -1002,7 +1107,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             s1.close();
 
-            assertTrue(s.removed());
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
 
             assertEquals(0, seqs0.size());
             assertEquals(0, seqs1.size());
@@ -1044,7 +1149,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     l2.close();
 
-                    assertTrue(l.removed());
+                    assertTrue(waitForCondition(l::removed, getTestTimeout()));
                 }
             }
 
@@ -1061,7 +1166,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l1.close();
 
-            assertTrue(l.removed());
+            assertTrue(waitForCondition(l::removed, getTestTimeout()));
 
             assertEquals(0, longs0.size());
             assertEquals(0, longs1.size());
@@ -1103,7 +1208,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     l2.close();
 
-                    assertTrue(r.removed());
+                    assertTrue(waitForCondition(r::removed, getTestTimeout()));
                 }
             }
 
@@ -1120,7 +1225,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l1.close();
 
-            assertTrue(l.removed());
+            assertTrue(waitForCondition(l::removed, getTestTimeout()));
 
             assertEquals(0, refs0.size());
             assertEquals(0, refs1.size());
@@ -1165,7 +1270,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     s2.close();
 
-                    assertTrue(s.removed());
+                    assertTrue(waitForCondition(s::removed, getTestTimeout()));
                 }
             }
 
@@ -1228,7 +1333,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     l2.countDown();
                     l2.close();
 
-                    assertTrue(l.removed());
+                    assertTrue(waitForCondition(l::removed, getTestTimeout()));
                 }
 
                 assertEquals(grpName, l.groupName());
@@ -1252,7 +1357,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             l3.countDown();
             l3.close();
 
-            assertTrue(l.removed());
+            assertTrue(waitForCondition(l::removed, getTestTimeout()));
 
             assertEquals(0, latches0.size());
             assertEquals(0, latches1.size());
@@ -1314,7 +1419,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     s2.close();
 
-                    assertTrue(s.removed());
+                    assertTrue(waitForCondition(s::removed, getTestTimeout()));
                 }
 
                 assertEquals(grpName, s.groupName());
@@ -1339,7 +1444,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l3.close();
 
-            assertTrue(s.removed());
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
 
             assertEquals(0, semaphores0.size());
             assertEquals(0, semaphores1.size());
@@ -1400,7 +1505,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     l2.close();
 
-                    assertTrue(l.removed());
+                    assertTrue(waitForCondition(l::removed, getTestTimeout()));
                 }
 
                 assertEquals(grpName, l.groupName());
@@ -1427,7 +1532,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             l3.close();
 
-            assertTrue(s.removed());
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
 
             assertEquals(0, locks0.size());
             assertEquals(0, locks1.size());
@@ -1863,6 +1968,79 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
 
             assertNotNull(testKey);
+        }
+    }
+
+    /** */
+    @Test
+    public void testBaselineNodes() throws Exception {
+        cleanPersistenceDir();
+
+        try (
+            IgniteEx ignite0 = startGrid(getConfiguration(getTestIgniteInstanceName(0))
+                .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true)))
+                .setConsistentId("consId0"));
+            IgniteEx ignite1 = startGrid(getConfiguration(getTestIgniteInstanceName(1))
+                .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true)))
+                .setConsistentId("consId1"));
+        ) {
+            ignite0.cluster().state(ClusterState.ACTIVE);
+
+            ignite1.close();
+
+            awaitPartitionMapExchange();
+
+            SystemView<BaselineNodeView> view = ignite0.context().systemView().view(BASELINE_NODES_SYS_VIEW);
+
+            assertEquals(2, view.size());
+            assertEquals(1, F.size(view.iterator(), row -> "consId0".equals(row.consistentId()) && row.online()));
+            assertEquals(1, F.size(view.iterator(), row -> "consId1".equals(row.consistentId()) && !row.online()));
+        }
+    }
+
+    /** */
+    @Test
+    public void testBaselineNodeAttributes() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration()
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setName("pds").setPersistenceEnabled(true)
+                ))
+            .setUserAttributes(F.asMap("name", "val"))
+            .setConsistentId("consId"))
+        ) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            SystemView<BaselineNodeAttributeView> view = ignite.context().systemView()
+                .view(BASELINE_NODE_ATTRIBUTES_SYS_VIEW);
+
+            assertEquals(ignite.cluster().localNode().attributes().size(), view.size());
+
+            assertEquals(1, F.size(view.iterator(), row -> "consId".equals(row.nodeConsistentId()) &&
+                "name".equals(row.name()) && "val".equals(row.value())));
+
+            // Test filtering.
+            assertTrue(view instanceof FiltrableSystemView);
+
+            Iterator<BaselineNodeAttributeView> iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view)
+                .iterator(F.asMap(BaselineNodeAttributeViewWalker.NODE_CONSISTENT_ID_FILTER, "consId",
+                    BaselineNodeAttributeViewWalker.NAME_FILTER, "name"));
+
+            assertEquals(1, F.size(iter));
+
+            iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view).iterator(
+                F.asMap(BaselineNodeAttributeViewWalker.NODE_CONSISTENT_ID_FILTER, "consId"));
+
+            assertEquals(1, F.size(iter, row -> "name".equals(row.name())));
+
+            iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view).iterator(
+                F.asMap(BaselineNodeAttributeViewWalker.NAME_FILTER, "name"));
+
+            assertEquals(1, F.size(iter));
         }
     }
 

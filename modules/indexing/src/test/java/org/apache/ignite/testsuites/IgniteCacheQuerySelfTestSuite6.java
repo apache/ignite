@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSinglePartitionMultiParallelismTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -73,7 +74,8 @@ import org.junit.runners.Suite;
     CacheContinuousQueryFilterDeploymentFailedTest.class,
     PerformanceStatisticsQueryTest.class,
     CacheContinuousQueryFilterDeploymentFailedTest.class,
-    CacheContinuousQueryDeploymentToClientTest.class
+    CacheContinuousQueryDeploymentToClientTest.class,
+    IgniteSqlSinglePartitionMultiParallelismTest.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

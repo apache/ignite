@@ -1305,12 +1305,14 @@ public class CacheGroupContext {
 
     /**
      * Removes statistics metrics registries.
+     *
+     * @param destroy Group destroy flag.
      */
-    public void removeIOStatistic() {
+    public void removeIOStatistic(boolean destroy) {
         if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName(), destroy);
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
     }
 }

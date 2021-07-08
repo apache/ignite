@@ -63,6 +63,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -168,7 +169,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -787,7 +788,40 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        return restoreCacheGrpProc.isRestoring();
+        return restoreCacheGrpProc.restoringSnapshotName() != null;
+    }
+
+    /**
+     * Check if snapshot restore process is currently running.
+     *
+     * @param snpName Snapshot name.
+     * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
+     */
+    public boolean isRestoring(String snpName) {
+        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
+    }
+
+    /**
+     * Check if the cache or group with the specified name is currently being restored from the snapshot.
+     *
+     * @param cacheName Cache name.
+     * @param grpName Cache group name.
+     * @return {@code True} if the cache or group with the specified name is being restored.
+     */
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
+    }
+
+    /**
+     * Status of the restore operation cluster-wide.
+     *
+     * @param snpName Snapshot name.
+     * @return Future that will be completed when the status of the restore operation is received from all the server
+     * nodes. The result of this future will be {@code false} if the restore process with the specified snapshot name is
+     * not running on all nodes.
+     */
+    public IgniteFuture<Boolean> restoreStatus(String snpName) {
+        return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
     }
 
     /**
@@ -800,17 +834,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptySet();
 
         return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
-    }
-
-    /**
-     * Check if the cache or group with the specified name is currently being restored from the snapshot.
-     *
-     * @param cacheName Cache name.
-     * @param grpName Cache group name.
-     * @return {@code True} if the cache or group with the specified name is being restored.
-     */
-    public boolean isRestoring(String cacheName, @Nullable String grpName) {
-        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
     }
 
     /**
@@ -885,6 +908,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
+        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
+    }
+
+    /**
+     * @param name Snapshot name.
+     *
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
+        return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
     }
 
     /**
@@ -1534,6 +1572,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param taskCls Snapshot restore operation management task class.
+     * @param snpName Snapshot name.
+     */
+    private IgniteFuture<Boolean> executeRestoreManagementTask(
+        Class<? extends ComputeTask<String, Boolean>> taskCls,
+        String snpName
+    ) {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
+
+        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
+        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
+
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+    }
+
+    /**
      * Ves pokrit assertami absolutely ves,
      * PageScan iterator in the ignite core est.
      */
@@ -1994,6 +2051,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Snapshot finish time. */
         volatile long endTime;
+
+        /** Operation interruption exception. */
+        volatile IgniteCheckedException interruptEx;
 
         /**
          * Default constructor.

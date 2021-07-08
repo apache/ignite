@@ -17,54 +17,11 @@
 
 package org.apache.ignite.platform.plugin.cache;
 
-import javax.cache.Cache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.plugin.CachePluginProvider;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.AbstractCachePluginProvider;
 
 /**
  * Test cache plugin provider.
  */
-public class PlatformTestCachePluginProvider implements CachePluginProvider {
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validate() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    @Override public void validateRemote(CacheConfiguration locCfg, CacheConfiguration rmtCfg, ClusterNode rmtNode)
-        throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object unwrapCacheEntry(Cache.Entry entry, Class cls) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(Class cls) {
-        return null;
-    }
+public class PlatformTestCachePluginProvider extends AbstractCachePluginProvider {
+    // No-op.
 }

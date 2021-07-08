@@ -7046,10 +7046,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
                         LT.warn(log, "Failed to initialize connection " +
                             "(missing SSL configuration on remote node?) " +
                             "[rmtAddr=" + sock.getInetAddress() + ']', true);
+
+                        spi.stats.onSslConnectionRejected();
+                    }
                     else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
                         && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))

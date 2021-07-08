@@ -410,6 +410,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
@@ -429,7 +430,10 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "PARTITION_STATES",
             "BINARY_METADATA",
             "METASTORAGE",
-            "DISTRIBUTED_METASTORAGE"
+            "DISTRIBUTED_METASTORAGE",
+            "STATISTICS_CONFIGURATION",
+            "STATISTICS_PARTITION_DATA",
+            "STATISTICS_LOCAL_DATA"
         ));
 
         Set<String> actViews = new HashSet<>();
