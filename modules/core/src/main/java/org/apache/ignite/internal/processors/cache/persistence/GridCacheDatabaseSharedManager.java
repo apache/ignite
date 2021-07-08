@@ -1416,6 +1416,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return null;
                 }
             );
+            /*cctx.cache().restorePartitionStates(
+                cctx.cache().cacheGroups(),
+                Collections.emptyMap(),
+                cacheGroup -> {
+                    if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
+                        cacheGroup.topology().afterStateRestored(fut.initialVersion());
+
+                    fut.timeBag().finishLocalStage("Restore partition states " +
+                        "[grp=" + cacheGroup.cacheOrGroupName() + "]");
+                }
+            );*/
 
             fut.timeBag().finishGlobalStage("Restore partition states");
         }
@@ -2641,7 +2652,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         WALIterator it = cctx.wal().replay(status.startPtr, recordTypePredicate);
 
         RestoreLogicalState restoreLogicalState =
-            new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
+            new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, Collections.unmodifiableMap(partitionRecoveryStates));
 
         final IgniteTxManager txManager = cctx.tm();
 

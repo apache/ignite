@@ -615,6 +615,131 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
+    @Override public long restoreStateOfPartition(
+        int p,
+        Map<GroupPartitionId, Integer> partRecoveryStates
+    ) throws IgniteCheckedException {
+        if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled()
+            || partitionStatesRestored)
+            return 0;
+
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        Integer recoverState = partRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
+
+        long startTime = U.currentTimeMillis();
+
+        long res = 0;
+
+        if (log.isDebugEnabled())
+            log.debug("Started restoring partition state [grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
+
+        if (ctx.pageStore().exists(grp.groupId(), p)) {
+            ctx.pageStore().ensure(grp.groupId(), p);
+
+            if (ctx.pageStore().pages(grp.groupId(), p) <= 1) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipping partition on recovery (pages less than 1) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
+                }
+
+                return 0;
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("Creating partition on recovery (exists in page store) " +
+                    "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
+            }
+
+            GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
+
+            // Triggers initialization of existing(having datafile) partition before acquiring cp read lock.
+            part.dataStore().init();
+
+            ctx.database().checkpointReadLock();
+
+            try {
+                long partMetaId = pageMem.partitionMetaPageId(grp.groupId(), p);
+                long partMetaPage = pageMem.acquirePage(grp.groupId(), partMetaId);
+
+                try {
+                    long pageAddr = pageMem.writeLock(grp.groupId(), partMetaId, partMetaPage);
+
+                    boolean changed = false;
+
+                    try {
+                        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                        if (recoverState != null) {
+                            changed = io.setPartitionState(pageAddr, (byte)recoverState.intValue());
+
+                            updateState(part, recoverState);
+
+                            if (log.isDebugEnabled()) {
+                                log.debug("Restored partition state (from WAL) " +
+                                    "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                                    ", updCntr=" + part.initialUpdateCounter() +
+                                    ", size=" + part.fullSize() + ']');
+                            }
+                        }
+                        else {
+                            int stateId = io.getPartitionState(pageAddr);
+
+                            updateState(part, stateId);
+
+                            if (log.isDebugEnabled()) {
+                                log.debug("Restored partition state (from page memory) " +
+                                    "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                                    ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId +
+                                    ", size=" + part.fullSize() + ']');
+                            }
+                        }
+                    }
+                    finally {
+                        pageMem.writeUnlock(grp.groupId(), partMetaId, partMetaPage, null, changed);
+                    }
+                }
+                finally {
+                    pageMem.releasePage(grp.groupId(), partMetaId, partMetaPage);
+                }
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
+
+            res = U.currentTimeMillis() - startTime;
+        }
+        else if (recoverState != null) { // Pre-create partition if having valid state.
+            GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
+
+            updateState(part, recoverState);
+
+            res = U.currentTimeMillis() - startTime;
+
+            if (log.isDebugEnabled()) {
+                log.debug("Restored partition state (from WAL) " +
+                    "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                    ", updCntr=" + part.initialUpdateCounter() +
+                    ", size=" + part.fullSize() + ']');
+            }
+        }
+        else {
+            if (log.isDebugEnabled()) {
+                log.debug("Skipping partition on recovery (no page store OR wal state) " +
+                    "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
+            }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("Finished restoring partition state " +
+                "[grp=" + grp.cacheOrGroupName() + ", p=" + p +
+                ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startTime) + ']');
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Integer, Long> restorePartitionStates(
         Map<GroupPartitionId, Integer> partRecoveryStates
     ) throws IgniteCheckedException {
@@ -624,122 +749,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         Map<Integer, Long> processed = new HashMap<>();
 
-        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-
         for (int p = 0; p < grp.affinity().partitions(); p++) {
-            Integer recoverState = partRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
+            long time = restoreStateOfPartition(p, partRecoveryStates);
 
-            long startTime = U.currentTimeMillis();
-
-            if (log.isDebugEnabled())
-                log.debug("Started restoring partition state [grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
-
-            if (ctx.pageStore().exists(grp.groupId(), p)) {
-                ctx.pageStore().ensure(grp.groupId(), p);
-
-                if (ctx.pageStore().pages(grp.groupId(), p) <= 1) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Skipping partition on recovery (pages less than 1) " +
-                            "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
-                    }
-
-                    continue;
-                }
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Creating partition on recovery (exists in page store) " +
-                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
-                }
-
-                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
-
-                // Triggers initialization of existing(having datafile) partition before acquiring cp read lock.
-                part.dataStore().init();
-
-                ctx.database().checkpointReadLock();
-
-                try {
-                    long partMetaId = pageMem.partitionMetaPageId(grp.groupId(), p);
-                    long partMetaPage = pageMem.acquirePage(grp.groupId(), partMetaId);
-
-                    try {
-                        long pageAddr = pageMem.writeLock(grp.groupId(), partMetaId, partMetaPage);
-
-                        boolean changed = false;
-
-                        try {
-                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-                            if (recoverState != null) {
-                                changed = io.setPartitionState(pageAddr, (byte)recoverState.intValue());
-
-                                updateState(part, recoverState);
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Restored partition state (from WAL) " +
-                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() +
-                                        ", size=" + part.fullSize() + ']');
-                                }
-                            }
-                            else {
-                                int stateId = io.getPartitionState(pageAddr);
-
-                                updateState(part, stateId);
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Restored partition state (from page memory) " +
-                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId +
-                                        ", size=" + part.fullSize() + ']');
-                                }
-                            }
-                        }
-                        finally {
-                            pageMem.writeUnlock(grp.groupId(), partMetaId, partMetaPage, null, changed);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grp.groupId(), partMetaId, partMetaPage);
-                    }
-                }
-                finally {
-                    ctx.database().checkpointReadUnlock();
-                }
-
-                processed.put(p, U.currentTimeMillis() - startTime);
-            }
-            else if (recoverState != null) { // Pre-create partition if having valid state.
-                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
-
-                updateState(part, recoverState);
-
-                processed.put(p, U.currentTimeMillis() - startTime);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Restored partition state (from WAL) " +
-                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                        ", updCntr=" + part.initialUpdateCounter() +
-                        ", size=" + part.fullSize() + ']');
-                }
-            }
-            else {
-                if (log.isDebugEnabled()) {
-                    log.debug("Skipping partition on recovery (no page store OR wal state) " +
-                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
-                }
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("Finished restoring partition state " +
-                    "[grp=" + grp.cacheOrGroupName() + ", p=" + p +
-                    ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startTime) + ']');
-            }
+            processed.put(p, time);
         }
 
-        partitionStatesRestored = true;
+        confirmPartitionStatesRestored();
 
         return processed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void confirmPartitionStatesRestored() {
+        partitionStatesRestored = true;
     }
 
     /**

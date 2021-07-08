@@ -271,10 +271,23 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public long restoreStateOfPartition(
+        int p,
+        Map<GroupPartitionId, Integer> partRecoveryStates
+    ) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Integer, Long> restorePartitionStates(
         Map<GroupPartitionId, Integer> partRecoveryStates
     ) throws IgniteCheckedException {
         return Collections.emptyMap(); // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void confirmPartitionStatesRestored() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

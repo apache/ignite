@@ -96,9 +96,26 @@ public interface IgniteCacheOffheapManager {
      * @return Processed partitions: partition id -> processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
+    long restoreStateOfPartition(
+        int p,
+        Map<GroupPartitionId, Integer> partRecoveryStates
+    ) throws IgniteCheckedException;
+
+    /**
+     * Pre-create partitions that resides in page memory or WAL and restores their state.
+     *
+     * @param partRecoveryStates Partition recovery states.
+     * @return Processed partitions: partition id -> processing time in millis.
+     * @throws IgniteCheckedException If failed.
+     */
     Map<Integer, Long> restorePartitionStates(
         Map<GroupPartitionId, Integer> partRecoveryStates
     ) throws IgniteCheckedException;
+
+    /**
+     * Confirm that partition states are restored.
+     */
+    void confirmPartitionStatesRestored();
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
