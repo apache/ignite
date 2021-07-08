@@ -58,6 +58,9 @@ public class SqlScriptRunner {
     /** NULL label. */
     private static final String NULL = "NULL";
 
+    /** Empty string label. */
+    private static final String EMPTY = "(empty)";
+
     /** Default schema. */
     private static final String schemaPublic = "PUBLIC";
 
@@ -487,7 +490,7 @@ public class SqlScriptRunner {
 
                     try {
                         if (singleValOnLine) {
-                            row.add(NULL.equals(vals[0]) ? null : vals[0]);
+                            row.add(NULL.equals(vals[0]) ? null : EMPTY.equals(vals[0]) ? "" : vals[0]);
 
                             if (row.size() == resTypes.size()) {
                                 expectedRes.add(row);
@@ -497,7 +500,7 @@ public class SqlScriptRunner {
                         }
                         else {
                             for (String val : vals)
-                                row.add(NULL.equals(val) ? null : val);
+                                row.add(NULL.equals(val) ? null : EMPTY.equals(val) ? "" : val);
 
                             expectedRes.add(row);
                             row = new ArrayList<>();
