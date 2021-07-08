@@ -62,6 +62,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -71,10 +72,16 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
-/**
+/**GridCacheDataStore
  * Snapshot restore tests.
  */
 public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Encryption={0}")
+    public static Iterable<Boolean> testParams() {
+        return Arrays.asList(true);
+    }
+
     /** Type name used for binary and SQL. */
     private static final String TYPE_NAME = "CustomType";
 

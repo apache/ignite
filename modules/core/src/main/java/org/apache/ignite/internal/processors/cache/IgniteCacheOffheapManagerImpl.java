@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.EncryptionKeyNotFoundException;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
@@ -205,16 +204,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (grp.isLocal())
                     locCacheDataStore = createCacheDataStore(0);
-            }
-            catch (Exception e) {
-                // Push more details above. 'Key not found' or 'unable to read/decrypt' is not obvious and do not suggests what to do.
-                if (X.hasCause(e, EncryptionKeyNotFoundException.class)) {
-                    throw new IgniteCheckedException("Failed to start encrypted cache group '" + grp.config().getName() +
-                        "'. No encryption key found. Make sure the caches still exist in the cluster and check the encryption " +
-                        "configuration. If caches do not exist, to add the node to cluster - remove directories with the caches.", e);
-                }
-
-                throw e;
             }
             finally {
                 ctx.database().checkpointReadUnlock();

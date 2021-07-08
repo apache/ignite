@@ -162,7 +162,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      */
     private void testActionFailsDuringSnapshotOperation(boolean restore, Function<Integer, IgniteFuture<?>> action, String errPrefix,
         Class<? extends Exception> errType) throws Exception {
-        startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key), defaultCacheConfiguration(),
+        startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key), dfltCacheCfg,
             new CacheConfiguration<>(dfltCacheCfg).setName(SECOND_CACHE_NAME));
 
         BlockingCustomMessageDiscoverySpi grid0Disco = discoSpi(grid(0));
