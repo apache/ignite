@@ -32,14 +32,22 @@ public class IgnitePdsTestSuite2 {
      * @return Suite.
      */
     public static List<Class<?>> suite() {
-        List<Class<?>> tests = new ArrayList<>();
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
+     */
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         for (int i = 0; i < 25; i++) {
-            tests.add(CdcSelfTest.class);
-            tests.add(CdcCacheVersionTest.class);
+            suite.add(CdcSelfTest.class);
+            suite.add(CdcCacheVersionTest.class);
         }
 
-        return tests;
+        return suite;
     }
 
     /**
