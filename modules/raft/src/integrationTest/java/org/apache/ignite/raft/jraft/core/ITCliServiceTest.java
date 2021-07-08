@@ -16,8 +16,8 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
-import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +31,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
@@ -46,11 +48,11 @@ import org.apache.ignite.raft.jraft.entity.Task;
 import org.apache.ignite.raft.jraft.option.CliOptions;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * Jraft cli tests.
  */
+@ExtendWith(WorkDirectoryExtension.class)
 public class ITCliServiceTest {
     /**
      * The logger.
@@ -72,8 +75,6 @@ public class ITCliServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(ITCliServiceTest.class);
 
     private static final int LEARNER_PORT_STEP = 100;
-
-    private String dataPath;
 
     private TestCluster cluster;
 
@@ -85,10 +86,9 @@ public class ITCliServiceTest {
 
     /** */
     @BeforeEach
-    public void setup(TestInfo testInfo) throws Exception {
+    public void setup(TestInfo testInfo, @WorkDirectory Path dataPath) throws Exception {
         LOG.info(">>>>>>>>>>>>>>> Start test method: " + testInfo.getDisplayName());
-        dataPath = TestUtils.mkTempDir();
-        new File(dataPath).mkdirs();
+
         List<PeerId> peers = TestUtils.generatePeers(3);
 
         LinkedHashSet<PeerId> learners = new LinkedHashSet<>();
@@ -97,7 +97,7 @@ public class ITCliServiceTest {
         for (int i = 0; i < 2; i++)
             learners.add(new PeerId(TestUtils.getLocalAddress(), TestUtils.INIT_PORT + LEARNER_PORT_STEP + i));
 
-        cluster = new TestCluster(groupId, dataPath, peers, learners, 300);
+        cluster = new TestCluster(groupId, dataPath.toString(), peers, learners, 300);
         for (PeerId peer : peers)
             cluster.start(peer.getEndpoint());
 
@@ -144,7 +144,7 @@ public class ITCliServiceTest {
     public void teardown(TestInfo testInfo) throws Exception {
         cliService.shutdown();
         cluster.stopAll();
-        Utils.delete(new File(dataPath));
+
         LOG.info(">>>>>>>>>>>>>>> End test method: " + testInfo.getDisplayName());
     }
 

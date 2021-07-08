@@ -18,6 +18,8 @@ package org.apache.ignite.raft.jraft.storage.snapshot.local;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.option.SnapshotCopierOptions;
@@ -99,13 +102,10 @@ public class LocalSnapshotStorage implements SnapshotStorage {
 
         // delete temp snapshot
         if (!this.filterBeforeCopyRemote) {
-            final String tempSnapshotPath = this.path + File.separator + TEMP_PATH;
-            final File tempFile = new File(tempSnapshotPath);
-            if (tempFile.exists()) {
-                if (!Utils.delete(tempFile)) {
-                    LOG.error("Fail to delete temp snapshot path {}.", tempSnapshotPath);
-                    return false;
-                }
+            final Path tempSnapshotPath = Paths.get(this.path, TEMP_PATH);
+            if (!IgniteUtils.deleteIfExists(tempSnapshotPath)) {
+                LOG.error("Fail to delete temp snapshot path {}.", tempSnapshotPath);
+                return false;
             }
         }
         // delete old snapshot
@@ -154,9 +154,9 @@ public class LocalSnapshotStorage implements SnapshotStorage {
 
     private boolean destroySnapshot(final String path) {
         LOG.info("Deleting snapshot {}.", path);
-        final File file = new File(path);
+        final Path file = Paths.get(path);
 
-        if (file.exists() && !Utils.delete(file)) {
+        if (!IgniteUtils.deleteIfExists(file)) {
             LOG.error("Fail to destroy snapshot {}.", path);
             return false;
         }

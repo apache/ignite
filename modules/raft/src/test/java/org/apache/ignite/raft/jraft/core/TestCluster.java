@@ -19,6 +19,8 @@ package org.apache.ignite.raft.jraft.core;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
@@ -50,7 +53,6 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.storage.SnapshotThrottle;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
-import org.apache.ignite.raft.jraft.util.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -316,10 +318,10 @@ public class TestCluster {
             stop(addr);
     }
 
-    public void clean(final Endpoint listenAddr) throws IOException {
-        final String path = this.dataPath + File.separator + listenAddr.toString().replace(':', '_');
+    public void clean(final Endpoint listenAddr) {
+        final Path path = Paths.get(this.dataPath, listenAddr.toString().replace(':', '_'));
         LOG.info("Clean dir: {}", path);
-        Utils.delete(new File(path));
+        IgniteUtils.deleteIfExists(path);
     }
 
     public Node getLeader() {

@@ -43,8 +43,11 @@ import org.apache.ignite.table.Tuple;
  */
 public class KeyValueBinaryViewExample {
     public static void main(String[] args) throws Exception {
-        Ignite ignite = IgnitionManager.start("node-0",
-            Files.readString(Path.of("config/ignite-config.json")));
+        Ignite ignite = IgnitionManager.start(
+            "node-0",
+            Files.readString(Path.of("config", "ignite-config.json").toAbsolutePath()),
+            Path.of("work")
+        );
 
         //---------------------------------------------------------------------------------
         //

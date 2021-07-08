@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.app;
+package org.apache.ignite.internal.testframework;
 
-import org.apache.ignite.internal.util.IgniteUtils;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.nio.file.Path;
 
 /**
- * Class for removing data of an Ignite node.
+ * Annotation for injecting temporary folders into tests.
+ * <p>
+ * This annotation should be used on either fields or method parameters of the {@link Path} type.
+ *
+ * @see WorkDirectoryExtension
  */
-public class IgnitionCleaner {
-    /**
-     * Removes all directories that were created during a node startup.
-     */
-    public static void removeAllData() {
-        IgniteUtils.delete(IgnitionImpl.VAULT_DB_PATH);
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+public @interface WorkDirectory {
 }

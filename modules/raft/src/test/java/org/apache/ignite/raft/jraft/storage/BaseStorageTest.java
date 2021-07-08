@@ -16,30 +16,22 @@
  */
 package org.apache.ignite.raft.jraft.storage;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.apache.ignite.raft.jraft.util.Utils;
-import org.junit.jupiter.api.AfterEach;
+import java.nio.file.Path;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(WorkDirectoryExtension.class)
 public class BaseStorageTest {
-    protected String path;
-
-    public void setup() throws Exception {
-        this.path = TestUtils.mkTempDir();
-        new File(this.path).mkdirs();
-    }
-
-    @AfterEach
-    public void teardown() throws Exception {
-        Utils.delete(new File(this.path));
-    }
+    @WorkDirectory
+    protected Path path;
 
     protected String writeData() throws IOException {
-        File file = new File(this.path + File.separator + "data");
+        Path file = this.path.resolve("data");
         String data = "jraft is great!";
-        Files.writeString(file.toPath(), data);
+        Files.writeString(file, data);
         return data;
     }
 

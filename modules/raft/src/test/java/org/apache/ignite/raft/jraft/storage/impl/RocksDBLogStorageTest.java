@@ -22,6 +22,6 @@ import org.apache.ignite.raft.jraft.storage.LogStorage;
 public class RocksDBLogStorageTest extends BaseLogStorageTest {
     @Override
     protected LogStorage newLogStorage() {
-        return new RocksDBLogStorage(this.path, new RaftOptions());
+        return new RocksDBLogStorage(this.path.toString(), new RaftOptions());
     }
 }

@@ -32,7 +32,6 @@ import org.apache.ignite.lang.ByteArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -54,7 +53,7 @@ public abstract class VaultServiceTest {
 
     /** */
     @BeforeEach
-    public void setUp(TestInfo testInfo) throws IOException {
+    public void setUp() throws IOException {
         vaultService = getVaultService();
     }
 

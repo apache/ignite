@@ -17,50 +17,21 @@
 
 package org.apache.ignite.internal.vault.persistence;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.vault.VaultService;
 import org.apache.ignite.internal.vault.VaultServiceTest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test suite for the {@link PersistentVaultService}.
  */
+@ExtendWith(WorkDirectoryExtension.class)
 class PersistentVaultServiceTest extends VaultServiceTest {
     /** */
-    private Path baseDir;
-
-    /** */
+    @WorkDirectory
     private Path vaultDir;
-
-    /** */
-    @BeforeEach
-    @Override public void setUp(TestInfo testInfo) throws IOException {
-        baseDir = testInfo.getTestMethod()
-            .map(Method::getName)
-            .map(Paths::get)
-            .orElseThrow();
-
-        vaultDir = baseDir.resolve("vault");
-
-        Files.createDirectories(vaultDir);
-
-        super.setUp(testInfo);
-    }
-
-    /** {@inheritDoc} */
-    @AfterEach
-    @Override public void tearDown() throws Exception {
-        super.tearDown();
-
-        IgniteUtils.delete(baseDir);
-    }
 
     /** {@inheritDoc} */
     @Override protected VaultService getVaultService() {

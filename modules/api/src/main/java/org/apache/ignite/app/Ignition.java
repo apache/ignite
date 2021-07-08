@@ -23,33 +23,36 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Entry point for handling grid lifecycle.
+ * Entry point for handling the grid lifecycle.
  */
 @SuppressWarnings("UnnecessaryInterfaceModifier")
 public interface Ignition {
     /**
-     * Starts Ignite node with optional bootstrap configuration from hocon file.
+     * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
-     * @param name Name of the node. Couldn't be {@code null}.
-     * @param configPath Node configuration in hocon format. Could be {@code null}.
+     * @param name Name of the node. Must not be {@code null}.
+     * @param configPath Path to the node configuration in the HOCON format. Can be {@code null}.
+     * @param workDir Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
-    public Ignite start(@NotNull String name, @Nullable Path configPath);
+    public Ignite start(@NotNull String name, @Nullable Path configPath, @NotNull Path workDir);
 
     /**
-     * Starts Ignite node with optional bootstrap configuration from input stream with hocon configs.
+     * Starts an Ignite node with an optional bootstrap configuration from an input stream with HOCON configs.
      *
-     * @param name Name of the node. Couldn't be {@code null}.
-     * @param config Input stream from node configuration in hocon format. Could be {@code null}.
+     * @param name Name of the node. Must not be {@code null}.
+     * @param config Input stream from the node configuration in HOCON format. Can be {@code null}.
+     * @param workDir Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
-    public Ignite start(@NotNull String name, @Nullable InputStream config);
+    public Ignite start(@NotNull String name, @Nullable InputStream config, @NotNull Path workDir);
 
     /**
-     * Starts Ignite node with default configuration.
+     * Starts an Ignite node with the default configuration.
      *
-     * @param name Name of the node. Couldn't be {@code null}.
+     * @param name Name of the node. Must not be {@code null}.
+     * @param workDir Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
-    public Ignite start(@NotNull String name);
+    public Ignite start(@NotNull String name, @NotNull Path workDir);
 }

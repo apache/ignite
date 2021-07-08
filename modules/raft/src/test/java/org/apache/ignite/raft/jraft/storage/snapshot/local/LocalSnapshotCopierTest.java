@@ -77,15 +77,13 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
     private Scheduler timerManager;
     private NodeOptions nodeOptions;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
         this.timerManager = new TimerManager(5);
         this.raftOptions = new RaftOptions();
-        this.writer = new LocalSnapshotWriter(this.path, this.snapshotStorage, this.raftOptions);
+        this.writer = new LocalSnapshotWriter(this.path.toString(), this.snapshotStorage, this.raftOptions);
         this.reader = new LocalSnapshotReader(this.snapshotStorage, null, new Endpoint("localhost", 8081),
-            this.raftOptions, this.path);
+            this.raftOptions, this.path.toString());
 
         Mockito.when(this.snapshotStorage.open()).thenReturn(this.reader);
         Mockito.when(this.snapshotStorage.create(true)).thenReturn(this.writer);
@@ -104,10 +102,8 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
         this.copier.setStorage(this.snapshotStorage);
     }
 
-    @Override
     @AfterEach
     public void teardown() throws Exception {
-        super.teardown();
         copier.close();
         timerManager.shutdown();
         nodeOptions.getCommonExecutor().shutdown();

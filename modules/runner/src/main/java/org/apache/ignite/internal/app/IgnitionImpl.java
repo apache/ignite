@@ -73,7 +73,7 @@ public class IgnitionImpl implements Ignition {
     /**
      * Path to the persistent storage used by the {@link VaultService} component.
      */
-    static final Path VAULT_DB_PATH = Paths.get("vault");
+    private static final Path VAULT_DB_PATH = Paths.get("vault");
 
     /** */
     private static final String[] BANNER = {
@@ -96,46 +96,55 @@ public class IgnitionImpl implements Ignition {
     private static final String VER_KEY = "version";
 
     /** {@inheritDoc} */
-    @Override public synchronized Ignite start(@NotNull String nodeName, @Nullable Path cfgPath) {
+    @Override public Ignite start(@NotNull String nodeName, @Nullable Path cfgPath, @NotNull Path workDir) {
         try {
-            return doStart(nodeName, Files.readString(cfgPath));
+            return doStart(
+                nodeName,
+                cfgPath == null ? null : Files.readString(cfgPath),
+                workDir
+            );
         }
         catch (IOException e) {
             LOG.warn("Unable to read user specific configuration, default configuration will be used: " + e.getMessage());
-            return start(nodeName);
+            return start(nodeName, workDir);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite start(@NotNull String name, @Nullable InputStream config) {
+    @Override public Ignite start(@NotNull String name, @Nullable InputStream config, @NotNull Path workDir) {
         try {
-            return doStart(name, new String(config.readAllBytes(), StandardCharsets.UTF_8));
+            return doStart(
+                name,
+                config == null ? null : new String(config.readAllBytes(), StandardCharsets.UTF_8),
+                workDir
+            );
         }
         catch (IOException e) {
             LOG.warn("Unable to read user specific configuration, default configuration will be used: " + e.getMessage());
-            return start(name);
+            return start(name, workDir);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite start(@NotNull String name) {
-        return doStart(name, null);
+    @Override public Ignite start(@NotNull String name, @NotNull Path workDir) {
+        return doStart(name, null, workDir);
     }
 
     /**
-     * Starts Ignite node with optional bootstrap configuration in hocon format.
+     * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
-     * @param nodeName Name of the node. Couldn't be {@code null}.
-     * @param cfgContent Node configuration in hocon format. Could be {@code null}.
+     * @param nodeName Name of the node. Must not be {@code null}.
+     * @param cfgContent Node configuration in the HOCON format. Can be {@code null}.
+     * @param workDir Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
-    private Ignite doStart(@NotNull String nodeName, @Nullable String cfgContent) {
+    private static Ignite doStart(String nodeName, @Nullable String cfgContent, Path workDir) {
         if (nodeName.isEmpty())
             throw new IllegalArgumentException("Node name must not be null or empty.");
 
         ackBanner();
 
-        VaultManager vaultMgr = createVault(nodeName);
+        VaultManager vaultMgr = createVault(nodeName, workDir);
 
         boolean cfgBootstrappedFromPds = vaultMgr.bootstrapped();
 
@@ -233,8 +242,8 @@ public class IgnitionImpl implements Ignition {
     /**
      * Starts the Vault component.
      */
-    private static VaultManager createVault(String nodeName) {
-        Path vaultPath = VAULT_DB_PATH.resolve(nodeName);
+    private static VaultManager createVault(String nodeName, Path workDir) {
+        Path vaultPath = workDir.resolve(VAULT_DB_PATH);
 
         try {
             Files.createDirectories(vaultPath);

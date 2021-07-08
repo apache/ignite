@@ -19,35 +19,28 @@ package org.apache.ignite.internal.storage.rocksdb;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.internal.storage.AbstractStorageTest;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Storage test implementation for {@link RocksDbStorage}.
  */
+@ExtendWith(WorkDirectoryExtension.class)
 public class RocksDbStorageTest extends AbstractStorageTest {
-    private Path path;
-
+    /** */
     @BeforeEach
-    public void setUp() throws Exception {
-        path = Paths.get("rocksdb_test");
-
-        IgniteUtils.delete(path);
-
-        storage = new RocksDbStorage(path, ByteBuffer::compareTo);
+    public void setUp(@WorkDirectory Path workDir) {
+        storage = new RocksDbStorage(workDir, ByteBuffer::compareTo);
     }
 
+    /** */
     @AfterEach
     public void tearDown() throws Exception {
-        try {
-            if (storage != null)
-                ((AutoCloseable)storage).close();
-        }
-        finally {
-            IgniteUtils.delete(path);
-        }
+        if (storage != null)
+            ((AutoCloseable)storage).close();
     }
 }

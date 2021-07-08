@@ -28,12 +28,12 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
  */
 public class IgniteCliRunner {
     /** CLI usage message. */
-    private static String usage = "IgniteCliRunner [--config conf] nodeName";
+    private static final String USAGE = "IgniteCliRunner [--config conf] nodeName";
 
     /**
      * Main method for run new Ignite node.
      *
-     * For CLI args info see {@link IgniteCliRunner#usage}
+     * For CLI args info see {@link IgniteCliRunner#USAGE}
      *
      * @param args CLI args to start new node.
      * @throws IOException if any issues with reading config file.
@@ -48,14 +48,15 @@ public class IgniteCliRunner {
             if (e.getMessage() != null)
                 System.out.println(e.getMessage() + "\n");
 
-            System.out.println(usage);
+            System.out.println(USAGE);
 
             System.exit(1);
         }
 
         var ignition = new IgnitionImpl();
 
-        ignition.start(parsedArgs.nodeName, parsedArgs.config.toAbsolutePath());
+        // TODO use the work dir provided as a parameter: https://issues.apache.org/jira/browse/IGNITE-15060
+        ignition.start(parsedArgs.nodeName, parsedArgs.config.toAbsolutePath(), Path.of("work"));
     }
 
     /**

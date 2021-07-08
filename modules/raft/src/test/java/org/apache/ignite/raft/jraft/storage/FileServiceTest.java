@@ -19,18 +19,20 @@ package org.apache.ignite.raft.jraft.storage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.storage.io.LocalDirReader;
-import org.apache.ignite.raft.jraft.test.TestUtils;
-import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,21 +41,22 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirectoryExtension.class)
 public class FileServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(FileServiceTest.class);
 
-    private String path;
+    @WorkDirectory
+    private Path path;
+
     private LocalDirReader fileReader;
 
     @BeforeEach
     public void setup() throws Exception {
-        this.path = TestUtils.mkTempDir();
-        this.fileReader = new LocalDirReader(path);
+        this.fileReader = new LocalDirReader(path.toString());
     }
 
     @AfterEach
     public void teardown() {
-        Utils.delete(new File(this.path));
         FileService.getInstance().clear();
     }
 

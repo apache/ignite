@@ -26,6 +26,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter.FileSource;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter.LocalFileMeta;
 import org.apache.ignite.raft.jraft.error.RaftError;
@@ -321,11 +322,11 @@ public class LocalSnapshotCopier extends SnapshotCopier {
             LOG.info("Found the same file ={} checksum={} in lastSnapshot={}", fileName, remoteMeta.getChecksum(),
                 lastSnapshot.getPath());
             if (localMeta.getSource() == FileSource.FILE_SOURCE_LOCAL) {
-                final String sourcePath = lastSnapshot.getPath() + File.separator + fileName;
-                final String destPath = writer.getPath() + File.separator + fileName;
-                Utils.delete(new File(destPath));
+                final Path sourcePath = Paths.get(lastSnapshot.getPath(), fileName);
+                final Path destPath = Paths.get(writer.getPath(), fileName);
+                IgniteUtils.deleteIfExists(destPath);
                 try {
-                    Files.createLink(Paths.get(destPath), Paths.get(sourcePath));
+                    Files.createLink(destPath, sourcePath);
                 }
                 catch (final IOException e) {
                     LOG.error("Fail to link {} to {}", sourcePath, destPath, e);
@@ -344,8 +345,8 @@ public class LocalSnapshotCopier extends SnapshotCopier {
             return false;
         }
         for (final String fileName : toRemove) {
-            final String removePath = writer.getPath() + File.separator + fileName;
-            Utils.delete(new File(removePath));
+            final Path removePath = Paths.get(writer.getPath(), fileName);
+            IgniteUtils.deleteIfExists(removePath);
             LOG.info("Deleted file: {}", removePath);
         }
         return true;

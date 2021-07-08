@@ -31,11 +31,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class LocalFileReaderTest extends BaseStorageTest {
     private LocalDirReader fileReader;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
-        this.fileReader = new LocalDirReader(path);
+        this.fileReader = new LocalDirReader(path.toString());
     }
 
     @Test

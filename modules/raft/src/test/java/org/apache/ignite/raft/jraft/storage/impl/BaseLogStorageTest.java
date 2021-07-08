@@ -47,10 +47,8 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
     private ConfigurationManager confManager;
     private LogEntryCodecFactory logEntryCodecFactory;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
         this.confManager = new ConfigurationManager();
         this.logEntryCodecFactory = LogEntryV1CodecFactory.getInstance();
         this.logStorage = newLogStorage();
@@ -69,11 +67,9 @@ public abstract class BaseLogStorageTest extends BaseStorageTest {
         return opts;
     }
 
-    @Override
     @AfterEach
     public void teardown() throws Exception {
         this.logStorage.shutdown();
-        super.teardown();
     }
 
     @Test

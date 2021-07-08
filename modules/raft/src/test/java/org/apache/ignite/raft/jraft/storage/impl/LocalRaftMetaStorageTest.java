@@ -16,8 +16,8 @@
  */
 package org.apache.ignite.raft.jraft.storage.impl;
 
-import java.io.File;
 import java.io.IOException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.error.RaftException;
@@ -25,7 +25,6 @@ import org.apache.ignite.raft.jraft.option.RaftMetaStorageOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.RaftMetaStorage;
-import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,11 +46,9 @@ public class LocalRaftMetaStorageTest extends BaseStorageTest {
     @Mock
     private NodeImpl node;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
-        this.raftMetaStorage = new LocalRaftMetaStorage(this.path, new RaftOptions());
+        this.raftMetaStorage = new LocalRaftMetaStorage(this.path.toString(), new RaftOptions());
         Mockito.when(this.node.getNodeMetrics()).thenReturn(null);
         assertTrue(this.raftMetaStorage.init(newOptions()));
     }
@@ -79,7 +76,7 @@ public class LocalRaftMetaStorageTest extends BaseStorageTest {
         assertEquals(100, this.raftMetaStorage.getTerm());
         assertEquals(new PeerId("localhost", 8083), this.raftMetaStorage.getVotedFor());
 
-        this.raftMetaStorage = new LocalRaftMetaStorage(this.path, new RaftOptions());
+        this.raftMetaStorage = new LocalRaftMetaStorage(this.path.toString(), new RaftOptions());
         Mockito.when(this.node.getNodeMetrics()).thenReturn(null);
         this.raftMetaStorage.init(newOptions());
         assertEquals(100, this.raftMetaStorage.getTerm());
@@ -88,7 +85,7 @@ public class LocalRaftMetaStorageTest extends BaseStorageTest {
 
     @Test
     public void testSaveFail() throws IOException {
-        Utils.delete(new File(this.path));
+        IgniteUtils.deleteIfExists(this.path);
         assertFalse(this.raftMetaStorage.setVotedFor(new PeerId("localhost", 8081)));
         Mockito.verify(this.node, Mockito.times(1)).onError((RaftException) Mockito.any());
     }

@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.raft.jraft.util;
 
-import com.codahale.metrics.MetricRegistry;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -37,13 +35,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.util.concurrent.MpscSingleThreadExecutor;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -408,63 +405,6 @@ public final class Utils {
         try (final FileChannel fc = FileChannel.open(file.toPath(), isDir ? StandardOpenOption.READ
             : StandardOpenOption.WRITE)) {
             fc.force(true);
-        }
-    }
-
-    /**
-     * Deletes file or directory with all sub-directories and files.
-     *
-     * @param file File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted, {@code false} otherwise
-     */
-    public static boolean delete(@Nullable File file) {
-        return file != null && delete(file.toPath());
-    }
-
-    /**
-     * Deletes file or directory with all sub-directories and files.
-     *
-     * @param path File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted, {@code false} otherwise
-     */
-    public static boolean delete(Path path) {
-        if (Files.isDirectory(path)) {
-            try {
-                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-                    for (Path innerPath : stream) {
-                        boolean res = delete(innerPath);
-
-                        if (!res)
-                            return false;
-                    }
-                }
-            }
-            catch (IOException e) {
-                LOG.error("Failed to read directory " + path, e);
-
-                return false;
-            }
-        }
-
-        if (path.toFile().getName().endsWith("jar")) {
-            try {
-                // Why do we do this?
-                new JarFile(path.toString(), false).close();
-            }
-            catch (IOException ignore) {
-                // Ignore it here...
-            }
-        }
-
-        try {
-            Files.delete(path);
-
-            return true;
-        }
-        catch (IOException e) {
-            LOG.error("Failed to remove " + path, e);
-
-            return false;
         }
     }
 

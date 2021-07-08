@@ -22,8 +22,6 @@ import java.lang.management.ThreadMXBean;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -58,14 +56,6 @@ public class TestUtils {
         ThreadInfo[] infos = bean.dumpAllThreads(true, true);
         for (ThreadInfo info : infos)
             System.out.println(info);
-    }
-
-    public static String mkTempDir() {
-        String dir = System.getProperty("user.dir");
-        //String dir = System.getProperty("java.io.tmpdir", "/tmp");
-        Path path = Paths.get(dir, "jraft_test_" + System.nanoTime());
-        path.toFile().mkdirs();
-        return path.toString();
     }
 
     public static LogEntry mockEntry(int index, int term) {

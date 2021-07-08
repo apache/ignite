@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.core;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +40,8 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.codahale.metrics.ConsoleReporter;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
@@ -88,6 +91,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +109,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * Integration tests for raft cluster. TODO asch get rid of sleeps wherether possible IGNITE-14832
  */
+@ExtendWith(WorkDirectoryExtension.class)
 public class ITNodeTest {
     private static final Logger LOG = LoggerFactory.getLogger(ITNodeTest.class);
 
@@ -159,16 +164,11 @@ public class ITNodeTest {
     }
 
     @BeforeEach
-    public void setup(TestInfo testInfo) throws Exception {
+    public void setup(TestInfo testInfo, @WorkDirectory Path workDir) throws Exception {
         LOG.info(">>>>>>>>>>>>>>> Start test method: " + testInfo.getDisplayName());
-        dataPath = TestUtils.mkTempDir();
 
-        File dataFile = new File(dataPath);
+        dataPath = workDir.toString();
 
-        if (dataFile.exists())
-            assertTrue(Utils.delete(dataFile));
-
-        dataFile.mkdirs();
         testStartMs = Utils.monotonicMs();
         dumpThread.interrupt(); // reset dump timeout
     }
@@ -187,7 +187,6 @@ public class ITNodeTest {
         if (cluster != null)
             cluster.stopAll();
 
-        assertTrue(Utils.delete(new File(dataPath)));
         startedCounter.set(0);
         stoppedCounter.set(0);
         LOG.info(">>>>>>>>>>>>>>> End test method: " + testInfo.getDisplayName() + ", cost:"

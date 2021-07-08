@@ -70,10 +70,8 @@ public class LogManagerTest extends BaseStorageTest {
 
     private LogStorage logStorage;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
         this.confManager = new ConfigurationManager();
         final RaftOptions raftOptions = new RaftOptions();
         this.logStorage = newLogStorage(raftOptions);
@@ -96,14 +94,12 @@ public class LogManagerTest extends BaseStorageTest {
     }
 
     protected LogStorage newLogStorage(final RaftOptions raftOptions) {
-        return new LocalLogStorage(this.path, raftOptions);
+        return new LocalLogStorage(this.path.toString(), raftOptions);
     }
 
-    @Override
     @AfterEach
     public void teardown() throws Exception {
         this.logStorage.shutdown();
-        super.teardown();
     }
 
     @Test

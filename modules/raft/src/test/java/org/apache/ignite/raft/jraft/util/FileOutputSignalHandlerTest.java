@@ -18,7 +18,9 @@ package org.apache.ignite.raft.jraft.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +34,7 @@ public class FileOutputSignalHandlerTest {
     public void testGetOutputFileWithEmptyPath() throws IOException {
         final File f = getOutputFile("", "test1.log");
         assertTrue(f.exists());
-        Utils.delete(f);
+        IgniteUtils.deleteIfExists(f.toPath());
     }
 
     @Test
@@ -40,15 +42,15 @@ public class FileOutputSignalHandlerTest {
         final String path = "abc";
         final File f = getOutputFile(path, "test2.log");
         assertTrue(f.exists());
-        Utils.delete(new File(path));
+        IgniteUtils.deleteIfExists(Paths.get(path));
     }
 
     @Test
     public void testGetOutputFileWithAbsolutePath() throws IOException {
-        final String path = Paths.get("cde").toAbsolutePath().toString();
-        final File f = getOutputFile(path, "test3.log");
+        final Path path = Paths.get("cde").toAbsolutePath();
+        final File f = getOutputFile(path.toString(), "test3.log");
         assertTrue(f.exists());
-        Utils.delete(new File(path));
+        IgniteUtils.deleteIfExists(path);
     }
 
     private File getOutputFile(final String path, final String baseName) throws IOException {

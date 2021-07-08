@@ -39,11 +39,9 @@ public class LocalSnapshotWriterTest extends BaseStorageTest {
     @Mock
     private LocalSnapshotStorage snapshotStorage;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
-        this.writer = new LocalSnapshotWriter(path, snapshotStorage, new RaftOptions());
+        this.writer = new LocalSnapshotWriter(path.toString(), snapshotStorage, new RaftOptions());
         assertTrue(this.writer.init(null));
     }
 
@@ -74,7 +72,7 @@ public class LocalSnapshotWriterTest extends BaseStorageTest {
 
         this.writer.sync();
         //create a new writer
-        LocalSnapshotWriter newWriter = new LocalSnapshotWriter(path, snapshotStorage, new RaftOptions());
+        LocalSnapshotWriter newWriter = new LocalSnapshotWriter(path.toString(), snapshotStorage, new RaftOptions());
         assertTrue(newWriter.init(null));
         assertNotSame(writer, newWriter);
         assertEquals(meta, newWriter.getFileMeta("data1"));

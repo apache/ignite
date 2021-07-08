@@ -98,15 +98,13 @@ public class SnapshotExecutorTest extends BaseStorageTest {
     private TimerManager timerManager;
     private NodeOptions options;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
         timerManager = new TimerManager(5);
         raftOptions = new RaftOptions();
-        writer = new LocalSnapshotWriter(path, snapshotStorage, raftOptions);
+        writer = new LocalSnapshotWriter(path.toString(), snapshotStorage, raftOptions);
         reader = new LocalSnapshotReader(snapshotStorage, null, new Endpoint("localhost", 8081),
-            raftOptions, path);
+            raftOptions, path.toString());
 
         Mockito.lenient().when(snapshotStorage.open()).thenReturn(reader);
         Mockito.lenient().when(snapshotStorage.create(true)).thenReturn(writer);
@@ -130,17 +128,15 @@ public class SnapshotExecutorTest extends BaseStorageTest {
         opts.setInitTerm(0);
         opts.setNode(node);
         opts.setLogManager(logManager);
-        opts.setUri(path);
+        opts.setUri(path.toString());
         addr = new Endpoint("localhost", 8081);
         opts.setAddr(addr);
         assertTrue(executor.init(opts));
     }
 
-    @Override
     @AfterEach
     public void teardown() throws Exception {
         executor.shutdown();
-        super.teardown();
         timerManager.shutdown();
         options.getCommonExecutor().shutdown();
     }

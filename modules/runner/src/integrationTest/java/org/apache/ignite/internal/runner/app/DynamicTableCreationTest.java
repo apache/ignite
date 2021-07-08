@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.runner.app;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,9 +25,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
-import org.apache.ignite.internal.app.IgnitionCleaner;
 import org.apache.ignite.internal.schema.SchemaManager;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.table.SchemaMismatchException;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
@@ -39,6 +41,7 @@ import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -48,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Ignition interface tests.
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-14581")
+@ExtendWith(WorkDirectoryExtension.class)
 class DynamicTableCreationTest {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(SchemaManager.class);
@@ -89,11 +93,13 @@ class DynamicTableCreationTest {
     private final List<Ignite> clusterNodes = new ArrayList<>();
 
     /** */
+    @WorkDirectory
+    private Path workDir;
+
+    /** */
     @AfterEach
     void tearDown() throws Exception {
         IgniteUtils.closeAll(clusterNodes);
-
-        IgnitionCleaner.removeAllData();
     }
 
     /**
@@ -101,8 +107,9 @@ class DynamicTableCreationTest {
      */
     @Test
     void testDynamicSimpleTableCreation() {
-        for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
-            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
+        nodesBootstrapCfg.forEach((nodeName, configStr) ->
+            clusterNodes.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
+        );
 
         assertEquals(3, clusterNodes.size());
 
@@ -153,8 +160,9 @@ class DynamicTableCreationTest {
      */
     @Test
     void testDynamicTableCreation() {
-        for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
-            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
+        nodesBootstrapCfg.forEach((nodeName, configStr) ->
+            clusterNodes.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
+        );
 
         assertEquals(3, clusterNodes.size());
 

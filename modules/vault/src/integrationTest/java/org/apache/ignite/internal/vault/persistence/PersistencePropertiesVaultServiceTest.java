@@ -17,25 +17,20 @@
 
 package org.apache.ignite.internal.vault.persistence;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.vault.VaultEntry;
 import org.apache.ignite.lang.ByteArray;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.vault.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,34 +40,14 @@ import static org.hamcrest.Matchers.is;
 /**
  * Test suite for testing persistence properties of {@link PersistentVaultService}.
  */
+@ExtendWith(WorkDirectoryExtension.class)
 class PersistencePropertiesVaultServiceTest {
     /** */
     private static final int TIMEOUT_SECONDS = 1;
 
     /** */
-    private Path baseDir;
-
-    /** */
+    @WorkDirectory
     private Path vaultDir;
-
-    /** */
-    @BeforeEach
-    void setUp(TestInfo testInfo) throws IOException {
-        baseDir = testInfo.getTestMethod()
-            .map(Method::getName)
-            .map(Paths::get)
-            .orElseThrow();
-
-        vaultDir = baseDir.resolve("vault");
-
-        Files.createDirectories(vaultDir);
-    }
-
-    /** */
-    @AfterEach
-    void tearDown() {
-        IgniteUtils.delete(baseDir);
-    }
 
     /**
      * Tests that the Vault Service correctly persists data after multiple service restarts.

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -364,10 +365,9 @@ public class IgniteUtils {
      * Deletes a file or a directory with all sub-directories and files.
      *
      * @param path File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted,
-     *      {@code false} otherwise
+     * @return {@code true} if the file or directory is successfully deleted or does not exist, {@code false} otherwise
      */
-    public static boolean delete(Path path) {
+    public static boolean deleteIfExists(Path path) {
         try {
             Files.walkFileTree(path, new SimpleFileVisitor<>() {
                 @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
@@ -383,6 +383,9 @@ public class IgniteUtils {
                 }
             });
 
+            return true;
+        }
+        catch (NoSuchFileException e) {
             return true;
         }
         catch (IOException e) {

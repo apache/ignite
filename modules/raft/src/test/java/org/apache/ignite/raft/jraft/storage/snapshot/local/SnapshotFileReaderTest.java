@@ -33,11 +33,9 @@ public class SnapshotFileReaderTest extends BaseStorageTest {
     private SnapshotFileReader reader;
     private LocalSnapshotMetaTable metaTable;
 
-    @Override
     @BeforeEach
     public void setup() throws Exception {
-        super.setup();
-        this.reader = new SnapshotFileReader(path, null);
+        this.reader = new SnapshotFileReader(path.toString(), null);
         metaTable = new LocalSnapshotMetaTable(new RaftOptions());
         this.reader.setMetaTable(metaTable);
     }
