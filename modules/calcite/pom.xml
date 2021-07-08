@@ -32,7 +32,7 @@
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.9.10</reflections.version>
         <javassist.version>3.28.0-GA</javassist.version>
-        <esri.geometry.version>2.2.3</esri.geometry.version>
+        <esri.geometry.version>2.2.0</esri.geometry.version>
     </properties>
 
     <parent>
