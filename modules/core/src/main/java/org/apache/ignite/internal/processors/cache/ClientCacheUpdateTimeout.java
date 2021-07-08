@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
 /**
@@ -26,6 +27,9 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
     /** */
     private final GridCacheSharedContext cctx;
 
+    /** Security context. */
+    private final SecurityContext secCtx;
+
     /**
      * @param cctx Context.
      * @param timeout Timeout.
@@ -34,11 +38,17 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
         super(timeout);
 
         this.cctx = cctx;
+        secCtx = cctx.kernalContext().security().securityContext();
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityContext securityContext() {
+        return secCtx;
     }
 
     /** {@inheritDoc} */

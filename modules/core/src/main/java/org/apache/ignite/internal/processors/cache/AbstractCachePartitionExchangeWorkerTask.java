@@ -19,15 +19,18 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.security.SecurityContext;
 
-/**
- * Cache partition exchange worker task marker interface.
- */
-public interface CachePartitionExchangeWorkerTask {
-    /**
-     * @return {@code False} if exchange merge should stop if this task is found in exchange worker queue.
-     */
-    boolean skipForExchangeMerge();
+/** */
+public abstract class AbstractCachePartitionExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    /** Security context in which current task must be executed. */
+    private final SecurityContext secCtx;
 
-    /** @return Security context in which current task must be executed. */
-    SecurityContext securityContext();
+    /** */
+    protected AbstractCachePartitionExchangeWorkerTask(SecurityContext secCtx) {
+        this.secCtx = secCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityContext securityContext() {
+        return secCtx;
+    }
 }

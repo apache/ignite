@@ -394,7 +394,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
 
             if (msg0.exchange())
-                return new SchemaExchangeWorkerTask(msg0);
+                return new SchemaExchangeWorkerTask(ctx.security().securityContext(), msg0);
         }
         else if (msg instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage msg0 = (ClientCacheChangeDummyDiscoveryMessage)msg;
@@ -405,7 +405,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
             if (msg0.initial())
-                return new CacheStatisticsModeChangeTask(msg0);
+                return new CacheStatisticsModeChangeTask(ctx.security().securityContext(), msg0);
         }
 
         return null;
