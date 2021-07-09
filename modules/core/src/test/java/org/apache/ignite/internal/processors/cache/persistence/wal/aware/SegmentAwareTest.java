@@ -563,23 +563,16 @@ public class SegmentAwareTest {
     }
 
     /**
-     * Should fail when release unreserved segment.
+     * Shouldn't fail when release unreserved segment.
      */
     @Test
-    public void testAssertFail_WhenReleaseUnreservedSegment() {
+    public void testReleaseUnreservedSegment() {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.reserve(5);
-        try {
 
-            aware.release(7);
-        }
-        catch (AssertionError e) {
-            return;
-        }
-
-        fail("Should fail with AssertError because this segment have not reserved");
+        aware.release(7);
     }
 
     /**

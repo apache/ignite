@@ -41,7 +41,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -306,11 +305,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Lock wait time. */
     private final long lockWaitTime;
 
-    /** This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed. */
-    private WALPointer reservedForExchange;
+    /**
+     * This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed.
+     * Guarded by {@code this}.
+     */
+    @Nullable private WALPointer reservedForExchange;
 
     /** This is the earliest WAL pointer that was reserved during preloading. */
-    private volatile WALPointer reservedForPreloading;
+    private final AtomicReference<WALPointer> reservedForPreloading = new AtomicReference<>();
 
     /** Snapshot manager. */
     private IgniteCacheSnapshotManager snapshotMgr;
@@ -342,9 +344,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Page list cache limits per data region. */
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
-
-    /** Lock for releasing history for preloading. */
-    private final ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
 
     /** */
     private CachePartitionDefragmentationManager defrgMgr;
@@ -1629,14 +1628,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointReadLock();
 
+        WALPointer reservedCheckpointMark;
+
         try {
             CheckpointHistoryResult checkpointHistoryResult =
                 checkpointHistory().searchAndReserveCheckpoints(applicableGroupsAndPartitions);
 
             earliestValidCheckpoints = checkpointHistoryResult.earliestValidCheckpoints();
 
-            if (checkpointHistoryResult.reservedCheckoint() != null)
-                reservedForExchange = checkpointHistoryResult.reservedCheckoint().checkpointMark();
+            reservedForExchange = reservedCheckpointMark = checkpointHistoryResult.reservedCheckpointMark();
         }
         finally {
             checkpointReadUnlock();
@@ -1656,8 +1656,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 int partId = e0.getKey();
 
-                assert cctx.wal().reserved(cpEntry.checkpointMark())
-                    : "WAL segment for checkpoint " + cpEntry + " has not reserved";
+                if (reservedCheckpointMark != null && !cctx.wal().reserved(reservedCheckpointMark)) {
+                    log.warning("Reservation failed because the segment was released: " + reservedCheckpointMark);
+
+                    reservedForExchange = null;
+
+                    grpPartsWithCnts.clear();
+                    
+                    return grpPartsWithCnts;
+                }
 
                 try {
                     Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
@@ -1752,20 +1759,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public synchronized void releaseHistoryForExchange() {
-        if (reservedForExchange == null)
-            return;
-
-        assert cctx.wal().reserved(reservedForExchange)
-            : "Earliest checkpoint WAL pointer is not reserved for exchange: " + reservedForExchange;
-
-        try {
+        if (reservedForExchange != null) {
             cctx.wal().release(reservedForExchange);
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to release earliest checkpoint WAL pointer: " + reservedForExchange, e);
-        }
 
-        reservedForExchange = null;
+            reservedForExchange = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1777,8 +1775,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         WALPointer oldestWALPointerToReserve = null;
 
-        for (GroupPartitionId key : entries.keySet()) {
-            WALPointer ptr = entries.get(key).checkpointMark();
+        for (CheckpointEntry cpE : entries.values()) {
+            WALPointer ptr = cpE.checkpointMark();
 
             if (ptr == null)
                 return false;
@@ -1788,7 +1786,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         if (cctx.wal().reserve(oldestWALPointerToReserve)) {
-            reservedForPreloading = oldestWALPointerToReserve;
+            reservedForPreloading.set(oldestWALPointerToReserve);
 
             return true;
         }
@@ -1798,28 +1796,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void releaseHistoryForPreloading() {
-        releaseHistForPreloadingLock.lock();
+        WALPointer prev = reservedForPreloading.getAndSet(null);
 
-        try {
-            if (reservedForPreloading != null) {
-                cctx.wal().release(reservedForPreloading);
-
-                reservedForPreloading = null;
-            }
-        }
-        catch (IgniteCheckedException ex) {
-            U.error(log, "Could not release WAL reservation", ex);
-
-            throw new IgniteException(ex);
-        }
-        finally {
-            releaseHistForPreloadingLock.unlock();
-        }
+        if (prev != null)
+            cctx.wal().release(prev);
     }
 
     /** {@inheritDoc} */
     @Override public WALPointer latestWalPointerReservedForPreloading() {
-        return reservedForPreloading;
+        return reservedForPreloading.get();
     }
 
     /**
@@ -2151,7 +2136,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         AtomicLong applied = new AtomicLong();
 
         try {
-            while (it.hasNextX()) {
+            while (restoreBinaryState.hasNext()) {
                 if (applyError.get() != null)
                     break;
 
@@ -2642,7 +2627,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         final IgniteTxManager txManager = cctx.tm();
 
         try {
-            while (it.hasNextX()) {
+            while (restoreLogicalState.hasNext()) {
                 WALRecord rec = restoreLogicalState.next();
 
                 if (rec == null)
@@ -3425,9 +3410,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return WALRecord entry.
          * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
          */
-        public WALRecord next() throws IgniteCheckedException {
+        @Nullable public WALRecord next() throws IgniteCheckedException {
             try {
-                for (;;) {
+                for (; ; ) {
                     if (!iterator.hasNextX())
                         return null;
 
@@ -3444,7 +3429,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Filter out records by group id.
                     if (rec instanceof WalRecordCacheGroupAware) {
-                        WalRecordCacheGroupAware grpAwareRecord = (WalRecordCacheGroupAware) rec;
+                        WalRecordCacheGroupAware grpAwareRecord = (WalRecordCacheGroupAware)rec;
 
                         if (!cacheGroupPredicate.apply(grpAwareRecord.groupId()))
                             continue;
@@ -3452,24 +3437,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Filter out data entries by group id.
                     if (rec instanceof DataRecord)
-                        rec = filterEntriesByGroupId((DataRecord) rec);
+                        rec = filterEntriesByGroupId((DataRecord)rec);
 
                     return rec;
                 }
             }
             catch (IgniteCheckedException e) {
-                boolean throwsCRCError = throwsCRCError();
+                IgniteCheckedException ex = throwsError(e);
 
-                if (X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
-                    if (throwsCRCError)
-                        throw e;
-                    else
-                        return null;
-                }
-
-                log.error("There is an error during restore state [throwsCRCError=" + throwsCRCError + ']', e);
-
-                throw e;
+                if (ex != null)
+                    throw ex;
+                else
+                    return null;
             }
         }
 
@@ -3509,6 +3488,44 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public boolean throwsCRCError() {
             return lastReadRecordPointer().index() <= lastArchivedSegment;
         }
+
+        /**
+         * Checks for more WALRecord entries.
+         *
+         * @return {@code True} if contains more WALRecord entries.
+         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
+         */
+        public boolean hasNext() throws IgniteCheckedException {
+            try {
+                return iterator.hasNextX();
+            }
+            catch (IgniteCheckedException e) {
+                IgniteCheckedException ex = throwsError(e);
+
+                if (ex != null)
+                    throw ex;
+                else
+                    return false;
+            }
+        }
+
+        /**
+         * Checks the need to throw an exception.
+         *
+         * @param e Thrown exception.
+         * @return Exception to be thrown.
+         */
+        @Nullable private IgniteCheckedException throwsError(IgniteCheckedException e) {
+            boolean throwsCRCError = throwsCRCError();
+
+            if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
+                return throwsCRCError ? e : null;
+            else {
+                log.error("There is an error during restore state [throwsCRCError=" + throwsCRCError + ']', e);
+
+                return e;
+            }
+        }
     }
 
     /**
@@ -3542,7 +3559,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return WALRecord entry.
          * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
          */
-        @Override public WALRecord next() throws IgniteCheckedException {
+        @Override @Nullable public WALRecord next() throws IgniteCheckedException {
             WALRecord rec = super.next();
 
             if (rec == null)
