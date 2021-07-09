@@ -134,6 +134,13 @@
         </profile>
 
         <profile>
+            <id>gatling</id>
+            <modules>
+                <module>modules/gatling</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>test</id>
             <build>
                 <plugins>
