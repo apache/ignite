@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor.DeferredSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -147,6 +148,9 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
+        if (securityCtx instanceof DeferredSecurityContext)
+            securityCtx = ((DeferredSecurityContext)securityCtx).delegate();
+
         if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
             throw new SecurityException("Authorization failed [perm=" + perm +
                 ", name=" + name +

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -178,6 +179,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     @Test
     public void testListenNotify() throws Exception {
         GridTestKernalContext ctx = new GridTestKernalContext(log);
+
+        ctx.add(new NoOpIgniteSecurityProcessor(ctx));
 
         ctx.add(new PoolProcessor(ctx) {
             final ExecutorService execSvc = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "exec-svc"));
