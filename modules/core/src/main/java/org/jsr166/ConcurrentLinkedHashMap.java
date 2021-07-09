@@ -983,6 +983,23 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
             return oldVal;
         }
+
+        /**
+         *
+         */
+        @SuppressWarnings("ExplicitArrayFilling")
+        void clear() {
+            if (cnt != 0) {
+                HashEntry<K, V>[] tab = tbl;
+
+                for (int i = 0; i < tab.length; i++)
+                    tab[i] = null;
+
+                ++modCnt;
+
+                cnt = 0; // write-volatile
+            }
+        }
     }
 
     /* ---------------- Public operations -------------- */
@@ -1536,10 +1553,47 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     }
 
     /**
-     * Removes all of the mappings from this map.
+     * Removes all of the mappings from this map. Performs recursive table locking.
      */
     @Override public void clear() {
-        throw new UnsupportedOperationException();
+        int len = segments.length;
+
+        if (len == 0) {
+            throw new IllegalStateException();
+        }
+
+        lockAndClearMap(0, len);
+    }
+
+    /**
+     * Recursively locks each segment in consistent order. When all segments are locked clears them all and releases
+     * locks in reverse order.
+     * @param idx index of a segment to lock
+     * @param len length of segments array
+     */
+    private void lockAndClearMap(int idx, int len) {
+
+        if (idx >= len) {
+            clearSegments();
+            return;
+        }
+
+        segments[idx].writeLock().lock();
+
+        try {
+            lockAndClearMap(idx + 1, len);
+        } finally {
+            segments[idx].writeLock().unlock();
+        }
+    }
+
+    /**
+     * Clears segments.
+     */
+    private void clearSegments() {
+        for (Segment<?, ?> segment : segments) {
+            segment.clear();
+        }
     }
 
     /**
