@@ -4,30 +4,25 @@ Apache Ignite Release Notes
 Apache Ignite In-Memory Distributed Database 2.11.0
 -----------------------------------------------------------
 
-
 Ignite:
 
-* Added system view for baseline node attributes.
-* Added new metrics for monitoring the number of memory pages related to SQL indexes. These metrics can be made available via JMX and viewed as part of data region and cache group properties under the name `InMemoryIndexPages`.
-* Added SSL connection metrics.
+* Added the ability to restore cache groups from a snapshot on an active cluster by using the Java API or command line control script.
+* Added the check snapshot procedure that validates snapshot consistency or individual cache groups.
 * Added cluster metastorage to process of creating a snapshot.
-* Added list of indices that will not be rebuilt forcibly to control.sh utility output.
-* Added documentation of spring-transactions integration.
-* Added the check snapshot procedure that validates individual cache groups.
+* Added command to control.(sh|bin) that makes possible performance statistics management.
+* Added clock and Segmented-LRU page replacement modes.
+* Added node attribute collocated affinity backup filter.
 * Added system views for data structures.
+* Added system view for baseline node attributes.
+* Added metrics for monitoring the number of memory pages related to SQL indexes. These metrics can be made available via JMX and viewed as part of data region and cache group properties under the name `InMemoryIndexPages`.
+* Added metrics for the number of written and compressed bytes for WAL.
+* Added SSL connection metrics.
+* Added list of indices that will not be rebuilt forcibly to control.sh utility output.
 * Added the argument "pages" to the IgniteWalConverter for searching pages in the WAL.
 * Added support for IGNITE_ENABLE_FORCIBLE_NODE_KILL flag in inverse connection protocol.
-* Added command to control.(sh|bin) that makes possible performance statistics management.
-* Added property `checkpoint.deviation` for randomization of checkpoint interval. It sets the checkpoint frequency in per cent via control.sh utility: `control.sh --property set --name checkpoint.deviation --val 25`.* Fixed incorrect values of cache, cache group, data region metrics after cluster re-activation.
-* Added metrics for the number of written and compressed bytes for WAL.
-* Added extended logging topology for node left/join a grid.
-* Added the ability to restore cache groups from a snapshot on an active cluster by using the Java API or command line control script.
-* Added clock and Segmented-LRU page replacement modes.
-* Added the snapshot check command to validate snapshot consistency.
-* Added printing WAL log data in human-readable form via IgniteWalConverter.
-* Added node attribute collocated affinity backup filter.
-* Added progress logging when restoring the statuses of partitions along with the output of the top partitions, the processing time of which took the longest.
-* Added support of  Spring Data repositories initialization with Spring Boot auto-starter.
+* Added property `checkpoint.deviation` for randomization of checkpoint interval. It sets the checkpoint frequency in per cent via control.sh utility: `control.sh --property set --name checkpoint.deviation --val 25`.
+* Added support of Spring Data repositories initialisation with Spring Boot auto-starter.
+* Fixed incorrect values of cache, cache group, data region metrics after cluster re-activation.
 * Fixed error with nodes fallabck. Now nodes will  properly fallback to full rebalance if historical rebalance fails.
 * Fixed possible deadlock in concurrent cache data store initialization, exchange initialization and start of checkpoint.
 * Fixed potential JVM crash due to integer overflow in binary streams.
@@ -36,7 +31,7 @@ Ignite:
 * Fixed an issue causing an error on modification binary object that contains reference to its own inner collection (binary HANDLE to collection).
 * Fixed an issue where exception in static initializer during remote filter deployment could lead to the server node failure.
 * Fixed deploying of continuous queries. They won't be deployed to the client nodes, since the clients don't store any data.
-* Fixed behaiviour while  writing to Distributed Metastorage. Now exception is thrown on client if client is not connected to topology.
+* Fixed behaviour while  writing to Distributed Metastorage. Now exception is thrown on client if client is not connected to topology.
 * Fixed node failure when a class was not found by UriDeploymentSpi.
 * Fixed an issue causing corruption of PK index tree in case the table was created via SQL API and the PK has several fields in order different from those specified in thr field list.
 * Fixed failure to connect to node leading to freezing connection future if paired connections are used.
@@ -64,10 +59,9 @@ Ignite:
 * Fixed bug when messaging-related metrics were updated before full initialization of Tcp Communication SPI.
 * Fixed partitions validator behaiviour. It checks sizes even if update counters are different and prints information about all copies, if partition is in inconsistent state.
 * Fixed restart rebuild indexes, if they were not rebuilt, on node restart / reactivation.
+* Fixed an exception that may happen when a thick client reconnects.
 * Changed IO discovery metric names. Now they are starting with the metric registry name.
-* Extended the metrics log message with information about the striped pool.
 * Implemented asynchronous execution of durable background tasks.
-* Improved log of node ping failure. Now failure reason is logged.
 * Migrated Spring Cache integration to the Ignite extensions.
 * Migrated Spring-transactions module to ignite-extensions.
 * Optimized collection of rebalance statistics. This has positive influence on rebalance time.
@@ -77,7 +71,6 @@ Ignite:
 
 .Net:
 
-* Added a warning to the log when alternate stack check is not enabled.
 * Added string.Compare support to LINQ provider.
 * Added thin client DataStreamer API.
 * Added an automated check that client binary configuration is compatible to server binary configuration on client start.
@@ -98,22 +91,19 @@ Java thin-client:
 
 * Added continuous queries support.
 * Added containsKeys, clearKey, clearKeys and getAndPutIfAbsent.
+* Added Ignite thin client Spring bean.
 
 Thin-clients:
 
-* Added Ignite thin client Spring bean.
-* Added partition awareness enabled by default (Java, .NET, C++).
-* Added documentation for thin client support for spring-data integration.
-* Added Additional logging that helps to find root cause in case of client node failure but server nodes can`t detect it.
-* Fixed an exception that may happen when a thick client reconnects.
-* Removed Python PHP and Node.js thin clients from main repository.
+* Partition awareness is enabled by default (Java, .NET, C++).
 
 SQL:
 
 * Added a new field INITIATOR_ID to the LOCAL_SQL_RUNNING_QUERIES system view. This field indicates the originator of the query: thin client, JDBC/ODBC, compute task.
 * Added support of alter/drop/create user SQL commands for security plugins.
-* Fixed SQL Constant hidden from logs and views when in IGNITE_TO_STRING_INCLUDE_SENSITIVE=false mode.
 * Added tag sql.query.id' for SQL tracing.
+* Fixed SQL Constant hidden from logs and views when in IGNITE_TO_STRING_INCLUDE_SENSITIVE=false mode.
+
 
 Apache Ignite In-Memory Distributed Database 2.10.0
 -----------------------------------------------------------
