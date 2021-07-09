@@ -25,14 +25,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -104,6 +107,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Instance of IgniteSandbox. */
     private IgniteSandbox sandbox;
+
+    /** Node local security context ready future.*/
+    private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
 
     /**
      * @param ctx Grid kernal context.
@@ -293,6 +299,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        if (!nodeSecCtxReadyFut.isDone()) {
+            nodeSecCtxReadyFut.onDone(new NodeStoppingException(
+                "Failed to wait for local node security context initialization (grid is stopping)."));
+        }
+
         secPrc.onKernalStop(cancel);
     }
 
@@ -367,13 +378,38 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         secPrc.dropUser(login);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onLocalJoin() {
+        try {
+            SecurityContext secCtx = nodeSecurityContext(
+                marsh,
+                U.resolveClassLoader(ctx.config()),
+                ctx.discovery().localNode());
+
+            nodeSecCtxReadyFut.onDone(secCtx);
+        } catch (Throwable e) {
+            nodeSecCtxReadyFut.onDone(e);
+
+            throw e;
+        }
+    }
+
     /**
      * Getting local node's security context.
      *
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
+        if (nodeSecCtxReadyFut.isDone()) {
+            try {
+                return nodeSecCtxReadyFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return new DeferredSecurityContext(nodeSecCtxReadyFut);
     }
 
     /**
@@ -398,5 +434,54 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** @return Security processor implementation to which current security facade delegates operations. */
     public GridSecurityProcessor securityProcessor() {
         return secPrc;
+    }
+
+    /**
+     * Represents {@link SecurityContext} wrapper that makes it possible to block the current thread until the security
+     * context to which wrapper delegates operations becomes available.
+     */
+    public static class DeferredSecurityContext implements SecurityContext {
+        /** */
+        private final GridFutureAdapter<SecurityContext> fut;
+
+        /** */
+        public DeferredSecurityContext(GridFutureAdapter<SecurityContext> fut) {
+            this.fut = fut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubject subject() {
+            return delegate().subject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+            return delegate().taskOperationAllowed(taskClsName, perm);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+            return delegate().cacheOperationAllowed(cacheName, perm);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+            return delegate().serviceOperationAllowed(srvcName, perm);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            return delegate().systemOperationAllowed(perm);
+        }
+
+        /** */
+        public SecurityContext delegate() {
+            try {
+                return fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 }
