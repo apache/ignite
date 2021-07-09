@@ -317,7 +317,7 @@ public class ReleaseSegmentOnHistoricalRebalanceTest extends GridCommonAbstractT
      * @param cache Cache.
      * @param spy Spy.
      */
-    private void offheapManager(IgniteInternalCache<? ,?> cache, GridCacheOffheapManager spy) {
+    private void offheapManager(IgniteInternalCache<?, ?> cache, GridCacheOffheapManager spy) {
         setFieldValue(cache.context().group(), "offheapMgr", spy);
     }
 
