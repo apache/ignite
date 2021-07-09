@@ -81,6 +81,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -2790,6 +2792,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
+                    case INDEX_ROOT_PAGE_RENAME_RECORD:
+                        IndexRenameRootPageRecord record = (IndexRenameRootPageRecord)rec;
+
+                        int cacheId = record.cacheId();
+
+                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                        if (cacheCtx != null) {
+                            IgniteCacheOffheapManager offheap = cacheCtx.offheap();
+
+                            for (int i = 0; i < record.segments(); i++)
+                                offheap.renameRootPageForIndex(cacheId, record.oldTreeName(), record.newTreeName(), i);
+                        }
+
+                        break;
                     default:
                         // Skip other records.
                 }

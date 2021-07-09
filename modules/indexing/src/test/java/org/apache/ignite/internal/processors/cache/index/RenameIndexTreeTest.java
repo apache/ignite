@@ -21,17 +21,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl.MAX_IDX_NAME_LEN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
@@ -147,6 +151,54 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
 
         assertExistIndexRoot(cache, oldTreeName, segments, true);
         assertExistIndexRoot(cache, newTreeName, segments, false);
+    }
+
+    /**
+     * Checking applying {@link IndexRenameRootPageRecord}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIndexRenameRootPageRecord() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        enableCheckpoints(n, getTestIgniteInstanceName(), false);
+
+        SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
+
+        String oldTreeName = idxDef.treeName();
+        String newTreeName = UUID.randomUUID().toString();
+
+        int segments = idxDef.segments();
+        int cacheId = cacheContext(cache).cacheId();
+
+        IndexRenameRootPageRecord r = new IndexRenameRootPageRecord(cacheId, oldTreeName, newTreeName, segments);
+        walMgr(n).log(r);
+
+        Set<Integer> cacheIds = n.context().cache().cacheNames().stream().map(CU::cacheId).collect(toSet());
+        int fakeCacheId = cacheIds.stream().mapToInt(Integer::intValue).sum();
+
+        while (cacheIds.contains(fakeCacheId))
+            fakeCacheId++;
+
+        // Check that the node does not crash when trying to apply a logical record with a non-existing cacheId.
+        walMgr(n).log(new IndexRenameRootPageRecord(fakeCacheId, oldTreeName, newTreeName, segments));
+
+        stopGrid(0);
+
+        n = startGrid(0);
+
+        cache = n.cache(DEFAULT_CACHE_NAME);
+
+        assertExistIndexRoot(cache, oldTreeName, segments, false);
+        assertExistIndexRoot(cache, newTreeName, segments, true);
     }
 
     /**
