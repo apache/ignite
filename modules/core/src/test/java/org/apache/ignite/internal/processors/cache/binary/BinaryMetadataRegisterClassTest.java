@@ -45,8 +45,8 @@ public class BinaryMetadataRegisterClassTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
-    /** Max retry cont for remove type. */
-    private static final int MAX_RETRY_CONT = 10;
+    /** Max retry count for remove type. */
+    private static final int MAX_RETRY_COUNT = 10;
 
     /** */
     private IgniteClient[] thinClients;
@@ -130,7 +130,7 @@ public class BinaryMetadataRegisterClassTest extends GridCommonAbstractTest {
 
         Exception err = null;
 
-        for (int i = 0; i < MAX_RETRY_CONT; ++i) {
+        for (int i = 0; i < MAX_RETRY_COUNT; ++i) {
             try {
                 ign.context().cacheObjects().removeType(ign.context().cacheObjects().typeId(typeName));
 
