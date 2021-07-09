@@ -5955,7 +5955,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Comparator of processed partitions.
      * T3 -> 1 - duration, 2 - timestamp, 3 - partition of group.
-     * Sort order: duration -> timestamp -> partition of group.
+     * Sort order: duration -> timestamp -> partition of group; and order is reversed.
      *
      * @return Comparator.
      */
