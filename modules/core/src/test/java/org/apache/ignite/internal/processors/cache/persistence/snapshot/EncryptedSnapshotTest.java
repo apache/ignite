@@ -53,7 +53,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         checkSnapshotWithReencryptedCache(1);
     }
 
-    /** Checks snapshot after single reencryption. */
+    /** Checks snapshot after multiple reencryption. */
     @Test
     public void testSnapshotRestoreAfterMultipleReencryption() throws Exception {
         checkSnapshotWithReencryptedCache(3);
