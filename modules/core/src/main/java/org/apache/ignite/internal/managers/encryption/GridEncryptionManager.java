@@ -650,7 +650,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Cache group ID.
      * @param key Encryption key.
      */
-    public void addGroupKey(int grpId, GroupKeyEncrypted key) {
+    void addGroupKey(int grpId, GroupKeyEncrypted key) {
         synchronized (metaStorageMux) {
             try {
                 grpKeys.addKey(grpId, key);
