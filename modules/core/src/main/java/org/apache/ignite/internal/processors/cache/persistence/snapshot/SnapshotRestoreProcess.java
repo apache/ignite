@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -972,8 +973,8 @@ public class SnapshotRestoreProcess {
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
 
-        /** Keys for encrypted cache groups. */
-        private final Map<Integer, byte[]> encrGrpKeys;
+        /** Keys and theirs ids for encrypted cache groups. */
+        private final Map<Integer, GroupKeyEncrypted> encrGrpKeys;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
@@ -982,7 +983,7 @@ public class SnapshotRestoreProcess {
          * @param encrGrpKeys Keys for the encrypted caches.
          */
         protected SnapshotRestoreContext(SnapshotOperationRequest req, Collection<File> dirs,
-            Map<Integer, StoredCacheData> cfgs, Map<Integer, byte[]> encrGrpKeys) {
+            Map<Integer, StoredCacheData> cfgs, Map<Integer, GroupKeyEncrypted> encrGrpKeys) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             nodes = new HashSet<>(req.nodes());

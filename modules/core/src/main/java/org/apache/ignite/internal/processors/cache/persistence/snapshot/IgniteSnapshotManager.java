@@ -76,6 +76,8 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -238,7 +240,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Name prefix to save cache group encryption keys in snapshot meta. */
-    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "CacheGrpEncrKey_";
+    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "GrpEncrKey_";
 
     /** Name of master encryption key signature in snapshot meta. */
     private static final String SNAPSHOT_META_MASTER_KEY_SIGN = "MasterKeySign";
@@ -1562,33 +1564,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code snpMeta}.
      */
     private SnapshotMetadata addEncrKeys(SnapshotMetadata snpMeta) {
-        Map<Integer, byte[]> encrGrpKeys =
+        Map<Integer, GroupKey> grpKeys =
             snpMeta.cacheGroupIds().stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
-                Collectors.toMap(Function.identity(), gid -> cctx.gridConfig().getEncryptionSpi()
-                    .encryptKey(cctx.kernalContext().encryption().getActiveKey(gid).key())));
+                Collectors.toMap(Function.identity(), gid -> cctx.kernalContext().encryption().getActiveKey(gid)));
 
-        if (!encrGrpKeys.isEmpty()) {
+        if (!grpKeys.isEmpty()) {
             snpMeta.addMetaRecord(SNAPSHOT_META_MASTER_KEY_SIGN, cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
 
-            encrGrpKeys.forEach((key, value) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + key, value));
+            grpKeys.forEach((grpId, grpKey) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + grpId,
+                new GroupKeyEncrypted(grpKey.id(), cctx.gridConfig().getEncryptionSpi().encryptKey(grpKey.key()))));
         }
 
         return snpMeta;
     }
 
     /**
-     * @return Cache group encription keys stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta}, returns empty
-     * map.
+     * @return Cache group encription keys and their ids stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta},
+     * returns empty map.
      */
-    static Map<Integer, byte[]> snapshotEncrKeys(SnapshotMetadata snpMeta) {
+    static Map<Integer, GroupKeyEncrypted> snapshotEncrKeys(SnapshotMetadata snpMeta) {
         if (snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN) == null)
             return Collections.emptyMap();
 
-        Map<Integer, byte[]> keys = new HashMap<>();
+        Map<Integer, GroupKeyEncrypted> keys = new HashMap<>();
 
         snpMeta.allMetaRecords().forEach((name, val) -> {
             if (name.startsWith(SNAPSHOT_META_GRP_KEY_PREFIX))
-                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (byte[])val);
+                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (GroupKeyEncrypted)val);
         });
 
         return keys;

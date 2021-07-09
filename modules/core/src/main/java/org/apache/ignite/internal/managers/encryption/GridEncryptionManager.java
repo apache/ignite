@@ -650,7 +650,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Cache group ID.
      * @param key Encryption key.
      */
-    void addGroupKey(int grpId, GroupKeyEncrypted key) {
+    public void addGroupKey(int grpId, GroupKeyEncrypted key) {
         synchronized (metaStorageMux) {
             try {
                 grpKeys.addKey(grpId, key);
@@ -819,7 +819,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return {@code True} If reencryption is active in the cluster.
      */
     public boolean reencryptionInProgress() {
-        return grpKeyChangeProc.inProgress();
+        return grpKeyChangeProc.inProgress() || !reencryptGroups.isEmpty();
     }
 
     /**
@@ -864,19 +864,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Sets new initial group key if key is not null.
+     * Sets new initial group key if key is not null. Assigns passed key id {@code encKeyId} if not null.
      *
-     * @param grpId Cache group ID.
+     * @param grpId  Cache group ID.
      * @param encKey Encryption key
+     * @param encKey Forced encryption key id to use. If {@code null}, {@link #INITIAL_KEY_ID} is used.
      */
-    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey) {
+    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey, @Nullable Integer encKeyId) {
         if (encKey == null || ctx.clientNode())
             return;
 
         removeGroupKey(grpId);
 
         withMasterKeyChangeReadLock(() -> {
-            addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
+            addGroupKey(grpId, new GroupKeyEncrypted(encKeyId == null ? INITIAL_KEY_ID : encKeyId, encKey));
 
             return null;
         });

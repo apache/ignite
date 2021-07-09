@@ -83,6 +83,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
@@ -3758,7 +3759,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param reuseEncrKeys Encryption keys by cache group id. If not empty, will be added instead of new generated keys.
+     * @param reuseEncrKeys Encryption keys by cache group id. If not empty, will be added instead of new generated keys. Contains keys and
+     *                      their ids.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3767,7 +3769,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean disabledAfterStart,
         IgniteUuid restartId,
-        Map<Integer, byte[]> reuseEncrKeys
+        Map<Integer, GroupKeyEncrypted> reuseEncrKeys
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3792,9 +3794,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
 
-                    // Reuse encrtption key if passed for this group. Take next generated otherwise.
-                    byte[] encrKey = ccfg.config().isEncryptionEnabled() ?
-                        (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) : null;
+                    // Reuse encription key if passed for this group. Take next generated otherwise.
+                    GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ?
+                        (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
 
                     DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                         ccfg.config(),
@@ -3807,8 +3809,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         restartId,
                         disabledAfterStart,
                         ccfg.queryEntities(),
-                        encrKey,
-                        ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
+                        encrKey != null ? encrKey.key() : null,
+                        encrKey != null ? masterKeyDigest : null);
+
+                    if (encrKey != null)
+                        req.encryptionKeyId(encrKey.id());
 
                     if (req != null) {
                         if (req.clientStartOnly()) {
@@ -5089,6 +5094,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
+     * @param encKeyId Encryption key id.
      * @param masterKeyDigest Master key digest.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed

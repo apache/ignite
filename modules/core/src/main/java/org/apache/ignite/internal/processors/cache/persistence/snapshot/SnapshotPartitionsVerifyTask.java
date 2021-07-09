@@ -43,6 +43,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -353,7 +354,7 @@ public class SnapshotPartitionsVerifyTask
      */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
         /** Encrypted keys. */
-        private final Map<Integer, byte[]> encryptedKeys;
+        private final Map<Integer, GroupKeyEncrypted> encryptedKeys;
 
         /** Encryption SPI to decrypt the keys. */
         private final EncryptionSpi encrSpi;
@@ -378,7 +379,7 @@ public class SnapshotPartitionsVerifyTask
 
         /** {@inheritDoc} */
         @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
-            return decryptedKeys.computeIfAbsent(grpId, gid -> new GroupKey(keyId, encrSpi.decryptKey(encryptedKeys.get(gid))));
+            return decryptedKeys.computeIfAbsent(grpId, gid -> new GroupKey(keyId, encrSpi.decryptKey(encryptedKeys.get(gid).key())));
         }
     }
 }
