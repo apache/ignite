@@ -5953,18 +5953,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Trimming the set to the required size.
-     * Removing items will be in ascending order.
-     *
-     * @param set Set.
-     * @param size Size.
-     */
-    static <E> void trimToSize(SortedSet<E> set, int size) {
-        while (set.size() > size)
-            set.remove(set.first());
-    }
-
-    /**
      * Comparator of processed partitions.
      * T3 -> 1 - duration, 2 - timestamp, 3 - partition of group.
      * Sort order: duration -> timestamp -> partition of group.
