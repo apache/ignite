@@ -49,12 +49,12 @@ class GatlingTest(IgniteTest):
         configuration = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
         servers = IgniteService(self.test_context, configuration, startup_timeout_sec=180,
-                                num_nodes=self._global_int(self.GLOBAL_SERVER_NODES_COUNT))
+                                num_nodes=self._global_int(self.GLOBAL_SERVER_NODES_COUNT, 1))
 
         servers.start()
 
         gatling = GatlingService(self.test_context, configuration, self._global_param(self.GLOBAL_SIMULATION_CLASS),
-                                 num_nodes=self._global_int(self.GLOBAL_GATLING_NODES_COUNT))
+                                 num_nodes=self._global_int(self.GLOBAL_GATLING_NODES_COUNT, 1))
 
         gatling.run()
 
