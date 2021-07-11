@@ -25,8 +25,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
+
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.jsr166.ConcurrentLinkedHashMap.QueuePolicy;
 import org.junit.Test;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -289,7 +292,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      * @param plc Policy.
      */
-    private void checkIteration(ConcurrentLinkedHashMap.QueuePolicy plc) {
+    private void checkIteration(QueuePolicy plc) {
         ConcurrentLinkedHashMap<Integer, Integer> map =
             new ConcurrentLinkedHashMap<>(10,
                 0.75f,
@@ -331,5 +334,29 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         info("Puts count: " + cnt);
 
         assert map0.isEmpty() : map0;
+    }
+
+    @Test
+    public void testClearMapWithQueuePolicies() {
+        int cap = 1 << 4;
+        int maxCap = 1 << 10;
+        float loadFactor = .75f;
+        int concLevel = 1 << 4;
+
+        for (QueuePolicy queuePolicy : QueuePolicy.values()) {
+            testClearMap(new ConcurrentLinkedHashMap<>(cap, loadFactor, concLevel, maxCap, queuePolicy));
+        }
+    }
+
+    private void testClearMap(Map<Integer, Integer> map) {
+        IntStream.generate(() -> ThreadLocalRandom.current().nextInt())
+                .limit(INSERTS_COUNT)
+                .forEach(i -> map.put(i, i));
+
+        assertFalse(map.isEmpty());
+
+        map.clear();
+
+        assertTrue(map.isEmpty());
     }
 }

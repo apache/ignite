@@ -1558,37 +1558,50 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     @Override public void clear() {
         int len = segments.length;
 
-        if (len == 0) {
-            throw new IllegalStateException();
-        }
-
-        lockAndClearMap(0, len);
+        clear(0, len);
     }
 
     /**
-     * Recursively locks each segment in consistent order. When all segments are locked clears them all and releases
-     * locks in reverse order.
-     * @param idx index of a segment to lock
+     * Recursively locks each segment in consistent order. When all segments are locked method clears them
+     * all and releases locks in reverse order.
+     * @param segIndex segIndex of a segment to lock
      * @param len length of segments array
      */
-    private void lockAndClearMap(int idx, int len) {
+    private void clear(int segIndex, int len) {
 
-        if (idx >= len) {
-            clearSegments();
+        if (segIndex >= len) {
+            clearSegmentsAndQueue();
             return;
         }
 
-        segments[idx].writeLock().lock();
+        segments[segIndex].writeLock().lock();
 
         try {
-            lockAndClearMap(idx + 1, len);
+            clear(segIndex + 1, len);
         } finally {
-            segments[idx].writeLock().unlock();
+            segments[segIndex].writeLock().unlock();
         }
     }
 
     /**
-     * Clears segments.
+     * Clears segments and associated queue
+     */
+    private void clearSegmentsAndQueue() {
+        clearSegments();
+        clearQueue();
+    }
+
+    /**
+     * Clears element queue
+     */
+    private void clearQueue() {
+        if (entryQ != null) {
+            entryQ.clear();
+        }
+    }
+
+    /**
+     * Clears segments
      */
     private void clearSegments() {
         for (Segment<?, ?> segment : segments) {
