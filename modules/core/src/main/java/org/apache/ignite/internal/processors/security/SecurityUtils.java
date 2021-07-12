@@ -46,6 +46,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.F;
@@ -170,6 +172,16 @@ public class SecurityUtils {
         IgniteSecurity security = ctx.security();
 
         return security.enabled() ? security.securityContext().subject().id() : null;
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheSharedContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
     }
 
     /**
