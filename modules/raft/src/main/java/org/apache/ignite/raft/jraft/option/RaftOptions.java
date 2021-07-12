@@ -102,7 +102,7 @@ public class RaftOptions implements Copiable<RaftOptions> {
      * true, it would hurt the performance of JRAft but gain the data safety.
      *
      */
-    private boolean enableLogEntryChecksum = false; // TODO asch https://issues.apache.org/jira/browse/IGNITE-14833.
+    private boolean enableLogEntryChecksum = false;
 
     /**
      * ReadOnlyOption specifies how the read only request is processed. * {@link ReadOnlyOption#ReadOnlySafe} guarantees

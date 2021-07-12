@@ -60,6 +60,11 @@ public final class RaftOutter {
 
         String getOldLearners(int index);
 
+        /**
+         * @return True when the entry has a checksum, false otherwise.
+         */
+        boolean hasChecksum();
+
         interface Builder {
             EntryMeta build();
 

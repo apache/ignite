@@ -2006,7 +2006,9 @@ public class NodeImpl implements Node, RaftServerService {
             final LogEntry logEntry = new LogEntry();
             logEntry.setId(new LogId(index, entry.getTerm()));
             logEntry.setType(entry.getType());
-            logEntry.setChecksum(entry.getChecksum()); // since 1.2.6
+
+            if (entry.hasChecksum())
+                logEntry.setChecksum(entry.getChecksum()); // since 1.2.6
 
             final long dataLen = entry.getDataLen();
             if (dataLen > 0) {

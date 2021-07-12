@@ -22,6 +22,9 @@ import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
 
 class EntryMetaImpl implements RaftOutter.EntryMeta, RaftOutter.EntryMeta.Builder {
+    /** Mask for the has checksum flag. */
+    private static final byte HAS_CHECKSUM_MASK = 0x01;
+
     private long term;
     private EnumOutter.EntryType type;
     private List<String> peersList = new ArrayList<>();
@@ -30,6 +33,14 @@ class EntryMetaImpl implements RaftOutter.EntryMeta, RaftOutter.EntryMeta.Builde
     private long checksum;
     private List<String> learnersList = new ArrayList<>();
     private List<String> oldLearnersList = new ArrayList<>();
+
+    /** Bit flags. */
+    private byte bitFlags;
+
+    /** {@inheritDoc} */
+    @Override public boolean hasChecksum() {
+        return (bitFlags & HAS_CHECKSUM_MASK) != 0;
+    }
 
     @Override public long getTerm() {
         return term;
@@ -107,6 +118,8 @@ class EntryMetaImpl implements RaftOutter.EntryMeta, RaftOutter.EntryMeta.Builde
 
     @Override public Builder setChecksum(long checksum) {
         this.checksum = checksum;
+
+        bitFlags |= HAS_CHECKSUM_MASK;
 
         return this;
     }

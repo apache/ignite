@@ -1114,7 +1114,6 @@ public class ITNodeTest {
     }
 
     @Test
-    @Disabled // TODO asch https://issues.apache.org/jira/browse/IGNITE-14833
     public void testChecksum() throws Exception {
         List<PeerId> peers = TestUtils.generatePeers(3);
 

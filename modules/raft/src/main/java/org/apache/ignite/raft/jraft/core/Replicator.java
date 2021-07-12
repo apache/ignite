@@ -740,7 +740,10 @@ public class Replicator implements ThreadId.OnError {
             return false;
         }
         emb.setTerm(entry.getId().getTerm());
-        emb.setChecksum(entry.getChecksum()); // since 1.2.6
+
+        if (entry.hasChecksum())
+            emb.setChecksum(entry.getChecksum()); // since 1.2.6
+
         emb.setType(entry.getType());
         if (entry.getPeers() != null) {
             Requires.requireTrue(!entry.getPeers().isEmpty(), "Empty peers at logIndex=%d", logIndex);
