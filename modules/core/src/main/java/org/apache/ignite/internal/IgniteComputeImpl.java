@@ -36,6 +36,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -54,7 +55,6 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
@@ -481,9 +481,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskName, arg, execName);
+            try (OperationSecurityContext ignored = ctx.security().withContext(subjId)) {
+                return ctx.task().execute(taskName, arg, execName);
+            }
         }
         finally {
             unguard();
@@ -520,9 +521,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskCls, arg, execName);
+            try (OperationSecurityContext ignored = ctx.security().withContext(subjId)) {
+                return ctx.task().execute(taskCls, arg, execName);
+            }
         }
         finally {
             unguard();
@@ -559,9 +561,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(task, arg, execName);
+            try (OperationSecurityContext ignored = ctx.security().withContext(subjId)) {
+                return ctx.task().execute(task, arg, execName);
+            }
         }
         finally {
             unguard();

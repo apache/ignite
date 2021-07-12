@@ -139,7 +139,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -148,7 +148,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -157,7 +157,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
@@ -195,7 +195,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -204,7 +204,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FAILED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
@@ -242,7 +242,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -251,7 +251,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_TIMEDOUT, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -260,7 +260,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FAILED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
@@ -291,7 +291,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -300,7 +300,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -309,14 +309,14 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
 
     /**
      * Events for class tasks that was started from external clients should contain
-     * client subject id instead of the node where it was started. This test checks it.
+     * subject ID if security enabled, otherwise null.
      *
      * @throws Exception If failed.
      */
@@ -339,7 +339,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -348,7 +348,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -357,7 +357,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
