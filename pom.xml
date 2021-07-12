@@ -133,6 +133,7 @@
             <id>ducktests</id>
             <modules>
                 <module>modules/ducktests</module>
+                <module>modules/gatling</module>
             </modules>
         </profile>
 
