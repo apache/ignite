@@ -88,6 +88,7 @@
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
+        <module>modules/gatling</module>
     </modules>
 
     <profiles>
@@ -104,6 +105,7 @@
                 <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
+                <module>modules/gatling</module>
             </modules>
         </profile>
 
@@ -117,6 +119,7 @@
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
+                <module>modules/gatling</module>
             </modules>
         </profile>
 
