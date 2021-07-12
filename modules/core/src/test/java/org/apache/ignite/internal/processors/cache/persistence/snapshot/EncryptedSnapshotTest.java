@@ -193,6 +193,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         ig.cache(dfltCacheCfg.getName()).destroy();
 
+        awaitPartitionMapExchange();
+
         ensureCacheAbsent(dfltCacheCfg);
 
         ig.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
