@@ -316,10 +316,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         cctx.events().removeListener(lsnr);
 
-        if (cancel)
-            onCancelAtStop();
-        else
-            onWaitAtStop();
+        onCancelAtStop();
     }
 
     /**
@@ -360,13 +357,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cancel flag handler at stop.
      */
     void onCancelAtStop() {
-        // No-op.
-    }
-
-    /**
-     * Wait flag handler at stop.
-     */
-    void onWaitAtStop() {
         // No-op.
     }
 

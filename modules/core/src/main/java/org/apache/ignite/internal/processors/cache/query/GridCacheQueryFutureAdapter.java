@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -370,36 +369,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     private R unmaskNull(R obj) {
         return obj != NULL ? obj : null;
-    }
-
-    /** Forces to stop query, don't care about result.  */
-    @Override public Collection<R> get() throws IgniteCheckedException {
-        forceStopQuery();
-
-        return super.get();
-    }
-
-    /** Forces to stop query, don't care about result.  */
-    @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-        forceStopQuery();
-
-        return super.get(timeout, unit);
-    }
-
-    /** Forces to stop query, don't care about result.  */
-    @Override public Collection<R> getUninterruptibly() throws IgniteCheckedException {
-        forceStopQuery();
-
-        return super.getUninterruptibly();
-    }
-
-    /** Force stop query future. */
-    private void forceStopQuery() {
-        if (!isDone()) {
-            reducer().onCancel();
-
-            onDone(Collections.emptyList());
-        }
     }
 
     /**

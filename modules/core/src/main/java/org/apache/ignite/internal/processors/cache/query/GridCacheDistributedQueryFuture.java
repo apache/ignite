@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
@@ -87,6 +90,32 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     /** Set reducer. */
     void reducer(DistributedCacheQueryReducer<R> reducer) {
         this.reducer = reducer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<R> get() throws IgniteCheckedException {
+        return get0();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+        return get0();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<R> getUninterruptibly() throws IgniteCheckedException {
+        return get0();
+    }
+
+    /**
+     * Completion of distributed query future depends on user that iterates over query result with lazy page loading.
+     * Then {@link #get()} can lock on unpredictably long period of time. So we should avoid call it.
+     */
+    private Collection<R> get0() throws IgniteCheckedException {
+        if (!isDone())
+            throw new IgniteIllegalStateException("Unexpected lock on iterator over distributed cache query result.");
+
+        return super.get();
     }
 
     /** {@inheritDoc} */

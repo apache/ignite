@@ -451,22 +451,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override void onWaitAtStop() {
-        super.onWaitAtStop();
-
-        // Wait till all requests will be finished.
-        for (GridCacheQueryFutureAdapter fut : futs.values())
-            try {
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Received query error while waiting for query to finish [queryFuture= " + fut +
-                        ", error= " + e + ']');
-            }
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo,
         Collection<?> data, boolean finished, Throwable e) {
         GridCacheLocalQueryFuture<?, ?, ?> fut = qryInfo.localQueryFuture();
