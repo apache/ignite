@@ -4,6 +4,12 @@ apache-ignite (2.11.0-1) unstable; urgency=low
 
  -- Alexey Gidaspov <olive.crow@gmail.com>  Fri, 09 Jul 2021 13:00:00 +0300
 
+ apache-ignite (2.10.0-1) unstable; urgency=low
+
+   * Updated Apache Ignite to version 2.10.0
+
+  -- Maxim Muzafarov <mmuzaf@apache.org>  Thu, 01 Feb 2021 16:44:10 +0300
+
 apache-ignite (2.9.1-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.9.1
