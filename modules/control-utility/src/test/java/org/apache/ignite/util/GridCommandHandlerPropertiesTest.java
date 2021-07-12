@@ -17,8 +17,6 @@
 
 package org.apache.ignite.util;
 
-import java.io.Serializable;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -29,9 +27,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import java.io.Serializable;
+import java.util.Set;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -196,5 +198,48 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
                 "--val", "invalidVal"
             )
         );
+    }
+
+    /**
+     * Check the set command for property 'history.rebalance.threshold'.
+     */
+    @Test
+    public void testPropertyWalRebalanceThreshold() {
+        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, DFLT_PDS_WAL_REBALANCE_THRESHOLD, true);
+
+        int newVal = DFLT_PDS_WAL_REBALANCE_THRESHOLD * 2;
+
+        assertEquals(
+                EXIT_CODE_OK,
+                execute(
+                        "--property", "set",
+                        "--name", HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY,
+                        "--val", Integer.toString(newVal)
+                )
+        );
+
+        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, newVal, true);
+    }
+
+    /**
+     * Validates that distributed property has specified value across all nodes.
+     *
+     * @param propName Distributed property name.
+     * @param expected Expected property value.
+     * @param onlyServerMode Ignore client nodes.
+     * @param <T> Property type.
+     */
+    private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected, boolean onlyServerMode) {
+        for (Ignite ign : G.allGrids()) {
+            IgniteEx ignEx = (IgniteEx) ign;
+
+            if (onlyServerMode && ign.configuration().isClientMode())
+                continue;
+
+            DistributedChangeableProperty<Serializable> prop =
+                    ignEx.context().distributedConfiguration().property(propName);
+
+            assertEquals(prop.get(), expected);
+        }
     }
 }
