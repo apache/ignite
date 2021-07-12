@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -45,6 +46,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.F;
@@ -162,6 +165,26 @@ public class SecurityUtils {
         catch (IgniteCheckedException e) {
             throw new SecurityException("Failed to get security context.", e);
         }
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        if (!security.enabled())
+            return null;
+
+        return security.securityContext().subject().id();
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheSharedContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
     }
 
     /**

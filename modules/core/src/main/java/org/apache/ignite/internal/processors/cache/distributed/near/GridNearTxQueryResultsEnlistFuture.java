@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -354,8 +355,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                     false,
                     tx.remainingTime(),
                     -1,
-                    this.tx.subjectId(),
-                    this.tx.taskNameHash(),
+                    SecurityUtils.securitySubjectId(cctx),
+                    tx.taskNameHash(),
                     false,
                     tx.label());
 
@@ -416,7 +417,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             threadId,
             futId,
             batchId,
-            tx.subjectId(),
             topVer,
             lockVer,
             mvccSnapshot,

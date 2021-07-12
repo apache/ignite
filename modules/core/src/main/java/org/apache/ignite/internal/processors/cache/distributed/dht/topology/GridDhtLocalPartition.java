@@ -1038,7 +1038,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                                 cached.hasValue(),
                                 null,
                                 null,
-                                null,
                                 false);
                         }
 

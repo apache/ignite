@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetect
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -154,6 +155,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.internal.util.IgniteUtils.broadcastToNodesSupportingFeature;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -792,8 +794,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
-        UUID subjId = null; // TODO GG-9141 how to get subj ID?
-
         int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
 
         GridNearTxLocal tx = new GridNearTxLocal(
@@ -808,7 +808,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             storeEnabled,
             mvccOp,
             txSize,
-            subjId,
+            securitySubjectId(cctx),
             taskNameHash,
             lb,
             txDumpsThrottling,
