@@ -44,7 +44,6 @@ import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.manager.EventListener;
-import org.apache.ignite.internal.manager.ListenerRemovedException;
 import org.apache.ignite.internal.manager.Producer;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.metastorage.client.Conditions;
@@ -65,7 +64,9 @@ import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.schema.PrimaryIndex;
@@ -476,9 +477,27 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public Table createTable(String name, Consumer<TableChange> tableInitChange) {
+        return createTable(name, tableInitChange, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Table getOrCreateTable(String name, Consumer<TableChange> tableInitChange) {
+        return createTable(name, tableInitChange, false);
+    }
+
+    /**
+     * Creates a new table with the specified name or returns an existing table with the same name.
+     *
+     * @param name Table name.
+     * @param tableInitChange Table configuration.
+     * @param exceptionWhenExist If the value is {@code true}, an exception will be thrown when the table already exists,
+     * {@code false} means the existing table will be returned.
+     * @return A table instance.
+     */
+    public Table createTable(String name, Consumer<TableChange> tableInitChange, boolean exceptionWhenExist) {
         CompletableFuture<Table> tblFut = new CompletableFuture<>();
 
-        listen(TableEvent.CREATE, new EventListener<>() {
+        EventListener<TableEventParameters> clo = new EventListener<>() {
             @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
                 String tableName = parameters.tableName();
 
@@ -496,17 +515,34 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             @Override public void remove(@NotNull Throwable e) {
                 tblFut.completeExceptionally(e);
             }
-        });
+        };
 
-        try {
-            configurationMgr.configurationRegistry()
-                .getConfiguration(TablesConfiguration.KEY).tables().change(change ->
-                change.create(name, tableInitChange)).get();
+        listen(TableEvent.CREATE, clo);
+
+        Table tbl = table(name, true);
+
+        if (tbl != null) {
+            if (exceptionWhenExist) {
+                removeListener(TableEvent.CREATE, clo, new IgniteInternalCheckedException(
+                    LoggerMessageHelper.format("Table already exists [name={}]", name)));
+            }
+            else if (tblFut.complete(tbl))
+                removeListener(TableEvent.CREATE, clo);
         }
-        catch (InterruptedException | ExecutionException e) {
-            LOG.error("Table wasn't created [name=" + name + ']', e);
+        else {
+            try {
+                configurationMgr
+                    .configurationRegistry()
+                    .getConfiguration(TablesConfiguration.KEY)
+                    .tables()
+                    .change(change -> change.create(name, tableInitChange))
+                    .get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                LOG.error("Table wasn't created [name=" + name + ']', e);
 
-            tblFut.completeExceptionally(e);
+                removeListener(TableEvent.CREATE, clo, new IgniteInternalCheckedException(e));
+            }
         }
 
         return tblFut.join();
@@ -523,9 +559,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 if (!name.equals(tableName))
                     return false;
 
-                if (e == null) {
+                if (e == null)
                     tblFut.complete(null);
-                }
                 else
                     tblFut.completeExceptionally(e);
 
@@ -555,7 +590,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     @Override public void dropTable(String name) {
         CompletableFuture<Void> dropTblFut = new CompletableFuture<>();
 
-        listen(TableEvent.DROP, new EventListener<>() {
+        EventListener<TableEventParameters> clo = new EventListener<>() {
             @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
                 String tableName = parameters.tableName();
 
@@ -578,19 +613,28 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             @Override public void remove(@NotNull Throwable e) {
                 dropTblFut.completeExceptionally(e);
             }
-        });
+        };
 
-        try {
-            configurationMgr
-                .configurationRegistry()
-                .getConfiguration(TablesConfiguration.KEY)
-                .tables()
-                .change(change -> change.delete(name)).get();
+        listen(TableEvent.DROP, clo);
+
+        if (!isTableConfigured(name)) {
+            if (dropTblFut.complete(null))
+                removeListener(TableEvent.DROP, clo, null);
         }
-        catch (InterruptedException | ExecutionException e) {
-            LOG.error("Table wasn't dropped [name=" + name + ']', e);
+        else {
+            try {
+                configurationMgr
+                    .configurationRegistry()
+                    .getConfiguration(TablesConfiguration.KEY)
+                    .tables()
+                    .change(change -> change.delete(name))
+                    .get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                LOG.error("Table wasn't dropped [name=" + name + ']', e);
 
-            dropTblFut.completeExceptionally(e);
+                removeListener(TableEvent.DROP, clo, new IgniteInternalCheckedException(e));
+            }
         }
 
         dropTblFut.join();
@@ -670,12 +714,6 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         EventListener<TableEventParameters> clo = new EventListener<>() {
             @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
-                if (e instanceof ListenerRemovedException) {
-                    getTblFut.completeExceptionally(e);
-
-                    return true;
-                }
-
                 String tableName = parameters.tableName();
 
                 if (!name.equals(tableName))
@@ -700,7 +738,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         if (tbl != null && getTblFut.complete(tbl) ||
             !isTableConfigured(name) && getTblFut.complete(null))
-            removeListener(TableEvent.CREATE, clo);
+            removeListener(TableEvent.CREATE, clo, null);
 
         return getTblFut.join();
     }
@@ -712,7 +750,11 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return True if table configured, false otherwise.
      */
     private boolean isTableConfigured(String name) {
-        return metaStorageMgr.get(new ByteArray(PUBLIC_PREFIX + ConfigurationUtil.escape(name) + ".name")).join() != null;
+        return metaStorageMgr.invoke(Conditions.exists(
+            new ByteArray(PUBLIC_PREFIX + ConfigurationUtil.escape(name) + ".name")),
+            Operations.noop(),
+            Operations.noop()
+        ).join();
     }
 
     /**

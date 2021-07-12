@@ -25,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
  * @see Producer#listen(Event, EventListener)
  */
 public interface EventListener<P extends EventParameters> {
-
     /**
      * Notifies the listener about an event.
      *

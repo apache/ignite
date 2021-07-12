@@ -23,4 +23,16 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
  * The exception notifies a listener when the listener was removed from queue and never receive a notification again.
  */
 public class ListenerRemovedException extends IgniteInternalCheckedException {
+    /**
+     * Default constructor.
+     */
+    public ListenerRemovedException() {
+    }
+
+    /**
+     * @param cause The exception that was a cause which a listener is removed.
+     */
+    public ListenerRemovedException(IgniteInternalCheckedException cause) {
+        super(cause);
+    }
 }

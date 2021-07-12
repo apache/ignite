@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.table;
 
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -74,6 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -330,6 +330,33 @@ public class TableManagerTest {
     }
 
     /**
+     * Tries to create a table that already exists.
+     */
+    @Test
+    public void testDoubledCreateTable() {
+        CompletableFuture<TableManager> tblManagerFut = new CompletableFuture<>();
+
+        SchemaTable scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_NAME)
+            .columns(
+                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
+                SchemaBuilders.column("val", ColumnType.INT64).asNullable().build())
+            .withPrimaryKey("key")
+            .build();
+
+        Table table = mockManagersAndCreateTable(scmTbl, tblManagerFut);
+
+        assertNotNull(table);
+
+        assertThrows(RuntimeException.class, () -> tblManagerFut.join().createTable(scmTbl.canonicalName(), tblCh -> SchemaConfigurationConverter.convert(scmTbl, tblCh)
+            .changeReplicas(1)
+            .changePartitions(10)));
+
+        assertSame(table, tblManagerFut.join().getOrCreateTable(scmTbl.canonicalName(), tblCh -> SchemaConfigurationConverter.convert(scmTbl, tblCh)
+            .changeReplicas(1)
+            .changePartitions(10)));
+    }
+
+    /**
      * Instantiates Table manager and creates a table in it.
      *
      * @param schemaTable Configuration schema for a table.
@@ -360,6 +387,10 @@ public class TableManagerTest {
 
         CompletableFuture<UUID> tblIdFut = new CompletableFuture<>();
 
+        String keyForCheck = PUBLIC_PREFIX + ConfigurationUtil.escape(schemaTable.canonicalName()) + ".name";
+
+        AtomicBoolean tableCreatedFlag = new AtomicBoolean();
+
         when(mm.invoke(any(Condition.class), any(Operation.class), any(Operation.class))).thenAnswer(invocation -> {
             Condition condition = invocation.getArgument(0);
 
@@ -367,10 +398,12 @@ public class TableManagerTest {
 
             Method getKeyMethod = ReflectionUtils.findMethod(internalCondition.getClass(), "key").get();
 
-            byte[] metastorageKeyBytes = (byte[])ReflectionUtils.invokeMethod(getKeyMethod, internalCondition);
+            String metastorageKey = new String((byte[])ReflectionUtils.invokeMethod(getKeyMethod, internalCondition));
 
-            tblIdFut.complete(UUID.fromString(new String(metastorageKeyBytes, StandardCharsets.UTF_8)
-                .substring(INTERNAL_PREFIX.length())));
+            if (keyForCheck.equals(metastorageKey))
+                return CompletableFuture.completedFuture(tableCreatedFlag.get());
+
+            tblIdFut.complete(UUID.fromString(metastorageKey.substring(INTERNAL_PREFIX.length())));
 
             return CompletableFuture.completedFuture(true);
         });
@@ -394,7 +427,7 @@ public class TableManagerTest {
         when(am.calculateAssignments(any(), eq(schemaTable.canonicalName()))).thenReturn(CompletableFuture.completedFuture(true));
 
         doAnswer(invocation -> {
-            EventListener<AffinityEventParameters> affinityClaculatedDelegate = invocation.getArgument(1);
+            EventListener<AffinityEventParameters> affinityCalculatedDelegate = invocation.getArgument(1);
 
             ArrayList<List<ClusterNode>> assignment = new ArrayList<>(PARTITIONS);
 
@@ -403,7 +436,7 @@ public class TableManagerTest {
 
             assertTrue(tblIdFut.isDone());
 
-            CompletableFuture.supplyAsync(() -> affinityClaculatedDelegate.notify(
+            CompletableFuture.supplyAsync(() -> affinityCalculatedDelegate.notify(
                 new AffinityEventParameters(tblIdFut.join(), assignment),
                 null));
 
@@ -413,9 +446,6 @@ public class TableManagerTest {
         TableManager tableManager = new TableManager(cfrMgr, mm, sm, am, rm, vm);
 
         tblManagerFut.complete(tableManager);
-
-        when(mm.get(eq(new ByteArray(PUBLIC_PREFIX + ConfigurationUtil.escape(schemaTable.canonicalName()) + ".name"))))
-            .thenReturn(CompletableFuture.completedFuture(null));
 
         when(mm.range(eq(new ByteArray(PUBLIC_PREFIX)), any())).thenAnswer(invocation -> {
             Cursor<Entry> cursor = mock(Cursor.class);
@@ -437,8 +467,7 @@ public class TableManagerTest {
             if (!createTbl && !dropTbl)
                 return CompletableFuture.completedFuture(null);
 
-            when(mm.get(eq(new ByteArray(PUBLIC_PREFIX + ConfigurationUtil.escape(schemaTable.canonicalName()) + ".name"))))
-                .thenAnswer(invocation -> CompletableFuture.completedFuture(createTbl ? mock(Entry.class) : null));
+            tableCreatedFlag.set(createTbl);
 
             when(mm.range(eq(new ByteArray(PUBLIC_PREFIX)), any())).thenAnswer(invocation -> {
                 AtomicBoolean firstRecord = new AtomicBoolean(createTbl);

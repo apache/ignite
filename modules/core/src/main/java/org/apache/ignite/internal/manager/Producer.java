@@ -20,6 +20,8 @@ package org.apache.ignite.internal.manager;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface which can produce its events.
@@ -48,8 +50,19 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param closure Closure.
      */
     public void removeListener(T evt, EventListener<P> closure) {
+        removeListener(evt, closure, null);
+    }
+
+    /**
+     * Removes a listener associated with the event.
+     *
+     * @param evt Event.
+     * @param closure Closure.
+     * @param cause The exception that was a cause which a listener is removed.
+     */
+    public void removeListener(T evt, EventListener<P> closure, @Nullable IgniteInternalCheckedException cause) {
         if (listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>()).remove(closure))
-            closure.remove(new ListenerRemovedException());
+            closure.remove(cause == null ? new ListenerRemovedException() : new ListenerRemovedException(cause));
     }
 
     /**
