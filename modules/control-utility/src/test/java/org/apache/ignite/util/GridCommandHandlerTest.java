@@ -71,6 +71,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -495,7 +497,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /**
      * Test verifies that persistence backup command to backup all caches backs up all cache directories.
-     * 
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -963,8 +965,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames) {
+    private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames)
+        throws IgniteInterruptedCheckedException {
         log.info(ignite.cluster().state() + " -> " + state);
+
+        ClusterState beforeState = ignite.cluster().state();
+
+        AtomicBoolean receivedGlobalState = new AtomicBoolean();
+
+        ((IgniteEx)ignite).context().discovery().setCustomEventListener(ChangeGlobalStateMessage.class,
+            ((topVer, snd, msg) -> receivedGlobalState.set(true)));
 
         assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
 
@@ -975,6 +985,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         List<IgniteEx> nodes = IntStream.range(0, 2)
             .mapToObj(this::grid)
             .collect(Collectors.toList());
+
+        if (beforeState != state)
+            waitForCondition(receivedGlobalState::get, getTestTimeout());
 
         ClusterStateTestUtils.putSomeDataAndCheck(log, nodes, cacheNames);
 
