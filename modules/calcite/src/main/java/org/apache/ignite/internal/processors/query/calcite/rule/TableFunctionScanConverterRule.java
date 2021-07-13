@@ -72,7 +72,7 @@ public class TableFunctionScanConverterRule extends AbstractIgniteConverterRule<
 
             corrIds = RelOptUtil.getVariablesUsed(rel0);
 
-            assert corrIds.size() == 1 : "Multiple correlates are appied: " + corrIds;
+            assert corrIds.size() == 1 : "Multiple correlates are applied: " + corrIds;
 
             rel = (LogicalTableFunctionScan)rel0;
         }
