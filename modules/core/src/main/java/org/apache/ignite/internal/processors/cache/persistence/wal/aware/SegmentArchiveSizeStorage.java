@@ -96,12 +96,13 @@ class SegmentArchiveSizeStorage {
     }
 
     /**
-     * Adding the WAL segment size in the archive.
+     * Adds or updates information about size of a WAL segment in archive.
      *
      * @param idx Absolut segment index.
-     * @param sizeChange Segment size in bytes.
+     * @param sizeChange Segment size in bytes. Could be positive (if segment is added to the archive)
+     *                   or negative (e.g. when it is removed from the archive).
      */
-    void addSize(long idx, long sizeChange) {
+    void changeSize(long idx, long sizeChange) {
         long releaseIdx = -1;
         int releaseCnt = 0;
 
@@ -156,7 +157,7 @@ class SegmentArchiveSizeStorage {
 
     /**
      * Waiting for exceeding the maximum WAL archive size.
-     * To track size of WAL archive, need to use {@link #addSize}.
+     * To track size of WAL archive, need to use {@link #changeSize}.
      *
      * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.

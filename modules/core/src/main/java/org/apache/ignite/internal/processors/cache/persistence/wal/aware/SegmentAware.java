@@ -341,7 +341,7 @@ public class SegmentAware {
      * @param sizeChange Segment size in bytes.
      */
     public void addSize(long idx, long sizeChange) {
-        archiveSizeStorage.addSize(idx, sizeChange);
+        archiveSizeStorage.changeSize(idx, sizeChange);
     }
 
     /**
