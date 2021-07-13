@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
@@ -564,6 +565,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case REENCRYPTION_START_RECORD:
                 return ((ReencryptionStartRecord)record).dataSize();
+
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                return ((IndexRenameRootPageRecord) record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1269,6 +1273,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                res = new IndexRenameRootPageRecord(in);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1893,6 +1902,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     buf.putInt(e.getKey());
                     buf.put(e.getValue());
                 }
+
+                break;
+
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                ((IndexRenameRootPageRecord)rec).writeRecord(buf);
 
                 break;
 

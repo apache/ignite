@@ -304,22 +304,12 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      *
      * @param cache Cache.
      * @param idxName Index name.
-     * @return Index creation future.
+     * @return Index creation result.
      */
     protected List<List<?>> createIdx(IgniteCache<Integer, Person> cache, String idxName) {
-        return cache.query(new SqlFieldsQuery("CREATE INDEX " + idxName + " ON Person(name)")).getAll();
-    }
+        String sql = "CREATE INDEX " + idxName + " ON Person(name)";
 
-    /**
-     * Drop of an index for the cache of{@link Person}.
-     * SQL: DROP INDEX " + idxName
-     *
-     * @param cache Cache.
-     * @param idxName Index name.
-     * @return Index creation future.
-     */
-    protected List<List<?>> dropIdx(IgniteCache<Integer, Person> cache, String idxName) {
-        return cache.query(new SqlFieldsQuery("DROP INDEX " + idxName)).getAll();
+        return cache.query(new SqlFieldsQuery(sql)).getAll();
     }
 
     /**
@@ -328,7 +318,6 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      * @param n Node.
      * @param reason Reason for checkpoint wakeup if it would be required.
      * @param enable Enable/disable.
-     * @throws Exception If failed.
      */
     protected Void enableCheckpoints(IgniteEx n, String reason, boolean enable) throws Exception {
         if (enable) {

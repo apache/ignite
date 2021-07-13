@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.AbstractPageLockTest;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot.LogEntry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
@@ -30,12 +29,10 @@ import org.junit.Test;
 import static java.lang.System.out;
 import static java.time.Duration.ofMinutes;
 import static java.util.stream.IntStream.range;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.BEFORE_READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.READ_UNLOCK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DEFAULT_CAPACITY;
 
 /** */
 public abstract class PageLockLogTest extends AbstractPageLockTest {

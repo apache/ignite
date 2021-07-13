@@ -28,10 +28,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_STACK;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_LOG;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_STACK;
 
 /**
  *

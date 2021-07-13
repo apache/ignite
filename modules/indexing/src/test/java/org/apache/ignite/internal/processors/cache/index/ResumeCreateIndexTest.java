@@ -348,11 +348,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      * @return Disable checkpoints future.
      */
     private IgniteInternalFuture<Void> enableCheckpointsAsync(IgniteEx n, String reason, boolean enable) {
-        return runAsync(() -> {
-            enableCheckpoints(n, reason, enable);
-
-            return null;
-        });
+        return runAsync(() -> enableCheckpoints(n, reason, enable));
     }
 
     /**
