@@ -1128,6 +1128,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable RootPage renameRootPageForIndex(
+        int cacheId,
+        String oldIdxName,
+        String newIdxName,
+        int segment
+    ) throws IgniteCheckedException {
+        return null; // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public ReuseList reuseListForIndex(String idxName) {
         return grp.reuseList();
     }
