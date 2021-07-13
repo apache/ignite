@@ -792,7 +792,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void query2() throws Exception {
+    public void query2() {
         IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
@@ -1042,6 +1042,41 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertThat(qCur.fieldsMeta().get(1).fieldTypeName(), equalTo(Byte.class.getName()));
         assertThat(qCur.fieldsMeta().get(2).fieldTypeName(), equalTo(Short.class.getName()));
         assertThat(qCur.fieldsMeta().get(3).fieldTypeName(), equalTo(String.class.getName()));
+    }
+
+    /** Quantified predicates test. */
+    @Test
+    public void quantifiedCompTest() throws InterruptedException {
+        populateTables();
+
+        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary")
+            .returns(11d)
+            .returns(12d)
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary < SOME (12, 12) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary < ANY (11, 12) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary > ANY (12, 13) ORDER BY salary")
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary <> ALL (12, 13) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
+            .check();
     }
 
     /** */

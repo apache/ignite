@@ -133,7 +133,10 @@ public class FunctionsTest extends GridCommonAbstractTest {
             "Increment can't be 0");
     }
 
-    /** */
+    /**
+     * Important! Don`t change query call sequence in this test. This also tests correctness of
+     * {@link org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl#SCALAR_CACHE} usage.
+     */
     @Test
     public void testRangeWithCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).getOrCreateCache(
