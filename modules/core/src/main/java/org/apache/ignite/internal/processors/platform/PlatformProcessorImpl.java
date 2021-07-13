@@ -302,6 +302,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Add Interop node attributes.
         ctx.addNodeAttribute(PlatformUtils.ATTR_PLATFORM, interopCfg.platform());
+
+        // Register query entity meta.
+        ctx.query().registerMetadataForRegisteredCaches(true);
     }
 
     /** {@inheritDoc} */

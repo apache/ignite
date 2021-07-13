@@ -436,6 +436,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
         /** {@inheritDoc} */
         @Override public synchronized boolean cancel() throws IgniteCheckedException {
+            grps.remove(grp.groupId());
+
             return onCancelled();
         }
 

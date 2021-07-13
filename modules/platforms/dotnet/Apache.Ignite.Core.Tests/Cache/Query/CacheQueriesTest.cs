@@ -1102,7 +1102,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             sb.Append("Returned keys: ");
 
             foreach (var e in all)
-                sb.Append(e.Key).Append(" ");
+                sb.Append(e.Key).Append(' ');
 
             sb.AppendLine(";");
 

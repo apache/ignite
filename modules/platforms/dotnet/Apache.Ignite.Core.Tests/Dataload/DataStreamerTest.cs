@@ -150,6 +150,22 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
         /// <summary>
+        /// Tests removal without <see cref="IDataStreamer{TK,TV}.AllowOverwrite"/>.
+        /// </summary>
+        [Test]
+        public void TestRemoveNoOverwrite()
+        {
+            _cache.Put(1, 1);
+
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.Remove(1);
+            }
+
+            Assert.IsTrue(_cache.ContainsKey(1));
+        }
+
+        /// <summary>
         /// Test data add/remove.
         /// </summary>
         [Test]
@@ -826,7 +842,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Assert.AreSame(batchTask, flushTask2);
                 await flushTask2;
-                
+
                 Assert.IsTrue(batchTask.IsCompleted);
                 Assert.IsFalse(await _cache.ContainsKeyAsync(1));
 

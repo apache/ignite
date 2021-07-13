@@ -2200,6 +2200,23 @@ public final class GridTestUtils {
     }
 
     /**
+     * Removing the directory cache groups.
+     * Deletes all directory satisfy the {@code cacheGrpFilter}.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cacheGrpFilter Filter cache groups.
+     * @throws Exception If failed.
+     */
+    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        String nodeDirName = U.maskForFileName(igniteInstanceName);
+
+        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
+            U.delete(cacheGrpDir);
+    }
+
+    /**
      * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
      * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
      * This method return correct simple name for inner classes.

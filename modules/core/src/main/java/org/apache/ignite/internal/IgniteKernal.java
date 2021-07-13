@@ -347,7 +347,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     public static final String SITE = "ignite.apache.org";
 
     /** System line separator. */
-    private static final String NL = U.nl();
+    public static final String NL = U.nl();
 
     /** System megabyte. */
     private static final int MEGABYTE = 1024 * 1024;
@@ -2387,7 +2387,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
                 long offHeapInit = regCfg.getInitialSize();
                 long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+                long offHeapComm = region.metrics().getOffHeapSize();
 
                 long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
                 long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
@@ -2427,7 +2427,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
 
                 if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsed = region.metrics().getTotalAllocatedSize();
                     long pdsUsedInMBytes = pdsUsed / MEGABYTE;
 
                     pdsUsedSummary += pdsUsed;

@@ -358,7 +358,7 @@ public class WalScannerTest {
     public static byte[] dummyPage(int pageSize, long pageId) {
         ByteBuffer pageBuf = ByteBuffer.allocateDirect(pageSize);
 
-        DummyPageIO.VERSIONS.latest().initNewPage(GridUnsafe.bufferAddress(pageBuf), pageId, pageSize);
+        DummyPageIO.VERSIONS.latest().initNewPage(GridUnsafe.bufferAddress(pageBuf), pageId, pageSize, null);
 
         byte[] pageData = new byte[pageSize];
 

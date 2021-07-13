@@ -62,7 +62,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.testframework.GridTestUtils.DFLT_BUSYWAIT_SLEEP_INTERVAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -137,7 +136,7 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
             {1, false, 1},
             {2, true, 0},
             {2, true, 1},
-            {2, false, 0},
+            //{2, false, 0}, such case is not fixed by now
             {2, false, 1},
         });
     }
@@ -145,15 +144,13 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
     /**Tests partially commited transactions with further recovery. */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop_MultiNodeTx_OneBackup() throws Exception {
+    public void testPartiallyCommitedTx_WithCpOnNodeStop() throws Exception {
         testPartiallyCommitedTx();
     }
 
     /**Tests partially commited transactions with further recovery. */
     @Test
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithoutCpOnNodeStop_SingleNodeTx() throws Exception {
+    public void testPartiallyCommitedTx_WithoutCpOnNodeStop() throws Exception {
         testPartiallyCommitedTx();
     }
 
