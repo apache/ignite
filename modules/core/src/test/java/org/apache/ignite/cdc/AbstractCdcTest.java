@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -179,6 +180,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
+        /** */
+        private int typesCnt;
+
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {
             assertNull(evt.version().otherClusterVersion());
@@ -195,6 +199,21 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            assertTrue(types.hasNext() || typesCnt > 0);
+
+            while (types.hasNext()) {
+                BinaryType type = types.next();
+
+                assertNotNull(type);
+
+                typesCnt++;
+
+                System.out.println(type);
+            }
         }
     }
 

@@ -45,10 +45,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -164,27 +166,42 @@ public class IgniteWalIteratorFactory {
     }
 
     /**
-     * @param iteratorParametersBuilder Iterator parameters builder.
+     * @param iterParametersBuilder Iterator parameters builder.
      * @return closable WAL records iterator, should be closed when non needed
      */
     public WALIterator iterator(
-        @NotNull IteratorParametersBuilder iteratorParametersBuilder
+        @NotNull IteratorParametersBuilder iterParametersBuilder
     ) throws IgniteCheckedException, IllegalArgumentException {
-        iteratorParametersBuilder.validate();
+        return iteratorWithContext(iterParametersBuilder).get1();
+    }
 
-        return new StandaloneWalRecordsIterator(
-            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-            iteratorParametersBuilder.sharedCtx == null ? prepareSharedCtx(iteratorParametersBuilder) :
-                iteratorParametersBuilder.sharedCtx,
-            iteratorParametersBuilder.ioFactory,
-            resolveWalFiles(iteratorParametersBuilder),
-            iteratorParametersBuilder.filter,
-            iteratorParametersBuilder.lowBound,
-            iteratorParametersBuilder.highBound,
-            iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize,
-            iteratorParametersBuilder.strictBoundsCheck
+    /**
+     * @param iterParametersBuilder Iterator parameters builder.
+     * @return closable WAL records iterator, should be closed when non needed
+     */
+    public IgniteBiTuple<WALIterator, GridCacheSharedContext<?, ?>> iteratorWithContext(
+        @NotNull IteratorParametersBuilder iterParametersBuilder
+    ) throws IgniteCheckedException, IllegalArgumentException {
+        iterParametersBuilder.validate();
+
+        GridCacheSharedContext<?, ?> ctx = iterParametersBuilder.sharedCtx == null
+            ? prepareSharedCtx(iterParametersBuilder)
+            : iterParametersBuilder.sharedCtx;
+
+        StandaloneWalRecordsIterator iter = new StandaloneWalRecordsIterator(
+            iterParametersBuilder.log == null ? log : iterParametersBuilder.log,
+            ctx,
+            iterParametersBuilder.ioFactory,
+            resolveWalFiles(iterParametersBuilder),
+            iterParametersBuilder.filter,
+            iterParametersBuilder.lowBound,
+            iterParametersBuilder.highBound,
+            iterParametersBuilder.keepBinary,
+            iterParametersBuilder.bufferSize,
+            iterParametersBuilder.strictBoundsCheck
         );
+
+        return F.t(iter, ctx);
     }
 
     /**

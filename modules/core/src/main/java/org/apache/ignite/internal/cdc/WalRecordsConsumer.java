@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -137,6 +138,14 @@ public class WalRecordsConsumer<K, V> {
         };
 
         return consumer.onEvents(evts);
+    }
+
+    /**
+     * Handles new binary types.
+     * @param types Binary types iterator.
+     */
+    public void onTypes(Iterator<BinaryType> types) {
+        consumer.onTypes(types);
     }
 
     /**

@@ -23,11 +23,16 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -48,55 +53,90 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  */
 public class CdcConsumerState {
     /** */
-    public static final String STATE_FILE_NAME = "cdc-state" + FILE_SUFFIX;
+    public static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
 
-    /** State file. */
-    private final Path state;
+    /** */
+    public static final String TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
 
-    /** Temp state file. */
-    private final Path tmp;
+    /** Long size in bytes. */
+    private static final int LONG_SZ = 8;
+
+    /** Integer size in bytes. */
+    private static final int INT_SZ = 4;
+
+
+    /** WAL pointer state file. */
+    private final Path walPtr;
+
+    /** Temp WAL pointer state file. */
+    private final Path tmpWalPtr;
+
+    /** Types state file. */
+    private final Path types;
+
+    /** Temp types state file. */
+    private final Path tmpTypes;
 
     /**
      * @param stateDir State directory.
      */
     public CdcConsumerState(Path stateDir) {
-        state = stateDir.resolve(STATE_FILE_NAME);
-        tmp = stateDir.resolve(STATE_FILE_NAME + TMP_SUFFIX);
+        walPtr = stateDir.resolve(WAL_STATE_FILE_NAME);
+        tmpWalPtr = stateDir.resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
+        types = stateDir.resolve(TYPES_STATE_FILE_NAME);
+        tmpTypes = stateDir.resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
     }
 
     /**
-     * Saves state to file.
+     * Saves WAL pointer state to file.
      * @param ptr WAL pointer.
      */
     public void save(WALPointer ptr) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
+        save(() -> {
+            ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
-        buf.putLong(ptr.index());
-        buf.putInt(ptr.fileOffset());
-        buf.putInt(ptr.length());
-        buf.flip();
+            buf.putLong(ptr.index());
+            buf.putInt(ptr.fileOffset());
+            buf.putInt(ptr.length());
+            buf.flip();
 
-        try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-            ch.write(buf);
+            return buf;
+        }, tmpWalPtr, walPtr);
+    }
 
-            ch.force(true);
-        }
+    /**
+     * Saves types state to file.
+     * @param typesState State of types.
+     */
+    public void save(Map<Integer, Long> typesState) throws IOException {
+        save(() -> {
+            ByteBuffer buf = ByteBuffer.allocate(INT_SZ + (LONG_SZ + INT_SZ) * typesState.size());
 
-        Files.move(tmp, state, ATOMIC_MOVE, REPLACE_EXISTING);
+            buf.putInt(typesState.size());
+
+            for (Map.Entry<Integer, Long> entry : typesState.entrySet()) {
+                buf.putInt(entry.getKey());
+                buf.putLong(entry.getValue());
+            }
+
+            buf.flip();
+
+            return buf;
+        }, tmpTypes, types);
     }
 
     /**
      * Loads CDC state from file.
      * @return Saved state.
      */
-    public WALPointer load() {
-        if (!Files.exists(state))
-            return null;
-
-        try (FileChannel ch = FileChannel.open(state, StandardOpenOption.READ)) {
+    public IgniteBiTuple<WALPointer, Map<Integer, Long>> load() {
+        WALPointer walState = load(walPtr, ch -> {
             ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
-            ch.read(buf);
+            int read = ch.read(buf);
+
+            if (read != POINTER_SIZE)
+                return null;
 
             buf.flip();
 
@@ -105,10 +145,79 @@ public class CdcConsumerState {
             int length = buf.getInt();
 
             return new WALPointer(idx, offset, length);
+        });
+
+        Map<Integer, Long> typesState = load(types, ch -> {
+            ByteBuffer buf = ByteBuffer.allocate(LONG_SZ);
+
+            int read = ch.read(buf);
+
+            if (read != LONG_SZ)
+                return null;
+
+            buf.flip();
+
+            int sz = buf.getInt();;
+
+            buf = ByteBuffer.allocate(sz * (LONG_SZ + INT_SZ));
+
+            read = ch.read(buf);
+
+            if (read != sz * (LONG_SZ + INT_SZ))
+                return null;
+
+            Map<Integer, Long> data = new HashMap<>();
+
+            for (int i = 0; i < sz; i++) {
+                int typeId = buf.getInt();
+                long timestamp = buf.getLong();
+
+                data.put(typeId, timestamp);
+            }
+
+            return data;
+        });
+
+        return F.t(walState, typesState);
+    }
+
+    /**
+     * @param file File to load from.
+     * @param ldr Object loader.
+     * @param <T> Result type.
+     * @return Result loaded from file.
+     */
+    private static <T> T load(Path file, IOFunction<FileChannel, T> ldr) {
+        if (!Files.exists(file))
+            return null;
+
+        try (FileChannel ch = FileChannel.open(file, StandardOpenOption.READ)) {
+            return ldr.apply(ch);
         }
         catch (IOException e) {
-            throw new IgniteException("Failed to read state [file=" + state + ']', e);
+            throw new IgniteException("Failed to read state [file=" + file + ']', e);
+        }
+    }
+
+    /**
+     * @param bytes Bytes to save supplier.
+     * @param tmp Temp file.
+     * @param file Destination file.
+     * @throws IOException In case of error.
+     */
+    private static void save(Supplier<ByteBuffer> bytes, Path tmp, Path file) throws IOException {
+        try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            ch.write(bytes.get());
+            ch.force(true);
         }
 
+        Files.move(tmp, file, ATOMIC_MOVE, REPLACE_EXISTING);
+    }
+
+    /** */
+    @FunctionalInterface
+    private interface IOFunction<T, R> {
+        /** */
+        R apply(T var) throws IOException;
     }
 }

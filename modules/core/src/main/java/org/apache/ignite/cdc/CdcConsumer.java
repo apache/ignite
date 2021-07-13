@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -68,6 +69,13 @@ public interface CdcConsumer {
      * to continue from it in case any failures or restart.
      */
     public boolean onEvents(Iterator<CdcEvent> events);
+
+    /**
+     * Handles new binary types. State of the types processing will be stored after this method invocation
+     * and ongoing notifications after CDC application fail/restart will be started for newly created/updates types.
+     * @param types Binary types iterator.
+     */
+    public void onTypes(Iterator<BinaryType> types);
 
     /**
      * Stops the consumer.

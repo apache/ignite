@@ -80,6 +80,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
  * Binary utils.
  */
 public class BinaryUtils {
+    /** Binary metadata file suffix. */
+    public static final String METADATA_FILE_SUFFIX = ".bin";
+
     /** */
     public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
 
@@ -2463,6 +2466,14 @@ public class BinaryUtils {
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
         return ctx.metadata(obj.typeId());
+    }
+
+    /**
+     * @param typeId Type id.
+     * @return Binary metadata file name.
+     */
+    public static String binaryMetaFileName(int typeId) {
+        return typeId + METADATA_FILE_SUFFIX;
     }
 
     /**

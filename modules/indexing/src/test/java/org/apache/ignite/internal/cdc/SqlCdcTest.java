@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractCdcTest;
 import org.apache.ignite.cdc.CdcConfiguration;
@@ -86,12 +88,14 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         executeSql(
             ign,
-            "CREATE TABLE USER(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) WITH \"CACHE_NAME=user\""
+            "CREATE TABLE USER(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) " +
+                "WITH \"CACHE_NAME=user,VALUE_TYPE=TestUser,KEY_TYPE=TestUserKey\""
         );
 
         executeSql(
             ign,
-            "CREATE TABLE CITY(id int, name varchar, zip_code varchar(6), PRIMARY KEY (id)) WITH \"CACHE_NAME=city\""
+            "CREATE TABLE CITY(id int, name varchar, zip_code varchar(6), PRIMARY KEY (id)) " +
+               "WITH \"CACHE_NAME=city,VALUE_TYPE=TestCity\""
         );
 
         for (int i = 0; i < KEYS_CNT; i++) {
@@ -169,6 +173,17 @@ public class SqlCdcTest extends AbstractCdcTest {
         /** {@inheritDoc} */
         @Override public CdcEvent extract(CdcEvent evt) {
             return evt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            System.out.println("BinaryCdcConsumer.onTypes");
+
+            while (types.hasNext()) {
+                BinaryType type = types.next();
+
+                System.out.println(type);
+            }
         }
     }
 

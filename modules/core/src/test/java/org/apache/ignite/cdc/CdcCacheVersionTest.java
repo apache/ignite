@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -151,6 +152,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 });
 
                 return true;
+            }
+
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                // No-op.
             }
 
             @Override public void start() {

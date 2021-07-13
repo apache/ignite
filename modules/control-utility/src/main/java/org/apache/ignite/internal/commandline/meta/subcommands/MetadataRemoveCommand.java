@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
@@ -92,7 +93,7 @@ public class MetadataRemoveCommand
         BinaryMetadata m = res.metadata();
 
         if (outFile == null)
-            outFile = FS.getPath(m.typeId() + ".bin");
+            outFile = FS.getPath(BinaryUtils.binaryMetaFileName(m.typeId()));
 
         try (OutputStream os = Files.newOutputStream(outFile)) {
             os.write(res.metadataMarshalled());

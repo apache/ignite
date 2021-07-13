@@ -140,7 +140,7 @@ class BinaryMetadataFileStore {
             return;
 
         try {
-            File file = new File(metadataDir, binMeta.typeId() + ".bin");
+            File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(binMeta.typeId()));
 
             byte[] marshalled = U.marshal(ctx, binMeta);
 
@@ -175,7 +175,7 @@ class BinaryMetadataFileStore {
         if (!isPersistenceEnabled)
             return;
 
-        File file = new File(metadataDir, typeId + ".bin");
+        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.delete()) {
             final String msg = "Failed to remove metadata for typeId: " + typeId;
@@ -236,7 +236,7 @@ class BinaryMetadataFileStore {
      * @param typeId typeId of BinaryMetadata to be read.
      */
     private BinaryMetadata readMetadata(int typeId) {
-        File file = new File(metadataDir, Integer.toString(typeId) + ".bin");
+        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.exists())
             return null;
