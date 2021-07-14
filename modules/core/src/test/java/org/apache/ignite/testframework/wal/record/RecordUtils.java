@@ -149,6 +149,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_DESTROY;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_DELTA_RECORD_V3;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_DELTA_RECORD_V4;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PART_META_UPDATE_STATE;
@@ -227,6 +228,7 @@ public class RecordUtils {
             put(ROLLBACK_TX_RECORD, RecordUtils::buildRollbackRecord);
             put(PARTITION_META_PAGE_UPDATE_COUNTERS_V2, RecordUtils::buildMetaPageUpdatePartitionDataRecordV2);
             put(PARTITION_META_PAGE_DELTA_RECORD_V3, RecordUtils::buildMetaPageUpdatePartitionDataRecordV3);
+            put(PARTITION_META_PAGE_DELTA_RECORD_V4, RecordUtils::buildMetaPageUpdatePartitionDataRecordV4);
             put(MASTER_KEY_CHANGE_RECORD, RecordUtils::buildMasterKeyChangeRecord);
             put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecordV2);
             put(REENCRYPTION_START_RECORD, RecordUtils::buildEncryptionStatusRecord);
@@ -545,6 +547,11 @@ public class RecordUtils {
     /** **/
     public static MetaPageUpdatePartitionDataRecordV3 buildMetaPageUpdatePartitionDataRecordV3() {
         return new MetaPageUpdatePartitionDataRecordV3(1, 1, 1, 1, 1, 1, (byte)1, 1, 1, 0, 0);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildMetaPageUpdatePartitionDataRecordV4() {
+        return new UnsupportedWalRecord(PARTITION_META_PAGE_DELTA_RECORD_V4);
     }
 
     /** **/
