@@ -305,7 +305,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 Expressions.statement(
                     Expressions.call(hnd_,
                         IgniteMethod.ROW_HANDLER_SET.method(),
-                        Expressions.constant(i), out_, projects.get(i))));
+                            Expressions.constant(i), out_, projects.get(i))));
         }
 
         MethodDeclaration decl = Expressions.methodDecl(
@@ -460,7 +460,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
             Expression field = Expressions.call(hnd_,
                 IgniteMethod.ROW_HANDLER_GET.method(),
-                Expressions.constant(index), row_);
+                    Expressions.constant(index), row_);
 
             Type fieldType = typeFactory.getJavaClass(rowType.getFieldList().get(index).getType());
 
