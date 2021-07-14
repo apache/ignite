@@ -43,14 +43,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     private final DataRegionConfiguration dataRegCfg;
 
     /**
-     * @param memMetrics DataRegionMetrics instance to expose through JMX interface.
-     * @param dataRegCfg Configuration of data region this MX Bean is created for.
+     * @param dataRegion Data region which metrics will be exposed through this JMX bean.
      */
-    DataRegionMetricsMXBeanImpl(DataRegionMetricsImpl memMetrics,
-        DataRegionConfiguration dataRegCfg
-    ) {
-        this.memMetrics = memMetrics;
-        this.dataRegCfg = dataRegCfg;
+    DataRegionMetricsMXBeanImpl(DataRegion dataRegion) {
+        this.memMetrics = dataRegion.metrics();
+        this.dataRegCfg = dataRegion.config();
     }
 
     /** {@inheritDoc} */

@@ -64,7 +64,27 @@
         <module>modules/uri-dependency</module>
     </modules>
 
+    <properties>
+
+        <uri.fn>uri</uri.fn>
+        <uri.jar>${uri.fn}.jar</uri.jar>
+
+        <plain.fn>deployfile</plain.fn>
+        <plain.clr>plain</plain.clr>
+        <plain.jar>${plain.fn}-${plain.clr}.jar</plain.jar>
+
+        <well-signed.fn>deployfile</well-signed.fn>
+        <well-signed.clr>well-signed</well-signed.clr>
+        <well-signed.jar>${well-signed.fn}-${well-signed.clr}.jar</well-signed.jar>
+
+        <bad-signed.fn>deployfile</bad-signed.fn>
+        <bad-signed.clr>bad-signed</bad-signed.clr>
+        <bad-signed.jar>${bad-signed.fn}-${bad-signed.clr}.jar</bad-signed.jar>
+
+    </properties>
+
     <build>
+
         <resources>
             <resource>
                 <directory>src/main/java</directory>
@@ -115,13 +135,29 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>jar-file</id>
+                        <id>jar-uri</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <finalName>deployfile</finalName>
+                            <finalName>${uri.fn}</finalName>
+                            <outputDirectory>${basedir}/target/deploy</outputDirectory>
+                            <includes>
+                                <include>**/GridUriDeploymentTestTask8.class</include>
+                                <include>**/GridUriDeploymentTestWithNameTask8.class</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jar-plain</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>${plain.fn}</finalName>
+                            <classifier>${plain.clr}</classifier>
                             <outputDirectory>${basedir}/target/file</outputDirectory>
                             <includes>
                                 <include>**/GridUriDeploymentTestTask8.class</include>
@@ -134,28 +170,14 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>jar-uri</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>uri</finalName>
-                            <outputDirectory>${basedir}/target/deploy</outputDirectory>
-                            <includes>
-                                <include>**/GridUriDeploymentTestTask8.class</include>
-                                <include>**/GridUriDeploymentTestWithNameTask8.class</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>jar-well-signed</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <finalName>well-signed-deployfile</finalName>
+                            <finalName>${well-signed.fn}</finalName>
+                            <classifier>${well-signed.clr}</classifier>
                             <outputDirectory>${basedir}/target/file</outputDirectory>
                             <includes>
                                 <include>**/GridUriDeploymentTestTask10.class</include>
@@ -170,7 +192,8 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <finalName>bad-signed-deployfile</finalName>
+                            <finalName>${bad-signed.fn}</finalName>
+                            <classifier>${bad-signed.clr}</classifier>
                             <outputDirectory>${basedir}/target/file</outputDirectory>
                             <includes>
                                 <include>**/GridUriDeploymentTestTask11.class</include>
@@ -184,6 +207,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jarsigner-plugin</artifactId>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>sign-well</id>
@@ -192,7 +216,7 @@
                             <goal>sign</goal>
                         </goals>
                         <configuration>
-                            <archive>${basedir}/target/file/well-signed-deployfile.jar</archive>
+                            <archive>${basedir}/target/file/${well-signed.jar}</archive>
                             <keystore>${basedir}/config/signeddeploy/keystore</keystore>
                             <alias>business</alias>
                             <storepass>abc123</storepass>
@@ -212,7 +236,6 @@
                         <artifactId>ignite-tools</artifactId>
                         <version>${project.version}</version>
                     </dependency>
-
                     <dependency>
                         <groupId>com.sun.mail</groupId>
                         <artifactId>javax.mail</artifactId>
@@ -232,15 +255,15 @@
                                 <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask11.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
                                 <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask11.class" tofile="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class" />
 
-                                <jar destfile="${basedir}/target/file/bad-signed-deployfile.jar" basedir="${basedir}/target/file_tmp/classes" />
+                                <jar destfile="${basedir}/target/file/${bad-signed.jar}" basedir="${basedir}/target/file_tmp/classes" />
 
-                                <signjar jar="${basedir}/target/file/bad-signed-deployfile.jar" keystore="${basedir}/config/signeddeploy/keystore" storepass="abc123" keypass="abc123" alias="business" />
+                                <signjar jar="${basedir}/target/file/${bad-signed.jar}" keystore="${basedir}/config/signeddeploy/keystore" storepass="abc123" keypass="abc123" alias="business" />
 
                                 <sleep seconds="2" />
 
                                 <touch file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class" />
 
-                                <zip destfile="${basedir}/target/file/bad-signed-deployfile.jar" basedir="${basedir}/target/classes/" includes="org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class" update="yes" />
+                                <zip destfile="${basedir}/target/file/${bad-signed.jar}" basedir="${basedir}/target/classes/" includes="org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class" update="yes" />
 
                                 <delete dir="${basedir}/target/file_tmp/"/>
                             </target>
@@ -269,7 +292,7 @@
                                 <!--uri-classes.gar-->
                                 <gar destfile="${basedir}/target/deploy2/uri-classes.gar" basedir="${basedir}/target/classes" />
 
-                                <!--Copy libs.-->
+                                <!--Copy libs-->
                                 <zip destfile="${basedir}/target/classes/lib/depend.jar" encoding="UTF-8">
                                     <zipfileset dir="modules/uri-dependency/target/classes" />
                                 </zip>

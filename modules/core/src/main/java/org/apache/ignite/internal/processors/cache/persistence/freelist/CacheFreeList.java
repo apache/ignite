@@ -25,7 +25,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -34,9 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
     /**
-     * @param cacheId Cache id.
+     * @param cacheGrpId Cache group id.
      * @param name Name.
-     * @param regionMetrics Region metrics.
      * @param dataRegion Data region.
      * @param wal Wal.
      * @param metaPageId Meta page id.
@@ -44,9 +42,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
      * @param pageFlag Default flag value for allocated pages.
      */
     public CacheFreeList(
-        int cacheId,
+        int cacheGrpId,
         String name,
-        DataRegionMetricsImpl regionMetrics,
         DataRegion dataRegion,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
@@ -57,9 +54,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         byte pageFlag
     ) throws IgniteCheckedException {
         super(
-            cacheId,
+            cacheGrpId,
             name,
-            regionMetrics,
             dataRegion,
             null,
             wal,
