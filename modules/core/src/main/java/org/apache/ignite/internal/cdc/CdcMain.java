@@ -170,7 +170,7 @@ public class CdcMain implements Runnable {
         p -> p.getFileName().toString().endsWith(METADATA_FILE_SUFFIX);
 
     /** */
-    private static final Function<Path, IgniteBiTuple<Integer, Long>> TO_TYPE_AND_LAST_MODIFIED = p -> F.t(
+    private static final Function<Path, IgniteBiTuple<Integer, Long>> TO_TYPE_ID_AND_LAST_MODIFIED = p -> F.t(
         Integer.parseInt(p.getFileName().toString().replace(METADATA_FILE_SUFFIX, "")),
         p.toFile().lastModified()
     );
@@ -448,7 +448,7 @@ public class CdcMain implements Runnable {
         try (Stream<Path> binaryMetaFiles = Files.walk(binaryMeta.toPath(), 1)) {
             Iterator<BinaryType> iter = binaryMetaFiles
                 .filter(METADATA_FILES_ONLY)
-                .map(TO_TYPE_AND_LAST_MODIFIED)
+                .map(TO_TYPE_ID_AND_LAST_MODIFIED)
                 .filter(unprocessed.and(t ->  toBinaryType.apply(t) != null))
                 .sorted(BY_LAST_MODIFIED)
                 .peek(addToProcessed)
