@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -17,25 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.PageLockStackSnapshot;
+/** */
+public class ThreadPageLockState {
+    /** */
+    public final long threadId;
 
-/**
- * Dump processor.
- */
-public interface DumpProcessor {
-    /**
-     * @param snapshot Process lock log snapshot.
-     */
-    void processDump(PageLockLogSnapshot snapshot);
+    /** */
+    public final String threadName;
 
-    /**
-     * @param snapshot Process lock stack snapshot.
-     */
-    void processDump(PageLockStackSnapshot snapshot);
+    /** */
+    public final Thread.State state;
 
-    /**
-     * @param snapshot Process lock thread dump snapshot.
-     */
-    void processDump(ThreadPageLocksDumpLock snapshot);
+    /** */
+    public final PageLockDump pageLockDump;
+
+    /** */
+    public final InvalidContext<? extends PageLockDump> invalidContext;
+
+    /** */
+    public ThreadPageLockState(
+        long threadId,
+        String threadName,
+        Thread.State state,
+        PageLockDump pageLockDump,
+        InvalidContext<? extends PageLockDump> invalidContext
+    ) {
+        this.threadId = threadId;
+        this.threadName = threadName;
+        this.state = state;
+        this.pageLockDump = pageLockDump;
+        this.invalidContext = invalidContext;
+    }
 }

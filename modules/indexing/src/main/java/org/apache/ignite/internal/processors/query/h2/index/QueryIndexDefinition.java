@@ -69,13 +69,13 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     private final boolean isAffinity;
 
     /** Index row comparator. */
-    private H2RowComparator rowComparator;
+    private final H2RowComparator rowComparator;
 
     /** Index key type settings. */
-    private IndexKeyTypeSettings keyTypeSettings;
+    private final IndexKeyTypeSettings keyTypeSettings;
 
     /** Index rows cache. */
-    private IndexRowCache idxRowCache;
+    private final IndexRowCache idxRowCache;
 
     /** Row handler factory. */
     private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();

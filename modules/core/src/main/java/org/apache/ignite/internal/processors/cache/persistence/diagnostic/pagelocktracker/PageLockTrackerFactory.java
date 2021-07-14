@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.LockLog;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.LockStack;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store.HeapPageMetaInfoStore;
@@ -37,7 +36,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * 3 - OFF_HEAP_STACK
  * 4 - OFF_HEAP_LOG
  */
-public final class LockTrackerFactory {
+public final class PageLockTrackerFactory {
     /** */
     public static final int HEAP_STACK = 1;
 

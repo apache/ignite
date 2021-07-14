@@ -408,4 +408,13 @@ public interface IgniteBinary {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException;
+
+    /**
+     * Register binary type for specified class.
+     *
+     * @param cls Class.
+     * @return Metadata.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerClass(Class<?> cls) throws BinaryObjectException;
 }
