@@ -111,36 +111,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         if (calls.isEmpty())
             return null;
 
-        Map<AggregateCall, Comparator<Row>> callCompMap = new HashMap<>();
-        for (AggregateCall call : calls) {
-            if (call.getCollation() != null)
-                callCompMap.put(call, comparator(call.getCollation(), call.getArgList()));
-        }
-
-        return new AccumulatorsFactory<>(ctx, type, calls, callCompMap, rowType);
-    }
-
-    /**
-     * The location of fields in the query and in the accumulator may be different.
-     * Since not all fields are presented in the accumulator,
-     * it is necessary to calculate in advance their correct position for sorting.
-     * */
-    private Comparator<Row> comparator(RelCollation collation, List<Integer> list) {
-        if (collation == null || collation.getFieldCollations().isEmpty())
-            return null;
-        else if (collation.getFieldCollations().size() == 1) {
-            RelFieldCollation rfCol = collation.getFieldCollations().get(0);
-            int idx = list.indexOf(rfCol.getFieldIndex());
-            return comparator(rfCol, idx == -1 ? list.size() : idx);
-        }
-        int len = list.size();
-        List<Comparator<Row>> comparators = new ArrayList<>();
-        for (RelFieldCollation field : collation.getFieldCollations()) {
-            int idx = list.indexOf(field.getFieldIndex());
-            comparators.add(comparator(field, idx == -1 ? len : idx));
-            len++;
-        }
-        return Ordering.compound(comparators);
+        return new AccumulatorsFactory<>(ctx, type, calls, rowType);
     }
 
     /** {@inheritDoc} */
@@ -170,14 +141,10 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    private Comparator<Row> comparator(RelFieldCollation fieldCollation) {
-        return comparator(fieldCollation, fieldCollation.getFieldIndex());
-    }
-
-    /** */
     @SuppressWarnings("rawtypes")
-    private Comparator<Row> comparator(RelFieldCollation fieldCollation, int x) {
+    private Comparator<Row> comparator(RelFieldCollation fieldCollation) {
         final int nullComparison = fieldCollation.nullDirection.nullComparison;
+        final int x = fieldCollation.getFieldIndex();
         RowHandler<Row> handler = ctx.rowHandler();
 
         if (fieldCollation.direction == RelFieldCollation.Direction.ASCENDING) {
@@ -338,7 +305,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 Expressions.statement(
                     Expressions.call(hnd_,
                         IgniteMethod.ROW_HANDLER_SET.method(),
-                            Expressions.constant(i), out_, projects.get(i))));
+                        Expressions.constant(i), out_, projects.get(i))));
         }
 
         MethodDeclaration decl = Expressions.methodDecl(
@@ -493,7 +460,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
             Expression field = Expressions.call(hnd_,
                 IgniteMethod.ROW_HANDLER_GET.method(),
-                    Expressions.constant(index), row_);
+                Expressions.constant(index), row_);
 
             Type fieldType = typeFactory.getJavaClass(rowType.getFieldList().get(index).getType());
 

@@ -17,22 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
-import java.io.Serializable;
+import com.google.common.collect.Ordering;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
@@ -46,22 +49,22 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 /**
  *
  */
-public class Accumulators {
+public class Accumulators<Row>  {
     /** */
-    public static Supplier<Accumulator> accumulatorFactory(AggregateCall call, Comparator<Object[]> comp) {
-        if (!call.isDistinct())
-            return accumulatorFunctionFactory(call, comp);
-
-        Supplier<Accumulator> fac = accumulatorFunctionFactory(call, comp);
-
+    public static <Row> Supplier<Accumulator> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         if ("LISTAGG".equals(call.getAggregation().getName()))
-            return () -> new DistinctArrayAccumulator(fac);
+            return listAggFactory(call, ctx);
+
+        if (!call.isDistinct())
+            return accumulatorFunctionFactory(call);
+
+        Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
 
         return () -> new DistinctAccumulator(fac);
     }
 
     /** */
-    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call, Comparator<Object[]> comp) {
+    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call) {
         switch (call.getAggregation().getName()) {
             case "COUNT":
                 return LongCount.FACTORY;
@@ -77,8 +80,6 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
-            case "LISTAGG":
-                return listAggFactory(call);
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -174,15 +175,103 @@ public class Accumulators {
     }
 
     /** */
-    private static Supplier<Accumulator> listAggFactory(AggregateCall call) {
-        List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
-        long count;
-        if (collations != null && !collations.isEmpty())
-            count = collations.stream().filter(field -> !call.getArgList().contains(field.getFieldIndex())).count();
-        else
-            count = 0;
+    private static <Row> Supplier<Accumulator> listAggFactory(AggregateCall call, ExecutionContext<Row> ctx) {
+        Supplier<Accumulator> supplier = ListAggAccumulator::new;
 
-        return () -> new ListAggAccumulator((int)count);
+        if (call.isDistinct())
+            supplier = getDistinctSupplier(supplier);
+
+        Comparator<Row> comp = comparator(call.getCollation(), call.getArgList(), ctx);
+
+        if (comp != null)
+            supplier = getSortingAccumulator(supplier, ctx, call);
+
+        return supplier;
+    }
+
+    /** */
+    private static <Row> Supplier<Accumulator> getSortingAccumulator(Supplier<Accumulator> supplier,
+        ExecutionContext<Row> ctx, AggregateCall call) {
+        List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
+
+        int count = 0;
+        if (collations != null && !collations.isEmpty())
+            for (RelFieldCollation collation : collations) {
+                if (!call.getArgList().contains(collation.getFieldIndex()))
+                    count++;
+            }
+
+        int finalCnt = count;
+
+        Comparator<Row> comp = comparator(call.getCollation(), call.getArgList(), ctx);
+        return () -> new SortingAccumulator(supplier, comp, finalCnt);
+    }
+
+    /** */
+    private static Supplier<Accumulator> getDistinctSupplier(Supplier<Accumulator> supplier) {
+        return () -> new DistinctArrayAccumulator(supplier);
+    }
+
+    /**
+     * The location of fields in the query and in the accumulator may be different.
+     * Since not all fields are presented in the accumulator,
+     * it is necessary to calculate in advance their correct position for sorting.
+     * */
+    private static <Row> Comparator<Row> comparator(RelCollation collation, List<Integer> list, ExecutionContext<Row> ctx) {
+        if (collation == null || collation.getFieldCollations().isEmpty())
+            return null;
+        else if (collation.getFieldCollations().size() == 1) {
+            RelFieldCollation rfCol = collation.getFieldCollations().get(0);
+            int idx = list.indexOf(rfCol.getFieldIndex());
+            return comparator(rfCol, ctx, idx == -1 ? list.size() : idx);
+        }
+        int len = list.size();
+        List<Comparator<Row>> comparators = new ArrayList<>();
+        for (RelFieldCollation field : collation.getFieldCollations()) {
+            int idx = list.indexOf(field.getFieldIndex());
+            comparators.add(comparator(field, ctx, idx == -1 ? len : idx));
+            len++;
+        }
+        return Ordering.compound(comparators);
+    }
+
+    /** */
+    @SuppressWarnings("rawtypes")
+    private static <Row> Comparator<Row> comparator(RelFieldCollation fieldCollation, ExecutionContext<Row> ctx, int x) {
+        final int nullComparison = fieldCollation.nullDirection.nullComparison;
+        RowHandler<Row> handler = ctx.rowHandler();
+
+        if (fieldCollation.direction == RelFieldCollation.Direction.ASCENDING) {
+            return (o1, o2) -> {
+                Object obj1 = handler.get(x, o1);
+                Object obj2 = handler.get(x, o2);
+
+                boolean o1Comparable = obj1 instanceof Comparable;
+                boolean o2Comparable = obj2 instanceof Comparable;
+
+                if (o1Comparable && o2Comparable) {
+                    final Comparable c1 = (Comparable)obj1;
+                    final Comparable c2 = (Comparable)obj2;
+                    return RelFieldCollation.compare(c1, c2, nullComparison);
+                }
+                else {
+                    if (obj1 == obj2)
+                        return 0;
+                    else if (obj1 == null)
+                        return nullComparison;
+                    else if (obj2 == null)
+                        return -nullComparison;
+                    else
+                        return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2);
+                }
+            };
+        }
+
+        return (o1, o2) -> {
+            final Comparable c1 = (Comparable)handler.get(x, o1);
+            final Comparable c2 = (Comparable)handler.get(x, o2);
+            return RelFieldCollation.compare(c2, c1, -nullComparison);
+        };
     }
 
     /** */
@@ -1090,26 +1179,16 @@ public class Accumulators {
     }
 
     /** */
-    private static class ArraysComparator implements Comparator<Object[]>, Serializable {
-
-        /** {@inheritDoc} */
-        @Override public int compare(Object[] o1, Object[] o2) {
-            return Arrays.equals(o1, o2) ? 0 : -1;
-        }
-    }
-
-    /** */
     private static class DistinctArrayAccumulator implements Accumulator {
         /** */
         private final Accumulator acc;
 
         /** */
-        Set<Object[]> set;
+        private final Set<GroupKey> set = new LinkedHashSet<>();
 
         /** */
         private DistinctArrayAccumulator(Supplier<Accumulator> accSup) {
             acc = accSup.get();
-            set = new TreeSet<>(new ArraysComparator());
         }
 
         /** {@inheritDoc} */
@@ -1117,7 +1196,7 @@ public class Accumulators {
             if (args == null || args.length == 0)
                 return;
 
-            set.add(args);
+            set.add(new GroupKey(args));
         }
 
         /** {@inheritDoc} */
@@ -1129,20 +1208,79 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            for (Object[] objects : set) {
-                acc.add(objects);
+            for (GroupKey key : set) {
+                acc.add(key.fields());
             }
 
             return acc.end();
         }
 
         /** {@inheritDoc} */
-        @Override public Object end(Comparator cmp) {
-            for (Object[] objects : set) {
-                acc.add(objects);
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return acc.argumentTypes(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return acc.returnType(typeFactory);
+        }
+    }
+
+    /** */
+    private static class SortingAccumulator implements Accumulator {
+        /** */
+        private final transient Comparator comp;
+
+        /** */
+        private final int collationFieldsCount;
+
+        /** */
+        private final List<Object[]> list;
+
+        /** */
+        private final Accumulator acc;
+
+        /**
+         * @param accSup Acc support.
+         * @param comp Comparator.
+         * @param collationFieldsCount Collation fields.
+         */
+        private SortingAccumulator(Supplier<Accumulator> accSup, Comparator comp, int collationFieldsCount) {
+            this.comp = comp;
+            this.collationFieldsCount = collationFieldsCount;
+
+            this.list = new ArrayList<>();
+            this.acc = accSup.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            list.add(args);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            SortingAccumulator other1 = (SortingAccumulator)other;
+            list.addAll(other1.list);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            list.sort(comp);
+
+            for (Object[] objects : list) {
+                if (collationFieldsCount == 0)
+                    acc.add(objects);
+                else {
+                    Object[] finalObjects = new Object[objects.length - collationFieldsCount];
+                    for (int i = 0; i < objects.length - collationFieldsCount; i++)
+                        finalObjects[i] = objects[i];
+
+                    acc.add(finalObjects);
+                }
             }
 
-            return acc.end(cmp);
+            return acc.end();
         }
 
         /** {@inheritDoc} */
@@ -1165,12 +1303,8 @@ public class Accumulators {
         private final List<Object[]> list;
 
         /** */
-        private final int numOfCollocationFields;
-
-        /** */
-        public ListAggAccumulator(int numOfCollocationFields) {
+        public ListAggAccumulator() {
             list = new ArrayList<>();
-            this.numOfCollocationFields = numOfCollocationFields;
         }
 
         /** {@inheritDoc} */
@@ -1189,35 +1323,21 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public Object end(Comparator cmp) {
-            if (list.isEmpty())
-                return null;
-
-            list.sort(cmp);
-
-            return end();
-        }
-
-        /** {@inheritDoc} */
         @Override public Object end() {
             if (list.isEmpty())
                 return null;
 
-            List<Object> data = new ArrayList<>();
-            List<Object> seps = new ArrayList<>();
+            StringBuilder builder = new StringBuilder();
 
-            for (Object[] objects : list) {
-                data.add(objects[0]);
-                if (objects.length > 1 && objects[1] != null && objects.length - 1 != numOfCollocationFields)
-                    seps.add(objects[1]);
-                else
-                    seps.add(DEFAULT_SEPARATOR);
+            for (Object[] objects: list) {
+                if (builder.length() != 0)
+                    if (objects.length > 1 && objects[1] != null)
+                        builder.append(objects[1]);
+                    else
+                        builder.append(DEFAULT_SEPARATOR);
+
+                builder.append(objects[0]);
             }
-
-            StringBuilder builder = new StringBuilder(data.size());
-            for (int i = 0; i < data.size() - 1; i++)
-                builder.append(data.get(i)).append(seps.get(i + 1));
-            builder.append(data.get(data.size() - 1));
 
             return builder.toString();
         }
