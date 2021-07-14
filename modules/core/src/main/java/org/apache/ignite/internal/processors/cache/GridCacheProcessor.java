@@ -5407,6 +5407,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return primaryNode != null && nodeId.equals(primaryNode.id());
     }
 
+    /**
+     * Restoring the state of partitions for cache groups.
+     *
+     * @param forGroups Cache groups.
+     * @param partStates Partition states.
+     * @param afterStatesRestoredForGrp Callback that is called after restoring states for all partitions in group.
+     * @throws IgniteCheckedException If failed.
+     */
     public void restorePartitionStates(
         Collection<CacheGroupContext> forGroups,
         Map<GroupPartitionId, Integer> partStates,

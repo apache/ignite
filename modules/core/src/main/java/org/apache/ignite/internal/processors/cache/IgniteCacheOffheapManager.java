@@ -90,10 +90,11 @@ public interface IgniteCacheOffheapManager {
     public void stop();
 
     /**
-     * Pre-create partitions that resides in page memory or WAL and restores their state.
+     * Pre-create single partition that resides in page memory or WAL and restores their state.
      *
+     * @param p Partition id.
      * @param partRecoveryStates Partition recovery states.
-     * @return Processed partitions: partition id -> processing time in millis.
+     * @return Processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
     long restoreStateOfPartition(
@@ -113,7 +114,8 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * Confirm that partition states are restored.
+     * Confirm that partition states are restored. This method should be called after restoring partitions using
+     * {@link #restoreStateOfPartition(int, Map)}.
      */
     void confirmPartitionStatesRestored();
 
