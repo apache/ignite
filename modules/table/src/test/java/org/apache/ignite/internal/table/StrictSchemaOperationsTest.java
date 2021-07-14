@@ -47,7 +47,7 @@ public class StrictSchemaOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         assertThrows(ColumnNotFoundException.class, () -> tbl.tupleBuilder().set("invalidCol", 0));
     }
@@ -67,7 +67,7 @@ public class StrictSchemaOperationsTest {
             }
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         // Check not-nullable column.
         assertThrows(IllegalArgumentException.class, () -> tbl.tupleBuilder().set("id", null));
@@ -93,7 +93,7 @@ public class StrictSchemaOperationsTest {
             }
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         tbl.tupleBuilder().set("valString", "qwe");
         tbl.tupleBuilder().set("valString", "qw");
@@ -119,7 +119,7 @@ public class StrictSchemaOperationsTest {
                 new Column("valLimited", NativeTypes.blobOf(2), true)
             });
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         tbl.tupleBuilder().set("valUnlimited", null);
         tbl.tupleBuilder().set("valLimited", null);

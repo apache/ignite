@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.UUID;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.table.ColumnChange;
 import org.apache.ignite.configuration.schemas.table.ColumnTypeChange;
@@ -512,4 +513,51 @@ public class SchemaConfigurationConverter {
     public static TableChange dropColumn(String columnName, TableChange tblChange) {
         return tblChange.changeColumns(colChg -> colChg.delete(columnName));
     }
+
+    /**
+     * Gets ColumnType type for given class.
+     *
+     * @param cls Class.
+     * @return ColumnType type or null.
+     */
+    public static ColumnType columnType(Class<?> cls) {
+        assert cls != null;
+
+        // Primitives.
+        if (cls == byte.class)
+            return ColumnType.INT8;
+        else if (cls == short.class)
+            return ColumnType.INT16;
+        else if (cls == int.class)
+            return ColumnType.INT32;
+        else if (cls == long.class)
+            return ColumnType.INT64;
+        else if (cls == float.class)
+            return ColumnType.FLOAT;
+        else if (cls == double.class)
+            return ColumnType.DOUBLE;
+
+            // Boxed primitives.
+        else if (cls == Byte.class)
+            return ColumnType.INT8;
+        else if (cls == Short.class)
+            return ColumnType.INT16;
+        else if (cls == Integer.class)
+            return ColumnType.INT32;
+        else if (cls == Long.class)
+            return ColumnType.INT64;
+        else if (cls == Float.class)
+            return ColumnType.FLOAT;
+        else if (cls == Double.class)
+            return ColumnType.DOUBLE;
+
+            // Other types
+        else if (cls == String.class)
+            return ColumnType.string();
+        else if (cls == UUID.class)
+            return ColumnType.UUID;
+
+        return null;
+    }
+
 }

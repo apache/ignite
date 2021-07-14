@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
+import org.apache.ignite.schema.SchemaMode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -85,6 +86,15 @@ public class DummyInternalTableImpl implements InternalTable {
     /** {@inheritDoc} */
     @Override public @NotNull String tableName() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull SchemaMode schemaMode() {
+        return SchemaMode.STRICT_SCHEMA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schema(SchemaMode schemaMode) {
     }
 
     /** {@inheritDoc} */

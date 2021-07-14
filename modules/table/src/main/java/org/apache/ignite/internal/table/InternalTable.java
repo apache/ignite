@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.schema.SchemaMode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -41,6 +42,18 @@ public interface InternalTable {
      * @return Table name.
      */
     @NotNull String tableName();
+
+    /**
+     * Gets a schema mode of the table.
+     *
+     * @return Schema mode.
+     */
+    @NotNull SchemaMode schemaMode();
+
+    /**
+     * Sets schema mode for the table.
+     */
+    void schema(SchemaMode schemaMode);
 
     /**
      * Asynchronously gets a row with same key columns values as given one from the table.

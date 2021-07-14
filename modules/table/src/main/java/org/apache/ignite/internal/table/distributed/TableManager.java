@@ -164,7 +164,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions);
 
-        var table = new TableImpl(internalTable, schemaReg);
+        var table = new TableImpl(internalTable, schemaReg, this);
 
         tables.put(name, table);
 
