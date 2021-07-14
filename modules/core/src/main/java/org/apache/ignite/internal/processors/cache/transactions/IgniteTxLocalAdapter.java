@@ -851,7 +851,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 else if (op == READ) {
                                     CacheGroupContext grp = cacheCtx.group();
 
-                                    if (grp.persistenceEnabled() && grp.walEnabled() &&
+                                    if (grp.walEnabled() &&
                                         cctx.snapshot().needTxReadLogging()) {
                                         ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
