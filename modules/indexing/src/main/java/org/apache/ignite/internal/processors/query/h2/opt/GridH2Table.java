@@ -1188,7 +1188,7 @@ public class GridH2Table extends TableBase {
             long primaryRowCnt = stats.primaryRowCount();
 
             try {
-                primaryRowCnt = cacheInfo.cacheContext().cache().size(new CachePeekMode[] {CachePeekMode.PRIMARY});
+                primaryRowCnt = cacheInfo.cacheContext().cache().size(new CachePeekMode[] {CachePeekMode.ALL});
             }
             catch (IgniteCheckedException e) {
                 log.warning("Can`t update cache size.", e);

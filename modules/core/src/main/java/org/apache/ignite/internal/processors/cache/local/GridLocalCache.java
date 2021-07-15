@@ -214,7 +214,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Override public long localSizeLong(CachePeekMode[] peekModes) {
         PeekModes modes = parsePeekModes(peekModes, true);
 
         modes.primary = true;

@@ -31,6 +31,9 @@ public class IgniteCost implements RelOptCost {
     /** Cost of a passing a single row through an execution node. */
     public static final double ROW_PASS_THROUGH_COST = 1;
 
+    /** Cost of a passing a single row through an index execution node. */
+    public static final double ROW_PASS_THROUGH_IDX_COST = 1.001;
+
     /** Size of a particular field. */
     public static final double AVERAGE_FIELD_SIZE = 4; // such accuracy should be enough for an estimate
 

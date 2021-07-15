@@ -172,6 +172,8 @@ public enum PlannerPhase {
                     NestedLoopJoinConverterRule.INSTANCE,
                     MergeJoinConverterRule.INSTANCE,
 
+                    CoreRules.JOIN_COMMUTE_OUTER,
+
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
