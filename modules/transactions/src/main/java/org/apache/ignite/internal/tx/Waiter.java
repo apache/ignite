@@ -18,7 +18,16 @@
 package org.apache.ignite.internal.tx;
 
 /**
- * Tests a LockManager implementation.
+ * The waiter.
  */
-public class LockManagerTest {
+public interface Waiter {
+    /**
+     * @return Associated timestamp.
+     */
+    Timestamp timestamp();
+
+    /**
+     * @return {@code True} if the waiter holds the lock.
+     */
+    boolean locked();
 }

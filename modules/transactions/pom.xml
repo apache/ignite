@@ -49,6 +49,13 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 3rd party dependencies -->
         <dependency>
             <groupId>org.jetbrains</groupId>

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.tx;
 
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -28,27 +29,42 @@ public interface LockManager {
      * @param key The key.
      * @param timestamp The timestamp.
      * @return The future.
-     * @throws LockOrderException When a lock can't be taken due to wrong ordering.
+     * @throws LockException When a lock can't be taken due to possible deadlock.
      */
-    public CompletableFuture<Void> tryAcquire(Object key, long timestamp) throws LockOrderException;
+    public CompletableFuture<Void> tryAcquire(Object key, Timestamp timestamp) throws LockException;
 
     /**
      * @param key The key.
-     * @return {@code True} if the lock was released.
+     * @param timestamp The timestamp.
+     * @throws LockException If the unlock operation is invalid.
      */
-    public boolean tryRelease(Object key);
+    public void tryRelease(Object key, Timestamp timestamp) throws LockException;
 
     /**
      * @param key The key.
      * @param timestamp The timestamp.
      * @return The future.
-     * @throws LockOrderException When a lock can't be taken due to wrong ordering.
+     * @throws LockException When a lock can't be taken due to possible deadlock.
      */
-    public CompletableFuture<Void> tryAcquireShared(Object key, long timestamp) throws LockOrderException;
+    public CompletableFuture<Void> tryAcquireShared(Object key, Timestamp timestamp) throws LockException;
 
     /**
      * @param key The key.
-     * @return {@code True} if the lock was released.
+     * @param timestamp The timestamp.
+     * @throws LockException If the unlock operation is invalid.
      */
-    public boolean tryReleaseShared(Object key);
+    public void tryReleaseShared(Object key, Timestamp timestamp) throws LockException;
+
+    /**
+     * @param key The key.
+     * @return The waiters queue.
+     */
+    public Collection<Timestamp> queue(Object key);
+
+    /**
+     * @param key The key.
+     * @param timestamp The timestamp.
+     * @return The waiter.
+     */
+    public Waiter waiter(Object key, Timestamp timestamp);
 }

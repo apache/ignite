@@ -125,7 +125,7 @@ public final class Utils {
     }
 
     /**
-     * Run a task in thread pool,returns the future object.
+     * Run a task in thread pool,returns the future object. TODO asch confusion runInThread runInExecutor IGNITE-14382
      */
     public static Future<?> runInThread(final ExecutorService executor, final Runnable runnable) {
         return executor.submit(runnable);

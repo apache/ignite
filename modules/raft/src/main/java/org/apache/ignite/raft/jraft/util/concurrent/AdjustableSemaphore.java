@@ -111,7 +111,6 @@ public final class AdjustableSemaphore implements Serializable {
     }
 
     private static final class ResizeableSemaphore extends Semaphore {
-
         private static final long serialVersionUID = 1204115455517785966L;
 
         ResizeableSemaphore(int permits) {
