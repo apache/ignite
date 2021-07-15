@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationTest {
-
     @Test
     public void testToStringParseStuff() {
         final String confStr = "localhost:8081,localhost:8082,localhost:8083";

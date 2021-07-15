@@ -265,8 +265,7 @@ public class ITDistributedTableTest {
             @Override public Row resolve(BinaryRow row) {
                 return new Row(SCHEMA, row);
             }
-        },
-            null);
+        }, null, null);
 
         partitionedTableView(tbl, PARTS * 10);
 

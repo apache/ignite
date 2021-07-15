@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationManagerTest {
-
     private ConfigurationManager confManager;
 
     @BeforeEach

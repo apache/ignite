@@ -17,6 +17,8 @@
 
 package org.apache.ignite.table;
 
+import org.apache.ignite.tx.Transaction;
+
 /**
  * Key-value view of table provides methods to access the data using key-value approach and
  * regarding the binary object concept.
@@ -28,4 +30,7 @@ public interface KeyValueBinaryView extends KeyValueView<Tuple, Tuple> {
      * @return Tuple builder.
      */
     TupleBuilder tupleBuilder();
+
+    /** {@inheritDoc} */
+    @Override KeyValueBinaryView withTransaction(Transaction tx);
 }

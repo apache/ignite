@@ -56,7 +56,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple val = tbl.tupleBuilder().set("val", 11L).build();
@@ -99,7 +100,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple val = tbl.tupleBuilder().set("val", 11L).build();
@@ -132,7 +134,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple val = tbl.tupleBuilder().set("val", 11L).build();
@@ -167,7 +170,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple key2 = tbl.tupleBuilder().set("id", 2L).build();
@@ -210,7 +214,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple key2 = tbl.tupleBuilder().set("id", 2L).build();
@@ -267,7 +272,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple key2 = tbl.tupleBuilder().set("id", 2L).build();
@@ -313,7 +319,8 @@ public class KVViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+        KeyValueBinaryView tbl =
+            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
 
         final Tuple key = tbl.tupleBuilder().set("id", 1L).build();
         final Tuple key2 = tbl.tupleBuilder().set("id", 2L).build();

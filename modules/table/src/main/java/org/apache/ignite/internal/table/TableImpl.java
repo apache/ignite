@@ -41,7 +41,9 @@ import org.apache.ignite.table.TupleBuilder;
 import org.apache.ignite.table.mapper.KeyMapper;
 import org.apache.ignite.table.mapper.RecordMapper;
 import org.apache.ignite.table.mapper.ValueMapper;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Table view implementation for binary objects.
@@ -58,9 +60,11 @@ public class TableImpl extends AbstractTableView implements Table {
      *
      * @param tbl Table.
      * @param schemaReg Table schema registry.
+     * @param tblMgr Table manager.
+     * @param tx The transaction.
      */
-    public TableImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr) {
-        super(tbl, schemaReg);
+    public TableImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr, @Nullable Transaction tx) {
+        super(tbl, schemaReg, tx);
 
         marsh = new TupleMarshallerImpl(schemaReg);
 
@@ -92,17 +96,22 @@ public class TableImpl extends AbstractTableView implements Table {
 
     /** {@inheritDoc} */
     @Override public <R> RecordView<R> recordView(RecordMapper<R> recMapper) {
-        return new RecordViewImpl<>(tbl, schemaReg, recMapper);
+        return new RecordViewImpl<>(tbl, schemaReg, recMapper, tx);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> KeyValueView<K, V> kvView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        return new KVViewImpl<>(tbl, schemaReg, keyMapper, valMapper);
+        return new KVViewImpl<>(tbl, schemaReg, keyMapper, valMapper, tx);
     }
 
     /** {@inheritDoc} */
     @Override public KeyValueBinaryView kvView() {
-        return new KVBinaryViewImpl(tbl, schemaReg, tblMgr);
+        return new KVBinaryViewImpl(tbl, schemaReg, tblMgr, tx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TableImpl withTransaction(Transaction tx) {
+        return new TableImpl(tbl, schemaReg, tblMgr, tx);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +125,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(keyRec, null); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.get(keyRow).thenApply(this::wrap);
+        return tbl.get(keyRow, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -136,7 +145,7 @@ public class TableImpl extends AbstractTableView implements Table {
             keys.add(keyRow);
         }
 
-        return tbl.getAll(keys).thenApply(this::wrap);
+        return tbl.getAll(keys, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -150,7 +159,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(rec);
 
-        return tbl.upsert(keyRow);
+        return tbl.upsert(keyRow, tx);
     }
 
     /** {@inheritDoc} */
@@ -170,7 +179,7 @@ public class TableImpl extends AbstractTableView implements Table {
             keys.add(keyRow);
         }
 
-        return tbl.upsertAll(keys);
+        return tbl.upsertAll(keys, tx);
     }
 
     /** {@inheritDoc} */
@@ -184,7 +193,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(rec);
 
-        return tbl.getAndUpsert(keyRow).thenApply(this::wrap);
+        return tbl.getAndUpsert(keyRow, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -198,7 +207,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(rec);
 
-        return tbl.insert(keyRow);
+        return tbl.insert(keyRow, tx);
     }
 
     /** {@inheritDoc} */
@@ -218,7 +227,7 @@ public class TableImpl extends AbstractTableView implements Table {
             keys.add(keyRow);
         }
 
-        return tbl.insertAll(keys).thenApply(this::wrap);
+        return tbl.insertAll(keys, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -232,7 +241,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(rec);
 
-        return tbl.replace(keyRow);
+        return tbl.replace(keyRow, tx);
     }
 
     /** {@inheritDoc} */
@@ -248,7 +257,7 @@ public class TableImpl extends AbstractTableView implements Table {
         final Row oldRow = marshaller().marshal(oldRec);
         final Row newRow = marshaller().marshal(newRec);
 
-        return tbl.replace(oldRow, newRow);
+        return tbl.replace(oldRow, newRow, tx);
     }
 
     /** {@inheritDoc} */
@@ -262,7 +271,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(rec);
 
-        return tbl.getAndReplace(keyRow).thenApply(this::wrap);
+        return tbl.getAndReplace(keyRow, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -276,7 +285,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row keyRow = marshaller().marshal(keyRec, null);
 
-        return tbl.delete(keyRow);
+        return tbl.delete(keyRow, tx);
     }
 
     /** {@inheritDoc} */
@@ -290,7 +299,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row row = marshaller().marshal(rec);
 
-        return tbl.deleteExact(row);
+        return tbl.deleteExact(row, tx);
     }
 
     /** {@inheritDoc} */
@@ -304,7 +313,7 @@ public class TableImpl extends AbstractTableView implements Table {
 
         final Row row = marshaller().marshal(rec);
 
-        return tbl.getAndDelete(row).thenApply(this::wrap);
+        return tbl.getAndDelete(row, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -324,7 +333,7 @@ public class TableImpl extends AbstractTableView implements Table {
             keys.add(keyRow);
         }
 
-        return tbl.deleteAll(keys).thenApply(this::wrap);
+        return tbl.deleteAll(keys, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
@@ -346,7 +355,7 @@ public class TableImpl extends AbstractTableView implements Table {
             keys.add(keyRow);
         }
 
-        return tbl.deleteAllExact(keys).thenApply(this::wrap);
+        return tbl.deleteAllExact(keys, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */

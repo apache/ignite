@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.table.mapper.Mappers;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Key-Value view of table provides methods to access table records.
@@ -379,4 +381,17 @@ public interface KeyValueView<K, V> {
         @NotNull Collection<K> keys,
         InvokeProcessor<K, V, R> proc,
         Serializable... args);
+
+    /**
+     * @return Current transaction or null if the view is not enlisted in a transaction.
+     */
+    @Nullable Transaction transaction();
+
+    /**
+     * Enslists a view into the transaction.
+     *
+     * @param tx The transaction.
+     * @return Transactional view.
+     */
+    KeyValueView<K, V> withTransaction(Transaction tx);
 }

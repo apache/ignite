@@ -21,6 +21,8 @@ import org.apache.ignite.table.mapper.KeyMapper;
 import org.apache.ignite.table.mapper.Mappers;
 import org.apache.ignite.table.mapper.RecordMapper;
 import org.apache.ignite.table.mapper.ValueMapper;
+import org.apache.ignite.tx.IgniteTransactions;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -72,6 +74,16 @@ public interface Table extends TableView<Tuple> {
      * @return Table key-value view.
      */
     KeyValueBinaryView kvView();
+
+    /**
+     * Creates a transactional view of the table.
+     *
+     * @param tx The transaction.
+     * @return Transactional table view.
+     * @see Transaction
+     * @see IgniteTransactions
+     */
+    @Override Table withTransaction(Transaction tx);
 
     /**
      * Creates record view of table for record class provided.

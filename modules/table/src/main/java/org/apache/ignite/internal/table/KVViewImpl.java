@@ -31,7 +31,9 @@ import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.mapper.KeyMapper;
 import org.apache.ignite.table.mapper.ValueMapper;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Key-value view implementation.
@@ -39,15 +41,15 @@ import org.jetbrains.annotations.NotNull;
 public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<K, V> {
     /**
      * Constructor.
-     *
      * @param tbl Table storage.
      * @param schemaReg Schema registry.
      * @param keyMapper Key class mapper.
      * @param valueMapper Value class mapper.
+     * @param tx The transaction.
      */
     public KVViewImpl(InternalTable tbl, SchemaRegistry schemaReg, KeyMapper<K> keyMapper,
-        ValueMapper<V> valueMapper) {
-        super(tbl, schemaReg);
+        ValueMapper<V> valueMapper, @Nullable Transaction tx) {
+        super(tbl, schemaReg, tx);
     }
 
     /** {@inheritDoc} */
@@ -63,7 +65,7 @@ public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<
 
         Row kRow = marsh.serialize(key, null); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.get(kRow)
+        return tbl.get(kRow, tx)
             .thenApply(this::wrap) // Binary -> schema-aware row
             .thenApply(marsh::deserializeValue); // row -> deserialized obj.
     }
@@ -221,6 +223,11 @@ public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<
         @NotNull Collection<K> keys,
         InvokeProcessor<K, V, R> proc, Serializable... args
     ) {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public KVViewImpl<K, V> withTransaction(Transaction tx) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 

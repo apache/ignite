@@ -32,6 +32,7 @@ import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.TupleBuilder;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -46,12 +47,12 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
     /**
      * Constructor.
-     *
      * @param tbl Table storage.
      * @param schemaReg Schema registry.
+     * @param tx The transaction.
      */
-    public KVBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg) {
-        super(tbl, schemaReg);
+    public KVBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg, Transaction tx) {
+        super(tbl, schemaReg, tx);
 
         marsh = new TupleMarshallerImpl(schemaReg);
 
@@ -64,8 +65,8 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
      * @param tbl Table storage.
      * @param schemaReg Schema registry.
      */
-    public KVBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr) {
-        super(tbl, schemaReg);
+    public KVBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr, Transaction tx) {
+        super(tbl, schemaReg, tx);
 
         marsh = new TupleMarshallerImpl(schemaReg);
 
@@ -83,7 +84,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row kRow = marshaller().marshal(key, null); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.get(kRow)  // Load async.
+        return tbl.get(kRow, tx)  // Load async.
             .thenApply(this::wrap) // Binary -> schema-aware row
             .thenApply(t -> t == null ? null : t.valueChunk()); // Narrow to value.
     }
@@ -97,7 +98,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     @Override public @NotNull CompletableFuture<Map<Tuple, Tuple>> getAllAsync(@NotNull Collection<Tuple> keys) {
         Objects.requireNonNull(keys);
 
-        return tbl.getAll(keys.stream().map(k -> marsh.marshal(k, null)).collect(Collectors.toList()))
+        return tbl.getAll(keys.stream().map(k -> marsh.marshal(k, null)).collect(Collectors.toList()), tx)
             .thenApply(this::wrap)
             .thenApply(ts -> ts.stream().filter(Objects::nonNull).collect(Collectors.toMap(TableRow::keyChunk, TableRow::valueChunk)));
     }
@@ -118,7 +119,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.upsert(row);
+        return tbl.upsert(row, tx);
     }
 
     /** {@inheritDoc} */
@@ -133,7 +134,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
         return tbl.upsertAll(pairs.entrySet()
             .stream()
             .map(this::marshalPair)
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList()), tx);
     }
 
     /** {@inheritDoc} */
@@ -147,7 +148,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.getAndUpsert(row)
+        return tbl.getAndUpsert(row, tx)
             .thenApply(this::wrap) // Binary -> schema-aware row
             .thenApply(t -> t == null ? null : t.valueChunk()); // Narrow to value.
     }
@@ -163,7 +164,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.insert(row);
+        return tbl.insert(row, tx);
     }
 
     /** {@inheritDoc} */
@@ -177,7 +178,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row row = marshaller().marshal(key, null); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.delete(row);
+        return tbl.delete(row, tx);
     }
 
     /** {@inheritDoc} */
@@ -192,7 +193,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.deleteExact(row);
+        return tbl.deleteExact(row, tx);
     }
 
     /** {@inheritDoc} */
@@ -206,7 +207,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     @Override public @NotNull CompletableFuture<Collection<Tuple>> removeAllAsync(@NotNull Collection<Tuple> keys) {
         Objects.requireNonNull(keys);
 
-        return tbl.deleteAll(keys.stream().map(k -> marsh.marshal(k, null)).collect(Collectors.toList()))
+        return tbl.deleteAll(keys.stream().map(k -> marsh.marshal(k, null)).collect(Collectors.toList()), tx)
             .thenApply(this::wrap)
             .thenApply(t -> t.stream().filter(Objects::nonNull).map(TableRow::valueChunk).collect(Collectors.toList()));
     }
@@ -222,7 +223,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     @Override public @NotNull CompletableFuture<Tuple> getAndRemoveAsync(@NotNull Tuple key) {
         Objects.requireNonNull(key);
 
-        return tbl.getAndDelete(marsh.marshal(key, null))
+        return tbl.getAndDelete(marsh.marshal(key, null), tx)
             .thenApply(this::wrap)
             .thenApply(t -> t == null ? null : t.valueChunk());
     }
@@ -238,7 +239,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.replace(row);
+        return tbl.replace(row, tx);
     }
 
     /** {@inheritDoc} */
@@ -253,7 +254,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
         Row oldRow = marshaller().marshal(key, oldVal); // Convert to portable format to pass TX/storage layer.
         Row newRow = marshaller().marshal(key, newVal); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.replace(oldRow, newRow);
+        return tbl.replace(oldRow, newRow, tx);
     }
 
     /** {@inheritDoc} */
@@ -265,7 +266,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     @Override public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
-        return tbl.getAndReplace(marsh.marshal(key, val))
+        return tbl.getAndReplace(marsh.marshal(key, val), tx)
             .thenApply(this::wrap)
             .thenApply(t -> t == null ? null : t.valueChunk());
     }
@@ -316,6 +317,11 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
         }
         
         throw new IllegalArgumentException("Unknown schema type: " + tbl.schemaMode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public KVBinaryViewImpl withTransaction(Transaction tx) {
+        return new KVBinaryViewImpl(tbl, schemaReg, tx);
     }
 
     /**

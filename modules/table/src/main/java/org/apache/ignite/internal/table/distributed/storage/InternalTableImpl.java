@@ -45,6 +45,7 @@ import org.apache.ignite.internal.table.distributed.command.response.MultiRowsRe
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.schema.SchemaMode;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -107,13 +108,14 @@ public class InternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<BinaryRow> get(BinaryRow keyRow) {
+    @Override public CompletableFuture<BinaryRow> get(BinaryRow keyRow, Transaction tx) {
         return partitionMap.get(partId(keyRow)).<SingleRowResponse>run(new GetCommand(keyRow))
             .thenApply(SingleRowResponse::getValue);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows) {
+    @Override public CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows,
+        Transaction tx) {
         HashMap<Integer, HashSet<BinaryRow>> keyRowsByPartition = new HashMap<>();
 
         for (BinaryRow keyRow : keyRows) {
@@ -140,12 +142,12 @@ public class InternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> upsert(BinaryRow row) {
+    @Override public CompletableFuture<Void> upsert(BinaryRow row, Transaction tx) {
         return partitionMap.get(partId(row)).run(new UpsertCommand(row));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows) {
+    @Override public CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows, Transaction tx) {
         HashMap<Integer, HashSet<BinaryRow>> keyRowsByPartition = new HashMap<>();
 
         for (BinaryRow keyRow : rows) {
@@ -167,18 +169,18 @@ public class InternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<BinaryRow> getAndUpsert(BinaryRow row) {
+    @Override public CompletableFuture<BinaryRow> getAndUpsert(BinaryRow row, Transaction tx) {
         return partitionMap.get(partId(row)).<SingleRowResponse>run(new GetAndUpsertCommand(row))
             .thenApply(SingleRowResponse::getValue);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> insert(BinaryRow row) {
+    @Override public CompletableFuture<Boolean> insert(BinaryRow row, Transaction tx) {
         return partitionMap.get(partId(row)).run(new InsertCommand(row));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows) {
+    @Override public CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows, Transaction tx) {
         HashMap<Integer, HashSet<BinaryRow>> keyRowsByPartition = new HashMap<>();
 
         for (BinaryRow keyRow : rows) {
@@ -205,39 +207,41 @@ public class InternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replace(BinaryRow row) {
+    @Override public CompletableFuture<Boolean> replace(BinaryRow row, Transaction tx) {
         return partitionMap.get(partId(row)).<Boolean>run(new ReplaceIfExistCommand(row));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow) {
+    @Override public CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow,
+        Transaction tx) {
         return partitionMap.get(partId(oldRow)).run(new ReplaceCommand(oldRow, newRow));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<BinaryRow> getAndReplace(BinaryRow row) {
+    @Override public CompletableFuture<BinaryRow> getAndReplace(BinaryRow row, Transaction tx) {
         return partitionMap.get(partId(row)).<SingleRowResponse>run(new ReplaceIfExistCommand(row))
             .thenApply(SingleRowResponse::getValue);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> delete(BinaryRow keyRow) {
+    @Override public CompletableFuture<Boolean> delete(BinaryRow keyRow, Transaction tx) {
         return partitionMap.get(partId(keyRow)).run(new DeleteCommand(keyRow));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> deleteExact(BinaryRow oldRow) {
+    @Override public CompletableFuture<Boolean> deleteExact(BinaryRow oldRow, Transaction tx) {
         return partitionMap.get(partId(oldRow)).<Boolean>run(new DeleteExactCommand(oldRow));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<BinaryRow> getAndDelete(BinaryRow row) {
+    @Override public CompletableFuture<BinaryRow> getAndDelete(BinaryRow row, Transaction tx) {
         return partitionMap.get(partId(row)).<SingleRowResponse>run(new GetAndDeleteCommand(row))
             .thenApply(SingleRowResponse::getValue);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows) {
+    @Override public CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows,
+        Transaction tx) {
         HashMap<Integer, HashSet<BinaryRow>> keyRowsByPartition = new HashMap<>();
 
         for (BinaryRow keyRow : rows) {
@@ -264,7 +268,8 @@ public class InternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<BinaryRow>> deleteAllExact(Collection<BinaryRow> rows) {
+    @Override public CompletableFuture<Collection<BinaryRow>> deleteAllExact(Collection<BinaryRow> rows,
+        Transaction tx) {
         HashMap<Integer, HashSet<BinaryRow>> keyRowsByPartition = new HashMap<>();
 
         for (BinaryRow keyRow : rows) {

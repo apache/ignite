@@ -43,7 +43,7 @@ public class Example {
      * @return Table implementation.
      */
     private static List<Table> tableFactory() {
-        return Collections.singletonList(new TableImpl(new DummyInternalTableImpl(), null, null));
+        return Collections.singletonList(new TableImpl(new DummyInternalTableImpl(), null, null, null));
     }
 
     /**

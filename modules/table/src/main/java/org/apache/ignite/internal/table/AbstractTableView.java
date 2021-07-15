@@ -21,6 +21,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.tx.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for Table views.
@@ -32,15 +34,33 @@ abstract class AbstractTableView {
     /** Schema registry. */
     protected final SchemaRegistry schemaReg;
 
+    /** The transaction */
+    protected final @Nullable Transaction tx;
+
     /**
      * Constructor
      * @param tbl Internal table.
      * @param schemaReg Schema registry.
+     * @param tx The transaction.
      */
-    protected AbstractTableView(InternalTable tbl, SchemaRegistry schemaReg) {
+    protected AbstractTableView(InternalTable tbl, SchemaRegistry schemaReg, @Nullable Transaction tx) {
         this.tbl = tbl;
         this.schemaReg = schemaReg;
+        this.tx = tx;
     }
+
+    /**
+     * @return Current transaction.
+     */
+    public @Nullable Transaction transaction() {
+        return tx;
+    }
+
+    /**
+     * @param tx The transaction.
+     * @return Transactional view.
+     */
+    public abstract AbstractTableView withTransaction(Transaction tx);
 
     /**
      * Waits for operation completion.

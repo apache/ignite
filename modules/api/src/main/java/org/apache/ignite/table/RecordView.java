@@ -19,6 +19,7 @@ package org.apache.ignite.table;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.table.mapper.Mappers;
+import org.apache.ignite.tx.Transaction;
 
 /**
  * Record view of table provides methods to access table records.
@@ -52,4 +53,7 @@ public interface RecordView<R> extends TableView<R> {
      * @return Future representing pending completion of the operation.
      */
     CompletableFuture<R> fillAsync(R recObjToFill);
+
+    /** {@inheritDoc} */
+    @Override RecordView<R> withTransaction(Transaction tx);
 }

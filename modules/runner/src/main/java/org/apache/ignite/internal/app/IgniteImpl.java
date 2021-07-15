@@ -20,6 +20,7 @@ package org.apache.ignite.internal.app;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.tx.IgniteTransactions;
 
 /**
  * Ignite internal implementation.
@@ -43,6 +44,11 @@ public class IgniteImpl implements Ignite {
     /** {@inheritDoc} */
     @Override public IgniteTables tables() {
         return distributedTableManager;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTransactions transactions() {
+        return null;
     }
 
     /** {@inheritDoc} */
