@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -5428,22 +5427,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Restoring the state of partitions for cache groups.
-     *
-     * @param forGroups Cache groups.
-     * @param partStates Partition states.
-     * @param afterStatesRestoredForGrp Callback that is called after restoring states for all partitions in group.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void restorePartitionStates(
-        Collection<CacheGroupContext> forGroups,
-        Map<GroupPartitionId, Integer> partStates,
-        Consumer<CacheGroupContext> afterStatesRestoredForGrp
-    ) throws IgniteCheckedException {
-        recovery.restorePartitionStates(forGroups, partStates, afterStatesRestoredForGrp);
-    }
-
-    /**
      * Recovery lifecycle for caches.
      */
     private class CacheRecoveryLifecycle implements MetastorageLifecycleListener, DatabaseLifecycleListener {
@@ -5515,7 +5498,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ) throws IgniteCheckedException {
             Collection<CacheGroupContext> cacheGrps = cacheGroups();
 
-            restorePartitionStates(cacheGrps, restoreState.partitionRecoveryStates(), null);
+            restorePartitionStates(cacheGrps, restoreState.partitionRecoveryStates());
 
             // Start warm-up only after restoring memory storage, but before starting GridDiscoveryManager.
             if (!cacheGrps.isEmpty())
@@ -5527,13 +5510,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          *
          * @param forGroups Cache groups.
          * @param partStates Partition states.
-         * @param afterStatesRestoredForGrp Callback that is called after restoring states for all partitions in group.
          * @throws IgniteCheckedException If failed.
          */
         private void restorePartitionStates(
             Collection<CacheGroupContext> forGroups,
-            Map<GroupPartitionId, Integer> partStates,
-            Consumer<CacheGroupContext> afterStatesRestoredForGrp
+            Map<GroupPartitionId, Integer> partStates
         ) throws IgniteCheckedException {
             long startRestorePart = U.currentTimeMillis();
 
@@ -5619,12 +5600,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             AtomicInteger completedCntr = grpTuple.get2();
 
-                            if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions()) {
+                            if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions())
                                 grpCtx.offheap().confirmPartitionStatesRestored();
-
-                                if (afterStatesRestoredForGrp != null)
-                                    afterStatesRestoredForGrp.accept(grpCtx);
-                            }
                         }
                     }
                 });
