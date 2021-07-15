@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -44,22 +45,22 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.WRITE_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.WRITE_UNLOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.pageIdToString;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper.DATE_FMT;
 import static org.apache.ignite.internal.util.IgniteUtils.hexInt;
 import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
 
 /** */
 class ToStringDumpProcessor {
-
     /** */
-    private final IntFunction<String> strucutreIdMapFunc;
+    private final IntFunction<String> structureIdMapFunc;
 
     /** */
     private final StringBuilder sb;
 
     /** */
-    ToStringDumpProcessor(StringBuilder sb, IntFunction<String> strucutreIdMapFunc) {
+    ToStringDumpProcessor(StringBuilder sb, IntFunction<String> structureIdMapFunc) {
         this.sb = sb;
-        this.strucutreIdMapFunc = strucutreIdMapFunc;
+        this.structureIdMapFunc = structureIdMapFunc;
     }
 
     /** Helper class for track lock/unlock count. */
@@ -101,7 +102,7 @@ class ToStringDumpProcessor {
         int structureId = entry.structureId;
 
         return operationToString(op) + " pageId=" + pageId
-            + ", structureId=" + strucutreIdMapFunc.apply(structureId)
+            + ", structureId=" + structureIdMapFunc.apply(structureId)
             + " [pageIdHex=" + hexLong(pageId)
             + ", partId=" + partId(pageId) + ", pageIdx=" + pageIndex(pageId)
             + ", flags=" + hexInt(flag(pageId)) + "]";
@@ -201,7 +202,7 @@ class ToStringDumpProcessor {
 
         if (nextOpPageId != 0) {
             logLocksStr.a("-> " + operationToString(nextOp) + " nextOpPageId=" + nextOpPageId +
-                ", nextOpStructureId=" + strucutreIdMapFunc.apply(nextOpStructureId)
+                ", nextOpStructureId=" + structureIdMapFunc.apply(nextOpStructureId)
                 + " [pageIdHex=" + hexLong(nextOpPageId)
                 + ", partId=" + partId(nextOpPageId) + ", pageIdx=" + pageIndex(nextOpPageId)
                 + ", flags=" + hexInt(flag(nextOpPageId)) + "]" + U.nl());
@@ -219,7 +220,7 @@ class ToStringDumpProcessor {
 
         sb.append("Locked pages log: ").append(snapshot.name)
             .append(" time=(").append(snapshot.time).append(", ")
-            .append(ToStringDumpHelper.DATE_FMT.format(new java.util.Date(snapshot.time)))
+            .append(DATE_FMT.format(Instant.ofEpochMilli(snapshot.time)))
             .append(")")
             .append(U.nl());
 
@@ -240,7 +241,7 @@ class ToStringDumpProcessor {
 
         if (nextOpPageId != 0)
             stackStr.a("\t-> " + operationToString(snapshot.nextOp) +
-                " structureId=" + strucutreIdMapFunc.apply(snapshot.nextOpStructureId) +
+                " structureId=" + structureIdMapFunc.apply(snapshot.nextOpStructureId) +
                 " " + pageIdToString(nextOpPageId) + U.nl());
 
         for (int itemIdx = headIdx - 1; itemIdx >= 0; itemIdx--) {
@@ -262,7 +263,7 @@ class ToStringDumpProcessor {
                 int structureId = pageIdLocksStack.getStructureId(itemIdx);
 
                 stackStr.a("\t" + operationToString(op) +
-                    " structureId=" + strucutreIdMapFunc.apply(structureId) +
+                    " structureId=" + structureIdMapFunc.apply(structureId) +
                     " " + pageIdToString(pageId) + U.nl());
             }
 
@@ -292,7 +293,7 @@ class ToStringDumpProcessor {
 
         sb.append("Locked pages stack: ").append(snapshot.name)
             .append(" time=(").append(snapshot.time).append(", ")
-            .append(ToStringDumpHelper.DATE_FMT.format(new java.util.Date(snapshot.time)))
+            .append(DATE_FMT.format(Instant.ofEpochMilli(snapshot.time)))
             .append(")")
             .append(U.nl());
 

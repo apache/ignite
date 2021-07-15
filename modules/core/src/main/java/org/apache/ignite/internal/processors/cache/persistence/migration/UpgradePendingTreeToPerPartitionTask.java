@@ -151,7 +151,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 pendingRootPage.pageId().pageId(),
                 ((GridCacheOffheapManager)grp.offheap()).reuseListForIndex(null),
                 false,
-                null,
+                grp.shared().diagnostic().pageLockTracker(),
                 PageIdAllocator.FLAG_IDX
             );
         }
