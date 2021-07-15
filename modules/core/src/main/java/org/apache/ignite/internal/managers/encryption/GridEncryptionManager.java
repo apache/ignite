@@ -993,8 +993,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     if (log.isInfoEnabled())
                         log.info("Master key name loaded from metastrore [masterKeyName=" + masterKeyName + ']');
 
-                    System.err.println("TEST | GridEncryptionManager::readMetastore, found master key " + masterKeyName);
-
                     getSpi().setMasterKeyName(masterKeyName);
                 }
             }

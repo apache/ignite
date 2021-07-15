@@ -63,7 +63,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -478,21 +477,13 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testNodeFailDuringRestore() throws Exception {
-//        startGridsWithCache(2, 1024, valueBuilder(), dfltCacheCfg);
-//
-//        stopAllGrids();
-//
-//        startGrids(2);
-//
-//        stopAllGrids();
+        startGridsWithSnapshot(4, CACHE_KEYS_RANGE);
 
-        startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
-
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
 
         IgniteFuture<Void> fut = waitForBlockOnRestore(spi, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, DEFAULT_CACHE_NAME);
 
-        IgniteInternalFuture<?> fut0 = runAsync(() -> stopGrid(1, true));
+        IgniteInternalFuture<?> fut0 = runAsync(() -> stopGrid(3, true));
 
         GridTestUtils.assertThrowsAnyCause(
             log,
@@ -509,7 +500,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> startGrid(1),
+            () -> startGrid(3),
             encryption ? CacheInvalidStateException.class : IgniteSpiException.class,
             "to add the node to cluster - remove directories with the caches"
         );

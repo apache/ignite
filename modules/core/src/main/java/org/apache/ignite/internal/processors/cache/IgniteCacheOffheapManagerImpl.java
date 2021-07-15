@@ -44,6 +44,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
@@ -198,8 +199,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         if (grp.affinityNode()) {
             if (grp.config().isEncryptionEnabled() && ctx.kernalContext().encryption().getActiveKey(grp.groupId()) == null &&
-                ctx.pageStore().exists(grp.groupId(), INDEX_PARTITION)) {
-                throw new CacheInvalidStateException("Failed to start encrypted cache group " + grp.groupId() + ". No encryption key " +
+                ctx.pageStore().exists(grp.groupId(), PageIdAllocator.INDEX_PARTITION)) {
+                throw new CacheInvalidStateException("Failed to start encrypted cache group '" + grp.name() + "'. No encryption key " +
                     "found. Make sure the caches still exist in the cluster and check the encryption configuration. If caches do not " +
                     "exist, to add the node to cluster - remove directories with the caches.");
             }

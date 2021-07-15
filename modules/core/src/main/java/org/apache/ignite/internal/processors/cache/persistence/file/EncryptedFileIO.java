@@ -23,7 +23,6 @@ import java.nio.MappedByteBuffer;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -213,22 +212,11 @@ public class EncryptedFileIO implements FileIO {
     private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
         assert position() >= headerSize;
 
-        encUtil.encrypt(srcBuf, res, grpKey(groupId, null));
-    }
+        GroupKey key = keyProvider.getActiveKey(groupId);
 
-    /**
-     * Finds encryption key for cache group {@code grpId}.
-     *
-     * @param grpId Cache group id.
-     * @param keyId Key id. If {@code null}, the active key is used.
-     * @return Encryption key if found.
-     */
-    private GroupKey grpKey(int grpId, @Nullable Integer keyId) {
-        GroupKey key = keyId == null ? keyProvider.getActiveKey(grpId) : keyProvider.groupKey(grpId, keyId);
+        assert key != null : "No encryption key found for cache group " + groupId;
 
-        assert key != null : "No encryption key found for cache group " + grpId + " by key id " + keyId;
-
-        return key;
+        encUtil.encrypt(srcBuf, res, key);
     }
 
     /**
@@ -251,7 +239,11 @@ public class EncryptedFileIO implements FileIO {
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         int keyId = encrypted.get(encryptedDataSize() + 4 /* CRC size. */) & 0xff;
 
-        encUtil.decrypt(encrypted, destBuf, grpKey(groupId, keyId));
+        GroupKey key = keyProvider.groupKey(groupId, keyId);
+
+        assert key != null : "No encryption key found for cache group " + groupId + " by key id " + keyId;
+
+        encUtil.decrypt(encrypted, destBuf, key);
     }
 
     /**
