@@ -1,0 +1,9 @@
+# name: test/sql/function/test/test_string.test
+# description: Just simple test to check support of INITCAP function
+# group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15111
+
+query T
+SELECT initcap(null)
+----
+NULL

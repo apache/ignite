@@ -8,6 +8,11 @@ SELECT to_base64(NULL)
 NULL
 
 query I
+SELECT to_base64('GRIDGAIN')
+----
+R1JJREdBSU4=
+
+query I
 select from_base64('AAAA');
 ----
 000000

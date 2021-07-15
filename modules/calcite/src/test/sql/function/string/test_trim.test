@@ -20,6 +20,12 @@ select TRIM(''), TRIM('Neither'), TRIM(' Leading'), TRIM('Trailing   '), TRIM(' 
 ----
 (empty)	Neither	Leading	Trailing	Both	NULL	(empty)
 
+# test trim with flags
+query TTTTTTT
+select trim(leading ' ' from '  Google.com  '), trim(trailing ' ' from '  Google.com  '), trim(both ' ' from '  Google.com  '), trim(' ' from '  Google.com  '), trim('   Google.com   '), trim(leading '0' from '000123'), trim(trailing '1' from 'Number1')
+----
+Google.com  	  Google.com	Google.com	Google.com	Google.com	123	Number
+
 # test on tables
 statement ok
 CREATE TABLE strings(id INTEGER, a VARCHAR, b VARCHAR)

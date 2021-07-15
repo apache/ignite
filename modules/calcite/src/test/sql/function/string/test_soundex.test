@@ -1,0 +1,28 @@
+# name: test/sql/function/string/test_soundex.test
+# description: Just simple test to check support of SOUNDEX function.
+# group: [string]
+
+query T
+SELECT soundex('Robert')
+----
+R163
+
+query T
+SELECT soundex('Rupert')
+----
+R163
+
+query T
+SELECT soundex('Rubin')
+----
+R150
+
+query T
+SELECT soundex('Ashcroft')
+----
+A261
+
+query T
+SELECT soundex(null)
+----
+NULL

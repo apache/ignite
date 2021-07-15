@@ -5,6 +5,11 @@
 # see https://www.postgresql.org/docs/10/functions-math.html
 
 query R
+select pi
+----
+3.141592653589793
+
+query R
 select abs(-17.4)
 ----
 17.400000
