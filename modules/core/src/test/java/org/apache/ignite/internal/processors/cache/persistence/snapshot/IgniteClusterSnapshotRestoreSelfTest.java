@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -62,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -75,6 +77,12 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Snapshot restore tests.
  */
 public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Encryption={0}")
+    public static Iterable<Boolean> testParams() {
+        return Arrays.asList(true);
+    }
+
     /** Type name used for binary and SQL. */
     private static final String TYPE_NAME = "CustomType";
 
@@ -476,13 +484,21 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testNodeFailDuringRestore() throws Exception {
-        startGridsWithSnapshot(4, CACHE_KEYS_RANGE);
+//        startGridsWithCache(2, 1024, valueBuilder(), dfltCacheCfg);
+//
+//        stopAllGrids();
+//
+//        startGrids(2);
+//
+//        stopAllGrids();
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
+        startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
         IgniteFuture<Void> fut = waitForBlockOnRestore(spi, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, DEFAULT_CACHE_NAME);
 
-        IgniteInternalFuture<?> fut0 = runAsync(() -> stopGrid(3, true));
+        IgniteInternalFuture<?> fut0 = runAsync(() -> stopGrid(1, true));
 
         GridTestUtils.assertThrowsAnyCause(
             log,
@@ -499,8 +515,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> startGrid(3),
-            encryption ? IgniteCheckedException.class : IgniteSpiException.class,
+            () -> startGrid(1),
+            encryption ? CacheInvalidStateException.class : IgniteSpiException.class,
             "to add the node to cluster - remove directories with the caches"
         );
     }

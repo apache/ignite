@@ -200,6 +200,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             ctx.database().checkpointReadLock();
 
             try {
+                if (ctx.pageStore().exists(grp.groupId(), INDEX_PARTITION) &&
+                    ctx.kernalContext().encryption().getActiveKey(grp.groupId()) == null) {
+                    throw new CacheInvalidStateException("Failed to start encrypted cache group " + grp.groupId() + ". No encryption key " +
+                        "found. Make sure the caches still exist in the cluster and check the encryption configuration. If caches do not " +
+                        "exist, to add the node to cluster - remove directories with the caches.");
+                }
+
                 initDataStructures();
 
                 if (grp.isLocal())

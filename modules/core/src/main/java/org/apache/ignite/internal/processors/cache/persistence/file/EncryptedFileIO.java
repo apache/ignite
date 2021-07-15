@@ -213,12 +213,7 @@ public class EncryptedFileIO implements FileIO {
     private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
         assert position() >= headerSize;
 
-        try {
-            encUtil.encrypt(srcBuf, res, grpKey(groupId, null));
-        }
-        catch (EncryptionKeyNotFoundException e) {
-            throw new IOException("Failed to encrypt data for cache group " + groupId + '.', e);
-        }
+        encUtil.encrypt(srcBuf, res, grpKey(groupId, null));
     }
 
     /**
@@ -227,13 +222,11 @@ public class EncryptedFileIO implements FileIO {
      * @param grpId Cache group id.
      * @param keyId Key id. If {@code null}, the active key is used.
      * @return Encryption key if found.
-     * @throws {@code EncryptionKeyNotFoundException} if the key isn't found.
      */
-    private GroupKey grpKey(int grpId, @Nullable Integer keyId) throws EncryptionKeyNotFoundException {
+    private GroupKey grpKey(int grpId, @Nullable Integer keyId) {
         GroupKey key = keyId == null ? keyProvider.getActiveKey(grpId) : keyProvider.groupKey(grpId, keyId);
 
-        if (key == null)
-            throw new EncryptionKeyNotFoundException(grpId, keyId);
+        assert key != null : "No encryption key found for cache group " + grpId + " by key id " + keyId;
 
         return key;
     }
@@ -258,12 +251,7 @@ public class EncryptedFileIO implements FileIO {
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         int keyId = encrypted.get(encryptedDataSize() + 4 /* CRC size. */) & 0xff;
 
-        try {
-            encUtil.decrypt(encrypted, destBuf, grpKey(groupId, keyId));
-        }
-        catch (EncryptionKeyNotFoundException e) {
-            throw new IOException("Faled to decrypt data for cache group " + groupId + '.', e);
-        }
+        encUtil.decrypt(encrypted, destBuf, grpKey(groupId, keyId));
     }
 
     /**

@@ -836,8 +836,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 dataRegion(METASTORE_DATA_REGION_NAME).pageMemory().start();
 
-                performBinaryMemoryRestore(status, onlyMetastorageGroup(), physicalRecords(), false);
-
                 metaStorage = createMetastorage(true);
 
                 applyLogicalUpdates(status, onlyMetastorageGroup(), onlyMetastorageAndEncryptionRecords(), true);
@@ -847,6 +845,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkpointManager.initializeStorage();
 
                 registerSystemView();
+
+                performBinaryMemoryRestore(status, onlyMetastorageGroup(), physicalRecords(), false);
 
                 notifyMetastorageReadyForRead();
 

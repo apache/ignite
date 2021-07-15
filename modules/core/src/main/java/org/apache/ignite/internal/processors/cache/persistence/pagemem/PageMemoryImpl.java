@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.cache.persistence.file.EncryptionKeyNotFoundException;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -87,7 +86,6 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -934,16 +932,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     dataRegionMetrics.onPageRead();
-                }
-                catch (Exception e) {
-                    // Push more details above. 'Key not found' or 'unable to read/decrypt' is not obvious and do not suggests what to do.
-                    if (X.hasCause(e, EncryptionKeyNotFoundException.class)) {
-                        throw new IgniteCheckedException("Failed to start encrypted cache group " + grpId + ". No encryption key found. " +
-                            "Make sure the caches still exist in the cluster and check the encryption configuration. If caches do not " +
-                            "exist, to add the node to cluster - remove directories with the caches.", e);
-                    }
-
-                    throw e;
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
