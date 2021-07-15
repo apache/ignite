@@ -17,88 +17,66 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerDump;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
+import org.junit.After;
 import org.junit.Test;
 
-import static java.nio.file.Paths.get;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public class ToFileDumpProcessorTest extends GridCommonAbstractTest {
+public class ToFileDumpProcessorTest {
     /** */
-    private File file;
+    private Path file;
 
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cleanFile();
-    }
-
-    /**
-     * Clean files.
-     */
-    public void cleanFile() {
-        if (file != null && file.exists())
-            file.delete();
+    /** */
+    @After
+    public void afterTest() throws IOException {
+        if (file != null)
+            Files.delete(file);
     }
 
     /** */
     @Test
     public void toFileDump() throws Exception {
-        String igHome = U.defaultWorkDirectory();
+        Path homeDir = Paths.get(U.defaultWorkDirectory());
 
-        System.out.println("IGNITE_HOME:" + igHome);
+        System.out.println("IGNITE_HOME:" + homeDir);
 
         SharedPageLockTracker pageLockTracker = new SharedPageLockTracker();
 
-        pageLockTracker.onBeforeReadLock(1, 2, 3);
-        pageLockTracker.onReadLock(1, 2, 3, 4);
+        try (PageLockListener tracker = pageLockTracker.registerStructure("dummy")) {
+            tracker.onBeforeReadLock(1, 2, 3);
+
+            tracker.onReadLock(1, 2, 3, 4);
+        }
 
         SharedPageLockTrackerDump pageLockDump = pageLockTracker.dump();
 
-        Assert.assertNotNull(pageLockDump);
+        assertNotNull(pageLockDump);
 
-        String expDumpStr = ToStringDumpHelper.toStringDump(pageLockDump);
+        file = Paths.get(ToFileDumpProcessor.toFileDump(pageLockDump, homeDir, "test"));
 
-        String filePath = ToFileDumpProcessor.toFileDump(pageLockDump, file = new File(igHome), "test");
+        System.out.println("Dump saved:" + file);
 
-        System.out.println("Dump saved:" + filePath);
-
-        boolean found = false;
-
-        for (File file : file.listFiles()) {
-            if (file.getAbsolutePath().equals(filePath)) {
-                found = true;
-
-                break;
-            }
+        try (Stream<Path> stream = Files.list(homeDir)) {
+            assertTrue(stream.map(Path::toAbsolutePath).anyMatch(file::equals));
         }
 
-        Assert.assertTrue(found);
+        String actDumpStr = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
 
-        String actDumpStr;
-
-        try (FileChannel ch = FileChannel.open(get(filePath), StandardOpenOption.READ)) {
-            long size = ch.size();
-
-            ByteBuffer buf = ByteBuffer.allocate((int)size);
-
-            while (buf.position() != buf.capacity())
-                ch.read(buf);
-
-            actDumpStr = new String(buf.array());
-        }
-
-        Assert.assertEquals(expDumpStr, actDumpStr);
+        assertEquals(ToStringDumpHelper.toStringDump(pageLockDump), actDumpStr);
     }
 }
