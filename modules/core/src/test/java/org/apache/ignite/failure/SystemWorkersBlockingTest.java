@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -135,6 +136,7 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch blockingSectionLatch = new CountDownLatch(1);
+        CountDownLatch endLatch = new CountDownLatch(1);
 
         GridWorker worker = new GridWorker(ignite.name(), "test-worker", log) {
             @Override protected void body() {
@@ -150,6 +152,8 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
                 }
                 finally {
                     blockingSectionEnd();
+
+                    endLatch.countDown();
                 }
             }
         };
@@ -167,7 +171,11 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
 
         blockingSectionLatch.countDown();
 
+        endLatch.await();
+
         assertNull(failureError.get());
+
+        assertTrue(worker.heartbeatTs() <= U.currentTimeMillis());
     }
 
     /**
