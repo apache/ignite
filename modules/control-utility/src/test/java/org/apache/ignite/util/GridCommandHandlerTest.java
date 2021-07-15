@@ -104,7 +104,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
-import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -925,6 +925,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testSetState() throws Exception {
         Ignite ignite = startGrids(2);
 
+        AtomicInteger globStateMsgCntr = new AtomicInteger();
+
+        for (Ignite grid : G.allGrids())
+            ((IgniteEx)grid).context().discovery().setCustomEventListener(ChangeGlobalStateFinishMessage.class,
+                ((topVer, snd, msg) -> globStateMsgCntr.incrementAndGet()));
+
         ignite.cluster().state(ACTIVE);
 
         ignite.createCache(ClusterStateTestUtils.partitionedCache(PARTITIONED_CACHE_NAME));
@@ -937,44 +943,49 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(INACTIVE, ignite.cluster().state());
 
         // INACTIVE -> INACTIVE.
-        setState(ignite, INACTIVE, "INACTIVE", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, INACTIVE, "INACTIVE", globStateMsgCntr, PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
 
         // INACTIVE -> ACTIVE_READ_ONLY.
-        setState(ignite, ACTIVE_READ_ONLY, "ACTIVE_READ_ONLY", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, ACTIVE_READ_ONLY, "ACTIVE_READ_ONLY", globStateMsgCntr, PARTITIONED_CACHE_NAME,
+            REPLICATED_CACHE_NAME);
 
         // ACTIVE_READ_ONLY -> ACTIVE_READ_ONLY.
-        setState(ignite, ACTIVE_READ_ONLY, "ACTIVE_READ_ONLY", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, ACTIVE_READ_ONLY, "ACTIVE_READ_ONLY", globStateMsgCntr, PARTITIONED_CACHE_NAME,
+            REPLICATED_CACHE_NAME);
 
         // ACTIVE_READ_ONLY -> ACTIVE.
-        setState(ignite, ACTIVE, "ACTIVE", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, ACTIVE, "ACTIVE", globStateMsgCntr, PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
 
         // ACTIVE -> ACTIVE.
-        setState(ignite, ACTIVE, "ACTIVE", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, ACTIVE, "ACTIVE", globStateMsgCntr, PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
 
         // ACTIVE -> INACTIVE.
-        setState(ignite, INACTIVE, "INACTIVE", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, INACTIVE, "INACTIVE", globStateMsgCntr, PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
 
         // INACTIVE -> ACTIVE.
-        setState(ignite, ACTIVE, "ACTIVE", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, ACTIVE, "ACTIVE", globStateMsgCntr, PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
 
         // ACTIVE -> ACTIVE_READ_ONLY.
-        setState(ignite, ACTIVE_READ_ONLY, "ACTIVE_READ_ONLY", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, ACTIVE_READ_ONLY, "ACTIVE_READ_ONLY", globStateMsgCntr, PARTITIONED_CACHE_NAME,
+            REPLICATED_CACHE_NAME);
 
         // ACTIVE_READ_ONLY -> INACTIVE.
-        setState(ignite, INACTIVE, "INACTIVE", PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
+        setState(ignite, INACTIVE, "INACTIVE", globStateMsgCntr, PARTITIONED_CACHE_NAME, REPLICATED_CACHE_NAME);
     }
 
     /** */
-    private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames)
-        throws IgniteInterruptedCheckedException {
+    private void setState(
+        Ignite ignite,
+        ClusterState state,
+        String strState,
+        AtomicInteger globStateMsgCntr,
+        String... cacheNames
+    ) throws IgniteInterruptedCheckedException {
         log.info(ignite.cluster().state() + " -> " + state);
 
         ClusterState beforeState = ignite.cluster().state();
 
-        AtomicBoolean receivedGlobalState = new AtomicBoolean();
-
-        ((IgniteEx)ignite).context().discovery().setCustomEventListener(ChangeGlobalStateMessage.class,
-            ((topVer, snd, msg) -> receivedGlobalState.set(true)));
+        globStateMsgCntr.set(0);
 
         assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
 
@@ -986,8 +997,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             .mapToObj(this::grid)
             .collect(Collectors.toList());
 
+        int size = G.allGrids().size();
+
         if (beforeState != state)
-            waitForCondition(receivedGlobalState::get, getTestTimeout());
+            waitForCondition(() -> globStateMsgCntr.get() == size, getTestTimeout());
 
         ClusterStateTestUtils.putSomeDataAndCheck(log, nodes, cacheNames);
 
