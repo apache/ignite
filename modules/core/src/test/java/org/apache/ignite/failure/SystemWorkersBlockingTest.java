@@ -127,6 +127,50 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlockingSection() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch blockingSectionLatch = new CountDownLatch(1);
+
+        GridWorker worker = new GridWorker(ignite.name(), "test-worker", log) {
+            @Override protected void body() {
+                blockingSectionBegin();
+
+                try {
+                    startLatch.countDown();
+
+                    blockingSectionLatch.await();
+                }
+                catch (Exception ignore) {
+                    // No-op.
+                }
+                finally {
+                    blockingSectionEnd();
+                }
+            }
+        };
+
+        runWorker(worker);
+
+        ignite.context().workersRegistry().register(worker);
+
+        startLatch.await();
+
+        // Check that concurrent heartbeat update doesn't affect the blocking section.
+        worker.updateHeartbeat();
+
+        Thread.sleep(2 * SYSTEM_WORKER_BLOCKED_TIMEOUT);
+
+        blockingSectionLatch.countDown();
+
+        assertNull(failureError.get());
+    }
+
+    /**
      * Tests that repeatedly calling {@link WorkersRegistry#onIdle} in single registered {@link GridWorker}
      * doesn't lead to infinite loop.
      *

@@ -101,7 +101,18 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
             try {
                 GridFutureAdapter<?> res = new GridFutureAdapter<>();
 
-                res.listen(fut -> heartbeatUpdater.updateHeartbeat());
+                res.listen(fut -> {
+                    // In some conditions checkpointer can proceed to waitCheckpointEvent() concurrently before
+                    // execution of this listener. To avoid false-positive failure handler trigger we should update
+                    // heartbeat only if we are currently not in blocking section.
+                    if (heartbeatUpdater.heartbeatTs() < U.currentTimeMillis()) {
+                        synchronized (heartbeatUpdater) {
+                            // Double check under the lock.
+                            if (heartbeatUpdater.heartbeatTs() < U.currentTimeMillis())
+                                heartbeatUpdater.updateHeartbeat();
+                        }
+                    }
+                });
 
                 asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 
