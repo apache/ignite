@@ -77,12 +77,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Snapshot restore tests.
  */
 public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Iterable<Boolean> testParams() {
-        return Arrays.asList(true);
-    }
-
     /** Type name used for binary and SQL. */
     private static final String TYPE_NAME = "CustomType";
 
