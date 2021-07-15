@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -31,13 +32,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -70,6 +75,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     protected static File customDiagnosticDir;
+
+    protected AtomicInteger receivedGlobalStateCntr =  new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -735,7 +742,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testState() throws Exception {
         final String newTag = "new_tag";
 
@@ -804,6 +811,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testSetState() throws Exception {
         Ignite ignite = startGrids(2);
 
+        for(Ignite grid : G.allGrids())
+            ((IgniteEx)grid).context().discovery().setCustomEventListener(ChangeGlobalStateFinishMessage.class,
+                ((topVer, snd, msg) -> receivedGlobalStateCntr.incrementAndGet()));
+
         ignite.cluster().state(ACTIVE);
 
         ignite.createCache(ClusterStateTestUtils.partitionedCache(PARTITIONED_CACHE_NAME));
@@ -850,10 +861,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ClusterState beforeState = ignite.cluster().state();
 
-        AtomicBoolean receivedGlobalState = new AtomicBoolean();
-
-        ((IgniteEx)ignite).context().discovery().setCustomEventListener(ChangeGlobalStateMessage.class,
-            ((topVer, snd, msg) -> receivedGlobalState.set(true)));
+        receivedGlobalStateCntr.set(0);
 
         assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
 
@@ -865,8 +873,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             .mapToObj(this::grid)
             .collect(Collectors.toList());
 
+        int size = G.allGrids().size();
+
         if (beforeState != state)
-            waitForCondition(receivedGlobalState::get, getTestTimeout());
+            waitForCondition(() -> receivedGlobalStateCntr.get() == size, getTestTimeout());
 
         ClusterStateTestUtils.putSomeDataAndCheck(log, nodes, cacheNames);
 
