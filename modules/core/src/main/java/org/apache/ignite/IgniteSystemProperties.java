@@ -1113,7 +1113,7 @@ public final class IgniteSystemProperties {
 
     /**
      * WAL rebalance threshold.
-     * @deprecated use Distributed MetaStorage property {@code history.rebalance.threshold}.
+     * @deprecated use Distributed MetaStorage property {@code historical.rebalance.threshold}.
      */
     @Deprecated
     @SystemProperty(value = "WAL rebalance threshold", type = Integer.class,
