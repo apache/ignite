@@ -1,4 +1,4 @@
-# name: test/sql/function/test/test_string.test
+# name: test/sql/function/test/test_initcap.test
 # description: Just simple test to check support of INITCAP function
 # group: [string]
 
