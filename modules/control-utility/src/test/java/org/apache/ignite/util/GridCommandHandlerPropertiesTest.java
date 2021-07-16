@@ -205,7 +205,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testPropertyWalRebalanceThreshold() {
-        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, DFLT_PDS_WAL_REBALANCE_THRESHOLD, true);
+        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
         int newVal = DFLT_PDS_WAL_REBALANCE_THRESHOLD * 2;
 
@@ -218,7 +218,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
                 )
         );
 
-        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, newVal, true);
+        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, newVal);
     }
 
     /**
@@ -226,20 +226,22 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      *
      * @param propName Distributed property name.
      * @param expected Expected property value.
-     * @param onlyServerMode Ignore client nodes.
      * @param <T> Property type.
      */
-    private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected, boolean onlyServerMode) {
+    private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected) {
         for (Ignite ign : G.allGrids()) {
             IgniteEx ignEx = (IgniteEx) ign;
 
-            if (onlyServerMode && ign.configuration().isClientMode())
+            if (ign.configuration().isClientMode())
                 continue;
 
             DistributedChangeableProperty<Serializable> prop =
                     ignEx.context().distributedConfiguration().property(propName);
 
-            assertEquals(prop.get(), expected);
+            assertEquals(
+                    "Validation has failed on the cluster node [name=" + ign.configuration().getIgniteInstanceName(),
+                    prop.get(),
+                    expected);
         }
     }
 }
