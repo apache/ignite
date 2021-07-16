@@ -29,7 +29,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
  */
 class UpgradingRowAdapter extends Row {
     /** Column mapper. */
-    private final ColumnMapper mapping;
+    private final ColumnMapper mapper;
 
     /**
      * @param schema Schema descriptor of new version.
@@ -39,12 +39,12 @@ class UpgradingRowAdapter extends Row {
     UpgradingRowAdapter(SchemaDescriptor schema, BinaryRow row, ColumnMapper mapper) {
         super(schema, row);
 
-        this.mapping = mapper;
+        this.mapper = mapper;
     }
 
     /** {@inheritDoc} */
     @Override protected long findColumn(int colIdx, NativeTypeSpec type) throws InvalidTypeException {
-        int mapIdx = mapping.map(colIdx);
+        int mapIdx = mapper.map(colIdx);
 
         return (mapIdx < 0) ? Long.MIN_VALUE : super.findColumn(mapIdx, type);
     }

@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
+package org.apache.ignite.internal.schema.registry;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.schema.registry.SchemaRegistrationConflictException;
-import org.apache.ignite.internal.schema.registry.SchemaRegistryException;
-import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
+import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaManager;
+import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
@@ -519,6 +520,63 @@ public class SchemaRegistryImplTest {
         assertThrows(SchemaRegistryException.class, () -> reg.schema(2));
         assertThrows(SchemaRegistryException.class, () -> reg.schema(3));
         assertNotNull(reg.schema(4));
+    }
+
+    /**
+     * Check schema cache cleanup.
+     */
+    @Test
+    public void testSchemaCacheCleanup() {
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
+            new Column[]{new Column("keyLongCol", INT64, true)},
+            new Column[]{new Column("valBytesCol", BYTES, true)});
+
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
+            new Column[]{new Column("keyLongCol", INT64, true)},
+            new Column[]{
+                new Column("valBytesCol", BYTES, true),
+                new Column("valStringCol", STRING, true)
+            });
+
+        final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
+            new Column[]{new Column("keyLongCol", INT64, true)},
+            new Column[]{
+                new Column("valStringCol", STRING, true)
+            });
+
+        final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
+            new Column[]{new Column("keyLongCol", INT64, true)},
+            new Column[]{
+                new Column("valBytesCol", BYTES, true),
+                new Column("valStringCol", STRING, true)
+            });
+
+        final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
+
+        Map<Long, ColumnMapper> cache = reg.mappingCache();
+
+        reg.onSchemaRegistered(schemaV1);
+        reg.onSchemaRegistered(schemaV2);
+        reg.onSchemaRegistered(schemaV3);
+        reg.onSchemaRegistered(schemaV4);
+
+        assertEquals(0, cache.size());
+
+        reg.resolveMapping(schemaV4, schemaV1);
+        reg.resolveMapping(schemaV3, schemaV1);
+        reg.resolveMapping(schemaV4, schemaV2);
+
+        assertEquals(3, cache.size());
+
+        reg.onSchemaDropped(schemaV1.version());
+
+        assertEquals(1, cache.size());
+
+        reg.onSchemaDropped(schemaV2.version());
+
+        assertEquals(0, cache.size());
     }
 
     /**

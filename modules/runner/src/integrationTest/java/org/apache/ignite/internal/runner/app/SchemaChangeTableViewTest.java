@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.runner.app;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.function.Supplier;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.table.ColumnNotFoundException;
+import org.apache.ignite.schema.Column;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.table.Table;
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -156,6 +160,176 @@ class SchemaChangeTableViewTest extends AbstractSchemaChangeTest {
             assertEquals(2, (Long) tbl.get(keyTuple2).value("key"));
             assertEquals(222, (Integer) tbl.get(keyTuple2).value("valRenamed"));
             assertThrows(ColumnNotFoundException.class, () -> tbl.get(keyTuple2).value("valInt"));
+        }
+    }
+
+    /**
+     * Rename column then add a new column with same name.
+     */
+    @Test
+    void testRenameThenAddColumnWithSameName() {
+        List<Ignite> grid = startGrid();
+
+        createTable(grid);
+
+        Table tbl = grid.get(0).tables().table(TABLE);
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 1L).set("valInt", 111).build());
+
+            assertThrows(ColumnNotFoundException.class,
+                () -> tbl.insert(tbl.tupleBuilder().set("key", 2L).set("val2", -222).build())
+            );
+        }
+
+        renameColumn(grid, "valInt", "val2");
+        addColumn(grid, SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().withDefaultValue(-1).build());
+
+        {
+            // Check old row conversion.
+            Tuple keyTuple1 = tbl.tupleBuilder().set("key", 1L).build();
+
+            assertEquals(1, (Long)tbl.get(keyTuple1).value("key"));
+            assertEquals(111, (Integer)tbl.get(keyTuple1).value("val2"));
+            assertEquals(-1, (Integer)tbl.get(keyTuple1).value("valInt"));
+
+            // Check tuple of outdated schema.
+            assertNull(tbl.get(tbl.tupleBuilder().set("key", 2L).build()));
+
+            // Check tuple of correct schema.
+            tbl.insert(tbl.tupleBuilder().set("key", 2L).set("val2", 222).build());
+
+            Tuple keyTuple2 = tbl.tupleBuilder().set("key", 2L).build();
+
+            assertEquals(2, (Long)tbl.get(keyTuple2).value("key"));
+            assertEquals(222, (Integer)tbl.get(keyTuple2).value("val2"));
+            assertEquals(-1, (Integer)tbl.get(keyTuple2).value("valInt"));
+        }
+    }
+
+    /**
+     * Check merge table schema changes.
+     */
+    @Test
+    public void testMergeChangesAddDropAdd() {
+        List<Ignite> grid = startGrid();
+
+        createTable(grid);
+
+        final Column column = SchemaBuilders.column("val", ColumnType.string()).asNullable().withDefaultValue("default").build();
+
+        Table tbl = grid.get(0).tables().table(TABLE);
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 1L).set("valInt", 111).build());
+
+            assertThrows(ColumnNotFoundException.class, () -> tbl.insert(
+                tbl.tupleBuilder().set("key", 2L).set("val", "I'not exists").build())
+            );
+        }
+
+        addColumn(grid, column);
+
+        {
+            assertNull(tbl.get(tbl.tupleBuilder().set("key", 2L).build()));
+
+            tbl.insert(tbl.tupleBuilder().set("key", 2L).set("valInt", 222).set("val", "string").build());
+
+            tbl.insert(tbl.tupleBuilder().set("key", 3L).set("valInt", 333).build());
+        }
+
+        dropColumn(grid, column.name());
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 4L).set("valInt", 444).build());
+
+            assertThrows(ColumnNotFoundException.class, () -> tbl.insert(
+                tbl.tupleBuilder().set("key", 4L).set("val", "I'm not exist").build())
+            );
+        }
+
+        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValue("default").build());
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 5L).set("valInt", 555).build());
+
+            // Check old row conversion.
+            Tuple keyTuple1 = tbl.tupleBuilder().set("key", 1L).build();
+
+            assertEquals(111, (Integer)tbl.get(keyTuple1).value("valInt"));
+            assertEquals("default", tbl.get(keyTuple1).value("val"));
+
+            Tuple keyTuple2 = tbl.tupleBuilder().set("key", 2L).build();
+
+            assertEquals(222, (Integer)tbl.get(keyTuple2).value("valInt"));
+            assertEquals("default", tbl.get(keyTuple2).value("val"));
+
+            Tuple keyTuple3 = tbl.tupleBuilder().set("key", 3L).build();
+
+            assertEquals(333, (Integer)tbl.get(keyTuple3).value("valInt"));
+            assertEquals("default", tbl.get(keyTuple3).value("val"));
+
+            Tuple keyTuple4 = tbl.tupleBuilder().set("key", 4L).build();
+
+            assertEquals(444, (Integer)tbl.get(keyTuple4).value("valInt"));
+            assertEquals("default", tbl.get(keyTuple4).value("val"));
+
+            Tuple keyTuple5 = tbl.tupleBuilder().set("key", 5L).build();
+
+            assertEquals(555, (Integer)tbl.get(keyTuple5).value("valInt"));
+            assertEquals("default", tbl.get(keyTuple5).value("val"));
+        }
+    }
+
+    /**
+     * Check merge column default value changes.
+     */
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14896")
+    @Test
+    public void testMergeChangesColumnDefault() {
+        List<Ignite> grid = startGrid();
+
+        createTable(grid);
+
+        Table tbl = grid.get(0).tables().table(TABLE);
+
+        final String colName = "valStr";
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 1L).set("valInt", 111).build());
+        }
+
+        changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "newDefault");
+        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValue("newDefault").build());
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 2L).set("valInt", 222).build());
+        }
+
+        changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "brandNewDefault");
+        changeDefault(grid, "val", (Supplier<Object> & Serializable)() -> "brandNewDefault");
+
+        {
+            tbl.insert(tbl.tupleBuilder().set("key", 3L).set("valInt", 333).build());
+
+            // Check old row conversion.
+            Tuple keyTuple1 = tbl.tupleBuilder().set("key", 1L).build();
+
+            assertEquals(111, (Integer)tbl.get(keyTuple1).value("valInt"));
+            assertEquals("default", tbl.get(keyTuple1).value("valStr"));
+            assertEquals("newDefault", tbl.get(keyTuple1).value("val"));
+
+            Tuple keyTuple2 = tbl.tupleBuilder().set("key", 2L).build();
+
+            assertEquals(222, (Integer)tbl.get(keyTuple2).value("valInt"));
+            assertEquals("newDefault", tbl.get(keyTuple2).value("valStr"));
+            assertEquals("newDefault", tbl.get(keyTuple2).value("val"));
+
+            Tuple keyTuple3 = tbl.tupleBuilder().set("key", 3L).build();
+
+            assertEquals(333, (Integer)tbl.get(keyTuple3).value("valInt"));
+            assertEquals("brandNewDefault", tbl.get(keyTuple3).value("valStr"));
+            assertEquals("brandNewDefault", tbl.get(keyTuple3).value("val"));
         }
     }
 }

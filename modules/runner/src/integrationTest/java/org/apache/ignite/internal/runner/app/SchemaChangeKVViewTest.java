@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.runner.app;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.function.Supplier;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.table.ColumnNotFoundException;
+import org.apache.ignite.schema.Column;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.table.KeyValueBinaryView;
@@ -164,6 +167,140 @@ class SchemaChangeKVViewTest extends AbstractSchemaChangeTest {
 
             assertEquals(222, (Integer)kvView.get(keyTuple2).value("valRenamed"));
             assertThrows(ColumnNotFoundException.class, () -> kvView.get(keyTuple2).value("valInt"));
+        }
+    }
+
+    /**
+     * Check merge table schema changes.
+     */
+    @Test
+    public void testMergeChangesAddDropAdd() {
+        List<Ignite> grid = startGrid();
+
+        createTable(grid);
+
+        final Column column = SchemaBuilders.column("val", ColumnType.string()).asNullable().withDefaultValue("default").build();
+
+        KeyValueBinaryView kvView = grid.get(1).tables().table(TABLE).kvView();
+
+        {
+            kvView.put(kvView.tupleBuilder().set("key", 1L).build(),
+                kvView.tupleBuilder().set("valInt", 111).build());
+
+            assertThrows(ColumnNotFoundException.class, () -> kvView.put(
+                kvView.tupleBuilder().set("key", 2L).build(),
+                kvView.tupleBuilder().set("val", "I'not exists").build())
+            );
+        }
+
+        addColumn(grid, column);
+
+        {
+            assertNull(kvView.get(kvView.tupleBuilder().set("key", 2L).build()));
+
+            kvView.put(kvView.tupleBuilder().set("key", 2L).build(),
+                kvView.tupleBuilder().set("valInt", 222).set("val", "string").build());
+
+            kvView.put(kvView.tupleBuilder().set("key", 3L).build(),
+                kvView.tupleBuilder().set("valInt", 333).build());
+        }
+
+        dropColumn(grid, column.name());
+
+        {
+            kvView.put(kvView.tupleBuilder().set("key", 4L).build(),
+                kvView.tupleBuilder().set("valInt", 444).build());
+
+            assertThrows(ColumnNotFoundException.class, () -> kvView.put(
+                kvView.tupleBuilder().set("key", 4L).build(),
+                kvView.tupleBuilder().set("val", "I'm not exist").build())
+            );
+        }
+
+        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).asNullable().withDefaultValue("default").build());
+
+        {
+            kvView.put(kvView.tupleBuilder().set("key", 5L).build(),
+                kvView.tupleBuilder().set("valInt", 555).build());
+
+            // Check old row conversion.
+            Tuple keyTuple1 = kvView.tupleBuilder().set("key", 1L).build();
+
+            assertEquals(111, (Integer)kvView.get(keyTuple1).value("valInt"));
+            assertEquals("default", kvView.get(keyTuple1).value("val"));
+
+            Tuple keyTuple2 = kvView.tupleBuilder().set("key", 2L).build();
+
+            assertEquals(222, (Integer)kvView.get(keyTuple2).value("valInt"));
+            assertEquals("default", kvView.get(keyTuple2).value("val"));
+
+            Tuple keyTuple3 = kvView.tupleBuilder().set("key", 3L).build();
+
+            assertEquals(333, (Integer)kvView.get(keyTuple3).value("valInt"));
+            assertEquals("default", kvView.get(keyTuple3).value("val"));
+
+            Tuple keyTuple4 = kvView.tupleBuilder().set("key", 4L).build();
+
+            assertEquals(444, (Integer)kvView.get(keyTuple4).value("valInt"));
+            assertEquals("default", kvView.get(keyTuple4).value("val"));
+
+            Tuple keyTuple5 = kvView.tupleBuilder().set("key", 5L).build();
+
+            assertEquals(555, (Integer)kvView.get(keyTuple5).value("valInt"));
+            assertEquals("default", kvView.get(keyTuple5).value("val"));
+        }
+    }
+
+
+    /**
+     * Check merge table schema changes.
+     */
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14896")
+    @Test
+    public void testMergeChangesColumnDefault() {
+        List<Ignite> grid = startGrid();
+
+        createTable(grid);
+
+        KeyValueBinaryView vkView = grid.get(1).tables().table(TABLE).kvView();
+
+        final String colName = "valStr";
+
+        {
+            vkView.put(vkView.tupleBuilder().set("key", 1L).build(), vkView.tupleBuilder().set("valInt", 111).build());
+        }
+
+        changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "newDefault");
+        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValue("newDefault").build());
+
+        {
+            vkView.put(vkView.tupleBuilder().set("key", 2L).build(), vkView.tupleBuilder().set("valInt", 222).build());
+        }
+
+        changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "brandNewDefault");
+        changeDefault(grid, "val", (Supplier<Object> & Serializable)() -> "brandNewDefault");
+
+        {
+            vkView.put(vkView.tupleBuilder().set("key", 3L).build(), vkView.tupleBuilder().set("valInt", 333).build());
+
+            // Check old row conversion.
+            Tuple keyTuple1 = vkView.tupleBuilder().set("key", 1L).build();
+
+            assertEquals(111, (Integer)vkView.get(keyTuple1).value("valInt"));
+            assertEquals("default", vkView.get(keyTuple1).value("valStr"));
+            assertEquals("newDefault", vkView.get(keyTuple1).value("val"));
+
+            Tuple keyTuple2 = vkView.tupleBuilder().set("key", 2L).build();
+
+            assertEquals(222, (Integer)vkView.get(keyTuple2).value("valInt"));
+            assertEquals("newDefault", vkView.get(keyTuple2).value("valStr"));
+            assertEquals("newDefault", vkView.get(keyTuple2).value("val"));
+
+            Tuple keyTuple3 = vkView.tupleBuilder().set("key", 3L).build();
+
+            assertEquals(333, (Integer)vkView.get(keyTuple3).value("valInt"));
+            assertEquals("brandNewDefault", vkView.get(keyTuple3).value("valStr"));
+            assertEquals("brandNewDefault", vkView.get(keyTuple3).value("val"));
         }
     }
 }

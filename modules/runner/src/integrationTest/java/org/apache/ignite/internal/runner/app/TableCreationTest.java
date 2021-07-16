@@ -47,112 +47,112 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class TableCreationTest {
     /** Nodes bootstrap configuration with preconfigured tables. */
     private final LinkedHashMap<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-            put("node0", "{\n" +
-                "  \"node\": {\n" +
-                "    \"name\":node0,\n" +
-                "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
-                "  },\n" +
-                "  \"network\": {\n" +
-                "    \"port\":3344,\n" +
-                "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-                "  },\n" +
-                "  \"table\": {\n" +
-                "       \"tables\": {\n" +
-                "           \"tbl1\": {\n" +
-                "               \"partitions\":10,\n" +
-                "               \"replicas\":2,\n" +
-                "               \"columns\": { \n" +
-                "                   \"key\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":UUID\n" +
-                "                       },\n" +
-                "                       \"nullable\":false\n" +
-                "                   },\n" +
-                "                   \"affKey\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":INT64\n" +
-                "                       },\n" +
-                "                       \"nullable\":false\n" +
-                "                   },\n" +
-                "                   \"valString\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":String\n" +
-                "                       },\n" +
-                "                       \"nullable\":false\n" +
-                "                   },\n" +
-                "                   \"valInt\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":INT32\n" +
-                "                       },\n" +
-                "                       \"nullable\":false\n" +
-                "                   },\n" +
-                "                   \"valNullable\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":String\n" +
-                "                       },\n" +
-                "                       \"nullable\":true\n" +
-                "                   }\n" +
-                "               },\n" + /* Columns. */
-                "               \"indices\": {\n" +
-                "                   \"PK\": {\n" +
-                "                       \"type\":PRIMARY,\n" +
-                "                       \"columns\": {\n" +
-                "                           \"key\": {\n" +
-                "                               \"asc\":true\n" +
-                "                           },\n" +
-                "                           \"affKey\": {}\n" +
-                "                       },\n" + /* Columns. */
-                "                       \"affinityColumns\":[ \"affKey\" ]\n" +
-                "                   }\n" +
-                "               }\n" + /* Indices. */
-                "           },\n" + /* Table. */
-                "\n" +
-                "           \"tbl2\": {\n" + // Table minimal configuration.
-                "               \"columns\": { \n" +
-                "                   \"key\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":INT64\n" +
-                "                       },\n" +
-                "                   },\n" +
-                "                   \"val\": {\n" +
-                "                       \"type\": {" +
-                "                           \"type\":INT64\n" +
-                "                       },\n" +
-                "                   }\n" +
-                "               },\n" + /* Columns. */
-                "               \"indices\": {\n" +
-                "                   \"PK\": {\n" +
-                "                       \"type\":PRIMARY,\n" +
-                "                       \"columns\": {\n" +
-                "                           \"key\": {}\n" +
-                "                       },\n" + /* Columns. */
-                "                   }\n" +
-                "               }\n" + /* Indices. */
-                "           }\n" + /* Table. */
-                "       }\n" + /* Tables. */
-                "  }\n" + /* Root. */
-                "}");
+        put("node0", "{\n" +
+            "  \"node\": {\n" +
+            "    \"name\":node0,\n" +
+            "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
+            "  },\n" +
+            "  \"network\": {\n" +
+            "    \"port\":3344,\n" +
+            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "  },\n" +
+            "  \"table\": {\n" +
+            "       \"tables\": {\n" +
+            "           \"tbl1\": {\n" +
+            "               \"partitions\":10,\n" +
+            "               \"replicas\":2,\n" +
+            "               \"columns\": { \n" +
+            "                   \"key\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":UUID\n" +
+            "                       },\n" +
+            "                       \"nullable\":false\n" +
+            "                   },\n" +
+            "                   \"affKey\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":INT64\n" +
+            "                       },\n" +
+            "                       \"nullable\":false\n" +
+            "                   },\n" +
+            "                   \"valString\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":String\n" +
+            "                       },\n" +
+            "                       \"nullable\":false\n" +
+            "                   },\n" +
+            "                   \"valInt\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":INT32\n" +
+            "                       },\n" +
+            "                       \"nullable\":false\n" +
+            "                   },\n" +
+            "                   \"valNullable\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":String\n" +
+            "                       },\n" +
+            "                       \"nullable\":true\n" +
+            "                   }\n" +
+            "               },\n" + /* Columns. */
+            "               \"indices\": {\n" +
+            "                   \"PK\": {\n" +
+            "                       \"type\":PRIMARY,\n" +
+            "                       \"columns\": {\n" +
+            "                           \"key\": {\n" +
+            "                               \"asc\":true\n" +
+            "                           },\n" +
+            "                           \"affKey\": {}\n" +
+            "                       },\n" + /* Columns. */
+            "                       \"affinityColumns\":[ \"affKey\" ]\n" +
+            "                   }\n" +
+            "               }\n" + /* Indices. */
+            "           },\n" + /* Table. */
+            "\n" +
+            "           \"tbl2\": {\n" + // Table minimal configuration.
+            "               \"columns\": { \n" +
+            "                   \"key\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":INT64\n" +
+            "                       },\n" +
+            "                   },\n" +
+            "                   \"val\": {\n" +
+            "                       \"type\": {" +
+            "                           \"type\":INT64\n" +
+            "                       },\n" +
+            "                   }\n" +
+            "               },\n" + /* Columns. */
+            "               \"indices\": {\n" +
+            "                   \"PK\": {\n" +
+            "                       \"type\":PRIMARY,\n" +
+            "                       \"columns\": {\n" +
+            "                           \"key\": {}\n" +
+            "                       },\n" + /* Columns. */
+            "                   }\n" +
+            "               }\n" + /* Indices. */
+            "           }\n" + /* Table. */
+            "       }\n" + /* Tables. */
+            "  }\n" + /* Root. */
+            "}");
 
-            put("node1", "{\n" +
-                "  \"node\": {\n" +
-                "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
-                "  },\n" +
-                "  \"network\": {\n" +
-                "    \"port\":3345,\n" +
-                "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-                "  }\n" +
-                "}");
+        put("node1", "{\n" +
+            "  \"node\": {\n" +
+            "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
+            "  },\n" +
+            "  \"network\": {\n" +
+            "    \"port\":3345,\n" +
+            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "  }\n" +
+            "}");
 
-            put("node2", "{\n" +
-                "  \"node\": {\n" +
-                "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
-                "  },\n" +
-                "  \"network\": {\n" +
-                "    \"port\":3346,\n" +
-                "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-                "  }\n" +
-                "}");
-        }};
+        put("node2", "{\n" +
+            "  \"node\": {\n" +
+            "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
+            "  },\n" +
+            "  \"network\": {\n" +
+            "    \"port\":3346,\n" +
+            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "  }\n" +
+            "}");
+    }};
 
     /** */
     private final List<Ignite> clusterNodes = new ArrayList<>();
