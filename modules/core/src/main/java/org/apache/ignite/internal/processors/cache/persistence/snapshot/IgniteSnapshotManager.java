@@ -295,7 +295,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-    /** File store manager to create page store for restore. */
+    /** File store manager to create page store for restoring. */
     private volatile FilePageStoreManager storeMgr;
 
     /** Snapshot thread pool to perform local partition snapshots. */
@@ -1366,7 +1366,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
-     * @param encrKeyProvider Encryption key provider for encrypted IO. If {@code null}, no encrypted IO is used.
+     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
@@ -1559,8 +1559,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * If {@code snpMeta} contains encrypted cache groups, additionally stores active encryption keys.
+     * Stores active encryption keys if {@code snpMeta} contains encrypted cache groups.
      *
+     * @param snpMeta Snapshot metadata.
      * @return {@code snpMeta}.
      */
     private SnapshotMetadata addEncrKeys(SnapshotMetadata snpMeta) {
@@ -1579,6 +1580,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Extracts the encryption keys.
+     *
+     * @param snpMeta Snapshot metadata.
      * @return Cache group encription keys and their ids stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta},
      * returns empty map.
      */

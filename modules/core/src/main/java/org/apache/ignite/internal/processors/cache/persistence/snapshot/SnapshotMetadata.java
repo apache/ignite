@@ -71,10 +71,7 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
-    /**
-     * Additional named records to store with snapshot meta.
-     * Can be null even if final because might be deserialized from previous class version.
-     */
+    /** Additional named records to store together with snapshot meta. */
     @Nullable
     private Map<String, Serializable> metaRecords;
 
@@ -111,37 +108,18 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * Prevents from NullPointerException when accessing the meta records. The records do not exists in previous class version. This
-     * collection might be null after deserealization, reading snapshot of previous version.
-     *
-     * @param canCreate If {@code true} and the metas map is null, it will be created.
-     * @return Map of the additional meta records.
-     */
-    private Map<String, Serializable> metaRecords0(boolean canCreate) {
-        if (metaRecords == null) {
-            if (canCreate) {
-                synchronized (this) {
-                    if (metaRecords == null)
-                        metaRecords = new HashMap<>();
-                }
-            }
-            else
-                return Collections.emptyMap();
-        }
-
-        return metaRecords;
-    }
-
-    /**
+     * @param name Record name.
+     * @param val Record data.
      * @return Current snapshot metadata.
      */
-    public SnapshotMetadata addMetaRecord(String name, Serializable meta) {
-        metaRecords0(true).put(name, meta);
+    public SnapshotMetadata addMetaRecord(String name, Serializable val) {
+        metaRecords0(true).put(name, val);
 
         return this;
     }
 
     /**
+     * @param name Record name.
      * @return Additional meta-record by {@code name}. {@code Null} if not found.
      */
     public Serializable metaRecord(String name) {
@@ -222,6 +200,28 @@ public class SnapshotMetadata implements Serializable {
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
+    }
+
+    /**
+     * Prevents from NullPointerException when accessing the meta records. The records do not exists in previous class version. This
+     * collection might be null after deserealization, reading snapshot of previous version.
+     *
+     * @param canCreate If {@code true} and the metas map is null, it will be created.
+     * @return Map of the additional meta records.
+     */
+    private Map<String, Serializable> metaRecords0(boolean canCreate) {
+        if (metaRecords == null) {
+            if (canCreate) {
+                synchronized (this) {
+                    if (metaRecords == null)
+                        metaRecords = new HashMap<>();
+                }
+            }
+            else
+                return Collections.emptyMap();
+        }
+
+        return metaRecords;
     }
 
     /** {@inheritDoc} */

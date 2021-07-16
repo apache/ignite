@@ -973,14 +973,14 @@ public class SnapshotRestoreProcess {
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
 
-        /** Keys and theirs ids for encrypted cache groups. */
+        /** Encryption keys by group id. */
         private final Map<Integer, GroupKeyEncrypted> encrGrpKeys;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
          * @param dirs List of cache group names to restore from the snapshot.
          * @param cfgs Cache ID to configuration mapping.
-         * @param encrGrpKeys Keys for the encrypted caches.
+         * @param encrGrpKeys Encryption keys by group id.
          */
         protected SnapshotRestoreContext(SnapshotOperationRequest req, Collection<File> dirs,
             Map<Integer, StoredCacheData> cfgs, Map<Integer, GroupKeyEncrypted> encrGrpKeys) {

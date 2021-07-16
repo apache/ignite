@@ -350,7 +350,7 @@ public class SnapshotPartitionsVerifyTask
     }
 
     /**
-     * Provides encryption keys stored with encrypted cache groups within snapshot meta.
+     * Provides encryption keys stored within snapshot metadata.
      */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
         /** Encrypted keys. */
@@ -363,6 +363,7 @@ public class SnapshotPartitionsVerifyTask
         private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
 
         /**
+         * Constructor.
          *
          * @param snpMeta Snapshot metadata.
          * @param encrSpi Encryption SPI to decrypt the keys.

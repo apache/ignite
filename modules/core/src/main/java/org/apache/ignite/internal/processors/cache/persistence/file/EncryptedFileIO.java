@@ -51,7 +51,7 @@ public class EncryptedFileIO implements FileIO {
     private final int headerSize;
 
     /**
-     * Encryption key provider.
+     * Encryption keys provider.
      */
     private final EncryptionCacheKeyProvider keyProvider;
 
@@ -68,7 +68,7 @@ public class EncryptedFileIO implements FileIO {
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
      * @param headerSize Size of file header in bytes.
-     * @param keyProvider Encryption key provider.
+     * @param keyProvider Encryption keys provider.
      */
     EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize, EncryptionCacheKeyProvider keyProvider,
         EncryptionSpi encSpi) {

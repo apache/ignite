@@ -864,11 +864,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Sets new initial group key if key is not null. Assigns passed key id {@code encKeyId} if not null.
+     * Sets new initial group key if key.
      *
-     * @param grpId  Cache group ID.
+     * @param grpId Cache group ID.
      * @param encKey Encryption key
-     * @param encKey Forced encryption key id to use. If {@code null}, {@link #INITIAL_KEY_ID} is used.
+     * @param encKeyId Key id to use. If {@code null}, {@link #INITIAL_KEY_ID} is used.
      */
     public void setInitialGroupKey(int grpId, @Nullable byte[] encKey, @Nullable Integer encKeyId) {
         if (encKey == null || ctx.clientNode())

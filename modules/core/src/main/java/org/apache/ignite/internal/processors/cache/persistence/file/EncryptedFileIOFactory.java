@@ -51,7 +51,7 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     private int groupId;
 
     /**
-     * Encryption key provider.
+     * Encryption keys provider.
      */
     private EncryptionCacheKeyProvider encrKeyProvider;
 
@@ -64,7 +64,7 @@ public class EncryptedFileIOFactory implements FileIOFactory {
      * @param plainIOFactory Underlying file factory.
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
-     * @param encrKeyProvider Encryption key provider.
+     * @param encrKeyProvider Encryption keys provider.
      */
     EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, EncryptionCacheKeyProvider encrKeyProvider,
         EncryptionSpi encSpi) {

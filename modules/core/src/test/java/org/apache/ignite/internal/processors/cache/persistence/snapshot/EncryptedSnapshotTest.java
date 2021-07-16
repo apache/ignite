@@ -38,7 +38,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
  * Snapshot test only for encrypted-related cases.
  */
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
-    /** */
+    /** Name of additional encrypted cache. */
     private static final String SECOND_CACHE_NAME = "encryptedCache";
 
     /** Parameters. */
@@ -176,7 +176,11 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         );
     }
 
-    /** Checks snapshot after reencryption. */
+    /**
+     * Checks snapshot after reencryption.
+     *
+     * @param reencryptionIterations Number re-encryptions turns.
+     */
     private void checkSnapshotWithReencryptedCache(int reencryptionIterations) throws Exception {
         int gridCnt = 3;
 
@@ -212,7 +216,9 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * Checks {@code action} is blocked with {@code errPrefix} and {@code errEncrypType} during active snapshot.
      *
      * @param restore If {@code true}, snapshot restoration is activated during the test. Snapshot creation otherwise.
-     * @param action  Action to call during snapshot operation. Its param is the grid num.
+     * @param action Action to call during snapshot operation. Its param is the grid num.
+     * @param errPrefix Prefix of error message text to search for.
+     * @param errType Type of exception to search for.
      */
     private void checkActionFailsDuringSnapshotOperation(boolean restore, Function<Integer, IgniteFuture<?>> action, String errPrefix,
         Class<? extends Exception> errType) throws Exception {

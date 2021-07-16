@@ -825,7 +825,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** Partition delta file to store delta pages into. */
         private final File deltaFile;
 
-        /** Id of related encrypted cache group. If {@code null}, no encrypted IO is used. */
+        /** Id of encrypted cache group. If {@code null}, no encrypted IO is used. */
         private final Integer encryptedGrpId;
 
         /** Busy lock to protect write operations. */
@@ -852,7 +852,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
-         * @param encryptedGrpId Id of related encrypted cache group. If {@code null}, no encrypted IO is used.
+         * @param encryptedGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
          */
         public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
             assert store != null;
@@ -860,11 +860,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             this.deltaFile = deltaFile;
             this.store = store;
-            this.encryptedGrpId = encryptedGrpId;
             // It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
             writtenPages = new AtomicBitSet(store.pages());
+            this.encryptedGrpId = encryptedGrpId;
 
             store.addWriteListener(this);
         }
