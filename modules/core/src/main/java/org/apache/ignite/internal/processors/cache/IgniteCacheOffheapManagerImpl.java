@@ -200,8 +200,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (grp.affinityNode()) {
             log.error("TEST | Starting " + grp.groupId());
             log.error("TEST | Encryption enabled: " + grp.config().isEncryptionEnabled());
-            log.error("TEST | Active key: " + ctx.kernalContext().encryption().getActiveKey(grp.groupId()));
-            log.error("TEST | index exists: " + ctx.pageStore().exists(grp.groupId(), PageIdAllocator.INDEX_PARTITION));
+
+            if (grp.config().isEncryptionEnabled()) {
+                log.error("TEST | Active key: " + ctx.kernalContext().encryption().getActiveKey(grp.groupId()));
+                log.error("TEST | page store: " + ctx.pageStore());
+                log.error("TEST | index exists: " + ctx.pageStore().exists(grp.groupId(), PageIdAllocator.INDEX_PARTITION));
+            }
 
             if (grp.config().isEncryptionEnabled() && ctx.kernalContext().encryption().getActiveKey(grp.groupId()) == null &&
                 ctx.pageStore().exists(grp.groupId(), PageIdAllocator.INDEX_PARTITION)) {
