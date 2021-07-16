@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -485,6 +486,11 @@ public class SnapshotRestoreProcess {
             if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
+            if (ctx.encryption().isMasterKeyChangeInProgress() || ctx.encryption().reencryptionInProgress()) {
+                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing or " +
+                    "caches re-encryption process is not finished yet."));
+            }
+
             for (UUID nodeId : req.nodes()) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -532,7 +538,7 @@ public class SnapshotRestoreProcess {
 
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
+            restoreAsync(opCtx0, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
                 .thenAccept(res -> {
                     try {
                         Throwable err = opCtx.err.get();
@@ -576,16 +582,14 @@ public class SnapshotRestoreProcess {
     /**
      * Copy partition files and update binary metadata.
      *
-     * @param snpName Snapshot name.
-     * @param dirs Cache directories to restore from the snapshot.
+     * @param snpCtx Snapshot restore context.
      * @param updateMeta Update binary metadata flag.
      * @param stopChecker Process interrupt checker.
      * @param errHnd Error handler.
      * @throws IgniteCheckedException If failed.
      */
     private CompletableFuture<Void> restoreAsync(
-        String snpName,
-        Collection<File> dirs,
+        SnapshotRestoreContext snpCtx,
         boolean updateMeta,
         BooleanSupplier stopChecker,
         Consumer<Throwable> errHnd
@@ -596,7 +600,7 @@ public class SnapshotRestoreProcess {
         List<CompletableFuture<Void>> futs = new ArrayList<>();
 
         if (updateMeta) {
-            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(), pdsFolderName);
+            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpCtx.snpName).getAbsolutePath(), pdsFolderName);
 
             futs.add(CompletableFuture.runAsync(() -> {
                 try {
@@ -608,9 +612,9 @@ public class SnapshotRestoreProcess {
             }, snapshotMgr.snapshotExecutorService()));
         }
 
-        for (File cacheDir : dirs) {
+        for (File cacheDir : snpCtx.dirs) {
             File tmpCacheDir = formatTmpDirName(cacheDir);
-            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpName),
+            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpCtx.snpName),
                 Paths.get(databaseRelativePath(pdsFolderName), cacheDir.getName()).toString());
 
             assert snpCacheDir.exists() : "node=" + ctx.localNodeId() + ", dir=" + snpCacheDir;
@@ -628,7 +632,7 @@ public class SnapshotRestoreProcess {
 
                         if (log.isDebugEnabled()) {
                             log.debug("Copying file from the snapshot " +
-                                "[snapshot=" + snpName +
+                                "[snapshot=" + snpCtx.snpName +
                                 ", src=" + snpFile +
                                 ", target=" + target + "]");
                         }
@@ -663,7 +667,7 @@ public class SnapshotRestoreProcess {
         SnapshotMetadata meta = F.first(cctx.snapshotMgr().readSnapshotMetadatas(req.snapshotName()));
 
         if (meta == null || !meta.consistentId().equals(cctx.localNode().consistentId().toString()))
-            return new SnapshotRestoreContext(req, Collections.emptyList(), Collections.emptyMap());
+            return new SnapshotRestoreContext(req, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
 
         if (meta.pageSize() != cctx.database().pageSize()) {
             throw new IgniteCheckedException("Incompatible memory page size " +
@@ -726,7 +730,7 @@ public class SnapshotRestoreProcess {
         Map<Integer, StoredCacheData> cfgsById =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
 
-        return new SnapshotRestoreContext(req, cacheDirs, cfgsById);
+        return new SnapshotRestoreContext(req, cacheDirs, cfgsById, IgniteSnapshotManager.snapshotEncrKeys(meta));
     }
 
     /**
@@ -807,7 +811,7 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId));
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId), opCtx0.encrGrpKeys);
     }
 
     /**
@@ -969,19 +973,24 @@ public class SnapshotRestoreProcess {
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
 
+        /** Encryption keys by group id. */
+        private final Map<Integer, GroupKeyEncrypted> encrGrpKeys;
+
         /**
          * @param req Request to prepare cache group restore from the snapshot.
          * @param dirs List of cache group names to restore from the snapshot.
          * @param cfgs Cache ID to configuration mapping.
+         * @param encrGrpKeys Encryption keys by group id.
          */
         protected SnapshotRestoreContext(SnapshotOperationRequest req, Collection<File> dirs,
-            Map<Integer, StoredCacheData> cfgs) {
+            Map<Integer, StoredCacheData> cfgs, Map<Integer, GroupKeyEncrypted> encrGrpKeys) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             nodes = new HashSet<>(req.nodes());
 
             this.dirs = dirs;
             this.cfgs = cfgs;
+            this.encrGrpKeys = encrGrpKeys;
         }
     }
 }

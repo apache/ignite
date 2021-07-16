@@ -93,6 +93,14 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
+        // Writting deltas causes several page writes into file. Every page write calls encrypt(). Every repatable encrypt() produces
+        // different record even for same original data. Re-writting pages from delta to partition file in the shanpshot leads to additional
+        // encryption before writting to the snapshot partition file. Thus, page in original partition and in snapshot partiton has
+        // different encrypted CRC and same de-crypted CRC. Different encrypted CRC looks like different data in point of view of
+        // third-party observer.
+        if (encryption)
+            return;
+
         IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
@@ -196,7 +204,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         SnapshotFutureTask snpFutTask = mgr.registerSnapshotTask(SNAPSHOT_NAME,
             cctx.localNodeId(),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            false,
+            encryption,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
@@ -434,7 +442,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             ccfg.getName(),
-            0)
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(ccfg.getName()).context().cacheObjectContext();
 
@@ -477,7 +486,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0)
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 
@@ -519,7 +529,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0)
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 
@@ -556,7 +567,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, false, snpSndr);
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, true, snpSndr);
 
         snpFutTask.start();
 

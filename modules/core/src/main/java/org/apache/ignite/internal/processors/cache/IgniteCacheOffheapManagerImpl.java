@@ -44,6 +44,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
@@ -195,6 +196,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         this.log = ctx.logger(getClass());
 
         if (grp.affinityNode()) {
+            log.error("TEST | Starting " + grp.groupId());
+            log.error("TEST | Encryption enabled: " + grp.config().isEncryptionEnabled());
+
+            if (grp.config().isEncryptionEnabled()) {
+                log.error("TEST | Active key: " + ctx.kernalContext().encryption().getActiveKey(grp.groupId()));
+                log.error("TEST | page store: " + ctx.pageStore());
+                log.error("TEST | index exists: " + ctx.pageStore().exists(grp.groupId(), PageIdAllocator.INDEX_PARTITION));
+            }
+
+            if (grp.config().isEncryptionEnabled() && ctx.kernalContext().encryption().getActiveKey(grp.groupId()) == null &&
+                ctx.pageStore().exists(grp.groupId(), PageIdAllocator.INDEX_PARTITION)) {
+                throw new CacheInvalidStateException("Failed to start encrypted cache group '" + grp.config().getName() +
+                    "'. No encryption key found. Make sure the caches still exist in the cluster and check the encryption configuration. " +
+                    "If caches do not exist, to add the node to cluster - remove directories with the caches.");
+            }
+
             ctx.database().checkpointReadLock();
 
             try {

@@ -41,6 +41,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -57,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -238,6 +242,11 @@ public class SnapshotPartitionsVerifyTask
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
+            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+            EncryptionCacheKeyProvider snpEncrKeyProvider = IgniteSnapshotManager.snapshotMasterSign(meta) != null ?
+                new SnapshotEncrKeyProvider(meta, ignite.context().config().getEncryptionSpi()) : null;
+
             try {
                 U.doInParallel(
                     ignite.context().getSystemExecutorService(),
@@ -247,13 +256,10 @@ public class SnapshotPartitionsVerifyTask
                         int grpId = CU.cacheId(grpName);
                         int partId = partId(part.getName());
 
-                        FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
                         try {
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
-                                .createPageStore(getTypeByPartId(partId),
-                                    part::toPath,
-                                    val -> {
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider).
+                                createPageStore(getTypeByPartId(partId),
+                                    part::toPath, val -> {
                                     })
                             ) {
                                 if (partId == INDEX_PARTITION) {
@@ -302,7 +308,7 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId, snpEncrKeyProvider));
 
                                 assert hash != null : "OWNING must have hash: " + key;
 
@@ -340,6 +346,41 @@ public class SnapshotPartitionsVerifyTask
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(snpName, consId);
+        }
+    }
+
+    /**
+     * Provides encryption keys stored within snapshot metadata.
+     */
+    private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
+        /** Encrypted keys. */
+        private final Map<Integer, GroupKeyEncrypted> encryptedKeys;
+
+        /** Encryption SPI to decrypt the keys. */
+        private final EncryptionSpi encrSpi;
+
+        /** Dencrypted keys. */
+        private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
+
+        /**
+         * Constructor.
+         *
+         * @param snpMeta Snapshot metadata.
+         * @param encrSpi Encryption SPI to decrypt the keys.
+         */
+        private SnapshotEncrKeyProvider(SnapshotMetadata snpMeta, EncryptionSpi encrSpi) {
+            this.encryptedKeys = IgniteSnapshotManager.snapshotEncrKeys(snpMeta);
+            this.encrSpi = encrSpi;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable GroupKey getActiveKey(int grpId) {
+            return groupKey(grpId, 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
+            return decryptedKeys.computeIfAbsent(grpId, gid -> new GroupKey(keyId, encrSpi.decryptKey(encryptedKeys.get(gid).key())));
         }
     }
 }

@@ -332,6 +332,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
+        // To prevent encrypted cache creation from client, we create it on the server side.
+        if (encryption)
+            grid(0).getOrCreateCache(new CacheConfiguration<>(dfltCacheCfg).setEncryptionEnabled(true));
+
         Ignite client = startClientGrid(grids);
 
         assertEquals("The initial summary value in all caches is not correct.",

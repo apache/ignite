@@ -816,6 +816,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * @return {@code True} If reencryption is active in the cluster.
+     */
+    public boolean reencryptionInProgress() {
+        return grpKeyChangeProc.inProgress() || !reencryptGroups.isEmpty();
+    }
+
+    /**
      * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
      */
     public double getReencryptionRate() {
@@ -857,19 +864,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Sets new initial group key if key is not null.
+     * Sets new initial group key if key.
      *
      * @param grpId Cache group ID.
      * @param encKey Encryption key
+     * @param encKeyId Key id to use. If {@code null}, {@link #INITIAL_KEY_ID} is used.
      */
-    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey) {
+    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey, @Nullable Integer encKeyId) {
         if (encKey == null || ctx.clientNode())
             return;
 
         removeGroupKey(grpId);
 
         withMasterKeyChangeReadLock(() -> {
-            addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
+            addGroupKey(grpId, new GroupKeyEncrypted(encKeyId == null ? INITIAL_KEY_ID : encKeyId, encKey));
 
             return null;
         });
@@ -1515,6 +1523,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The previous change was not completed."));
+        }
+
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                "Snapshot operation is in progress."));
         }
 
         masterKeyChangeRequest = req;

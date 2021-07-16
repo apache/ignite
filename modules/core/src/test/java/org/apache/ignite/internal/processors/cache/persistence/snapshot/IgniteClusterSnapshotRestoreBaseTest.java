@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.function.Function;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.IgniteEx;
 
@@ -26,9 +25,6 @@ import org.apache.ignite.internal.IgniteEx;
  * Snapshot restore test base.
  */
 public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnapshotSelfTest {
-    /** Cache value builder. */
-    protected abstract Function<Integer, Object> valueBuilder();
-
     /**
      * @param nodesCnt Nodes count.
      * @param keysCnt Number of keys to create.
@@ -37,39 +33,6 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
      */
     protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt) throws Exception {
         return startGridsWithSnapshot(nodesCnt, keysCnt, false);
-    }
-
-    /**
-     * @param nodesCnt Nodes count.
-     * @param keysCnt Number of keys to create.
-     * @param startClient {@code True} to start an additional client node.
-     * @return Ignite coordinator instance.
-     * @throws Exception if failed.
-     */
-    protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
-        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg);
-
-        if (startClient)
-            ignite = startClientGrid("client");
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-
-        return ignite;
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keysCnt Expected number of keys.
-     */
-    protected void assertCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
-        assertEquals(keysCnt, cache.size());
-
-        for (int i = 0; i < keysCnt; i++)
-            assertEquals(valueBuilder().apply(i), cache.get(i));
     }
 
     /** */
