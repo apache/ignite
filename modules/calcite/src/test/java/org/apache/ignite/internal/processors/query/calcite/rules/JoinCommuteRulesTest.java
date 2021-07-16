@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
@@ -76,6 +77,28 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             .matches(containsTableScan("PUBLIC", "HUGE"))
             .matches(containsTableScan("PUBLIC", "SMALL"))
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($1, $0)], joinType=[right]"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCommuteInner() {
+        String sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */ " +
+            "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+
+        checkQuery(sql)
+            .matches(containsTableScan("PUBLIC", "HUGE"))
+            .matches(containsTableScan("PUBLIC", "SMALL"))
+            .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[inner]"))
+            .check();
+
+        sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter', 'JoinCommuteRule') */ " +
+            "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+
+        checkQuery(sql)
+            .matches(containsTableScan("PUBLIC", "HUGE"))
+            .matches(containsTableScan("PUBLIC", "SMALL"))
+            .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($1, $0)], joinType=[inner]"))
             .check();
     }
 
