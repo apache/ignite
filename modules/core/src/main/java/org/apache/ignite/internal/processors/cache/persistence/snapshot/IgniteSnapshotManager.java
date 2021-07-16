@@ -75,9 +75,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
-import org.apache.ignite.internal.managers.encryption.GroupKey;
-import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -238,12 +235,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
-
-    /** Name prefix to save cache group encryption keys in snapshot meta. */
-    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "GrpEncrKey_";
-
-    /** Name of master encryption key signature in snapshot meta. */
-    private static final String SNAPSHOT_META_MASTER_KEY_SIGN = "MasterKeySign";
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -652,16 +643,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
-                        // Store encryption keys to have ability to verify/restore snapshot without restart and without
-                        // manual data files (and metastore) replacing.
-                        addEncrKeys(new SnapshotMetadata(req.requestId(),
+                        new SnapshotMetadata(req.requestId(),
                             req.snapshotName(),
                             cctx.localNode().consistentId().toString(),
                             pdsSettings.folderName(),
                             cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                             grpIds,
                             blts,
-                            fut.result())),
+                            fut.result()),
                         out);
 
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
@@ -991,19 +980,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
-                    for (SnapshotMetadata meta : nodeMetas) {
-                        if (snapshotMasterSign(meta) != null && !Arrays.equals(snapshotMasterSign(meta),
-                            kctx0.config().getEncryptionSpi().masterKeyDigest())) {
-
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
-                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
-                                    "' has different signature of the master key.")))));
-
-                            return;
-                        }
-
+                    for (SnapshotMetadata meta : nodeMetas)
                         grpIds.keySet().removeAll(meta.partitions().keySet());
-                    }
                 }
 
                 if (!grpIds.isEmpty()) {
@@ -1366,15 +1344,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
-     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
         String folderName,
         String grpName,
-        int partId,
-        EncryptionCacheKeyProvider encrKeyProvider
+        int partId
     ) throws IgniteCheckedException {
         File snpDir = snapshotLocalDir(snpName);
 
@@ -1407,7 +1383,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int grpId = CU.cacheId(grpName);
 
         FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
-            encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
+            cctx.kernalContext().encryption().getActiveKey(grpId) != null).
             createPageStore(getTypeByPartId(partId),
                 snpPart::toPath,
                 val -> {
@@ -1556,56 +1532,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     FileIOFactory ioFactory() {
         return ioFactory;
-    }
-
-    /**
-     * Stores active encryption keys if {@code snpMeta} contains encrypted cache groups.
-     *
-     * @param snpMeta Snapshot metadata.
-     * @return {@code snpMeta}.
-     */
-    private SnapshotMetadata addEncrKeys(SnapshotMetadata snpMeta) {
-        Map<Integer, GroupKey> grpKeys =
-            snpMeta.cacheGroupIds().stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
-                Collectors.toMap(Function.identity(), gid -> cctx.kernalContext().encryption().getActiveKey(gid)));
-
-        if (!grpKeys.isEmpty()) {
-            snpMeta.addMetaRecord(SNAPSHOT_META_MASTER_KEY_SIGN, cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
-
-            grpKeys.forEach((grpId, grpKey) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + grpId,
-                new GroupKeyEncrypted(grpKey.id(), cctx.gridConfig().getEncryptionSpi().encryptKey(grpKey.key()))));
-        }
-
-        return snpMeta;
-    }
-
-    /**
-     * Extracts the encryption keys.
-     *
-     * @param snpMeta Snapshot metadata.
-     * @return Cache group encription keys and their ids stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta},
-     * returns empty map.
-     */
-    static Map<Integer, GroupKeyEncrypted> snapshotEncrKeys(SnapshotMetadata snpMeta) {
-        if (snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN) == null)
-            return Collections.emptyMap();
-
-        Map<Integer, GroupKeyEncrypted> keys = new HashMap<>();
-
-        snpMeta.allMetaRecords().forEach((name, val) -> {
-            if (name.startsWith(SNAPSHOT_META_GRP_KEY_PREFIX))
-                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (GroupKeyEncrypted)val);
-        });
-
-        return keys;
-    }
-
-    /**
-     * @return Signature of master encryption key stored in {@code snpMeta}. {@code Null} if no encripted cache groups stored in {@code
-     * snpMeta}.
-     */
-    static byte[] snapshotMasterSign(SnapshotMetadata snpMeta) {
-        return (byte[])snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN);
     }
 
     /**

@@ -17,14 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Collections;
 import java.util.function.Function;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.runners.Parameterized;
 
 /**
  * Snapshot restore test base.
  */
 public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnapshotSelfTest {
+    /** Parameters. Encrypted snapshots are not supported. */
+    @Parameterized.Parameters(name = "Encryption is disabled")
+    public static Iterable<Boolean> disabledEncryption() {
+        return Collections.singletonList(false);
+    }
+
     /**
      * @param nodesCnt Nodes count.
      * @param keysCnt Number of keys to create.

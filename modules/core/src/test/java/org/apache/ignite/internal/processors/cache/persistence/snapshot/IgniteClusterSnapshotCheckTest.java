@@ -78,6 +78,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -97,6 +98,12 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
+    /** Parameters. Encryption is not supported by snapshot validation. */
+    @Parameterized.Parameters(name = "Encryption is disabled")
+    public static Iterable<Boolean> disabledEncryption() {
+        return Collections.singletonList(false);
+    }
+
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
     private final Map<Class<?>, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> jobResults = new ConcurrentHashMap<>();
 

@@ -442,8 +442,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             ccfg.getName(),
-            0,
-            ignite.context().encryption())
+            0)
         ) {
             CacheObjectContext coctx = ignite.cachex(ccfg.getName()).context().cacheObjectContext();
 
@@ -486,8 +485,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0,
-            ignite.context().encryption())
+            0)
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 
@@ -529,8 +527,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0,
-            ignite.context().encryption())
+            0)
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 

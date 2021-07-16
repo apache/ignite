@@ -1445,8 +1445,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 true,
                 true,
                 false,
-                IgniteUuid.randomUuid(),
-                Collections.emptyMap()
+                IgniteUuid.randomUuid()
             ).get();
 
             fail();
@@ -1457,8 +1456,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             System.out.println("We couldn't start new cache with wrong restart id.");
         }
 
-        kernal.context().cache().dynamicStartCachesByStoredConf(Collections.singleton(storedCacheData), true, true,
-            false, restartId, Collections.emptyMap()).get();
+        kernal.context().cache().dynamicStartCachesByStoredConf(Collections.singleton(storedCacheData), true, true, false, restartId).get();
 
         System.out.println("We successfully restarted cache with initial restartId.");
 

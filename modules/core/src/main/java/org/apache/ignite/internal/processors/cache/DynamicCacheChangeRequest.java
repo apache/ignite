@@ -101,9 +101,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
-    /** Encryption key id. */
-    @Nullable private Integer encKeyId;
-
     /** Master key digest. */
     @Nullable private byte[] masterKeyDigest;
 
@@ -471,22 +468,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public byte[] encryptionKey() {
         return encKey;
-    }
-
-    /**
-     * Sets encryption key id.
-     *
-     * @param encKeyId Encryption key id.
-     */
-    public void encryptionKeyId(@Nullable Integer encKeyId) {
-        this.encKeyId = encKeyId;
-    }
-
-    /**
-     * @return Encryption key id.
-     */
-    @Nullable public Integer encryptionKeyId() {
-        return encKeyId;
     }
 
     /** @param masterKeyDigest Master key digest. */

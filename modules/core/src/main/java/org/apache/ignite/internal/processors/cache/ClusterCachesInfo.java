@@ -1066,7 +1066,6 @@ public class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
-            req.encryptionKeyId(),
             req.cacheConfigurationEnrichment()
         );
 
@@ -2140,7 +2139,6 @@ public class ClusterCachesInfo {
             nodeId,
             joinData.cacheDeploymentId(),
             null,
-            null,
             cacheInfo.cacheData().cacheConfigurationEnrichment()
         );
 
@@ -2263,7 +2261,6 @@ public class ClusterCachesInfo {
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
      * @param encKey Encryption key.
-     * @param encKeyId Encryption key id.
      * @param cacheCfgEnrichment Cache configuration enrichment.
      * @return Group descriptor.
      */
@@ -2275,7 +2272,6 @@ public class ClusterCachesInfo {
         UUID rcvdFrom,
         IgniteUuid deploymentId,
         @Nullable byte[] encKey,
-        @Nullable Integer encKeyId,
         CacheConfigurationEnrichment cacheCfgEnrichment
     ) {
         if (startedCacheCfg.getGroupName() != null) {
@@ -2316,7 +2312,7 @@ public class ClusterCachesInfo {
         );
 
         if (startedCacheCfg.isEncryptionEnabled())
-            ctx.encryption().setInitialGroupKey(grpId, encKey, encKeyId);
+            ctx.encryption().setInitialGroupKey(grpId, encKey);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 
