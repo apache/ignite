@@ -30,6 +30,8 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
  * RPC server configured for integration tests.
  */
 public class TestIgniteRpcServer extends IgniteRpcServer {
+    private final NodeOptions nodeOptions;
+
     /**
      * @param clusterService Cluster service.
      * @param servers Server list.
@@ -48,5 +50,20 @@ public class TestIgniteRpcServer extends IgniteRpcServer {
             new RaftClientMessagesFactory(),
             JRaftUtils.createRequestExecutor(nodeOptions)
         );
+
+        this.nodeOptions = nodeOptions;
+    }
+
+    @Override public void shutdown() {
+        super.shutdown();
+
+        if (this.nodeOptions.getClientExecutor() != null)
+            this.nodeOptions.getClientExecutor().shutdown();
+
+        if (this.nodeOptions.getStripedExecutor() != null)
+            this.nodeOptions.getStripedExecutor().shutdownGracefully();
+
+        if (this.nodeOptions.getCommonExecutor() != null)
+            this.nodeOptions.getCommonExecutor().shutdown();
     }
 }

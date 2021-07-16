@@ -170,7 +170,7 @@ public class JRaftServerImpl implements RaftServer {
 
         var peerId = new PeerId(addr.host(), addr.port(), 0, ElectionPriority.DISABLED);
 
-        var server = new RaftGroupService(groupId, peerId, nodeOptions, rpcServer, nodeManager, true);
+        var server = new RaftGroupService(groupId, peerId, nodeOptions, rpcServer, nodeManager);
 
         server.start();
 

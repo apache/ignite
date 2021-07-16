@@ -236,6 +236,8 @@ public class TestCluster {
                 @Override public synchronized void shutdown() {
                     super.shutdown();
 
+                    rpcServer.shutdown();
+
                     clusterService.shutdown();
                 }
             };
