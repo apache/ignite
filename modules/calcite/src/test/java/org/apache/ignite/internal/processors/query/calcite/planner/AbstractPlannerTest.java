@@ -65,7 +65,6 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
-import org.apache.calcite.tools.Planner;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;

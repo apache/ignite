@@ -467,7 +467,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public long localSizeLong(CachePeekMode[] peekModes) {
+    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
         return delegate.get().localSizeLong(peekModes);
     }
 
