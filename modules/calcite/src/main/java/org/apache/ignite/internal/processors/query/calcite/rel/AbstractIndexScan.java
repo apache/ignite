@@ -122,7 +122,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = table.getRowCount();
 
-        double cost = rows * IgniteCost.ROW_PASS_THROUGH_IDX_COST;
+        double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
 
         if (condition != null) {
             RexBuilder builder = getCluster().getRexBuilder();
@@ -150,10 +150,11 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
             if (rows <= 0)
                 rows = 1;
 
-            cost += rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_IDX_COST);
+            cost += rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST);
         }
 
-        return planner.getCostFactory().makeCost(rows, cost, 0);
+        // additional tiny cost for preventing equality with table scan.
+        return planner.getCostFactory().makeCost(rows, cost, 0).plus(planner.getCostFactory().makeTinyCost());
     }
 
     /** */

@@ -21,29 +21,31 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Test;
 
-/** */
+/** Tests correctness applying of JOIN_COMMUTE* rules. */
 public class JoinCommutePlannerTest extends AbstractPlannerTest {
-    @Test
-    public void test0() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+    /** */
+    private static IgniteSchema publicSchema;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        publicSchema = new IgniteSchema("PUBLIC");
+
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         publicSchema.addTable(
@@ -71,57 +73,116 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                 }
             }
         );
+    }
 
+    /** */
+    @Test
+    public void testOuterCommute() throws Exception {
         String sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
-        IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin"
-        );
-
-        RelOptPlanner pl = planner(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin");
-
-        @Nullable RelOptCost cost1 = pl.getCost(phys, phys.getCluster().getMetadataQuery());
-
-        System.out.println("+++ " + RelOptUtil.toString(phys));
+        IgniteRel phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
 
         assertNotNull(phys);
 
-        phys = physicalPlan(
-            sql,
-            publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule"
-        );
+        IgniteNestedLoopJoin join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
 
-        pl = planner(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        IgniteProject proj = findFirstNode(phys, byClass(IgniteProject.class));
 
-        @Nullable RelOptCost cost2 = pl.getCost(phys, phys.getCluster().getMetadataQuery());
+        assertNotNull(proj);
 
-        System.out.println("+++ " + RelOptUtil.toString(phys));
+        assertEquals(JoinRelType.LEFT, join.getJoinType());
 
-        System.out.println("cost+++ " + cost1.isLt(cost2));
+        RelOptPlanner pl = planner(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin");
 
-/*        checkSplitAndSerialization(phys, publicSchema);
+        RelOptCost costWithCommute = pl.getCost(phys, phys.getCluster().getMetadataQuery());
 
-        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
+        System.out.println("plan: " + RelOptUtil.toString(phys));
 
-        List<RexNode> lBound = idxScan.lowerBound();
+        assertNotNull(phys);
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), lBound);
-        assertEquals(3, lBound.size());
+        phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
+        join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
 
-        List<RexNode> uBound = idxScan.upperBound();
+        proj = findFirstNode(phys, byClass(IgniteProject.class));
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), uBound);
-        assertEquals(3, uBound.size());
+        assertNull(proj);
 
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);*/
+        // no commute
+        assertEquals(JoinRelType.RIGHT, join.getJoinType());
+
+        pl = planner(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+
+        RelOptCost costWithoutCommute = pl.getCost(phys, phys.getCluster().getMetadataQuery());
+
+        System.out.println("plan: " + RelOptUtil.toString(phys));
+
+        assertTrue(costWithCommute.isLt(costWithoutCommute));
+    }
+
+    /** */
+    @Test
+    public void testInnerCommute() throws Exception {
+        String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+
+        IgniteRel phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+
+        assertNotNull(phys);
+
+        IgniteNestedLoopJoin join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
+        IgniteProject proj = findFirstNode(phys, byClass(IgniteProject.class));
+        IgniteTableScan scan = findFirstNode(phys, byClass(IgniteTableScan.class));
+
+        assertNotNull(join);
+        assertNotNull(proj);
+        assertNotNull(scan);
+
+        List<String> schemaWithName = scan.getTable().getQualifiedName();
+
+        assertEquals(2, schemaWithName.size());
+
+        assertEquals(schemaWithName.get(1), "HUGE");
+
+        assertEquals(JoinRelType.INNER, join.getJoinType());
+
+        RelOptPlanner pl = planner(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+
+        RelOptCost costWithCommute = pl.getCost(phys, phys.getCluster().getMetadataQuery());
+
+        System.out.println("plan: " + RelOptUtil.toString(phys));
+
+        assertNotNull(phys);
+
+        phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+
+        join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
+        proj = findFirstNode(phys, byClass(IgniteProject.class));
+        scan = findFirstNode(phys, byClass(IgniteTableScan.class));
+
+        assertNotNull(join);
+        assertNull(proj);
+        assertNotNull(scan);
+
+        schemaWithName = scan.getTable().getQualifiedName();
+        assertEquals(2, schemaWithName.size());
+        // no commute
+        assertEquals(schemaWithName.get(1), "SMALL");
+
+        // no commute
+        assertEquals(JoinRelType.INNER, join.getJoinType());
+
+        pl = planner(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+
+        RelOptCost costWithoutCommute = pl.getCost(phys, phys.getCluster().getMetadataQuery());
+
+        System.out.println("plan: " + RelOptUtil.toString(phys));
+
+        assertTrue(costWithCommute.isLt(costWithoutCommute));
     }
 }
