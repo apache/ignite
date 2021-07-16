@@ -1,5 +1,5 @@
 # name: test/sql/function/string/test_strcmp.test
-# description: Test the md5 function
+# description: Test the STRCMP function
 # group: [string]
 
 query I

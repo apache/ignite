@@ -2,8 +2,8 @@
 # description: Test the SPACE function
 # group: [string]
 
-query II
-select sha1('hello'), sha1(NULL)
+query I
+select '|' || space(10) || '|' || space(1) || '|' || space(0) || '|' || space(-100) || '|'
 ----
-aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d
-NULL
+|          | |||
+
