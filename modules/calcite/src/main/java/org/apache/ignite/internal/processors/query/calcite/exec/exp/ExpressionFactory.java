@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -72,6 +73,14 @@ public interface ExpressionFactory<Row> {
     Predicate<Row> predicate(RexNode filter, RelDataType rowType);
 
     /**
+     * Creates a Filter predicate.
+     * @param filter Filter expression.
+     * @param rowType Input row type.
+     * @return Filter predicate.
+     */
+    BiPredicate<Row, Row> biPredicate(RexNode filter, RelDataType rowType);
+
+    /**
      * Creates a Project function. Resulting function returns a row with different fields,
      * fields order, fields types, etc.
      * @param projects Projection expressions.
@@ -104,22 +113,42 @@ public interface ExpressionFactory<Row> {
     <T> Supplier<T> execute(RexNode node);
 
     /**
-     * Creates {@link Scalar}, a code-generated expressions evaluator.
+     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
      *
      * @param node Expression.
      * @param type Row type.
-     * @return Scalar.
+     * @return SingleScalar.
      */
-    default Scalar scalar(RexNode node, RelDataType type) {
+    default SingleScalar scalar(RexNode node, RelDataType type) {
         return scalar(ImmutableList.of(node), type);
     }
 
     /**
-     * Creates {@link Scalar}, a code-generated expressions evaluator.
+     * Creates {@link BiScalar}, a code-generated expressions evaluator.
+     *
+     * @param node Expression.
+     * @param type Row type.
+     * @return BiScalar.
+     */
+    default BiScalar biScalar(RexNode node, RelDataType type) {
+        return biScalar(ImmutableList.of(node), type);
+    }
+
+    /**
+     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
      *
      * @param nodes Expressions.
      * @param type Row type.
-     * @return Scalar.
+     * @return SingleScalar.
      */
-    Scalar scalar(List<RexNode> nodes, RelDataType type);
+    SingleScalar scalar(List<RexNode> nodes, RelDataType type);
+
+    /**
+     * Creates {@link BiScalar}, a code-generated expressions evaluator.
+     *
+     * @param nodes Expressions.
+     * @param type Row type.
+     * @return BiScalar.
+     */
+    BiScalar biScalar(List<RexNode> nodes, RelDataType type);
 }

@@ -32,6 +32,9 @@ public interface RowHandler<Row> {
     Object get(int field, Row row);
 
     /** */
+    Object getBiRows(int field, Object row1, Object row2);
+
+    /** */
     void set(int field, Row row, Object val);
 
     /** */

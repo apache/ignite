@@ -37,6 +37,17 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** {@inheritDoc} */
+    @Override public Object getBiRows(int field, Object row1, Object row2) {
+        if (!row1.getClass().isArray() || !row2.getClass().isArray())
+            throw new IllegalArgumentException();
+
+        Object[] cols1 = (Object[])row1;
+        Object[] cols2 = (Object[])row2;
+
+        return field < cols1.length ? get(field, cols1) : get(field - cols1.length, cols2);
+    }
+
+    /** {@inheritDoc} */
     @Override public void set(int field, Object[] row, Object val) {
         row[field] = val;
     }
