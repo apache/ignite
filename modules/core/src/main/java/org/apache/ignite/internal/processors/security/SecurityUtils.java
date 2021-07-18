@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -162,6 +163,13 @@ public class SecurityUtils {
         catch (IgniteCheckedException e) {
             throw new SecurityException("Failed to get security context.", e);
         }
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        return security.enabled() ? security.securityContext().subject().id() : null;
     }
 
     /**
