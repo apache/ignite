@@ -19,13 +19,20 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STORE_CUSTOM_ARRAY_TO_BINARY_AS_ARRAY;
 
 /**
  *
  */
 public class BinaryObjectArrayTest extends GridCommonAbstractTest {
+    /** Key. */
+    private static final int KEY = 1;
+
     /**
      *
      */
@@ -36,19 +43,33 @@ public class BinaryObjectArrayTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checking we getting just Object[] as it was before the {@link BinaryObjectArrayWrapper} invention.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_STORE_CUSTOM_ARRAY_TO_BINARY_AS_ARRAY, value = "true")
+    public void testArrayObjectLegacy() throws Exception {
+        testArrayObject();
+    }
+
+    /**
      * Checking we able to get TestClass[], not just Object[].
      */
     @Test
-    public void testArrayObject() throws Exception {
+    public void testArrayObjectWrapper() throws Exception {
+        testArrayObject();
+    }
+
+    /**
+     *
+     */
+    private void testArrayObject() throws Exception {
         Ignite ignite = startGrid();
 
         IgniteCache<Integer, TestClass[]> cache = ignite.createCache("cache");
 
-        int key = 1;
+        cache.put(KEY, generate());
 
-        cache.put(key, generate());
-
-        check(cache.get(key));
+        check(cache.get(KEY));
     }
 
     /**
@@ -60,11 +81,9 @@ public class BinaryObjectArrayTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, TestClassHolder> cache = ignite.createCache("cache");
 
-        int key = 1;
+        cache.put(KEY, new TestClassHolder(generate()));
 
-        cache.put(key, new TestClassHolder(generate()));
-
-        check(cache.get(key).arr);
+        check(cache.get(KEY).arr);
     }
 
     /**
@@ -75,20 +94,26 @@ public class BinaryObjectArrayTest extends GridCommonAbstractTest {
             new TestClass42(),
             new TestClass43(),
             new TestClass(44) {
-            }};
+                // No-op.
+            }
+        };
     }
 
     /**
      * @param arr Array.
      */
-    private void check(TestClass[] arr) {
-        assertEquals(TestClass[].class, arr.getClass());
+    private void check(Object[] arr) {
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_STORE_CUSTOM_ARRAY_TO_BINARY_AS_ARRAY))
+            assertEquals(Object[].class, arr.getClass()); // Legacy data.
+        else
+            assertEquals(TestClass[].class, arr.getClass());
+
         assertEquals(TestClass42.class, arr[0].getClass());
         assertEquals(TestClass43.class, arr[1].getClass());
 
-        assertEquals(new Integer(42), arr[0].field);
-        assertEquals(new Integer(43), arr[1].field);
-        assertEquals(new Integer(44), arr[2].field);
+        assertEquals(new Integer(42), ((TestClass)arr[0]).field);
+        assertEquals(new Integer(43), ((TestClass)arr[1]).field);
+        assertEquals(new Integer(44), ((TestClass)arr[2]).field);
     }
 
     /**

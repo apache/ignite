@@ -66,6 +66,7 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryObjectArrayWrapper;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
@@ -492,14 +493,18 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return obj;
 
         if (obj instanceof Object[]) {
-            Object[] arr = (Object[])obj;
+            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_STORE_CUSTOM_ARRAY_TO_BINARY_AS_ARRAY)) {
+                Object[] arr = (Object[])obj;
 
-            Object[] pArr = new Object[arr.length];
+                Object[] pArr = new Object[arr.length];
 
-            for (int i = 0; i < arr.length; i++)
-                pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
+                for (int i = 0; i < arr.length; i++)
+                    pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            return pArr;
+                return pArr;
+            }
+
+            return marshalToBinary(new BinaryObjectArrayWrapper((Object[])obj), failIfUnregistered);
         }
 
         if (obj instanceof IgniteBiTuple) {

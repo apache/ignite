@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryObjectArrayWrapper;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
@@ -2001,6 +2002,13 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Count of rows, being processed within a single checkpoint lock when indexes are rebuilt",
         type = Integer.class, defaults = "" + DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE)
     public static final String IGNITE_INDEX_REBUILD_BATCH_SIZE = "IGNITE_INDEX_REBUILD_BATCH_SIZE";
+
+    /**
+     * When enabled, an array of custom type will be stored to binary as Object[], which will cause type loss.
+     * Use this property to store arrays to binary in way it was stored before the {@link BinaryObjectArrayWrapper} invention.
+     */
+    @SystemProperty(value = "When enabled, an array of custom type will be stored to binary as Object[]")
+    public static final String IGNITE_STORE_CUSTOM_ARRAY_TO_BINARY_AS_ARRAY = "IGNITE_STORE_CUSTOM_ARRAY_TO_BINARY_AS_ARRAY";
 
     /**
      * Enforces singleton.
