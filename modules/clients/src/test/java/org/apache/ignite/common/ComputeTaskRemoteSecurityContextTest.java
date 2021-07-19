@@ -105,7 +105,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     /** Port for REST client connection. */
-    private static final String DFLT_REST_PORT = "11080";
+    static final String DFLT_REST_PORT = "11080";
 
     /** Task timeout.*/
     private static final long TEST_TASK_TIMEOUT = 500;
