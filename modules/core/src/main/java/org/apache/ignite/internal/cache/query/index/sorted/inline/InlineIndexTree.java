@@ -119,7 +119,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         @Nullable IndexRowCache idxRowCache,
         @Nullable IoStatisticsHolder stats,
         InlineIndexRowHandlerFactory rowHndFactory,
-        InlineRecommender recommender) throws IgniteCheckedException {
+        InlineRecommender recommender
+    ) throws IgniteCheckedException {
         super(
             treeName,
             cctx.groupId(),
@@ -131,7 +132,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             reuseList,
             PageIdAllocator.FLAG_IDX,
             cctx.shared().kernalContext().failure(),
-            null,
+            cctx.shared().diagnostic().pageLockTracker(),
             pageIoResolver
         );
 
