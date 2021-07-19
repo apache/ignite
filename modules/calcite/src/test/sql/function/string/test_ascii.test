@@ -4,10 +4,14 @@
 
 # Some ascii checks
 query I
+SELECT ascii('')
+----
+0
+
+query I
 SELECT ascii('x')
 ----
 120
-
 
 query I
 SELECT ASCII('a')

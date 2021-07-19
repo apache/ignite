@@ -1,0 +1,9 @@
+# name: test/sql/function/numeric/test_truncate.test
+# description: Test TRUNCATE function
+# group: [numeric]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15112
+
+query T
+SELECT TRUNCATE(null, 0)
+----
+NULL
