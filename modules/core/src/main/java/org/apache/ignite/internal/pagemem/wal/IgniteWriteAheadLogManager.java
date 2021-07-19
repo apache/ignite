@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
@@ -133,7 +134,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
      *
+     * NOTE: If the {@link DataStorageConfiguration#getMaxWalArchiveSize()} is exceeded, the segment will be released.
+     *
      * @param start WAL pointer.
+     * @return {@code True} if the reservation was successful.
      */
     public boolean reserve(WALPointer start);
 
