@@ -81,7 +81,12 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> executeSql(String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql);
+        return executeSql(client, sql);
+    }
+
+    /** */
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql) {
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
@@ -89,7 +94,7 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CalciteQueryProcessor queryProcessor() {
-        return Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+    private CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
+        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
     }
 }

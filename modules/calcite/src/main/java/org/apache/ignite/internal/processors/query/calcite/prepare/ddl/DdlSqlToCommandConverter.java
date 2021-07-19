@@ -248,7 +248,7 @@ public class DdlSqlToCommandConverter {
         alterTblCmd.ifTableExists(alterTblNode.ifExists());
         alterTblCmd.ifColumnNotExists(alterTblNode.ifNotExistsColumn());
 
-        List<ColumnDefinition> cols = new ArrayList<>();
+        List<ColumnDefinition> cols = new ArrayList<>(alterTblNode.columns().size());
 
         for (SqlNode colNode : alterTblNode.columns()) {
             assert colNode instanceof SqlColumnDeclaration : colNode.getClass();
@@ -284,7 +284,7 @@ public class DdlSqlToCommandConverter {
         alterTblCmd.ifTableExists(alterTblNode.ifExists());
         alterTblCmd.ifColumnExists(alterTblNode.ifExistsColumn());
 
-        List<String> cols = new ArrayList<>();
+        List<String> cols = new ArrayList<>(alterTblNode.columns().size());
         alterTblNode.columns().forEach(c -> cols.add(((SqlIdentifier)c).getSimple()));
 
         alterTblCmd.columns(cols);

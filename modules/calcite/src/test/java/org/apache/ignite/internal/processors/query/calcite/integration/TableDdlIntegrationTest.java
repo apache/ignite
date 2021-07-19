@@ -561,6 +561,81 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Alter table from server and client nodes.
+     */
+    @Test
+    public void alterTableServerAndClient() throws Exception {
+        executeSql(grid(0), "create table my_table (id int primary key, val varchar)");
+
+        executeSql(grid(0), "alter table my_table add column val2 varchar");
+
+        executeSql(grid(0), "insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql(grid(0), "select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql(grid(0), "drop table my_table");
+
+        awaitPartitionMapExchange();
+
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column val2 varchar");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        awaitPartitionMapExchange();
+
+        executeSql(grid(0), "alter table my_table drop column val2");
+
+        awaitPartitionMapExchange();
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Drop and add the same column with different NOT NULL modificator.
+     */
+    @Test
+    public void alterTableDropAddColumn() {
+        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        executeSql("alter table my_table drop column val2");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        executeSql("alter table my_table add column val2 varchar not null");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+        // The command DROP COLUMN does not remove actual data from the cluster, it's a known and documented limitation.
+        assertEquals("2", res.get(0).get(2));
+
+        assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
+            "Null value is not allowed");
+
+        executeSql("insert into my_table (id, val, val2) values (1, '2', '3')");
+
+        assertEquals(2, executeSql("select * from my_table").size());
+    }
+
+    /**
      * Alter table logging/nologing.
      */
     @Test

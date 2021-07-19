@@ -17,22 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * ALTER TABLE ... ADD COLUMN statement.
+ * ALTER TABLE ... DROP COLUMN statement.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class AlterTableDropCommand implements DdlCommand {
-    /** Schema name. */
-    private String schemaName;
-
-    /** Table name. */
-    private String tblName;
-
-    /** Quietly ignore this command if table is not exists. */
-    private boolean ifTableExists;
-
+public class AlterTableDropCommand extends AbstractAlterTableCommand {
     /** Quietly ignore this command if column is not exists. */
     private boolean ifColumnExists;
 
@@ -43,7 +35,7 @@ public class AlterTableDropCommand implements DdlCommand {
      * @return Columns.
      */
     public List<String> columns() {
-        return cols;
+        return Collections.unmodifiableList(cols);
     }
 
     /**
@@ -51,48 +43,6 @@ public class AlterTableDropCommand implements DdlCommand {
      */
     public void columns(List<String> cols) {
         this.cols = cols;
-    }
-
-    /**
-     * @return Schema name.
-     */
-    public String schemaName() {
-        return schemaName;
-    }
-
-    /**
-     * @param schemaName Schema name.
-     */
-    public void schemaName(String schemaName) {
-        this.schemaName = schemaName;
-    }
-
-    /**
-     * @return Table name.
-     */
-    public String tableName() {
-        return tblName;
-    }
-
-    /**
-     * @param tblName Table name.
-     */
-    public void tableName(String tblName) {
-        this.tblName = tblName;
-    }
-
-    /**
-     * @return Quietly ignore this command if table is not exists.
-     */
-    public boolean ifTableExists() {
-        return ifTableExists;
-    }
-
-    /**
-     * @param ifTableExists Quietly ignore this command if table is not exists.
-     */
-    public void ifTableExists(boolean ifTableExists) {
-        this.ifTableExists = ifTableExists;
     }
 
     /**
