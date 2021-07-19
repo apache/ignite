@@ -19,8 +19,6 @@ package org.apache.ignite.internal.network.netty;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +70,7 @@ public class InboundDecoderTest {
 
         AllTypesMessage received = sendAndReceive(msg);
 
-        assertTrue(equals(msg, received));
+        assertEquals(msg, received);
     }
 
     /**
@@ -214,8 +212,7 @@ public class InboundDecoderTest {
 
         TestMessage actualMessage = (TestMessage) list.get(0);
 
-        assertEquals(msg.msg(), actualMessage.msg());
-        assertEquals(msg.map(), actualMessage.map());
+        assertEquals(msg, actualMessage);
     }
 
     /**
@@ -226,66 +223,5 @@ public class InboundDecoderTest {
     private static LongStream messageGenerationSeed() {
         var random = new Random();
         return IntStream.range(0, 100).mapToLong(ignored -> random.nextLong());
-    }
-
-    /**
-     * Returns {@code true} if the content of the given messages is equal.
-     */
-    private static boolean equals(AllTypesMessage o1, AllTypesMessage o2) {
-        if (o1 == o2)
-            return true;
-
-        boolean fieldEquals = o1.a() == o2.a()
-            && o1.b() == o2.b()
-            && o1.c() == o2.c()
-            && o1.d() == o2.d()
-            && Float.compare(o1.e(), o2.e()) == 0
-            && Double.compare(o1.f(), o2.f()) == 0
-            && o1.g() == o2.g()
-            && o1.h() == o2.h()
-            && Arrays.equals(o1.i(), o2.i())
-            && Arrays.equals(o1.j(), o2.j())
-            && Arrays.equals(o1.k(), o2.k())
-            && Arrays.equals(o1.l(), o2.l())
-            && Arrays.equals(o1.m(), o2.m())
-            && Arrays.equals(o1.n(), o2.n())
-            && Arrays.equals(o1.o(), o2.o())
-            && Arrays.equals(o1.p(), o2.p())
-            && Objects.equals(o1.q(), o2.q())
-            && Objects.equals(o1.r(), o2.r())
-            && Objects.equals(o1.s(), o2.s())
-            && Objects.equals(o1.t(), o2.t())
-            && equals((AllTypesMessage)o1.u(), (AllTypesMessage)o2.u());
-
-        boolean arrayEquals;
-
-        if (o1.v() == null && o2.v() == null)
-            arrayEquals = true;
-        else {
-            arrayEquals = IntStream.range(0, o1.v().length)
-                .allMatch(i -> equals((AllTypesMessage)o1.v()[i], (AllTypesMessage)o2.v()[i]));
-        }
-
-        boolean collectionEquals;
-
-        if (o1.w() == null && o2.w() == null)
-            collectionEquals = true;
-        else {
-            var iterator1 = o1.w().iterator();
-
-            collectionEquals = o2.w().stream()
-                .allMatch(w -> equals((AllTypesMessage)w, (AllTypesMessage)iterator1.next()));
-        }
-
-        boolean mapEquals;
-
-        if (o1.x() == null && o2.x() == null)
-            mapEquals = true;
-        else {
-            mapEquals = o2.x().entrySet().stream()
-                .allMatch(e -> equals((AllTypesMessage)e.getValue(), (AllTypesMessage)o1.x().get(e.getKey())));
-        }
-
-        return fieldEquals && arrayEquals && collectionEquals && mapEquals;
     }
 }

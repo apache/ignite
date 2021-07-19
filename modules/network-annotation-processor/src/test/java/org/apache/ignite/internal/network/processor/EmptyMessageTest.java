@@ -17,19 +17,26 @@
 
 package org.apache.ignite.internal.network.processor;
 
-import org.apache.ignite.network.annotations.MessageGroup;
+import org.junit.jupiter.api.Test;
 
-/**
- * Message group for tests.
- */
-@MessageGroup(groupType = 1, groupName = "TestMessages")
-public class TestMessageGroup {
-    /** Type of {@link SerializationOrderMessage} */
-    public static final short SERIALIZATION_ORDER_MESSAGE = 1;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-    /** Type of {@link InheritedMessage} */
-    public static final short INHERITED_MESSAGE = 2;
+/** */
+public class EmptyMessageTest {
+    /** */
+    private final TestMessagesFactory factory = new TestMessagesFactory();
 
-    /** Type of {@link EmptyMessage} */
-    public static final short EMPTY_MESSAGE = 3;
+    /**
+     * Test that {@code hashCode} and {@code equals} are generated correctly for empty messages.
+     */
+    @Test
+    public void testEqualsAndHashCode() {
+        EmptyMessage msg = factory.emptyMessage().build();
+
+        assertEquals(msg, msg);
+        assertNotEquals(factory.serializationOrderMessage().build(), msg);
+
+        assertEquals(EmptyMessageImpl.class.hashCode(), msg.hashCode());
+    }
 }

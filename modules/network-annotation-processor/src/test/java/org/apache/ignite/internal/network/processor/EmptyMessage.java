@@ -17,19 +17,10 @@
 
 package org.apache.ignite.internal.network.processor;
 
-import org.apache.ignite.network.annotations.MessageGroup;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 
-/**
- * Message group for tests.
- */
-@MessageGroup(groupType = 1, groupName = "TestMessages")
-public class TestMessageGroup {
-    /** Type of {@link SerializationOrderMessage} */
-    public static final short SERIALIZATION_ORDER_MESSAGE = 1;
-
-    /** Type of {@link InheritedMessage} */
-    public static final short INHERITED_MESSAGE = 2;
-
-    /** Type of {@link EmptyMessage} */
-    public static final short EMPTY_MESSAGE = 3;
+/** */
+@Transferable(TestMessageGroup.EMPTY_MESSAGE)
+interface EmptyMessage extends NetworkMessage {
 }
