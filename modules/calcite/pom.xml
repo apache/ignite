@@ -110,6 +110,11 @@
             <artifactId>esri-geometry-api</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+        </dependency>
+
         <!-- Test dependencies. -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

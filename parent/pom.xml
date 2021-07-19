@@ -79,7 +79,8 @@
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.9.10</reflections.version>
         <javassist.version>3.28.0-GA</javassist.version>
-        <esri.geometry.version>2.2.3</esri.geometry.version>
+        <esri.geometry.version>2.2.0</esri.geometry.version>
+        <checker.version>3.10.0</checker.version>
         <rocksdb.version>6.20.3</rocksdb.version>
         <disruptor.version>3.3.7</disruptor.version>
         <metrics.version>4.0.2</metrics.version>
@@ -355,6 +356,12 @@
                 <groupId>com.esri.geometry</groupId>
                 <artifactId>esri-geometry-api</artifactId>
                 <version>${esri.geometry.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>${checker.version}</version>
             </dependency>
 
             <dependency>
