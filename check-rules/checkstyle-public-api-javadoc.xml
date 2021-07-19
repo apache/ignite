@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "http://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+
+    <property name="fileExtensions" value="java"/>
+
+    <module name="BeforeExecutionExclusionFileFilter">
+        <property name="fileNamePattern" value=".*[\\/](test|internal)[\\/].*$"/>
+    </module>
+
+    <!-- SuppressWarning Filter. https://checkstyle.sourceforge.io/config_filters.html#SuppressWarningsFilter -->
+    <module name="SuppressWarningsFilter"/>
+
+    <!--
+        Checks that each Java package has a Javadoc file used for commenting.
+        By default it only allows a package-info.java file.
+        See: https://checkstyle.org/config_javadoc.html#JavadocPackage
+    -->
+    <module name="JavadocPackage" />
+
+    <module name="TreeWalker">
+        <!-- Handler for SuppressWarning Filter. https://checkstyle.sourceforge.io/config_filters.html#SuppressWarningsFilter -->
+        <module name="SuppressWarningsHolder"/>
+
+        <!--
+            Javdoc style checks.
+        -->
+
+        <!--
+            Checks the order of javadoc block-tags or javadoc tags.
+            See: https://checkstyle.org/config_javadoc.html#AtclauseOrder
+        -->
+        <module name="AtclauseOrder"/>
+
+        <!--
+            Checks that Javadocs are located at the correct position.
+            See: https://checkstyle.org/config_javadoc.html#InvalidJavadocPosition
+        -->
+        <module name="InvalidJavadocPosition"/>
+
+        <!--
+           Checks that a javadoc block tag (starts with @) appears only at the beginning of a line,
+           ignoring leading asterisks and white space.
+           This check ignores block tags in comments and inside inline tags {@code } and {@literal }.
+           See: https://checkstyle.org/config_javadoc.html#JavadocBlockTagLocation
+       -->
+        <module name="JavadocBlockTagLocation">
+            <!-- default tags -->
+            <property name="tags" value="author, deprecated, exception, hidden"/>
+            <property name="tags" value="param, provides, return, see, serial"/>
+            <property name="tags" value="serialData, serialField, since, throws"/>
+            <property name="tags" value="uses, version"/>
+            <!-- additional tags can be used in the project -->
+            <property name="tags" value="noinspection"/>
+        </module>
+
+        <!--
+            Checks that the Javadoc content begins from the same position for all Javadoc comments in the project.
+            Any leading asterisks and spaces are not counted as the beginning of the content and are therefore ignored.
+            https://checkstyle.org/config_javadoc.html#JavadocContentLocation
+        -->
+        <module name="JavadocContentLocationCheck"/>
+
+        <!--
+            Checks the Javadoc of a method or constructor.
+            See: https://checkstyle.org/config_javadoc.html#JavadocMethod
+        -->
+        <module name="JavadocMethod">
+            <property name="validateThrows" value="true"/>
+        </module>
+
+        <!--
+            Checks if the javadoc has leading asterisks on each line.
+            See: https://checkstyle.org/config_javadoc.html#JavadocMissingLeadingAsterisk
+        -->
+        <module name="JavadocMissingLeadingAsterisk"/>
+
+        <!--
+            Checks that there is at least one whitespace after the leading asterisk.
+            See: https://checkstyle.org/config_javadoc.html#JavadocMissingWhitespaceAfterAsterisk
+        -->
+        <module name="JavadocMissingWhitespaceAfterAsterisk"/>
+
+        <!--
+           Validates Javadoc comments to help ensure they are well formed.
+           See: https://checkstyle.org/config_javadoc.html#JavadocStyle
+        -->
+        <module name="JavadocStyle">
+            <property name="checkEmptyJavadoc" value="true"/>
+        </module>
+
+        <!--
+            Checks the Javadoc comments for type definitions.
+            See: https://checkstyle.org/config_javadoc.html#JavadocType
+        -->
+        <module name="JavadocType">
+            <property name="allowUnknownTags" value="true"/>
+        </module>
+
+        <!--
+            Checks that a variable has a Javadoc comment. Ignores serialVersionUID fields.
+            See: https://checkstyle.org/config_javadoc.html#JavadocVariable
+        -->
+        <module name="JavadocVariable"/>
+
+        <!--
+            Checks for missing Javadoc comments for a method or constructor.
+            See: https://checkstyle.org/config_javadoc.html#MissingJavadocMethod
+        -->
+        <module name="MissingJavadocMethod">
+            <property name="allowedAnnotations" value=""/>
+        </module>
+
+        <!--
+           Checks for missing Javadoc comments for interface, and annotation interface definitions.
+           See: https://checkstyle.org/config_javadoc.html#MissingJavadocType
+        -->
+        <module name="MissingJavadocType"/>
+
+        <!--
+            Checks that the block tag is followed by description.
+            See: https://checkstyle.org/config_javadoc.html#NonEmptyAtclauseDescription
+        -->
+        <module name="NonEmptyAtclauseDescription"/>
+
+        <!--
+              Checks that one blank line before the block tag if it is present in Javadoc.
+              See: https://checkstyle.org/config_javadoc.html#RequireEmptyLineBeforeBlockTagGroup
+          -->
+        <module name="RequireEmptyLineBeforeBlockTagGroup"/>
+
+        <!--
+            Checks that a Javadoc block can fit in a single line and doesn't contain block tags.
+            See: https://checkstyle.org/config_javadoc.html#SingleLineJavadoc
+        -->
+        <module name="SingleLineJavadoc">
+            <property name="ignoredTags" value="@inheritDoc, @see"/>
+        </module>
+    </module>
+</module>

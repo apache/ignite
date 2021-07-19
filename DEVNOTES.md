@@ -28,9 +28,19 @@ Upon build completion, CLI tool can be found be under `modules/cli/target` direc
 Code style is checked with [Apache Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/).
 * [Checkstyle rules](check-rules/checkstyle-rules.xml)
 * [Checkstyle suppressions](check-rules/checkstyle-suppressions.xml)
+* [Checkstyle rules for javadocs](https://checkstyle.sourceforge.io/config_javadoc.html)
+
+Run code style checks only:
 ```
 mvn clean checkstyle:checkstyle-aggregate
 ```
+
+Run javadoc style checks for public api only:
+```
+mvn clean checkstyle:checkstyle-aggregate -P javadoc-public-api
+```
+>ℹ `javadoc-public-api` profile is required for enabling checkstyle rules for public API javadoc.
+
 Code style check result is generated at `target/site/checkstyle-aggregate.html`
 
 ### License headers
@@ -68,6 +78,7 @@ mvn integration-test -Dskip.surefire.tests
 
 ## Checking and generating Javadoc
 Javadoc is generated and checked for correctness with [Maven Javadoc Plugin](https://maven.apache.org/plugins/maven-javadoc-plugin/).
+(Javadoc style check is described above in [Code style](#code-style) section)
 
 Check Javadoc is correct (precompilation is required for resolving internal dependencies):
 ```

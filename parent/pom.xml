@@ -88,12 +88,12 @@
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
-        <checkstyle.puppycrawl.version>8.37</checkstyle.puppycrawl.version>
+        <checkstyle.puppycrawl.version>8.41.1</checkstyle.puppycrawl.version>
         <launch.maven.plugin.version>1.7.25</launch.maven.plugin.version>
         <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
         <maven.assembly.plugin.version>3.2.0</maven.assembly.plugin.version>
         <maven.build-helper.plugin.version>3.2.0</maven.build-helper.plugin.version>
-        <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
         <maven.failsafe.plugin.version>3.0.0-M5</maven.failsafe.plugin.version>
@@ -705,6 +705,25 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+            Profile to enable Javadoc style checks for public API.
+        -->
+        <profile>
+            <id>javadoc-public-api</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <configLocation>${project.basedir}/check-rules/checkstyle-public-api-javadoc.xml</configLocation>
+                            <suppressionsLocation>${project.basedir}/check-rules/checkstyle-disabled-modules.xml</suppressionsLocation>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
