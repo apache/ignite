@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
-/**
- *
- */
+/** */
+@FunctionalInterface
 public interface SingleScalar extends Scalar {
+    /** Single input and single output. */
     void execute(ExecutionContext ctx, Object in, Object out);
 }

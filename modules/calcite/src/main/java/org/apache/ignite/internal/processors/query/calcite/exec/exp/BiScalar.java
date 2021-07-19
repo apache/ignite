@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
-/** Class */
+@FunctionalInterface
 public interface BiScalar extends Scalar {
-    /** */
+    /** Multi input and single output. */
     void execute(ExecutionContext ctx, Object in1, Object in2, Object out);
 }
