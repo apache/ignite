@@ -501,29 +501,18 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    private class BiFieldGetter implements InputGetter {
-        /** */
-        private final Expression hnd_;
-
-        /** */
-        private final Expression row1_;
-
+    private class BiFieldGetter extends CommonFieldGetter {
         /** */
         private final Expression row2_;
 
         /** */
-        private final RelDataType rowType;
-
-        /** */
         private BiFieldGetter(Expression hnd_, Expression row1_, Expression row2_, RelDataType rowType) {
-            this.hnd_ = hnd_;
-            this.row1_ = row1_;
+            super(hnd_, row1_, rowType);
             this.row2_ = row2_;
-            this.rowType = rowType;
         }
 
         /** {@inheritDoc} */
-        @Override public Expression field(BlockBuilder list, int index, Type desiredType) {
+        @Override protected Expression fillExpressions(BlockBuilder list, int index) {
             Expression row1_ = list.append("row1", this.row1_);
             Expression row2_ = list.append("row2", this.row2_);
 
@@ -531,46 +520,53 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 IgniteMethod.ROW_HANDLER_BI_GET.method(),
                 Expressions.constant(index), row1_, row2_);
 
-            Type fieldType = typeFactory.getJavaClass(rowType.getFieldList().get(index).getType());
-
-            if (desiredType == null) {
-                desiredType = fieldType;
-                fieldType = Object.class;
-            } else if (fieldType != java.sql.Date.class
-                && fieldType != java.sql.Time.class
-                && fieldType != java.sql.Timestamp.class) {
-                fieldType = Object.class;
-            }
-
-            return EnumUtils.convert(field, fieldType, desiredType);
+            return field;
         }
     }
 
     /** */
-    private class FieldGetter implements InputGetter {
+    private class FieldGetter extends CommonFieldGetter {
         /** */
-        private final Expression hnd_;
+        private FieldGetter(Expression hnd_, Expression row1_, RelDataType rowType) {
+            super(hnd_, row1_, rowType);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Expression fillExpressions(BlockBuilder list, int index) {
+            Expression row_ = list.append("row", this.row1_);
+
+            Expression field = Expressions.call(hnd_,
+                IgniteMethod.ROW_HANDLER_GET.method(),
+                Expressions.constant(index), row_);
+
+            return field;
+        }
+    }
+
+    /** */
+    private abstract class CommonFieldGetter implements InputGetter {
+        /** */
+        protected final Expression hnd_;
 
         /** */
-        private final Expression row_;
+        protected final Expression row1_;
 
         /** */
-        private final RelDataType rowType;
+        protected final RelDataType rowType;
 
         /** */
-        private FieldGetter(Expression hnd_, Expression row_, RelDataType rowType) {
+        protected abstract Expression fillExpressions(BlockBuilder list, int index);
+
+        /** */
+        private CommonFieldGetter(Expression hnd_, Expression row_, RelDataType rowType) {
             this.hnd_ = hnd_;
-            this.row_ = row_;
+            this.row1_ = row_;
             this.rowType = rowType;
         }
 
         /** {@inheritDoc} */
         @Override public Expression field(BlockBuilder list, int index, Type desiredType) {
-            Expression row_ = list.append("row", this.row_);
-
-            Expression field = Expressions.call(hnd_,
-                IgniteMethod.ROW_HANDLER_GET.method(),
-                    Expressions.constant(index), row_);
+            Expression fldExpression = fillExpressions(list, index);
 
             Type fieldType = typeFactory.getJavaClass(rowType.getFieldList().get(index).getType());
 
@@ -579,11 +575,10 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 fieldType = Object.class;
             } else if (fieldType != java.sql.Date.class
                 && fieldType != java.sql.Time.class
-                && fieldType != java.sql.Timestamp.class) {
+                && fieldType != java.sql.Timestamp.class)
                 fieldType = Object.class;
-            }
 
-            return EnumUtils.convert(field, fieldType, desiredType);
+            return EnumUtils.convert(fldExpression, fieldType, desiredType);
         }
     }
 
