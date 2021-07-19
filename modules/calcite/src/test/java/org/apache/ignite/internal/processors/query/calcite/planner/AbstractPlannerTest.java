@@ -232,7 +232,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
+    protected PlanningContext plannerCtx(String sql, IgniteSchema publicSchema, String... disabledRules) {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
@@ -256,6 +256,19 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
+
+        IgnitePlanner planner = ctx.planner();
+
+        assertNotNull(planner);
+
+        planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
+
+        return ctx;
+    }
+
+    /** */
+    protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
+        PlanningContext ctx = plannerCtx(sql, publicSchema, disabledRules);
 
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);

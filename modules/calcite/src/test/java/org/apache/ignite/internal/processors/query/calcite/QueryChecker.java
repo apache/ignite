@@ -150,7 +150,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsAnyProject(String schema, String tblName) {
         return matchesOnce(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], .* requiredColumns=\\[\\{(\\d|\\W|,)+\\}\\].*");
+            tblName + "\\]\\],.*requiredColumns=\\[\\{(\\d|\\W|,)+\\}\\].*");
     }
 
     /**

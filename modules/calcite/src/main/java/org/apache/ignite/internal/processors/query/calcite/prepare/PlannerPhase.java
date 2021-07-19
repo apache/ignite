@@ -148,6 +148,7 @@ public enum PlannerPhase {
                     CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
+                    CoreRules.JOIN_COMMUTE_OUTER,
 
                     // Useful of this rule is not clear now.
                     // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
