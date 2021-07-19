@@ -36,7 +36,6 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
@@ -232,7 +231,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         return node -> cls.isInstance(node) && pred.test(node);
     }
 
-    protected RelOptPlanner planner(String sql, IgniteSchema publicSchema, String... disabledRules) {
+    /** */
+    protected PlanningContext plannerCtx(String sql, IgniteSchema publicSchema, String... disabledRules) {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
@@ -263,34 +263,12 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
-        return ctx.cluster().getPlanner();
+        return ctx;
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
+        PlanningContext ctx = plannerCtx(sql, publicSchema, disabledRules);
 
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
