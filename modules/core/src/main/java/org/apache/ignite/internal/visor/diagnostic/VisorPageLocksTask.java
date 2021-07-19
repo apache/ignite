@@ -32,7 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -119,7 +119,7 @@ public class VisorPageLocksTask
                     lockTrackerMgr.dumpLocksToLog();
 
                     result = "Page locks dump was printed to console " +
-                        ToStringDumpProcessor.DATE_FMT.format(new Date(System.currentTimeMillis()));
+                        ToStringDumpHelper.DATE_FMT.format(new Date(System.currentTimeMillis()));
 
                     break;
                 case DUMP_FILE:

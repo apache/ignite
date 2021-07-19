@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private const string ClassPlatformThreadUtils = "org/apache/ignite/platform/PlatformThreadUtils";
 
+        /** */
+        private const string ClassPlatformStartIgniteUtils = "org/apache/ignite/platform/PlatformStartIgniteUtils";
+
         /// <summary>
         /// Suspend Ignite threads for the given grid.
         /// </summary>
@@ -102,6 +105,16 @@ namespace Apache.Ignite.Core.Tests
         public static string GetJavaThreadName()
         {
             return CallStringMethod(ClassPlatformThreadUtils, "getThreadName", "()Ljava/lang/String;");
+        }
+
+        public static void StartIgnite(string name)
+        {
+            CallStringMethod(ClassPlatformStartIgniteUtils, "startWithSecurity", "(Ljava/lang/String;)V", name);
+        }
+
+        public static void StopIgnite(string name)
+        {
+            CallStringMethod(ClassPlatformStartIgniteUtils, "stop", "(Ljava/lang/String;)V", name);
         }
 
         /** */

@@ -61,6 +61,34 @@ include::{javaCodeDir}/JavaThinClient.java[tag=system-views,indent=0]
 ----
 
 
+System views can also be queried through the link:tools/control-script#system-view-command[Control Script system view command].
+Note that the mentioned above command result contains all columns of the requested system view. If filtering is necessary, it should be performed manually.
+
+Examples of the use of link:tools/control-script#system-view-command[Control Script system view command]:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+# get the list of nodes
+control.sh --system-view NODES
+
+# get the list of metrics from the node with the specific ID
+control.sh --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684f3bae
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+# get the list of nodes
+control.bat --system-view NODES
+
+# get the list of metrics from the node with the specific ID
+control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684f3bae
+----
+--
+
+
 :table_opts: cols="2,1,4",opts="header"
 
 == CACHES
@@ -313,6 +341,21 @@ The BASELINE_NODES view contains information about the nodes that are part of th
 | Column |Data Type |Description
 |CONSISTENT_ID |VARCHAR |Node consistent ID.
 |ONLINE |BOOLEAN |Indicates whether the node is up and running.
+
+|===
+
+
+== BASELINE_NODE_ATTRIBUTES
+
+
+The BASELINE_NODE_ATTRIBUTES view exposes node attributes fixed at a moment when a current baseline topology was set.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
+| NAME | VARCHAR | Name of the node attribute.
+| VALUE | VARCHAR | Attribute value.
 
 |===
 

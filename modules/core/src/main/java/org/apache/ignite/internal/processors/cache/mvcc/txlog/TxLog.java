@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -130,13 +131,15 @@ public class TxLog implements CheckpointListener {
                             // Initialize new page.
                             PageMetaIO io = PageMetaIOV2.VERSIONS.latest();
 
-                            io.initNewPage(pageAddr, metaId, pageMemory.pageSize());
+                            PageMetrics metrics = txLogDataRegion.metrics().pageMetrics();
 
-                            treeRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, PageMemory.FLAG_IDX);
-                            reuseListRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, PageMemory.FLAG_IDX);
+                            io.initNewPage(pageAddr, metaId, pageMemory.pageSize(), metrics);
 
-                            assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_IDX;
-                            assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_IDX;
+                            treeRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, FLAG_IDX);
+                            reuseListRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, FLAG_IDX);
+
+                            assert PageIdUtils.flag(treeRoot) == FLAG_IDX;
+                            assert PageIdUtils.flag(reuseListRoot) == FLAG_IDX;
 
                             io.setTreeRoot(pageAddr, treeRoot);
                             io.setReuseListRoot(pageAddr, reuseListRoot);
@@ -161,9 +164,9 @@ public class TxLog implements CheckpointListener {
                             treeRoot = io.getTreeRoot(pageAddr);
                             reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                            assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_IDX :
+                            assert PageIdUtils.flag(treeRoot) == FLAG_IDX :
                                 U.hexLong(treeRoot) + ", TX_LOG_CACHE_ID=" + TX_LOG_CACHE_ID;
-                            assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_IDX :
+                            assert PageIdUtils.flag(reuseListRoot) == FLAG_IDX :
                                 U.hexLong(reuseListRoot) + ", TX_LOG_CACHE_ID=" + TX_LOG_CACHE_ID;
                         }
                     }

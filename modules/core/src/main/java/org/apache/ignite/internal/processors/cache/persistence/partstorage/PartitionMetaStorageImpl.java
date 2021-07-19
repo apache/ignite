@@ -25,7 +25,6 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -41,9 +40,8 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
  */
 public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeList<T> implements PartitionMetaStorage<T> {
     /**
-     * @param cacheId Cache id.
+     * @param cacheGrpId Cache group id.
      * @param name Name.
-     * @param memMetrics Mem metrics.
      * @param memPlc Mem policy.
      * @param reuseList Reuse list.
      * @param wal Wal.
@@ -52,8 +50,8 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
      * @param pageFlag Default flag value for allocated pages.
      */
     public PartitionMetaStorageImpl(
-        int cacheId, String name,
-        DataRegionMetricsImpl memMetrics,
+        int cacheGrpId,
+        String name,
         DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
@@ -64,7 +62,7 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
         AtomicLong pageListCacheLimit,
         byte pageFlag
     ) throws IgniteCheckedException {
-        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit, pageFlag);
+        super(cacheGrpId, name, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit, pageFlag);
     }
 
     /**

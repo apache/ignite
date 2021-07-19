@@ -20,7 +20,8 @@ package org.apache.ignite.logger.java;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
@@ -43,7 +44,7 @@ public class JavaLoggerTest {
         log = new JavaLogger();
 
         ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
-        ((LoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
+        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         System.out.println(log.toString());
 
@@ -67,5 +68,20 @@ public class JavaLoggerTest {
 
         // Ensure we don't get pattern, only actual file name is allowed here.
         assert !log.fileName().contains("%");
+        assert log.fileName().contains("ignite");
+
+        System.clearProperty("java.util.logging.config.file");
+        GridTestUtils.setFieldValue(JavaLogger.class, JavaLogger.class, "inited", false);
+
+        log = new JavaLogger();
+
+        ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
+        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode("other-app", UUID.fromString("00000000-1111-2222-3333-444444444444"));
+
+        assert log.fileName() != null;
+
+        // Ensure we don't get pattern, only actual file name is allowed here.
+        assert !log.fileName().contains("%");
+        assert log.fileName().contains("other-app");
     }
 }

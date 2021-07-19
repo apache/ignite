@@ -79,6 +79,8 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
@@ -265,6 +267,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** Service invocation. */
     private static final short OP_SERVICE_INVOKE = 7000;
+
+    /** Data streamers. */
+    /** */
+    private static final short OP_DATA_STREAMER_START = 8000;
+
+    /** */
+    private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -475,6 +484,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_SERVICE_INVOKE:
                 return new ClientServiceInvokeRequest(reader);
+
+            case OP_DATA_STREAMER_START:
+                return new ClientDataStreamerStartRequest(reader);
+
+            case OP_DATA_STREAMER_ADD_DATA:
+                return new ClientDataStreamerAddDataRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
