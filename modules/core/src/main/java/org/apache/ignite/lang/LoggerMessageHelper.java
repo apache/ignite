@@ -90,6 +90,7 @@ public final class LoggerMessageHelper {
      *
      * @param messagePattern Message with formatting anchor.
      * @param params Parameters.
+     * @return A formatted message.
      */
     static String arrayFormat(final String messagePattern, final Object[] params) {
         if (messagePattern == null)
