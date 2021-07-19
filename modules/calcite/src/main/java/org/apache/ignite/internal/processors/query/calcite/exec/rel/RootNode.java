@@ -22,11 +22,11 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -122,20 +122,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void closeInternal() {
-        closeInternal0(ex.get() == null);
-    }
-
-    /** */
-    private void closeInternal0(boolean sync) {
-        try {
-            if (sync)
-                context().submit(() -> sources().forEach(U::closeQuiet), this::onError).get();
-            else
-                context().execute(() -> sources().forEach(U::closeQuiet), this::onError);
-        }
-        catch (InterruptedException | ExecutionException e) {
-            U.warn(context().planningContext().logger(), "Execution is cancelled.", e);
-        }
+        context().execute(() -> sources().forEach(U::closeQuiet), this::onError);
     }
 
     /** {@inheritDoc} */
