@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 import java.util.BitSet;
+import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.tostring.S;
 
 /**

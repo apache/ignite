@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
+package org.apache.ignite.internal.schema.row;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -24,6 +24,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.util.Arrays;
+import org.apache.ignite.internal.util.Constants;
 
 /**
  * A simple byte array wrapper to allow dynamic byte array expansion during the row construction. Grows exponentially
@@ -46,20 +47,19 @@ import java.util.Arrays;
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ExpandableByteBuf {
-    /** */
-    private static final int MB = 1024 * 1024;
-
-    /** */
+    /** Buffer array. */
     private byte[] arr;
 
-    /** */
+    /** Wrapped array. */
     private ByteBuffer buf;
 
-    /** */
+    /** Written bytes. */
     private int len;
 
     /**
-     * @param size Start buffer size.
+     * Creates expandable row buffer.
+     *
+     * @param size Initial buffer size.
      */
     public ExpandableByteBuf(int size) {
         if (size <= 0)
@@ -171,6 +171,9 @@ public class ExpandableByteBuf {
      * @throws CharacterCodingException If encoding failed.
      */
     public int putString(int off, String val, CharsetEncoder encoder) throws CharacterCodingException {
+        if (val.isEmpty())
+            return 0;
+
         ensureCapacity(off);
 
         encoder.reset();
@@ -181,7 +184,10 @@ public class ExpandableByteBuf {
             CharBuffer valBuf = CharBuffer.wrap(val);
 
             while (true) {
-                CoderResult cr = encoder.encode(valBuf, buf, true);
+                CoderResult cr = valBuf.hasRemaining() ? encoder.encode(valBuf, buf, true) : CoderResult.UNDERFLOW;
+
+                if (cr.isUnderflow())
+                    cr = encoder.flush(buf);
 
                 len = buf.position();
 
@@ -197,24 +203,6 @@ public class ExpandableByteBuf {
                 if (cr.isError())
                     cr.throwException();
 
-            }
-
-            while (true) {
-                CoderResult cr = encoder.flush(buf);
-
-                len = buf.position();
-
-                if (cr.isOverflow()) {
-                    expand(len + (int)encoder.maxBytesPerChar());
-
-                    continue;
-                }
-
-                if (cr.isUnderflow())
-                    break;
-
-                if (cr.isError())
-                    cr.throwException();
             }
 
             return len - off;
@@ -232,6 +220,16 @@ public class ExpandableByteBuf {
      */
     public byte get(int off) {
         return buf.get(off);
+    }
+
+    /**
+     * Reads {@code short} value from buffer.
+     *
+     * @param off Buffer offset.
+     * @return Value.
+     */
+    public short getShort(int off) {
+        return buf.getShort(off);
     }
 
     /**
@@ -264,10 +262,10 @@ public class ExpandableByteBuf {
         int l = arr.length;
 
         while (l < cap) {
-            if (l < MB)
+            if (l < Constants.MiB)
                 l *= 2;
             else
-                l += MB;
+                l += Constants.MiB;
         }
 
         byte[] tmp = new byte[l];
@@ -279,5 +277,31 @@ public class ExpandableByteBuf {
         buf = ByteBuffer.wrap(arr);
         buf.position(oldPos);
         buf.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * Compact array shifting the tail of the data.
+     *
+     * @param srcOff Source offset.
+     * @param dstOff Destination offset.
+     */
+    void shift(int srcOff, int dstOff) {
+        assert srcOff > dstOff;
+
+        final int shift = srcOff - dstOff;
+
+        System.arraycopy(arr, srcOff, arr, dstOff, len - srcOff);
+        Arrays.fill(arr, len - shift, len, (byte)0);
+
+        len -= shift;
+        buf = ByteBuffer.wrap(arr);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * @return Underlying buffer.
+     */
+    public ByteBuffer unwrap() {
+        return buf.duplicate().limit(len).order(ByteOrder.LITTLE_ENDIAN);
     }
 }

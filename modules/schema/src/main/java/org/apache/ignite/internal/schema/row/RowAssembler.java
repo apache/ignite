@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
+package org.apache.ignite.internal.schema.row;
 
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetEncoder;
@@ -23,30 +23,33 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.UUID;
+import org.apache.ignite.internal.schema.AssemblyException;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.BinaryRow.RowFlags;
+import org.apache.ignite.internal.schema.BitmaskNativeType;
+import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.Columns;
+import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.NativeTypeSpec;
+import org.apache.ignite.internal.schema.NativeTypes;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
 
-import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.OMIT_KEY_VARTBL_FLAG;
-import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.OMIT_VAL_VARTBL_FLAG;
-import static org.apache.ignite.internal.schema.BinaryRow.VARLEN_COLUMN_OFFSET_FIELD_SIZE;
-import static org.apache.ignite.internal.schema.BinaryRow.VARLEN_TABLE_SIZE_FIELD_SIZE;
+import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.KEY_FLAGS_OFFSET;
+import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.VAL_FLAGS_OFFSET;
 
 /**
  * Utility class to build rows using column appending pattern. The external user of this class must consult
  * with the schema and provide the columns in strict internal column sort order during the row construction.
  * Additionally, the user of this class should pre-calculate the resulting row size when possible to avoid
- * unnecessary data copies. The assembler provides some utility methods to calculate the resulting row size
- * based on the number of null columns and size calculation for strings.
- *
- * @see #rowSize(Columns, int, int, Columns, int, int)
- * @see #rowChunkSize(Columns, int, int)
- * @see #utf8EncodedLength(CharSequence)
+ * unnecessary data copies and allow some size-optimizations can be applied.
  */
 public class RowAssembler {
     /** Schema. */
     private final SchemaDescriptor schema;
 
     /** The number of non-null varlen columns in values chunk. */
-    private final int nonNullVarlenValCols;
+    private final int valVartblLen;
 
     /** Target byte buffer to write to. */
     private final ExpandableByteBuf buf;
@@ -57,20 +60,23 @@ public class RowAssembler {
     /** Current field index (the field is unset). */
     private int curCol;
 
-    /** Index of the current varlen table entry. Incremented each time non-null varlen column is appended. */
-    private int curVarlenTblEntry;
-
     /** Current offset for the next column to be appended. */
     private int curOff;
+
+    /** Index of the current varlen table entry. Incremented each time non-null varlen column is appended. */
+    private int curVartblEntry;
 
     /** Base offset of the current chunk */
     private int baseOff;
 
-    /** Offset of the null map for current chunk. */
+    /** Offset of the null-map for current chunk. */
     private int nullMapOff;
 
     /** Offset of the varlen table for current chunk. */
-    private int varlenTblChunkOff;
+    private int varTblOff;
+
+    /** Offset of data for current chunk. */
+    private int dataOff;
 
     /** Row hashcode. */
     private int keyHash;
@@ -82,14 +88,11 @@ public class RowAssembler {
     private CharsetEncoder strEncoder;
 
     /**
-     * @param nonNullVarlenCols Number of non-null varlen columns.
+     * @param entries Number of non-null varlen columns.
      * @return Total size of the varlen table.
      */
-    public static int varlenTableChunkSize(int nonNullVarlenCols) {
-        int items = nonNullVarlenCols - 1; // Ignore very first varlen.
-
-        return items <= 0 ? 0 :
-            VARLEN_TABLE_SIZE_FIELD_SIZE + items * VARLEN_COLUMN_OFFSET_FIELD_SIZE;
+    private static int varTableChunkLength(int entries, int entrySize) {
+        return entries <= 1 ? 0 : Short.BYTES + (entries - 1) * entrySize;
     }
 
     /**
@@ -121,80 +124,136 @@ public class RowAssembler {
     }
 
     /**
-     * @param keyCols Key columns.
-     * @param nonNullVarlenKeyCols Number of non-null varlen columns in key chunk.
-     * @param nonNullVarlenKeySize Size of non-null varlen columns in key chunk.
-     * @param valCols Value columns.
-     * @param nonNullVarlenValCols Number of non-null varlen columns in value chunk.
-     * @param nonNullVarlenValSize Size of non-null varlen columns in value chunk.
-     * @return Total row size.
+     * Helper method.
+     *
+     * @param rowAsm Writes column value to assembler.
+     * @param col Column.
+     * @param val Value.
      */
-    public static int rowSize(
-        Columns keyCols,
-        int nonNullVarlenKeyCols,
-        int nonNullVarlenKeySize,
-        Columns valCols,
-        int nonNullVarlenValCols,
-        int nonNullVarlenValSize
-    ) {
-        return BinaryRow.KEY_CHUNK_OFFSET /* Header size */ +
-            rowChunkSize(keyCols, nonNullVarlenKeyCols, nonNullVarlenKeySize) +
-            rowChunkSize(valCols, nonNullVarlenValCols, nonNullVarlenValSize);
+    public static void writeValue(RowAssembler rowAsm, Column col, Object val) {
+        if (val == null) {
+            rowAsm.appendNull();
+
+            return;
+        }
+
+        switch (col.type().spec()) {
+            case INT8: {
+                rowAsm.appendByte((byte)val);
+
+                break;
+            }
+            case INT16: {
+                rowAsm.appendShort((short)val);
+
+                break;
+            }
+            case INT32: {
+                rowAsm.appendInt((int)val);
+
+                break;
+            }
+            case INT64: {
+                rowAsm.appendLong((long)val);
+
+                break;
+            }
+            case FLOAT: {
+                rowAsm.appendFloat((float)val);
+
+                break;
+            }
+            case DOUBLE: {
+                rowAsm.appendDouble((double)val);
+
+                break;
+            }
+            case UUID: {
+                rowAsm.appendUuid((UUID)val);
+
+                break;
+            }
+            case STRING: {
+                rowAsm.appendString((String)val);
+
+                break;
+            }
+            case BYTES: {
+                rowAsm.appendBytes((byte[])val);
+
+                break;
+            }
+            case BITMASK: {
+                rowAsm.appendBitmask((BitSet)val);
+
+                break;
+            }
+            default:
+                throw new IllegalStateException("Unexpected value: " + col.type());
+        }
     }
 
     /**
-     * @param cols Columns.
-     * @param nonNullVarlenCols Number of non-null varlen columns in chunk.
-     * @param nonNullVarlenSize Size of non-null varlen columns in chunk.
-     * @return Row's chunk size.
-     */
-    static int rowChunkSize(Columns cols, int nonNullVarlenCols, int nonNullVarlenSize) {
-        int size = BinaryRow.CHUNK_LEN_FIELD_SIZE + cols.nullMapSize() +
-            varlenTableChunkSize(nonNullVarlenCols);
-
-        for (int i = 0; i < cols.numberOfFixsizeColumns(); i++)
-            size += cols.column(i).type().sizeInBytes();
-
-        return size + nonNullVarlenSize;
-    }
-
-    /**
+     * Creates RowAssembler for chunks of unknown size.
+     * <p>
+     * RowAssembler will use adaptive buffer size and omit some optimizations for small key/value chunks.
+     *
      * @param schema Row schema.
-     * @param size Target row size. If the row size is known in advance, it should be provided upfront to avoid
-     * unnecessary arrays copy.
      * @param nonNullVarlenKeyCols Number of non-null varlen columns in key chunk.
      * @param nonNullVarlenValCols Number of non-null varlen columns in value chunk.
      */
     public RowAssembler(
         SchemaDescriptor schema,
-        int size,
         int nonNullVarlenKeyCols,
         int nonNullVarlenValCols
     ) {
+        this(schema,
+            0,
+            nonNullVarlenKeyCols,
+            0,
+            nonNullVarlenValCols);
+    }
+
+    /**
+     * Creates RowAssembler for chunks with estimated sizes.
+     * <p>
+     * RowAssembler will apply optimizations based on chunks sizes estimations.
+     *
+     * @param schema Row schema.
+     * @param keyVarlenSize Key payload size. Estimated upper-bound or zero if unknown.
+     * @param keyVarlenCols Number of non-null varlen columns in key chunk.
+     * @param valVarlenSize Value data size. Estimated upper-bound or zero if unknown.
+     * @param valVarlenCols Number of non-null varlen columns in value chunk.
+     */
+    public RowAssembler(
+        SchemaDescriptor schema,
+        int keyVarlenSize,
+        int keyVarlenCols,
+        int valVarlenSize,
+        int valVarlenCols
+    ) {
         this.schema = schema;
-        this.nonNullVarlenValCols = nonNullVarlenValCols;
 
         curCols = schema.keyColumns();
-        flags = 0;
+        curCol = 0;
         keyHash = 0;
         strEncoder = null;
 
-        initOffsets(BinaryRow.KEY_CHUNK_OFFSET, nonNullVarlenKeyCols);
+        int keyVartblLen = varTableChunkLength(keyVarlenCols, Integer.BYTES);
+        valVartblLen = varTableChunkLength(valVarlenCols, Integer.BYTES);
 
-        if (schema.keyColumns().nullMapSize() == 0)
-            flags |= RowFlags.OMIT_KEY_NULL_MAP_FLAG;
+        initChunk(BinaryRow.KEY_CHUNK_OFFSET, curCols.nullMapSize(), keyVartblLen);
 
-        if (schema.valueColumns().nullMapSize() == 0)
-            flags |= RowFlags.OMIT_VAL_NULL_MAP_FLAG;
+        final Columns valCols = schema.valueColumns();
+
+        int size = BinaryRow.HEADER_SIZE + 2 * BinaryRow.CHUNK_LEN_FLD_SIZE +
+            keyVarlenSize + valVarlenSize +
+            keyVartblLen + valVartblLen +
+            curCols.fixsizeMaxLen() + valCols.fixsizeMaxLen() +
+            curCols.nullMapSize() + valCols.nullMapSize();
 
         buf = new ExpandableByteBuf(size);
-
         buf.putShort(0, (short)schema.version());
-
-        if (nonNullVarlenKeyCols > 1) // First varlen column offset is known.
-            buf.putShort(varlenTblChunkOff, (short)(nonNullVarlenKeyCols - 1));
-        else
-            flags |= OMIT_KEY_VARTBL_FLAG;
     }
 
     /**
@@ -203,18 +262,15 @@ public class RowAssembler {
      * @return {@code this} for chaining.
      */
     public RowAssembler appendNull() {
-        Column col = curCols.column(curCol);
-
-        if (!col.nullable())
-            throw new IllegalArgumentException("Failed to set column (null was passed, but column is not nullable): " +
-                col);
+        if (!curCols.column(curCol).nullable())
+            throw new IllegalArgumentException("Failed to set column (null was passed, but column is not nullable): " + curCols.column(curCol));
 
         setNull(curCol);
 
-        if (isKeyColumn())
+        if (isKeyChunk())
             keyHash *= 31;
 
-        shiftColumn(0, false);
+        shiftColumn(0);
 
         return this;
     }
@@ -230,10 +286,10 @@ public class RowAssembler {
 
         buf.put(curOff, val);
 
-        if (isKeyColumn())
+        if (isKeyChunk())
             keyHash = 31 * keyHash + Byte.hashCode(val);
 
-        shiftColumn(NativeTypes.INT8);
+        shiftColumn(NativeTypes.INT8.sizeInBytes());
 
         return this;
     }
@@ -249,10 +305,10 @@ public class RowAssembler {
 
         buf.putShort(curOff, val);
 
-        if (isKeyColumn())
+        if (isKeyChunk())
             keyHash = 31 * keyHash + Short.hashCode(val);
 
-        shiftColumn(NativeTypes.INT16);
+        shiftColumn(NativeTypes.INT16.sizeInBytes());
 
         return this;
     }
@@ -268,10 +324,10 @@ public class RowAssembler {
 
         buf.putInt(curOff, val);
 
-        if (isKeyColumn())
+        if (isKeyChunk())
             keyHash = 31 * keyHash + Integer.hashCode(val);
 
-        shiftColumn(NativeTypes.INT32);
+        shiftColumn(NativeTypes.INT32.sizeInBytes());
 
         return this;
     }
@@ -287,10 +343,10 @@ public class RowAssembler {
 
         buf.putLong(curOff, val);
 
-        if (isKeyColumn())
-            keyHash += 31 * keyHash + Long.hashCode(val);
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + Long.hashCode(val);
 
-        shiftColumn(NativeTypes.INT64);
+        shiftColumn(NativeTypes.INT64.sizeInBytes());
 
         return this;
     }
@@ -306,10 +362,10 @@ public class RowAssembler {
 
         buf.putFloat(curOff, val);
 
-        if (isKeyColumn())
-            keyHash += 31 * keyHash + Float.hashCode(val);
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + Float.hashCode(val);
 
-        shiftColumn(NativeTypes.FLOAT);
+        shiftColumn(NativeTypes.FLOAT.sizeInBytes());
 
         return this;
     }
@@ -325,10 +381,10 @@ public class RowAssembler {
 
         buf.putDouble(curOff, val);
 
-        if (isKeyColumn())
-            keyHash += 31 * keyHash + Double.hashCode(val);
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + Double.hashCode(val);
 
-        shiftColumn(NativeTypes.DOUBLE);
+        shiftColumn(NativeTypes.DOUBLE.sizeInBytes());
 
         return this;
     }
@@ -345,10 +401,10 @@ public class RowAssembler {
         buf.putLong(curOff, uuid.getLeastSignificantBits());
         buf.putLong(curOff + 8, uuid.getMostSignificantBits());
 
-        if (isKeyColumn())
-            keyHash += 31 * keyHash + uuid.hashCode();
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + uuid.hashCode();
 
-        shiftColumn(NativeTypes.UUID);
+        shiftColumn(NativeTypes.UUID.sizeInBytes());
 
         return this;
     }
@@ -365,13 +421,14 @@ public class RowAssembler {
         try {
             int written = buf.putString(curOff, val, encoder());
 
-            if (curVarlenTblEntry != 0)
-                writeOffset(curVarlenTblEntry - 1, curOff - baseOff);
+            writeVarlenOffset(curVartblEntry, curOff - dataOff);
 
-            if (isKeyColumn())
-                keyHash += 31 * keyHash + val.hashCode();
+            curVartblEntry++;
 
-            shiftColumn(written, true);
+            if (isKeyChunk())
+                keyHash = 31 * keyHash + val.hashCode();
+
+            shiftColumn(written);
 
             return this;
         }
@@ -391,13 +448,14 @@ public class RowAssembler {
 
         buf.putBytes(curOff, val);
 
-        if (isKeyColumn())
-            keyHash += 31 * keyHash + Arrays.hashCode(val);
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + Arrays.hashCode(val);
 
-        if (curVarlenTblEntry != 0)
-            writeOffset(curVarlenTblEntry - 1, curOff - baseOff);
+        writeVarlenOffset(curVartblEntry, curOff - dataOff);
 
-        shiftColumn(val.length, true);
+        curVartblEntry++;
+
+        shiftColumn(val.length);
 
         return this;
     }
@@ -426,10 +484,10 @@ public class RowAssembler {
         for (int i = 0; i < maskType.sizeInBytes() - arr.length; i++)
             buf.put(curOff + arr.length + i, (byte)0);
 
-        if (isKeyColumn())
-            keyHash += 31 * keyHash + Arrays.hashCode(arr);
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + bitSet.hashCode();
 
-        shiftColumn(maskType);
+        shiftColumn(maskType.sizeInBytes());
 
         return this;
     }
@@ -437,20 +495,38 @@ public class RowAssembler {
     /**
      * @return Serialized row.
      */
-    public byte[] build() {
+    public BinaryRow build() {
+        flush();
+
+        return new ByteBufferRow(buf.unwrap());
+    }
+
+    /**
+     * @return Row bytes.
+     */
+    public byte[] toBytes() {
+        flush();
+
+        return buf.toArray();
+    }
+
+    /**
+     * Finish building row.
+     */
+    private void flush() {
         if (schema.keyColumns() == curCols)
             throw new AssemblyException("Key column missed: colIdx=" + curCol);
         else {
-            if (curCol == 0)
+            if (curCol == 0) {
+                flags &= ~(RowFlags.CHUNK_FLAGS_MASK << VAL_FLAGS_OFFSET);
                 flags |= RowFlags.NO_VALUE_FLAG;
+            }
             else if (schema.valueColumns().length() != curCol)
                 throw new AssemblyException("Value column missed: colIdx=" + curCol);
         }
 
         buf.putShort(BinaryRow.FLAGS_FIELD_OFFSET, flags);
         buf.putInt(BinaryRow.KEY_HASH_FIELD_OFFSET, keyHash);
-
-        return buf.toArray();
     }
 
     /**
@@ -466,14 +542,14 @@ public class RowAssembler {
     /**
      * Writes the given offset to the varlen table entry with the given index.
      *
-     * @param tblEntryIdx Varlen table entry index.
+     * @param entryIdx Vartable entry index.
      * @param off Offset to write.
      */
-    private void writeOffset(int tblEntryIdx, int off) {
-        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? OMIT_KEY_VARTBL_FLAG : OMIT_VAL_VARTBL_FLAG)) == 0 :
-            "Illegal writing of varlen when 'omit vartable' flag is set for a chunk.";
+    private void writeVarlenOffset(int entryIdx, int off) {
+        if (entryIdx == 0)
+            return; // Omit offset for very first varlen.
 
-        buf.putShort(varlenTblChunkOff + Row.varlenItemOffset(tblEntryIdx), (short)off);
+        buf.putInt(varTblOff + Short.BYTES + (entryIdx - 1) * Integer.BYTES, off);
     }
 
     /**
@@ -499,86 +575,100 @@ public class RowAssembler {
     }
 
     /**
-     * Sets null flag in the null map for the given column.
+     * Sets null flag in the null-map for the given column.
      *
      * @param colIdx Column index.
      */
     private void setNull(int colIdx) {
-        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? RowFlags.OMIT_KEY_NULL_MAP_FLAG : RowFlags.OMIT_VAL_NULL_MAP_FLAG)) == 0 :
-            "Illegal writing 'null' value when 'omit null-map' flag is set for a chunk.";
+        assert nullMapOff < varTblOff : "Null-map is omitted.";
 
-        int byteInMap = colIdx / 8;
-        int bitInByte = colIdx % 8;
+        int byteInMap = colIdx >> 3; // Equivalent expression for: colIidx / 8
+        int bitInByte = colIdx & 7; // Equivalent expression for: colIdx % 8
 
         buf.ensureCapacity(nullMapOff + byteInMap + 1);
 
-        buf.put(nullMapOff + byteInMap, (byte)(buf.get(nullMapOff + byteInMap) | (1 << bitInByte)));
+        buf.put(nullMapOff + byteInMap, (byte)((Byte.toUnsignedInt(buf.get(nullMapOff + byteInMap))) | (1 << bitInByte)));
     }
 
     /**
-     * Must be called after an append of fixlen column.
-     *
-     * @param type Type of the appended column.
+     * Shifts current column indexes as necessary, also
+     * switch to value chunk writer when moving from key to value columns.
      */
-    private void shiftColumn(NativeType type) {
-        assert type.spec().fixedLength() : "Varlen types should provide field length to shift column: " + type;
-
-        shiftColumn(type.sizeInBytes(), false);
-    }
-
-    /**
-     * Shifts current offsets and column indexes as necessary, also changes the chunk base offsets when
-     * moving from key to value columns.
-     *
-     * @param size Size of the appended column.
-     * @param varlen {@code true} if appended column was varlen.
-     */
-    private void shiftColumn(int size, boolean varlen) {
+    private void shiftColumn(int size) {
         curCol++;
         curOff += size;
 
-        if (varlen)
-            curVarlenTblEntry++;
+        if (curCol == curCols.length())
+            finishChunk();
+    }
 
-        if (curCol == curCols.length()) {
-            int chunkLen = curOff - baseOff;
+    /**
+     * Write chunk meta.
+     */
+    private void finishChunk() {
+        if (curVartblEntry > 1) {
+            assert varTblOff < dataOff : "Illegal writing of varlen when 'omit vartable' flag is set for a chunk.";
+            assert varTblOff + varTableChunkLength(curVartblEntry, Integer.BYTES) == dataOff : "Vartable overlow: size=" + curVartblEntry;
 
-            buf.putInt(baseOff, chunkLen);
+            final VarTableFormat format = VarTableFormat.format(curOff - dataOff);
 
-            if (schema.valueColumns() == curCols)
-                return; // No more columns.
+            curOff -= format.compactVarTable(buf, varTblOff, curVartblEntry - 1);
 
-            curCols = schema.valueColumns(); // Switch key->value columns.
-
-            initOffsets(baseOff + chunkLen, nonNullVarlenValCols);
-
-            if (nonNullVarlenValCols > 1)
-                buf.putShort(varlenTblChunkOff, (short)(nonNullVarlenValCols - 1));
-            else
-                flags |= OMIT_VAL_VARTBL_FLAG;
+            flags |= format.formatFlags() << (isKeyChunk() ? KEY_FLAGS_OFFSET : VAL_FLAGS_OFFSET);
         }
+
+        // Write sizes.
+        final int chunkLen = curOff - baseOff;
+
+        buf.putInt(baseOff, chunkLen);
+
+        if (schema.keyColumns() == curCols)
+            switchToValuChunk(BinaryRow.HEADER_SIZE + chunkLen);
     }
 
     /**
-     * @param base Chunk base offset.
-     * @param nonNullVarlenCols Number of non-null varlen columns.
+     * @param baseOff Chunk base offset.
      */
-    private void initOffsets(int base, int nonNullVarlenCols) {
-        baseOff = base;
-
+    private void switchToValuChunk(int baseOff) {
+        // Switch key->value columns.
+        curCols = schema.valueColumns();
         curCol = 0;
-        curVarlenTblEntry = 0;
 
-        nullMapOff = baseOff + BinaryRow.CHUNK_LEN_FIELD_SIZE;
-        varlenTblChunkOff = nullMapOff + curCols.nullMapSize();
-
-        curOff = varlenTblChunkOff + varlenTableChunkSize(nonNullVarlenCols);
+        // Create value chunk writer.
+        initChunk(baseOff, curCols.nullMapSize(), valVartblLen);
     }
 
     /**
-     * @return {@code true} if current column is a key column, {@code false} otherwise.
+     * Init chunk offsets and flags.
+     *
+     * @param baseOff Chunk base offset.
+     * @param nullMapLen Null-map length in bytes.
+     * @param vartblLen Vartable length in bytes.
      */
-    private boolean isKeyColumn() {
-        return schema.keyColumns() == curCols;
+    private void initChunk(int baseOff, int nullMapLen, int vartblLen) {
+        this.baseOff = baseOff;
+
+        nullMapOff = baseOff + BinaryRow.CHUNK_LEN_FLD_SIZE;
+        varTblOff = nullMapOff + nullMapLen;
+        dataOff = varTblOff + vartblLen;
+        curOff = dataOff;
+        curVartblEntry = 0;
+
+        int flags = 0;
+
+        if (nullMapLen == 0)
+            flags |= VarTableFormat.OMIT_NULL_MAP_FLAG;
+
+        if (vartblLen == 0)
+            flags |= VarTableFormat.OMIT_VARTBL_FLAG;
+
+        this.flags |= flags << (isKeyChunk() ? KEY_FLAGS_OFFSET : VAL_FLAGS_OFFSET);
+    }
+
+    /**
+     * @return {@code true} if current chunk is a key chunk, {@code false} otherwise.
+     */
+    private boolean isKeyChunk() {
+        return baseOff == BinaryRow.KEY_CHUNK_OFFSET;
     }
 }

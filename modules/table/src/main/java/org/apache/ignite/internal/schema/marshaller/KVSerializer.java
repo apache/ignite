@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.schema.marshaller;
 
-import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.row.Row;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

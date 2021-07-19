@@ -34,7 +34,7 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
 import org.apache.ignite.internal.schema.Columns;
-import org.apache.ignite.internal.schema.RowAssembler;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
 import org.apache.ignite.lang.IgniteInternalException;

@@ -59,6 +59,11 @@ public class Columns implements Serializable {
     private final int nullMapSize;
 
     /**
+     * Estimated max length of fixed-size columns.
+     */
+    private int fixedSizeMaxLen;
+
+    /**
      * Fixed-size column length folding table. The table is used to quickly calculate the offset of a fixed-length
      * column based on the nullability map.
      */
@@ -184,6 +189,13 @@ public class Columns implements Serializable {
     }
 
     /**
+     * @return Fixsize columns size upper bound.
+     */
+    public int fixsizeMaxLen() {
+        return fixedSizeMaxLen;
+    }
+
+    /**
      * @param schemaBaseIdx Base index of this columns object in its schema.
      * @param cols User columns.
      * @return A copy of user columns array sorted in column order.
@@ -235,11 +247,13 @@ public class Columns implements Serializable {
         if (numFixsize == 0) {
             foldingTbl = EMPTY_FOLDING_TABLE;
             foldingMask = EMPTY_FOLDING_MASK;
+            fixedSizeMaxLen = 0;
 
             return;
         }
 
         int fixsizeNullMapSize = (numFixsize + 7) / 8;
+        int maxLen = 0;
 
         int[][] res = new int[fixsizeNullMapSize][];
         int[] resMask = new int[fixsizeNullMapSize];
@@ -262,10 +276,13 @@ public class Columns implements Serializable {
 
                 mask++;
             }
+
+            maxLen += res[b][0];
         }
 
         foldingTbl = res;
         foldingMask = resMask;
+        fixedSizeMaxLen = maxLen;
     }
 
     /**

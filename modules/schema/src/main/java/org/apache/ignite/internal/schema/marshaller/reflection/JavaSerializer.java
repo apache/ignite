@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.schema.marshaller.reflection;
 
 import org.apache.ignite.internal.schema.Columns;
-import org.apache.ignite.internal.schema.Row;
-import org.apache.ignite.internal.schema.RowAssembler;
+import org.apache.ignite.internal.schema.row.Row;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.AbstractSerializer;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
@@ -71,7 +71,7 @@ public class JavaSerializer extends AbstractSerializer {
         keyMarsh.writeObject(key, asm);
         valMarsh.writeObject(val, asm);
 
-        return asm.build();
+        return asm.toBytes();
     }
 
     /**
@@ -85,11 +85,7 @@ public class JavaSerializer extends AbstractSerializer {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
 
-        int size = RowAssembler.rowSize(
-            schema.keyColumns(), keyStat.nonNullCols, keyStat.nonNullColsSize,
-            schema.valueColumns(), valStat.nonNullCols, valStat.nonNullColsSize);
-
-        return new RowAssembler(schema, size, keyStat.nonNullCols, valStat.nonNullCols);
+        return new RowAssembler(schema, keyStat.nonNullColsSize, keyStat.nonNullCols, valStat.nonNullColsSize, valStat.nonNullCols);
     }
 
     /**
@@ -102,7 +98,7 @@ public class JavaSerializer extends AbstractSerializer {
      */
     private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) {
         if (obj == null || !cols.hasVarlengthColumns())
-            return new ObjectStatistic(0, 0);
+            return ObjectStatistic.ZERO_VARLEN_STATISTICS;
 
         int cnt = 0;
         int size = 0;
@@ -142,6 +138,9 @@ public class JavaSerializer extends AbstractSerializer {
      * Object statistic.
      */
     private static class ObjectStatistic {
+        /** Cached zero statistics. */
+        static final ObjectStatistic ZERO_VARLEN_STATISTICS = new ObjectStatistic(0,0);
+
         /** Non-null columns of varlen type. */
         int nonNullCols;
 

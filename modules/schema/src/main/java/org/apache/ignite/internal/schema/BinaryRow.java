@@ -26,20 +26,23 @@ import java.nio.ByteBuffer;
  * The class contains low-level methods to read row data.
  */
 public interface BinaryRow {
-    /** */
+    /** Row schema version field offset. */
     int SCHEMA_VERSION_OFFSET = 0;
-    /** */
+
+    /** Row flags field offset. */
     int FLAGS_FIELD_OFFSET = SCHEMA_VERSION_OFFSET + 2 /* version length */;
-    /** */
+
+    /** Key hash field offset. */
     int KEY_HASH_FIELD_OFFSET = FLAGS_FIELD_OFFSET + 2 /* flags length */;
-    /** */
+
+    /** Key chunk field offset. */
     int KEY_CHUNK_OFFSET = KEY_HASH_FIELD_OFFSET + 4 /* hash length */;
-    /** */
-    int CHUNK_LEN_FIELD_SIZE = 4;
-    /** */
-    int VARLEN_TABLE_SIZE_FIELD_SIZE = 2;
-    /** */
-    int VARLEN_COLUMN_OFFSET_FIELD_SIZE = 2;
+
+    /** Size of chunk length field. */
+    int CHUNK_LEN_FLD_SIZE = Integer.BYTES;
+
+    /** Row header size. */
+    int HEADER_SIZE = KEY_CHUNK_OFFSET;
 
     /**
      * @return Row schema version.
@@ -136,17 +139,14 @@ public interface BinaryRow {
         /** Flag indicates row has no value chunk. */
         public static final int NO_VALUE_FLAG = 1;
 
-        /** Flag indicates key chunk omits null map. */
-        public static final int OMIT_KEY_NULL_MAP_FLAG = 1 << 1;
+        /** Chunk flags mask. */
+        public static final int CHUNK_FLAGS_MASK = 0x0F;
 
-        /** Flag indicates value chunk omits null map. */
-        public static final int OMIT_VAL_NULL_MAP_FLAG = 1 << 2;
+        /** Key specific flags. */
+        public static final int KEY_FLAGS_OFFSET = 8;
 
-        /** Flag indicates key chunk omits varlen table. */
-        public static final int OMIT_KEY_VARTBL_FLAG = 1 << 3;
-
-        /** Flag indicates value chunk omits varlen table. */
-        public static final int OMIT_VAL_VARTBL_FLAG = 1 << 4;
+        /** Value specific flags. */
+        public static final int VAL_FLAGS_OFFSET = 12;
 
         /** Stub. */
         private RowFlags() {

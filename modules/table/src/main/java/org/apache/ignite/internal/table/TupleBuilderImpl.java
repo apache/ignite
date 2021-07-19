@@ -40,13 +40,15 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple {
     private SchemaDescriptor schemaDesc;
 
     /**
-     * Constructor.
+     * Creates tuple builder.
+     *
+     * @param schemaDesc Schema descriptor.
      */
     public TupleBuilderImpl(SchemaDescriptor schemaDesc) {
         Objects.requireNonNull(schemaDesc);
 
         this.schemaDesc = schemaDesc;
-        map = new HashMap<>();
+        map = new HashMap<>(schemaDesc.length());
     }
 
     /** {@inheritDoc} */
@@ -69,8 +71,8 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean contains(String colName) {
-        return map.containsKey(colName);
+    @Override public <T> T valueOrDefault(String colName, T def) {
+        return (T)map.getOrDefault(colName, def);
     }
 
     @Override public <T> T value(String colName) {

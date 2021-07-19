@@ -23,7 +23,11 @@ import org.apache.ignite.lang.IgniteException;
  * Invalid tuple invocation exception is thrown when tuple doesn't match the table schema.
  */
 public class SchemaMismatchException extends IgniteException {
-    /** */
+    /**
+     * Creates a new exception with the given error message.
+     *
+     * @param msg Error message.
+     */
     public SchemaMismatchException(String msg) {
         super(msg);
     }

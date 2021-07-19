@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema;
 
 import java.util.Arrays;
 import java.util.UUID;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.schema.NativeTypes.INT8;
@@ -45,30 +46,30 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyIntCol", INT32, false)},
-            new Column[] {new Column("valIntCol", INT32, true)});
+            new Column[]{new Column("keyIntCol", INT32, false)},
+            new Column[]{new Column("valIntCol", INT32, true)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0, 9, 0, 0, 0, 0, -71, -1, -1, -1},
-            new RowAssembler(schema, 24, 0, 0)
+            new byte[]{42, 0, 0, -116, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0, 9, 0, 0, 0, 0, -71, -1, -1, -1},
+            new RowAssembler(schema, 0, 0)
                 .appendInt(33)
                 .appendInt(-71)
-                .build());
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 21, 0, 0)
+            new byte[]{42, 0, 0, -116, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendInt(33)
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 27, 0, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0},
-            new RowAssembler(schema, 16, 0, 0)
+            new byte[]{42, 0, 1, 12, 33, 0, 0, 0, 8, 0, 0, 0, 33, 0, 0, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendInt(33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -77,23 +78,23 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", INT16, false)},
-            new Column[] {new Column("valShortCol", INT16, false)});
+            new Column[]{new Column("keyShortCol", INT16, false)},
+            new Column[]{new Column("valShortCol", INT16, false)});
 
         // With value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 30, 0, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0, 6, 0, 0, 0, -71, -1},
-            new RowAssembler(schema, 20, 0, 0)
+            new byte[]{42, 0, 0, -52, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0, 6, 0, 0, 0, -71, -1},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
                 .appendShort((short)-71)
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 31, 0, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 14, 0, 0)
+            new byte[]{42, 0, 1, 12, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -102,30 +103,30 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyVarlenNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", INT16, false)},
-            new Column[] {new Column("valStrCol", STRING, true)});
+            new Column[]{new Column("keyShortCol", INT16, false)},
+            new Column[]{new Column("valStrCol", STRING, true)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, -33, -1, -1, -1, 6, 0, 0, 0, -33, -1, 8, 0, 0, 0, 0, 118, 97, 108},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -116, -33, -1, -1, -1, 6, 0, 0, 0, -33, -1, 8, 0, 0, 0, 0, 118, 97, 108},
+            new RowAssembler(schema, 0, 1)
                 .appendShort((short)-33)
                 .appendString("val")
-                .build());
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -116, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 27, 0, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 1, 12, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -134,22 +135,22 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedKeyVarlenValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", INT16, false)},
-            new Column[] {new Column("valStrCol", STRING, false)});
+            new Column[]{new Column("keyShortCol", INT16, false)},
+            new Column[]{new Column("valStrCol", STRING, false)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 30, 0, -33, -1, -1, -1, 6, 0, 0, 0, -33, -1, 7, 0, 0, 0, 118, 97, 108},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -52, -33, -1, -1, -1, 6, 0, 0, 0, -33, -1, 7, 0, 0, 0, 118, 97, 108},
+            new RowAssembler(schema, 0, 1)
                 .appendShort((short)-33)
                 .appendString("val")
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 31, 0, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 1, 12, 33, 0, 0, 0, 6, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -158,30 +159,30 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", INT16, true)},
-            new Column[] {new Column("valByteCol", INT8, false)});
+            new Column[]{new Column("keyShortCol", INT16, true)},
+            new Column[]{new Column("valByteCol", INT8, false)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, -33, -1, -1, -1, 7, 0, 0, 0, 0, -33, -1, 5, 0, 0, 0, 71},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -56, -33, -1, -1, -1, 7, 0, 0, 0, 0, -33, -1, 5, 0, 0, 0, 71},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)-33)
                 .appendByte((byte)71)
-                .build());
+                .toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, -71},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -56, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, -71},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendByte((byte)-71)
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 29, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 1, 8, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -190,39 +191,39 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyShortCol", INT16, true)},
-            new Column[] {new Column("valShortCol", INT16, true)});
+            new Column[]{new Column("keyShortCol", INT16, true)},
+            new Column[]{new Column("valShortCol", INT16, true)});
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 7, 0, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 7, 0, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendShort((short)33)
-                .build());
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
                 .appendNull()
-                .build());
+                .toBytes());
 
         // Null both.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 25, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 1, 8, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
-                .build());
+                .toBytes());
 
     }
 
@@ -232,46 +233,46 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyVarlenNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyIntCol", INT16, true)},
-            new Column[] {new Column("valStrCol", STRING, true)});
+            new Column[]{new Column("keyIntCol", INT16, true)},
+            new Column[]{new Column("valStrCol", STRING, true)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0, 8, 0, 0, 0, 0, 118, 97, 108},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -120, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0, 8, 0, 0, 0, 0, 118, 97, 108},
+            new RowAssembler(schema, 0, 1)
                 .appendShort((short)33)
                 .appendString("val")
-                .build());
+                .toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 8, 0, 0, 0, 0, 118, 97, 108},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 8, 0, 0, 0, 0, 118, 97, 108},
+            new RowAssembler(schema, 0, 1)
                 .appendNull()
                 .appendString("val")
-                .build());
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
                 .appendNull()
-                .build());
+                .toBytes());
 
         // Null both.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 25, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 1, 8, 33, 0, 0, 0, 7, 0, 0, 0, 0, 33, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendShort((short)33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -280,28 +281,28 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void fixedNullableKeyVarlenValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyByteCol", INT8, true)},
-            new Column[] {new Column("valStrCol", STRING, false)});
+            new Column[]{new Column("keyByteCol", INT8, true)},
+            new Column[]{new Column("valStrCol", STRING, false)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 33, 0, 0, 0, 6, 0, 0, 0, 0, 33, 7, 0, 0, 0, 118, 97, 108},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -56, 33, 0, 0, 0, 6, 0, 0, 0, 0, 33, 7, 0, 0, 0, 118, 97, 108},
+            new RowAssembler(schema, 0, 1)
                 .appendByte((byte)33)
-                .appendString("val").build());
+                .appendString("val").toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 7, 0, 0, 0, 118, 97, 108},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -56, 0, 0, 0, 0, 5, 0, 0, 0, 1, 7, 0, 0, 0, 118, 97, 108},
+            new RowAssembler(schema, 0, 1)
                 .appendNull()
-                .appendString("val").build());
+                .appendString("val").toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 29, 0, 33, 0, 0, 0, 6, 0, 0, 0, 0, 33},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 1, 8, 33, 0, 0, 0, 6, 0, 0, 0, 0, 33},
+            new RowAssembler(schema, 0, 0)
                 .appendByte((byte)33)
-                .build());
+                .toBytes());
     }
 
     /**
@@ -310,33 +311,32 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, false)},
-            new Column[] {new Column("valUuidCol", UUID, true)});
+            new Column[]{new Column("keyStrCol", STRING, false)},
+            new Column[]{new Column("valUuidCol", UUID, true)});
 
         assertRowBytesEquals(
-            new byte[] {
-                42, 0, 26, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121,
+            new byte[]{
+                42, 0, 0, -116, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121,
                 21, 0, 0, 0, 0, -117, -61, -31, 85, 61, -32, 57, 68, 111, 67, 56, -3, -99, -37, -58, -73},
-            new RowAssembler(schema, 0, 1, 0)
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendUuid(uuidVal)
-                .build());
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, 95, -98, 1, 0, 7, 0, 0, 0,107, 101, 121, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 1, 0)
-
+            new byte[]{42, 0, 0, -116, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 27, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 12, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
 
     }
 
@@ -346,24 +346,24 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, false)},
-            new Column[] {new Column("valUuidCol", UUID, false)});
+            new Column[]{new Column("keyStrCol", STRING, false)},
+            new Column[]{new Column("valUuidCol", UUID, false)});
 
         assertRowBytesEquals(
-            new byte[] {
-                42, 0, 30, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121,
+            new byte[]{
+                42, 0, 0, -52, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121,
                 20, 0, 0, 0, -117, -61, -31, 85, 61, -32, 57, 68, 111, 67, 56, -3, -99, -37, -58, -73},
-            new RowAssembler(schema, 0, 1, 0)
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendUuid(uuidVal)
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 31, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 12, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
 
     }
 
@@ -373,30 +373,33 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenKeyVarlenNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, false)},
-            new Column[] {new Column("valBytesCol", BYTES, true)});
+            new Column[]{new Column("keyStrCol", STRING, false)},
+            new Column[]{new Column("valBytesCol", BYTES, true)});
+
+        System.out.println(Integer.toHexString(((byte)-116) & 0xFF));
+        System.out.println(Integer.toHexString(((byte)-99) & 0xFF));
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 9, 0, 0, 0, 0, -1, 1, 0, 120},
-            new RowAssembler(schema, 0, 1, 1)
+            new byte[]{42, 0, 0, -116, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 9, 0, 0, 0, 0, -1, 1, 0, 120},
+            new RowAssembler(schema, 1, 1)
                 .appendString("key")
-                .appendBytes(new byte[] {-1, 1, 0, 120})
-                .build());
+                .appendBytes(new byte[]{-1, 1, 0, 120})
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 26, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 0, -116, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 27, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 12, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
 
     }
 
@@ -406,22 +409,22 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenKeyVarlenValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, false)},
-            new Column[] {new Column("valBytesCol", BYTES, false)});
+            new Column[]{new Column("keyStrCol", STRING, false)},
+            new Column[]{new Column("valBytesCol", BYTES, false)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 30, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 8, 0, 0, 0, -1, 1, 0, 120},
-            new RowAssembler(schema, 0, 1, 1)
+            new byte[]{42, 0, 0, -52, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121, 8, 0, 0, 0, -1, 1, 0, 120},
+            new RowAssembler(schema, 1, 1)
                 .appendString("key")
-                .appendBytes(new byte[] {-1, 1, 0, 120})
-                .build());
+                .appendBytes(new byte[]{-1, 1, 0, 120})
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 31, 0, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 12, 95, -98, 1, 0, 7, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
     }
 
     /**
@@ -430,46 +433,46 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenNullableKeyFixedNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, true)},
-            new Column[] {new Column("valShortCol", INT16, true)});
+            new Column[]{new Column("keyStrCol", STRING, true)},
+            new Column[]{new Column("valShortCol", INT16, true)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 7, 0, 0, 0, 0, -71, -1},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 0, -120, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 7, 0, 0, 0, 0, -71, -1},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendShort((short)-71)
-                .build());
+                .toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 7, 0, 0, 0, 0, 71, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 7, 0, 0, 0, 0, 71, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendShort((short)71)
-                .build());
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 0, -120, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendNull()
-                .build());
+                .toBytes());
 
         // Null both.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 25, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 8, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
 
     }
 
@@ -479,30 +482,30 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenNullableKeyFixedValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, true)},
-            new Column[] {new Column("valShortCol", INT16, false)});
+            new Column[]{new Column("keyStrCol", STRING, true)},
+            new Column[]{new Column("valShortCol", INT16, false)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 6, 0, 0, 0, -71, -1},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 0, -56, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 6, 0, 0, 0, -71, -1},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendShort((short)-71L)
-                .build());
+                .toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 6, 0, 0, 0, 71, 0},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -56, 0, 0, 0, 0, 5, 0, 0, 0, 1, 6, 0, 0, 0, 71, 0},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendShort((short)71)
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 29, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 8, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
     }
 
     /**
@@ -511,46 +514,46 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenNullableKeyVarlenNullableValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, true)},
-            new Column[] {new Column("valBytesCol", BYTES, true)});
+            new Column[]{new Column("keyStrCol", STRING, true)},
+            new Column[]{new Column("valBytesCol", BYTES, true)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 9, 0, 0, 0, 0, -1, 1, 0, 120},
-            new RowAssembler(schema, 0, 1, 1)
+            new byte[]{42, 0, 0, -120, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 9, 0, 0, 0, 0, -1, 1, 0, 120},
+            new RowAssembler(schema, 1, 1)
                 .appendString("key")
-                .appendBytes(new byte[] {-1, 1, 0, 120})
-                .build());
+                .appendBytes(new byte[]{-1, 1, 0, 120})
+                .toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 9, 0, 0, 0, 0, -1, 1, 0, 120},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 9, 0, 0, 0, 0, -1, 1, 0, 120},
+            new RowAssembler(schema, 0, 1)
                 .appendNull()
-                .appendBytes(new byte[] {-1, 1, 0, 120})
-                .build());
+                .appendBytes(new byte[]{-1, 1, 0, 120})
+                .toBytes());
 
         // Null value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 0, -120, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
                 .appendNull()
-                .build());
+                .toBytes());
 
         // Null both.
         assertRowBytesEquals(
-            new byte[] {42, 0, 24, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
-            new RowAssembler(schema, 0, 0, 0)
+            new byte[]{42, 0, 0, -120, 0, 0, 0, 0, 5, 0, 0, 0, 1, 5, 0, 0, 0, 1},
+            new RowAssembler(schema, 0, 0)
                 .appendNull()
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 25, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 8, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
     }
 
     /**
@@ -559,30 +562,30 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void varlenNullableKeyVarlenValue() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {new Column("keyStrCol", STRING, true)},
-            new Column[] {new Column("valBytesCol", BYTES, false)});
+            new Column[]{new Column("keyStrCol", STRING, true)},
+            new Column[]{new Column("valBytesCol", BYTES, false)});
 
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 8, 0, 0, 0, -1, 1, 0, 120},
-            new RowAssembler(schema, 0, 1, 1)
+            new byte[]{42, 0, 0, -56, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121, 8, 0, 0, 0, -1, 1, 0, 120},
+            new RowAssembler(schema, 1, 1)
                 .appendString("key")
-                .appendBytes(new byte[] {-1, 1, 0, 120})
-                .build());
+                .appendBytes(new byte[]{-1, 1, 0, 120})
+                .toBytes());
 
         // Null key.
         assertRowBytesEquals(
-            new byte[] {42, 0, 28, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 8, 0, 0, 0, -1, 1, 0, 120},
-            new RowAssembler(schema, 0, 0, 1)
+            new byte[]{42, 0, 0, -56, 0, 0, 0, 0, 5, 0, 0, 0, 1, 8, 0, 0, 0, -1, 1, 0, 120},
+            new RowAssembler(schema, 0, 1)
                 .appendNull()
-                .appendBytes(new byte[] {-1, 1, 0, 120})
-                .build());
+                .appendBytes(new byte[]{-1, 1, 0, 120})
+                .toBytes());
 
         // No value.
         assertRowBytesEquals(
-            new byte[] {42, 0, 29, 0, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
-            new RowAssembler(schema, 0, 1, 0)
+            new byte[]{42, 0, 1, 8, 95, -98, 1, 0, 8, 0, 0, 0, 0, 107, 101, 121},
+            new RowAssembler(schema, 1, 0)
                 .appendString("key")
-                .build());
+                .toBytes());
     }
 
     /**
@@ -591,46 +594,46 @@ public class RowAssemblerSimpleSchemaTest {
     @Test
     public void mixedTypes() {
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
-            new Column[] {
+            new Column[]{
                 new Column("keyShortCol", INT16, false),
                 new Column("keyStrCol", STRING, false)
             },
-            new Column[] {
+            new Column[]{
                 new Column("valIntCol", INT32, true),
                 new Column("valStrCol", STRING, true)
             });
 
-        assertRowBytesEquals(new byte[] {
-                42, 0, 26, 0, -110, -109, 94, -68,
+        assertRowBytesEquals(new byte[]{
+                42, 0, 0, -116, 113, -109, 94, -68,
                 12, 0, 0, 0, 33, 0, 107, 101, 121, 115, 116, 114,
                 15, 0, 0, 0, 0, 73, 0, 0, 0, 118, 97, 108, 115, 116, 114},
-            new RowAssembler(schema, 0, 1, 1)
+            new RowAssembler(schema, 1, 1)
                 .appendShort((short)33)
                 .appendString("keystr")
                 .appendInt(73)
                 .appendString("valstr")
-                .build());
+                .toBytes());
 
         // Null value.
-        assertRowBytesEquals(new byte[] {
-                42, 0, 26, 0, 32, 99, 115, -49,
+        assertRowBytesEquals(new byte[]{
+                42, 0, 0, -116, -1, 98, 115, -49,
                 13, 0, 0, 0, 33, 0, 107, 101, 121, 115, 116, 114, 50,
                 5, 0, 0, 0, 3},
-            new RowAssembler(schema, 0, 1, 0)
+            new RowAssembler(schema, 1, 0)
                 .appendShort((short)33)
                 .appendString("keystr2")
                 .appendNull()
                 .appendNull()
-                .build());
+                .toBytes());
 
         // No value.
-        assertRowBytesEquals(new byte[] {
-                42, 0, 27, 0, -110, -109, 94, -68,
+        assertRowBytesEquals(new byte[]{
+                42, 0, 1, 12, 113, -109, 94, -68,
                 12, 0, 0, 0, 33, 0, 107, 101, 121, 115, 116, 114},
-            new RowAssembler(schema, 0, 1, 0)
+            new RowAssembler(schema, 1, 0)
                 .appendShort((short)33)
                 .appendString("keystr")
-                .build());
+                .toBytes());
     }
 
     /**

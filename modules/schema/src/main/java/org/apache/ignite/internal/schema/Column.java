@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema;
 
 import java.io.Serializable;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.tostring.IgniteToStringExclude;
 import org.apache.ignite.internal.tostring.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,6 +51,7 @@ public class Column implements Comparable<Column>, Serializable {
     /**
      * Default value supplier.
      */
+    @IgniteToStringExclude
     private final Supplier<Object> defValSup;
 
     /**
@@ -135,12 +137,7 @@ public class Column implements Comparable<Column>, Serializable {
      * @return Default value.
      */
     public Object defaultValue() {
-        Object val = defValSup.get();
-
-        if (nullable || val != null)
-            return val;
-
-        throw new IllegalStateException("Null value is not accepted for not nullable column: [col=" + this + ']');
+        return defValSup.get();
     }
 
     /** {@inheritDoc} */

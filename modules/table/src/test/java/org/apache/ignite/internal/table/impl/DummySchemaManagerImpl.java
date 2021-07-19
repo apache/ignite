@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.table.impl;
 
 import org.apache.ignite.internal.schema.BinaryRow;
-import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaRegistry;
+import org.apache.ignite.internal.schema.row.Row;
 import org.jetbrains.annotations.NotNull;
 
 /**

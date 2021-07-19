@@ -21,7 +21,7 @@ import com.facebook.presto.bytecode.BytecodeNode;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
-import org.apache.ignite.internal.schema.RowAssembler;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
 
 /**

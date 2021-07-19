@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
+package org.apache.ignite.internal.util;
 
 /**
- * Invalid tuple invocation exception is thrown when tuple doesn't match the table schema.
+ * Utility class with magic constants.
  */
-public class ColumnNotFoundException extends SchemaMismatchException {
-    /**
-     * Creates a new exception with the given error message.
-     *
-     * @param msg Error message.
-     */
-    public ColumnNotFoundException(String msg) {
-        super(msg);
+public final class Constants {
+    /** Bytes in kilo-byte  (IEC 80000-13). */
+    public static final int KiB = 1024;
+
+    /** Bytes in mega-byte (IEC 80000-13). */
+    public static final int MiB = 1024 * KiB;
+
+    /** Bytes in giga-byte (IEC 80000-13). */
+    public static final int GiB = 1024 * MiB;
+
+    /** Stub. */
+    private Constants() {
+        //Noop.
     }
 }

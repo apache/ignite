@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 import org.apache.ignite.internal.schema.registry.SchemaRegistryException;
+import org.apache.ignite.internal.schema.row.Row;
 import org.jetbrains.annotations.NotNull;
 
 /**

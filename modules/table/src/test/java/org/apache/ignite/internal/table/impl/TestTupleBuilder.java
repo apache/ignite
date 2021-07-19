@@ -24,34 +24,30 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.table.TupleBuilder;
 
 /**
  * Dummy table storage implementation.
  */
-public class TestTupleBuilder implements Tuple {
+public class TestTupleBuilder implements TupleBuilder, Tuple {
     /** Columns values. */
     private final Map<String, Object> map = new HashMap<>();
 
-    /**
-     * Constructor.
-     */
-    public TestTupleBuilder() {
-    }
-
-    public TestTupleBuilder set(String colName, Object value) {
+    /** {@inheritDoc} */
+    @Override public TestTupleBuilder set(String colName, Object value) {
         map.put(colName, value);
 
         return this;
     }
 
-    /** */
-    public Tuple build() {
+    /** {@inheritDoc} */
+    @Override public Tuple build() {
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean contains(String colName) {
-        return map.containsKey(colName);
+    @Override public <T> T valueOrDefault(String colName, T def) {
+        return (T)map.getOrDefault(colName, def);
     }
 
     /** {@inheritDoc} */

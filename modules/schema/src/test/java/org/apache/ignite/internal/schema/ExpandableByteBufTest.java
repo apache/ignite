@@ -20,6 +20,7 @@ package org.apache.ignite.internal.schema;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import org.apache.ignite.internal.schema.row.ExpandableByteBuf;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

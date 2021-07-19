@@ -19,8 +19,8 @@ package org.apache.ignite.internal.table;
 
 import java.util.Objects;
 import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -81,11 +81,6 @@ public class TableRow extends RowChunkAdapter {
         return row;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean contains(String colName) {
-        return schema.column(colName) != null;
-    }
-
     /** Key column chunk. */
     private class KeyRowChunk extends RowChunkAdapter {
         /** {@inheritDoc} */
@@ -103,11 +98,6 @@ public class TableRow extends RowChunkAdapter {
                 throw new ColumnNotFoundException("Invalid key column name: columnName=" + colName + ", schemaVersion=" + schema.version());
 
             return col;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean contains(String colName) {
-            return schema.column(colName) != null;
         }
     }
 
@@ -128,11 +118,6 @@ public class TableRow extends RowChunkAdapter {
                 throw new ColumnNotFoundException("Invalid value column name: columnName=" + colName + ", schemaVersion=" + schema.version());
 
             return col;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean contains(String colName) {
-            return schema.column(colName) != null;
         }
     }
 }
