@@ -326,7 +326,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                         Expressions.constant(i), out_, projects.get(i))));
         }
 
-        String methodName = biInParams ? IgniteMethod.SCALAR_EXECUTE1.method().getName() :
+        String methodName = biInParams ? IgniteMethod.BI_SCALAR_EXECUTE.method().getName() :
             IgniteMethod.SCALAR_EXECUTE.method().getName();
 
         ImmutableList<ParameterExpression> params = biInParams ? ImmutableList.of(ctx_, in1_, in2_, out_) :

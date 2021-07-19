@@ -40,7 +40,7 @@ public enum IgniteMethod {
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
     /** See {@link SingleScalar#execute(ExecutionContext, Object, Object)} */
     SCALAR_EXECUTE(SingleScalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
-    SCALAR_EXECUTE1(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
+    BI_SCALAR_EXECUTE(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
     /** See {@link FragmentMappingMetadata#fragmentMapping()} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
 
