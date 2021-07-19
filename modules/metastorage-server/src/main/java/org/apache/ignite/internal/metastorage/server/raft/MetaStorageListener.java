@@ -54,6 +54,7 @@ import org.apache.ignite.internal.metastorage.server.ExistenceCondition;
 import org.apache.ignite.internal.metastorage.server.KeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.Operation;
 import org.apache.ignite.internal.metastorage.server.RevisionCondition;
+import org.apache.ignite.internal.metastorage.server.TombstoneCondition;
 import org.apache.ignite.internal.metastorage.server.ValueCondition;
 import org.apache.ignite.internal.metastorage.server.WatchEvent;
 import org.apache.ignite.internal.util.Cursor;
@@ -333,6 +334,8 @@ public class MetaStorageListener implements RaftGroupListener {
             return new ExistenceCondition(ExistenceCondition.Type.EXISTS, key);
         else if (type == ConditionType.KEY_NOT_EXISTS)
             return new ExistenceCondition(ExistenceCondition.Type.NOT_EXISTS, key);
+        else if (type == ConditionType.TOMBSTONE)
+            return new TombstoneCondition(key);
         else if (type == ConditionType.VAL_EQUAL)
             return new ValueCondition(ValueCondition.Type.EQUAL, key, info.value());
         else if (type == ConditionType.VAL_NOT_EQUAL)

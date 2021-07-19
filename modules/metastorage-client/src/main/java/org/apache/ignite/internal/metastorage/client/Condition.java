@@ -283,6 +283,37 @@ public final class Condition {
     }
 
     /**
+     * Represents condition on an entry's value which checks whether value is tombstone or not. Only one type of
+     * condition could be applied to the one instance of condition. Subsequent invocations of any method which produces
+     * condition will throw {@link IllegalStateException}.
+     */
+    public static final class TombstoneCondition extends AbstractCondition {
+        /**
+         * Constructs a condition on an entry, identified by the given key, is tombstone.
+         *
+         * @param key Identifies an entry which condition will be applied to.
+         */
+        TombstoneCondition(byte[] key) {
+            super(key);
+        }
+
+        /**
+         * Produces the condition of type {@link ConditionType#TOMBSTONE}. This condition tests that an entry's value,
+         * identified by the given key, is tombstone.
+         *
+         * @return The condition of type {@link ConditionType#TOMBSTONE}.
+         * @throws IllegalStateException In case when the condition is already defined.
+         */
+        public Condition tombstone() {
+            validate(type());
+
+            type(ConditionType.TOMBSTONE);
+
+            return new Condition(this);
+        }
+    }
+
+    /**
      * Checks that condition is not defined yet. If the condition is already defined then exception will be thrown.
      *
      * @throws IllegalStateException In case when the condition is already defined.

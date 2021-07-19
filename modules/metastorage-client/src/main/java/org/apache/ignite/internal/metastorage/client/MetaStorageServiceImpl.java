@@ -281,6 +281,11 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
             cnd = new ConditionInfo(inner.key(), inner.type(), null, 0);
         }
+        else if (obj instanceof Condition.TombstoneCondition) {
+            Condition.TombstoneCondition inner = (Condition.TombstoneCondition)obj;
+
+            cnd = new ConditionInfo(inner.key(), inner.type(), null, 0);
+        }
         else if (obj instanceof Condition.RevisionCondition) {
             Condition.RevisionCondition inner = (Condition.RevisionCondition)obj;
 

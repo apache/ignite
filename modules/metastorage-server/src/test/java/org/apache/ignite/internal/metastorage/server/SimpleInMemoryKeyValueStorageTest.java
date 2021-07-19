@@ -1283,6 +1283,111 @@ class SimpleInMemoryKeyValueStorageTest {
     }
 
     @Test
+    public void invokeWithTombstoneCondition_successBranch() {
+        byte[] key1 = k(1);
+        byte[] val1_1 = kv(1, 11);
+
+        byte[] key2 = k(2);
+        byte[] val2 = kv(2, 2);
+
+        byte[] key3 = k(3);
+        byte[] val3 = kv(3, 3);
+
+        assertEquals(0, storage.revision());
+        assertEquals(0, storage.updateCounter());
+
+        storage.put(key1, val1_1);
+        storage.remove(key1); // Should be tombstone after remove.
+
+        assertEquals(2, storage.revision());
+        assertEquals(2, storage.updateCounter());
+
+        boolean branch = storage.invoke(
+                new TombstoneCondition(key1),
+                List.of(new Operation(OperationType.PUT, key2, val2)),
+                List.of(new Operation(OperationType.PUT, key3, val3))
+        );
+
+        // "Success" branch is applied.
+        assertTrue(branch);
+        assertEquals(3, storage.revision());
+        assertEquals(3, storage.updateCounter());
+
+        Entry e1 = storage.get(key1);
+
+        assertFalse(e1.empty());
+        assertTrue(e1.tombstone());
+        assertEquals(2, e1.revision());
+        assertEquals(2, e1.updateCounter());
+        assertNull(e1.value());
+
+        Entry e2 = storage.get(key2);
+
+        assertFalse(e2.empty());
+        assertFalse(e2.tombstone());
+        assertEquals(3, e2.revision());
+        assertEquals(3, e2.updateCounter());
+        assertArrayEquals(val2, e2.value());
+
+        // "Failure" branch isn't applied.
+        Entry e3 = storage.get(key3);
+
+        assertTrue(e3.empty());
+    }
+
+    @Test
+    public void invokeWithTombstoneCondition_failureBranch() {
+        byte[] key1 = k(1);
+        byte[] val1_1 = kv(1, 11);
+
+        byte[] key2 = k(2);
+        byte[] val2 = kv(2, 2);
+
+        byte[] key3 = k(3);
+        byte[] val3 = kv(3, 3);
+
+        assertEquals(0, storage.revision());
+        assertEquals(0, storage.updateCounter());
+
+        storage.put(key1, val1_1);
+
+        assertEquals(1, storage.revision());
+        assertEquals(1, storage.updateCounter());
+
+        boolean branch = storage.invoke(
+                new TombstoneCondition(key1),
+                List.of(new Operation(OperationType.PUT, key2, val2)),
+                List.of(new Operation(OperationType.PUT, key3, val3))
+        );
+
+        // "Failure" branch is applied.
+        assertFalse(branch);
+        assertEquals(2, storage.revision());
+        assertEquals(2, storage.updateCounter());
+
+        Entry e1 = storage.get(key1);
+
+        assertFalse(e1.empty());
+        assertFalse(e1.tombstone());
+        assertEquals(1, e1.revision());
+        assertEquals(1, e1.updateCounter());
+        assertArrayEquals(val1_1, e1.value());
+
+        Entry e3 = storage.get(key3);
+
+        assertFalse(e3.empty());
+        assertFalse(e3.tombstone());
+        assertEquals(2, e3.revision());
+        assertEquals(2, e3.updateCounter());
+        assertArrayEquals(val3, e3.value());
+
+        // "Success" branch isn't applied.
+        Entry e2 = storage.get(key2);
+
+        assertTrue(e2.empty());
+    }
+
+    @Test
     public void invokeWithValueCondition_successBranch() {
         byte[] key1 = k(1);
         byte[] val1_1 = kv(1, 11);

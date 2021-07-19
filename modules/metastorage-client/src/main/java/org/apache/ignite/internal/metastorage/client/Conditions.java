@@ -70,6 +70,16 @@ public final class Conditions {
     }
 
     /**
+     * Creates condition on an entry's value which checks whether value is tombstone or not.
+     *
+     * @param key Identifies an entry which condition will be applied to. Can't be {@code null}.
+     * @return Condition on entry's value is tombstone.
+     */
+    public static Condition tombstone(@NotNull ByteArray key) {
+        return new Condition.TombstoneCondition(key.bytes()).tombstone();
+    }
+
+    /**
      * Default no-op constructor.
      */
     private Conditions() {

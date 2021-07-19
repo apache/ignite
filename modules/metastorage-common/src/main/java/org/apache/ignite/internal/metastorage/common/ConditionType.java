@@ -49,5 +49,8 @@ public enum ConditionType {
     KEY_EXISTS,
 
     /** Non-existence condition type for key. */
-    KEY_NOT_EXISTS
+    KEY_NOT_EXISTS,
+
+    /** Tombstone condition type for key. */
+    TOMBSTONE
 }
