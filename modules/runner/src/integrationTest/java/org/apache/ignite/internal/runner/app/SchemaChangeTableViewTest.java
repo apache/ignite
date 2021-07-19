@@ -284,7 +284,6 @@ class SchemaChangeTableViewTest extends AbstractSchemaChangeTest {
     /**
      * Check merge column default value changes.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14896")
     @Test
     public void testMergeChangesColumnDefault() {
         List<Ignite> grid = startGrid();

@@ -116,7 +116,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
         ColumnMapper mapping = resolveMapping(curSchema, rowSchema);
 
-        return new UpgradingRowAdapter(curSchema, row, mapping);
+        return new UpgradingRowAdapter(curSchema, rowSchema, row, mapping);
     }
 
     /**

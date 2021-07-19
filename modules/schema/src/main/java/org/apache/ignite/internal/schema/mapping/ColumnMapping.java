@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.schema.mapping;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Column mapping helper.
@@ -35,11 +37,11 @@ public class ColumnMapping {
     }
 
     /**
-     * @param cols Number of columns.
+     * @param schema Schema descriptor.
      * @return Column mapper builder.
      */
-    public static ColumnMapperBuilder mapperBuilder(int cols) {
-        return new ColumnMapperImpl(cols);
+    public static ColumnMapper createMapper(SchemaDescriptor schema) {
+        return new ColumnMapperImpl(schema);
     }
 
     /**
@@ -51,13 +53,7 @@ public class ColumnMapping {
      * @return Merged column mapper.
      */
     public static ColumnMapper mergeMapping(ColumnMapper mapping, SchemaDescriptor schema) {
-        if (mapping == identityMapping())
-            return schema.columnMapping();
-
-        else if (schema.columnMapping() == identityMapping())
-            return mapping;
-
-        ColumnMapperBuilder builder = mapperBuilder(schema.length());
+        ColumnMapperImpl newMapper = new ColumnMapperImpl(schema);
 
         ColumnMapper schemaMapper = schema.columnMapping();
 
@@ -65,12 +61,12 @@ public class ColumnMapping {
             int idx = schemaMapper.map(i);
 
             if (idx < 0)
-                builder.add(i, -1);
+                newMapper.add(schema.column(i));
             else
-                builder.add(i, mapping.map(idx));
+                newMapper.add0(i, mapping.map(idx), mapping.mappedColumn(idx)); // Remap.
         }
 
-        return builder.build();
+        return newMapper;
     }
 
     /**
@@ -84,8 +80,23 @@ public class ColumnMapping {
      */
     private static class IdentityMapper implements ColumnMapper, Serializable {
         /** {@inheritDoc} */
+        @Override public ColumnMapper add(@NotNull Column col) {
+            throw new IllegalStateException("Immutable identity column mapper.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public ColumnMapper add(int from, int to) {
+            throw new IllegalStateException("Immutable identity column mapper.");
+        }
+
+        /** {@inheritDoc} */
         @Override public int map(int idx) {
             return idx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Column mappedColumn(int idx) {
+            return null;
         }
     }
 }

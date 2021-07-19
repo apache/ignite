@@ -255,52 +255,51 @@ class SchemaChangeKVViewTest extends AbstractSchemaChangeTest {
     /**
      * Check merge table schema changes.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14896")
     @Test
     public void testMergeChangesColumnDefault() {
         List<Ignite> grid = startGrid();
 
         createTable(grid);
 
-        KeyValueBinaryView vkView = grid.get(1).tables().table(TABLE).kvView();
+        KeyValueBinaryView kvView = grid.get(1).tables().table(TABLE).kvView();
 
         final String colName = "valStr";
 
         {
-            vkView.put(vkView.tupleBuilder().set("key", 1L).build(), vkView.tupleBuilder().set("valInt", 111).build());
+            kvView.put(kvView.tupleBuilder().set("key", 1L).build(), kvView.tupleBuilder().set("valInt", 111).build());
         }
 
         changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "newDefault");
         addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValue("newDefault").build());
 
         {
-            vkView.put(vkView.tupleBuilder().set("key", 2L).build(), vkView.tupleBuilder().set("valInt", 222).build());
+            kvView.put(kvView.tupleBuilder().set("key", 2L).build(), kvView.tupleBuilder().set("valInt", 222).build());
         }
 
         changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "brandNewDefault");
         changeDefault(grid, "val", (Supplier<Object> & Serializable)() -> "brandNewDefault");
 
         {
-            vkView.put(vkView.tupleBuilder().set("key", 3L).build(), vkView.tupleBuilder().set("valInt", 333).build());
+            kvView.put(kvView.tupleBuilder().set("key", 3L).build(), kvView.tupleBuilder().set("valInt", 333).build());
 
             // Check old row conversion.
-            Tuple keyTuple1 = vkView.tupleBuilder().set("key", 1L).build();
+            Tuple keyTuple1 = kvView.tupleBuilder().set("key", 1L).build();
 
-            assertEquals(111, (Integer)vkView.get(keyTuple1).value("valInt"));
-            assertEquals("default", vkView.get(keyTuple1).value("valStr"));
-            assertEquals("newDefault", vkView.get(keyTuple1).value("val"));
+            assertEquals(111, (Integer)kvView.get(keyTuple1).value("valInt"));
+            assertEquals("default", kvView.get(keyTuple1).value("valStr"));
+            assertEquals("newDefault", kvView.get(keyTuple1).value("val"));
 
-            Tuple keyTuple2 = vkView.tupleBuilder().set("key", 2L).build();
+            Tuple keyTuple2 = kvView.tupleBuilder().set("key", 2L).build();
 
-            assertEquals(222, (Integer)vkView.get(keyTuple2).value("valInt"));
-            assertEquals("newDefault", vkView.get(keyTuple2).value("valStr"));
-            assertEquals("newDefault", vkView.get(keyTuple2).value("val"));
+            assertEquals(222, (Integer)kvView.get(keyTuple2).value("valInt"));
+            assertEquals("newDefault", kvView.get(keyTuple2).value("valStr"));
+            assertEquals("newDefault", kvView.get(keyTuple2).value("val"));
 
-            Tuple keyTuple3 = vkView.tupleBuilder().set("key", 3L).build();
+            Tuple keyTuple3 = kvView.tupleBuilder().set("key", 3L).build();
 
-            assertEquals(333, (Integer)vkView.get(keyTuple3).value("valInt"));
-            assertEquals("brandNewDefault", vkView.get(keyTuple3).value("valStr"));
-            assertEquals("brandNewDefault", vkView.get(keyTuple3).value("val"));
+            assertEquals(333, (Integer)kvView.get(keyTuple3).value("valInt"));
+            assertEquals("brandNewDefault", kvView.get(keyTuple3).value("valStr"));
+            assertEquals("brandNewDefault", kvView.get(keyTuple3).value("val"));
         }
     }
 }
