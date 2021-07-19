@@ -87,6 +87,17 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!--
+                Reset sourcepath configuration from parent for fixing javadoc:aggregate
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <sourcepath combine.self="override"></sourcepath>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
