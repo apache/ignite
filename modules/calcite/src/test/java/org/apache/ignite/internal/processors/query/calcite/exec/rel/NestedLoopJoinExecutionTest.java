@@ -39,7 +39,7 @@ import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getBiRows;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getFieldFromBiRows;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
@@ -342,7 +342,7 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType,
-            (r1, r2) -> getBiRows(hnd, 2, r1, r2) == getBiRows(hnd, 3, r1, r2));
+            (r1, r2) -> getFieldFromBiRows(hnd, 2, r1, r2) == getFieldFromBiRows(hnd, 3, r1, r2));
         join.register(F.asList(leftNode, rightNode));
 
         RelDataType rowType;

@@ -78,15 +78,23 @@ public final class Commons {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
     }
 
-    /** {@inheritDoc} */
-    public static Object getBiRows(RowHandler<Object[]> hnd, int field, Object row1, Object row2) {
+    /**
+     * Gets appropriate field from two rows by offset.
+     * @param hnd RowHandler impl.
+     * @param offset Current offset.
+     * @param row1 row1.
+     * @param row2 row2.
+     * @return Returns field by offset.
+     */
+    public static Object getFieldFromBiRows(RowHandler<Object[]> hnd, int offset, Object row1, Object row2) {
         if (!row1.getClass().isArray() || !row2.getClass().isArray())
             throw new IllegalArgumentException();
 
         Object[] cols1 = (Object[])row1;
         Object[] cols2 = (Object[])row2;
 
-        return field < cols1.length ? hnd.get(field, cols1) : hnd.get(field - cols1.length, cols2);
+        return offset < hnd.columnCount(cols1) ? hnd.get(offset, cols1) :
+            hnd.get(offset - hnd.columnCount(cols1), cols2);
     }
 
     /**
