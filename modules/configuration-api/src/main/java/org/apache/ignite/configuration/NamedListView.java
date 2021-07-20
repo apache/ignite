@@ -17,14 +17,14 @@
 
 package org.apache.ignite.configuration;
 
-import java.util.Set;
+import java.util.List;
 
 /** */
 public interface NamedListView<T> {
     /**
      * @return Immutable collection of keys contained within this list.
      */
-    Set<String> namedListKeys();
+    List<String> namedListKeys();
 
     /**
      * Returns value associated with the passed key.

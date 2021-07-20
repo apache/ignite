@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration.sample;
+package org.apache.ignite.internal.configuration.tree;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
-import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
-import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
-import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,11 +46,11 @@ public class ConstructableTreeNodeTest {
         cgen = null;
     }
 
-    public static <P extends InnerNode & ParentView & ParentChange> P newParentInstance() {
+    public static <P extends InnerNode & ParentChange> P newParentInstance() {
         return (P)cgen.instantiateNode(TraversableTreeNodeTest.ParentConfigurationSchema.class);
     }
 
-    public static <C extends InnerNode & ChildView & ChildChange> C newChildInstance() {
+    public static <C extends InnerNode & ChildChange> C newChildInstance() {
         return (C)cgen.instantiateNode(TraversableTreeNodeTest.ChildConfigurationSchema.class);
     }
 
@@ -84,7 +81,7 @@ public class ConstructableTreeNodeTest {
 
         assertNotNull(parentNode.elements());
         assertNotSame(elements, parentNode.elements());
-        assertEquals(Collections.emptySet(), parentNode.elements().namedListKeys());
+        assertEquals(List.of(), parentNode.elements().namedListKeys());
 
         // Inner node.
         NamedElementView element = elements.get("name");

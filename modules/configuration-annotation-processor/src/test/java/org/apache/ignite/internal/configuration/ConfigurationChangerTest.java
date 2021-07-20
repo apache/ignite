@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.configuration.ConfigurationChangeException;
-import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
@@ -38,14 +37,12 @@ import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
-import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.configuration.AConfiguration.KEY;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.superRootPatcher;
@@ -111,7 +108,7 @@ public class ConfigurationChangerTest {
     public void testSimpleConfigurationChange() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ConfigurationChanger changer = new TestConfigurationChanger();
+        ConfigurationChanger changer = new TestConfigurationChanger(cgen);
         changer.addRootKey(KEY);
         changer.register(storage);
 
@@ -135,11 +132,11 @@ public class ConfigurationChangerTest {
     public void testModifiedFromAnotherStorage() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ConfigurationChanger changer1 = new TestConfigurationChanger();
+        ConfigurationChanger changer1 = new TestConfigurationChanger(cgen);
         changer1.addRootKey(KEY);
         changer1.register(storage);
 
-        ConfigurationChanger changer2 = new TestConfigurationChanger();
+        ConfigurationChanger changer2 = new TestConfigurationChanger(cgen);
         changer2.addRootKey(KEY);
         changer2.register(storage);
 
@@ -180,11 +177,11 @@ public class ConfigurationChangerTest {
     public void testModifiedFromAnotherStorageWithIncompatibleChanges() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ConfigurationChanger changer1 = new TestConfigurationChanger();
+        ConfigurationChanger changer1 = new TestConfigurationChanger(cgen);
         changer1.addRootKey(KEY);
         changer1.register(storage);
 
-        ConfigurationChanger changer2 = new TestConfigurationChanger();
+        ConfigurationChanger changer2 = new TestConfigurationChanger(cgen);
         changer2.addRootKey(KEY);
         changer2.register(storage);
 
@@ -223,7 +220,7 @@ public class ConfigurationChangerTest {
     public void testFailedToWrite() {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ConfigurationChanger changer = new TestConfigurationChanger();
+        ConfigurationChanger changer = new TestConfigurationChanger(cgen);
         changer.addRootKey(KEY);
 
         storage.fail(true);
@@ -281,7 +278,7 @@ public class ConfigurationChangerTest {
 
     @Test
     public void defaultsOnInit() throws Exception {
-        var changer = new TestConfigurationChanger();
+        var changer = new TestConfigurationChanger(cgen);
 
         changer.addRootKey(DefaultsConfiguration.KEY);
 
@@ -308,21 +305,4 @@ public class ConfigurationChangerTest {
         assertEquals("bar", root.childsList().get("name").defStr());
     }
 
-    private static class TestConfigurationChanger extends ConfigurationChanger {
-        TestConfigurationChanger() {
-            super((oldRoot, newRoot, revision) -> completedFuture(null));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addRootKey(RootKey<?, ?> rootKey) {
-            super.addRootKey(rootKey);
-
-            cgen.compileRootSchema(rootKey.schemaClass());
-        }
-
-        /** {@inheritDoc} */
-        @Override public InnerNode createRootNode(RootKey<?, ?> rootKey) {
-            return cgen.instantiateNode(rootKey.schemaClass());
-        }
-    }
 }

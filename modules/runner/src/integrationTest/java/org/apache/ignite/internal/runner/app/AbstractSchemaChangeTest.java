@@ -119,7 +119,7 @@ abstract class AbstractSchemaChangeTest {
                         });
 
                     tblChanger.changeColumns(listChanger ->
-                        listChanger.update(colKey, colChanger -> colChanger.changeType(c -> c.changeType("STRING")))
+                        listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeType(c -> c.changeType("STRING")))
                     );
                 })
             );
@@ -147,7 +147,7 @@ abstract class AbstractSchemaChangeTest {
                         });
 
                     tblChanger.changeColumns(listChanger ->
-                        listChanger.update(colKey, colChanger -> colChanger.changeNullable(false))
+                        listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeNullable(false))
                     );
                 })
             );
@@ -175,7 +175,7 @@ abstract class AbstractSchemaChangeTest {
                         });
 
                     tblChanger.changeColumns(listChanger ->
-                        listChanger.update(colKey, colChanger -> colChanger.changeNullable(true))
+                        listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeNullable(true))
                     );
                 })
             );
@@ -258,7 +258,7 @@ abstract class AbstractSchemaChangeTest {
                     });
 
                 tblChanger.changeColumns(listChanger ->
-                    listChanger.update(colKey, colChanger -> colChanger.changeName(newName))
+                    listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeName(newName))
                 );
             })
         );
@@ -280,7 +280,7 @@ abstract class AbstractSchemaChangeTest {
                     });
 
                 tblChanger.changeColumns(listChanger ->
-                    listChanger.update(colKey, colChanger -> colChanger.changeDefaultValue(defSup.get().toString()))
+                    listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeDefaultValue(defSup.get().toString()))
                 );
             })
         );

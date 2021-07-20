@@ -45,7 +45,6 @@ import org.junit.jupiter.api.Test;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
@@ -175,8 +174,8 @@ public class ValidationUtilTest {
             @Override public void validate(NamedListValidation annotation, ValidationContext<NamedListView<?>> ctx) {
                 assertEquals("root.elements", ctx.currentKey());
 
-                assertEquals(emptySet(), ctx.getOldValue().namedListKeys());
-                assertEquals(emptySet(), ctx.getNewValue().namedListKeys());
+                assertEquals(List.of(), ctx.getOldValue().namedListKeys());
+                assertEquals(List.of(), ctx.getNewValue().namedListKeys());
 
                 ctx.addIssue(new ValidationIssue("bar"));
             }

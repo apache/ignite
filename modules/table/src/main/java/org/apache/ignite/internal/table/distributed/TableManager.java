@@ -575,7 +575,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         try {
             configurationMgr.configurationRegistry()
                 .getConfiguration(TablesConfiguration.KEY).tables().change(change ->
-                change.update(name, tableChange)).get();
+                change.createOrUpdate(name, tableChange)).get();
         }
         catch (InterruptedException | ExecutionException e) {
             LOG.error("Table wasn't created [name=" + name + ']', e);

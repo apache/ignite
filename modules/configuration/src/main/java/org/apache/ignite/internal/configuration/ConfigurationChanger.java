@@ -50,11 +50,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.addDefaults;
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.cleanupMatchingValues;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.fillFromPrefixMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.nodePatcher;
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.nodeToFlatMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.patch;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.toPrefixMap;
 
@@ -290,6 +289,8 @@ public abstract class ConfigurationChanger {
             }
         };
 
+        source.reset();
+
         source.descend(collector);
 
         assert !storagesTypes.isEmpty();
@@ -357,9 +358,6 @@ public abstract class ConfigurationChanger {
 
                 src.descend(changes);
 
-                // It is necessary to reinitialize default values every time.
-                // Possible use case that explicitly requires it: creation of the same named list entry with slightly
-                // different set of values and different dynamic defaults at the same time.
                 SuperRoot patchedSuperRoot = patch(curRoots, changes);
 
                 SuperRoot defaultsNode = new SuperRoot(rootCreator());
@@ -368,9 +366,7 @@ public abstract class ConfigurationChanger {
 
                 SuperRoot patchedChanges = patch(changes, defaultsNode);
 
-                cleanupMatchingValues(curRoots, patchedChanges);
-
-                Map<String, Serializable> allChanges = nodeToFlatMap(curRoots, patchedChanges);
+                Map<String, Serializable> allChanges = createFlattenedUpdatesMap(curRoots, patchedChanges);
 
                 // Unlikely but still possible.
                 if (allChanges.isEmpty())

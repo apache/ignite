@@ -37,8 +37,7 @@ import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 /**
  * Configuration manager is responsible for handling configuration lifecycle and provides configuration API.
  */
-// TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
-@SuppressWarnings("WeakerAccess") public class ConfigurationManager {
+public class ConfigurationManager {
     /** Configuration registry. */
     private final ConfigurationRegistry confRegistry;
 

@@ -41,7 +41,7 @@ public interface ConfigurationVisitor<T> {
      * @param node Inner configuration node.
      * @return Anything that implementation decides to return.
      */
-    default T visitInnerNode(String key, InnerNode node) { //TODO IGNITE-14372 Pass interface, not implementation.
+    default T visitInnerNode(String key, InnerNode node) {
         return null;
     }
 

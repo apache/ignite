@@ -98,8 +98,8 @@ public class ConfigurationNotificationsUtil {
 
                     // This is optimization, we could use "NamedListConfiguration#get" directly, but we don't want to.
 
-                    Set<String> oldNames = oldNamedList.namedListKeys();
-                    Set<String> newNames = newNamedList.namedListKeys();
+                    List<String> oldNames = oldNamedList.namedListKeys();
+                    List<String> newNames = newNamedList.namedListKeys();
 
                     Map<String, ConfigurationProperty<?, ?>> namedListCfgMembers = namedListCfg.members();
 

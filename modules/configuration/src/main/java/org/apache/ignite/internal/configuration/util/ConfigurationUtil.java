@@ -21,15 +21,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.stream.Collectors;
+import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.internal.configuration.SuperRoot;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
@@ -252,22 +250,24 @@ public class ConfigurationUtil {
 
             /** {@inheritDoc} */
             @Override public void descend(ConstructableTreeNode node) {
+                if (node instanceof NamedListNode) {
+                    descendToNamedListNode((NamedListNode<?>)node);
+
+                    return;
+                }
+
                 for (Map.Entry<String, ?> entry : map.entrySet()) {
                     String key = entry.getKey();
                     Object val = entry.getValue();
 
                     assert val == null || val instanceof Map || val instanceof Serializable;
 
-                    if (val == null) {
-                        if (node instanceof NamedListNode) {
-                            // Given that this particular method is applied to modify existing trees rather than
-                            // creating new trees, a "hack" is required in this place. "construct" is designed to create
-                            // "change" objects, thus it would just nullify named list element instead of deleting it.
-                            ((NamedListNode<?>)node).forceDelete(key);
-                        }
-                        else
-                            node.construct(key, null);
-                    }
+                    // Ordering of indexes must be skipped here because they make no sense in this context.
+                    if (key.equals(NamedListNode.ORDER_IDX))
+                        continue;
+
+                    if (val == null)
+                        node.construct(key, null);
                     else if (val instanceof Map)
                         node.construct(key, new InnerConfigurationSource((Map<String, ?>)val));
                     else {
@@ -277,101 +277,73 @@ public class ConfigurationUtil {
                     }
                 }
             }
+
+            /**
+             * Specific implementation of {@link #descend(ConstructableTreeNode)} that descends into named list node and
+             * sets a proper ordering to named list elements.
+             *
+             * @param node Named list node under construction.
+             */
+            private void descendToNamedListNode(NamedListNode<?> node) {
+                // This list must be mutable and RandomAccess.
+                var orderedKeys = new ArrayList<>(((NamedListView<?>)node).namedListKeys());
+
+                for (Map.Entry<String, ?> entry : map.entrySet()) {
+                    String key = entry.getKey();
+                    Object val = entry.getValue();
+
+                    assert val == null || val instanceof Map || val instanceof Serializable;
+
+                    if (val == null) {
+                        // Given that this particular method is applied to modify existing trees rather than
+                        // creating new trees, a "hack" is required in this place. "construct" is designed to create
+                        // "change" objects, thus it would just nullify named list element instead of deleting it.
+                        node.forceDelete(key);
+                    }
+                    else if (val instanceof Map) {
+                        // For every named list entry modification we must take its index into account.
+                        // We do this by modifying "orderedKeys" when index is explicitly passed.
+                        Object idxObj = ((Map<?, ?>)val).get(NamedListNode.ORDER_IDX);
+
+                        if (idxObj != null) {
+                            assert idxObj instanceof Integer : val;
+
+                            int idx = (Integer)idxObj;
+
+                            if (idx >= orderedKeys.size()) {
+                                // Updates can come in arbitrary order. This means that array may be too small
+                                // during batch creation. In this case we have to insert enough nulls before
+                                // invoking "add" method for actual key.
+                                orderedKeys.ensureCapacity(idx + 1);
+
+                                while (idx != orderedKeys.size())
+                                    orderedKeys.add(null);
+
+                                orderedKeys.add(key);
+                            }
+                            else
+                                orderedKeys.set(idx, key);
+                        }
+
+                        node.construct(key, new InnerConfigurationSource((Map<String, ?>)val));
+                    }
+                    else {
+                        assert val instanceof Serializable;
+
+                        node.construct(key, new LeafConfigurationSource((Serializable)val));
+                    }
+                }
+
+                node.reorderKeys(orderedKeys.size() > node.size()
+                    ? orderedKeys.subList(0, node.size())
+                    : orderedKeys
+                );
+            }
         }
 
         var src = new InnerConfigurationSource(prefixMap);
 
         src.descend(node);
-    }
-
-    /**
-     * Convert a traversable tree to a map of qualified keys to values.
-     *
-     * @param curRoot Current root tree.
-     * @param updates Tree with updates.
-     * @return Map of changes.
-     */
-    public static Map<String, Serializable> nodeToFlatMap(
-        SuperRoot curRoot,
-        SuperRoot updates
-    ) {
-        Map<String, Serializable> values = new HashMap<>();
-
-        updates.traverseChildren(new KeysTrackingConfigurationVisitor<>() {
-            /** Write nulls instead of actual values. Makes sense for deletions from named lists. */
-            private boolean writeNulls;
-
-            /** {@inheritDoc} */
-            @Override public Map<String, Serializable> doVisitLeafNode(String key, Serializable val) {
-                if (val != null)
-                    values.put(currentKey(), writeNulls ? null : val);
-
-                return values;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<String, Serializable> doVisitInnerNode(String key, InnerNode node) {
-                if (node == null)
-                    return null;
-
-                node.traverseChildren(this);
-
-                return values;
-            }
-
-            /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Map<String, Serializable> doVisitNamedListNode(String key, NamedListNode<N> node) {
-                for (String namedListKey : node.namedListKeys()) {
-                    N namedElement = node.get(namedListKey);
-
-                    withTracking(namedListKey, true, false, () -> {
-                        if (namedElement == null)
-                            visitDeletedNamedListElement();
-                        else
-                            namedElement.traverseChildren(this);
-
-                        return null;
-                    });
-                }
-
-                return values;
-            }
-
-            /**
-             * Here we must list all joined keys belonging to deleted element. The only way to do it is to traverse
-             * cached configuration tree and write {@code null} into all values.
-             */
-            private void visitDeletedNamedListElement() {
-                // It must be impossible to delete something inside of the element that we're currently deleting.
-                assert !writeNulls;
-
-                Object originalNamedElement = null;
-
-                List<String> currentPath = currentPath();
-
-                try {
-                    // This code can in fact be better optimized for deletion scenario,
-                    // but there's no point in doing that, since the operation is so rare and it will
-                    // complicate code even more.
-                    originalNamedElement = find(currentPath, curRoot);
-                }
-                catch (KeyNotFoundException ignore) {
-                    // May happen, not a big deal. This means that element never existed in the first place.
-                }
-
-                if (originalNamedElement != null) {
-                    assert originalNamedElement instanceof InnerNode : currentPath;
-
-                    writeNulls = true;
-
-                    ((InnerNode)originalNamedElement).traverseChildren(this);
-
-                    writeNulls = false;
-                }
-            }
-        });
-
-        return values;
     }
 
     /**
@@ -539,65 +511,6 @@ public class ConfigurationUtil {
         };
     }
 
-    /**
-     * Nullifies leaves in {@code newNode} node that are equal to the corresponding leaf values in {@code curNode}.
-     * In this context we view {@code curNode} as a full configuration node with all the data, while {@code newNode}
-     * contains only updates that we plan to apply to the {@code curNode} in the future.
-     * @param curNode Node to look for definitive values.
-     * @param newNode Node to nullify matching values.
-     */
-    public static void cleanupMatchingValues(InnerNode curNode, InnerNode newNode) {
-        if (curNode == null || newNode == null)
-            return;
-
-        assert curNode.getClass() == newNode.getClass();
-
-        newNode.traverseChildren(new ConfigurationVisitor<Void>() {
-            /** {@inheritDoc} */
-            @Override public Void visitLeafNode(String key, Serializable newVal) {
-                if (Objects.deepEquals(curNode.traverseChild(key, leafNodeVisitor()), newVal))
-                    newNode.construct(key, null);
-
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Void visitInnerNode(String key, InnerNode newInnerNode) {
-                InnerNode oldInnerNode = curNode.traverseChild(key, innerNodeVisitor());
-
-                if (oldInnerNode == newInnerNode)
-                    newNode.construct(key, null);
-                else
-                    cleanupMatchingValues(oldInnerNode, newInnerNode);
-
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> newNamedList) {
-                NamedListNode<?> curNamedList = curNode.traverseChild(key, namedListNodeVisitor());
-
-                if (curNamedList == newNamedList) {
-                    newNode.construct(key, null);
-
-                    return null;
-                }
-
-                for (String name : new LinkedHashSet<>(newNamedList.namedListKeys())) {
-                    InnerNode oldElement = curNamedList.get(name);
-                    N newElement = newNamedList.get(name);
-
-                    if (oldElement == newElement)
-                        newNamedList.forceDelete(name);
-                    else
-                        cleanupMatchingValues(oldElement, newElement);
-                }
-
-                return null;
-            }
-        });
-    }
-
     /** @see #patch(ConstructableTreeNode, TraversableTreeNode) */
     private static class PatchLeafConfigurationSource implements ConfigurationSource {
         /** */
@@ -643,6 +556,9 @@ public class ConfigurationUtil {
         /** {@inheritDoc} */
         @Override public void descend(ConstructableTreeNode dstNode) {
             assert srcNode.getClass() == dstNode.getClass() : srcNode.getClass() + " : " + dstNode.getClass();
+
+            if (srcNode == dstNode)
+                return;
 
             srcNode.traverseChildren(new ConfigurationVisitor<>() {
                 @Override public Void visitLeafNode(String key, Serializable val) {
@@ -690,12 +606,15 @@ public class ConfigurationUtil {
         @Override public void descend(ConstructableTreeNode dstNode) {
             assert srcNode.getClass() == dstNode.getClass();
 
+            if (srcNode == dstNode)
+                return;
+
             for (String key : srcNode.namedListKeys()) {
                 InnerNode node = srcNode.get(key);
 
                 if (node == null)
                     ((NamedListNode<?>)dstNode).forceDelete(key); // Same as in fillFromPrefixMap.
-                else
+                else if (((NamedListView<?>)dstNode).get(key) != node)
                     dstNode.construct(key, new PatchInnerConfigurationSource(node));
             }
         }

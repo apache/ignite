@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration.sample;
+package org.apache.ignite.internal.configuration.tree;
 
 import java.util.Random;
 import java.util.UUID;
@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
-import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -17,12 +17,11 @@
 package org.apache.ignite.internal.configuration.storage;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
 
@@ -31,10 +30,10 @@ import org.apache.ignite.configuration.annotation.ConfigurationType;
  */
 public class TestConfigurationStorage implements ConfigurationStorage {
     /** Map to store values. */
-    private Map<String, Serializable> map = new ConcurrentHashMap<>();
+    private Map<String, Serializable> map = new HashMap<>();
 
     /** Change listeners. */
-    private List<ConfigurationStorageListener> listeners = new ArrayList<>();
+    private List<ConfigurationStorageListener> listeners = new CopyOnWriteArrayList<>();
 
     /** Storage version. */
     private AtomicLong version = new AtomicLong(0);
