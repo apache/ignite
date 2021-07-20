@@ -111,7 +111,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     private static final AtomicInteger CONN_COUNTER = new AtomicInteger();
 
     /** */
-    private static final String DFLT_REST_PORT = "11080";
+    static final String DFLT_REST_PORT = "11080";
 
     /** */
     private static final long TEST_TASK_TIMEOUT = 500;
@@ -120,7 +120,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     private static final ObjectMapper OBJECT_MAPPER = new GridJettyObjectMapper();
 
     /** */
-    private static final Set<Event> LISTENED_TASK_EVENTS = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Set<Event>> LISTENED_TASK_EVENTS = new HashMap<>();
 
     /** */
     private static CountDownLatch taskExecutionUnlockedLatch;
@@ -178,9 +178,9 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridAllowAll("crd");
-        startGridAllowAll("srv");
-        startClientAllowAll("cli");
+        LISTENED_TASK_EVENTS.put(startGridAllowAll("crd").localNode().id(), ConcurrentHashMap.newKeySet());
+        LISTENED_TASK_EVENTS.put(startGridAllowAll("srv").localNode().id(), ConcurrentHashMap.newKeySet());
+        LISTENED_TASK_EVENTS.put(startGridAllowAll("cli").localNode().id(), ConcurrentHashMap.newKeySet());
     }
 
     /** {@inheritDoc} */
@@ -195,7 +195,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        LISTENED_TASK_EVENTS.clear();
+        LISTENED_TASK_EVENTS.values().forEach(Set::clear);
 
         taskExecutionUnlockedLatch = null;
 
@@ -223,7 +223,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         IgniteEx ignite = startGrid(login, prmSet, null, isClient);
 
         ignite.events().localListen(evt -> {
-            LISTENED_TASK_EVENTS.add(evt);
+            LISTENED_TASK_EVENTS.get(evt.node().id()).add(evt);
 
             return true;
         }, TASK_EVENTS);
@@ -409,36 +409,30 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         List<Integer> expMapNodeTaskEvts
     ) throws Exception {
         for (Ignite ignite : allGrids()) {
-            checkEvents(ignite.name(), taskInitiatorLogin, ignite.name().equals(taskReducerNode)
+            checkEvents(((IgniteEx)ignite).localNode().id(), taskInitiatorLogin, ignite.name().equals(taskReducerNode)
                 ? expReducerTaskEvts : expMapNodeTaskEvts);
         }
     }
 
     /** */
-    private void checkEvents(String igniteInstanceName, String expLogin, List<Integer> expEvtTypes) throws Exception {
-        List<Event> nodeLocListenedEvts = new ArrayList<>();
+    private void checkEvents(UUID nodeId, String expLogin, List<Integer> expEvtTypes) throws Exception {
+        Set<Event> nodeTaskEvents = LISTENED_TASK_EVENTS.get(nodeId);
 
-        assertTrue(waitForCondition(() -> {
-            nodeLocListenedEvts.clear();
-
-            LISTENED_TASK_EVENTS.stream()
-                .filter(evt -> igniteInstanceName.equals(evt.node().attribute(ATTR_IGNITE_INSTANCE_NAME)))
-                .forEach(nodeLocListenedEvts::add);
-
-            List<Integer> listenedEvtsTypes = nodeLocListenedEvts.stream().map(Event::type).collect(Collectors.toList());
-
-            return listenedEvtsTypes.containsAll(expEvtTypes);
-        }, getTestTimeout()));
+        assertTrue(waitForCondition(() ->
+            nodeTaskEvents.stream()
+                .map(Event::type)
+                .collect(Collectors.toList())
+                .containsAll(expEvtTypes), getTestTimeout()));
 
         UUID expSecSubjId = authenticatedSubjectId(grid("crd"), expLogin);
 
-        assertTrue(nodeLocListenedEvts.stream()
+        assertTrue(nodeTaskEvents.stream()
             .map(evt -> evt instanceof TaskEvent ? ((TaskEvent)evt).subjectId() : ((JobEvent)evt).taskSubjectId())
             .allMatch(expSecSubjId::equals));
     }
 
     /** */
-    private static UUID authenticatedSubjectId(IgniteEx ignite, String login) {
+    static UUID authenticatedSubjectId(IgniteEx ignite, String login) {
         List<SecuritySubject> secSubjects;
 
         try {
@@ -457,7 +451,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     }
 
     /** */
-    private static JsonNode sendRestRequest(String url) throws IOException {
+    static JsonNode sendRestRequest(String url) throws IOException {
         URLConnection conn = new URL(url).openConnection();
 
         StringBuilder buf = new StringBuilder(256);
