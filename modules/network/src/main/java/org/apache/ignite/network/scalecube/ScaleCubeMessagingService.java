@@ -60,7 +60,7 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
 
         String correlationId = message.correlationId();
 
-        for (NetworkMessageHandler handler : getMessageHandlers())
+        for (NetworkMessageHandler handler : getMessageHandlers(msg.groupType()))
             handler.onReceived(msg, address, correlationId);
     }
 

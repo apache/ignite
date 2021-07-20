@@ -29,6 +29,7 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
  * RPC server configured for integration tests.
  */
 public class TestIgniteRpcServer extends IgniteRpcServer {
+    /** */
     private final NodeOptions nodeOptions;
 
     /**
@@ -51,9 +52,12 @@ public class TestIgniteRpcServer extends IgniteRpcServer {
             JRaftUtils.createRequestExecutor(nodeOptions)
         );
 
+        clusterService.messagingService().addMessageHandler(TestMessageGroup.class, new RpcMessageHandler());
+
         this.nodeOptions = nodeOptions;
     }
 
+    /** {@inheritDoc} */
     @Override public void shutdown() {
         super.shutdown();
 

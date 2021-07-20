@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.vault;
+package org.apache.ignite.internal.testframework.matchers;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -56,6 +56,13 @@ public class CompletableFutureMatcher<T> extends TypeSafeMatcher<CompletableFutu
     /** {@inheritDoc} */
     @Override public void describeTo(Description description) {
         description.appendText("is ").appendDescriptionOf(matcher);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void describeMismatchSafely(CompletableFuture<T> item, Description mismatchDescription) {
+        Object valueDescription = item.isDone() ? item.join() : item;
+
+        mismatchDescription.appendText("was ").appendValue(valueDescription);
     }
 
     /**

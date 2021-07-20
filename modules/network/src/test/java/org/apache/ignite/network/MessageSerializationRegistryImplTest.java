@@ -19,6 +19,7 @@ package org.apache.ignite.network;
 
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageSerializationFactory;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
 import org.junit.jupiter.api.Test;
 
@@ -30,13 +31,14 @@ import static org.mockito.Mockito.mock;
  * {@link MessageSerializationRegistryImpl} tests.
  */
 public class MessageSerializationRegistryImplTest {
+    /** Default registry implementation. */
+    private final MessageSerializationRegistry registry = new MessageSerializationRegistryImpl();
+
     /**
      * Tests that a serialization factory can be registered.
      */
     @Test
     public void testRegisterFactory() {
-        var registry = new MessageSerializationRegistryImpl();
-
         registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory());
     }
 
@@ -46,8 +48,6 @@ public class MessageSerializationRegistryImplTest {
      */
     @Test
     public void testRegisterFactoryWithSameType() {
-        var registry = new MessageSerializationRegistryImpl();
-
         registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory());
 
         assertThrows(
@@ -62,8 +62,6 @@ public class MessageSerializationRegistryImplTest {
      */
     @Test
     public void testRegisterFactoryWithSameTypeDifferentModule() {
-        var registry = new MessageSerializationRegistryImpl();
-
         registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory());
 
         short nextGroupType = Msg.GROUP_TYPE + 1;
@@ -80,8 +78,6 @@ public class MessageSerializationRegistryImplTest {
      */
     @Test
     public void testCreateSerializers() {
-        var registry = new MessageSerializationRegistryImpl();
-
         registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory());
 
         assertNotNull(registry.createSerializer(Msg.GROUP_TYPE, Msg.TYPE));
@@ -94,10 +90,22 @@ public class MessageSerializationRegistryImplTest {
      */
     @Test
     public void testCreateSerializersIfNotRegistered() {
-        var registry = new MessageSerializationRegistryImpl();
-
         assertThrows(NetworkConfigurationException.class, () -> registry.createSerializer(Msg.GROUP_TYPE, Msg.TYPE));
         assertThrows(NetworkConfigurationException.class, () -> registry.createDeserializer(Msg.GROUP_TYPE, Msg.TYPE));
+    }
+
+    /**
+     * Tests that edge values of group and message types are handled without out-of-bound errors.
+     */
+    @Test
+    public void testEdgeValues() {
+        registry.registerFactory((short)0, (short)0, new MsgSerializationFactory());
+
+        assertNotNull(registry.createSerializer((short)0, (short)0));
+
+        registry.registerFactory(Short.MAX_VALUE, Short.MAX_VALUE, new MsgSerializationFactory());
+
+        assertNotNull(registry.createSerializer(Short.MAX_VALUE, Short.MAX_VALUE));
     }
 
     /** */

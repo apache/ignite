@@ -38,8 +38,9 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.message.ActionRequest;
 import org.apache.ignite.raft.client.message.GetLeaderRequest;
 import org.apache.ignite.raft.client.message.GetLeaderResponse;
-import org.apache.ignite.raft.client.message.RaftErrorResponse;
+import org.apache.ignite.raft.client.message.RaftClientMessageGroup;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
+import org.apache.ignite.raft.client.message.RaftErrorResponse;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.jetbrains.annotations.Nullable;
@@ -90,32 +91,35 @@ public class RaftServerImpl implements RaftServer {
         readQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
         writeQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
 
-        service.messagingService().addMessageHandler((message, senderAddr, correlationId) -> {
-            if (message instanceof GetLeaderRequest) {
-                var localPeer = new Peer(service.topologyService().localMember().address());
+        service.messagingService().addMessageHandler(
+            RaftClientMessageGroup.class,
+            (message, senderAddr, correlationId) -> {
+                if (message instanceof GetLeaderRequest) {
+                    var localPeer = new Peer(service.topologyService().localMember().address());
 
-                GetLeaderResponse resp = clientMsgFactory.getLeaderResponse().leader(localPeer).build();
+                    GetLeaderResponse resp = clientMsgFactory.getLeaderResponse().leader(localPeer).build();
 
-                service.messagingService().send(senderAddr, resp, correlationId);
-            }
-            else if (message instanceof ActionRequest) {
-                ActionRequest req0 = (ActionRequest)message;
-
-                RaftGroupListener lsnr = listeners.get(req0.groupId());
-
-                if (lsnr == null) {
-                    sendError(senderAddr, correlationId, RaftErrorCode.ILLEGAL_STATE);
-
-                    return;
+                    service.messagingService().send(senderAddr, resp, correlationId);
                 }
+                else if (message instanceof ActionRequest) {
+                    ActionRequest req0 = (ActionRequest)message;
 
-                if (req0.command() instanceof ReadCommand)
-                    handleActionRequest(senderAddr, req0, correlationId, readQueue, lsnr);
-                else
-                    handleActionRequest(senderAddr, req0, correlationId, writeQueue, lsnr);
+                    RaftGroupListener lsnr = listeners.get(req0.groupId());
+
+                    if (lsnr == null) {
+                        sendError(senderAddr, correlationId, RaftErrorCode.ILLEGAL_STATE);
+
+                        return;
+                    }
+
+                    if (req0.command() instanceof ReadCommand)
+                        handleActionRequest(senderAddr, req0, correlationId, readQueue, lsnr);
+                    else
+                        handleActionRequest(senderAddr, req0, correlationId, writeQueue, lsnr);
+                }
+                // TODO https://issues.apache.org/jira/browse/IGNITE-14775
             }
-            // TODO https://issues.apache.org/jira/browse/IGNITE-14775
-        });
+        );
 
         readWorker = new Thread(() -> processQueue(readQueue, RaftGroupListener::onRead), "read-cmd-worker#" + service.topologyService().localMember().toString());
         readWorker.setDaemon(true);

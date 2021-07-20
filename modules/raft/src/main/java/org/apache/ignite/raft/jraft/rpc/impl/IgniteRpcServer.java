@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import org.apache.ignite.network.NetworkMessageHandler;
+import org.apache.ignite.raft.client.message.RaftClientMessageGroup;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -58,6 +61,10 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteRpcServer implements RpcServer<Void> {
     private final ClusterService service;
 
+    private final NodeManager nodeManager;
+
+    private final Executor rpcExecutor;
+
     private final List<ConnectionClosedEventListener> listeners = new CopyOnWriteArrayList<>();
 
     private final Map<String, RpcProcessor> processors = new ConcurrentHashMap<>();
@@ -77,6 +84,8 @@ public class IgniteRpcServer implements RpcServer<Void> {
         @Nullable Executor rpcExecutor
     ) {
         this.service = service;
+        this.nodeManager = nodeManager;
+        this.rpcExecutor = rpcExecutor;
 
         // raft server RPC
         AppendEntriesRequestProcessor appendEntriesRequestProcessor =
@@ -106,8 +115,30 @@ public class IgniteRpcServer implements RpcServer<Void> {
         registerProcessor(new ActionRequestProcessor(rpcExecutor, raftClientMessagesFactory));
         registerProcessor(new org.apache.ignite.raft.jraft.rpc.impl.client.SnapshotRequestProcessor(rpcExecutor, raftClientMessagesFactory));
 
-        service.messagingService().addMessageHandler((msg, senderAddr, corellationId) -> {
-            Class<? extends NetworkMessage> cls = msg.getClass();
+        var messageHandler = new RpcMessageHandler();
+
+        service.messagingService().addMessageHandler(RaftMessageGroup.class, messageHandler);
+        service.messagingService().addMessageHandler(RaftClientMessageGroup.class, messageHandler);
+
+        service.topologyService().addEventHandler(new TopologyEventHandler() {
+            @Override public void onAppeared(ClusterNode member) {
+                // TODO asch optimize start replicator https://issues.apache.org/jira/browse/IGNITE-14843
+            }
+
+            @Override public void onDisappeared(ClusterNode member) {
+                for (ConnectionClosedEventListener listener : listeners)
+                    listener.onClosed(service.topologyService().localMember().name(), member.name());
+            }
+        });
+    }
+
+    /**
+     * Implementation of a message handler that dispatches the incoming requests to a suitable {@link RpcProcessor}.
+     */
+    public class RpcMessageHandler implements NetworkMessageHandler {
+        /** {@inheritDoc} */
+        @Override public void onReceived(NetworkMessage message, NetworkAddress senderAddr, String correlationId) {
+            Class<? extends NetworkMessage> cls = message.getClass();
             RpcProcessor<NetworkMessage> prc = processors.get(cls.getName());
 
             // TODO asch cache mapping https://issues.apache.org/jira/browse/IGNITE-14832
@@ -128,7 +159,7 @@ public class IgniteRpcServer implements RpcServer<Void> {
             Executor executor = null;
 
             if (selector != null)
-                executor = selector.select(prc.getClass().getName(), msg, nodeManager);
+                executor = selector.select(prc.getClass().getName(), message, nodeManager);
 
             if (executor == null)
                 executor = prc.executor();
@@ -145,7 +176,7 @@ public class IgniteRpcServer implements RpcServer<Void> {
                     }
 
                     @Override public void sendResponse(Object responseObj) {
-                        service.messagingService().send(senderAddr, (NetworkMessage) responseObj, corellationId);
+                        service.messagingService().send(senderAddr, (NetworkMessage) responseObj, correlationId);
                     }
 
                     @Override public NetworkAddress getRemoteAddress() {
@@ -157,20 +188,9 @@ public class IgniteRpcServer implements RpcServer<Void> {
                     }
                 };
 
-                finalPrc.handleRequest(context, msg);
+                finalPrc.handleRequest(context, message);
             });
-        });
-
-        service.topologyService().addEventHandler(new TopologyEventHandler() {
-            @Override public void onAppeared(ClusterNode member) {
-                // TODO asch optimize start replicator https://issues.apache.org/jira/browse/IGNITE-14843
-            }
-
-            @Override public void onDisappeared(ClusterNode member) {
-                for (ConnectionClosedEventListener listener : listeners)
-                    listener.onClosed(service.topologyService().localMember().name(), member.name());
-            }
-        });
+        }
     }
 
     /** {@inheritDoc} */

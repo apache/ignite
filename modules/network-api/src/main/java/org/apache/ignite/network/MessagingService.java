@@ -18,6 +18,7 @@
 package org.apache.ignite.network;
 
 import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.network.annotations.MessageGroup;
 
 /**
  * Entry point for sending messages between network members in both weak and patient mode.
@@ -90,9 +91,12 @@ public interface MessagingService {
     CompletableFuture<NetworkMessage> invoke(NetworkAddress addr, NetworkMessage msg, long timeout);
 
     /**
-     * Registers a handler for network message events.
+     * Registers a listener for a group of network message events.
+     * <p>
+     * Message group is specified by providing a class annotated with the {@link MessageGroup} annotation.
      *
+     * @param messageGroup Message group descriptor.
      * @param handler Message handler.
      */
-    void addMessageHandler(NetworkMessageHandler handler);
+    void addMessageHandler(Class<?> messageGroup, NetworkMessageHandler handler);
 }

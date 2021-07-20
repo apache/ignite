@@ -21,9 +21,12 @@ import org.apache.ignite.network.annotations.MessageGroup;
 
 @MessageGroup(groupName = "TestMessages", groupType = 2)
 public class TestMessageTypes {
+    /** */
     public static final short ALL_TYPES = 1;
 
+    /** */
     public static final short TEST = 2;
 
+    /** */
     public static final short NESTED_MESSAGE = 3;
 }

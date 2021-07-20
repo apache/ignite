@@ -23,20 +23,19 @@ import org.apache.ignite.raft.jraft.rpc.impl.ConnectionClosedEventListener;
  *
  */
 public interface RpcServer<T> extends Lifecycle<T> {
-
     /**
      * Register a conn closed event listener.
      *
      * @param listener the event listener.
      */
-    void registerConnectionClosedEventListener(final ConnectionClosedEventListener listener);
+    void registerConnectionClosedEventListener(ConnectionClosedEventListener listener);
 
     /**
      * Register user processor.
      *
      * @param processor the user processor which has a interest
      */
-    void registerProcessor(final RpcProcessor<?> processor);
+    void registerProcessor(RpcProcessor<?> processor);
 
     /**
      * @return bound port

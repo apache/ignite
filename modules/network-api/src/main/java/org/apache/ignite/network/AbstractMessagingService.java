@@ -17,26 +17,58 @@
 
 package org.apache.ignite.network;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.network.annotations.MessageGroup;
 
 /**
  * Base class for {@link MessagingService} implementations.
  */
 public abstract class AbstractMessagingService implements MessagingService {
-    /** */
-    private final Collection<NetworkMessageHandler> messageHandlers = new CopyOnWriteArrayList<>();
+    /** Mapping from group type (array index) to a list of registered message handlers. */
+    private final AtomicReferenceArray<List<NetworkMessageHandler>> handlersByGroupType =
+        new AtomicReferenceArray<>(Short.MAX_VALUE + 1);
 
     /** {@inheritDoc} */
-    @Override public void addMessageHandler(NetworkMessageHandler handler) {
-        messageHandlers.add(handler);
+    @Override public void addMessageHandler(Class<?> messageGroup, NetworkMessageHandler handler) {
+        handlersByGroupType.getAndUpdate(getMessageGroupType(messageGroup), handlers -> {
+            if (handlers == null)
+                return List.of(handler);
+
+            var result = new ArrayList<NetworkMessageHandler>(handlers.size() + 1);
+
+            result.addAll(handlers);
+            result.add(handler);
+
+            return result;
+        });
+    }
+
+    /**
+     * Extracts the message group ID from a class annotated with {@link MessageGroup}.
+     */
+    private static short getMessageGroupType(Class<?> messageGroup) {
+        MessageGroup annotation = messageGroup.getAnnotation(MessageGroup.class);
+
+        assert annotation != null : "No MessageGroup annotation present on " + messageGroup;
+
+        short groupType = annotation.groupType();
+
+        assert groupType >= 0 : "Group type must not be negative";
+
+        return groupType;
     }
 
     /**
      * @return registered message handlers.
      */
-    public Collection<NetworkMessageHandler> getMessageHandlers() {
-        return Collections.unmodifiableCollection(messageHandlers);
+    protected final Collection<NetworkMessageHandler> getMessageHandlers(short groupType) {
+        assert groupType >= 0 : "Group type must not be negative";
+
+        List<NetworkMessageHandler> result = handlersByGroupType.get(groupType);
+
+        return result == null ? List.of() : result;
     }
 }

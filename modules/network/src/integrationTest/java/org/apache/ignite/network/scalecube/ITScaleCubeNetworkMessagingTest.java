@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.network.scalecube;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -29,21 +30,27 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.transport.api.Transport;
+import org.apache.ignite.internal.network.NetworkMessageTypes;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
+import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.TopologyEventHandler;
+import org.apache.ignite.network.annotations.MessageGroup;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,6 +86,7 @@ class ITScaleCubeNetworkMessagingTest {
 
         for (ClusterService member : testCluster.members) {
             member.messagingService().addMessageHandler(
+                TestMessageTypes.class,
                 (message, senderAddr, correlationId) -> {
                     messageStorage.put(member.localConfiguration().getName(), (TestMessage)message);
                     messageReceivedLatch.countDown();
@@ -106,6 +114,7 @@ class ITScaleCubeNetworkMessagingTest {
 
     /**
      * Tests graceful shutdown.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -151,6 +160,7 @@ class ITScaleCubeNetworkMessagingTest {
         var dataFuture = new CompletableFuture<Data>();
 
         member.messagingService().addMessageHandler(
+            TestMessageTypes.class,
             (message, senderAddr, correlationId) ->
                 dataFuture.complete(new Data((TestMessage)message, senderAddr, correlationId))
         );
@@ -182,10 +192,13 @@ class ITScaleCubeNetworkMessagingTest {
         var requestMessage = messageFactory.testMessage().msg("request").build();
         var responseMessage = messageFactory.testMessage().msg("response").build();
 
-        member.messagingService().addMessageHandler((message, senderAddr, correlationId) -> {
-            if (message.equals(requestMessage))
-                member.messagingService().send(self, responseMessage, correlationId);
-        });
+        member.messagingService().addMessageHandler(
+            TestMessageTypes.class,
+            (message, senderAddr, correlationId) -> {
+                if (message.equals(requestMessage))
+                    member.messagingService().send(self, responseMessage, correlationId);
+            }
+        );
 
         TestMessage actualResponseMessage = member.messagingService()
             .invoke(self, requestMessage, 1000)
@@ -196,7 +209,79 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
+     * Serializable message that belongs to the {@link NetworkMessageTypes} message group.
+     */
+    private static class MockNetworkMessage implements NetworkMessage, Serializable {
+        /** {@inheritDoc} */
+        @Override public short messageType() {
+            return 666;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short groupType() {
+            return NetworkMessageTypes.class.getAnnotation(MessageGroup.class).groupType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return getClass() == obj.getClass();
+        }
+    }
+
+    /**
+     * Tests that messages from different message groups can be delivered to different sets of handlers.
+     */
+    @Test
+    public void testMessageGroupsHandlers() throws Exception {
+        testCluster = new Cluster(2);
+        testCluster.startAwait();
+
+        ClusterService node1 = testCluster.members.get(0);
+        ClusterService node2 = testCluster.members.get(1);
+
+        var testMessageFuture1 = new CompletableFuture<NetworkMessage>();
+        var testMessageFuture2 = new CompletableFuture<NetworkMessage>();
+        var networkMessageFuture = new CompletableFuture<NetworkMessage>();
+
+        // register multiple handlers for the same group
+        node1.messagingService().addMessageHandler(
+            TestMessageTypes.class,
+            (message, senderAddr, correlationId) -> assertTrue(testMessageFuture1.complete(message))
+        );
+
+        node1.messagingService().addMessageHandler(
+            TestMessageTypes.class,
+            (message, senderAddr, correlationId) -> assertTrue(testMessageFuture2.complete(message))
+        );
+
+        // register a different handle for the second group
+        node1.messagingService().addMessageHandler(
+            NetworkMessageTypes.class,
+            (message, senderAddr, correlationId) -> assertTrue(networkMessageFuture.complete(message))
+        );
+
+        var testMessage = messageFactory.testMessage().msg("foo").build();
+
+        var networkMessage = new MockNetworkMessage();
+
+        // test that a message gets delivered to both handlers
+        node2.messagingService()
+            .send(node1.topologyService().localMember(), testMessage)
+            .get(1, TimeUnit.SECONDS);
+
+        // test that a message from the other group is only delivered to a single handler
+        node2.messagingService()
+            .send(node1.topologyService().localMember(), networkMessage)
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(testMessageFuture1, willBe(equalTo(testMessage)));
+        assertThat(testMessageFuture2, willBe(equalTo(testMessage)));
+        assertThat(networkMessageFuture, willBe(equalTo(networkMessage)));
+    }
+
+    /**
      * Tests shutdown.
+     *
      * @param forceful Whether shutdown should be forceful.
      * @throws Exception If failed.
      */
@@ -238,6 +323,7 @@ class ITScaleCubeNetworkMessagingTest {
 
     /**
      * Find the cluster's transport and force it to stop.
+     *
      * @param cluster Cluster to be shutdown.
      * @throws Exception If failed to stop.
      */
@@ -319,6 +405,7 @@ class ITScaleCubeNetworkMessagingTest {
 
         /**
          * Start and wait for cluster to come up.
+         *
          * @throws InterruptedException If failed.
          */
         void startAwait() throws InterruptedException {
