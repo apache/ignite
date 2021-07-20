@@ -2,7 +2,6 @@
 # description: Extract function edge cases
 # group: [date]
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14961
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14960
 
 # century changes in the year 1
 query I
@@ -32,77 +31,77 @@ SELECT EXTRACT(millennium FROM cast('2001-10-10' AS DATE));
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 0);
 ----
-4
+5
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 0);
 ----
-4
+5
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 1);
 ----
-5
+6
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 1);
 ----
-3
+4
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 2);
 ----
-6
+7
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 2);
 ----
-2
+3
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 3);
 ----
-0
+1
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 3);
 ----
-1
+2
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 4);
 ----
-1
+2
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 4);
 ----
-0
+1
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 5);
 ----
-2
+3
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 5);
 ----
-6
+7
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) + 6);
 ----
-3
+4
 
 query I
 SELECT EXTRACT(dow FROM cast('1970-01-01' AS DATE) - 6);
 ----
-5
+6
 
 query I
 SELECT EXTRACT(dow FROM cast('1793-05-26' AS DATE));
 ----
-0
+1
 
 query I
 SELECT EXTRACT(isodow FROM cast('1793-05-26' AS DATE));
