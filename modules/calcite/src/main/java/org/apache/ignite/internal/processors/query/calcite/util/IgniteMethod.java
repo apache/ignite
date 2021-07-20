@@ -33,6 +33,7 @@ public enum IgniteMethod {
     ROW_HANDLER_SET(RowHandler.class, "set", int.class, Object.class, Object.class),
     /** See {@link RowHandler#get(int, Object)} */
     ROW_HANDLER_GET(RowHandler.class, "get", int.class, Object.class),
+    /** See {@link RowHandler#getBiRows(int, Object, Object)} */
     ROW_HANDLER_BI_GET(RowHandler.class, "getBiRows", int.class, Object.class, Object.class),
     /** See {@link ExecutionContext#rowHandler()} */
     CONTEXT_ROW_HANDLER(ExecutionContext.class, "rowHandler"),
@@ -40,6 +41,7 @@ public enum IgniteMethod {
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
     /** See {@link SingleScalar#execute(ExecutionContext, Object, Object)} */
     SCALAR_EXECUTE(SingleScalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
+    /** See {@link BiScalar#execute(ExecutionContext, Object, Object, Object)} */
     BI_SCALAR_EXECUTE(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
     /** See {@link FragmentMappingMetadata#fragmentMapping()} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
