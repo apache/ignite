@@ -804,7 +804,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         ) throws IgniteCheckedException {
             super(
                 def,
-                cctx,
+                cctx.group(),
                 treeName,
                 offheap,
                 reuseList,
@@ -813,6 +813,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 metaPageId,
                 initNew,
                 configuredInlineSize,
+                cctx.config().getSqlIndexMaxInlineSize(),
                 keyTypeSettings,
                 rowCache,
                 stats,

@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,16 +25,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
@@ -54,6 +51,8 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
  * Tasks that cleans up index tree.
+ *
+ * @deprecated Use {@link DurableBackgroundCleanupIndexTreeTaskV2}.
  */
 public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundTask {
     /** */
@@ -156,34 +155,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private void execute(GridKernalContext ctx) {
         List<InlineIndexTree> trees0 = trees;
 
-        if (1 == 1) {
-            int grpId = CU.cacheGroupId(cacheName, cacheGrpName);
-
-            CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
-
-            IgniteCacheOffheapManager offheap = grpCtx.offheap();
-
-            int cacheId = CU.cacheId(cacheName);
-
-            List<RootPage> rootPages = new ArrayList<>();
-
-            for (int segment = 0; segment < this.rootPages.size(); segment++) {
-                try {
-                    RootPage rootPage = offheap.findRootPageForIndex(cacheId, treeName, segment);
-
-                    if (rootPage != null)
-                        rootPages.add(rootPage);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-
-            System.out.println(rootPages);
-
-            return;
-        }
-
         if (trees0 == null) {
             trees0 = new ArrayList<>(rootPages.size());
 
@@ -254,9 +225,9 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     String treeName = "deletedTree_" + i + "_" + name();
 
                     InlineIndexTree tree = new InlineIndexTree(
-                        null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
+                        null, grpCtx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
                         cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, new IndexKeyTypeSettings(), null,
+                        rootPage, false, 0, 0, new IndexKeyTypeSettings(), null,
                         stats, new NoopRowHandlerFactory(), null);
 
                     trees0.add(tree);
@@ -331,49 +302,19 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
+    @Override public DurableBackgroundTask convertAfterRestoreIfNeeded() {
+        return new DurableBackgroundCleanupIndexTreeTaskV2(
+            cacheGrpName,
+            cacheName,
+            idxName,
+            treeName,
+            UUID.randomUUID().toString(),
+            rootPages.size()
+        );
     }
 
-    /** */
-    private static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
-        /** {@inheritDoc} */
-        @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
-            return new InlineIndexRowHandler() {
-                /** {@inheritDoc} */
-                @Override public IndexKey indexKey(int idx, CacheDataRow row) {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public List<InlineIndexKeyType> inlineIndexKeyTypes() {
-                    return Collections.emptyList();
-                }
-
-                /** {@inheritDoc} */
-                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
-                    return Collections.emptyList();
-                }
-
-                @Override public IndexKeyTypeSettings indexKeyTypeSettings() {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public int partition(CacheDataRow row) {
-                    return 0;
-                }
-
-                /** {@inheritDoc} */
-                @Override public Object cacheKey(CacheDataRow row) {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public Object cacheValue(CacheDataRow row) {
-                    return null;
-                }
-            };
-        }
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
     }
 }

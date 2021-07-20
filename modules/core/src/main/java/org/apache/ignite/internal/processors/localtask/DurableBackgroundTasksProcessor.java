@@ -72,8 +72,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      */
     private final ConcurrentMap<String, DurableBackgroundTask> toRmv = new ConcurrentHashMap<>();
 
-    /** Prohibiting the execution of tasks. */
-    private volatile boolean prohibitionExecTasks = true;
+    /** Prohibiting the execution of tasks. Guarded by {@link #cancelLock}. */
+    private boolean prohibitionExecTasks = true;
 
     /** Node stop lock. */
     private final GridBusyLock stopLock = new GridBusyLock();
@@ -111,7 +111,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 metaStorage.iterate(
                     TASK_PREFIX,
                     (k, v) -> {
-                        DurableBackgroundTask t = (DurableBackgroundTask)v;
+                        DurableBackgroundTask t = ((DurableBackgroundTask)v).convertAfterRestoreIfNeeded();
 
                         tasks.put(t.name(), new DurableBackgroundTaskState(t, null, true));
                     },
@@ -197,11 +197,16 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      */
     public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
         if (msg.state() != ClusterState.INACTIVE) {
-            prohibitionExecTasks = false;
+            cancelLock.writeLock().lock();
 
-            for (DurableBackgroundTaskState taskState : tasks.values()) {
-                if (!prohibitionExecTasks)
+            try {
+                prohibitionExecTasks = false;
+
+                for (DurableBackgroundTaskState taskState : tasks.values())
                     executeAsync0(taskState.task());
+            }
+            finally {
+                cancelLock.writeLock().unlock();
             }
         }
     }
@@ -244,8 +249,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 });
             }
 
-            if (!prohibitionExecTasks)
-                executeAsync0(task);
+            executeAsync0(task);
 
             return taskState.outFuture();
         }
@@ -275,52 +279,54 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
         cancelLock.readLock().lock();
 
         try {
-            DurableBackgroundTaskState taskState = tasks.get(t.name());
+            if (!prohibitionExecTasks) {
+                DurableBackgroundTaskState taskState = tasks.get(t.name());
 
-            if (taskState != null && taskState.state(INIT, PREPARE)) {
-                if (log.isInfoEnabled())
-                    log.info("Executing durable background task: " + t.name());
+                if (taskState != null && taskState.state(INIT, PREPARE)) {
+                    if (log.isInfoEnabled())
+                        log.info("Executing durable background task: " + t.name());
 
-                t.executeAsync(ctx).listen(f -> {
-                    DurableBackgroundTaskResult res = null;
+                    t.executeAsync(ctx).listen(f -> {
+                        DurableBackgroundTaskResult res = null;
 
-                    try {
-                        res = f.get();
-                    }
-                    catch (Throwable e) {
-                        log.error("Task completed with an error: " + t.name(), e);
-                    }
+                        try {
+                            res = f.get();
+                        }
+                        catch (Throwable e) {
+                            log.error("Task completed with an error: " + t.name(), e);
+                        }
 
-                    assert res != null;
+                        assert res != null;
 
-                    if (res.error() != null)
-                        log.error("Could not execute durable background task: " + t.name(), res.error());
+                        if (res.error() != null)
+                            log.error("Could not execute durable background task: " + t.name(), res.error());
 
-                    if (res.completed()) {
-                        if (res.error() == null && log.isInfoEnabled())
-                            log.info("Execution of durable background task completed: " + t.name());
+                        if (res.completed()) {
+                            if (res.error() == null && log.isInfoEnabled())
+                                log.info("Execution of durable background task completed: " + t.name());
 
-                        if (taskState.saved())
-                            taskState.state(COMPLETED);
-                        else
-                            tasks.remove(t.name());
+                            if (taskState.saved())
+                                taskState.state(COMPLETED);
+                            else
+                                tasks.remove(t.name());
 
-                        GridFutureAdapter<Void> outFut = taskState.outFuture();
+                            GridFutureAdapter<Void> outFut = taskState.outFuture();
 
-                        if (outFut != null)
-                            outFut.onDone(res.error());
-                    }
-                    else {
-                        assert res.restart();
+                            if (outFut != null)
+                                outFut.onDone(res.error());
+                        }
+                        else {
+                            assert res.restart();
 
-                        if (log.isInfoEnabled())
-                            log.info("Execution of durable background task will be restarted: " + t.name());
+                            if (log.isInfoEnabled())
+                                log.info("Execution of durable background task will be restarted: " + t.name());
 
-                        taskState.state(INIT);
-                    }
-                });
+                            taskState.state(INIT);
+                        }
+                    });
 
-                taskState.state(PREPARE, STARTED);
+                    taskState.state(PREPARE, STARTED);
+                }
             }
         }
         finally {
@@ -333,11 +339,11 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      * Prohibiting the execution of tasks.
      */
     private void cancelTasks() {
-        prohibitionExecTasks = true;
-
         cancelLock.writeLock().lock();
 
         try {
+            prohibitionExecTasks = true;
+
             for (DurableBackgroundTaskState taskState : tasks.values()) {
                 if (taskState.state() == STARTED)
                     taskState.task().cancel();

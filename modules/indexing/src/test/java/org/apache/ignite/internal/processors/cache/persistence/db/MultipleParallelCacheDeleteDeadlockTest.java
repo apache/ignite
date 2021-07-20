@@ -255,7 +255,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         ) throws IgniteCheckedException {
             super(
                 def,
-                cctx,
+                cctx.group(),
                 treeName,
                 offheap,
                 reuseList,
@@ -264,6 +264,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 metaPageId,
                 initNew,
                 configuredInlineSize,
+                cctx.config().getSqlIndexMaxInlineSize(),
                 keyTypeSettings,
                 rowCache,
                 stats,

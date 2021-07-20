@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -27,7 +25,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
@@ -422,63 +420,29 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     private final AtomicBoolean destroyed = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override public void destroy(boolean softDelete) {
+    @Override public void destroy(boolean softDel) {
         // Already destroyed.
         if (!destroyed.compareAndSet(false, true))
             return;
 
-        try {
-            if (cctx.affinityNode() && !softDelete) {
-                List<Long> rootPages = new ArrayList<>(segments.length);
-                List<InlineIndexTree> trees = new ArrayList<>(segments.length);
+        if (cctx.affinityNode() && !softDel) {
+            for (InlineIndexTree segment : segments)
+                segment.markDestroyed();
 
-                cctx.shared().database().checkpointReadLock();
+            cctx.kernalContext().metric().remove(stats.metricRegistryName());
 
-                try {
-                    for (int i = 0; i < segments.length; i++) {
-                        InlineIndexTree tree = segments[i];
+            // Actual destroy index task.
+            DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTaskV2(
+                cctx.group().name(),
+                cctx.name(),
+                def.idxName().idxName(),
+                treeName,
+                UUID.randomUUID().toString(),
+                segments.length
+            );
 
-                        // TODO: 02.07.2021 тут надо дерево переименовать и надо понять как это сделать
-
-                        // Just mark it as destroyed. Actual destroy later in background task.
-                        tree.markDestroyed();
-
-                        rootPages.add(tree.getMetaPageId());
-                        trees.add(tree);
-
-                        dropMetaPage(i);
-                    }
-                }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
-                }
-
-                cctx.kernalContext().metric().remove(stats.metricRegistryName());
-
-                // Actual destroy index task.
-                DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
-                    rootPages,
-                    trees,
-                    cctx.group().name() == null ? cctx.cache().name() : cctx.group().name(),
-                    cctx.cache().name(),
-                    def.idxName(),
-                    treeName
-                );
-
-                cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
-            }
+            cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @param segIdx Segment index.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void dropMetaPage(int segIdx) throws IgniteCheckedException {
-        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
     /** {@inheritDoc} */

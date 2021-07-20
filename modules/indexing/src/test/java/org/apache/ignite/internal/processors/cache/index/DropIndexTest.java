@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
@@ -33,20 +35,9 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Class for testing the {@link DurableBackgroundCleanupIndexTreeTask}.
+ * Class for testing index drop.
  */
-public class DurableBackgroundCleanupIndexTreeTaskSelfTest extends AbstractRebuildIndexTest {
-    /**
-     * // TODO: 02.07.2021 План
-     * 1)Сделать переименование дерева
-     * 2)Сделать удаление индекса так, чтобы можно было с любого места продолжить:
-     *      обход в глубину??
-     *      или уже реализовано??
-     * 3)Сделать удаление безопасным для сценария:
-     *      создали IDX0 -> удалили IDX0 -> создали IDX0
-     *      кажется это можно сделать остановкой таски и удаления ее из metastorage
-     */
-
+public class DropIndexTest extends AbstractRebuildIndexTest {
     @Test
     public void test0() throws Exception {
         IgniteEx n = startGrid(0);
@@ -95,5 +86,17 @@ public class DurableBackgroundCleanupIndexTreeTaskSelfTest extends AbstractRebui
             .filter(s -> s.task().name().contains(idxName))
             .findAny()
             .orElse(null);
+    }
+
+    /**
+     * Drop of an index for the cache of{@link Person}.
+     * SQL: DROP INDEX " + idxName
+     *
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index creation future.
+     */
+    private List<List<?>> dropIdx(IgniteCache<Integer, Person> cache, String idxName) {
+        return cache.query(new SqlFieldsQuery("DROP INDEX " + idxName)).getAll();
     }
 }
