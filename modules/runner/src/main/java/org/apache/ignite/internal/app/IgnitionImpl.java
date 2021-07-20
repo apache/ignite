@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.configuration.schemas.network.NetworkView;
-import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
 import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
@@ -59,12 +58,10 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
-import org.apache.ignite.rest.RestModule;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.utils.IgniteProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of an entry point for handling grid lifecycle.
@@ -155,8 +152,7 @@ public class IgnitionImpl implements Ignition {
             NetworkConfiguration.KEY,
             NodeConfiguration.KEY,
             ClusterConfiguration.KEY,
-            TablesConfiguration.KEY,
-            RestConfiguration.KEY
+            TablesConfiguration.KEY
         );
 
         List<ConfigurationStorage> cfgStorages =
@@ -233,14 +229,10 @@ public class IgnitionImpl implements Ignition {
             vaultMgr
         );
 
+        // TODO IGNITE-14579 Start rest manager.
+
         // Deploy all resisted watches cause all components are ready and have registered their listeners.
         metaStorageMgr.deployWatches();
-
-        RestModule restModule = new RestModule(LoggerFactory.getLogger(RestModule.class.getName()));
-
-        restModule.prepareStart(locConfigurationMgr.configurationRegistry());
-
-        restModule.start();
 
         ackSuccessStart();
 

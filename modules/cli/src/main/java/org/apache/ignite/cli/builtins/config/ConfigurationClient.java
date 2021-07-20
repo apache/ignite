@@ -113,7 +113,7 @@ public class ConfigurationClient {
     public void set(String host, int port, String rawHoconData, PrintWriter out, ColorScheme cs) {
         var req = HttpRequest
             .newBuilder()
-            .PUT(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
+            .POST(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
             .header("Content-Type", "application/json")
             .uri(URI.create("http://" + host + ":" + port + SET_URL))
             .build();
@@ -131,7 +131,7 @@ public class ConfigurationClient {
                 throw error("Failed to set configuration", res);
         }
         catch (IOException | InterruptedException e) {
-            throw new IgniteCLIException("Connection issues while trying to send http request", e);
+            throw new IgniteCLIException("Connection issues while trying to send http request");
         }
     }
 

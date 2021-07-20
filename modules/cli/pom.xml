@@ -113,18 +113,6 @@
             <artifactId>micronaut-test-junit5</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-runner</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
