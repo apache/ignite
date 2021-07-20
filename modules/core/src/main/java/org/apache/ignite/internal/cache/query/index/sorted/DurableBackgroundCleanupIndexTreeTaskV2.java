@@ -287,7 +287,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @return Mapping: segment number -> index root page.
      * @throws IgniteCheckedException If failed.
      */
-    static Map<Integer, RootPage> findIndexRootPages(
+    public static Map<Integer, RootPage> findIndexRootPages(
         CacheGroupContext grpCtx,
         String cacheName,
         String treeName,
@@ -315,7 +315,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @param segments Number of segments.
      * @throws IgniteCheckedException If failed.
      */
-    static void renameIndexRootPages(
+    public static void renameIndexRootPages(
         CacheGroupContext grpCtx,
         String cacheName,
         String oldTreeName,

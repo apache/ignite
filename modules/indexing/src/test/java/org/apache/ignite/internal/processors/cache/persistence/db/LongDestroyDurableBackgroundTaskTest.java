@@ -49,6 +49,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoRes
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
@@ -91,12 +94,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.IDX_TREE_FACTORY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Tests case when long index deletion operation happens.
@@ -769,6 +774,38 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         forceCheckpoint();
 
         assertTrue(durableBackgroundTaskTestLsnr.check());
+    }
+
+    /**
+     * Checking the converting of the old problem into the new one.
+     */
+    @Test
+    public void testConvertOldTaskToNew() {
+        String grpName = "grpTest";
+        String cacheName = "cacheTest";
+        String treeName = "treeTest";
+        String idxName = "idxTest";
+
+        List<Long> pages = F.asList(100L);
+
+        DurableBackgroundCleanupIndexTreeTask oldTask = new DurableBackgroundCleanupIndexTreeTask(
+            pages,
+            emptyList(),
+            grpName,
+            cacheName,
+            new IndexName(cacheName, "schemaTest", "tableTest", idxName),
+            treeName
+        );
+
+        DurableBackgroundTask convertedTask = oldTask.convertAfterRestoreIfNeeded();
+        assertTrue(convertedTask instanceof DurableBackgroundCleanupIndexTreeTaskV2);
+
+        assertEquals(grpName, getFieldValue(convertedTask, "grpName"));
+        assertEquals(cacheName, getFieldValue(convertedTask, "cacheName"));
+        assertEquals(treeName, getFieldValue(convertedTask, "oldTreeName"));
+        assertNotNull(getFieldValue(convertedTask, "newTreeName"));
+        assertEquals(idxName, getFieldValue(convertedTask, "idxName"));
+        assertEquals(pages.size(), (int)getFieldValue(convertedTask, "segments"));
     }
 
     /** */

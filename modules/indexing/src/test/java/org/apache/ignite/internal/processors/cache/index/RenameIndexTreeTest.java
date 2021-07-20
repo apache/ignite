@@ -20,22 +20,36 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.StreamSupport.stream;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.findIndexRootPages;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.renameIndexRootPages;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INDEX_ROOT_PAGE_RENAME_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl.MAX_IDX_NAME_LEN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
@@ -202,6 +216,69 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
     }
 
     /**
+     * Checking the correctness of {@link DurableBackgroundCleanupIndexTreeTaskV2#findIndexRootPages}
+     * and {@link DurableBackgroundCleanupIndexTreeTaskV2#renameIndexRootPages}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRenameFromTask() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
+
+        GridCacheContext<Integer, Person> cctx = cacheContext(cache);
+
+        String oldTreeName = idxDef.treeName();
+        int segments = idxDef.segments();
+
+        assertExistIndexRoot(cache, oldTreeName, segments, true);
+
+        Map<Integer, RootPage> rootPages0 = findIndexRoots(cache, oldTreeName, segments);
+        Map<Integer, RootPage> rootPages1 = findIndexRootPages(cctx.group(), cctx.name(), oldTreeName, segments);
+
+        assertEqualsCollections(toPageIds(rootPages0), toPageIds(rootPages1));
+
+        long currSegIdx = walMgr(n).currentSegment();
+
+        String newTreeName = UUID.randomUUID().toString();
+        renameIndexRootPages(cctx.group(), cctx.name(), oldTreeName, newTreeName, segments);
+
+        assertExistIndexRoot(cache, oldTreeName, segments, false);
+        assertExistIndexRoot(cache, newTreeName, segments, true);
+
+        assertTrue(findIndexRootPages(cctx.group(), cctx.name(), oldTreeName, segments).isEmpty());
+
+        rootPages0 = findIndexRoots(cache, newTreeName, segments);
+        rootPages1 = findIndexRootPages(cctx.group(), cctx.name(), newTreeName, segments);
+
+        assertEqualsCollections(toPageIds(rootPages0), toPageIds(rootPages1));
+
+        WALPointer start = new WALPointer(currSegIdx, 0, 0);
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> pred = (t, p) -> t == INDEX_ROOT_PAGE_RENAME_RECORD;
+
+        try (WALIterator it = walMgr(n).replay(start, pred)) {
+            List<WALRecord> records = stream(it.spliterator(), false).map(IgniteBiTuple::get2).collect(toList());
+
+            assertEquals(1, records.size());
+
+            IndexRenameRootPageRecord record = (IndexRenameRootPageRecord)records.get(0);
+
+            assertEquals(cctx.cacheId(), record.cacheId());
+            assertEquals(oldTreeName, record.oldTreeName());
+            assertEquals(newTreeName, record.newTreeName());
+            assertEquals(segments, record.segments());
+        }
+    }
+
+    /**
      * Renaming index trees.
      *
      * @param cache Cache.
@@ -258,13 +335,38 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
         int segments,
         boolean expExist
     ) throws Exception {
+        Map<Integer, RootPage> rootPages = findIndexRoots(cache, treeName, segments);
+
+        for (int i = 0; i < segments; i++)
+            assertEquals(expExist, rootPages.containsKey(i));
+    }
+
+    /**
+     * Finding index root pages.
+     *
+     * @param cache Cache.
+     * @param treeName Index tree name.
+     * @param segments Segment count.
+     * @return Mapping: segment number -> index root page.
+     * @throws Exception If failed.
+     */
+    private Map<Integer, RootPage> findIndexRoots(
+        IgniteCache<Integer, Person> cache,
+        String treeName,
+        int segments
+    ) throws Exception {
         GridCacheContext<Integer, Person> cacheCtx = cacheContext(cache);
+
+        Map<Integer, RootPage> rootPages = new HashMap<>();
 
         for (int i = 0; i < segments; i++) {
             RootPage rootPage = cacheCtx.offheap().findRootPageForIndex(cacheCtx.cacheId(), treeName, i);
 
-            assertEquals(expExist, rootPage != null);
+            if (rootPage != null)
+                rootPages.put(i, rootPage);
         }
+
+        return rootPages;
     }
 
     /**
@@ -290,5 +392,16 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
             .filter(i -> idxName.equals(i.name()))
             .findAny()
             .orElse(null);
+    }
+
+    /**
+     * Getting page ids.
+     *
+     * @param rootPages Mapping: segment number -> index root page.
+     * @return Page ids sorted by segment numbers.
+     */
+    private Collection<FullPageId> toPageIds(Map<Integer, RootPage> rootPages) {
+        return rootPages.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey()).map(e -> e.getValue().pageId()).collect(toList());
     }
 }
