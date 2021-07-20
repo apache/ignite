@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.Status;
@@ -33,15 +34,17 @@ import static org.mockito.ArgumentMatchers.eq;
 public class RemoveLearnersRequestProcessorTest extends AbstractCliRequestProcessorTest<RemoveLearnersRequest> {
     @Override
     public RemoveLearnersRequest createRequest(final String groupId, final PeerId peerId) {
-        return RemoveLearnersRequest.newBuilder(). //
-            setGroupId(groupId). //
-            setLeaderId(peerId.toString()). //
-            addLearners("learner:8082").addLearners("test:8183").build();
+        return msgFactory
+            .removeLearnersRequest()
+            .groupId(groupId)
+            .leaderId(peerId.toString())
+            .learnersList(List.of("learner:8082", "test:8183"))
+            .build();
     }
 
     @Override
     public BaseCliRequestProcessor<RemoveLearnersRequest> newProcessor() {
-        return new RemoveLearnersRequestProcessor(null);
+        return new RemoveLearnersRequestProcessor(null, msgFactory);
     }
 
     @Override
@@ -54,9 +57,9 @@ public class RemoveLearnersRequestProcessorTest extends AbstractCliRequestProces
         done.run(Status.OK());
         assertNotNull(this.asyncContext.getResponseObject());
         assertEquals("[learner:8081, learner:8082, learner:8083]", this.asyncContext.as(LearnersOpResponse.class)
-            .getOldLearnersList().toString());
+            .oldLearnersList().toString());
         assertEquals("[learner:8081, learner:8083]", this.asyncContext.as(LearnersOpResponse.class)
-            .getNewLearnersList().toString());
+            .newLearnersList().toString());
     }
 
 }

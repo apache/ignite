@@ -19,120 +19,48 @@
 
 package org.apache.ignite.raft.jraft.entity;
 
+import java.util.List;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.rpc.Message;
-import org.apache.ignite.raft.jraft.rpc.MessageBuilderFactory;
 
 public final class RaftOutter {
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.ENTRY_META, autoSerializable = false)
     public interface EntryMeta extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createEntryMeta();
-        }
+        long term();
 
-        long getTerm();
+        EnumOutter.EntryType type();
 
-        EnumOutter.EntryType getType();
+        List<String> peersList();
 
-        java.util.List<String> getPeersList();
+        long dataLen();
 
-        int getPeersCount();
+        List<String> oldPeersList();
 
-        String getPeers(int index);
+        long checksum();
 
-        long getDataLen();
+        List<String> learnersList();
 
-        java.util.List<String> getOldPeersList();
-
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-
-        long getChecksum();
-
-        java.util.List<String> getLearnersList();
-
-        int getLearnersCount();
-
-        String getLearners(int index);
-
-        java.util.List<String> getOldLearnersList();
-
-        int getOldLearnersCount();
-
-        String getOldLearners(int index);
+        List<String> oldLearnersList();
 
         /**
          * @return True when the entry has a checksum, false otherwise.
          */
         boolean hasChecksum();
-
-        interface Builder {
-            EntryMeta build();
-
-            Builder setTerm(long term);
-
-            Builder setChecksum(long checksum);
-
-            Builder setType(EnumOutter.EntryType type);
-
-            Builder setDataLen(int remaining);
-
-            Builder addPeers(String peerId);
-
-            Builder addOldPeers(String oldPeerId);
-
-            Builder addLearners(String learnerId);
-
-            Builder addOldLearners(String oldLearnerId);
-        }
     }
 
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.SNAPSHOT_META, autoSerializable = false)
     public interface SnapshotMeta extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createSnapshotMeta();
-        }
+        long lastIncludedIndex();
 
-        long getLastIncludedIndex();
+        long lastIncludedTerm();
 
-        long getLastIncludedTerm();
+        List<String> peersList();
 
-        java.util.List<String> getPeersList();
+        List<String> oldPeersList();
 
-        int getPeersCount();
+        List<String> learnersList();
 
-        String getPeers(int index);
-
-        java.util.List<String> getOldPeersList();
-
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-
-        java.util.List<String> getLearnersList();
-
-        int getLearnersCount();
-
-        String getLearners(int index);
-
-        java.util.List<String> getOldLearnersList();
-
-        int getOldLearnersCount();
-
-        String getOldLearners(int index);
-
-        interface Builder {
-            SnapshotMeta build();
-
-            Builder setLastIncludedIndex(long lastAppliedIndex);
-
-            Builder setLastIncludedTerm(long lastAppliedTerm);
-
-            Builder addPeers(String peerId);
-
-            Builder addLearners(String learnerId);
-
-            Builder addOldPeers(String oldPeerId);
-
-            Builder addOldLearners(String oldLearnerId);
-        }
+        List<String> oldLearnersList();
     }
 }

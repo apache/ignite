@@ -1480,7 +1480,7 @@ public class ITNodeTest {
                 if (msg instanceof RpcRequests.RequestVoteRequest) {
                     RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest)msg;
 
-                    return !msg0.getPreVote();
+                    return !msg0.preVote();
                 }
 
                 return false;
@@ -3282,7 +3282,7 @@ public class ITNodeTest {
                 if (msg instanceof RpcRequests.RequestVoteRequest) {
                     RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest)msg;
 
-                    return !msg0.getPreVote();
+                    return !msg0.preVote();
                 }
 
                 return false;

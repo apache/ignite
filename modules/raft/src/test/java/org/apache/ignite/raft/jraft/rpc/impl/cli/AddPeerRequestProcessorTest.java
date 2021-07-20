@@ -33,15 +33,16 @@ public class AddPeerRequestProcessorTest extends AbstractCliRequestProcessorTest
 
     @Override
     public AddPeerRequest createRequest(String groupId, PeerId peerId) {
-        return AddPeerRequest.newBuilder(). //
-            setGroupId(groupId). //
-            setLeaderId(peerId.toString()). //
-            setPeerId("test:8181").build();
+        return msgFactory.addPeerRequest()
+            .groupId(groupId)
+            .leaderId(peerId.toString())
+            .peerId("test:8181")
+            .build();
     }
 
     @Override
     public BaseCliRequestProcessor<AddPeerRequest> newProcessor() {
-        return new AddPeerRequestProcessor(null);
+        return new AddPeerRequestProcessor(null, msgFactory);
     }
 
     @Override
@@ -53,9 +54,9 @@ public class AddPeerRequestProcessorTest extends AbstractCliRequestProcessorTest
         done.run(Status.OK());
         assertNotNull(this.asyncContext.getResponseObject());
         assertEquals("[localhost:8081, localhost:8082, localhost:8083]", this.asyncContext.as(AddPeerResponse.class)
-            .getOldPeersList().toString());
+            .oldPeersList().toString());
         assertEquals("[localhost:8081, localhost:8082, localhost:8083, test:8181]",
-            this.asyncContext.as(AddPeerResponse.class).getNewPeersList().toString());
+            this.asyncContext.as(AddPeerResponse.class).newPeersList().toString());
     }
 
 }

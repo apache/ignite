@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
@@ -71,11 +72,6 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
      * The logger.
      */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ITJRaftCounterServerTest.class);
-
-    /**
-     * Message factory.
-     */
-    private static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
 
     /**
      * Counter group name 0.
@@ -157,7 +153,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         ClusterService service = clusterService("server" + idx, PORT + idx, List.of(addr), true);
 
-        JRaftServerImpl server = new JRaftServerImpl(service, dataPath.toString(), FACTORY) {
+        JRaftServerImpl server = new JRaftServerImpl(service, dataPath.toString()) {
             @Override public void shutdown() throws Exception {
                 super.shutdown();
 

@@ -29,6 +29,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.jraft.JRaftUtils;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.conf.ConfigurationEntry;
 import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.LogEntry;
@@ -103,8 +104,9 @@ public class TestUtils {
     }
 
     public static RpcRequests.PingRequest createPingRequest() {
-        return RpcRequests.PingRequest.newBuilder()
-            .setSendTimestamp(System.currentTimeMillis())
+        return new RaftMessagesFactory()
+            .pingRequest()
+            .sendTimestamp(System.currentTimeMillis())
             .build();
     }
 

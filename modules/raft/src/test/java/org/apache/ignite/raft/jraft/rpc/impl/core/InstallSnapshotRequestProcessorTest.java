@@ -17,7 +17,6 @@
 package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import org.apache.ignite.raft.jraft.entity.PeerId;
-import org.apache.ignite.raft.jraft.entity.RaftOutter.SnapshotMeta;
 import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.InstallSnapshotRequest;
 import org.mockito.Mockito;
@@ -30,18 +29,20 @@ public class InstallSnapshotRequestProcessorTest extends BaseNodeRequestProcesso
 
     @Override
     public InstallSnapshotRequest createRequest(String groupId, PeerId peerId) {
-        request = InstallSnapshotRequest.newBuilder().setGroupId(groupId). //
-            setServerId("localhost:8082"). //
-            setPeerId(peerId.toString()). //
-            setTerm(0). //
-            setMeta(SnapshotMeta.newBuilder().setLastIncludedIndex(1).setLastIncludedTerm(1).build()).setUri("test")
+        request = msgFactory.installSnapshotRequest()
+            .groupId(groupId)
+            .serverId("localhost:8082")
+            .peerId(peerId.toString())
+            .term(0)
+            .meta(msgFactory.snapshotMeta().lastIncludedIndex(1).lastIncludedTerm(1).build())
+            .uri("test")
             .build();
         return request;
     }
 
     @Override
     public NodeRequestProcessor<InstallSnapshotRequest> newProcessor() {
-        return new InstallSnapshotRequestProcessor(null);
+        return new InstallSnapshotRequestProcessor(null, msgFactory);
     }
 
     @Override

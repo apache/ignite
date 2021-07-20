@@ -19,6 +19,7 @@ package org.apache.ignite.raft.jraft.rpc.impl.cli;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.LearnersOpResponse;
@@ -27,36 +28,38 @@ import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * ResetLearners request processor.
  */
 public class ResetLearnersRequestProcessor extends BaseCliRequestProcessor<ResetLearnersRequest> {
 
-    public ResetLearnersRequestProcessor(final Executor executor) {
-        super(executor, LearnersOpResponse.getDefaultInstance());
+    public ResetLearnersRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final ResetLearnersRequest request) {
-        return request.getLeaderId();
+        return request.leaderId();
     }
 
     @Override
     protected String getGroupId(final ResetLearnersRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final ResetLearnersRequest request,
         final RpcRequestClosure done) {
         final List<PeerId> oldLearners = ctx.node.listLearners();
-        final List<PeerId> newLearners = new ArrayList<>(request.getLearnersCount());
+        final List<PeerId> newLearners = new ArrayList<>(request.learnersList().size());
 
-        for (final String peerStr : request.getLearnersList()) {
+        for (final String peerStr : request.learnersList()) {
             final PeerId peer = new PeerId();
             if (!peer.parse(peerStr)) {
                 return RaftRpcFactory.DEFAULT
-                    .newResponse(defaultResp(), RaftError.EINVAL, "Fail to parse peer id %s", peerStr);
+                    .newResponse(msgFactory(), RaftError.EINVAL, "Fail to parse peer id %s", peerStr);
             }
             newLearners.add(peer);
         }
@@ -68,17 +71,12 @@ public class ResetLearnersRequestProcessor extends BaseCliRequestProcessor<Reset
                 done.run(status);
             }
             else {
-                final LearnersOpResponse.Builder rb = LearnersOpResponse.newBuilder();
+                LearnersOpResponse response = msgFactory().learnersOpResponse()
+                    .oldLearnersList(oldLearners.stream().map(Object::toString).collect(toList()))
+                    .newLearnersList(newLearners.stream().map(Object::toString).collect(toList()))
+                    .build();
 
-                for (final PeerId peer : oldLearners) {
-                    rb.addOldLearners(peer.toString());
-                }
-
-                for (final PeerId peer : newLearners) {
-                    rb.addNewLearners(peer.toString());
-                }
-
-                done.sendResponse(rb.build());
+                done.sendResponse(response);
             }
         });
 

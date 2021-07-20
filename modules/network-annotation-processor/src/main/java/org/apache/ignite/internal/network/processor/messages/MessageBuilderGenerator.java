@@ -73,6 +73,18 @@ public class MessageBuilderGenerator {
             })
             .collect(Collectors.toList());
 
+        // generate a getter for each getter in the original interface
+        List<MethodSpec> getters = message.getters().stream()
+            .map(getter -> {
+                String getterName = getter.getSimpleName().toString();
+
+                return MethodSpec.methodBuilder(getterName)
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .returns(TypeName.get(getter.getReturnType()))
+                    .build();
+            })
+            .collect(Collectors.toList());
+
         MethodSpec buildMethod = MethodSpec.methodBuilder("build")
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
             .returns(message.className())
@@ -81,6 +93,7 @@ public class MessageBuilderGenerator {
         return TypeSpec.interfaceBuilder(builderName)
             .addModifiers(Modifier.PUBLIC)
             .addMethods(setters)
+            .addMethods(getters)
             .addMethod(buildMethod)
             .addOriginatingElement(message.element())
             .addOriginatingElement(messageGroup.element())

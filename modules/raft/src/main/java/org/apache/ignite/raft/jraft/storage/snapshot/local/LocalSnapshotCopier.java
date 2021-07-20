@@ -290,7 +290,7 @@ public class LocalSnapshotCopier extends SnapshotCopier {
         for (final String fileName : remoteFiles) {
             final LocalFileMeta remoteMeta = (LocalFileMeta) this.remoteSnapshot.getFileMeta(fileName);
             Requires.requireNonNull(remoteMeta, "remoteMeta");
-            if (!remoteMeta.hasChecksum()) {
+            if (remoteMeta.checksum() != null) {
                 // Re-download file if this file doesn't have checksum
                 writer.removeFile(fileName);
                 toRemove.add(fileName);
@@ -299,8 +299,8 @@ public class LocalSnapshotCopier extends SnapshotCopier {
 
             LocalFileMeta localMeta = (LocalFileMeta) writer.getFileMeta(fileName);
             if (localMeta != null) {
-                if (localMeta.hasChecksum() && localMeta.getChecksum().equals(remoteMeta.getChecksum())) {
-                    LOG.info("Keep file={} checksum={} in {}", fileName, remoteMeta.getChecksum(), writer.getPath());
+                if (localMeta.checksum() != null && localMeta.checksum().equals(remoteMeta.checksum())) {
+                    LOG.info("Keep file={} checksum={} in {}", fileName, remoteMeta.checksum(), writer.getPath());
                     continue;
                 }
                 // Remove files from writer so that the file is to be copied from
@@ -315,13 +315,13 @@ public class LocalSnapshotCopier extends SnapshotCopier {
             if ((localMeta = (LocalFileMeta) lastSnapshot.getFileMeta(fileName)) == null) {
                 continue;
             }
-            if (!localMeta.hasChecksum() || !localMeta.getChecksum().equals(remoteMeta.getChecksum())) {
+            if (localMeta.checksum() == null || !localMeta.checksum().equals(remoteMeta.checksum())) {
                 continue;
             }
 
-            LOG.info("Found the same file ={} checksum={} in lastSnapshot={}", fileName, remoteMeta.getChecksum(),
+            LOG.info("Found the same file ={} checksum={} in lastSnapshot={}", fileName, remoteMeta.checksum(),
                 lastSnapshot.getPath());
-            if (localMeta.getSource() == FileSource.FILE_SOURCE_LOCAL) {
+            if (localMeta.source() == FileSource.FILE_SOURCE_LOCAL) {
                 final Path sourcePath = Paths.get(lastSnapshot.getPath(), fileName);
                 final Path destPath = Paths.get(writer.getPath(), fileName);
                 IgniteUtils.deleteIfExists(destPath);

@@ -24,12 +24,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.NodeManager;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.AppendEntriesRequest;
 import org.apache.ignite.raft.jraft.rpc.impl.ConnectionClosedEventListener;
 import org.apache.ignite.raft.jraft.util.Utils;
@@ -51,9 +51,9 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
         @Override
         public Executor select(final String reqClass, final Object req, NodeManager nodeManager) {
             final AppendEntriesRequest req0 = (AppendEntriesRequest) req;
-            final String groupId = req0.getGroupId();
-            final String peerId = req0.getPeerId();
-            final String serverId = req0.getServerId();
+            final String groupId = req0.groupId();
+            final String peerId = req0.peerId();
+            final String serverId = req0.serverId();
 
             final PeerId peer = new PeerId();
 
@@ -85,10 +85,10 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
         private final PeerPair pair;
         private final boolean isHeartbeat;
 
-        SequenceRpcRequestClosure(final RpcRequestClosure parent, final Message defaultResp,
+        SequenceRpcRequestClosure(final RpcRequestClosure parent,
             final String groupId, final PeerPair pair, final int sequence,
             final boolean isHeartbeat) {
-            super(parent.getRpcCtx(), defaultResp);
+            super(parent.getRpcCtx(), parent.getMsgFactory());
             this.reqSequence = sequence;
             this.groupId = groupId;
             this.pair = pair;
@@ -378,19 +378,19 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
      */
     private final ExecutorSelector executorSelector;
 
-    public AppendEntriesRequestProcessor(final Executor executor) {
-        super(executor, RpcRequests.AppendEntriesResponse.getDefaultInstance());
+    public AppendEntriesRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
         this.executorSelector = new PeerExecutorSelector();
     }
 
     @Override
     protected String getPeerId(final AppendEntriesRequest request) {
-        return request.getPeerId();
+        return request.peerId();
     }
 
     @Override
     protected String getGroupId(final AppendEntriesRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     private int getAndIncrementSequence(final String groupId, final PeerPair pair, NodeManager nodeManager) {
@@ -401,7 +401,7 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
     private boolean isHeartbeatRequest(final AppendEntriesRequest request) {
         // No entries and no data means a true heartbeat request.
         // TODO refactor, adds a new flag field? https://issues.apache.org/jira/browse/IGNITE-14832
-        return request.getEntriesCount() == 0 && !request.hasData();
+        return request.entriesList() == null && request.data() == null;
     }
 
     @Override
@@ -411,8 +411,8 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
         final Node node = (Node) service;
 
         if (node.getRaftOptions().isReplicatorPipeline()) {
-            final String groupId = request.getGroupId();
-            final PeerPair pair = pairOf(request.getPeerId(), request.getServerId());
+            final String groupId = request.groupId();
+            final PeerPair pair = pairOf(request.peerId(), request.serverId());
 
             boolean isHeartbeat = isHeartbeatRequest(request);
             int reqSequence = -1;
@@ -422,7 +422,7 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
             }
 
             final Message response = service.handleAppendEntriesRequest(request, new SequenceRpcRequestClosure(done,
-                defaultResp(), groupId, pair, reqSequence, isHeartbeat));
+                groupId, pair, reqSequence, isHeartbeat));
 
             if (response != null) {
                 // heartbeat or probe request

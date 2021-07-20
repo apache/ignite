@@ -19,6 +19,7 @@ package org.apache.ignite.raft.jraft.rpc.impl.cli;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.LearnersOpResponse;
@@ -32,31 +33,31 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
  */
 public class RemoveLearnersRequestProcessor extends BaseCliRequestProcessor<RemoveLearnersRequest> {
 
-    public RemoveLearnersRequestProcessor(final Executor executor) {
-        super(executor, LearnersOpResponse.getDefaultInstance());
+    public RemoveLearnersRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final RemoveLearnersRequest request) {
-        return request.getLeaderId();
+        return request.leaderId();
     }
 
     @Override
     protected String getGroupId(final RemoveLearnersRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final RemoveLearnersRequest request,
         final RpcRequestClosure done) {
         final List<PeerId> oldLearners = ctx.node.listLearners();
-        final List<PeerId> removeingLearners = new ArrayList<>(request.getLearnersCount());
+        final List<PeerId> removeingLearners = new ArrayList<>(request.learnersList().size());
 
-        for (final String peerStr : request.getLearnersList()) {
+        for (final String peerStr : request.learnersList()) {
             final PeerId peer = new PeerId();
             if (!peer.parse(peerStr)) {
                 return RaftRpcFactory.DEFAULT //
-                    .newResponse(defaultResp(), RaftError.EINVAL, "Fail to parse peer id %s", peerStr);
+                    .newResponse(msgFactory(), RaftError.EINVAL, "Fail to parse peer id %s", peerStr);
             }
             removeingLearners.add(peer);
         }
@@ -68,16 +69,22 @@ public class RemoveLearnersRequestProcessor extends BaseCliRequestProcessor<Remo
                 done.run(status);
             }
             else {
-                final LearnersOpResponse.Builder rb = LearnersOpResponse.newBuilder();
+                List<String> oldLearnersList = new ArrayList<>();
+                List<String> newLearnersList = new ArrayList<>();
 
                 for (final PeerId peer : oldLearners) {
-                    rb.addOldLearners(peer.toString());
+                    oldLearnersList.add(peer.toString());
                     if (!removeingLearners.contains(peer)) {
-                        rb.addNewLearners(peer.toString());
+                        newLearnersList.add(peer.toString());
                     }
                 }
 
-                done.sendResponse(rb.build());
+                LearnersOpResponse response = msgFactory().learnersOpResponse()
+                    .oldLearnersList(oldLearnersList)
+                    .newLearnersList(newLearnersList)
+                    .build();
+
+                done.sendResponse(response);
             }
         });
 

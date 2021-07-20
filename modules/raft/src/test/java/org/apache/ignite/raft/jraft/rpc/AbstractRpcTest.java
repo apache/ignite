@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +46,8 @@ public abstract class AbstractRpcTest {
     private RpcServer<?> server;
 
     private final List<RpcClient> clients = new ArrayList<>();
+
+    private final TestRaftMessagesFactory msgFactory = new TestRaftMessagesFactory();
 
     @BeforeEach
     public void setup() {
@@ -98,7 +101,7 @@ public abstract class AbstractRpcTest {
 
         CountDownLatch l1 = new CountDownLatch(1);
         AtomicReference<Response1> resp1 = new AtomicReference<>();
-        client.invokeAsync(endpoint, new Request1(), new InvokeContext(), (result, err) -> {
+        client.invokeAsync(endpoint, msgFactory.request1().build(), new InvokeContext(), (result, err) -> {
             resp1.set((Response1) result);
             l1.countDown();
         }, 5000);
@@ -107,7 +110,7 @@ public abstract class AbstractRpcTest {
 
         CountDownLatch l2 = new CountDownLatch(1);
         AtomicReference<Response2> resp2 = new AtomicReference<>();
-        client.invokeAsync(endpoint, new Request2(), new InvokeContext(), (result, err) -> {
+        client.invokeAsync(endpoint, msgFactory.request2().build(), new InvokeContext(), (result, err) -> {
             resp2.set((Response2) result);
             l2.countDown();
         }, 5000);
@@ -141,8 +144,8 @@ public abstract class AbstractRpcTest {
 
         CountDownLatch l = new CountDownLatch(2);
 
-        client1.invokeAsync(endpoint, new Request1(), null, (result, err) -> l.countDown(), 500);
-        client1.invokeAsync(endpoint, new Request2(), null, (result, err) -> l.countDown(), 500);
+        client1.invokeAsync(endpoint, msgFactory.request1().build(), null, (result, err) -> l.countDown(), 500);
+        client1.invokeAsync(endpoint, msgFactory.request2().build(), null, (result, err) -> l.countDown(), 500);
 
         l.await();
 
@@ -159,8 +162,8 @@ public abstract class AbstractRpcTest {
         assertTrue(client1.checkConnection(endpoint));
 
         try {
-            Request1 request = new Request1();
-            request.val = 10_000;
+            Request1 request = msgFactory.request1().val(10_000).build();
+
             CompletableFuture<Object> fut = new CompletableFuture<>();
 
             client1.invokeAsync(endpoint, request, null, (result, err) -> {
@@ -193,7 +196,7 @@ public abstract class AbstractRpcTest {
 
         CompletableFuture<Object> resp = new CompletableFuture<>();
 
-        client1.invokeAsync(endpoint, new Request1(), null, (result, err) -> resp.complete(result), 30_000);
+        client1.invokeAsync(endpoint, msgFactory.request1().build(), null, (result, err) -> resp.complete(result), 30_000);
 
         Thread.sleep(500);
 
@@ -209,10 +212,10 @@ public abstract class AbstractRpcTest {
     }
 
     /** */
-    private static class Request1RpcProcessor implements RpcProcessor<Request1> {
+    private class Request1RpcProcessor implements RpcProcessor<Request1> {
         /** {@inheritDoc} */
         @Override public void handleRequest(RpcContext rpcCtx, Request1 request) {
-            if (request.val == 10_000)
+            if (request.val() == 10_000)
                 try {
                     Thread.sleep(1000);
                 }
@@ -220,8 +223,7 @@ public abstract class AbstractRpcTest {
                     // No-op.
                 }
 
-            Response1 resp1 = new Response1();
-            resp1.val = request.val + 1;
+            Response1 resp1 = msgFactory.response1().val(request.val() + 1).build();
             rpcCtx.sendResponse(resp1);
         }
 
@@ -232,11 +234,10 @@ public abstract class AbstractRpcTest {
     }
 
     /** */
-    private static class Request2RpcProcessor implements RpcProcessor<Request2> {
+    private class Request2RpcProcessor implements RpcProcessor<Request2> {
         /** {@inheritDoc} */
         @Override public void handleRequest(RpcContext rpcCtx, Request2 request) {
-            Response2 resp2 = new Response2();
-            resp2.val = request.val + 1;
+            Response2 resp2 = msgFactory.response2().val(request.val() + 1).build();
             rpcCtx.sendResponse(resp2);
         }
 
@@ -247,27 +248,31 @@ public abstract class AbstractRpcTest {
     }
 
     /** */
-    private static class Request1 implements Message {
+    @Transferable(value = 0, autoSerializable = false)
+    public static interface Request1 extends Message {
         /** */
-        int val;
+        int val();
     }
 
     /** */
-    private static class Request2 implements Message {
+    @Transferable(value = 1, autoSerializable = false)
+    public static interface Request2 extends Message {
         /** */
-        int val;
+        int val();
     }
 
     /** */
-    private static class Response1 implements Message {
+    @Transferable(value = 2, autoSerializable = false)
+    public static interface Response1 extends Message {
         /** */
-        int val;
+        int val();
     }
 
     /** */
-    private static class Response2 implements Message {
+    @Transferable(value = 3, autoSerializable = false)
+    public static interface Response2 extends Message {
         /** */
-        int val;
+        int val();
     }
 
     /**

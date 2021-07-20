@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.raft.jraft.Closure;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,22 +36,21 @@ public class RpcRequestClosure implements Closure {
     private static final int RESPOND = 1;
 
     private final RpcContext rpcCtx;
-    private final Message defaultResp;
+    private final RaftMessagesFactory msgFactory;
 
     private volatile int state = PENDING; // NOPMD
 
-    public RpcRequestClosure(RpcContext rpcCtx) {
-        this(rpcCtx, null);
-    }
-
-    public RpcRequestClosure(RpcContext rpcCtx, Message defaultResp) {
-        super();
+    public RpcRequestClosure(RpcContext rpcCtx, RaftMessagesFactory msgFactory) {
         this.rpcCtx = rpcCtx;
-        this.defaultResp = defaultResp;
+        this.msgFactory = msgFactory;
     }
 
     public RpcContext getRpcCtx() {
         return rpcCtx;
+    }
+
+    public RaftMessagesFactory getMsgFactory() {
+        return msgFactory;
     }
 
     public void sendResponse(final Message msg) {
@@ -64,6 +64,6 @@ public class RpcRequestClosure implements Closure {
 
     @Override
     public void run(final Status status) {
-        sendResponse(RaftRpcFactory.DEFAULT.newResponse(this.defaultResp, status));
+        sendResponse(RaftRpcFactory.DEFAULT.newResponse(msgFactory, status));
     }
 }

@@ -17,7 +17,6 @@
 package org.apache.ignite.raft.jraft.storage.snapshot.local;
 
 import java.io.File;
-import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.FileService;
@@ -45,13 +44,14 @@ public class LocalSnapshotReaderTest extends BaseStorageTest {
 
     @BeforeEach
     public void setup() throws Exception {
+        RaftOptions opts = new RaftOptions();
         String snapPath = this.path + File.separator + Snapshot.JRAFT_SNAPSHOT_PREFIX + snapshotIndex;
         new File(snapPath).mkdirs();
-        this.table = new LocalSnapshotMetaTable(new RaftOptions());
-        this.table.addFile("testFile", LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("test").build());
+        this.table = new LocalSnapshotMetaTable(opts);
+        this.table.addFile("testFile", opts.getRaftMessagesFactory().localFileMeta().checksum("test").build());
         table.saveToFile(snapPath + File.separator + Snapshot.JRAFT_SNAPSHOT_META_FILE);
         this.reader = new LocalSnapshotReader(snapshotStorage, null, new Endpoint("localhost", 8081),
-            new RaftOptions(), snapPath);
+            opts, snapPath);
         assertTrue(this.reader.init(null));
     }
 

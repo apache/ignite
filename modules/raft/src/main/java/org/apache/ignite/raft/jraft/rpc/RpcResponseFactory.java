@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.rpc;
 
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
 
@@ -32,45 +33,44 @@ public interface RpcResponseFactory {
     /**
      * Creates a RPC response from status, return OK response when status is null.
      *
-     * @param parent parent message
+     * @param msgFactory Raft message factory
      * @param st status with response
      * @return a response instance
      */
-    default Message newResponse(final Message parent, final Status st) {
-        if (st == null) {
-            return newResponse(parent, 0, "OK");
-        }
-        return newResponse(parent, st.getCode(), st.getErrorMsg());
+    default Message newResponse(RaftMessagesFactory msgFactory, Status st) {
+        if (st == null)
+            return newResponse(msgFactory, 0, "OK");
+
+        return newResponse(msgFactory, st.getCode(), st.getErrorMsg());
     }
 
     /**
      * Creates an error response with parameters.
      *
-     * @param parent parent message
+     * @param msgFactory Raft message factory
      * @param error error with raft info
      * @param fmt message with format string
      * @param args arguments referenced by the format specifiers in the format string
      * @return a response instance
      */
-    default Message newResponse(final Message parent, final RaftError error, final String fmt, final Object... args) {
-        return newResponse(parent, error.getNumber(), fmt, args);
+    default Message newResponse(RaftMessagesFactory msgFactory, RaftError error, String fmt, Object... args) {
+        return newResponse(msgFactory, error.getNumber(), fmt, args);
     }
 
     /**
      * Creates an error response with parameters.
      *
-     * @param parent parent message
+     * @param msgFactory Raft message factory
      * @param code error code with raft info
      * @param fmt message with format string
      * @param args arguments referenced by the format specifiers in the format string
      * @return a response instance
      */
-    default Message newResponse(final Message parent, final int code, final String fmt, final Object... args) {
-        final RpcRequests.ErrorResponse.Builder eBuilder = RpcRequests.ErrorResponse.newBuilder();
-        eBuilder.setErrorCode(code);
-        if (fmt != null) {
-            eBuilder.setErrorMsg(String.format(fmt, args));
-        }
+    default Message newResponse(RaftMessagesFactory msgFactory, int code, String fmt, Object... args) {
+        ErrorResponseBuilder eBuilder = msgFactory.errorResponse();
+        eBuilder.errorCode(code);
+        if (fmt != null)
+            eBuilder.errorMsg(String.format(fmt, args));
         return eBuilder.build();
     }
 }

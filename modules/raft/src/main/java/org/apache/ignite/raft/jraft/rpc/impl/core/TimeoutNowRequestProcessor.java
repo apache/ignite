@@ -17,10 +17,10 @@
 package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.TimeoutNowRequest;
 
 /**
@@ -30,18 +30,18 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.TimeoutNowRequest;
  */
 public class TimeoutNowRequestProcessor extends NodeRequestProcessor<TimeoutNowRequest> {
 
-    public TimeoutNowRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.TimeoutNowResponse.getDefaultInstance());
+    public TimeoutNowRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final TimeoutNowRequest request) {
-        return request.getPeerId();
+        return request.peerId();
     }
 
     @Override
     protected String getGroupId(final TimeoutNowRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override

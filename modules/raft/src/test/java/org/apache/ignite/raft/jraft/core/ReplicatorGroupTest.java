@@ -279,15 +279,16 @@ public class ReplicatorGroupTest {
     }
 
     private RpcRequests.AppendEntriesRequest createEmptyEntriesRequestToPeer(final PeerId peerId) {
-        return RpcRequests.AppendEntriesRequest.newBuilder() //
-            .setGroupId("test") //
-            .setServerId(new PeerId("localhost", 8081).toString()) //
-            .setPeerId(peerId.toString()) //
-            .setTerm(1) //
-            .setPrevLogIndex(10) //
-            .setPrevLogTerm(1) //
-            .setCommittedIndex(0) //
-            .setData(ByteString.EMPTY) //
+        return raftOptions.getRaftMessagesFactory()
+            .appendEntriesRequest()
+            .groupId("test")
+            .serverId(new PeerId("localhost", 8081).toString())
+            .peerId(peerId.toString())
+            .term(1)
+            .prevLogIndex(10)
+            .prevLogTerm(1)
+            .committedIndex(0)
+            .data(ByteString.EMPTY)
             .build();
     }
 }

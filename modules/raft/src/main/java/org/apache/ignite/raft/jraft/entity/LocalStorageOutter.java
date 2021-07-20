@@ -19,94 +19,30 @@
 
 package org.apache.ignite.raft.jraft.entity;
 
-import java.nio.ByteBuffer;
+import java.util.List;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.rpc.Message;
-import org.apache.ignite.raft.jraft.rpc.MessageBuilderFactory;
-import org.apache.ignite.raft.jraft.util.Marshaller;
 
 public final class LocalStorageOutter {
-    public interface ConfigurationPB {
-        java.util.List<String> getPeersList();
-
-        int getPeersCount();
-
-        String getPeers(int index);
-
-        java.util.List<String> getOldPeersList();
-
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-    }
-
-    public interface LogPBMeta {
-        long getFirstLogIndex();
-    }
-
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.STABLE_PB_META, autoSerializable = false)
     public interface StablePBMeta extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createStableMeta();
-        }
+        long term();
 
-        long getTerm();
-
-        String getVotedfor();
-
-        interface Builder {
-
-            Builder setTerm(long term);
-
-            Builder setVotedfor(String votedFor);
-
-            StablePBMeta build();
-        }
+        String votedFor();
     }
 
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_SNAPSHOT_PB_META, autoSerializable = false)
     public interface LocalSnapshotPbMeta extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createLocalSnapshotMeta();
-        }
+        RaftOutter.SnapshotMeta meta();
 
-        static LocalSnapshotPbMeta parseFrom(ByteBuffer buf) {
-            return Marshaller.DEFAULT.unmarshall(buf.array());
-        }
+        List<LocalStorageOutter.LocalSnapshotPbMeta.File> filesList();
 
-        RaftOutter.SnapshotMeta getMeta();
-
-        java.util.List<LocalStorageOutter.LocalSnapshotPbMeta.File> getFilesList();
-
-        int getFilesCount();
-
-        LocalStorageOutter.LocalSnapshotPbMeta.File getFiles(int index);
-
-        byte[] toByteArray();
-
-        boolean hasMeta();
-
+        @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_SNAPSHOT_META_FILE, autoSerializable = false)
         interface File extends Message {
-            static Builder newBuilder() {
-                return MessageBuilderFactory.DEFAULT.createFile();
-            }
+            String name();
 
-            String getName();
-
-            LocalFileMetaOutter.LocalFileMeta getMeta();
-
-            public interface Builder {
-                Builder setName(String key);
-
-                Builder setMeta(LocalFileMetaOutter.LocalFileMeta meta);
-
-                File build();
-            }
-        }
-
-        public interface Builder {
-            Builder setMeta(RaftOutter.SnapshotMeta meta);
-
-            Builder addFiles(File file);
-
-            LocalSnapshotPbMeta build();
+            LocalFileMetaOutter.LocalFileMeta meta();
         }
     }
 }

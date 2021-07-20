@@ -17,10 +17,10 @@
 package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestProcessor;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.GetFileRequest;
 import org.apache.ignite.raft.jraft.storage.FileService;
 
@@ -29,8 +29,8 @@ import org.apache.ignite.raft.jraft.storage.FileService;
  */
 public class GetFileRequestProcessor extends RpcRequestProcessor<GetFileRequest> {
 
-    public GetFileRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.GetFileResponse.getDefaultInstance());
+    public GetFileRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override

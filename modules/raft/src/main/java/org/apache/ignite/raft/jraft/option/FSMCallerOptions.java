@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.option;
 
 import org.apache.ignite.raft.jraft.Closure;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.StateMachine;
 import org.apache.ignite.raft.jraft.closure.ClosureQueue;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
@@ -33,6 +34,7 @@ public class FSMCallerOptions {
     private LogId bootstrapId;
     private ClosureQueue closureQueue;
     private NodeImpl node;
+    private RaftMessagesFactory raftMessagesFactory;
     /**
      * disruptor buffer size.
      */
@@ -92,5 +94,15 @@ public class FSMCallerOptions {
 
     public void setBootstrapId(LogId bootstrapId) {
         this.bootstrapId = bootstrapId;
+    }
+
+    public RaftMessagesFactory getRaftMessagesFactory() {
+        assert raftMessagesFactory != null;
+
+        return raftMessagesFactory;
+    }
+
+    public void setRaftMessagesFactory(RaftMessagesFactory raftMessagesFactory) {
+        this.raftMessagesFactory = raftMessagesFactory;
     }
 }

@@ -18,29 +18,31 @@ package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.GetPeersRequest;
-import org.apache.ignite.raft.jraft.rpc.CliRequests.GetPeersResponse;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Process get all peers of the replication group request.
  */
 public class GetPeersRequestProcessor extends BaseCliRequestProcessor<GetPeersRequest> {
 
-    public GetPeersRequestProcessor(final Executor executor) {
-        super(executor, GetPeersResponse.getDefaultInstance());
+    public GetPeersRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final GetPeersRequest request) {
-        return request.getLeaderId();
+        return request.leaderId();
     }
 
     @Override
     protected String getGroupId(final GetPeersRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
@@ -48,7 +50,7 @@ public class GetPeersRequestProcessor extends BaseCliRequestProcessor<GetPeersRe
         final RpcRequestClosure done) {
         final List<PeerId> peers;
         final List<PeerId> learners;
-        if (request.getOnlyAlive()) {
+        if (request.onlyAlive()) {
             peers = ctx.node.listAlivePeers();
             learners = ctx.node.listAliveLearners();
         }
@@ -56,14 +58,11 @@ public class GetPeersRequestProcessor extends BaseCliRequestProcessor<GetPeersRe
             peers = ctx.node.listPeers();
             learners = ctx.node.listLearners();
         }
-        final GetPeersResponse.Builder builder = GetPeersResponse.newBuilder();
-        for (final PeerId peerId : peers) {
-            builder.addPeers(peerId.toString());
-        }
-        for (final PeerId peerId : learners) {
-            builder.addLearners(peerId.toString());
-        }
-        return builder.build();
+
+        return msgFactory().getPeersResponse()
+            .peersList(peers.stream().map(Object::toString).collect(toList()))
+            .learnersList(learners.stream().map(Object::toString).collect(toList()))
+            .build();
     }
 
     @Override

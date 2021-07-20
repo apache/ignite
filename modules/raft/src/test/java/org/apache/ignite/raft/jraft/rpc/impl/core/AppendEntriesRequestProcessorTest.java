@@ -50,13 +50,15 @@ public class AppendEntriesRequestProcessorTest extends BaseNodeRequestProcessorT
 
     @Override
     public AppendEntriesRequest createRequest(final String groupId, final PeerId peerId) {
-        this.request = AppendEntriesRequest.newBuilder().setCommittedIndex(0). //
-            setGroupId(groupId). //
-            setPeerId(peerId.toString()).//
-            setServerId(this.serverId). //
-            setPrevLogIndex(0). //
-            setTerm(0). //
-            setPrevLogTerm(0).build();
+        this.request = msgFactory.appendEntriesRequest()
+            .committedIndex(0)
+            .groupId(groupId)
+            .peerId(peerId.toString())
+            .serverId(this.serverId)
+            .prevLogIndex(0)
+            .term(0)
+            .prevLogTerm(0)
+            .build();
         return this.request;
     }
 
@@ -70,7 +72,7 @@ public class AppendEntriesRequestProcessorTest extends BaseNodeRequestProcessorT
     @Override
     public NodeRequestProcessor<AppendEntriesRequest> newProcessor() {
         this.executor = Executors.newSingleThreadExecutor();
-        return new AppendEntriesRequestProcessor(this.executor);
+        return new AppendEntriesRequestProcessor(this.executor, msgFactory);
     }
 
     @AfterEach

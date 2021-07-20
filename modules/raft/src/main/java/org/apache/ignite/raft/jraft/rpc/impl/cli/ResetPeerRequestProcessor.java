@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.conf.Configuration;
 import org.apache.ignite.raft.jraft.entity.PeerId;
@@ -25,46 +26,45 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.ResetPeerRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 
 /**
  * Reset peer request processor.
  */
 public class ResetPeerRequestProcessor extends BaseCliRequestProcessor<ResetPeerRequest> {
 
-    public ResetPeerRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.ErrorResponse.getDefaultInstance());
+    public ResetPeerRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final ResetPeerRequest request) {
-        return request.getPeerId();
+        return request.peerId();
     }
 
     @Override
     protected String getGroupId(final ResetPeerRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final ResetPeerRequest request,
         final RpcRequestClosure done) {
         final Configuration newConf = new Configuration();
-        for (final String peerIdStr : request.getNewPeersList()) {
+        for (final String peerIdStr : request.newPeersList()) {
             final PeerId peer = new PeerId();
             if (peer.parse(peerIdStr)) {
                 newConf.addPeer(peer);
             }
             else {
                 return RaftRpcFactory.DEFAULT //
-                    .newResponse(defaultResp(), RaftError.EINVAL, "Fail to parse peer id %s", peerIdStr);
+                    .newResponse(msgFactory(), RaftError.EINVAL, "Fail to parse peer id %s", peerIdStr);
             }
         }
         LOG.info("Receive ResetPeerRequest to {} from {}, new conf is {}", ctx.node.getNodeId(), done.getRpcCtx()
             .getRemoteAddress(), newConf);
         final Status st = ctx.node.resetPeers(newConf);
         return RaftRpcFactory.DEFAULT //
-            .newResponse(defaultResp(), st);
+            .newResponse(msgFactory(), st);
     }
 
     @Override

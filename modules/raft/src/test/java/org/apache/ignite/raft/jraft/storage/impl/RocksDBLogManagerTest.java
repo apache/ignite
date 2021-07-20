@@ -21,6 +21,6 @@ import org.apache.ignite.raft.jraft.storage.LogStorage;
 
 public class RocksDBLogManagerTest extends LogManagerTest {
     @Override protected LogStorage newLogStorage(RaftOptions raftOptions) {
-        return new RocksDBLogStorage(this.path.toString(), new RaftOptions());
+        return new RocksDBLogStorage(this.path.toString(), raftOptions);
     }
 }

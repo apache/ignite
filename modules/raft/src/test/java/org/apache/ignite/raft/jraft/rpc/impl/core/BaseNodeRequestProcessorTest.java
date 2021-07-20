@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Node;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.NodeId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
@@ -39,6 +40,7 @@ public abstract class BaseNodeRequestProcessorTest<T extends Message> {
     protected final String groupId = "test";
     protected final String peerIdStr = "localhost:8081";
     protected MockAsyncContext asyncContext;
+    protected RaftMessagesFactory msgFactory = new RaftMessagesFactory();
 
     public abstract T createRequest(String groupId, PeerId peerId);
 

@@ -31,6 +31,7 @@ import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.CopyOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
+import org.apache.ignite.raft.jraft.rpc.GetFileRequestBuilder;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftClientService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.GetFileRequest;
@@ -56,7 +57,7 @@ public class CopySession implements Session {
     private final CountDownLatch finishLatch = new CountDownLatch(1);
     private final GetFileResponseClosure done = new GetFileResponseClosure();
     private final RaftClientService rpcService;
-    private final GetFileRequest.Builder requestBuilder;
+    private final GetFileRequestBuilder requestBuilder;
     private final Endpoint endpoint;
     private final Scheduler timerManager;
     private final SnapshotThrottle snapshotThrottle;
@@ -116,7 +117,7 @@ public class CopySession implements Session {
 
     public CopySession(final RaftClientService rpcService, final Scheduler timerManager,
         final SnapshotThrottle snapshotThrottle, final RaftOptions raftOptions,
-        NodeOptions nodeOptions, final GetFileRequest.Builder rb, final Endpoint ep) {
+        NodeOptions nodeOptions, final GetFileRequestBuilder rb, final Endpoint ep) {
         super();
         this.snapshotThrottle = snapshotThrottle;
         this.raftOptions = raftOptions;
@@ -176,8 +177,8 @@ public class CopySession implements Session {
         if (!this.finished) {
             if (!this.st.isOk()) {
                 LOG.error("Fail to copy data, readerId={} fileName={} offset={} status={}",
-                    this.requestBuilder.getReaderId(), this.requestBuilder.getFilename(),
-                    this.requestBuilder.getOffset(), this.st);
+                    this.requestBuilder.readerId(), this.requestBuilder.filename(),
+                    this.requestBuilder.offset(), this.st);
             }
             if (this.outputStream != null) {
                 Utils.closeQuietly(this.outputStream);
@@ -207,7 +208,7 @@ public class CopySession implements Session {
             }
             if (!status.isOk()) {
                 // Reset count to make next rpc retry the previous one
-                this.requestBuilder.setCount(0);
+                this.requestBuilder.count(0);
                 if (status.getCode() == RaftError.ECANCELED.getNumber()) {
                     if (this.st.isOk()) {
                         this.st.setError(status.getCode(), status.getErrorMsg());
@@ -232,12 +233,12 @@ public class CopySession implements Session {
             this.retryTimes = 0;
             Requires.requireNonNull(response, "response");
             // Reset count to |real_read_size| to make next rpc get the right offset
-            if (!response.getEof()) {
-                this.requestBuilder.setCount(response.getReadSize());
+            if (!response.eof()) {
+                this.requestBuilder.count(response.readSize());
             }
             if (this.outputStream != null) {
                 try {
-                    response.getData().writeTo(this.outputStream);
+                    response.data().writeTo(this.outputStream);
                 }
                 catch (final IOException e) {
                     LOG.error("Fail to write into file {}", this.destPath);
@@ -247,9 +248,9 @@ public class CopySession implements Session {
                 }
             }
             else {
-                this.destBuf.put(response.getData().asReadOnlyByteBuffer());
+                this.destBuf.put(response.data().asReadOnlyByteBuffer());
             }
-            if (response.getEof()) {
+            if (response.eof()) {
                 onFinished();
                 return;
             }
@@ -267,9 +268,10 @@ public class CopySession implements Session {
         this.lock.lock();
         try {
             this.timer = null;
-            final long offset = this.requestBuilder.getOffset() + this.requestBuilder.getCount();
+
+            final long offset = this.requestBuilder.offset() + this.requestBuilder.count();
             final long maxCount = this.destBuf == null ? this.raftOptions.getMaxByteCountPerRpc() : Integer.MAX_VALUE;
-            this.requestBuilder.setOffset(offset).setCount(maxCount).setReadPartly(true);
+            this.requestBuilder.offset(offset).count(maxCount).readPartly(true);
 
             if (this.finished) {
                 return;
@@ -280,13 +282,13 @@ public class CopySession implements Session {
                 newMaxCount = this.snapshotThrottle.throttledByThroughput(maxCount);
                 if (newMaxCount == 0) {
                     // Reset count to make next rpc retry the previous one
-                    this.requestBuilder.setCount(0);
+                    this.requestBuilder.count(0);
                     this.timer = this.timerManager.schedule(this::onTimer, this.copyOptions.getRetryIntervalMs(),
                         TimeUnit.MILLISECONDS);
                     return;
                 }
             }
-            this.requestBuilder.setCount(newMaxCount);
+            this.requestBuilder.count(newMaxCount);
             final GetFileRequest request = this.requestBuilder.build();
             LOG.debug("Send get file request {} to peer {}", request, this.endpoint);
             this.rpcCall = this.rpcService.getFile(this.endpoint, request, this.copyOptions.getTimeoutMs(), this.done);

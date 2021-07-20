@@ -19,8 +19,9 @@
 
 package org.apache.ignite.raft.jraft.entity;
 
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.rpc.Message;
-import org.apache.ignite.raft.jraft.rpc.MessageBuilderFactory;
 
 public final class LocalFileMetaOutter {
     /**
@@ -68,27 +69,12 @@ public final class LocalFileMetaOutter {
         }
     }
 
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_FILE_META, autoSerializable = false)
     public interface LocalFileMeta extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createLocalFileMeta();
-        }
+        FileSource source();
 
-        FileSource getSource();
-
-        String getChecksum();
-
-        boolean hasChecksum();
+        String checksum();
 
         boolean hasUserMeta();
-
-        interface Builder {
-            LocalFileMeta build();
-
-            void mergeFrom(Message fileMeta);
-
-            Builder setChecksum(String sum);
-
-            Builder setSource(FileSource source);
-        }
     }
 }

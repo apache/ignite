@@ -19,6 +19,9 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
+import java.util.List;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
 import org.apache.ignite.raft.jraft.util.ByteString;
 
@@ -26,446 +29,170 @@ public final class RpcRequests {
     private RpcRequests() {
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.PING_REQUEST, autoSerializable = false)
     public interface PingRequest extends Message {
         /**
          * <code>required int64 send_timestamp = 1;</code>
          */
-        long getSendTimestamp();
-
-        interface Builder {
-            Builder setSendTimestamp(long timestamp);
-
-            PingRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createPingRequest();
-        }
+        long sendTimestamp();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.ERROR_RESPONSE, autoSerializable = false)
     public interface ErrorResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
-
         /**
          * <code>required int32 errorCode = 1;</code>
          */
-        int getErrorCode();
+        int errorCode();
 
         /**
          * <code>optional string errorMsg = 2;</code>
          */
-        String getErrorMsg();
-
-        interface Builder {
-            Builder setErrorCode(int code);
-
-            Builder setErrorMsg(String msg);
-
-            ErrorResponse build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createErrorResponse();
-        }
+        String errorMsg();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_REQUEST, autoSerializable = false)
     public interface InstallSnapshotRequest extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createInstallSnapshotRequest();
-        }
+        String groupId();
 
-        String getGroupId();
+        String serverId();
 
-        String getServerId();
+        String peerId();
 
-        String getPeerId();
+        long term();
 
-        long getTerm();
+        RaftOutter.SnapshotMeta meta();
 
-        RaftOutter.SnapshotMeta getMeta();
-
-        String getUri();
-
-        interface Builder {
-            InstallSnapshotRequest build();
-
-            Builder setTerm(long term);
-
-            Builder setGroupId(String groupId);
-
-            Builder setServerId(String serverId);
-
-            Builder setPeerId(String peerId);
-
-            Builder setMeta(RaftOutter.SnapshotMeta meta);
-
-            Builder setUri(String uri);
-        }
+        String uri();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_RESPONSE, autoSerializable = false)
     public interface InstallSnapshotResponse extends Message {
-        static Message getDefaultInstance() { // TODO asch remove https://issues.apache.org/jira/browse/IGNITE-14838
-            return null;
-        }
+        long term();
 
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createInstallSnapshotResponse();
-        }
-
-        long getTerm();
-
-        boolean getSuccess();
-
-        interface Builder {
-            InstallSnapshotResponse build();
-
-            Builder setTerm(long currTerm);
-
-            Builder setSuccess(boolean success);
-        }
+        boolean success();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.TIMEOUT_NOW_REQUEST, autoSerializable = false)
     public interface TimeoutNowRequest extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createTimeoutNowRequest();
-        }
+        String groupId();
 
-        String getGroupId();
+        String serverId();
 
-        String getServerId();
+        String peerId();
 
-        String getPeerId();
-
-        long getTerm();
-
-        interface Builder {
-            TimeoutNowRequest build();
-
-            Builder setTerm(long term);
-
-            Builder setGroupId(String groupId);
-
-            Builder setServerId(String serverId);
-
-            Builder setPeerId(String peerId);
-        }
+        long term();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.TIMEOUT_NOW_RESPONSE, autoSerializable = false)
     public interface TimeoutNowResponse extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createTimeoutNowResponse();
-        }
-
-        static Message getDefaultInstance() {
-            return null;
-        }
-
         /**
          * <code>required int64 term = 1;</code>
          */
-        long getTerm();
+        long term();
 
         /**
          * <code>required bool success = 2;</code>
          */
-        boolean getSuccess();
-
-        interface Builder {
-            TimeoutNowResponse build();
-
-            Builder setTerm(long currTerm);
-
-            Builder setSuccess(boolean success);
-        }
+        boolean success();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.REQUEST_VOTE_REQUEST, autoSerializable = false)
     public interface RequestVoteRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getServerId();
+        String serverId();
 
-        String getPeerId();
+        String peerId();
 
-        long getTerm();
+        long term();
 
-        long getLastLogTerm();
+        long lastLogTerm();
 
-        long getLastLogIndex();
+        long lastLogIndex();
 
-        boolean getPreVote();
-
-        interface Builder {
-            Builder setPreVote(boolean preVote);
-
-            Builder setGroupId(String groupId);
-
-            Builder setServerId(String serverId);
-
-            Builder setPeerId(String peerId);
-
-            Builder setTerm(long currTerm);
-
-            Builder setLastLogIndex(long index);
-
-            Builder setLastLogTerm(long term);
-
-            RequestVoteRequest build();
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createVoteRequest();
-        }
+        boolean preVote();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.REQUEST_VOTE_RESPONSE, autoSerializable = false)
     public interface RequestVoteResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createVoteResponse();
-        }
-
         /**
          * <code>required int64 term = 1;</code>
          */
-        long getTerm();
+        long term();
 
         /**
          * <code>required bool granted = 2;</code>
          */
-        boolean getGranted();
-
-        interface Builder {
-            RequestVoteResponse build();
-
-            Builder setTerm(long currTerm);
-
-            Builder setGranted(boolean granted);
-        }
+        boolean granted();
     }
 
-    // TODO asch not needed https://issues.apache.org/jira/browse/IGNITE-14838
-    public interface AppendEntriesRequestHeader extends Message {
-        /**
-         * <code>required string group_id = 1;</code>
-         */
-        String getGroupId();
-
-        /**
-         * <code>required string server_id = 2;</code>
-         */
-        String getServerId();
-
-        /**
-         * <code>required string peer_id = 3;</code>
-         */
-        String getPeerId();
-
-        interface Builder {
-            AppendEntriesRequestHeader build();
-        }
-    }
-
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.APPEND_ENTRIES_REQUEST, autoSerializable = false)
     public interface AppendEntriesRequest extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createAppendEntriesRequest();
-        }
+        String groupId();
 
-        String getGroupId();
+        String serverId();
 
-        String getServerId();
+        String peerId();
 
-        String getPeerId();
+        long term();
 
-        long getTerm();
+        long prevLogTerm();
 
-        long getPrevLogTerm();
+        long prevLogIndex();
 
-        long getPrevLogIndex();
+        List<RaftOutter.EntryMeta> entriesList();
 
-        java.util.List<RaftOutter.EntryMeta> getEntriesList();
+        long committedIndex();
 
-        RaftOutter.EntryMeta getEntries(int index);
-
-        int getEntriesCount();
-
-        long getCommittedIndex();
-
-        ByteString getData();
-
-        boolean hasData();
-
-        byte[] toByteArray();
-
-        interface Builder {
-            AppendEntriesRequest build();
-
-            Builder setData(ByteString data);
-
-            Builder setTerm(long term);
-
-            Builder setGroupId(String groupId);
-
-            Builder setServerId(String serverId);
-
-            Builder setPeerId(String peerId);
-
-            Builder setPrevLogIndex(long prevLogIndex);
-
-            Builder setPrevLogTerm(long prevLogTerm);
-
-            Builder setCommittedIndex(long lastCommittedIndex);
-
-            Builder addEntries(RaftOutter.EntryMeta entryMeta);
-
-            int getEntriesCount();
-        }
+        ByteString data();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.APPEND_ENTRIES_RESPONSE, autoSerializable = false)
     public interface AppendEntriesResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
+        long term();
 
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createAppendEntriesResponse();
-        }
+        boolean success();
 
-        long getTerm();
-
-        boolean getSuccess();
-
-        long getLastLogIndex();
-
-        interface Builder {
-            AppendEntriesResponse build();
-
-            Builder setSuccess(boolean success);
-
-            Builder setTerm(long currTerm);
-
-            Builder setLastLogIndex(long lastLogIndex);
-        }
+        long lastLogIndex();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.GET_FILE_REQUEST, autoSerializable = false)
     public interface GetFileRequest extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createGetFileRequest();
-        }
+        long readerId();
 
-        long getReaderId();
+        String filename();
 
-        String getFilename();
+        long count();
 
-        long getCount();
+        long offset();
 
-        long getOffset();
-
-        boolean getReadPartly();
-
-        interface Builder {
-            GetFileRequest build();
-
-            long getReaderId();
-
-            String getFilename();
-
-            long getOffset();
-
-            Builder setCount(long cnt);
-
-            long getCount();
-
-            Builder setOffset(long offset);
-
-            Builder setReadPartly(boolean readPartly);
-
-            Builder setFilename(String fileName);
-
-            Builder setReaderId(long readerId);
-        }
+        boolean readPartly();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.GET_FILE_RESPONSE, autoSerializable = false)
     public interface GetFileResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
+        boolean eof();
 
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createGetFileResponse();
-        }
+        long readSize();
 
-        boolean getEof();
-
-        long getReadSize();
-
-        ByteString getData();
-
-        interface Builder {
-            GetFileResponse build();
-
-            Builder setReadSize(int read);
-
-            Builder setEof(boolean eof);
-
-            Builder setData(ByteString data);
-        }
+        ByteString data();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.READ_INDEX_REQUEST, autoSerializable = false)
     public interface ReadIndexRequest extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createReadIndexRequest();
-        }
+        String groupId();
 
-        String getGroupId();
+        String serverId();
 
-        String getServerId();
+        List<ByteString> entriesList();
 
-        java.util.List<ByteString> getEntriesList();
-
-        int getEntriesCount();
-
-        ByteString getEntries(int index);
-
-        String getPeerId();
-
-        interface Builder {
-            ReadIndexRequest build();
-
-            Builder mergeFrom(ReadIndexRequest request);
-
-            Builder setPeerId(String peerId);
-
-            Builder setGroupId(String groupId);
-
-            Builder setServerId(String serverId);
-
-            Builder addEntries(ByteString data);
-        }
+        String peerId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.READ_INDEX_RESPONSE, autoSerializable = false)
     public interface ReadIndexResponse extends Message {
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createReadIndexResponse();
-        }
+        long index();
 
-        static Message getDefaultInstance() {
-            return null;
-        }
-
-        long getIndex();
-
-        boolean getSuccess();
-
-        interface Builder {
-            ReadIndexResponse build();
-
-            Builder setSuccess(boolean success);
-
-            Builder setIndex(long lastCommittedIndex);
-        }
+        boolean success();
     }
 }

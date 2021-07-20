@@ -29,16 +29,17 @@ public class ReadIndexRequestProcessorTest extends BaseNodeRequestProcessorTest<
 
     @Override
     public ReadIndexRequest createRequest(String groupId, PeerId peerId) {
-        request = ReadIndexRequest.newBuilder().setGroupId(groupId). //
-            setServerId("localhostL8082"). //
-            setPeerId(peerId.toString()). //
-            build();
+        request = msgFactory.readIndexRequest()
+            .groupId(groupId)
+            .serverId("localhostL8082")
+            .peerId(peerId.toString())
+            .build();
         return request;
     }
 
     @Override
     public NodeRequestProcessor<ReadIndexRequest> newProcessor() {
-        return new ReadIndexRequestProcessor(null);
+        return new ReadIndexRequestProcessor(null, msgFactory);
     }
 
     @Override

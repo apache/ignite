@@ -17,10 +17,10 @@
 package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.RequestVoteRequest;
 
 /**
@@ -28,24 +28,24 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.RequestVoteRequest;
  */
 public class RequestVoteRequestProcessor extends NodeRequestProcessor<RequestVoteRequest> {
 
-    public RequestVoteRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.RequestVoteResponse.getDefaultInstance());
+    public RequestVoteRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final RequestVoteRequest request) {
-        return request.getPeerId();
+        return request.peerId();
     }
 
     @Override
     protected String getGroupId(final RequestVoteRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     public Message processRequest0(final RaftServerService service, final RequestVoteRequest request,
         final RpcRequestClosure done) {
-        if (request.getPreVote()) {
+        if (request.preVote()) {
             return service.handlePreVoteRequest(request);
         }
         else {

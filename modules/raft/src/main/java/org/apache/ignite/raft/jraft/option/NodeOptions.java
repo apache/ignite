@@ -198,6 +198,11 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
     /** Server name. */
     private String serverName;
 
+    public NodeOptions() {
+        raftOptions.setRaftMessagesFactory(getRaftMessagesFactory());
+        raftOptions.setRaftClientMessagesFactory(getRaftClientMessagesFactory());
+    }
+
     /**
      * The rpc client.
      */
@@ -491,7 +496,7 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         nodeOptions.setRaftRpcThreadPoolSize(this.raftRpcThreadPoolSize);
         nodeOptions.setCommonThreadPollSize(this.commonThreadPollSize);
         nodeOptions.setEnableMetrics(this.enableMetrics);
-        nodeOptions.setRaftOptions(this.raftOptions == null ? new RaftOptions() : this.raftOptions.copy());
+        nodeOptions.setRaftOptions(this.raftOptions.copy());
         nodeOptions.setSharedElectionTimer(this.sharedElectionTimer);
         nodeOptions.setSharedVoteTimer(this.sharedVoteTimer);
         nodeOptions.setSharedStepDownTimer(this.sharedStepDownTimer);

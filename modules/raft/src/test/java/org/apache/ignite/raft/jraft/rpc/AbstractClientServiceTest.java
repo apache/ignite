@@ -99,7 +99,7 @@ public class AbstractClientServiceTest {
         assertNull(done.status);
         assertFalse(future.isDone());
 
-        ErrorResponse response = (ErrorResponse) this.rpcResponseFactory.newResponse(null, Status.OK());
+        ErrorResponse response = (ErrorResponse) this.rpcResponseFactory.newResponse(rpcOptions.getRaftMessagesFactory(), Status.OK());
         cb.complete(response, null);
 
         done.latch.await();
@@ -161,9 +161,10 @@ public class AbstractClientServiceTest {
     public void testInvokeWithDoneOnErrorResponse() throws Exception {
         final InvokeContext invokeCtx = new InvokeContext();
         final ArgumentCaptor<InvokeCallback> callbackArg = ArgumentCaptor.forClass(InvokeCallback.class);
-        final CliRequests.GetPeersRequest request = CliRequests.GetPeersRequest.newBuilder() //
-            .setGroupId("id") //
-            .setLeaderId("127.0.0.1:8001") //
+        final CliRequests.GetPeersRequest request = rpcOptions.getRaftMessagesFactory()
+            .getPeersRequest()
+            .groupId("id")
+            .leaderId("127.0.0.1:8001")
             .build();
 
         MockRpcResponseClosure<ErrorResponse> done = new MockRpcResponseClosure<>();
@@ -178,7 +179,7 @@ public class AbstractClientServiceTest {
         assertNull(done.status);
         assertFalse(future.isDone());
 
-        final Message resp = this.rpcResponseFactory.newResponse(CliRequests.GetPeersResponse.getDefaultInstance(),
+        final Message resp = this.rpcResponseFactory.newResponse(rpcOptions.getRaftMessagesFactory(),
             new Status(-1, "failed"));
         cb.complete(resp, null);
 

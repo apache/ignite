@@ -32,11 +32,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class SnapshotFileReaderTest extends BaseStorageTest {
     private SnapshotFileReader reader;
     private LocalSnapshotMetaTable metaTable;
+    private RaftOptions opts;
 
     @BeforeEach
     public void setup() throws Exception {
         this.reader = new SnapshotFileReader(path.toString(), null);
-        metaTable = new LocalSnapshotMetaTable(new RaftOptions());
+        opts = new RaftOptions();
+        metaTable = new LocalSnapshotMetaTable(opts);
         this.reader.setMetaTable(metaTable);
     }
 
@@ -54,8 +56,11 @@ public class SnapshotFileReaderTest extends BaseStorageTest {
     }
 
     private LocalFileMetaOutter.LocalFileMeta addDataMeta() {
-        final LocalFileMetaOutter.LocalFileMeta meta = LocalFileMetaOutter.LocalFileMeta.newBuilder()
-            .setChecksum("test").setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        final LocalFileMetaOutter.LocalFileMeta meta = opts.getRaftMessagesFactory()
+            .localFileMeta()
+            .checksum("test")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         this.metaTable.addFile("data", meta);
         return meta;
     }

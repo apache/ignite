@@ -20,9 +20,9 @@ import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Lifecycle;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
 import org.apache.ignite.raft.jraft.option.SnapshotExecutorOptions;
+import org.apache.ignite.raft.jraft.rpc.InstallSnapshotResponseBuilder;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.InstallSnapshotRequest;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests.InstallSnapshotResponse;
 import org.apache.ignite.raft.jraft.util.Describer;
 
 /**
@@ -49,7 +49,7 @@ public interface SnapshotExecutor extends Lifecycle<SnapshotExecutorOptions>, De
      * leader. - Interrupted: happens when interrupt_downloading_snapshot is called or a new RPC with the same or newer
      * snapshot arrives - Busy: the state machine is saving or loading snapshot
      */
-    void installSnapshot(final InstallSnapshotRequest request, final InstallSnapshotResponse.Builder response,
+    void installSnapshot(final InstallSnapshotRequest request, final InstallSnapshotResponseBuilder response,
         final RpcRequestClosure done);
 
     /**

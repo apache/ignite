@@ -17,34 +17,34 @@
 package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.SnapshotRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 
 /**
  * Snapshot request processor.
  */
 public class SnapshotRequestProcessor extends BaseCliRequestProcessor<SnapshotRequest> {
 
-    public SnapshotRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.ErrorResponse.getDefaultInstance());
+    public SnapshotRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final SnapshotRequest request) {
-        return request.getPeerId();
+        return request.peerId();
     }
 
     @Override
     protected String getGroupId(final SnapshotRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final SnapshotRequest request,
         final RpcRequestClosure done) {
-        LOG.info("Receive SnapshotRequest to {} from {}", ctx.node.getNodeId(), request.getPeerId());
+        LOG.info("Receive SnapshotRequest to {} from {}", ctx.node.getNodeId(), request.peerId());
         ctx.node.snapshot(done);
         return null;
     }

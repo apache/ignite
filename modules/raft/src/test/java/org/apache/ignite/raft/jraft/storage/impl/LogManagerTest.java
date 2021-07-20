@@ -62,6 +62,8 @@ public class LogManagerTest extends BaseStorageTest {
 
     private ConfigurationManager confManager;
 
+    private RaftOptions raftOptions;
+
     @Mock
     private FSMCaller fsmCaller;
 
@@ -73,7 +75,7 @@ public class LogManagerTest extends BaseStorageTest {
     @BeforeEach
     public void setup() throws Exception {
         this.confManager = new ConfigurationManager();
-        final RaftOptions raftOptions = new RaftOptions();
+        this.raftOptions = new RaftOptions();
         this.logStorage = newLogStorage(raftOptions);
         this.logManager = new LogManagerImpl();
         final LogManagerOptions opts = new LogManagerOptions();
@@ -365,15 +367,21 @@ public class LogManagerTest extends BaseStorageTest {
     @Test
     public void testSetSnapshot() throws Exception {
         final List<LogEntry> entries = mockAddEntries();
-        RaftOutter.SnapshotMeta meta = RaftOutter.SnapshotMeta.newBuilder().setLastIncludedIndex(3)
-            .setLastIncludedTerm(2).addPeers("localhost:8081").build();
+        RaftOutter.SnapshotMeta meta = raftOptions.getRaftMessagesFactory().snapshotMeta()
+            .lastIncludedIndex(3)
+            .lastIncludedTerm(2)
+            .peersList(List.of("localhost:8081"))
+            .build();
         this.logManager.setSnapshot(meta);
         //Still valid
         for (int i = 0; i < 10; i++) {
             assertEquals(entries.get(i), this.logManager.getEntry(i + 1));
         }
-        meta = RaftOutter.SnapshotMeta.newBuilder().setLastIncludedIndex(5).setLastIncludedTerm(4)
-            .addPeers("localhost:8081").build();
+        meta = raftOptions.getRaftMessagesFactory().snapshotMeta()
+            .lastIncludedIndex(5)
+            .lastIncludedTerm(4)
+            .peersList(List.of("localhost:8081"))
+            .build();
         this.logManager.setSnapshot(meta);
 
         Thread.sleep(1000);

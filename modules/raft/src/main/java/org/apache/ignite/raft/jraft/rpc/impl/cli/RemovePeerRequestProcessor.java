@@ -16,8 +16,10 @@
  */
 package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.RemovePeerRequest;
@@ -31,25 +33,25 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
  */
 public class RemovePeerRequestProcessor extends BaseCliRequestProcessor<RemovePeerRequest> {
 
-    public RemovePeerRequestProcessor(Executor executor) {
-        super(executor, RemovePeerResponse.getDefaultInstance());
+    public RemovePeerRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final RemovePeerRequest request) {
-        return request.getLeaderId();
+        return request.leaderId();
     }
 
     @Override
     protected String getGroupId(final RemovePeerRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final RemovePeerRequest request,
         final RpcRequestClosure done) {
         final List<PeerId> oldPeers = ctx.node.listPeers();
-        final String removingPeerIdStr = request.getPeerId();
+        final String removingPeerIdStr = request.peerId();
         final PeerId removingPeer = new PeerId();
         if (removingPeer.parse(removingPeerIdStr)) {
             LOG.info("Receive RemovePeerRequest to {} from {}, removing {}", ctx.node.getNodeId(), done.getRpcCtx()
@@ -59,20 +61,28 @@ public class RemovePeerRequestProcessor extends BaseCliRequestProcessor<RemovePe
                     done.run(status);
                 }
                 else {
-                    final RemovePeerResponse.Builder rb = RemovePeerResponse.newBuilder();
+                    List<String> oldPeersList = new ArrayList<>();
+                    List<String> newPeersList = new ArrayList<>();
+
                     for (final PeerId oldPeer : oldPeers) {
-                        rb.addOldPeers(oldPeer.toString());
+                        oldPeersList.add(oldPeer.toString());
                         if (!oldPeer.equals(removingPeer)) {
-                            rb.addNewPeers(oldPeer.toString());
+                            newPeersList.add(oldPeer.toString());
                         }
                     }
-                    done.sendResponse(rb.build());
+
+                    RemovePeerResponse rb = msgFactory().removePeerResponse()
+                        .newPeersList(newPeersList)
+                        .oldPeersList(oldPeersList)
+                        .build();
+
+                    done.sendResponse(rb);
                 }
             });
         }
         else {
             return RaftRpcFactory.DEFAULT //
-                .newResponse(defaultResp(), RaftError.EINVAL, "Fail to parse peer id %s", removingPeerIdStr);
+                .newResponse(msgFactory(), RaftError.EINVAL, "Fail to parse peer id %s", removingPeerIdStr);
         }
 
         return null;

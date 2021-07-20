@@ -29,16 +29,18 @@ public class TimeoutNowRequestProcessorTest extends BaseNodeRequestProcessorTest
 
     @Override
     public TimeoutNowRequest createRequest(String groupId, PeerId peerId) {
-        request = TimeoutNowRequest.newBuilder().setGroupId(groupId). //
-            setServerId("localhostL8082"). //
-            setPeerId(peerId.toString()). //
-            setTerm(0).build();
+        request = msgFactory.timeoutNowRequest()
+            .groupId(groupId)
+            .serverId("localhost:8082")
+            .peerId(peerId.toString())
+            .term(0)
+            .build();
         return request;
     }
 
     @Override
     public NodeRequestProcessor<TimeoutNowRequest> newProcessor() {
-        return new TimeoutNowRequestProcessor(null);
+        return new TimeoutNowRequestProcessor(null, msgFactory);
     }
 
     @Override

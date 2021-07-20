@@ -19,443 +19,145 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
+import java.util.List;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.network.annotations.Transferable;
+
 public final class CliRequests {
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_PEER_REQUEST, autoSerializable = false)
     public interface AddPeerRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        String getPeerId();
-
-        interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder setPeerId(String peerId);
-
-            AddPeerRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createAddPeerRequest();
-        }
+        String peerId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_PEER_RESPONSE, autoSerializable = false)
     public interface AddPeerResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
+        List<String> oldPeersList();
 
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createAddPeerResponse();
-        }
-
-        java.util.List<String> getOldPeersList();
-
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-
-        java.util.List<String> getNewPeersList();
-
-        int getNewPeersCount();
-
-        String getNewPeers(int index);
-
-        public interface Builder {
-            Builder addOldPeers(String oldPeersId);
-
-            Builder addNewPeers(String newPeersId);
-
-            AddPeerResponse build();
-        }
+        List<String> newPeersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_PEER_REQUEST, autoSerializable = false)
     public interface RemovePeerRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        String getPeerId();
-
-        interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder setPeerId(String peerId);
-
-            RemovePeerRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createRemovePeerRequest();
-        }
+        String peerId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_PEER_RESPONSE, autoSerializable = false)
     public interface RemovePeerResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
+        List<String> oldPeersList();
 
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createRemovePeerResponse();
-        }
-
-        java.util.List<String> getOldPeersList();
-
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-
-        java.util.List<String> getNewPeersList();
-
-        int getNewPeersCount();
-
-        String getNewPeers(int index);
-
-        public interface Builder {
-            Builder addOldPeers(String oldPeerId);
-
-            Builder addNewPeers(String newPeerId);
-
-            RemovePeerResponse build();
-        }
+        List<String> newPeersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.CHANGE_PEERS_REQUEST, autoSerializable = false)
     public interface ChangePeersRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        java.util.List<String> getNewPeersList();
-
-        int getNewPeersCount();
-
-        String getNewPeers(int index);
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder addNewPeers(String peerId);
-
-            ChangePeersRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createChangePeerRequest();
-        }
+        List<String> newPeersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.CHANGE_PEERS_RESPONSE, autoSerializable = false)
     public interface ChangePeersResponse extends Message {
+        List<String> oldPeersList();
 
-        static Message getDefaultInstance() {
-            return null;
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createChangePeerResponse();
-        }
-
-        java.util.List<String> getOldPeersList();
-
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-
-        java.util.List<String> getNewPeersList();
-
-        int getNewPeersCount();
-
-        String getNewPeers(int index);
-
-        public interface Builder {
-            Builder addOldPeers(String oldPeerId);
-
-            Builder addNewPeers(String newPeerId);
-
-            ChangePeersResponse build();
-        }
+        List<String> newPeersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.SNAPSHOT_REQUEST, autoSerializable = false)
     public interface SnapshotRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getPeerId();
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setPeerId(String peerId);
-
-            SnapshotRequest build();
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createSnapshotRequest();
-        }
+        String peerId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.RESET_PEER_REQUEST, autoSerializable = false)
     public interface ResetPeerRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getPeerId();
+        String peerId();
 
-        java.util.List<String> getOldPeersList();
+        List<String> oldPeersList();
 
-        int getOldPeersCount();
-
-        String getOldPeers(int index);
-
-        java.util.List<String> getNewPeersList();
-
-        int getNewPeersCount();
-
-        String getNewPeers(int index);
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setPeerId(String peerId);
-
-            Builder addNewPeers(String peerId);
-
-            ResetPeerRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createResetPeerRequest();
-        }
+        List<String> newPeersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.TRANSFER_LEADER_REQUEST, autoSerializable = false)
     public interface TransferLeaderRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        String getPeerId();
-
-        boolean hasPeerId();
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder setPeerId(String peerId);
-
-            TransferLeaderRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createTransferLeaderRequest();
-        }
+        String peerId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_REQUEST, autoSerializable = false)
     public interface GetLeaderRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getPeerId();
-
-        boolean hasPeerId();
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setPeerId(String peerId);
-
-            GetLeaderRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createGetLeaderRequest();
-        }
+        String peerId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_RESPONSE, autoSerializable = false)
     public interface GetLeaderResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createGetLeaderResponse();
-        }
-
-        String getLeaderId();
-
-        public interface Builder {
-            GetLeaderResponse build();
-
-            Builder setLeaderId(String leaderId);
-        }
+        String leaderId();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_REQUEST, autoSerializable = false)
     public interface GetPeersRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        boolean getOnlyAlive();
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder setOnlyAlive(boolean onlyGetAlive);
-
-            GetPeersRequest build();
-        }
-
-        public static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createGetPeersRequest();
-        }
+        boolean onlyAlive();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_RESPONSE, autoSerializable = false)
     public interface GetPeersResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
+        List<String> peersList();
 
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createGetPeersResponse();
-        }
-
-        java.util.List<String> getPeersList();
-
-        int getPeersCount();
-
-        String getPeers(int index);
-
-        java.util.List<String> getLearnersList();
-
-        int getLearnersCount();
-
-        String getLearners(int index);
-
-        public interface Builder {
-            Builder addPeers(String peerId);
-
-            Builder addLearners(String learnerId);
-
-            GetPeersResponse build();
-        }
+        List<String> learnersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_LEARNERS_REQUEST, autoSerializable = false)
     public interface AddLearnersRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        java.util.List<String> getLearnersList();
-
-        int getLearnersCount();
-
-        String getLearners(int index);
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder addLearners(String learnerId);
-
-            AddLearnersRequest build();
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createAddLearnersRequest();
-        }
+        List<String> learnersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_LEARNERS_REQUEST, autoSerializable = false)
     public interface RemoveLearnersRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        java.util.List<String> getLearnersList();
-
-        int getLearnersCount();
-
-        String getLearners(int index);
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder addLearners(String leaderId);
-
-            RemoveLearnersRequest build();
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createRemoveLearnersRequest();
-        }
+        List<String> learnersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.RESET_LEARNERS_REQUEST, autoSerializable = false)
     public interface ResetLearnersRequest extends Message {
-        String getGroupId();
+        String groupId();
 
-        String getLeaderId();
+        String leaderId();
 
-        java.util.List<String> getLearnersList();
-
-        /**
-         * <code>repeated string learners = 3;</code>
-         */
-        int getLearnersCount();
-
-        /**
-         * <code>repeated string learners = 3;</code>
-         */
-        String getLearners(int index);
-
-        public interface Builder {
-            Builder setGroupId(String groupId);
-
-            Builder setLeaderId(String leaderId);
-
-            Builder addLearners(String learnerId);
-
-            ResetLearnersRequest build();
-        }
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createResetLearnersRequest();
-        }
+        List<String> learnersList();
     }
 
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.LEARNERS_OP_RESPONSE, autoSerializable = false)
     public interface LearnersOpResponse extends Message {
-        static Message getDefaultInstance() {
-            return null;
-        }
+        List<String> oldLearnersList();
 
-        java.util.List<String> getOldLearnersList();
-
-        int getOldLearnersCount();
-
-        String getOldLearners(int index);
-
-        java.util.List<String> getNewLearnersList();
-
-        int getNewLearnersCount();
-
-        String getNewLearners(int index);
-
-        static Builder newBuilder() {
-            return MessageBuilderFactory.DEFAULT.createLearnersOpResponse();
-        }
-
-        public interface Builder {
-            Builder addOldLearners(String oldLearnersId);
-
-            Builder addNewLearners(String newLearnersId);
-
-            LearnersOpResponse build();
-        }
+        List<String> newLearnersList();
     }
 }

@@ -35,13 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 public class LocalSnapshotWriterTest extends BaseStorageTest {
+    private RaftOptions opts;
     private LocalSnapshotWriter writer;
     @Mock
     private LocalSnapshotStorage snapshotStorage;
 
     @BeforeEach
     public void setup() throws Exception {
-        this.writer = new LocalSnapshotWriter(path.toString(), snapshotStorage, new RaftOptions());
+        opts = new RaftOptions();
+        this.writer = new LocalSnapshotWriter(path.toString(), snapshotStorage, opts);
         assertTrue(this.writer.init(null));
     }
 
@@ -61,13 +63,16 @@ public class LocalSnapshotWriterTest extends BaseStorageTest {
 
     @Test
     public void testSyncInit() throws Exception {
-        LocalFileMetaOutter.LocalFileMeta meta = LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("test")
-            .setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        LocalFileMetaOutter.LocalFileMeta meta = opts.getRaftMessagesFactory()
+            .localFileMeta()
+            .checksum("test")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         assertTrue(this.writer.addFile("data1", meta));
         assertTrue(this.writer.addFile("data2"));
 
         assertEquals(meta, this.writer.getFileMeta("data1"));
-        assertFalse(((LocalFileMetaOutter.LocalFileMeta) this.writer.getFileMeta("data2")).hasChecksum());
+        assertNull(((LocalFileMetaOutter.LocalFileMeta) this.writer.getFileMeta("data2")).checksum());
         assertFalse(((LocalFileMetaOutter.LocalFileMeta) this.writer.getFileMeta("data2")).hasUserMeta());
 
         this.writer.sync();
@@ -76,7 +81,7 @@ public class LocalSnapshotWriterTest extends BaseStorageTest {
         assertTrue(newWriter.init(null));
         assertNotSame(writer, newWriter);
         assertEquals(meta, newWriter.getFileMeta("data1"));
-        assertFalse(((LocalFileMetaOutter.LocalFileMeta) newWriter.getFileMeta("data2")).hasChecksum());
+        assertNull(((LocalFileMetaOutter.LocalFileMeta) newWriter.getFileMeta("data2")).checksum());
         assertFalse(((LocalFileMetaOutter.LocalFileMeta) newWriter.getFileMeta("data2")).hasUserMeta());
     }
 

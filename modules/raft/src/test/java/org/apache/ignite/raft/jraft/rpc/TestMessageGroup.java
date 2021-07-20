@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,24 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.raft.jraft.rpc.message;
 
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
+package org.apache.ignite.raft.jraft.rpc;
 
-class PingRequestImpl implements RpcRequests.PingRequest, RpcRequests.PingRequest.Builder {
-    private long sendTimestamp;
+import org.apache.ignite.network.annotations.MessageGroup;
 
-    @Override public long getSendTimestamp() {
-        return sendTimestamp;
-    }
-
-    @Override public Builder setSendTimestamp(long timestamp) {
-        this.sendTimestamp = timestamp;
-
-        return this;
-    }
-
-    @Override public RpcRequests.PingRequest build() {
-        return this;
-    }
+/**
+ * Message group for tests.
+ */
+@MessageGroup(groupType = 4, groupName = "TestRaftMessages")
+public class TestMessageGroup {
 }

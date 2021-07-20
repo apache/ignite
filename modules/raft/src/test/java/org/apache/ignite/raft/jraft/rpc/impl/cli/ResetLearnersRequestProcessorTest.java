@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.Status;
@@ -34,17 +35,16 @@ public class ResetLearnersRequestProcessorTest extends AbstractCliRequestProcess
 
     @Override
     public ResetLearnersRequest createRequest(final String groupId, final PeerId peerId) {
-        return ResetLearnersRequest.newBuilder(). //
-            setGroupId(groupId). //
-            setLeaderId(peerId.toString()). //
-            addLearners("learner:8082").
-            addLearners("test:8182").
-            addLearners("test:8183").build();
+        return msgFactory.resetLearnersRequest()
+            .groupId(groupId)
+            .leaderId(peerId.toString())
+            .learnersList(List.of("learner:8082", "test:8182", "test:8183"))
+            .build();
     }
 
     @Override
     public BaseCliRequestProcessor<ResetLearnersRequest> newProcessor() {
-        return new ResetLearnersRequestProcessor(null);
+        return new ResetLearnersRequestProcessor(null, msgFactory);
     }
 
     @Override
@@ -58,9 +58,9 @@ public class ResetLearnersRequestProcessorTest extends AbstractCliRequestProcess
         done.run(Status.OK());
         assertNotNull(this.asyncContext.getResponseObject());
         assertEquals("[learner:8081, learner:8082, learner:8083]", this.asyncContext.as(LearnersOpResponse.class)
-            .getOldLearnersList().toString());
+            .oldLearnersList().toString());
         assertEquals("[learner:8082, test:8182, test:8183]", this.asyncContext.as(LearnersOpResponse.class)
-            .getNewLearnersList().toString());
+            .newLearnersList().toString());
     }
 
 }

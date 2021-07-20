@@ -17,6 +17,8 @@
 package org.apache.ignite.raft.jraft.core;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +38,7 @@ import org.apache.ignite.raft.jraft.error.RaftException;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.option.ReplicatorOptions;
+import org.apache.ignite.raft.jraft.rpc.AppendEntriesRequestBuilder;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftClientService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
@@ -134,16 +137,16 @@ public class ReplicatorTest {
     }
 
     private RpcRequests.AppendEntriesRequest createEmptyEntriesRequest(final boolean isHeartbeat) {
-        RpcRequests.AppendEntriesRequest.Builder rb = RpcRequests.AppendEntriesRequest.newBuilder() //
-            .setGroupId("test") //
-            .setServerId(new PeerId("localhost", 8082).toString()) //
-            .setPeerId(this.peerId.toString()) //
-            .setTerm(1) //
-            .setPrevLogIndex(10) //
-            .setPrevLogTerm(1) //
-            .setCommittedIndex(0);
+        AppendEntriesRequestBuilder rb = raftOptions.getRaftMessagesFactory().appendEntriesRequest()
+            .groupId("test")
+            .serverId(new PeerId("localhost", 8082).toString())
+            .peerId(this.peerId.toString())
+            .term(1)
+            .prevLogIndex(10)
+            .prevLogTerm(1)
+            .committedIndex(0);
         if (!isHeartbeat) {
-            rb.setData(ByteString.EMPTY);
+            rb.data(ByteString.EMPTY);
         }
         return rb.build();
     }
@@ -195,10 +198,11 @@ public class ReplicatorTest {
         final Replicator r = getReplicator();
         assertNull(r.getBlockTimer());
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(false) //
-            .setLastLogIndex(12) //
-            .setTerm(2) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(12)
+            .term(2)
             .build();
         this.id.unlock();
 
@@ -216,10 +220,11 @@ public class ReplicatorTest {
         assertNotNull(timer);
 
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(false) //
-            .setLastLogIndex(12) //
-            .setTerm(2) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(12)
+            .term(2)
             .build();
         r.getInflights().add(new Replicator.Inflight(RequestType.AppendEntries, r.getNextSendIndex(), 0, 0, 1, null));
         Replicator.onRpcReturned(this.id, Replicator.RequestType.AppendEntries, new Status(-1, "test error"), request,
@@ -243,10 +248,11 @@ public class ReplicatorTest {
     public void testOnRpcReturnedTermMismatch() {
         final Replicator r = getReplicator();
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(false) //
-            .setLastLogIndex(12) //
-            .setTerm(2) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(12)
+            .term(2)
             .build();
         this.id.unlock();
 
@@ -264,25 +270,28 @@ public class ReplicatorTest {
         final Replicator r = getReplicator();
         assertEquals(11, r.getRealNextIndex());
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(false) //
-            .setLastLogIndex(12) //
-            .setTerm(1) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(12)
+            .term(1)
             .build();
         this.id.unlock();
         final Future<Message> rpcInFly = r.getRpcInFly();
         assertNotNull(rpcInFly);
 
         Mockito.when(this.logManager.getTerm(9)).thenReturn(1L);
-        final RpcRequests.AppendEntriesRequest newReq = RpcRequests.AppendEntriesRequest.newBuilder(). //
-            setGroupId("test"). //
-            setServerId(new PeerId("localhost", 8082).toString()). //
-            setPeerId(this.peerId.toString()). //
-            setTerm(1). //
-            setPrevLogIndex(9). //
-            setData(ByteString.EMPTY). //
-            setPrevLogTerm(1). //
-            setCommittedIndex(0).build();
+        final RpcRequests.AppendEntriesRequest newReq = raftOptions.getRaftMessagesFactory()
+            .appendEntriesRequest()
+            .groupId("test")
+            .serverId(new PeerId("localhost", 8082).toString())
+            .peerId(this.peerId.toString())
+            .term(1)
+            .prevLogIndex(9)
+            .data(ByteString.EMPTY)
+            .prevLogTerm(1)
+            .committedIndex(0)
+            .build();
         Mockito.when(this.rpcService.appendEntries(eq(this.peerId.getEndpoint()), eq(newReq), eq(-1), Mockito.any()))
             .thenReturn(new CompletableFuture<>());
 
@@ -302,25 +311,27 @@ public class ReplicatorTest {
         final Replicator r = getReplicator();
         assertEquals(11, r.getRealNextIndex());
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(false) //
-            .setLastLogIndex(8) //
-            .setTerm(1) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(8)
+            .term(1)
             .build();
         this.id.unlock();
         final Future<Message> rpcInFly = r.getRpcInFly();
         assertNotNull(rpcInFly);
 
         Mockito.when(this.logManager.getTerm(8)).thenReturn(1L);
-        final RpcRequests.AppendEntriesRequest newReq = RpcRequests.AppendEntriesRequest.newBuilder() //
-            .setGroupId("test") //
-            .setServerId(new PeerId("localhost", 8082).toString()) //
-            .setPeerId(this.peerId.toString()) //
-            .setTerm(1) //
-            .setPrevLogIndex(8) //
-            .setPrevLogTerm(1) //
-            .setData(ByteString.EMPTY) //
-            .setCommittedIndex(0) //
+        final RpcRequests.AppendEntriesRequest newReq = raftOptions.getRaftMessagesFactory()
+            .appendEntriesRequest()
+            .groupId("test")
+            .serverId(new PeerId("localhost", 8082).toString())
+            .peerId(this.peerId.toString())
+            .term(1)
+            .prevLogIndex(8)
+            .prevLogTerm(1)
+            .data(ByteString.EMPTY)
+            .committedIndex(0)
             .build();
         Mockito.when(this.rpcService.appendEntries(eq(this.peerId.getEndpoint()), eq(newReq), eq(-1), Mockito.any()))
             .thenReturn(new CompletableFuture<>());
@@ -342,10 +353,11 @@ public class ReplicatorTest {
         assertEquals(-1, r.getWaitId());
 
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(true) //
-            .setLastLogIndex(10) //
-            .setTerm(1) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(true)
+            .lastLogIndex(10)
+            .term(1)
             .build();
         this.id.unlock();
         Mockito.when(this.logManager.wait(eq(10L), Mockito.any(), same(this.id))).thenReturn(99L);
@@ -416,16 +428,19 @@ public class ReplicatorTest {
         final Future<Message> rpcInFly = r.getRpcInFly();
         assertNotNull(rpcInFly);
 
-        final RpcRequests.AppendEntriesRequest.Builder rb = RpcRequests.AppendEntriesRequest.newBuilder() //
-            .setGroupId("test") //
-            .setServerId(new PeerId("localhost", 8082).toString()) //
-            .setPeerId(this.peerId.toString()) //
-            .setTerm(1) //
-            .setPrevLogIndex(10) //
-            .setPrevLogTerm(1) //
-            .setCommittedIndex(0);
+        final AppendEntriesRequestBuilder rb = raftOptions.getRaftMessagesFactory()
+            .appendEntriesRequest()
+            .groupId("test")
+            .serverId(new PeerId("localhost", 8082).toString())
+            .peerId(this.peerId.toString())
+            .term(1)
+            .prevLogIndex(10)
+            .prevLogTerm(1)
+            .committedIndex(0);
 
         int totalDataLen = 0;
+        List<RaftOutter.EntryMeta> entries = new ArrayList<>();
+
         for (int i = 0; i < 10; i++) {
             totalDataLen += i;
             final LogEntry value = new LogEntry();
@@ -433,10 +448,17 @@ public class ReplicatorTest {
             value.setType(EnumOutter.EntryType.ENTRY_TYPE_DATA);
             value.setId(new LogId(11 + i, 1));
             Mockito.when(this.logManager.getEntry(11 + i)).thenReturn(value);
-            rb.addEntries(RaftOutter.EntryMeta.newBuilder().setTerm(1).setType(EnumOutter.EntryType.ENTRY_TYPE_DATA)
-                .setDataLen(i).build());
+            entries.add(raftOptions.getRaftMessagesFactory()
+                .entryMeta()
+                .term(1)
+                .type(EnumOutter.EntryType.ENTRY_TYPE_DATA)
+                .dataLen(i)
+                .build());
         }
-        rb.setData(new ByteString(new byte[totalDataLen]));
+
+        rb.entriesList(entries);
+
+        rb.data(new ByteString(new byte[totalDataLen]));
 
         final RpcRequests.AppendEntriesRequest request = rb.build();
         Mockito.when(this.rpcService.appendEntries(eq(this.peerId.getEndpoint()), eq(request), eq(-1), Mockito.any()))
@@ -490,9 +512,12 @@ public class ReplicatorTest {
         this.id.unlock();
         final ScheduledFuture<?> timer = r.getHeartbeatTimer();
         assertNotNull(timer);
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder(). //
-            setSuccess(false). //
-            setLastLogIndex(10).setTerm(1).build();
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(10)
+            .term(1)
+            .build();
         Replicator
             .onHeartbeatReturned(this.id, Status.OK(), createEmptyEntriesRequest(), response, Utils.monotonicMs());
         assertNotNull(r.getHeartbeatTimer());
@@ -503,10 +528,11 @@ public class ReplicatorTest {
     public void testOnHeartbeatReturnedTermMismatch() {
         final Replicator r = getReplicator();
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder() //
-            .setSuccess(false) //
-            .setLastLogIndex(12) //
-            .setTerm(2) //
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(false)
+            .lastLogIndex(12)
+            .term(2)
             .build();
         this.id.unlock();
 
@@ -599,12 +625,13 @@ public class ReplicatorTest {
     }
 
     private RpcRequests.TimeoutNowRequest createTimeoutnowRequest() {
-        final RpcRequests.TimeoutNowRequest.Builder rb = RpcRequests.TimeoutNowRequest.newBuilder();
-        rb.setTerm(this.opts.getTerm());
-        rb.setGroupId(this.opts.getGroupId());
-        rb.setServerId(this.opts.getServerId().toString());
-        rb.setPeerId(this.opts.getPeerId().toString());
-        return rb.build();
+        return raftOptions.getRaftMessagesFactory()
+            .timeoutNowRequest()
+            .term(this.opts.getTerm())
+            .groupId(this.opts.getGroupId())
+            .serverId(this.opts.getServerId().toString())
+            .peerId(this.opts.getPeerId().toString())
+            .build();
     }
 
     @Test
@@ -642,25 +669,27 @@ public class ReplicatorTest {
         Mockito.when(this.snapshotStorage.open()).thenReturn(reader);
         final String uri = "remote://localhost:8081/99";
         Mockito.when(reader.generateURIForCopy()).thenReturn(uri);
-        final RaftOutter.SnapshotMeta meta = RaftOutter.SnapshotMeta.newBuilder() //
-            .setLastIncludedIndex(11) //
-            .setLastIncludedTerm(1) //
+        final RaftOutter.SnapshotMeta meta = raftOptions.getRaftMessagesFactory().snapshotMeta()
+            .lastIncludedIndex(11)
+            .lastIncludedTerm(1)
             .build();
         Mockito.when(reader.load()).thenReturn(meta);
 
         assertEquals(0, r.statInfo.lastLogIncluded);
         assertEquals(0, r.statInfo.lastTermIncluded);
 
-        final RpcRequests.InstallSnapshotRequest.Builder rb = RpcRequests.InstallSnapshotRequest.newBuilder();
-        rb.setTerm(this.opts.getTerm());
-        rb.setGroupId(this.opts.getGroupId());
-        rb.setServerId(this.opts.getServerId().toString());
-        rb.setPeerId(this.opts.getPeerId().toString());
-        rb.setMeta(meta);
-        rb.setUri(uri);
+        final RpcRequests.InstallSnapshotRequest req = raftOptions.getRaftMessagesFactory()
+            .installSnapshotRequest()
+            .term(this.opts.getTerm())
+            .groupId(this.opts.getGroupId())
+            .serverId(this.opts.getServerId().toString())
+            .peerId(this.opts.getPeerId().toString())
+            .meta(meta)
+            .uri(uri)
+            .build();
 
         Mockito.when(
-            this.rpcService.installSnapshot(eq(this.opts.getPeerId().getEndpoint()), eq(rb.build()),
+            this.rpcService.installSnapshot(eq(this.opts.getPeerId().getEndpoint()), eq(req),
                 Mockito.any())).thenReturn(new CompletableFuture<>());
 
         r.installSnapshot();
@@ -676,9 +705,10 @@ public class ReplicatorTest {
         final Replicator r = getReplicator();
         this.id.unlock();
         final RpcRequests.TimeoutNowRequest request = createTimeoutnowRequest();
-        final RpcRequests.TimeoutNowResponse response = RpcRequests.TimeoutNowResponse.newBuilder() //
-            .setSuccess(false) //
-            .setTerm(12) //
+        final RpcRequests.TimeoutNowResponse response = raftOptions.getRaftMessagesFactory()
+            .timeoutNowResponse()
+            .success(false)
+            .term(12)
             .build();
         this.id.unlock();
 
@@ -697,8 +727,11 @@ public class ReplicatorTest {
         assertNull(r.getBlockTimer());
 
         final RpcRequests.InstallSnapshotRequest request = createInstallSnapshotRequest();
-        final RpcRequests.InstallSnapshotResponse response = RpcRequests.InstallSnapshotResponse.newBuilder()
-            .setSuccess(true).setTerm(1).build();
+        final RpcRequests.InstallSnapshotResponse response = raftOptions.getRaftMessagesFactory()
+            .installSnapshotResponse()
+            .success(true)
+            .term(1)
+            .build();
         assertEquals(-1, r.getWaitId());
         Mockito.when(this.logManager.getTerm(11)).thenReturn(1L);
         Replicator.onRpcReturned(this.id, Replicator.RequestType.Snapshot, Status.OK(), request, response, 0, 0, -1);
@@ -713,8 +746,11 @@ public class ReplicatorTest {
         assertNull(r.getBlockTimer());
 
         final RpcRequests.InstallSnapshotRequest request = createInstallSnapshotRequest();
-        final RpcRequests.InstallSnapshotResponse response = RpcRequests.InstallSnapshotResponse.newBuilder()
-            .setSuccess(true).setTerm(1).build();
+        final RpcRequests.InstallSnapshotResponse response = raftOptions.getRaftMessagesFactory()
+            .installSnapshotResponse()
+            .success(true)
+            .term(1)
+            .build();
         assertEquals(-1, r.getWaitId());
         Mockito.lenient().when(this.logManager.getTerm(11)).thenReturn(1L);
         Replicator.onRpcReturned(this.id, Replicator.RequestType.Snapshot, new Status(-1, "test"), request, response,
@@ -730,8 +766,11 @@ public class ReplicatorTest {
         assertNull(r.getBlockTimer());
 
         final RpcRequests.InstallSnapshotRequest request = createInstallSnapshotRequest();
-        final RpcRequests.InstallSnapshotResponse response = RpcRequests.InstallSnapshotResponse.newBuilder()
-            .setSuccess(false).setTerm(1).build();
+        final RpcRequests.InstallSnapshotResponse response = raftOptions.getRaftMessagesFactory()
+            .installSnapshotResponse()
+            .success(false)
+            .term(1)
+            .build();
         assertEquals(-1, r.getWaitId());
         Mockito.lenient().when(this.logManager.getTerm(11)).thenReturn(1L);
         Replicator.onRpcReturned(this.id, Replicator.RequestType.Snapshot, Status.OK(), request, response, 0, 0, -1);
@@ -745,9 +784,12 @@ public class ReplicatorTest {
         assertEquals(-1, r.getWaitId());
 
         final RpcRequests.AppendEntriesRequest request = createEmptyEntriesRequest();
-        final RpcRequests.AppendEntriesResponse response = RpcRequests.AppendEntriesResponse.newBuilder(). //
-            setSuccess(true). //
-            setLastLogIndex(10).setTerm(1).build();
+        final RpcRequests.AppendEntriesResponse response = raftOptions.getRaftMessagesFactory()
+            .appendEntriesResponse()
+            .success(true)
+            .lastLogIndex(10)
+            .term(1)
+            .build();
         assertNull(r.getBlockTimer());
         this.id.unlock();
 
@@ -770,14 +812,17 @@ public class ReplicatorTest {
     }
 
     private RpcRequests.AppendEntriesRequest createEntriesRequest(final int n) {
-        final RpcRequests.AppendEntriesRequest.Builder rb = RpcRequests.AppendEntriesRequest.newBuilder() //
-            .setGroupId("test") //
-            .setServerId(new PeerId("localhost", 8082).toString()) //
-            .setPeerId(this.peerId.toString()) //
-            .setTerm(1) //
-            .setPrevLogIndex(10) //
-            .setPrevLogTerm(1) //
-            .setCommittedIndex(0);
+        final AppendEntriesRequestBuilder rb = raftOptions.getRaftMessagesFactory()
+            .appendEntriesRequest()
+            .groupId("test")
+            .serverId(new PeerId("localhost", 8082).toString())
+            .peerId(this.peerId.toString())
+            .term(1)
+            .prevLogIndex(10)
+            .prevLogTerm(1)
+            .committedIndex(0);
+
+        List<RaftOutter.EntryMeta> entries = new ArrayList<>();
 
         for (int i = 0; i < n; i++) {
             final LogEntry log = new LogEntry(EnumOutter.EntryType.ENTRY_TYPE_DATA);
@@ -785,9 +830,15 @@ public class ReplicatorTest {
             log.setId(new LogId(i + 11, 1));
             Mockito.when(this.logManager.getEntry(i + 11)).thenReturn(log);
             Mockito.when(this.logManager.getTerm(i + 11)).thenReturn(1L);
-            rb.addEntries(RaftOutter.EntryMeta.newBuilder().setDataLen(i).setTerm(1)
-                .setType(EnumOutter.EntryType.ENTRY_TYPE_DATA).build());
+            entries.add(raftOptions.getRaftMessagesFactory()
+                .entryMeta()
+                .dataLen(i)
+                .term(1)
+                .type(EnumOutter.EntryType.ENTRY_TYPE_DATA)
+                .build());
         }
+
+        rb.entriesList(entries);
 
         return rb.build();
     }
@@ -805,17 +856,18 @@ public class ReplicatorTest {
 
     private RpcRequests.InstallSnapshotRequest createInstallSnapshotRequest() {
         final String uri = "remote://localhost:8081/99";
-        final RaftOutter.SnapshotMeta meta = RaftOutter.SnapshotMeta.newBuilder() //
-            .setLastIncludedIndex(11) //
-            .setLastIncludedTerm(1) //
+        final RaftOutter.SnapshotMeta meta = raftOptions.getRaftMessagesFactory()
+            .snapshotMeta()
+            .lastIncludedIndex(11)
+            .lastIncludedTerm(1)
             .build();
-        final RpcRequests.InstallSnapshotRequest.Builder rb = RpcRequests.InstallSnapshotRequest.newBuilder();
-        rb.setTerm(this.opts.getTerm());
-        rb.setGroupId(this.opts.getGroupId());
-        rb.setServerId(this.opts.getServerId().toString());
-        rb.setPeerId(this.opts.getPeerId().toString());
-        rb.setMeta(meta);
-        rb.setUri(uri);
-        return rb.build();
+        return raftOptions.getRaftMessagesFactory().installSnapshotRequest()
+            .term(this.opts.getTerm())
+            .groupId(this.opts.getGroupId())
+            .serverId(this.opts.getServerId().toString())
+            .peerId(this.opts.getPeerId().toString())
+            .meta(meta)
+            .uri(uri)
+            .build();
     }
 }

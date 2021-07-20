@@ -35,14 +35,17 @@ public class LocalSnapshotStorageTest extends BaseStorageTest {
     private LocalSnapshotStorage snapshotStorage;
     private LocalSnapshotMetaTable table;
     private int lastSnapshotIndex = 99;
+    private RaftOptions opts;
 
     @BeforeEach
     public void setup() throws Exception {
         String snapshotPath = this.path + File.separator + Snapshot.JRAFT_SNAPSHOT_PREFIX + lastSnapshotIndex;
         new File(snapshotPath).mkdirs();
-        this.table = new LocalSnapshotMetaTable(new RaftOptions());
-        this.table.setMeta(RaftOutter.SnapshotMeta.newBuilder().setLastIncludedIndex(this.lastSnapshotIndex)
-            .setLastIncludedTerm(1).build());
+        opts = new RaftOptions();
+        this.table = new LocalSnapshotMetaTable(opts);
+        this.table.setMeta(opts.getRaftMessagesFactory().snapshotMeta()
+            .lastIncludedIndex(this.lastSnapshotIndex)
+            .lastIncludedTerm(1).build());
         this.table.saveToFile(snapshotPath + File.separator + Snapshot.JRAFT_SNAPSHOT_META_FILE);
 
         this.snapshotStorage = new LocalSnapshotStorage(path.toString(), new RaftOptions());
@@ -64,8 +67,11 @@ public class LocalSnapshotStorageTest extends BaseStorageTest {
     public void testCreateOpen() throws Exception {
         SnapshotWriter writer = this.snapshotStorage.create();
         assertNotNull(writer);
-        RaftOutter.SnapshotMeta wroteMeta = RaftOutter.SnapshotMeta.newBuilder()
-            .setLastIncludedIndex(this.lastSnapshotIndex + 1).setLastIncludedTerm(1).build();
+        RaftOutter.SnapshotMeta wroteMeta = opts.getRaftMessagesFactory()
+            .snapshotMeta()
+            .lastIncludedIndex(this.lastSnapshotIndex + 1)
+            .lastIncludedTerm(1)
+            .build();
         ((LocalSnapshotWriter) writer).saveMeta(wroteMeta);
         writer.addFile("data");
         assertEquals(1, this.snapshotStorage.getRefs(this.lastSnapshotIndex).get());

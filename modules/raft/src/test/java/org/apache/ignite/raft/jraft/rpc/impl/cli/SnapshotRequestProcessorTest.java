@@ -30,13 +30,15 @@ public class SnapshotRequestProcessorTest extends AbstractCliRequestProcessorTes
 
     @Override
     public SnapshotRequest createRequest(String groupId, PeerId peerId) {
-        return SnapshotRequest.newBuilder().setGroupId(groupId).setPeerId(peerId.toString()).build();
-
+        return msgFactory.snapshotRequest()
+            .groupId(groupId)
+            .peerId(peerId.toString())
+            .build();
     }
 
     @Override
     public BaseCliRequestProcessor<SnapshotRequest> newProcessor() {
-        return new SnapshotRequestProcessor(null);
+        return new SnapshotRequestProcessor(null, msgFactory);
     }
 
     @Override

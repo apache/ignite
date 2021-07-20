@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import java.util.concurrent.Executor;
 import org.apache.ignite.raft.jraft.Node;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.Message;
@@ -33,8 +34,8 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequestProcessor;
  * @author jiachun.fjc
  */
 public abstract class NodeRequestProcessor<T extends Message> extends RpcRequestProcessor<T> {
-    public NodeRequestProcessor(Executor executor, Message defaultResp) {
-        super(executor, defaultResp);
+    public NodeRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     protected abstract Message processRequest0(final RaftServerService serviceService, final T request,
@@ -56,13 +57,13 @@ public abstract class NodeRequestProcessor<T extends Message> extends RpcRequest
             }
             else {
                 return RaftRpcFactory.DEFAULT //
-                    .newResponse(defaultResp(), RaftError.ENOENT, "Peer id not found: %s, group: %s", peerIdStr,
+                    .newResponse(msgFactory(), RaftError.ENOENT, "Peer id not found: %s, group: %s", peerIdStr,
                         groupId);
             }
         }
         else {
             return RaftRpcFactory.DEFAULT //
-                .newResponse(defaultResp(), RaftError.EINVAL, "Fail to parse peerId: %s", peerIdStr);
+                .newResponse(msgFactory(), RaftError.EINVAL, "Fail to parse peerId: %s", peerIdStr);
         }
     }
 }

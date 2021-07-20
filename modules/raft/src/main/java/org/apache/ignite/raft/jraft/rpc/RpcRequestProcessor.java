@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,20 +33,20 @@ public abstract class RpcRequestProcessor<T extends Message> implements RpcProce
     protected static final Logger LOG = LoggerFactory.getLogger(RpcRequestProcessor.class);
 
     private final Executor executor;
-    private final Message defaultResp;
+
+    private final RaftMessagesFactory msgFactory;
 
     public abstract Message processRequest(final T request, final RpcRequestClosure done);
 
-    public RpcRequestProcessor(Executor executor, Message defaultResp) {
-        super();
+    public RpcRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
         this.executor = executor;
-        this.defaultResp = defaultResp;
+        this.msgFactory = msgFactory;
     }
 
     @Override
     public void handleRequest(final RpcContext rpcCtx, final T request) {
         try {
-            final Message msg = processRequest(request, new RpcRequestClosure(rpcCtx, this.defaultResp));
+            final Message msg = processRequest(request, new RpcRequestClosure(rpcCtx, msgFactory));
 
             if (msg != null) {
                 rpcCtx.sendResponse(msg);
@@ -54,7 +55,7 @@ public abstract class RpcRequestProcessor<T extends Message> implements RpcProce
         catch (final Throwable t) {
             LOG.error("handleRequest {} failed", request, t);
             rpcCtx.sendResponse(RaftRpcFactory.DEFAULT //
-                .newResponse(defaultResp(), -1, "handleRequest internal error"));
+                .newResponse(msgFactory, -1, "handleRequest internal error"));
         }
     }
 
@@ -63,7 +64,7 @@ public abstract class RpcRequestProcessor<T extends Message> implements RpcProce
         return this.executor;
     }
 
-    public Message defaultResp() {
-        return this.defaultResp;
+    public RaftMessagesFactory msgFactory() {
+        return msgFactory;
     }
 }

@@ -16,13 +16,6 @@
  */
 package org.apache.ignite.raft.jraft.storage.impl;
 
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.EventTranslator;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.TimeoutBlockingWaitStrategy;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +26,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslator;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.TimeoutBlockingWaitStrategy;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.conf.Configuration;
@@ -613,20 +613,20 @@ public class LogManagerImpl implements LogManager {
         LOG.debug("set snapshot: {}.", meta);
         this.writeLock.lock();
         try {
-            if (meta.getLastIncludedIndex() <= this.lastSnapshotId.getIndex()) {
+            if (meta.lastIncludedIndex() <= this.lastSnapshotId.getIndex()) {
                 return;
             }
             final Configuration conf = confFromMeta(meta);
             final Configuration oldConf = oldConfFromMeta(meta);
 
-            final ConfigurationEntry entry = new ConfigurationEntry(new LogId(meta.getLastIncludedIndex(),
-                meta.getLastIncludedTerm()), conf, oldConf);
+            final ConfigurationEntry entry = new ConfigurationEntry(new LogId(meta.lastIncludedIndex(),
+                meta.lastIncludedTerm()), conf, oldConf);
             this.configManager.setSnapshot(entry);
-            final long term = unsafeGetTerm(meta.getLastIncludedIndex());
+            final long term = unsafeGetTerm(meta.lastIncludedIndex());
             final long savedLastSnapshotIndex = this.lastSnapshotId.getIndex();
 
-            this.lastSnapshotId.setIndex(meta.getLastIncludedIndex());
-            this.lastSnapshotId.setTerm(meta.getLastIncludedTerm());
+            this.lastSnapshotId.setIndex(meta.lastIncludedIndex());
+            this.lastSnapshotId.setTerm(meta.lastIncludedTerm());
 
             if (this.lastSnapshotId.compareTo(this.appliedId) > 0) {
                 this.appliedId = this.lastSnapshotId.copy();
@@ -643,9 +643,9 @@ public class LogManagerImpl implements LogManager {
             if (term == 0) {
                 // last_included_index is larger than last_index
                 // FIXME: what if last_included_index is less than first_index?
-                truncatePrefix(meta.getLastIncludedIndex() + 1);
+                truncatePrefix(meta.lastIncludedIndex() + 1);
             }
-            else if (term == meta.getLastIncludedTerm()) {
+            else if (term == meta.lastIncludedTerm()) {
                 // Truncating log to the index of the last snapshot.
                 // We don't truncate log before the last snapshot immediately since
                 // some log around last_snapshot_index is probably needed by some
@@ -656,8 +656,8 @@ public class LogManagerImpl implements LogManager {
                 }
             }
             else {
-                if (!reset(meta.getLastIncludedIndex() + 1)) {
-                    LOG.warn("Reset log manager failed, nextLogIndex={}.", meta.getLastIncludedIndex() + 1);
+                if (!reset(meta.lastIncludedIndex() + 1)) {
+                    LOG.warn("Reset log manager failed, nextLogIndex={}.", meta.lastIncludedIndex() + 1);
                 }
             }
         }
@@ -669,31 +669,44 @@ public class LogManagerImpl implements LogManager {
 
     private Configuration oldConfFromMeta(final SnapshotMeta meta) {
         final Configuration oldConf = new Configuration();
-        for (int i = 0; i < meta.getOldPeersCount(); i++) {
-            final PeerId peer = new PeerId();
-            peer.parse(meta.getOldPeers(i));
-            oldConf.addPeer(peer);
+
+        if (meta.oldPeersList() != null) {
+            for (String oldPeer : meta.oldPeersList()) {
+                final PeerId peer = new PeerId();
+                peer.parse(oldPeer);
+                oldConf.addPeer(peer);
+            }
         }
-        for (int i = 0; i < meta.getOldLearnersCount(); i++) {
-            final PeerId peer = new PeerId();
-            peer.parse(meta.getOldLearners(i));
-            oldConf.addLearner(peer);
+
+        if (meta.oldLearnersList() != null) {
+            for (String oldLearner : meta.oldLearnersList()) {
+                final PeerId peer = new PeerId();
+                peer.parse(oldLearner);
+                oldConf.addLearner(peer);
+            }
         }
+
         return oldConf;
     }
 
     private Configuration confFromMeta(final SnapshotMeta meta) {
         final Configuration conf = new Configuration();
-        for (int i = 0; i < meta.getPeersCount(); i++) {
-            final PeerId peer = new PeerId();
-            peer.parse(meta.getPeers(i));
-            conf.addPeer(peer);
+        if (meta.peersList() != null) {
+            for (String metaPeer : meta.peersList()) {
+                final PeerId peer = new PeerId();
+                peer.parse(metaPeer);
+                conf.addPeer(peer);
+            }
         }
-        for (int i = 0; i < meta.getLearnersCount(); i++) {
-            final PeerId peer = new PeerId();
-            peer.parse(meta.getLearners(i));
-            conf.addLearner(peer);
+
+        if (meta.learnersList() != null) {
+            for (String learner : meta.learnersList()) {
+                final PeerId peer = new PeerId();
+                peer.parse(learner);
+                conf.addLearner(peer);
+            }
         }
+
         return conf;
     }
 

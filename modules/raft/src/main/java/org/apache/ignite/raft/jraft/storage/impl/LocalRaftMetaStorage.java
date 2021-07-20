@@ -86,8 +86,8 @@ public class LocalRaftMetaStorage implements RaftMetaStorage {
         try {
             final StablePBMeta meta = pbFile.load();
             if (meta != null) {
-                this.term = meta.getTerm();
-                return this.votedFor.parse(meta.getVotedfor());
+                this.term = meta.term();
+                return this.votedFor.parse(meta.votedFor());
             }
             return true;
         }
@@ -106,9 +106,9 @@ public class LocalRaftMetaStorage implements RaftMetaStorage {
 
     private boolean save() {
         final long start = Utils.monotonicMs();
-        final StablePBMeta meta = StablePBMeta.newBuilder() //
-            .setTerm(this.term) //
-            .setVotedfor(this.votedFor.toString()) //
+        final StablePBMeta meta = raftOptions.getRaftMessagesFactory().stablePBMeta()
+            .term(this.term) //
+            .votedFor(this.votedFor.toString()) //
             .build();
         final MessageFile pbFile = newPbFile();
         try {

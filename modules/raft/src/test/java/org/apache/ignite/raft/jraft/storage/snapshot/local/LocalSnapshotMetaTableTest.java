@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
@@ -36,17 +37,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirectoryExtension.class)
 public class LocalSnapshotMetaTableTest {
+    private RaftMessagesFactory msgFactory;
+
     private LocalSnapshotMetaTable table;
 
     @BeforeEach
     public void setup() {
-        this.table = new LocalSnapshotMetaTable(new RaftOptions());
+        RaftOptions opts = new RaftOptions();
+        this.table = new LocalSnapshotMetaTable(opts);
+        this.msgFactory = opts.getRaftMessagesFactory();
     }
 
     @Test
     public void testAddRemove() {
-        LocalFileMetaOutter.LocalFileMeta meta = LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("test")
-            .setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        LocalFileMetaOutter.LocalFileMeta meta = msgFactory.localFileMeta()
+            .checksum("test")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         assertEquals(0, table.listFiles().size());
         assertTrue(this.table.addFile("data", meta));
         assertFalse(this.table.addFile("data", meta));
@@ -61,14 +68,21 @@ public class LocalSnapshotMetaTableTest {
 
     @Test
     public void testSaveLoadFile(@WorkDirectory Path workDir) throws IOException {
-        LocalFileMetaOutter.LocalFileMeta meta1 = LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("data1")
-            .setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        LocalFileMetaOutter.LocalFileMeta meta1 = msgFactory.localFileMeta()
+            .checksum("data1")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         assertTrue(this.table.addFile("data1", meta1));
-        LocalFileMetaOutter.LocalFileMeta meta2 = LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("data2")
-            .setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        LocalFileMetaOutter.LocalFileMeta meta2 = msgFactory.localFileMeta()
+            .checksum("data2")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         assertTrue(this.table.addFile("data2", meta2));
 
-        RaftOutter.SnapshotMeta meta = RaftOutter.SnapshotMeta.newBuilder().setLastIncludedIndex(1).setLastIncludedTerm(1).build();
+        RaftOutter.SnapshotMeta meta = msgFactory.snapshotMeta()
+            .lastIncludedIndex(1)
+            .lastIncludedTerm(1)
+            .build();
         this.table.setMeta(meta);
 
         assertTrue(table.listFiles().contains("data1"));
@@ -89,11 +103,15 @@ public class LocalSnapshotMetaTableTest {
 
     @Test
     public void testSaveLoadIoBuffer() throws Exception {
-        LocalFileMetaOutter.LocalFileMeta meta1 = LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("data1")
-            .setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        LocalFileMetaOutter.LocalFileMeta meta1 = msgFactory.localFileMeta()
+            .checksum("data1")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         assertTrue(this.table.addFile("data1", meta1));
-        LocalFileMetaOutter.LocalFileMeta meta2 = LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("data2")
-            .setSource(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL).build();
+        LocalFileMetaOutter.LocalFileMeta meta2 = msgFactory.localFileMeta()
+            .checksum("data2")
+            .source(LocalFileMetaOutter.FileSource.FILE_SOURCE_LOCAL)
+            .build();
         assertTrue(this.table.addFile("data2", meta2));
 
         ByteBuffer buf = this.table.saveToByteBufferAsRemote();

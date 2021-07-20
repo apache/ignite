@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.error.RaftError;
@@ -24,40 +25,39 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.TransferLeaderRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 
 /**
  * Snapshot request processor.
  */
 public class TransferLeaderRequestProcessor extends BaseCliRequestProcessor<TransferLeaderRequest> {
 
-    public TransferLeaderRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.ErrorResponse.getDefaultInstance());
+    public TransferLeaderRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final TransferLeaderRequest request) {
-        return request.getLeaderId();
+        return request.leaderId();
     }
 
     @Override
     protected String getGroupId(final TransferLeaderRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final TransferLeaderRequest request,
         final RpcRequestClosure done) {
         final PeerId peer = new PeerId();
-        if (request.hasPeerId() && !peer.parse(request.getPeerId())) {
+        if (request.peerId() != null && !peer.parse(request.peerId())) {
             return RaftRpcFactory.DEFAULT //
-                .newResponse(defaultResp(), RaftError.EINVAL, "Fail to parse peer id %s", request.getPeerId());
+                .newResponse(msgFactory(), RaftError.EINVAL, "Fail to parse peer id %s", request.peerId());
         }
         LOG.info("Receive TransferLeaderRequest to {} from {}, newLeader will be {}.", ctx.node.getNodeId(), done
             .getRpcCtx().getRemoteAddress(), peer);
         final Status st = ctx.node.transferLeadershipTo(peer);
         return RaftRpcFactory.DEFAULT //
-            .newResponse(defaultResp(), st);
+            .newResponse(msgFactory(), st);
     }
 
     @Override

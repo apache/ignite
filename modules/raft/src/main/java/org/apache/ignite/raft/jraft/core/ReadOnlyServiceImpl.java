@@ -16,13 +16,6 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
-import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.EventTranslator;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -32,6 +25,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import com.lmax.disruptor.BlockingWaitStrategy;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslator;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.FSMCaller.LastAppliedLogIndexListener;
 import org.apache.ignite.raft.jraft.ReadOnlyService;
@@ -43,6 +43,7 @@ import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.error.RaftException;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.option.ReadOnlyServiceOptions;
+import org.apache.ignite.raft.jraft.rpc.ReadIndexRequestBuilder;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.ReadIndexRequest;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.ReadIndexResponse;
 import org.apache.ignite.raft.jraft.rpc.RpcResponseClosureAdapter;
@@ -151,16 +152,16 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, LastAppliedLogIndex
                 return;
             }
             final ReadIndexResponse readIndexResponse = getResponse();
-            if (!readIndexResponse.getSuccess()) {
+            if (!readIndexResponse.success()) {
                 notifyFail(new Status(-1, "Fail to run ReadIndex task, maybe the leader stepped down."));
                 return;
             }
             // Success
             final ReadIndexStatus readIndexStatus = new ReadIndexStatus(this.states, this.request,
-                readIndexResponse.getIndex());
+                readIndexResponse.index());
             for (final ReadIndexState state : this.states) {
                 // Records current commit log index.
-                state.setIndex(readIndexResponse.getIndex());
+                state.setIndex(readIndexResponse.index());
             }
 
             boolean doUnlock = true;
@@ -200,21 +201,26 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, LastAppliedLogIndex
     }
 
     private void executeReadIndexEvents(final List<ReadIndexEvent> events) {
-        if (events.isEmpty()) {
+        if (events.isEmpty())
             return;
-        }
-        final ReadIndexRequest.Builder rb = ReadIndexRequest.newBuilder() //
-            .setGroupId(this.node.getGroupId()) //
-            .setServerId(this.node.getServerId().toString());
 
-        final List<ReadIndexState> states = new ArrayList<>(events.size());
+        ReadIndexRequestBuilder rb = raftOptions.getRaftMessagesFactory()
+            .readIndexRequest()
+            .groupId(this.node.getGroupId())
+            .serverId(this.node.getServerId().toString());
 
-        for (final ReadIndexEvent event : events) {
+        List<ReadIndexState> states = new ArrayList<>(events.size());
+        List<ByteString> entries = new ArrayList<>(events.size());
+
+        for (ReadIndexEvent event : events) {
             byte[] ctx = event.requestContext.get();
-            rb.addEntries(ctx == null ? ByteString.EMPTY : new ByteString(ctx));
+            entries.add(ctx == null ? ByteString.EMPTY : new ByteString(ctx));
             states.add(new ReadIndexState(event.requestContext, event.done, event.startTime));
         }
-        final ReadIndexRequest request = rb.build();
+
+        ReadIndexRequest request = rb
+            .entriesList(entries)
+            .build();
 
         this.node.handleReadIndexRequest(request, new ReadIndexResponseClosure(states, request));
     }

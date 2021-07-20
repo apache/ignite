@@ -19,14 +19,18 @@ package org.apache.ignite.raft.jraft.storage.snapshot.local;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter.LocalFileMeta;
+import org.apache.ignite.raft.jraft.entity.LocalSnapshotPbMetaBuilder;
 import org.apache.ignite.raft.jraft.entity.LocalStorageOutter.LocalSnapshotPbMeta;
 import org.apache.ignite.raft.jraft.entity.LocalStorageOutter.LocalSnapshotPbMeta.File;
 import org.apache.ignite.raft.jraft.entity.RaftOutter.SnapshotMeta;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.io.MessageFile;
+import org.apache.ignite.raft.jraft.util.Marshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,17 +55,23 @@ public class LocalSnapshotMetaTable {
      * Save metadata infos into byte buffer.
      */
     public ByteBuffer saveToByteBufferAsRemote() {
-        final LocalSnapshotPbMeta.Builder pbMetaBuilder = LocalSnapshotPbMeta.newBuilder();
+        final LocalSnapshotPbMetaBuilder pbMetaBuilder = raftOptions.getRaftMessagesFactory().localSnapshotPbMeta();
         if (hasMeta()) {
-            pbMetaBuilder.setMeta(this.meta);
+            pbMetaBuilder.meta(this.meta);
         }
-        for (final Map.Entry<String, LocalFileMeta> entry : this.fileMap.entrySet()) {
-            final File.Builder fb = File.newBuilder() //
-                .setName(entry.getKey()) //
-                .setMeta(entry.getValue());
-            pbMetaBuilder.addFiles(fb.build());
-        }
-        return ByteBuffer.wrap(pbMetaBuilder.build().toByteArray());
+
+        List<File> files = fileMap.entrySet().stream()
+            .map(e -> raftOptions.getRaftMessagesFactory()
+                .file()
+                .name(e.getKey())
+                .meta(e.getValue())
+                .build()
+            )
+            .collect(Collectors.toList());
+
+        pbMetaBuilder.filesList(files);
+
+        return ByteBuffer.wrap(Marshaller.DEFAULT.marshall(pbMetaBuilder.build()));
     }
 
     /**
@@ -73,7 +83,7 @@ public class LocalSnapshotMetaTable {
             return false;
         }
         try {
-            final LocalSnapshotPbMeta pbMeta = LocalSnapshotPbMeta.parseFrom(buf);
+            final LocalSnapshotPbMeta pbMeta = Marshaller.DEFAULT.unmarshall(buf.array());
             if (pbMeta == null) {
                 LOG.error("Fail to load meta from buffer.");
                 return false;
@@ -104,14 +114,22 @@ public class LocalSnapshotMetaTable {
      * Save metadata infos into file by path.
      */
     public boolean saveToFile(String path) throws IOException {
-        LocalSnapshotPbMeta.Builder pbMeta = LocalSnapshotPbMeta.newBuilder();
+        LocalSnapshotPbMetaBuilder pbMeta = raftOptions.getRaftMessagesFactory().localSnapshotPbMeta();
         if (hasMeta()) {
-            pbMeta.setMeta(this.meta);
+            pbMeta.meta(this.meta);
         }
-        for (Map.Entry<String, LocalFileMeta> entry : this.fileMap.entrySet()) {
-            File f = File.newBuilder().setName(entry.getKey()).setMeta(entry.getValue()).build();
-            pbMeta.addFiles(f);
-        }
+
+        List<File> files = fileMap.entrySet().stream()
+            .map(e -> raftOptions.getRaftMessagesFactory()
+                .file()
+                .name(e.getKey())
+                .meta(e.getValue())
+                .build()
+            )
+            .collect(Collectors.toList());
+
+        pbMeta.filesList(files);
+
         MessageFile pbFile = new MessageFile(path);
         return pbFile.save(pbMeta.build(), this.raftOptions.isSyncMeta());
     }
@@ -165,15 +183,15 @@ public class LocalSnapshotMetaTable {
     }
 
     private boolean loadFromPbMeta(final LocalSnapshotPbMeta pbMeta) {
-        if (pbMeta.hasMeta()) {
-            this.meta = pbMeta.getMeta();
+        if (pbMeta.meta() != null) {
+            this.meta = pbMeta.meta();
         }
         else {
             this.meta = null;
         }
         this.fileMap.clear();
-        for (final File f : pbMeta.getFilesList()) {
-            this.fileMap.put(f.getName(), f.getMeta());
+        for (final File f : pbMeta.filesList()) {
+            this.fileMap.put(f.name(), f.meta());
         }
         return true;
     }

@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.rpc.impl.cli;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Node;
@@ -44,6 +45,7 @@ public abstract class AbstractCliRequestProcessorTest<T extends Message> {
     private final String peerIdStr = "localhost:8081";
     protected MockAsyncContext asyncContext;
     protected NodeManager nodeManager = new NodeManager();
+    protected RaftMessagesFactory msgFactory = new RaftMessagesFactory();
 
     public abstract T createRequest(String groupId, PeerId peerId);
 

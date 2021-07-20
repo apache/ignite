@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -41,6 +42,7 @@ import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.util.concurrent.MpscSingleThreadExecutor;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -476,5 +478,15 @@ public final class Utils {
             return true;
 
         return file.mkdirs();
+    }
+
+    /**
+     * Returns the size of a given collection or {@code 0} if the given collection is {@code null}.
+     *
+     * @param col collection to get the size of
+     * @return size of {@code col} or {@code 0} if {@code col} is {@code null}
+     */
+    public static int size(@Nullable Collection<?> col) {
+        return col == null ? 0 : col.size();
     }
 }

@@ -19,9 +19,11 @@ package org.apache.ignite.raft.jraft.rpc;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.util.AdaptiveBufAllocator;
 import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
 import org.apache.ignite.raft.jraft.util.ByteString;
+import org.apache.ignite.raft.jraft.util.Marshaller;
 import org.apache.ignite.raft.jraft.util.RecyclableByteBufferList;
 import org.apache.ignite.raft.jraft.util.RecycleUtil;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -36,8 +38,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
-
-import static org.apache.ignite.raft.jraft.rpc.RpcRequests.AppendEntriesRequest;
 
 /**
  *
@@ -97,6 +97,8 @@ public class AppendEntriesBenchmark {
     private int entryCount;
     private int sizeOfEntry;
 
+    private final RaftMessagesFactory msgFactory = new RaftMessagesFactory();
+
     @Setup
     public void setup() {
         this.entryCount = 256;
@@ -105,10 +107,15 @@ public class AppendEntriesBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         final int size = ThreadLocalRandom.current().nextInt(100, 1000);
-        System.out.println(sendEntries1(256, size).length);
-        System.out.println(sendEntries2(256, size).length);
-        System.out.println(sendEntries3(256, size, AdaptiveBufAllocator.DEFAULT.newHandle()).length);
-        System.out.println(sendEntries4(256, size).length);
+
+        AppendEntriesBenchmark benchmark = new AppendEntriesBenchmark();
+        benchmark.entryCount = 256;
+        benchmark.sizeOfEntry = size;
+
+        System.out.println(benchmark.sendEntries1().length);
+        System.out.println(benchmark.sendEntries2().length);
+        System.out.println(benchmark.sendEntries3().length);
+        System.out.println(benchmark.sendEntries4().length);
 
         Options opt = new OptionsBuilder() //
             .include(AppendEntriesBenchmark.class.getSimpleName()) //
@@ -127,32 +134,32 @@ public class AppendEntriesBenchmark {
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void copy() {
-        sendEntries1(this.entryCount, this.sizeOfEntry);
+        sendEntries1();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void pooled() {
-        sendEntries2(this.entryCount, this.sizeOfEntry);
+        sendEntries2();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void adaptiveAndPooled() {
-        sendEntries3(this.entryCount, this.sizeOfEntry, handleThreadLocal.get());
+        sendEntries3();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void zeroCopy() {
-        sendEntries4(this.entryCount, this.sizeOfEntry);
+        sendEntries4();
     }
 
-    private static byte[] sendEntries1(final int entryCount, final int sizeOfEntry) {
-        final AppendEntriesRequest.Builder rb = AppendEntriesRequest.newBuilder();
+    private byte[] sendEntries1() {
+        final AppendEntriesRequestBuilder rb = msgFactory.appendEntriesRequest();
         fillCommonFields(rb);
         final ByteBufferCollector dataBuffer = ByteBufferCollector.allocate();
         for (int i = 0; i < entryCount; i++) {
@@ -163,12 +170,12 @@ public class AppendEntriesBenchmark {
         }
         final ByteBuffer buf = dataBuffer.getBuffer();
         buf.flip();
-        rb.setData(new ByteString(buf));
-        return rb.build().toByteArray();
+        rb.data(new ByteString(buf));
+        return Marshaller.DEFAULT.marshall(rb.build());
     }
 
-    private static byte[] sendEntries2(final int entryCount, final int sizeOfEntry) {
-        final AppendEntriesRequest.Builder rb = AppendEntriesRequest.newBuilder();
+    private byte[] sendEntries2() {
+        final AppendEntriesRequestBuilder rb = msgFactory.appendEntriesRequest();
         fillCommonFields(rb);
         final ByteBufferCollector dataBuffer = ByteBufferCollector.allocateByRecyclers();
         try {
@@ -180,19 +187,18 @@ public class AppendEntriesBenchmark {
             }
             final ByteBuffer buf = dataBuffer.getBuffer();
             buf.flip();
-            rb.setData(new ByteString(buf));
-            return rb.build().toByteArray();
+            rb.data(new ByteString(buf));
+            return Marshaller.DEFAULT.marshall(rb.build());
         }
         finally {
             RecycleUtil.recycle(dataBuffer);
         }
     }
 
-    private static byte[] sendEntries3(final int entryCount, final int sizeOfEntry,
-        AdaptiveBufAllocator.Handle allocator) {
-        final AppendEntriesRequest.Builder rb = AppendEntriesRequest.newBuilder();
+    private byte[] sendEntries3() {
+        final AppendEntriesRequestBuilder rb = msgFactory.appendEntriesRequest();
         fillCommonFields(rb);
-        final ByteBufferCollector dataBuffer = allocator.allocateByRecyclers();
+        final ByteBufferCollector dataBuffer = handleThreadLocal.get().allocateByRecyclers();
         try {
             for (int i = 0; i < entryCount; i++) {
                 final byte[] bytes = new byte[sizeOfEntry];
@@ -203,17 +209,17 @@ public class AppendEntriesBenchmark {
             final ByteBuffer buf = dataBuffer.getBuffer();
             buf.flip();
             final int remaining = buf.remaining();
-            allocator.record(remaining);
-            rb.setData(new ByteString(buf));
-            return rb.build().toByteArray();
+            handleThreadLocal.get().record(remaining);
+            rb.data(new ByteString(buf));
+            return Marshaller.DEFAULT.marshall(rb.build());
         }
         finally {
             RecycleUtil.recycle(dataBuffer);
         }
     }
 
-    private static byte[] sendEntries4(final int entryCount, final int sizeOfEntry) {
-        final AppendEntriesRequest.Builder rb = AppendEntriesRequest.newBuilder();
+    private byte[] sendEntries4() {
+        final AppendEntriesRequestBuilder rb = msgFactory.appendEntriesRequest();
         fillCommonFields(rb);
         final RecyclableByteBufferList dataBuffer = RecyclableByteBufferList.newInstance();
 
@@ -224,21 +230,21 @@ public class AppendEntriesBenchmark {
                 final ByteBuffer buf = ByteBuffer.wrap(bytes);
                 dataBuffer.add(buf.slice());
             }
-            rb.setData(RecyclableByteBufferList.concatenate(dataBuffer));
-            return rb.build().toByteArray();
+            rb.data(RecyclableByteBufferList.concatenate(dataBuffer));
+            return Marshaller.DEFAULT.marshall(rb.build());
         }
         finally {
             RecycleUtil.recycle(dataBuffer);
         }
     }
 
-    private static void fillCommonFields(final AppendEntriesRequest.Builder rb) {
-        rb.setTerm(1) //
-            .setGroupId("1") //
-            .setServerId("test") //
-            .setPeerId("127.0.0.1:8080") //
-            .setPrevLogIndex(2) //
-            .setPrevLogTerm(3) //
-            .setCommittedIndex(4);
+    private static void fillCommonFields(final AppendEntriesRequestBuilder rb) {
+        rb.term(1)
+            .groupId("1")
+            .serverId("test")
+            .peerId("127.0.0.1:8080")
+            .prevLogIndex(2)
+            .prevLogTerm(3)
+            .committedIndex(4);
     }
 }

@@ -33,15 +33,16 @@ public class RemovePeerRequestProcessorTest extends AbstractCliRequestProcessorT
 
     @Override
     public RemovePeerRequest createRequest(String groupId, PeerId peerId) {
-        return RemovePeerRequest.newBuilder(). //
-            setGroupId(groupId). //
-            setLeaderId(peerId.toString()). //
-            setPeerId("localhost:8082").build();
+        return msgFactory.removePeerRequest()
+            .groupId(groupId)
+            .leaderId(peerId.toString())
+            .peerId("localhost:8082")
+            .build();
     }
 
     @Override
     public BaseCliRequestProcessor<RemovePeerRequest> newProcessor() {
-        return new RemovePeerRequestProcessor(null);
+        return new RemovePeerRequestProcessor(null, msgFactory);
     }
 
     @Override
@@ -53,9 +54,9 @@ public class RemovePeerRequestProcessorTest extends AbstractCliRequestProcessorT
         done.run(Status.OK());
         assertNotNull(this.asyncContext.getResponseObject());
         assertEquals("[localhost:8081, localhost:8082, localhost:8083]", this.asyncContext.as(RemovePeerResponse.class)
-            .getOldPeersList().toString());
+            .oldPeersList().toString());
         assertEquals("[localhost:8081, localhost:8083]", this.asyncContext.as(RemovePeerResponse.class)
-            .getNewPeersList().toString());
+            .newPeersList().toString());
     }
 
 }

@@ -17,10 +17,10 @@
 package org.apache.ignite.raft.jraft.rpc.impl;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.PingRequest;
 
 /**
@@ -30,25 +30,30 @@ public class PingRequestProcessor implements RpcProcessor<PingRequest> {
     /** The executor */
     private final Executor executor;
 
+    /** Message factory. */
+    private final RaftMessagesFactory msgFactory;
+
     /**
      * @param executor The executor.
      */
-    public PingRequestProcessor(Executor executor) {
+    public PingRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
         this.executor = executor;
+        this.msgFactory = msgFactory;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void handleRequest(final RpcContext rpcCtx, final PingRequest request) {
-        rpcCtx.sendResponse( //
-            RaftRpcFactory.DEFAULT //
-                .newResponse(RpcRequests.ErrorResponse.getDefaultInstance(), 0, "OK"));
+        rpcCtx.sendResponse(RaftRpcFactory.DEFAULT.newResponse(msgFactory, 0, "OK"));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String interest() {
         return PingRequest.class.getName();
     }
 
+    /** {@inheritDoc} */
     @Override public Executor executor() {
         return executor;
     }

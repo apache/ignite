@@ -122,8 +122,9 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
                 return true;
 
             try {
-                final RpcRequests.PingRequest req = RpcRequests.PingRequest.newBuilder()
-                    .setSendTimestamp(System.currentTimeMillis())
+                final RpcRequests.PingRequest req = rpcOptions.getRaftMessagesFactory()
+                    .pingRequest()
+                    .sendTimestamp(System.currentTimeMillis())
                     .build();
 
                 Future<Message> fut =
@@ -131,7 +132,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
 
                 final ErrorResponse resp = (ErrorResponse) fut.get(); // Future will be certainly terminated by timeout.
 
-                if (resp != null && resp.getErrorCode() == 0) {
+                if (resp != null && resp.errorCode() == 0) {
                     readyAddresses.add(endpoint.toString());
 
                     return true;
@@ -258,8 +259,8 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
 
     private static Status handleErrorResponse(final ErrorResponse eResp) {
         final Status status = new Status();
-        status.setCode(eResp.getErrorCode());
-        status.setErrorMsg(eResp.getErrorMsg());
+        status.setCode(eResp.errorCode());
+        status.setErrorMsg(eResp.errorMsg());
         return status;
     }
 }

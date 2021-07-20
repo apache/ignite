@@ -17,10 +17,10 @@
 package org.apache.ignite.raft.jraft.rpc.impl.core;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
-import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.InstallSnapshotRequest;
 
 /**
@@ -30,18 +30,18 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.InstallSnapshotRequest;
  * TODO asch use dedicated executor for potentially long jobs ? https://issues.apache.org/jira/browse/IGNITE-14832
  */
 public class InstallSnapshotRequestProcessor extends NodeRequestProcessor<InstallSnapshotRequest> {
-    public InstallSnapshotRequestProcessor(Executor executor) {
-        super(executor, RpcRequests.InstallSnapshotResponse.getDefaultInstance());
+    public InstallSnapshotRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
+        super(executor, msgFactory);
     }
 
     @Override
     protected String getPeerId(final InstallSnapshotRequest request) {
-        return request.getPeerId();
+        return request.peerId();
     }
 
     @Override
     protected String getGroupId(final InstallSnapshotRequest request) {
-        return request.getGroupId();
+        return request.groupId();
     }
 
     @Override

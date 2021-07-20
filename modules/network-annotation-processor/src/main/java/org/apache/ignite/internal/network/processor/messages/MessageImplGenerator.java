@@ -311,15 +311,16 @@ public class MessageImplGenerator {
     private static TypeSpec generateBuilderImpl(
         MessageClass message, ClassName messageImplClass, ClassName builderName
     ) {
-        List<ExecutableElement> getters = message.getters();
+        List<ExecutableElement> messageGetters = message.getters();
 
-        var fields = new ArrayList<FieldSpec>(getters.size());
-        var setters = new ArrayList<MethodSpec>(getters.size());
+        var fields = new ArrayList<FieldSpec>(messageGetters.size());
+        var setters = new ArrayList<MethodSpec>(messageGetters.size());
+        var getters = new ArrayList<MethodSpec>(messageGetters.size());
 
-        for (ExecutableElement getter : getters) {
-            var getterReturnType = TypeName.get(getter.getReturnType());
+        for (ExecutableElement messageGetter : messageGetters) {
+            var getterReturnType = TypeName.get(messageGetter.getReturnType());
 
-            String getterName = getter.getSimpleName().toString();
+            String getterName = messageGetter.getSimpleName().toString();
 
             FieldSpec field = FieldSpec.builder(getterReturnType, getterName)
                 .addModifiers(Modifier.PRIVATE)
@@ -337,6 +338,15 @@ public class MessageImplGenerator {
                 .build();
 
             setters.add(setter);
+
+            MethodSpec getter = MethodSpec.methodBuilder(getterName)
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(getterReturnType)
+                .addStatement("return $N", field)
+                .build();
+
+            getters.add(getter);
         }
 
         return TypeSpec.classBuilder("Builder")
@@ -344,6 +354,7 @@ public class MessageImplGenerator {
             .addSuperinterface(builderName)
             .addFields(fields)
             .addMethods(setters)
+            .addMethods(getters)
             .addMethod(buildMethod(message, messageImplClass, fields))
             .build();
     }

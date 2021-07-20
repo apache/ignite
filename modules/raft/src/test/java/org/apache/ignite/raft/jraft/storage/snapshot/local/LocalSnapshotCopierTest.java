@@ -23,13 +23,12 @@ import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.core.Scheduler;
 import org.apache.ignite.raft.jraft.core.TimerManager;
-import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter;
-import org.apache.ignite.raft.jraft.entity.RaftOutter;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.CopyOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.option.SnapshotCopierOptions;
+import org.apache.ignite.raft.jraft.rpc.GetFileRequestBuilder;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftClientService;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
@@ -89,8 +88,8 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
         Mockito.when(this.snapshotStorage.create(true)).thenReturn(this.writer);
 
         this.table = new LocalSnapshotMetaTable(this.raftOptions);
-        this.table.addFile("testFile", LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("test").build());
-        this.table.setMeta(RaftOutter.SnapshotMeta.newBuilder().setLastIncludedIndex(1).setLastIncludedTerm(1).build());
+        this.table.addFile("testFile", raftOptions.getRaftMessagesFactory().localFileMeta().checksum("test").build());
+        this.table.setMeta(raftOptions.getRaftMessagesFactory().snapshotMeta().lastIncludedIndex(1).lastIncludedTerm(1).build());
         this.uri = "remote://" + this.hostPort + "/" + this.readerId;
         this.copier = new LocalSnapshotCopier();
         this.copyOpts = new CopyOptions();
@@ -113,14 +112,19 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testCancelByRemote() throws Exception {
         final CompletableFuture<Message> future = new CompletableFuture<>();
-        final RpcRequests.GetFileRequest.Builder rb = RpcRequests.GetFileRequest.newBuilder().setReaderId(99)
-            .setFilename(Snapshot.JRAFT_SNAPSHOT_META_FILE).setCount(Integer.MAX_VALUE).setOffset(0)
-            .setReadPartly(true);
+        final RpcRequests.GetFileRequest rb = raftOptions.getRaftMessagesFactory()
+            .getFileRequest()
+            .readerId(99)
+            .filename(Snapshot.JRAFT_SNAPSHOT_META_FILE)
+            .count(Integer.MAX_VALUE)
+            .offset(0)
+            .readPartly(true)
+            .build();
 
         //mock get metadata
         ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
         Mockito.when(
-            this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb.build()),
+            this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb),
                 eq(this.copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
         this.copier.start();
 
@@ -141,14 +145,19 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
     @Test
     public void testInterrupt() throws Exception {
         final CompletableFuture<Message> future = new CompletableFuture<>();
-        final RpcRequests.GetFileRequest.Builder rb = RpcRequests.GetFileRequest.newBuilder().setReaderId(99)
-            .setFilename(Snapshot.JRAFT_SNAPSHOT_META_FILE).setCount(Integer.MAX_VALUE).setOffset(0)
-            .setReadPartly(true);
+        final RpcRequests.GetFileRequest rb = raftOptions.getRaftMessagesFactory()
+            .getFileRequest()
+            .readerId(99)
+            .filename(Snapshot.JRAFT_SNAPSHOT_META_FILE)
+            .count(Integer.MAX_VALUE)
+            .offset(0)
+            .readPartly(true)
+            .build();
 
         //mock get metadata
         ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
         Mockito.when(
-            this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb.build()),
+            this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb),
                 eq(this.copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
         this.copier.start();
 
@@ -166,9 +175,12 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testStartJoinFinishOK() throws Exception {
         final CompletableFuture<Message> future = new CompletableFuture<>();
-        final RpcRequests.GetFileRequest.Builder rb = RpcRequests.GetFileRequest.newBuilder().setReaderId(99)
-            .setFilename(Snapshot.JRAFT_SNAPSHOT_META_FILE).setCount(Integer.MAX_VALUE).setOffset(0)
-            .setReadPartly(true);
+        final GetFileRequestBuilder rb = raftOptions.getRaftMessagesFactory().getFileRequest()
+            .readerId(99)
+            .filename(Snapshot.JRAFT_SNAPSHOT_META_FILE)
+            .count(Integer.MAX_VALUE)
+            .offset(0)
+            .readPartly(true);
 
         //mock get metadata
         ArgumentCaptor<RpcResponseClosure> argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
@@ -179,13 +191,20 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
         assertTrue(TestUtils.waitForArgumentCapture(argument, 5_000));
         RpcResponseClosure<RpcRequests.GetFileResponse> closure = argument.getValue();
         final ByteBuffer metaBuf = this.table.saveToByteBufferAsRemote();
-        closure.setResponse(RpcRequests.GetFileResponse.newBuilder().setReadSize(metaBuf.remaining()).setEof(true)
-            .setData(new ByteString(metaBuf)).build());
+
+        RpcRequests.GetFileResponse response = raftOptions.getRaftMessagesFactory()
+            .getFileResponse()
+            .readSize(metaBuf.remaining())
+            .eof(true)
+            .data(new ByteString(metaBuf))
+            .build();
+
+        closure.setResponse(response);
 
         //mock get file
         argument = ArgumentCaptor.forClass(RpcResponseClosure.class);
-        rb.setFilename("testFile");
-        rb.setCount(this.raftOptions.getMaxByteCountPerRpc());
+        rb.filename("testFile");
+        rb.count(this.raftOptions.getMaxByteCountPerRpc());
         Mockito.when(
             this.raftClientService.getFile(eq(new Endpoint("localhost", 8081)), eq(rb.build()),
                 eq(this.copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
@@ -194,8 +213,15 @@ public class LocalSnapshotCopierTest extends BaseStorageTest {
 
         assertTrue(TestUtils.waitForArgumentCapture(argument, 5_000));
         closure = argument.getValue();
-        closure.setResponse(RpcRequests.GetFileResponse.newBuilder().setReadSize(100).setEof(true)
-            .setData(new ByteString(new byte[100])).build());
+
+        response = raftOptions.getRaftMessagesFactory()
+            .getFileResponse()
+            .readSize(100)
+            .eof(true)
+            .data(new ByteString(new byte[100]))
+            .build();
+
+        closure.setResponse(response);
         closure.run(Status.OK());
         this.copier.join();
         final SnapshotReader reader = this.copier.getReader();

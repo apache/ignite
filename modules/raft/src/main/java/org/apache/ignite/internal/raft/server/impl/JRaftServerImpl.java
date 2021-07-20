@@ -30,7 +30,6 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.ElectionPriority;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.WriteCommand;
-import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.jraft.Closure;
@@ -78,22 +77,19 @@ public class JRaftServerImpl implements RaftServer {
     /**
      * @param service Cluster service.
      * @param dataPath Data path.
-     * @param factory The factory.
      */
-    public JRaftServerImpl(ClusterService service, String dataPath, RaftClientMessagesFactory factory) {
-        this(service, dataPath, factory, new NodeOptions());
+    public JRaftServerImpl(ClusterService service, String dataPath) {
+        this(service, dataPath, new NodeOptions());
     }
 
     /**
      * @param service Cluster service.
      * @param dataPath Data path.
-     * @param factory The factory.
      * @param opts Default node options.
      */
     public JRaftServerImpl(
         ClusterService service,
         String dataPath,
-        RaftClientMessagesFactory factory,
         NodeOptions opts
     ) {
         this.service = service;
@@ -118,7 +114,13 @@ public class JRaftServerImpl implements RaftServer {
         if (opts.getClientExecutor() == null)
             opts.setClientExecutor(JRaftUtils.createClientExecutor(opts, opts.getServerName()));
 
-        rpcServer = new IgniteRpcServer(service, nodeManager, factory, JRaftUtils.createRequestExecutor(opts));
+        rpcServer = new IgniteRpcServer(
+            service,
+            nodeManager,
+            opts.getRaftClientMessagesFactory(),
+            opts.getRaftMessagesFactory(),
+            JRaftUtils.createRequestExecutor(opts)
+        );
 
         rpcServer.init(null);
     }

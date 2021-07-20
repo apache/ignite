@@ -23,11 +23,4 @@ import org.apache.ignite.network.NetworkMessage;
  * Base raft message. Temporary extends Serializable for compatibility with JDK serialization.
  */
 public interface Message extends NetworkMessage, Serializable {
-    @Override default short messageType() {
-        return 1;
-    }
-
-    @Override default short groupType() {
-        return 1;
-    }
 }

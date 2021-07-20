@@ -16,6 +16,11 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -23,13 +28,9 @@ import com.lmax.disruptor.EventTranslator;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.FSMCaller;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.StateMachine;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.closure.ClosureQueue;
@@ -45,6 +46,7 @@ import org.apache.ignite.raft.jraft.entity.LogEntry;
 import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
+import org.apache.ignite.raft.jraft.entity.SnapshotMetaBuilder;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.error.RaftException;
 import org.apache.ignite.raft.jraft.option.FSMCallerOptions;
@@ -60,6 +62,8 @@ import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * The finite state machine caller implementation.
@@ -151,6 +155,7 @@ public class FSMCallerImpl implements FSMCaller {
     private volatile CountDownLatch shutdownLatch;
     private NodeMetrics nodeMetrics;
     private final CopyOnWriteArrayList<LastAppliedLogIndexListener> lastAppliedLogIndexListeners = new CopyOnWriteArrayList<>();
+    private RaftMessagesFactory msgFactory;
 
     public FSMCallerImpl() {
         super();
@@ -186,6 +191,7 @@ public class FSMCallerImpl implements FSMCaller {
                 new DisruptorMetricSet(this.taskQueue));
         }
         this.error = new RaftException(ErrorType.ERROR_TYPE_NONE);
+        this.msgFactory = opts.getRaftMessagesFactory();
         LOG.info("Starts FSMCaller successfully.");
         return true;
     }
@@ -542,9 +548,6 @@ public class FSMCallerImpl implements FSMCaller {
     private void doSnapshotSave(final SaveSnapshotClosure done) {
         Requires.requireNonNull(done, "SaveSnapshotClosure is null");
         final long lastAppliedIndex = this.lastAppliedIndex.get();
-        final RaftOutter.SnapshotMeta.Builder metaBuilder = RaftOutter.SnapshotMeta.newBuilder() //
-            .setLastIncludedIndex(lastAppliedIndex) //
-            .setLastIncludedTerm(this.lastAppliedTerm);
         final ConfigurationEntry confEntry = this.logManager.getConfiguration(lastAppliedIndex);
         if (confEntry == null || confEntry.isEmpty()) {
             LOG.error("Empty conf entry for lastAppliedIndex={}", lastAppliedIndex);
@@ -552,20 +555,19 @@ public class FSMCallerImpl implements FSMCaller {
                 "Empty conf entry for lastAppliedIndex=%s", lastAppliedIndex));
             return;
         }
-        for (final PeerId peer : confEntry.getConf()) {
-            metaBuilder.addPeers(peer.toString());
-        }
-        for (final PeerId peer : confEntry.getConf().getLearners()) {
-            metaBuilder.addLearners(peer.toString());
-        }
+
+        SnapshotMetaBuilder metaBuilder = msgFactory.snapshotMeta()
+            .lastIncludedIndex(lastAppliedIndex)
+            .lastIncludedTerm(this.lastAppliedTerm)
+            .peersList(confEntry.getConf().getPeers().stream().map(Object::toString).collect(toList()))
+            .learnersList(confEntry.getConf().getLearners().stream().map(Object::toString).collect(toList()));
+
         if (confEntry.getOldConf() != null) {
-            for (final PeerId peer : confEntry.getOldConf()) {
-                metaBuilder.addOldPeers(peer.toString());
-            }
-            for (final PeerId peer : confEntry.getOldConf().getLearners()) {
-                metaBuilder.addOldLearners(peer.toString());
-            }
+            metaBuilder
+                .oldPeersList(confEntry.getOldConf().getPeers().stream().map(Object::toString).collect(toList()))
+                .oldLearnersList(confEntry.getOldConf().getLearners().stream().map(Object::toString).collect(toList()));
         }
+
         final SnapshotWriter writer = done.start(metaBuilder.build());
         if (writer == null) {
             done.run(new Status(RaftError.EINVAL, "snapshot_storage create SnapshotWriter failed"));
@@ -632,7 +634,7 @@ public class FSMCallerImpl implements FSMCaller {
             return;
         }
         final LogId lastAppliedId = new LogId(this.lastAppliedIndex.get(), this.lastAppliedTerm);
-        final LogId snapshotId = new LogId(meta.getLastIncludedIndex(), meta.getLastIncludedTerm());
+        final LogId snapshotId = new LogId(meta.lastIncludedIndex(), meta.lastIncludedTerm());
         if (lastAppliedId.compareTo(snapshotId) > 0) {
             done.run(new Status(
                 RaftError.ESTALE,
@@ -647,18 +649,20 @@ public class FSMCallerImpl implements FSMCaller {
             setError(e);
             return;
         }
-        if (meta.getOldPeersCount() == 0) {
+        if (meta.oldPeersList() == null) {
             // Joint stage is not supposed to be noticeable by end users.
             final Configuration conf = new Configuration();
-            for (int i = 0, size = meta.getPeersCount(); i < size; i++) {
-                final PeerId peer = new PeerId();
-                Requires.requireTrue(peer.parse(meta.getPeers(i)), "Parse peer failed");
-                conf.addPeer(peer);
+            if (meta.peersList() != null) {
+                for (String metaPeer : meta.peersList()) {
+                    final PeerId peer = new PeerId();
+                    Requires.requireTrue(peer.parse(metaPeer), "Parse peer failed");
+                    conf.addPeer(peer);
+                }
             }
             this.fsm.onConfigurationCommitted(conf);
         }
-        this.lastAppliedIndex.set(meta.getLastIncludedIndex());
-        this.lastAppliedTerm = meta.getLastIncludedTerm();
+        this.lastAppliedIndex.set(meta.lastIncludedIndex());
+        this.lastAppliedTerm = meta.lastIncludedTerm();
         done.run(Status.OK());
     }
 
