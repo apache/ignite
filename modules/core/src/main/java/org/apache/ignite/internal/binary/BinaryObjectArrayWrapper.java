@@ -34,7 +34,7 @@ public class BinaryObjectArrayWrapper {
     /**
      *
      */
-    public Object[] array(){
+    public Object[] array() {
         return arr;
     }
 }
