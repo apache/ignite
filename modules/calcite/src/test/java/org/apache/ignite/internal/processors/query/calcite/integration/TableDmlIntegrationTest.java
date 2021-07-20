@@ -272,6 +272,19 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
         assertNull(row);
     }
 
+    /**
+     * Test verifies that a type inference works properly in case of
+     * multiple values list consisting of least restrictive type
+     * comparing to table field type and NULL literal.
+     */
+    @Test
+    public void testInsertMultipleValuesWithNullAndImplicitTypeConversion() {
+        executeSql("CREATE TABLE test (d DATE)");
+        executeSql("INSERT INTO test VALUES ('2000-10-10'), (null)");
+
+        assertEquals(2L, executeSql("select count(*) from test").get(0).get(0));
+    }
+
     /** */
     private List<List<?>> executeSql(String sql, Object... args) {
         List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql, args);
