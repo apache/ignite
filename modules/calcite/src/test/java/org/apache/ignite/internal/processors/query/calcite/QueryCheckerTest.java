@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
@@ -27,9 +28,17 @@ import static org.junit.Assert.assertTrue;
 /** Query checker tests. */
 public class QueryCheckerTest {
     /** */
+    private static final String PLAN = "IgniteSingleHashAggregate(group=[{}], COUNT(NAME)=[COUNT($0)]): rowcount = 1.0, " +
+        "cumulative cost = IgniteCost [rowCount=9.0, cpu=9.0, memory=5.0, io=0.0, network=12.0], id = 110\n" +
+        "  IgniteExchange(distribution=[single]): rowcount = 3.0, cumulative cost = IgniteCost " +
+        "[rowCount=6.0, cpu=6.0, memory=0.0, io=0.0, network=12.0], id = 109\n" +
+        "    IgniteIndexScan(table=[[PUBLIC, PERSON]], index=[PERSON_NAME], requiredColumns=[{2}]): rowcount = 3.0, " +
+        "cumulative cost = IgniteCost [rowCount=3.0, cpu=3.0, memory=0.0, io=0.0, network=0.0], id = 29";
+
+    /** */
     @Test
     public void testMatchesOnce() {
-        String plan = "PLAN=IgniteExchange(distribution=[single])\n  " +
+        String planMatchesOnce = "PLAN=IgniteExchange(distribution=[single])\n  " +
             "IgniteProject(NAME=[$2])\n    " +
             "IgniteTableScan(table=[[PUBLIC, DEVELOPER]], projects=[[$t0]], requiredColunms=[{2}])\n  " +
             "IgniteTableScan(table=[[PUBLIC, DEVELOPER]], projects=[[$t1]], requiredColunms=[{2, 3}])";
@@ -37,7 +46,68 @@ public class QueryCheckerTest {
         Matcher<String> matcherTbl = matchesOnce("IgniteTableScan");
         Matcher<String> matcherPrj = matchesOnce("IgniteProject");
 
-        assertFalse(matcherTbl.matches(plan));
-        assertTrue(matcherPrj.matches(plan));
+        assertFalse(matcherTbl.matches(planMatchesOnce));
+        assertTrue(matcherPrj.matches(planMatchesOnce));
+    }
+
+    /**
+     * Check that the wrong cost will not be found.
+     */
+    @Test
+    public void testCostMatchesWrongCostNoMatches() {
+        ServerStatisticsIntegrationTest.TestCost wrongCost =
+            new ServerStatisticsIntegrationTest.TestCost(4., null, null, null, null);
+        Matcher<String> wrongCostMatcher = QueryChecker.containsCost(wrongCost);
+
+        assertFalse(wrongCostMatcher.matches(PLAN));
+    }
+
+    /**
+     * Check that the any cost will be found.
+     */
+    @Test
+    public void testCostMatchesAnyCostMatches() {
+
+        ServerStatisticsIntegrationTest.TestCost anyCost =
+            new ServerStatisticsIntegrationTest.TestCost(null, null, null, null, null);
+        Matcher<String> anyCostMatcher = QueryChecker.containsCost(anyCost);
+
+        assertTrue(anyCostMatcher.matches(PLAN));
+    }
+
+    /**
+     * Check that the cost from the first line of plan will be found.
+     */
+    @Test
+    public void testCostMatchesFirstLineMatches() {
+        ServerStatisticsIntegrationTest.TestCost firstLineCost =
+            new ServerStatisticsIntegrationTest.TestCost(null, 9., null, null, 12.);
+        Matcher<String> firstLineCostMatcher = QueryChecker.containsCost(firstLineCost);
+
+        assertTrue(firstLineCostMatcher.matches(PLAN));
+    }
+
+    /**
+     * Check that the cost from the middle line of plan will be found.
+     */
+    @Test
+    public void testCostMatchesMiddleLineMatches() {
+        ServerStatisticsIntegrationTest.TestCost middleLineCost =
+            new ServerStatisticsIntegrationTest.TestCost(6., 6., null, 0., 12.);
+        Matcher<String> middleLineCostMatcher = QueryChecker.containsCost(middleLineCost);
+
+        assertTrue(middleLineCostMatcher.matches(PLAN));
+    }
+
+    /**
+     * Check that the cost from the last line of plan will be found.
+     */
+    @Test
+    public void testCostMatchesLastLineMatches() {
+        ServerStatisticsIntegrationTest.TestCost lastLineCost =
+            new ServerStatisticsIntegrationTest.TestCost(3., 3., null, 0., null);
+        Matcher<String> lastLineCostMatcher = QueryChecker.containsCost(lastLineCost);
+
+        assertTrue(lastLineCostMatcher.matches(PLAN));
     }
 }

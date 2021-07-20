@@ -35,11 +35,13 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.core.SubstringMatcher;
 
@@ -87,6 +89,61 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsIndexScan(String schema, String tblName, String idxName) {
         return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']');
+    }
+
+    /**
+     * Ignite cost mather.
+     *
+     * @param cost TestCost to match.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsCost(ServerStatisticsIntegrationTest.TestCost cost) {
+        String rowCntStr = printCostVal(cost.rowCount());
+        String cpuStr = printCostVal(cost.cpu());
+        String memoryStr = printCostVal(cost.memory());
+        String ioStr = printCostVal(cost.io());
+        String netStr = printCostVal(cost.network());
+
+        String costStr = String.format(".*\\[rowCount=%s, cpu=%s, memory=%s, io=%s, network=%s\\].*", rowCntStr, cpuStr,
+            memoryStr, ioStr, netStr);
+
+        return new RegexpMather(costStr);
+    }
+
+    /**
+     * Regexp string mather.
+     */
+    private static class RegexpMather extends CustomTypeSafeMatcher<String> {
+        /** Compilled pathern. */
+        private Pattern pattern;
+
+        /**
+         * Constructor.
+         *
+         * @param regexp Regexp to search.
+         */
+        public RegexpMather(String regexp) {
+            super(regexp);
+
+            pattern = Pattern.compile(regexp, Pattern.DOTALL);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean matchesSafely(String item) {
+            java.util.regex.Matcher matcher = pattern.matcher(item);
+
+            return matcher.matches();
+        }
+    }
+
+    /**
+     * Print cost value to regexp.
+     *
+     * @param val Value to print.
+     * @return String representation for regexp.
+     */
+    private static String printCostVal(Double val) {
+        return (val == null) ? "\\d\\.\\d" : val.toString();
     }
 
     /**

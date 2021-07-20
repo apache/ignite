@@ -48,7 +48,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
+import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,13 +62,13 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private final TableDescriptor desc;
 
     /** */
-    private final Statistic statistic;
+    //private final Statistic statistic;
 
     /** */
     private final GridKernalContext ctx;
 
     /** */
-    private volatile GridH2Table tbl;
+    //private volatile GridH2Table tbl;
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
@@ -78,7 +80,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     public IgniteTableImpl(GridKernalContext ctx, TableDescriptor desc) {
         this.ctx = ctx;
         this.desc = desc;
-        statistic = new StatisticsImpl();
+        //statistic = new StatisticsImpl();
     }
 
     /** {@inheritDoc} */
@@ -88,16 +90,15 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
-        if (tbl == null) {
-            IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
+        IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
 
-            final String tblName = desc.typeDescription().tableName();
-            final String schemaName = desc.typeDescription().schemaName();
+        final String tblName = desc.typeDescription().tableName();
+        final String schemaName = desc.typeDescription().schemaName();
 
-            tbl = idx.schemaManager().dataTable(schemaName, tblName);
-        }
+        ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
+            new StatisticsKey(schemaName, tblName));
 
-        return statistic;
+        return new StatisticsImpl(statistics);
     }
 
 
@@ -191,11 +192,24 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         }
     }
 
-    /** */
+    /** Calcite statistics wrapper. */
     private class StatisticsImpl implements Statistic {
+        /** Internal statistics implementation. */
+        private final ObjectStatisticsImpl statistics;
+
+        /**
+         * Constructor.
+         *
+         * @param statistics Internal object statistics or {@code null}.
+         */
+        public StatisticsImpl(ObjectStatisticsImpl statistics) {
+            this.statistics = statistics;
+        }
+
         /** {@inheritDoc} */
         @Override public Double getRowCount() {
-            long rows = tbl.getRowCountApproximationNoCheck();
+            // TBD: default values.
+            long rows = (statistics == null) ? 1000 : statistics.rowCount();
 
             return (double)rows;
         }
@@ -223,6 +237,23 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         /** {@inheritDoc} */
         @Override public IgniteDistribution getDistribution() {
             return distribution();
+        }
+
+        /**
+         * @return Column statistics map.
+         */
+        public Map<String, ColumnStatistics> getColumnsStatistics() {
+            return (statistics == null) ? Collections.EMPTY_MAP : statistics.columnsStatistics();
+        }
+
+        /**
+         * Get column statistics.
+         *
+         * @param colName Column name.
+         * @return Column statistics or {@code null} if there are no statistics for specified column.
+         */
+        public ColumnStatistics getColumnStatistics(String colName) {
+            return (statistics == null) ? null : statistics.columnStatistics(colName);
         }
     }
 }
