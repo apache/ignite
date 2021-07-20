@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
 import org.apache.ignite.configuration.schemas.rest.RestView;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.rest.netty.RestApiInitializer;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.apache.ignite.rest.presentation.json.JsonPresentation;
@@ -63,6 +64,9 @@ public class RestModule {
     /** */
     private ConfigurationRegistry sysConf;
 
+    /** Ignite logger. */
+    private final IgniteLogger LOG = IgniteLogger.forClass(RestModule.class);
+
     /** */
     private volatile ConfigurationPresentation<String> presentation;
 
@@ -87,9 +91,8 @@ public class RestModule {
 
     /**
      * @return REST channel future.
-     * @throws InterruptedException If thread has been interupted during the start.
      */
-    public ChannelFuture start() throws InterruptedException {
+    public ChannelFuture start() {
         var router = new Router();
         router
             .get(CONF_URL, (req, resp) -> {
@@ -148,7 +151,7 @@ public class RestModule {
     }
 
     /** */
-    private ChannelFuture startRestEndpoint(Router router) throws InterruptedException {
+    private ChannelFuture startRestEndpoint(Router router) {
         RestView restConfigurationView = sysConf.getConfiguration(RestConfiguration.KEY).value();
 
         int desiredPort = restConfigurationView.port();
@@ -163,6 +166,7 @@ public class RestModule {
 
         var hnd = new RestApiInitializer(router);
 
+        // TODO: IGNITE-15132 Rest module must reuse netty infrastructure from network module
         ServerBootstrap b = new ServerBootstrap();
         b.option(ChannelOption.SO_BACKLOG, 1024);
         b.group(parentGrp, childGrp)
@@ -170,8 +174,8 @@ public class RestModule {
             .handler(new LoggingHandler(LogLevel.INFO))
             .childHandler(hnd);
 
-        for (int portCandidate = desiredPort; portCandidate < desiredPort + portRange; portCandidate++) {
-            ChannelFuture bindRes = b.bind(portCandidate).await();
+        for (int portCandidate = desiredPort; portCandidate <= desiredPort + portRange; portCandidate++) {
+            ChannelFuture bindRes = b.bind(portCandidate).awaitUninterruptibly();
             if (bindRes.isSuccess()) {
                 ch = bindRes.channel();
 
@@ -179,6 +183,7 @@ public class RestModule {
                     @Override public void operationComplete(ChannelFuture fut) {
                         parentGrp.shutdownGracefully();
                         childGrp.shutdownGracefully();
+                        LOG.error("REST component was stopped", fut.cause());
                     }
                 });
                 port = portCandidate;
