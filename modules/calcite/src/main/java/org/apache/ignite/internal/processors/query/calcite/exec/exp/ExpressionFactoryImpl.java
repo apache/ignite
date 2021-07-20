@@ -265,14 +265,39 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         return rows;
     }
 
-    /** {@inheritDoc} */
-    @Override public SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
+    /**
+     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
+     *
+     * @param node Expression.
+     * @param type Row type.
+     * @return SingleScalar.
+     */
+    private SingleScalar scalar(RexNode node, RelDataType type) {
+        return scalar(ImmutableList.of(node), type);
+    }
+
+    /**
+     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
+     *
+     * @param nodes Expressions.
+     * @param type Row type.
+     * @return SingleScalar.
+     */
+    public SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
         return (SingleScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, false),
             k -> compile(nodes, type, false));
     }
 
-    /** {@inheritDoc} */
-    @Override public BiScalar biScalar(List<RexNode> nodes, RelDataType type) {
+    /**
+     * Creates {@link BiScalar}, a code-generated expressions evaluator.
+     *
+     * @param node Expression.
+     * @param type Row type.
+     * @return BiScalar.
+     */
+    public BiScalar biScalar(RexNode node, RelDataType type) {
+        ImmutableList<RexNode> nodes = ImmutableList.of(node);
+
         return (BiScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, true),
             k -> compile(nodes, type, true));
     }

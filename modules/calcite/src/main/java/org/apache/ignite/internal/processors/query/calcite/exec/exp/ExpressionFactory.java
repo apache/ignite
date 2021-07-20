@@ -24,7 +24,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -111,44 +110,4 @@ public interface ExpressionFactory<Row> {
      * Executes expression.
      */
     <T> Supplier<T> execute(RexNode node);
-
-    /**
-     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
-     *
-     * @param node Expression.
-     * @param type Row type.
-     * @return SingleScalar.
-     */
-    default SingleScalar scalar(RexNode node, RelDataType type) {
-        return scalar(ImmutableList.of(node), type);
-    }
-
-    /**
-     * Creates {@link BiScalar}, a code-generated expressions evaluator.
-     *
-     * @param node Expression.
-     * @param type Row type.
-     * @return BiScalar.
-     */
-    default BiScalar biScalar(RexNode node, RelDataType type) {
-        return biScalar(ImmutableList.of(node), type);
-    }
-
-    /**
-     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
-     *
-     * @param nodes Expressions.
-     * @param type Row type.
-     * @return SingleScalar.
-     */
-    SingleScalar scalar(List<RexNode> nodes, RelDataType type);
-
-    /**
-     * Creates {@link BiScalar}, a code-generated expressions evaluator.
-     *
-     * @param nodes Expressions.
-     * @param type Row type.
-     * @return BiScalar.
-     */
-    BiScalar biScalar(List<RexNode> nodes, RelDataType type);
 }
