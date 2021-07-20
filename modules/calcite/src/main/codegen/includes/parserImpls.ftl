@@ -281,3 +281,78 @@ void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
         list.add(dt);
     }
 }
+
+SqlNodeList ColumnWithTypeList() :
+{
+    final Span s;
+    List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col;
+}
+{
+    <LPAREN> { s = span(); }
+    col = ColumnWithType() { list.add(col); }
+    (
+        <COMMA> col = ColumnWithType() { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlNode ColumnWithType() :
+{
+    SqlIdentifier id;
+    SqlDataTypeSpec type;
+    boolean nullable = true;
+    final Span s = Span.of();
+}
+{
+    id = SimpleIdentifier()
+    type = DataType()
+    [
+        <NOT> <NULL> {
+            nullable = false;
+        }
+    ]
+    {
+        return SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), null, null);
+    }
+}
+
+SqlNodeList ColumnWithTypeOrList() :
+{
+    SqlNode col;
+    SqlNodeList list;
+}
+{
+    col = ColumnWithType() { return new SqlNodeList(Collections.singletonList(col), col.getParserPosition()); }
+|
+    list = ColumnWithTypeList() { return list; }
+}
+
+SqlNode SqlAlterTable() :
+{
+    final Span s;
+    final boolean ifExists;
+    final SqlIdentifier id;
+    boolean colIgnoreErr;
+    SqlNode col;
+    SqlNodeList cols;
+}
+{
+    <ALTER> { s = span(); }
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier()
+    (
+        <LOGGING> { return new IgniteSqlAlterTable(s.end(this), ifExists, id, true); }
+    |
+        <NOLOGGING>  { return new IgniteSqlAlterTable(s.end(this), ifExists, id, false); }
+    |
+        <ADD> [<COLUMN>] colIgnoreErr = IfNotExistsOpt() cols = ColumnWithTypeOrList() {
+            return new IgniteSqlAlterTableAddColumn(s.end(this), ifExists, id, colIgnoreErr, cols);
+        }
+    |
+        <DROP> [<COLUMN>] colIgnoreErr = IfExistsOpt() cols = SimpleIdentifierOrList() {
+            return new IgniteSqlAlterTableDropColumn(s.end(this), ifExists, id, colIgnoreErr, cols);
+        }
+    )
+}
