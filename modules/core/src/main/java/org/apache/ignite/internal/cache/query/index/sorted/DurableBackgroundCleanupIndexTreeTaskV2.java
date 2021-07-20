@@ -64,6 +64,9 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Index tree index factory. */
+    public static InlineIndexTreeFactory IDX_TREE_FACTORY = new InlineIndexTreeFactory();
+
     /** Logger. */
     @GridToStringExclude
     @Nullable private transient volatile IgniteLogger log;
@@ -159,7 +162,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "drop-index-" + cacheName + "-" + idxName + "-" + uid;
+        return "drop-sql-index-" + cacheName + "-" + idxName + "-" + uid;
     }
 
     /** {@inheritDoc} */
@@ -259,29 +262,12 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
         );
 
         for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
-            InlineIndexTree tree = new InlineIndexTree(
-                null,
-                grpCtx,
-                treeName,
-                grpCtx.offheap(),
-                grpCtx.offheap().reuseListForIndex(treeName),
-                grpCtx.dataRegion().pageMemory(),
-                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                e.getValue().pageId().pageId(),
-                false,
-                0,
-                0,
-                new IndexKeyTypeSettings(),
-                null,
-                stats,
-                new NoopRowHandlerFactory(),
-                null
-            );
+            InlineIndexTree tree = IDX_TREE_FACTORY.create(grpCtx, e.getValue(), treeName, stats);
 
             grpCtx.shared().database().checkpointReadLock();
 
             try {
-                tree.destroy();
+                tree.destroy(null, true);
 
                 grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, e.getKey());
             }
@@ -357,7 +343,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     /**
      * A do-nothing {@link InlineIndexRowHandlerFactory} implementation.
      */
-    static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
+    public static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
         /** {@inheritDoc} */
         @Override public InlineIndexRowHandler create(
             SortedIndexDefinition sdef,
@@ -398,6 +384,47 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                     return null;
                 }
             };
+        }
+    }
+
+    /**
+     * Factory for creating index trees.
+     */
+    public static class InlineIndexTreeFactory {
+        /**
+         * Creation of an index tree.
+         *
+         * @param grpCtx Cache group context.
+         * @param rootPage Index root page.
+         * @param treeName Name of underlying index tree name.
+         * @param stats Statistics holder.
+         * @return New index tree.
+         * @throws IgniteCheckedException If failed.
+         */
+        protected InlineIndexTree create(
+            CacheGroupContext grpCtx,
+            RootPage rootPage,
+            String treeName,
+            IoStatisticsHolderIndex stats
+        ) throws IgniteCheckedException {
+            return new InlineIndexTree(
+                null,
+                grpCtx,
+                treeName,
+                grpCtx.offheap(),
+                grpCtx.offheap().reuseListForIndex(treeName),
+                grpCtx.dataRegion().pageMemory(),
+                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+                rootPage.pageId().pageId(),
+                false,
+                0,
+                0,
+                new IndexKeyTypeSettings(),
+                null,
+                stats,
+                new NoopRowHandlerFactory(),
+                null
+            );
         }
     }
 

@@ -39,7 +39,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class DropIndexTest extends AbstractRebuildIndexTest {
     @Test
-    public void test0() throws Exception {
+    public void test00() throws Exception {
         IgniteEx n = startGrid(0);
 
         IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
