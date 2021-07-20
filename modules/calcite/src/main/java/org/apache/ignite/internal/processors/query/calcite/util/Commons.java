@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -75,6 +76,17 @@ public final class Commons {
      */
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
+    }
+
+    /** {@inheritDoc} */
+    public static Object getBiRows(RowHandler<Object[]> hnd, int field, Object row1, Object row2) {
+        if (!row1.getClass().isArray() || !row2.getClass().isArray())
+            throw new IllegalArgumentException();
+
+        Object[] cols1 = (Object[])row1;
+        Object[] cols2 = (Object[])row2;
+
+        return field < cols1.length ? hnd.get(field, cols1) : hnd.get(field - cols1.length, cols2);
     }
 
     /**

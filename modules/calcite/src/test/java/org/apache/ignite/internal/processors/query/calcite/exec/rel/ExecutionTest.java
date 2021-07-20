@@ -47,6 +47,7 @@ import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getBiRows;
 
 /**
  *
@@ -100,7 +101,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, INNER,
-            (r1, r2) -> hnd.getBiRows(0, r1, r2) == hnd.getBiRows(4, r1, r2));
+            (r1, r2) -> getBiRows(hnd, 0, r1, r2) == getBiRows(hnd, 4, r1, r2));
         join.register(F.asList(persons, projects));
 
         rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
@@ -208,7 +209,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT,
-            (r1, r2) -> hnd.getBiRows(2, r1, r2) == hnd.getBiRows(3, r1, r2));
+            (r1, r2) -> getBiRows(hnd, 2, r1, r2) == getBiRows(hnd, 3, r1, r2));
         join.register(F.asList(persons, deps));
 
         rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
@@ -269,7 +270,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, RIGHT,
-            (r1, r2) -> hnd.getBiRows(0, r1, r2) == hnd.getBiRows(4, r1, r2));
+            (r1, r2) -> getBiRows(hnd, 0, r1, r2) == getBiRows(hnd, 4, r1, r2));
         join.register(F.asList(deps, persons));
 
         rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
@@ -330,7 +331,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, FULL,
-            (r1, r2) -> hnd.getBiRows(2, r1, r2) == hnd.getBiRows(3, r1, r2));
+            (r1, r2) -> getBiRows(hnd, 2, r1, r2) == getBiRows(hnd, 3, r1, r2));
         join.register(F.asList(persons, deps));
 
         rowType = TypeUtils.createRowType(tf, Integer.class, String.class, String.class);
@@ -391,7 +392,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, SEMI,
-            (r1, r2) -> hnd.getBiRows(0, r1, r2) == hnd.getBiRows(4, r1, r2));
+            (r1, r2) -> getBiRows(hnd, 0, r1, r2) == getBiRows(hnd, 4, r1, r2));
         join.register(F.asList(deps, persons));
 
         rowType = TypeUtils.createRowType(tf, String.class);
@@ -449,7 +450,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RowHandler<Object[]> hnd = ctx.rowHandler();
 
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, ANTI,
-            (r1, r2) -> hnd.getBiRows(0, r1, r2) == hnd.getBiRows(4, r1, r2));
+            (r1, r2) -> getBiRows(hnd, 0, r1, r2) == getBiRows(hnd, 4, r1, r2));
         join.register(F.asList(deps, persons));
 
         rowType = TypeUtils.createRowType(tf, String.class);
@@ -505,7 +506,7 @@ public class ExecutionTest extends AbstractExecutionTest {
                         CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
                             ctx,
                             joinRowType,
-                            (r1, r2) -> hnd.getBiRows(0, r1, r2).equals(hnd.getBiRows(3, r1, r2)),
+                            (r1, r2) -> getBiRows(hnd, 0, r1, r2).equals(getBiRows(hnd, 3, r1, r2)),
                             ImmutableSet.of(new CorrelationId(0)),
                             joinType
                         );

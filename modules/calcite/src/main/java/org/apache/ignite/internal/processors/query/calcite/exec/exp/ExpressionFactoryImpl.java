@@ -541,8 +541,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             Expression row1_ = list.append("row1", this.row1_);
             Expression row2_ = list.append("row2", this.row2_);
 
-            Expression field = Expressions.call(hnd_,
-                IgniteMethod.ROW_HANDLER_BI_GET.method(),
+            Expression field = Expressions.call(
+                IgniteMethod.ROW_HANDLER_BI_GET.method(), hnd_,
                 Expressions.constant(index), row1_, row2_);
 
             return field;
