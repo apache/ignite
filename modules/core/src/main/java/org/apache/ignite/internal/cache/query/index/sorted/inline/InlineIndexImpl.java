@@ -426,13 +426,15 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return;
 
         if (cctx.affinityNode() && !softDel) {
-            for (InlineIndexTree segment : segments)
+            for (InlineIndexTree segment : segments) {
                 segment.markDestroyed();
+                segment.close();
+            }
 
             cctx.kernalContext().metric().remove(stats.metricRegistryName());
 
             // Actual destroy index task.
-            DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTaskV2(
+            DurableBackgroundTask<Long> task = new DurableBackgroundCleanupIndexTreeTaskV2(
                 cctx.group().name(),
                 cctx.name(),
                 def.idxName().idxName(),

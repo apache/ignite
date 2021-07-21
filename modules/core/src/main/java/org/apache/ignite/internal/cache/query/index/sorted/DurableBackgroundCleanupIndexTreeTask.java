@@ -302,7 +302,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public DurableBackgroundTask convertAfterRestoreIfNeeded() {
+    @Override public DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
         return new DurableBackgroundCleanupIndexTreeTaskV2(
             cacheGrpName,
             cacheName,

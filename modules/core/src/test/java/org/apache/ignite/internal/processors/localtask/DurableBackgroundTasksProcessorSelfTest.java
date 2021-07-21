@@ -134,7 +134,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Void> execAsyncFut = execAsync(n, t, false);
 
         t.onExecFut.get(getTestTimeout());
-        checkStateAndMetaStorage(n, t, STARTED, false);
+        checkStateAndMetaStorage(n, t, STARTED, false, false);
         assertFalse(execAsyncFut.isDone());
 
         n.cluster().state(INACTIVE);
@@ -159,7 +159,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         execAsync(n, t, true);
 
         t.onExecFut.get(getTestTimeout());
-        checkStateAndMetaStorage(n, t, STARTED, true);
+        checkStateAndMetaStorage(n, t, STARTED, true, false);
         t.taskFut.onDone(restart(null));
 
         stopAllGrids();
@@ -170,7 +170,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         t = ((SimpleTask)tasks(n).get(t.name()).task());
 
         t.onExecFut.get(getTestTimeout());
-        checkStateAndMetaStorage(n, t, STARTED, true);
+        checkStateAndMetaStorage(n, t, STARTED, true, false);
         t.taskFut.onDone(complete(null));
     }
 
@@ -280,6 +280,44 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * Checking the correctness of using the {@link DurableBackgroundTask#convertAfterRestoreIfNeeded}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConvertAfterRestoreIfNeeded() throws Exception {
+        IgniteEx n = startGrid(0);
+        n.cluster().state(ACTIVE);
+
+        String taskName0 = "test-task0";
+        String taskName1 = "test-task1";
+
+        ConvertibleTask t0 = new ConvertibleTask(taskName0);
+        SimpleTask t1 = new SimpleTask(taskName1);
+
+        SimpleTask t2 = (SimpleTask)t0.convertAfterRestoreIfNeeded();
+        assertEquals("converted-task-" + taskName0, t2.name());
+
+        assertNotNull(n.context().durableBackgroundTask().executeAsync(t0, true));
+        assertNotNull(n.context().durableBackgroundTask().executeAsync(t1, true));
+
+        assertEquals(2, tasks(n).size());
+
+        checkStateAndMetaStorage(n, t0, STARTED, true, false);
+        checkStateAndMetaStorage(n, t1, STARTED, true, false);
+
+        stopGrid(0);
+
+        n = startGrid(0);
+
+        assertEquals(3, tasks(n).size());
+
+        checkStateAndMetaStorage(n, t0, COMPLETED, true, true);
+        checkStateAndMetaStorage(n, t1, INIT, true, false);
+        checkStateAndMetaStorage(n, t1, INIT, true, false);
+    }
+
+    /**
      * Check that the task will be restarted correctly.
      *
      * @param save Save to MetaStorage.
@@ -293,7 +331,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Void> execAsyncFut = execAsync(n, t, save);
 
         t.onExecFut.get(getTestTimeout());
-        checkStateAndMetaStorage(n, t, STARTED, save);
+        checkStateAndMetaStorage(n, t, STARTED, save, false);
         assertFalse(execAsyncFut.isDone());
 
         if (save) {
@@ -303,11 +341,11 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
             dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
             t.taskFut.onDone(restart(null));
-            checkStateAndMetaStorage(n, t, INIT, true);
+            checkStateAndMetaStorage(n, t, INIT, true, false);
             assertFalse(execAsyncFut.isDone());
 
             GridFutureAdapter<Void> onMarkCheckpointBeginFut = checkpointLsnr.onMarkCheckpointBeginAsync(ctx -> {
-                checkStateAndMetaStorage(n, t, INIT, true);
+                checkStateAndMetaStorage(n, t, INIT, true, false);
                 assertFalse(toRmv(n).containsKey(t.name()));
             });
 
@@ -316,7 +354,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         }
         else {
             t.taskFut.onDone(restart(null));
-            checkStateAndMetaStorage(n, t, INIT, false);
+            checkStateAndMetaStorage(n, t, INIT, false, false);
             assertFalse(execAsyncFut.isDone());
         }
 
@@ -326,7 +364,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         n.cluster().state(ACTIVE);
 
         t.onExecFut.get(getTestTimeout());
-        checkStateAndMetaStorage(n, t, STARTED, save);
+        checkStateAndMetaStorage(n, t, STARTED, save, false);
         assertFalse(execAsyncFut.isDone());
 
         t.taskFut.onDone(complete(null));
@@ -345,10 +383,10 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         SimpleTask t = new SimpleTask("t");
         IgniteInternalFuture<Void> execAsyncFut = execAsync(n, t, save);
 
-        checkStateAndMetaStorage(n, t, INIT, save);
+        checkStateAndMetaStorage(n, t, INIT, save, false);
 
         checkExecuteSameTask(n, t);
-        checkStateAndMetaStorage(n, t, INIT, save);
+        checkStateAndMetaStorage(n, t, INIT, save, false);
 
         assertFalse(t.onExecFut.isDone());
         assertFalse(execAsyncFut.isDone());
@@ -357,7 +395,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         t.onExecFut.get(getTestTimeout());
 
-        checkStateAndMetaStorage(n, t, STARTED, save);
+        checkStateAndMetaStorage(n, t, STARTED, save, false);
         assertFalse(execAsyncFut.isDone());
 
         if (save) {
@@ -366,20 +404,20 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
             t.taskFut.onDone(complete(null));
             execAsyncFut.get(getTestTimeout());
 
-            checkStateAndMetaStorage(n, t, COMPLETED, true);
+            checkStateAndMetaStorage(n, t, COMPLETED, true, true);
 
             ObservingCheckpointListener checkpointLsnr = new ObservingCheckpointListener();
 
             GridFutureAdapter<Void> onMarkCheckpointBeginFut = checkpointLsnr.onMarkCheckpointBeginAsync(
                 ctx -> {
-                    checkStateAndMetaStorage(n, t, null, true);
+                    checkStateAndMetaStorage(n, t, null, true, false);
                     assertTrue(toRmv(n).containsKey(t.name()));
                 }
             );
 
             GridFutureAdapter<Void> afterCheckpointEndFut = checkpointLsnr.afterCheckpointEndAsync(
                 ctx -> {
-                    checkStateAndMetaStorage(n, t, null, false);
+                    checkStateAndMetaStorage(n, t, null, false, false);
                     assertFalse(toRmv(n).containsKey(t.name()));
                 }
             );
@@ -394,7 +432,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
             t.taskFut.onDone(complete(null));
             execAsyncFut.get(getTestTimeout());
 
-            checkStateAndMetaStorage(n, t, null, false);
+            checkStateAndMetaStorage(n, t, null, false, false);
         }
     }
 
@@ -419,25 +457,34 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @param t Task.
      * @param expState Expected state of the task, {@code null} means that the task should not be.
      * @param expSaved Task is expected to be stored in MetaStorage.
+     * @param expDone Expect completion of the futures task.
      * @throws IgniteCheckedException If failed.
      */
     private void checkStateAndMetaStorage(
         IgniteEx n,
-        DurableBackgroundTask t,
+        DurableBackgroundTask<?> t,
         @Nullable State expState,
-        boolean expSaved
+        boolean expSaved,
+        boolean expDone
     ) throws IgniteCheckedException {
-        DurableBackgroundTaskState taskState = tasks(n).get(t.name());
+        DurableBackgroundTaskState<?> taskState = tasks(n).get(t.name());
 
         if (expState == null)
             assertNull(taskState);
-        else
+        else {
             assertEquals(expState, taskState.state());
+            assertEquals(expSaved, taskState.saved());
+            assertEquals(expDone, taskState.outFuture().isDone());
+        }
 
-        DurableBackgroundTask ser = (DurableBackgroundTask)metaStorageOperation(n, ms -> ms.read(metaStorageKey(t)));
+        DurableBackgroundTask<?> ser =
+            (DurableBackgroundTask<?>)metaStorageOperation(n, ms -> ms.read(metaStorageKey(t)));
 
-        if (expSaved)
+        if (expSaved) {
             assertEquals(t.name(), ser.name());
+
+            assertTrue(t.getClass().isInstance(ser));
+        }
         else
             assertNull(ser);
     }
@@ -450,7 +497,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @param save Save task to MetaStorage.
      * @return Task future.
      */
-    private IgniteInternalFuture<Void> execAsync(IgniteEx n, DurableBackgroundTask t, boolean save) {
+    private <R> IgniteInternalFuture<R> execAsync(IgniteEx n, DurableBackgroundTask<R> t, boolean save) {
         return durableBackgroundTask(n).executeAsync(t, save);
     }
 
@@ -460,7 +507,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @param n Node.
      * @return Map of tasks that will be removed from the MetaStorage.
      */
-    private Map<String, DurableBackgroundTask> toRmv(IgniteEx n) {
+    private Map<String, DurableBackgroundTask<?>> toRmv(IgniteEx n) {
         return getFieldValue(durableBackgroundTask(n), "toRmv");
     }
 
@@ -470,7 +517,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @param n Node.
      * @return Task states map.
      */
-    private Map<String, DurableBackgroundTaskState> tasks(IgniteEx n) {
+    private Map<String, DurableBackgroundTaskState<?>> tasks(IgniteEx n) {
         return getFieldValue(durableBackgroundTask(n), "tasks");
     }
 

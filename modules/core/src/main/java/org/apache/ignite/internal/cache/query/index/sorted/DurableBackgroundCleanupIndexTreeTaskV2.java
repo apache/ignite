@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
  * Task for background cleaning of index trees.
  */
 public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferObject implements
-    DurableBackgroundTask {
+    DurableBackgroundTask<Long> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -177,10 +177,10 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx) {
+    @Override public IgniteInternalFuture<DurableBackgroundTaskResult<Long>> executeAsync(GridKernalContext ctx) {
         log = ctx.log(DurableBackgroundCleanupIndexTreeTaskV2.class);
 
-        IgniteInternalFuture<DurableBackgroundTaskResult> outFut;
+        IgniteInternalFuture<DurableBackgroundTaskResult<Long>> outFut;
 
         CacheGroupContext grpCtx = ctx.cache().cacheGroup(CU.cacheGroupId(cacheName, grpName));
 
@@ -195,7 +195,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                 Map<Integer, RootPage> rootPages = findIndexRootPages(grpCtx, cacheName, newTreeName, segments);
 
                 if (!rootPages.isEmpty()) {
-                    GridFutureAdapter<DurableBackgroundTaskResult> fut = new GridFutureAdapter<>();
+                    GridFutureAdapter<DurableBackgroundTaskResult<Long>> fut = new GridFutureAdapter<>();
 
                     GridWorker w = new GridWorker(
                         ctx.igniteInstanceName(),
@@ -205,9 +205,9 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                         /** {@inheritDoc} */
                         @Override protected void body() {
                             try {
-                                destroyIndexTrees(grpCtx, rootPages, cacheName, newTreeName, idxName);
+                                long pageCnt = destroyIndexTrees(grpCtx, rootPages, cacheName, newTreeName, idxName);
 
-                                fut.onDone(DurableBackgroundTaskResult.complete(null));
+                                fut.onDone(DurableBackgroundTaskResult.complete(pageCnt));
                             }
                             catch (Throwable t) {
                                 fut.onDone(DurableBackgroundTaskResult.restart(t));
@@ -225,14 +225,14 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                     outFut = fut;
                 }
                 else
-                    outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete(null));
+                    outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete());
             }
             catch (Throwable t) {
                 outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.restart(t));
             }
         }
         else
-            outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete(null));
+            outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete());
 
         return outFut;
     }
@@ -245,9 +245,10 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @param cacheName Cache name.
      * @param treeName Name of underlying index tree name.
      * @param idxName Index name.
+     * @return Total number of pages recycled from this tree.
      * @throws IgniteCheckedException If failed.
      */
-    static void destroyIndexTrees(
+    public static long destroyIndexTrees(
         CacheGroupContext grpCtx,
         Map<Integer, RootPage> rootPages,
         String cacheName,
@@ -261,20 +262,25 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
             grpCtx.shared().kernalContext().metric()
         );
 
+        long pageCnt = 0;
+
         for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
             InlineIndexTree tree = IDX_TREE_FACTORY.create(grpCtx, e.getValue(), treeName, stats);
 
             grpCtx.shared().database().checkpointReadLock();
 
             try {
-                tree.destroy(null, true);
+                pageCnt += tree.destroy(null, true);
 
-                grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, e.getKey());
+                if (grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, e.getKey()) != null)
+                    pageCnt++;
             }
             finally {
                 grpCtx.shared().database().checkpointReadUnlock();
             }
         }
+
+        return pageCnt;
     }
 
     /**

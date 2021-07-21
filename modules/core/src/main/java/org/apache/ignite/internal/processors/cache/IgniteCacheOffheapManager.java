@@ -563,11 +563,14 @@ public interface IgniteCacheOffheapManager {
     public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
+     * Dropping the root page of the index tree.
+     *
      * @param cacheId Cache ID.
      * @param idxName Index name.
+     * @return Dropped root page of the index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+    @Nullable RootPage dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * Renaming the root page of the index tree.

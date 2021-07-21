@@ -22,8 +22,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
  * Durable task that should be used to do long operations (e.g. index deletion) in background.
+ * @param <R> Type of the result of the task.
  */
-public interface DurableBackgroundTask extends Serializable {
+public interface DurableBackgroundTask<R> extends Serializable {
     /**
      * Getting the name of the task to identify it.
      * Also used as part of a key for storage in a MetaStorage.
@@ -45,14 +46,14 @@ public interface DurableBackgroundTask extends Serializable {
      * @param ctx Kernal context.
      * @return Future of the tasks.
      */
-    IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx);
+    IgniteInternalFuture<DurableBackgroundTaskResult<R>> executeAsync(GridKernalContext ctx);
 
     /**
      * Converting the current task to another after restoring from metaStorage.
      *
      * @return Converted task.
      */
-    default DurableBackgroundTask convertAfterRestoreIfNeeded() {
+    default DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
         return this;
     }
 }

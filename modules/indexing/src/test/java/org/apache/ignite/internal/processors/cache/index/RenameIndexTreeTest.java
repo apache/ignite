@@ -28,7 +28,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -41,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
@@ -53,7 +51,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl.MAX_IDX_NAME_LEN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Class for testing index tree renaming.
@@ -367,31 +364,6 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
         }
 
         return rootPages;
-    }
-
-    /**
-     * Getting index description.
-     *
-     * @param idx Index.
-     * @return Index description.
-     */
-    private SortedIndexDefinition indexDefinition(Index idx) {
-        return getFieldValue(idx, "def");
-    }
-
-    /**
-     * Getting the cache index.
-     *
-     * @param n Node.
-     * @param cache Cache.
-     * @param idxName Index name.
-     * @return Index.
-     */
-    @Nullable private Index index(IgniteEx n, IgniteCache<Integer, Person> cache, String idxName) {
-        return n.context().indexProcessor().indexes(cacheContext(cache)).stream()
-            .filter(i -> idxName.equals(i.name()))
-            .findAny()
-            .orElse(null);
     }
 
     /**
