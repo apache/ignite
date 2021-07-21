@@ -1036,6 +1036,9 @@ public class ITNodeTest {
         // apply tasks to leader
         sendTestTaskAndWait(leader);
 
+        // wait for all update received, before election of new leader
+        cluster.ensureSame();
+
         // stop leader
         assertTrue(cluster.stop(leader.getNodeId().getPeerId().getEndpoint()));
 
@@ -1045,22 +1048,9 @@ public class ITNodeTest {
 
         assertNotNull(leader);
 
-        // get current leader priority value
-        int leaderPriority = leader.getNodeId().getPeerId().getPriority();
-
-        // get current leader log size
-        int peer1LogSize = cluster.getFsmByPeer(peers.get(1)).getLogs().size();
-        int peer2LogSize = cluster.getFsmByPeer(peers.get(2)).getLogs().size();
-
-        // if the leader is lower priority value
-        if (leaderPriority == 10) {
-            // we just compare the two peers' log size value;
-            assertTrue(peer2LogSize > peer1LogSize);
-        }
-        else {
-            assertEquals(60, leader.getNodeId().getPeerId().getPriority());
-            assertEquals(100, leader.getNodeTargetPriority());
-        }
+        // nodes with the same log size will elect leader only by priority
+        assertEquals(60, leader.getNodeId().getPeerId().getPriority());
+        assertEquals(100, leader.getNodeTargetPriority());
     }
 
     @Test
