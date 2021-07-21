@@ -50,6 +50,7 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -256,6 +257,7 @@ public class ITCliServiceTest {
     }
 
     @Test
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15157")
     public void testAddPeerRemovePeer() throws Exception {
         PeerId peer3 = new PeerId(TestUtils.getLocalAddress(), TestUtils.INIT_PORT + 3);
         assertTrue(cluster.start(peer3.getEndpoint()));
