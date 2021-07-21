@@ -72,6 +72,8 @@ public final class SchemaBuilders {
     }
 
     /**
+     * Creates primary index builder.
+     *
      * @return Primary index builder.
      */
     public static PrimaryIndexBuilder pkIndex() {
@@ -79,6 +81,8 @@ public final class SchemaBuilders {
     }
 
     /**
+     * Creates sorted index builder.
+     *
      * @param name Index name.
      * @return Sorted index builder.
      */
@@ -87,6 +91,8 @@ public final class SchemaBuilders {
     }
 
     /**
+     * Creates partial index builder.
+     *
      * @param name Index name.
      * @return Partial index builder.
      */
@@ -95,6 +101,8 @@ public final class SchemaBuilders {
     }
 
     /**
+     * Creates hash index builder.
+     *
      * @param name Index name.
      * @return Hash index builder.
      */

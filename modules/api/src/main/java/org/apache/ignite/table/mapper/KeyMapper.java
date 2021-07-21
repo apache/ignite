@@ -18,7 +18,9 @@
 package org.apache.ignite.table.mapper;
 
 /**
+ * Key mapper interface.
  *
+ * @param <K> Key type.
  */
-public interface KeyMapper<T> {
+public interface KeyMapper<K> {
 }

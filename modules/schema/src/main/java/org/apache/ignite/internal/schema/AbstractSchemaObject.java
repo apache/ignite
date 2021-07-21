@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.schema;
 
 import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.schema.SchemaObject;
+import org.apache.ignite.schema.SchemaNamedObject;
 
 /**
  * Schema object base class.
  */
-public abstract class AbstractSchemaObject implements SchemaObject {
+public abstract class AbstractSchemaObject implements SchemaNamedObject {
     /** Schema object name. */
     private final String name;
 

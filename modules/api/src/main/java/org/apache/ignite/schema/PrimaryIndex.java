@@ -27,7 +27,9 @@ public interface PrimaryIndex extends SortedIndex {
     String PRIMARY_KEY_INDEX_NAME = "PK";
 
     /**
-     * @return Affinity columns
+     * Returns affinity columns.
+     *
+     * @return Columns list.
      */
     List<String> affinityColumns();
 }

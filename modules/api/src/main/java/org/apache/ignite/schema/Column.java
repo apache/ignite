@@ -20,25 +20,31 @@ package org.apache.ignite.schema;
 /**
  * Table column descriptor.
  */
-public interface Column extends SchemaObject {
+public interface Column extends SchemaNamedObject {
     /**
+     * Returns column name.
+     *
      * @return Column name.
      */
     @Override String name();
 
     /**
+     * Returns column type.
+     *
      * @return Column type.
      */
     ColumnType type();
 
     /**
-     * {@code Nullable} flag.
+     * Returns {@code Nullable} flag value.
      *
      * @return {@code True} if null-values is allowed, {@code false} otherwise.
      */
     boolean nullable();
 
     /**
+     * Returns column default value.
+     *
      * @return Default column value.
      */
     Object defaultValue();

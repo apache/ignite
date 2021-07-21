@@ -93,7 +93,7 @@ public interface Table extends TableView<Tuple> {
      * @return Table record view.
      */
     default <R> RecordView<R> recordView(Class<R> recCls) {
-        return recordView(Mappers.ofRowClass(recCls));
+        return recordView(Mappers.ofRecordClass(recCls));
     }
 
     /**

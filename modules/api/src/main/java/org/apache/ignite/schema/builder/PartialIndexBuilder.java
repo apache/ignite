@@ -25,6 +25,8 @@ import org.apache.ignite.schema.PartialIndex;
  */
 public interface PartialIndexBuilder extends SortedIndexBuilder {
     /**
+     * Sets partial index expression.
+     *
      * @param expr Partial index expression.
      * @return {@code this} for chaining.
      */
@@ -37,6 +39,8 @@ public interface PartialIndexBuilder extends SortedIndexBuilder {
     @Override PartialIndexBuilder withHints(Map<String, String> hints);
 
     /**
+     * Builds partial index.
+     *
      * @return Partial index.
      */
     @Override PartialIndex build();

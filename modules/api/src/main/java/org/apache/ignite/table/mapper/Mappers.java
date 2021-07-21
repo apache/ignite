@@ -21,27 +21,68 @@ package org.apache.ignite.table.mapper;
  * Mappers shortcut methods.
  */
 public final class Mappers {
-    public static <K> KeyMapper<K> ofKeyClass(Class<K> keyCls) {
+    /**
+     * Factory method for key mapper.
+     *
+     * @param cls Key class.
+     * @param <K> Key type.
+     * @return Mapper for key.
+     */
+    public static <K> KeyMapper<K> ofKeyClass(Class<K> cls) {
         return null;
     }
 
-    public static <V> ValueMapper<V> ofValueClass(Class<V> keyCls) {
+    /**
+     * Factory method for value mapper.
+     *
+     * @param cls Value class.
+     * @param <V> Value type.
+     * @return Mapper for value.
+     */
+    public static <V> ValueMapper<V> ofValueClass(Class<V> cls) {
         return null;
     }
 
-    public static <V> ValueMapper.Builder<V> ofValueClassBuilder(Class<V> valCls) {
+    /**
+     * Factory method for value mapper builder.
+     *
+     * @param cls Value class.
+     * @param <V> Value type.
+     * @return Mapper builder for value.
+     */
+    public static <V> ValueMapper.Builder<V> ofValueClassBuilder(Class<V> cls) {
         return null;
     }
 
+    /**
+     * Identity key mapper.
+     *
+     * @param <R> Record type.
+     * @return Identity key mapper.
+     */
     public static <R> KeyMapper<R> identity() {
         return null;
     }
 
-    public static <R> RecordMapper<R> ofRowClass(Class<R> rowCls) {
+    /**
+     * Factory method for record mapper builder.
+     *
+     * @param cls Record class.
+     * @param <R> Record type.
+     * @return Mapper builder for record.
+     */
+    public static <R> RecordMapper<R> ofRecordClass(Class<R> cls) {
         return null;
     }
 
-    public static <R> RecordMapper.Builder<R> ofRowClassBuilder(Class<R> targetClass) {
+    /**
+     * Factory method for value mapper builder.
+     *
+     * @param cls Record class.
+     * @param <R> Record type.
+     * @return Mapper builder for record.
+     */
+    public static <R> RecordMapper.Builder<R> ofRecordClassBuilder(Class<R> cls) {
         return null;
     }
 

@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryObject;
 
 /**
  * Tuple represents arbitrary set of columns whose values is accessible by column name.
- *
+ * <p>
  * Provides specialized method for some value-types to avoid boxing/unboxing.
  */
 public interface Tuple {
@@ -32,6 +32,7 @@ public interface Tuple {
      *
      * @param colName Column name.
      * @param def Default value.
+     * @param <T> Column default value type.
      * @return Column value if this tuple contains a column with the specified name. Otherwise returns {@code default}.
      */
     <T> T valueOrDefault(String colName, T def);

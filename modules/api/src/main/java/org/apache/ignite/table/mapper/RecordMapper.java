@@ -21,14 +21,41 @@ import java.util.function.Function;
 import org.apache.ignite.table.Tuple;
 
 /**
+ * Record mapper interface.
  *
+ * @param <R> Record type.
  */
 public interface RecordMapper<R> {
+    /**
+     * Record mapper builder.
+     *
+     * @param <R> Record type.
+     */
     public interface Builder<R> {
+        /**
+         * Map a field to a type of given class.
+         *
+         * @param fieldName Field name.
+         * @param targetClass Target class.
+         * @return {@code this} for chaining.
+         */
         public Builder<R> map(String fieldName, Class<?> targetClass);
 
-        public Builder<R> map(String fieldName, Function<Tuple, Object> mapping);
+        /**
+         * Adds a functional mapping for a field,
+         * the result depends on function call for every particular row.
+         *
+         * @param fieldName Field name.
+         * @param mappingFunction Mapper function.
+         * @return {@code this} for chaining.
+         */
+        public Builder<R> map(String fieldName, Function<Tuple, Object> mappingFunction);
 
+        /**
+         * Builds record mapper.
+         *
+         * @return Mapper.
+         */
         public RecordMapper<R> build();
     }
 }

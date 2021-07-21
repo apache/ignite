@@ -373,12 +373,12 @@ public class Example {
         }
 
         RecordView<TruncatedRecord> truncatedView = t.recordView(
-            Mappers.ofRowClassBuilder(TruncatedRecord.class)
+            Mappers.ofRecordClassBuilder(TruncatedRecord.class)
                 .map("upgradedObject", JavaPersonV2.class).build());
 
         // Or we can have a custom conditional type selection.
         RecordView<TruncatedRecord> truncatedView2 = t.recordView(
-            Mappers.ofRowClassBuilder(TruncatedRecord.class)
+            Mappers.ofRecordClassBuilder(TruncatedRecord.class)
                 .map("upgradedObject", (row) -> {
                     BinaryObject bObj = row.binaryObjectField("upgradedObject");
                     int dept = row.intValue("department");

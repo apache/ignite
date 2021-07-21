@@ -43,6 +43,8 @@ public interface SortedIndexBuilder extends SchemaObjectBuilder {
     @Override SortedIndexBuilder withHints(Map<String, String> hints);
 
     /**
+     * Builds sorted index.
+     *
      * @return Sorted index.
      */
     @Override SortedIndex build();
@@ -67,12 +69,16 @@ public interface SortedIndexBuilder extends SchemaObjectBuilder {
         SortedIndexColumnBuilder asc();
 
         /**
+         * Sets column name.
+         *
          * @param name Column name.
          * @return {@code this} for chaining.
          */
         SortedIndexColumnBuilder withName(String name);
 
         /**
+         * Builds and adds the column to the index.
+         *
          * @return Parent builder for chaining.
          */
         SortedIndexBuilder done();

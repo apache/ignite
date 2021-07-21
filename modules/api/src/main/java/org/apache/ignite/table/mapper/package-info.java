@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema;
-
 /**
- * Schema object.
+ * Contains user classes mapping API classes and mapper builders.
  */
-public interface SchemaObject {
-    /**
-     * @return Schema object name.
-     */
-    String name();
-}
+package org.apache.ignite.table.mapper;

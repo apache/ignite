@@ -19,8 +19,13 @@ package org.apache.ignite.schema;
 
 import java.util.List;
 
+/**
+ * Columnar index interface.
+ */
 public interface ColumnarIndex {
     /**
+     * Configured index columns.
+     *
      * @return Index columns.
      */
     List<? extends IndexColumn> columns();

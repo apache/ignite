@@ -20,14 +20,16 @@ package org.apache.ignite.schema;
 /**
  * Table index base interface.
  */
-public interface TableIndex extends SchemaObject {
+public interface TableIndex extends SchemaNamedObject {
     /**
+     * Returns index name.
+     *
      * @return Index name.
      */
     @Override String name();
 
     /**
-     * Index type.
+     * Returns index type.
      *
      * @return Index type.
      */

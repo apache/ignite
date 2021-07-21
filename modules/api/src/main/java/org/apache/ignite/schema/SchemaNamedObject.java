@@ -15,26 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.builder;
-
-import java.util.Map;
+package org.apache.ignite.schema;
 
 /**
- * Builder base interface.
+ * Schema named object.
  */
-public interface SchemaObjectBuilder {
+public interface SchemaNamedObject {
     /**
-     * Provide hints to builder.
+     * Returns object name.
      *
-     * @param hints Hints.
-     * @return {@code This} for chaining.
+     * @return Schema object name.
      */
-    SchemaObjectBuilder withHints(Map<String, String> hints);
-
-    /**
-     * Builds schema object.
-     *
-     * @return Built object.
-     */
-    Object build();
+    String name();
 }

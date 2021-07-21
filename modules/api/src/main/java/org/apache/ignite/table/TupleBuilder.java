@@ -31,6 +31,8 @@ public interface TupleBuilder {
     TupleBuilder set(String colName, Object value);
 
     /**
+     * Builds tuple.
+     *
      * @return Tuple.
      */
     Tuple build();

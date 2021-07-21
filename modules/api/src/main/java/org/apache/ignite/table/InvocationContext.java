@@ -24,14 +24,18 @@ package org.apache.ignite.table;
  * InvokeProcessor executes atomically under lock which makes impossible
  * to trigger 'live-schema' upgrade within the invoke operation.
  * Any try to update the row leading to schema change will end up with {@link InvokeProcessorException}.
+ * <p>
+ * New value MUST BE compliant with the current schema version.
  *
  * @param <K> Target object type.
  * @param <V> Value object type.
- * @apiNote New value MUST BE compliant with the current schema version.
+ * @see InvokeProcessor
  */
 public interface InvocationContext<K, V> {
     /**
-     * @return Processor invocation arguments provided by user to invoke operation.
+     * Returns arguments provided by user for invoke operation.
+     *
+     * @return Agruments for invocation processor.
      */
     Object[] args();
 

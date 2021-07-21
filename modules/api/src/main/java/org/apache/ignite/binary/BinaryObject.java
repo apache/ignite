@@ -23,7 +23,9 @@ package org.apache.ignite.binary;
 //TODO: IGNITE-14316: Replace this stub with a proper interface.
 public interface BinaryObject {
     /**
+     * Return binary object bytes.
+     *
      * @return Serialized data.
      */
-    byte[] toBytes();
+    byte[] bytes();
 }

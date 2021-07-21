@@ -15,26 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.builder;
-
-import java.util.Map;
-
 /**
- * Builder base interface.
+ * Configuration schemas for Table and Schema components.
  */
-public interface SchemaObjectBuilder {
-    /**
-     * Provide hints to builder.
-     *
-     * @param hints Hints.
-     * @return {@code This} for chaining.
-     */
-    SchemaObjectBuilder withHints(Map<String, String> hints);
-
-    /**
-     * Builds schema object.
-     *
-     * @return Built object.
-     */
-    Object build();
-}
+package org.apache.ignite.configuration.schemas.table;

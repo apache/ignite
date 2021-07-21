@@ -25,6 +25,8 @@ import org.apache.ignite.schema.HashIndex;
  */
 public interface HashIndexBuilder extends SchemaObjectBuilder {
     /**
+     * Sets indexed columns.
+     *
      * @param columns Indexed columns.
      * @return {@code this} for chaining.
      */
@@ -34,6 +36,8 @@ public interface HashIndexBuilder extends SchemaObjectBuilder {
     @Override HashIndexBuilder withHints(Map<String, String> hints);
 
     /**
+     * Builds hash index.
+     *
      * @return Hash index.
      */
     @Override HashIndex build();

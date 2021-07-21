@@ -35,6 +35,8 @@ public interface PrimaryIndexBuilder extends SortedIndexBuilder {
     @Override PrimaryIndexColumnBuilder addIndexColumn(String name);
 
     /**
+     * Builds primary index.
+     *
      * @return Primary index.
      */
     @Override PrimaryIndex build();

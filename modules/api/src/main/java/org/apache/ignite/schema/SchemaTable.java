@@ -23,44 +23,56 @@ import org.apache.ignite.schema.modification.TableModificationBuilder;
 /**
  * Schema table descriptor.
  */
-public interface SchemaTable extends SchemaObject {
+public interface SchemaTable extends SchemaNamedObject {
     /** Default schema name. */
     String DEFAULT_SCHEMA_NAME = "PUBLIC";
 
     /**
+     * Returns table name.
+     *
      * @return Table name.
      */
     @Override String name();
 
     /**
-     * @return Key columns.
+     * Returns key columns.
+     *
+     * @return List of columns.
      */
     Collection<Column> keyColumns();
 
     /**
-     * @return Affinity columns.
+     * Returns affinity columns.
+     *
+     * @return List of columns.
      */
     Collection<Column> affinityColumns();
 
     /**
-     * @return Value columns.
+     * Returns value columns.
+     *
+     * @return List of columns.
      */
     Collection<Column> valueColumns();
 
     /**
-     * Schema name + Table name
+     * Returns canonical table name (Concatenation of schema name and table name).
      *
      * @return Canonical table name.
      */
     String canonicalName();
 
     /**
-     * @return Table indexes.
+     * Returns table indices.
+     *
+     * @return Collection of indexes.
      */
     Collection<TableIndex> indices();
 
     /**
-     * @return Schema modification builder.
+     * Converts table descriptor to table modification builder.
+     *
+     * @return Table modification builder.
      */
     TableModificationBuilder toBuilder();
 }

@@ -16,7 +16,8 @@
  */
 
 /**
- * <!-- Package description. -->
- * Contains schema description, row assembly and field accessor classes.
+ * Contains internal classes for schema definition and row assembling,
+ * schema manipulation and schema history maintaning logic,
+ * user object marshallers.
  */
 package org.apache.ignite.internal.schema;

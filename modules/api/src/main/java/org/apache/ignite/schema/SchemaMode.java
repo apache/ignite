@@ -19,13 +19,20 @@ package org.apache.ignite.schema;
 
 /**
  * Schema mode.
- *
+ * <p>
  * Defines the way inserting data will be validated against the schema and schema evolution capabilities.
  */
 public enum SchemaMode {
-    /** Normal mode offers strong validation for the inserting data. Explicit schema changes only are allowed. */
+    /**
+     * Normal mode offers strong validation for the inserting data.
+     * Explicit schema changes only are allowed.
+     */
     STRICT_SCHEMA,
 
-    /** Extended mode that allows the schema to be fit the inserting data automatically. Only safe implicit schema changes are allowed, e.g. adding extra columns and widening column type. Changes like column removal or narrowing column type won't be applied implicitly. */
+    /**
+     * Extended mode that allows the schema to be fit the inserting data automatically.
+     * Only safe implicit schema changes are allowed, e.g. adding extra columns and widening column type.
+     * Changes like column removal or narrowing column type won't be applied implicitly.
+     */
     LIVE_SCHEMA
 }

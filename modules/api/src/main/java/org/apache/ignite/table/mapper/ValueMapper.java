@@ -21,16 +21,49 @@ import java.util.function.Function;
 import org.apache.ignite.table.Tuple;
 
 /**
+ * Value mapper interface.
  *
+ * @param <V> Value type.
  */
 public interface ValueMapper<V> {
+    /**
+     * Value mapper builder.
+     *
+     * @param <V> Value type.
+     */
     public interface Builder<V> {
-        public Builder<V> deserializeTo(Class<?> cls);
+        /**
+         * Sets a target class to deserialize to.
+         *
+         * @param targetClass Target class.
+         * @return {@code this} for chaining.
+         */
+        public Builder<V> deserializeTo(Class<?> targetClass);
 
-        public Builder<V> map(String fieldName, Class<?> cls);
+        /**
+         * Map a field to a type of given class.
+         *
+         * @param fieldName Field name.
+         * @param targetClass Target class.
+         * @return {@code this} for chaining.
+         */
+        public Builder<V> map(String fieldName, Class<?> targetClass);
 
-        public Builder<V> map(String fieldName, Function<Tuple, Object> mapper);
+        /**
+         * Adds a functional mapping for a field,
+         * the result depends on function call for every particular row.
+         *
+         * @param fieldName Field name.
+         * @param mapperFunction Mapper function.
+         * @return {@code this} for chaining.
+         */
+        public Builder<V> map(String fieldName, Function<Tuple, Object> mapperFunction);
 
+        /**
+         * Builds value mapper.
+         *
+         * @return Mapper.
+         */
         public ValueMapper<V> build();
     }
 }

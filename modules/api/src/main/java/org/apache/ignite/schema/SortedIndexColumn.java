@@ -22,6 +22,8 @@ package org.apache.ignite.schema;
  */
 public interface SortedIndexColumn extends IndexColumn {
     /**
+     * Returns column sort order.
+     *
      * @return Column sort order.
      */
     SortOrder sortOrder();
