@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -144,6 +145,10 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param type Event type (start or stop).
      */
     public void addEvent(int type) {
+        IgniteSecurity security = cctx.kernalContext().security();
+
+        UUID subjId = security.enabled() ? security.securityContext().subject().id() : null;
+
         addEvent(
             0,
             null,
@@ -156,7 +161,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             false,
             null,
             false,
-            null,
+            subjId,
             null,
             null,
             false);
