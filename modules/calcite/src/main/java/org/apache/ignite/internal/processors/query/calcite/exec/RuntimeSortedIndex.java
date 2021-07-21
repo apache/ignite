@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -128,35 +127,41 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
             this.rows = rows;
             this.upper = upper;
 
-            idx = computeStartIdx(rows, lower) - 1;
+            idx = lower == null ? 0 : lowerBound(rows, lower);
         }
 
         /**
+         * Searches the lower bound (skipping duplicates) using a binary search.
+         *
          * @param rows List of rows.
-         * @param lower Lower bound.
+         * @param target Lower bound.
          * @return Lower bound position in the list.
          */
-        private int computeStartIdx(List<Row> rows, @Nullable Row lower) {
-            int fromIdx = lower == null ? -1 : Collections.binarySearch(rows, lower, comp);
+        private int lowerBound(List<Row> rows, Row target) {
+            int low = 0, high = rows.size() - 1, idx = -1;
 
-            if (fromIdx < 0)
-                fromIdx = -fromIdx - 1;
-            else {
-                // Skip duplcates.
-                while (fromIdx > 0 && comp.compare(rows.get(fromIdx - 1), rows.get(fromIdx)) == 0)
-                    --fromIdx;
+            while (low <= high) {
+                int mid = (high - low) / 2 + low;
+
+                if (comp.compare(rows.get(mid), target) > 0)
+                    high = mid - 1;
+                else if (comp.compare(rows.get(mid), target) == 0) {
+                    idx = mid;
+                    high = mid - 1;
+                }
+                else
+                    low = mid + 1;
             }
 
-            return fromIdx;
+            return idx == -1 ? low : idx;
         }
-
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (idx == (rows.size() - 1) || (upper != null && comp.compare(upper, rows.get(idx + 1)) < 0))
+            if (idx == rows.size() || (upper != null && comp.compare(upper, rows.get(idx)) < 0))
                 return false;
 
-            row = rows.get(++idx);
+            row = rows.get(idx++);
 
             return true;
         }
