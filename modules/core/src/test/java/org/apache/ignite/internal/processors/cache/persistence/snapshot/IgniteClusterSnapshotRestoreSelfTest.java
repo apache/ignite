@@ -44,6 +44,7 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -94,6 +95,19 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Cache value builder. */
     private Function<Integer, Object> valBuilder = String::valueOf;
 
+    /** Reset consistent ID flag. */
+    private boolean resetConsistentId;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (resetConsistentId)
+            cfg.setConsistentId(null);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
         return valBuilder;
@@ -102,6 +116,20 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
+        doRestoreAllGroups();
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRestoreAllGroupsWithoutConsistentId() throws Exception {
+        resetConsistentId = true;
+
+        doRestoreAllGroups();
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void doRestoreAllGroups() throws Exception {
         CacheConfiguration<Integer, Object> cacheCfg1 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
 
