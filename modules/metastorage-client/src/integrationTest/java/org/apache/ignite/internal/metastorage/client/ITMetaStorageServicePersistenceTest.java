@@ -45,6 +45,7 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.Peer;
@@ -343,8 +344,10 @@ public class ITMetaStorageServicePersistenceTest {
     /**
      * Creates a cluster service.
      */
-    private ClusterService clusterService(String name, int port, List<NetworkAddress> servers) {
-        var context = new ClusterLocalConfiguration(name, port, servers, SERIALIZATION_REGISTRY);
+    private ClusterService clusterService(String name, int port, NetworkAddress otherPeer) {
+        var nodeFinder = new StaticNodeFinder(List.of(otherPeer));
+
+        var context = new ClusterLocalConfiguration(name, port, nodeFinder, SERIALIZATION_REGISTRY);
 
         var network = NETWORK_FACTORY.createClusterService(context);
 
@@ -365,7 +368,7 @@ public class ITMetaStorageServicePersistenceTest {
     private JRaftServerImpl startServer(int idx, KeyValueStorage storage) {
         var addr = new NetworkAddress(getLocalAddress(), PORT);
 
-        ClusterService service = clusterService("server" + idx, PORT + idx, List.of(addr));
+        ClusterService service = clusterService("server" + idx, PORT + idx, addr);
 
         Path jraft = workDir.resolve("jraft" + idx);
 
@@ -407,8 +410,7 @@ public class ITMetaStorageServicePersistenceTest {
      * Starts a client with a specific address.
      */
     private RaftGroupService startClient(String groupId, NetworkAddress addr) {
-        ClusterService clientNode = clusterService(
-            "client_" + groupId + "_", CLIENT_PORT + clients.size(), List.of(addr));
+        ClusterService clientNode = clusterService("client_" + groupId + "_", CLIENT_PORT + clients.size(), addr);
 
         RaftGroupServiceImpl client = new RaftGroupServiceImpl(groupId, clientNode, FACTORY, 10_000,
             List.of(new Peer(addr)), false, 200) {

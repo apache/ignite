@@ -17,9 +17,7 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
-import java.util.List;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
@@ -34,16 +32,10 @@ public class TestIgniteRpcServer extends IgniteRpcServer {
 
     /**
      * @param clusterService Cluster service.
-     * @param servers Server list.
      * @param nodeManager Node manager.
      * @param nodeOptions Node options.
      */
-    public TestIgniteRpcServer(
-        ClusterService clusterService,
-        List<NetworkAddress> servers,
-        NodeManager nodeManager,
-        NodeOptions nodeOptions
-    ) {
+    public TestIgniteRpcServer(ClusterService clusterService, NodeManager nodeManager, NodeOptions nodeOptions) {
         super(
             clusterService,
             nodeManager,

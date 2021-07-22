@@ -86,7 +86,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
             })
             .config(opts -> opts.memberAlias(consistentId))
             .transport(opts -> opts.transportFactory(new DelegatingTransportFactory(messagingService, config -> transport)))
-            .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())));
+            .membership(opts -> opts.seedMembers(parseAddresses(context.getNodeFinder().findNodes())));
 
         // resolve cyclic dependencies
         messagingService.setCluster(cluster);
