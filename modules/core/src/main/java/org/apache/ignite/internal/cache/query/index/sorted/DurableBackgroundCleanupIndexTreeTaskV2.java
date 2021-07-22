@@ -22,9 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -33,6 +36,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -43,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendi
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,7 +70,6 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     public static InlineIndexTreeFactory IDX_TREE_FACTORY = new InlineIndexTreeFactory();
 
     /** Logger. */
-    @GridToStringExclude
     @Nullable private transient volatile IgniteLogger log;
 
     /** Unique id. */
@@ -93,9 +96,14 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     /** Need to rename index root pages. */
     private transient volatile boolean needToRen;
 
+    /** Index trees. Mapping: segment number -> index tree. */
+    @Nullable private transient volatile Map<Integer, InlineIndexTree> trees;
+
     /** Worker cleaning index trees. */
-    @GridToStringExclude
     @Nullable private transient volatile GridWorker worker;
+
+    /** Total number of pages recycled from index trees. */
+    private final AtomicLong pageCnt = new AtomicLong();
 
     /**
      * Constructor.
@@ -106,6 +114,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @param oldTreeName Old name of underlying index tree name.
      * @param newTreeName New name of underlying index tree name.
      * @param segments Number of segments.
+     * @param trees Index trees.
      */
     public DurableBackgroundCleanupIndexTreeTaskV2(
         @Nullable String grpName,
@@ -113,7 +122,8 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
         String idxName,
         String oldTreeName,
         String newTreeName,
-        int segments
+        int segments,
+        @Nullable InlineIndexTree[] trees
     ) {
         uid = UUID.randomUUID().toString();
         this.grpName = grpName;
@@ -122,6 +132,18 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
         this.oldTreeName = oldTreeName;
         this.newTreeName = newTreeName;
         this.segments = segments;
+
+        if (trees != null) {
+            assert trees.length == segments :
+                "Invalid number of index trees [trees=" + trees.length + ", segments=" + segments + ']';
+
+            Map<Integer, InlineIndexTree> trees0 = new ConcurrentHashMap<>();
+
+            for (int i = 0; i < trees.length; i++)
+                trees0.put(i, trees[i]);
+
+            this.trees = trees0;
+        }
 
         needToRen = true;
     }
@@ -176,6 +198,8 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<DurableBackgroundTaskResult<Long>> executeAsync(GridKernalContext ctx) {
+        assert worker == null;
+
         log = ctx.log(DurableBackgroundCleanupIndexTreeTaskV2.class);
 
         IgniteInternalFuture<DurableBackgroundTaskResult<Long>> outFut;
@@ -190,10 +214,21 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                     needToRen = false;
                 }
 
-                Map<Integer, RootPage> rootPages = findIndexRootPages(grpCtx, cacheName, newTreeName, segments);
+                Map<Integer, InlineIndexTree> trees = this.trees;
 
-                if (!rootPages.isEmpty()) {
+                if (trees == null) {
+                    Map<Integer, RootPage> rootPages = findIndexRootPages(grpCtx, cacheName, newTreeName, segments);
+
+                    Map<Integer, InlineIndexTree> trees0 = indexTrees(grpCtx, rootPages, newTreeName);
+
+                    if (trees0 != null)
+                        this.trees = trees = new ConcurrentHashMap<>(trees0);
+                }
+
+                if (!F.isEmpty(trees)) {
                     GridFutureAdapter<DurableBackgroundTaskResult<Long>> fut = new GridFutureAdapter<>();
+
+                    Map<Integer, InlineIndexTree> finalTrees = trees;
 
                     GridWorker w = new GridWorker(
                         ctx.igniteInstanceName(),
@@ -203,9 +238,22 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                         /** {@inheritDoc} */
                         @Override protected void body() {
                             try {
-                                long pageCnt = destroyIndexTrees(grpCtx, rootPages, cacheName, newTreeName, idxName);
+                                Iterator<Map.Entry<Integer, InlineIndexTree>> it = finalTrees.entrySet().iterator();
 
-                                fut.onDone(DurableBackgroundTaskResult.complete(pageCnt));
+                                while (it.hasNext()) {
+                                    Map.Entry<Integer, InlineIndexTree> e = it.next();
+
+                                    InlineIndexTree tree = e.getValue();
+                                    Integer segment = e.getKey();
+
+                                    long pages = destroyIndexTrees(grpCtx, tree, cacheName, newTreeName, segment);
+
+                                    pageCnt.addAndGet(pages);
+
+                                    it.remove();
+                                }
+
+                                fut.onDone(DurableBackgroundTaskResult.complete(pageCnt.get()));
                             }
                             catch (Throwable t) {
                                 fut.onDone(DurableBackgroundTaskResult.restart(t));
@@ -239,39 +287,94 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * Destroying index trees.
      *
      * @param grpCtx Cache group context.
-     * @param rootPages Mapping: segment number -> index root page.
+     * @param tree Index tree.
      * @param cacheName Cache name.
      * @param treeName Name of underlying index tree name.
-     * @param idxName Index name.
+     * @param segment Segment number.
      * @return Total number of pages recycled from this tree.
      * @throws IgniteCheckedException If failed.
      */
     public static long destroyIndexTrees(
         CacheGroupContext grpCtx,
-        Map<Integer, RootPage> rootPages,
+        InlineIndexTree tree,
         String cacheName,
         String treeName,
-        String idxName
+        int segment
     ) throws IgniteCheckedException {
         long pageCnt = 0;
 
-        for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
-            InlineIndexTree tree = IDX_TREE_FACTORY.create(grpCtx, e.getValue(), treeName);
+        grpCtx.shared().database().checkpointReadLock();
 
-            grpCtx.shared().database().checkpointReadLock();
-
-            try {
+        try {
+            if (existMetaPage(grpCtx, tree.getMetaPageId())) {
                 pageCnt += tree.destroy(null, true);
 
-                if (grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, e.getKey()) != null)
+                if (grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, segment) != null)
                     pageCnt++;
             }
-            finally {
-                grpCtx.shared().database().checkpointReadUnlock();
-            }
+        }
+        finally {
+            grpCtx.shared().database().checkpointReadUnlock();
         }
 
         return pageCnt;
+    }
+
+    /**
+     * Checking the existence of a index tree meta page.
+     *
+     * @param grpCtx Cache group context.
+     * @param metaPageId Meta page id.
+     * @return {@code True} if exist.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean existMetaPage(CacheGroupContext grpCtx, long metaPageId) throws IgniteCheckedException {
+        PageMemory pageMemory = grpCtx.dataRegion().pageMemory();
+
+        int grpId = grpCtx.groupId();
+
+        long metaPage = pageMemory.acquirePage(grpId, metaPageId);
+
+        try {
+            long metaPageAddr = pageMemory.readLock(grpId, metaPageId, metaPage);
+
+            try {
+                return metaPageAddr != 0;
+            }
+            finally {
+                if (metaPageAddr != 0)
+                    pageMemory.readUnlock(grpId, metaPageId, metaPage);
+            }
+        }
+        finally {
+            pageMemory.releasePage(grpId, metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * Creation of index trees.
+     *
+     * @param grpCtx Cache group context.
+     * @param rootPages Index root pages. Mapping: segment number -> index root page.
+     * @param treeName Name of underlying index tree name.
+     * @return Index trees. Mapping: segment number -> index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public static Map<Integer, InlineIndexTree> indexTrees(
+        CacheGroupContext grpCtx,
+        Map<Integer, RootPage> rootPages,
+        String treeName
+    ) throws IgniteCheckedException {
+        if (rootPages.isEmpty())
+            return null;
+        else {
+            Map<Integer, InlineIndexTree> trees = new HashMap<>(rootPages.size());
+
+            for (Map.Entry<Integer, RootPage> e : rootPages.entrySet())
+                trees.put(e.getKey(), IDX_TREE_FACTORY.create(grpCtx, e.getValue(), treeName));
+
+            return trees;
+        }
     }
 
     /**
@@ -281,7 +384,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @param cacheName Cache name.
      * @param treeName Name of underlying index tree name.
      * @param segments Number of segments.
-     * @return Mapping: segment number -> index root page.
+     * @return Index root pages. Mapping: segment number -> index root page.
      * @throws IgniteCheckedException If failed.
      */
     public static Map<Integer, RootPage> findIndexRootPages(

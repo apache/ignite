@@ -50,6 +50,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.IDX_TREE_FACTORY;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.destroyIndexTrees;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.findIndexRootPages;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.indexTrees;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -109,7 +110,15 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         Map<Integer, RootPage> rootPages = findIndexRootPages(cctx.group(), cctx.name(), treeName, segments);
         assertFalse(rootPages.isEmpty());
 
-        assertTrue(destroyIndexTrees(cctx.group(), rootPages, cctx.name(), treeName, idxName) >= 3);
+        Map<Integer, InlineIndexTree> idxTrees = indexTrees(cctx.group(), rootPages, treeName);
+        assertFalse(F.isEmpty(idxTrees));
+
+        long pageCnt = 0;
+
+        for (Map.Entry<Integer, InlineIndexTree> e : idxTrees.entrySet())
+            pageCnt += destroyIndexTrees(cctx.group(), e.getValue(), cctx.name(), treeName, e.getKey());
+
+        assertTrue(pageCnt >= 3);
         assertTrue(findIndexRootPages(cctx.group(), cctx.name(), treeName, segments).isEmpty());
     }
 
@@ -131,8 +140,8 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         GridCacheContext<Integer, Person> cctx = cacheContext(n.cache(DEFAULT_CACHE_NAME));
 
         List<DurableBackgroundCleanupIndexTreeTaskV2> tasks = F.asList(
-            new DurableBackgroundCleanupIndexTreeTaskV2(fake, fake, fake, fake, fake, 10),
-            new DurableBackgroundCleanupIndexTreeTaskV2(cctx.group().name(), cctx.name(), fake, fake, fake, 10)
+            new DurableBackgroundCleanupIndexTreeTaskV2(fake, fake, fake, fake, fake, 10, null),
+            new DurableBackgroundCleanupIndexTreeTaskV2(cctx.group().name(), cctx.name(), fake, fake, fake, 10, null)
         );
 
         for (DurableBackgroundCleanupIndexTreeTaskV2 task : tasks) {
@@ -176,7 +185,8 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
             idxName,
             oldTreeName,
             newTreeName,
-            segments
+            segments,
+            null
         );
 
         assertTrue(task.name().startsWith(taskNamePrefix(cctx.name(), idxName)));

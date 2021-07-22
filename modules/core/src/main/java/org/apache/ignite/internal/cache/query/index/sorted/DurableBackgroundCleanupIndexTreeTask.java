@@ -309,7 +309,8 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
             idxName,
             treeName,
             UUID.randomUUID().toString(),
-            rootPages.size()
+            rootPages.size(),
+            null
         );
     }
 

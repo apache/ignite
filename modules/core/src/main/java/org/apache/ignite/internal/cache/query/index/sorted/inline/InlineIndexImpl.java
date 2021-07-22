@@ -426,10 +426,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return;
 
         if (cctx.affinityNode() && !softDel) {
-            for (InlineIndexTree segment : segments) {
+            for (InlineIndexTree segment : segments)
                 segment.markDestroyed();
-                segment.close();
-            }
 
             cctx.kernalContext().metric().remove(stats.metricRegistryName());
 
@@ -440,7 +438,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 def.idxName().idxName(),
                 treeName,
                 UUID.randomUUID().toString(),
-                segments.length
+                segments.length,
+                segments
             );
 
             cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
