@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsParti
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelperTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.HeapArrayLockLogTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
@@ -65,6 +66,7 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(PageLockTrackerManagerTest.class);
         ignoredTests.add(SharedPageLockTrackerTest.class);
         ignoredTests.add(ToFileDumpProcessorTest.class);
+        ignoredTests.add(ToStringDumpHelperTest.class);
         ignoredTests.add(HeapArrayLockLogTest.class);
         ignoredTests.add(HeapArrayLockStackTest.class);
         ignoredTests.add(OffHeapLockLogTest.class);

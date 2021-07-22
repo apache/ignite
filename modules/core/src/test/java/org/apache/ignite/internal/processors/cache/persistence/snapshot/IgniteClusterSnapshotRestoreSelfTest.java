@@ -44,6 +44,8 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -87,9 +89,35 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Default shared cache group name. */
     private static final String SHARED_GRP = "shared";
 
+    /** Reset consistent ID flag. */
+    private boolean resetConsistentId;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (resetConsistentId)
+            cfg.setConsistentId(null);
+
+        return cfg;
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
+        doRestoreAllGroups();
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRestoreAllGroupsWithoutConsistentId() throws Exception {
+        resetConsistentId = true;
+
+        doRestoreAllGroups();
+    }
+
+    /** @throws Exception If failed. */
+    private void doRestoreAllGroups() throws Exception {
         CacheConfiguration<Integer, Object> cacheCfg1 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
 
