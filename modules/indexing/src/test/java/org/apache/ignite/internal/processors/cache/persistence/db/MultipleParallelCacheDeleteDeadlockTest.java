@@ -40,7 +40,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -290,8 +289,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         @Override protected InlineIndexTree create(
             CacheGroupContext grpCtx,
             RootPage rootPage,
-            String treeName,
-            IoStatisticsHolderIndex stats
+            String treeName
         ) throws IgniteCheckedException {
             return new InlineIndexTreeTest(
                 null,
@@ -307,7 +305,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 0,
                 new IndexKeyTypeSettings(),
                 null,
-                stats,
+                null,
                 new DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory(),
                 null
             );

@@ -62,7 +62,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -945,8 +944,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         @Override protected InlineIndexTree create(
             CacheGroupContext grpCtx,
             RootPage rootPage,
-            String treeName,
-            IoStatisticsHolderIndex stats
+            String treeName
         ) throws IgniteCheckedException {
             return new InlineIndexTreeTest(
                 null,
@@ -962,7 +960,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 0,
                 new IndexKeyTypeSettings(),
                 null,
-                stats,
+                null,
                 new NoopRowHandlerFactory(),
                 null
             );

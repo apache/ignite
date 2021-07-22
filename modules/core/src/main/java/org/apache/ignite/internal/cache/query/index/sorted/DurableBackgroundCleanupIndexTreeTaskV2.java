@@ -33,7 +33,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -54,7 +53,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
-import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
  * Task for background cleaning of index trees.
@@ -255,17 +253,10 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
         String treeName,
         String idxName
     ) throws IgniteCheckedException {
-        IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
-            SORTED_INDEX,
-            cacheName,
-            idxName,
-            grpCtx.shared().kernalContext().metric()
-        );
-
         long pageCnt = 0;
 
         for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
-            InlineIndexTree tree = IDX_TREE_FACTORY.create(grpCtx, e.getValue(), treeName, stats);
+            InlineIndexTree tree = IDX_TREE_FACTORY.create(grpCtx, e.getValue(), treeName);
 
             grpCtx.shared().database().checkpointReadLock();
 
@@ -403,15 +394,13 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
          * @param grpCtx Cache group context.
          * @param rootPage Index root page.
          * @param treeName Name of underlying index tree name.
-         * @param stats Statistics holder.
          * @return New index tree.
          * @throws IgniteCheckedException If failed.
          */
         protected InlineIndexTree create(
             CacheGroupContext grpCtx,
             RootPage rootPage,
-            String treeName,
-            IoStatisticsHolderIndex stats
+            String treeName
         ) throws IgniteCheckedException {
             return new InlineIndexTree(
                 null,
@@ -427,7 +416,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                 0,
                 new IndexKeyTypeSettings(),
                 null,
-                stats,
+                null,
                 new NoopRowHandlerFactory(),
                 null
             );

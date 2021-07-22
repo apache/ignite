@@ -32,7 +32,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundClea
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
@@ -328,8 +327,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
             @Override protected InlineIndexTree create(
                 CacheGroupContext grpCtx,
                 RootPage rootPage,
-                String treeName,
-                IoStatisticsHolderIndex stats
+                String treeName
             ) throws IgniteCheckedException {
                 if (throwEx)
                     throw new IgniteCheckedException("From test");
@@ -342,7 +340,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
                     endFut.get(getTestTimeout());
                 }
 
-                return super.create(grpCtx, rootPage, treeName, stats);
+                return super.create(grpCtx, rootPage, treeName);
             }
         };
     }

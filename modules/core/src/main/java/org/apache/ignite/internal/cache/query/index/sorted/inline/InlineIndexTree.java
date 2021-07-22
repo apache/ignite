@@ -90,7 +90,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     private final CacheGroupContext grpCtx;
 
     /** Statistics holder used by underlying BPlusTree. */
-    private final IoStatisticsHolder stats;
+    @Nullable private final IoStatisticsHolder stats;
 
     /** */
     private final IgniteLogger log;
