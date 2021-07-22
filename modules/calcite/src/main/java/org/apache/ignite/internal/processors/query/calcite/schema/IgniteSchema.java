@@ -21,6 +21,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
@@ -33,6 +37,9 @@ public class IgniteSchema extends AbstractSchema {
 
     /** */
     private final Map<String, IgniteTable> tblMap = new ConcurrentHashMap<>();
+
+    /** */
+    private final Multimap<String, Function> funcMap = Multimaps.synchronizedMultimap(HashMultimap.create());
 
     /**
      * Creates a Schema.
@@ -55,6 +62,11 @@ public class IgniteSchema extends AbstractSchema {
         return Collections.unmodifiableMap(tblMap);
     }
 
+    /** {@inheritDoc} */
+    @Override protected Multimap<String, Function> getFunctionMultimap() {
+        return Multimaps.unmodifiableMultimap(funcMap);
+    }
+
     /**
      * @param tbl Table.
      */
@@ -67,5 +79,13 @@ public class IgniteSchema extends AbstractSchema {
      */
     public void removeTable(String tblName) {
         tblMap.remove(tblName);
+    }
+
+    /**
+     * @param name Function name.
+     * @param func SQL function.
+     */
+    public void addFunction(String name, Function func) {
+        funcMap.put(name, func);
     }
 }

@@ -31,6 +31,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
@@ -93,6 +94,9 @@ public final class PlanningContext implements Context {
 
     /** */
     private CalciteCatalogReader catalogReader;
+
+    /** */
+    private SqlOperatorTable opTable;
 
     /**
      * Private constructor, used by a builder.
@@ -186,7 +190,10 @@ public final class PlanningContext implements Context {
      * @return Sql operators table.
      */
     public SqlOperatorTable opTable() {
-        return config().getOperatorTable();
+        if (opTable == null)
+            opTable = SqlOperatorTables.chain(config().getOperatorTable(), catalogReader());
+
+        return opTable;
     }
 
     /**

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -97,7 +96,7 @@ import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -533,7 +532,9 @@ class RelJson {
         SqlSyntax sqlSyntax = toEnum(map.get("syntax"));
         List<SqlOperator> operators = new ArrayList<>();
 
-        CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable().lookupOperatorOverloads(
+        PlanningContext pctx = (PlanningContext)cluster.getPlanner().getContext();
+
+        pctx.opTable().lookupOperatorOverloads(
             new SqlIdentifier(name, new SqlParserPos(0, 0)),
             null,
             sqlSyntax,

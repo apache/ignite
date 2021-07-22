@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -265,6 +267,15 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         assert tbl != null;
 
         tbl.removeIndex(idxName);
+
+        rebuild();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
 
         rebuild();
     }
