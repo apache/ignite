@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -27,13 +25,11 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite table.
@@ -80,23 +76,6 @@ public interface IgniteTable extends TranslatableTable {
      * @return Table relational expression.
      */
     IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
-
-    /**
-     * Creates rows iterator over the table.
-     *
-     * @param execCtx Execution context.
-     * @param group Colocation group.
-     * @param filter Row filter.
-     * @param rowTransformer Row transformer.
-     * @param usedColumns Used columns enumeration.
-     * @return Rows iterator.
-     */
-    <Row> Iterable<Row> scan(
-            ExecutionContext<Row> execCtx,
-            ColocationGroup group,
-            Predicate<Row> filter,
-            Function<Row, Row> rowTransformer,
-            @Nullable ImmutableBitSet usedColumns);
 
     /**
      * Returns nodes mapping.

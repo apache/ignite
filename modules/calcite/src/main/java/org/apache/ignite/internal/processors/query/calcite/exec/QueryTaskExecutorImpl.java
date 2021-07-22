@@ -30,7 +30,7 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.Uncaught
     private static final IgniteLogger LOG = IgniteLogger.forClass(QueryTaskExecutorImpl.class);
 
     /** */
-    private final StripedThreadPoolExecutor stripedThreadPoolExecutor;
+    private StripedThreadPoolExecutor stripedThreadPoolExecutor;
 
     /** */
     private Thread.UncaughtExceptionHandler eHnd;
@@ -38,7 +38,7 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.Uncaught
     /**
      * @param stripedThreadPoolExecutor Executor.
      */
-    public QueryTaskExecutorImpl(StripedThreadPoolExecutor stripedThreadPoolExecutor) {
+    public void stripedThreadPoolExecutor(StripedThreadPoolExecutor stripedThreadPoolExecutor) {
         this.stripedThreadPoolExecutor = stripedThreadPoolExecutor;
     }
 

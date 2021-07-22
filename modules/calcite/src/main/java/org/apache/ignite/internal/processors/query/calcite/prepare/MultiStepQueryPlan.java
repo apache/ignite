@@ -24,7 +24,7 @@ public class MultiStepQueryPlan extends AbstractMultiStepPlan {
     /**
      * @param fieldsMeta Fields metadata.
      */
-    public MultiStepQueryPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMeta) {
+    public MultiStepQueryPlan(QueryTemplate queryTemplate, Object fieldsMeta) {
         super(queryTemplate, fieldsMeta);
     }
 

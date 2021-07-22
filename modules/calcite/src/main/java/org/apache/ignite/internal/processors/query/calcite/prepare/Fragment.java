@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
@@ -149,7 +150,7 @@ public class Fragment {
     }
 
     /** */
-    private FragmentMapping mapping(PlanningContext ctx, RelMetadataQuery mq, Supplier<List<String>> nodesSource) {
+    private FragmentMapping mapping(PlanningContext ctx, RelMetadataQuery mq, Supplier<List<UUID>> nodesSource) {
         try {
             FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq);
 
@@ -175,7 +176,7 @@ public class Fragment {
     }
 
     /** */
-    @NotNull private Supplier<List<String>> nodesSource(MappingService mappingSrvc, PlanningContext ctx) {
+    @NotNull private Supplier<List<UUID>> nodesSource(MappingService mappingSrvc, PlanningContext ctx) {
         return () -> mappingSrvc.executionNodes(ctx.topologyVersion(), single(), null);
     }
 

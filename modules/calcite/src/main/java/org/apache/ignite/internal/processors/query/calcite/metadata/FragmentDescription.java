@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /** */
-public class FragmentDescription implements Serializable {
+public class FragmentDescription {
     /** */
     private long fragmentId;
 
@@ -33,7 +33,7 @@ public class FragmentDescription implements Serializable {
     private ColocationGroup target;
 
     /** */
-    private Map<Long, List<String>> remoteSources;
+    private Map<Long, List<UUID>> remoteSources;
 
     /** */
     public FragmentDescription() {
@@ -41,7 +41,7 @@ public class FragmentDescription implements Serializable {
 
     /** */
     public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
-        Map<Long, List<String>> remoteSources) {
+        Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
         this.target = target;
@@ -54,7 +54,7 @@ public class FragmentDescription implements Serializable {
     }
 
     /** */
-    public List<String> nodeIds() {
+    public List<UUID> nodeIds() {
         return mapping.nodeIds();
     }
 
@@ -64,7 +64,7 @@ public class FragmentDescription implements Serializable {
     }
 
     /** */
-    public Map<Long, List<String>> remotes() {
+    public Map<Long, List<UUID>> remotes() {
         return remoteSources;
     }
 

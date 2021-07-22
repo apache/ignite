@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -28,14 +27,20 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Physical node for REDUCE phase of MINUS (EXCEPT) operator.
  */
-public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp {
+public class IgniteReduceMinus extends IgniteMinusBase {
     /** */
     public IgniteReduceMinus(
         RelOptCluster cluster,
@@ -69,6 +74,46 @@ public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp 
     }
 
     /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
+        return ImmutableList.of(
+            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), ImmutableList.of(inputTraits.get(0))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        IgniteDistribution distr = TraitUtils.distribution(nodeTraits);
+
+        if (IgniteDistributions.single().satisfies(distr)) {
+            return Pair.of(nodeTraits.replace(IgniteDistributions.single()),
+                Commons.transform(inTraits, t -> t.replace(IgniteDistributions.single())));
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()),
+            ImmutableList.of(sole(inputTraits).replace(IgniteDistributions.single()))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits
+    ) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
+            inTraits));
+    }
+
+    /** {@inheritDoc} */
     @Override public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         return new IgniteReduceMinus(getCluster(), traitSet, sole(inputs), all, rowType);
     }
@@ -84,7 +129,7 @@ public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp 
     }
 
     /** {@inheritDoc} */
-    @Override public int aggregateFieldsCount() {
+    @Override protected int aggregateFieldsCount() {
         return rowType.getFieldCount() + COUNTER_FIELDS_CNT;
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import org.apache.ignite.network.ClusterNode;
@@ -36,5 +37,5 @@ public interface MappingService {
      * @param nodeFilter Node filter.
      * @return Nodes mapping for intermediate fragments.
      */
-    List<String> executionNodes(long topVer, boolean single, @Nullable Predicate<ClusterNode> nodeFilter);
+    List<UUID> executionNodes(long topVer, boolean single, @Nullable Predicate<ClusterNode> nodeFilter);
 }

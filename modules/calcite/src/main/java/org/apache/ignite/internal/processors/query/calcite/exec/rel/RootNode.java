@@ -22,6 +22,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -120,7 +121,20 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void closeInternal() {
-        context().execute(() -> sources().forEach(Commons::closeQuiet), this::onError);
+        closeInternal0(ex.get() == null);
+    }
+
+    /** */
+    private void closeInternal0(boolean sync) {
+        try {
+            if (sync)
+                context().submit(() -> sources().forEach(Commons::closeQuiet), this::onError).get();
+            else
+                context().execute(() -> sources().forEach(Commons::closeQuiet), this::onError);
+        }
+        catch (InterruptedException | ExecutionException e) {
+            log.warn("Execution is cancelled.", e);
+        }
     }
 
     /** {@inheritDoc} */

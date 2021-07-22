@@ -48,9 +48,9 @@ import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMerge
 import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.MinusConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
@@ -144,7 +144,6 @@ public enum PlannerPhase {
 
                     CoreRules.UNION_MERGE,
                     CoreRules.MINUS_MERGE,
-                    CoreRules.INTERSECT_MERGE,
                     CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
@@ -179,10 +178,8 @@ public enum PlannerPhase {
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.SINGLE,
                     SortAggregateConverterRule.MAP_REDUCE,
-                    SetOpConverterRule.SINGLE_MINUS,
-                    SetOpConverterRule.MAP_REDUCE_MINUS,
-                    SetOpConverterRule.SINGLE_INTERSECT,
-                    SetOpConverterRule.MAP_REDUCE_INTERSECT,
+                    MinusConverterRule.SINGLE,
+                    MinusConverterRule.MAP_REDUCE,
                     ProjectConverterRule.INSTANCE,
                     FilterConverterRule.INSTANCE,
                     TableModifyConverterRule.INSTANCE,

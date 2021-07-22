@@ -32,7 +32,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMinusBase;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.NumberUtil.multiply;
@@ -118,9 +118,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /**
-     * Estimation of row count for set op (MINUS, INTERSECT).
+     * Estimation of row count for MINUS (EXCEPT) operator.
      */
-    public double getRowCount(IgniteSetOp rel, RelMetadataQuery mq) {
+    public double getRowCount(IgniteMinusBase rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 

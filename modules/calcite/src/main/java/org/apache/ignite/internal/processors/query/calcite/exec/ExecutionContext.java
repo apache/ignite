@@ -134,7 +134,7 @@ public class ExecutionContext<Row> implements DataContext {
      * @param exchangeId ExchangeId to find remote nodes for.
      * @return Remote nodes for given exchangeId.
      */
-    public List<String> remotes(long exchangeId) {
+    public List<UUID> remotes(long exchangeId) {
         return fragmentDesc.remotes().get(exchangeId);
     }
 
@@ -170,7 +170,7 @@ public class ExecutionContext<Row> implements DataContext {
     /**
      * @return Originating node ID.
      */
-    public String originatingNodeId() {
+    public UUID originatingNodeId() {
         return planningContext().originatingNodeId();
     }
 

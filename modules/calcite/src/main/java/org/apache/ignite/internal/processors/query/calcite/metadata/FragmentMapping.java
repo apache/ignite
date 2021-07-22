@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.firstNotNull;
 /**
  *
  */
-public class FragmentMapping implements Serializable {
+public class FragmentMapping {
     /** */
     private List<ColocationGroup> colocationGroups;
 
@@ -58,7 +58,7 @@ public class FragmentMapping implements Serializable {
     }
 
     /** */
-    public static FragmentMapping create(String nodeId) {
+    public static FragmentMapping create(UUID nodeId) {
         return new FragmentMapping(ColocationGroup.forNodes(Collections.singletonList(nodeId)));
     }
 
@@ -111,21 +111,21 @@ public class FragmentMapping implements Serializable {
     }
 
     /** */
-    public List<String> nodeIds() {
+    public List<UUID> nodeIds() {
         return colocationGroups.stream()
             .flatMap(g -> g.nodeIds().stream())
             .distinct().collect(Collectors.toList());
     }
 
     /** */
-    public FragmentMapping finalize(Supplier<List<String>> nodesSource) {
+    public FragmentMapping finalize(Supplier<List<UUID>> nodesSource) {
         if (colocationGroups.isEmpty())
             return this;
 
         List<ColocationGroup> colocationGroups = this.colocationGroups;
 
         colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalaze);
-        List<String> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
+        List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
         colocationGroups = Commons.transform(colocationGroups, g -> g.mapToNodes(nodes0));
 
         return new FragmentMapping(colocationGroups);

@@ -47,6 +47,7 @@ public class StripedThreadPoolExecutor implements ExecutorService {
      * Create striped thread pool.
      *
      * @param concurrentLvl Concurrency level.
+     * @param igniteInstanceName Node name.
      * @param threadNamePrefix Thread name prefix.
      * @param allowCoreThreadTimeOut Sets the policy governing whether core threads may time out and
      * terminate if no tasks arrive within the keep-alive time.
@@ -55,6 +56,7 @@ public class StripedThreadPoolExecutor implements ExecutorService {
      */
     public StripedThreadPoolExecutor(
         int concurrentLvl,
+        String igniteInstanceName,
         String threadNamePrefix,
         UncaughtExceptionHandler eHnd,
         boolean allowCoreThreadTimeOut,
