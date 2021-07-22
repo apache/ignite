@@ -37,14 +37,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.codahale.metrics.ConsoleReporter;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.NodeFinder;
-import org.apache.ignite.network.StaticNodeFinder;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.Iterator;
@@ -95,8 +95,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -3387,20 +3385,20 @@ public class ITNodeTest {
     private RaftGroupService createService(String groupId, PeerId peerId, NodeOptions nodeOptions) {
         Configuration initialConf = nodeOptions.getInitialConf();
 
-        Stream<PeerId> peers = initialConf == null ?
-            Stream.empty() :
-            Stream.concat(initialConf.getPeers().stream(), initialConf.getLearners().stream());
+        var servers = List.<NetworkAddress>of();
 
-        NodeFinder nodeFinder = peers
+        if (initialConf != null) {
+            servers = Stream.concat(initialConf.getPeers().stream(), initialConf.getLearners().stream())
                 .map(PeerId::getEndpoint)
                 .map(JRaftUtils::addressFromEndpoint)
-                .collect(collectingAndThen(toList(), StaticNodeFinder::new));
+                .collect(Collectors.toList());
+        }
 
         var nodeManager = new NodeManager();
 
-        ClusterService clusterService = createClusterService(peerId.getEndpoint(), nodeFinder);
+        ClusterService clusterService = createClusterService(peerId.getEndpoint(), servers);
 
-        IgniteRpcServer rpcServer = new TestIgniteRpcServer(clusterService, nodeManager, nodeOptions);
+        IgniteRpcServer rpcServer = new TestIgniteRpcServer(clusterService, servers, nodeManager, nodeOptions);
 
         nodeOptions.setRpcClient(new IgniteRpcClient(clusterService));
 
@@ -3422,10 +3420,10 @@ public class ITNodeTest {
     /**
      * Creates a non-started {@link ClusterService}.
      */
-    private static ClusterService createClusterService(Endpoint endpoint, NodeFinder nodeFinder) {
+    private static ClusterService createClusterService(Endpoint endpoint, List<NetworkAddress> members) {
         var registry = new TestMessageSerializationRegistryImpl();
 
-        var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), nodeFinder, registry);
+        var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), members, registry);
 
         var clusterServiceFactory = new TestScaleCubeClusterServiceFactory();
 

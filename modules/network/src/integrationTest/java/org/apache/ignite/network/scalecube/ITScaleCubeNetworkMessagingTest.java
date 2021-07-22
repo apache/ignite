@@ -26,8 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.transport.api.Transport;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
@@ -35,10 +35,8 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.TestMessageTypes;
@@ -367,25 +365,26 @@ class ITScaleCubeNetworkMessagingTest {
 
             int initialPort = 3344;
 
-            var nodeFinder = new LocalPortRangeNodeFinder(initialPort, initialPort + numOfNodes);
+            List<NetworkAddress> addresses = IntStream.range(0, numOfNodes)
+                .mapToObj(i -> new NetworkAddress("localhost", initialPort + i))
+                .collect(Collectors.toUnmodifiableList());
 
-            var isInitial = new AtomicBoolean(true);
-
-            members = nodeFinder.findNodes().stream()
-                .map(addr -> startNode(addr, nodeFinder, isInitial.getAndSet(false)))
+            members = IntStream.range(0, numOfNodes)
+                .mapToObj(i -> startNode("Node #" + i, initialPort + i, addresses, i == 0))
                 .collect(Collectors.toUnmodifiableList());
         }
 
         /**
          * Start cluster node.
          *
-         * @param addr Node address.
-         * @param nodeFinder Node finder.
+         * @param name Node name.
+         * @param port Node port.
+         * @param addresses Addresses of other nodes.
          * @param initial Whether this node is the first one.
          * @return Started cluster node.
          */
-        private ClusterService startNode(NetworkAddress addr, NodeFinder nodeFinder, boolean initial) {
-            var context = new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, serializationRegistry);
+        private ClusterService startNode(String name, int port, List<NetworkAddress> addresses, boolean initial) {
+            var context = new ClusterLocalConfiguration(name, port, addresses, serializationRegistry);
 
             ClusterService clusterService = networkFactory.createClusterService(context);
 

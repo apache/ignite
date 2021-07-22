@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.metastorage.common.OperationType;
 import org.apache.ignite.internal.metastorage.server.KeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
@@ -42,10 +43,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
-import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.Peer;
@@ -59,7 +58,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -165,11 +163,12 @@ public class ITMetaStorageServiceTest {
      */
     @BeforeEach
     public void beforeTest() {
-        var nodeFinder = new LocalPortRangeNodeFinder(NODE_PORT_BASE, NODE_PORT_BASE + NODES);
+        List<NetworkAddress> servers = IntStream.range(NODE_PORT_BASE, NODE_PORT_BASE + NODES)
+            .mapToObj(port -> new NetworkAddress("localhost", port))
+            .collect(Collectors.toList());
 
-        nodeFinder.findNodes().stream()
-            .map(addr -> startClusterNode(addr, nodeFinder))
-            .forEach(cluster::add);
+        for (int i = 0; i < NODES; i++)
+            cluster.add(startClusterNode("node_" + i, NODE_PORT_BASE + i, servers));
 
         for (ClusterService node : cluster)
             assertTrue(waitForTopology(node, NODES, 1000));
@@ -329,7 +328,7 @@ public class ITMetaStorageServiceTest {
                         assertEquals(EXPECTED_RESULT_MAP.keySet().size(), keys.size());
 
                         List<byte[]> expKeys = EXPECTED_RESULT_MAP.keySet().stream().
-                                map(ByteArray::bytes).collect(toList());
+                                map(ByteArray::bytes).collect(Collectors.toList());
 
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expKeys.get(i), keys.get(i));
@@ -338,7 +337,7 @@ public class ITMetaStorageServiceTest {
                         assertEquals(EXPECTED_RESULT_MAP.values().size(), values.size());
 
                         List<byte[]> expVals = EXPECTED_RESULT_MAP.values().stream().
-                                map(Entry::value).collect(toList());
+                                map(Entry::value).collect(Collectors.toList());
 
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expVals.get(i), values.get(i));
@@ -368,7 +367,7 @@ public class ITMetaStorageServiceTest {
                         assertEquals(EXPECTED_RESULT_MAP.keySet().size(), keys.size());
 
                         List<byte[]> expKeys = EXPECTED_RESULT_MAP.keySet().stream().
-                                map(ByteArray::bytes).collect(toList());
+                                map(ByteArray::bytes).collect(Collectors.toList());
 
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expKeys.get(i), keys.get(i));
@@ -377,7 +376,7 @@ public class ITMetaStorageServiceTest {
                         assertEquals(EXPECTED_RESULT_MAP.values().size(), values.size());
 
                         List<byte[]> expVals = EXPECTED_RESULT_MAP.values().stream().
-                                map(Entry::value).collect(toList());
+                                map(Entry::value).collect(Collectors.toList());
 
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expVals.get(i), values.get(i));
@@ -460,7 +459,7 @@ public class ITMetaStorageServiceTest {
                         assertEquals(EXPECTED_RESULT_MAP.keySet().size(), keys.size());
 
                         List<byte[]> expKeys = EXPECTED_RESULT_MAP.keySet().stream().
-                                map(ByteArray::bytes).collect(toList());
+                                map(ByteArray::bytes).collect(Collectors.toList());
 
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expKeys.get(i), keys.get(i));
@@ -484,7 +483,7 @@ public class ITMetaStorageServiceTest {
                         assertEquals(EXPECTED_RESULT_MAP.keySet().size(), keys.size());
 
                         List<byte[]> expKeys = EXPECTED_RESULT_MAP.keySet().stream().
-                                map(ByteArray::bytes).collect(toList());
+                                map(ByteArray::bytes).collect(Collectors.toList());
 
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expKeys.get(i), keys.get(i));
@@ -964,12 +963,13 @@ public class ITMetaStorageServiceTest {
     }
 
     /**
-     * @param addr Node address.
-     * @param nodeFinder Node finder.
+     * @param name Node name.
+     * @param port Local port.
+     * @param srvs Server nodes of the cluster.
      * @return The client cluster view.
      */
-    private static ClusterService startClusterNode(NetworkAddress addr, NodeFinder nodeFinder) {
-        var ctx = new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, SERIALIZATION_REGISTRY);
+    private ClusterService startClusterNode(String name, int port, List<NetworkAddress> srvs) {
+        var ctx = new ClusterLocalConfiguration(name, port, srvs, SERIALIZATION_REGISTRY);
 
         var net = NETWORK_FACTORY.createClusterService(ctx);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.network;
 
+import java.util.List;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
@@ -32,8 +33,8 @@ public class ClusterLocalConfiguration {
     /** The port. */
     private final int port;
 
-    /** Node finder. */
-    private final NodeFinder nodeFinder;
+    /** Addresses of other nodes. */
+    private final List<NetworkAddress> memberAddresses;
 
     /** Message mapper providers. */
     private final MessageSerializationRegistry serializationRegistry;
@@ -41,15 +42,15 @@ public class ClusterLocalConfiguration {
     /**
      * @param name Local name.
      * @param port Local port.
-     * @param nodeFinder Node finder for discovering the initial cluster members.
+     * @param memberAddresses Other cluster member addresses.
      * @param serializationRegistry Message serialization registry.
      */
     public ClusterLocalConfiguration(
-        String name, int port, NodeFinder nodeFinder, MessageSerializationRegistry serializationRegistry
+        String name, int port, List<NetworkAddress> memberAddresses, MessageSerializationRegistry serializationRegistry
     ) {
         this.name = name;
         this.port = port;
-        this.nodeFinder = nodeFinder;
+        this.memberAddresses = List.copyOf(memberAddresses);
         this.serializationRegistry = serializationRegistry;
     }
 
@@ -68,10 +69,10 @@ public class ClusterLocalConfiguration {
     }
 
     /**
-     * @return Node finder for discovering the initial cluster members.
+     * @return Addresses of other nodes.
      */
-    public NodeFinder getNodeFinder() {
-        return nodeFinder;
+    public List<NetworkAddress> getMemberAddresses() {
+        return memberAddresses;
     }
 
     /**

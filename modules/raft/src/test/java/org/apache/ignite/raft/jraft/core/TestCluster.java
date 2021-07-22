@@ -31,13 +31,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.NodeFinder;
-import org.apache.ignite.network.StaticNodeFinder;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.JRaftServiceFactory;
@@ -56,8 +55,6 @@ import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -212,20 +209,22 @@ public class TestCluster {
             if (!emptyPeers)
                 nodeOptions.setInitialConf(new Configuration(this.peers, this.learners));
 
-            NodeFinder nodeFinder = (emptyPeers ? Stream.<PeerId>empty() : peers.stream())
+            List<NetworkAddress> servers = emptyPeers ?
+                List.of() :
+                this.peers.stream()
                     .map(PeerId::getEndpoint)
                     .map(JRaftUtils::addressFromEndpoint)
-                    .collect(collectingAndThen(toList(), StaticNodeFinder::new));
+                    .collect(Collectors.toList());
 
             NodeManager nodeManager = new NodeManager();
 
-            ClusterService clusterService = createClusterService(listenAddr, nodeFinder);
+            ClusterService clusterService = createClusterService(listenAddr, servers);
 
             var rpcClient = new IgniteRpcClient(clusterService);
 
             nodeOptions.setRpcClient(rpcClient);
 
-            var rpcServer = new TestIgniteRpcServer(clusterService, nodeManager, nodeOptions);
+            var rpcServer = new TestIgniteRpcServer(clusterService, servers, nodeManager, nodeOptions);
 
             clusterService.start();
 
@@ -259,10 +258,10 @@ public class TestCluster {
     /**
      * Creates a non-started {@link ClusterService}.
      */
-    private static ClusterService createClusterService(Endpoint endpoint, NodeFinder nodeFinder) {
+    private static ClusterService createClusterService(Endpoint endpoint, List<NetworkAddress> members) {
         var registry = new TestMessageSerializationRegistryImpl();
 
-        var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), nodeFinder, registry);
+        var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), members, registry);
 
         var clusterServiceFactory = new TestScaleCubeClusterServiceFactory();
 
@@ -436,7 +435,7 @@ public class TestCluster {
         this.lock.lock();
         try {
             return this.nodes.stream().map(node -> node.getNodeId().getPeerId().getEndpoint())
-                .collect(toList());
+                .collect(Collectors.toList());
         }
         finally {
             this.lock.unlock();
