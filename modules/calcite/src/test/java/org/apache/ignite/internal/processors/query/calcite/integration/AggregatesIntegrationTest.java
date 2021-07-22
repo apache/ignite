@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -104,9 +105,13 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
     @Test
-    public void testMultipleRowsFromSingleAggr() {
+    public void testMultipleRowsFromSingleAggr() throws Exception {
         createAndPopulateTable();
+
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),
+            IllegalArgumentException.class);
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT t._key, (SELECT x FROM " +
                 "TABLE(system_range(1, 5))) FROM person t").check(), IllegalArgumentException.class);
@@ -115,6 +120,21 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
                 "TABLE(system_range(t._key, t._key + 1))) FROM person t").check(), IllegalArgumentException.class);
 
         assertQuery("SELECT t._key, (SELECT x FROM TABLE(system_range(t._key, t._key))) FROM person t").check();
+
+        // Check exception on reduce phase.
+        String cacheName = "person";
+
+        IgniteCache<Integer, Employer> person = client.cache(cacheName);
+
+        person.clear();
+
+        for (int gridIdx = 0; gridIdx < GRID_CNT; gridIdx++)
+            person.put(primaryKey(grid(gridIdx).cache(cacheName)), new Employer(gridIdx == 0 ? "Emp" : null, 0.0d));
+
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),
+            IllegalArgumentException.class);
+
+        assertQuery("SELECT (SELECT name FROM person WHERE name is not null)").returns("Emp").check();
     }
 
     /** */
