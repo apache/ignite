@@ -15,19 +15,7 @@
  * limitations under the License.
  */
 
+/**
+ * Contains utils for access to package-private Calcite Volcano classes.
+ */
 package org.apache.calcite.plan.volcano;
-
-import org.apache.calcite.plan.RelOptCost;
-
-/** Utils for access to package-private fields. */
-public class VolcanoUtils {
-    /**
-     * Return cost of best known plan.
-     *
-     * @param relSubset RelSubset.
-     * @return Cost of best known plan for given relSubset.
-     */
-    public static RelOptCost bestCost(RelSubset relSubset) {
-        return relSubset.bestCost;
-    }
-}
