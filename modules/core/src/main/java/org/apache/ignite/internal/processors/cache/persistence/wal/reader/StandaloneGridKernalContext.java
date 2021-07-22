@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -109,11 +111,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Dummy grid kernal context
+ * Dummy context for offline utilities. All grid components registered in the standalone context
+ * must be properly stopped since the lifecycle of them are controlled by kernal.
+ *
+ * @see org.apache.ignite.internal.GridComponent#stop(boolean)
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
+
+    /** List of registered components. */
+    private final List<GridComponent> comps = new LinkedList<>();
 
     /** Logger. */
     private IgniteLogger log;
@@ -194,6 +202,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
         processor.start();
+
+        comps.add(processor);
+
         return processor;
     }
 
@@ -226,7 +237,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public List<GridComponent> components() {
-        return null;
+        return Collections.unmodifiableList(comps);
     }
 
     /** {@inheritDoc} */
@@ -709,7 +720,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
-        return null;
+        return comps.iterator();
     }
 
     /** {@inheritDoc} */

@@ -67,6 +67,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -1398,6 +1399,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             null, null, null, null, null,
             null, null, null, null, null, null);
 
+        for (GridComponent comp : kctx)
+            comp.start();
+
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
 
@@ -1809,6 +1813,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             assert read : toDetailString(pageId);
 
             return getType(buff) == flag(pageId);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws IgniteCheckedException {
+            assert sctx.kernalContext() instanceof StandaloneGridKernalContext;
+
+            for (GridComponent comp : sctx.kernalContext())
+                comp.stop(true);
         }
 
         /** {@inheritDoc} */

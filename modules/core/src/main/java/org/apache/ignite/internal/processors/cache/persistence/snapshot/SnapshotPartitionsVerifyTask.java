@@ -42,6 +42,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -296,17 +298,20 @@ public class SnapshotPartitionsVerifyTask
                                 // There is no `primary` partitions for snapshot.
                                 PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
-                                PartitionHashRecordV2 hash = calculatePartitionHash(key,
-                                    updateCntr,
-                                    consId,
-                                    GridDhtPartitionState.OWNING,
-                                    false,
-                                    size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+                                try (GridCloseableIterator<CacheDataRow> it =
+                                         snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId)) {
+                                    PartitionHashRecordV2 hash = calculatePartitionHash(key,
+                                        updateCntr,
+                                        consId,
+                                        GridDhtPartitionState.OWNING,
+                                        false,
+                                        size,
+                                        it);
 
-                                assert hash != null : "OWNING must have hash: " + key;
+                                    assert hash != null : "OWNING must have hash: " + key;
 
-                                res.put(key, hash);
+                                    res.put(key, hash);
+                                }
                             }
                         }
                         catch (IOException e) {
