@@ -19,6 +19,7 @@ package org.apache.ignite.internal.app;
 
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.tx.IgniteTransactions;
 
@@ -32,18 +33,26 @@ public class IgniteImpl implements Ignite {
     /** Vault manager */
     private final VaultManager vaultManager;
 
+    private final SqlQueryProcessor qryEngine;
+
     /**
      * @param tableManager Table manager.
      * @param vaultManager Vault manager.
+     * @param qryEngine Query processor.
      */
-    IgniteImpl(IgniteTables tableManager, VaultManager vaultManager) {
+    IgniteImpl(IgniteTables tableManager, VaultManager vaultManager, SqlQueryProcessor qryEngine) {
         this.distributedTableManager = tableManager;
         this.vaultManager = vaultManager;
+        this.qryEngine = qryEngine;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTables tables() {
         return distributedTableManager;
+    }
+
+    public SqlQueryProcessor queryEngine() {
+        return qryEngine;
     }
 
     /** {@inheritDoc} */

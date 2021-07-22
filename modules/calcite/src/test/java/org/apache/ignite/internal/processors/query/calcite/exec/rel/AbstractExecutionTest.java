@@ -50,17 +50,16 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
 
     /** */
     @BeforeEach
-    public void setup() throws Exception {
-        taskExecutor = new QueryTaskExecutorImpl();
-
-        taskExecutor.stripedThreadPoolExecutor(new StripedThreadPoolExecutor(
-            4,
-            "calcite-exec-test-ignite",
-            "calciteQry",
-            this::handle,
-            true,
-            60_000L
-        ));
+    public void setup() {
+        taskExecutor = new QueryTaskExecutorImpl(
+            new StripedThreadPoolExecutor(
+                4,
+                "calciteQry",
+                this::handle,
+                true,
+                60_000L
+            )
+        );
     }
 
     /** */
@@ -78,7 +77,7 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
         return new ExecutionContext<>(
             taskExecutor,
             PlanningContext.builder()
-                .localNodeId(UUID.randomUUID())
+                .localNodeId(UUID.randomUUID().toString())
                 .build(),
             UUID.randomUUID(),
             fragmentDesc,

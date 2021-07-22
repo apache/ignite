@@ -87,14 +87,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class PlannerTest extends AbstractPlannerTest {
     /** */
-    private static List<UUID> NODES;
+    private static List<String> NODES;
     
     @BeforeAll
     public static void init() {
         NODES = new ArrayList<>(4);
 
         for (int i = 0; i < 4; i++)
-            NODES.add(UUID.randomUUID());
+            NODES.add(UUID.randomUUID().toString());
     }
 
     /**
@@ -1840,7 +1840,7 @@ public class PlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private List<UUID> intermediateMapping(long topVer, boolean single,
+    private List<String> intermediateMapping(long topVer, boolean single,
         @Nullable Predicate<ClusterNode> filter) {
         return single ? select(NODES, 0) : select(NODES, 0, 1, 2, 3);
     }

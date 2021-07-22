@@ -17,12 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.Stubs.intFoo;
+import static org.apache.ignite.internal.util.CollectionUtils.first;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /**
  * Distribution function.
@@ -60,6 +69,18 @@ public abstract class DistributionFunction {
     public int cacheId() {
         return intFoo()/*CU.UNDEFINED_CACHE_ID*/;
     }
+
+    /**
+     * Creates a destination based on this function algorithm, given nodes mapping and given distribution keys.
+     *
+     * @param ctx Execution context.
+     * @param affinityService Affinity function source.
+     * @param group Target mapping.
+     * @param keys Distribution keys.
+     * @return Destination function.
+     */
+    abstract <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
+        ColocationGroup group, ImmutableIntList keys);
 
     /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
@@ -135,6 +156,12 @@ public abstract class DistributionFunction {
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.ANY;
         }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
+            ColocationGroup m, ImmutableIntList k) {
+            throw new IllegalStateException();
+        }
     }
 
     /** */
@@ -145,6 +172,14 @@ public abstract class DistributionFunction {
         /** {@inheritDoc} */
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.BROADCAST_DISTRIBUTED;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
+            ColocationGroup m, ImmutableIntList k) {
+            assert m != null && !nullOrEmpty(m.nodeIds());
+
+            return new AllNodes<>(m.nodeIds());
         }
     }
 
@@ -157,6 +192,14 @@ public abstract class DistributionFunction {
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.RANDOM_DISTRIBUTED;
         }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
+            ColocationGroup m, ImmutableIntList k) {
+            assert m != null && !nullOrEmpty(m.nodeIds());
+
+            return new RandomNode<>(m.nodeIds());
+        }
     }
 
     /** */
@@ -168,6 +211,15 @@ public abstract class DistributionFunction {
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.SINGLETON;
         }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
+            ColocationGroup m, ImmutableIntList k) {
+            if (m == null || m.nodeIds() == null || m.nodeIds().size() != 1)
+                throw new IllegalStateException();
+
+            return new AllNodes<>(Collections.singletonList(Objects.requireNonNull(first(m.nodeIds()))));
+        }
     }
 
     /** */
@@ -177,6 +229,24 @@ public abstract class DistributionFunction {
         /** {@inheritDoc} */
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.HASH_DISTRIBUTED;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affSrvc,
+            ColocationGroup m, ImmutableIntList k) {
+            assert m != null && !nullOrEmpty(m.assignments()) && !k.isEmpty();
+
+            List<List<String>> assignments = m.assignments();
+
+            if (IgniteUtils.assertionsEnabled()) {
+                for (List<String> assignment : assignments)
+                    assert nullOrEmpty(assignment) || assignment.size() == 1;
+            }
+
+            AffinityAdapter<Row> affinity = new AffinityAdapter<>(affSrvc.affinity(intFoo()/*CU.UNDEFINED_CACHE_ID*/), k.toIntArray(),
+                ctx.rowHandler());
+
+            return new Partitioned<>(assignments, affinity);
         }
     }
 
@@ -210,6 +280,23 @@ public abstract class DistributionFunction {
         /** {@inheritDoc} */
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.HASH_DISTRIBUTED;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affSrvc,
+            ColocationGroup m, ImmutableIntList k) {
+            assert m != null && !nullOrEmpty(m.assignments()) && k.size() == 1;
+
+            List<List<String>> assignments = m.assignments();
+
+            if (IgniteUtils.assertionsEnabled()) {
+                for (List<String> assignment : assignments)
+                    assert nullOrEmpty(assignment) || assignment.size() == 1;
+            }
+
+            AffinityAdapter<Row> affinity = new AffinityAdapter<>(affSrvc.affinity(cacheId), k.toIntArray(), ctx.rowHandler());
+
+            return new Partitioned<>(assignments, affinity);
         }
 
         /** */

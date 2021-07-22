@@ -3,7 +3,7 @@
 This module provides implementation for schema management components:
 
 * Public API for schema definition and evolution
-* Schema manager component that implements necessary machinary to translate schema management commands to corresponding
+* Schema manager component that implements necessary machinery to translate schema management commands to corresponding
   metastorage modifications, as well as schema modification event processing logic 
 * Necessary logic to build and upgrade rows of specific schema that encode user data in schema-defined format.
 

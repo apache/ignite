@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -63,8 +67,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.util.ArrayUtils;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.lang.IgniteLogger;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
@@ -124,6 +131,35 @@ public final class Commons {
 
     /** */
     private Commons(){}
+
+    public static <T> Cursor<T> createCursor(Iterable<T> iterable) {
+        return createCursor(iterable.iterator());
+    }
+
+    public static <T> Cursor<T> createCursor(Iterator<T> iter) {
+        return new Cursor<>() {
+            @Override public void remove() {
+                iter.remove();
+            }
+
+            @Override public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override public T next() {
+                return iter.next();
+            }
+
+            @NotNull @Override public Iterator<T> iterator() {
+                return iter;
+            }
+
+            @Override public void close() throws Exception {
+                if (iter instanceof AutoCloseable)
+                    ((AutoCloseable)iter).close();
+            }
+        };
+    }
 
     /**
      * Combines two lists.
@@ -254,13 +290,22 @@ public final class Commons {
             ((AutoCloseable) o).close();
     }
 
-//    /**
-//     * @param o Object to close.
-//     */
-//    public static void close(Object o, IgniteLogger log) {
-//        if (o instanceof AutoCloseable)
-//            U.close((AutoCloseable) o, log);
-//    }
+    /**
+     * Closes given resource logging possible checked exception.
+     *
+     * @param o Resource to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception.
+     */
+    public static void close(Object o, @NotNull IgniteLogger log) {
+        if (o instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable)o).close();
+            }
+            catch (Exception e) {
+                log.warn("Failed to close resource: " + e.getMessage(), e);
+            }
+        }
+    }
 //
 //    /**
 //     * @param o Object to close.
@@ -444,6 +489,48 @@ public final class Commons {
             catch (Exception ignored) {
                 // No-op.
             }
+        }
+    }
+
+    public static Class<?> nativeTypeToClass(NativeType type) {
+        assert type != null;
+
+        switch (type.spec()) {
+            case INT8:
+                return Byte.class;
+
+            case INT16:
+                return Short.class;
+
+            case INT32:
+                return Integer.class;
+
+            case INT64:
+                return Long.class;
+
+            case FLOAT:
+                return Float.class;
+
+            case DOUBLE:
+                return Double.class;
+
+            case DECIMAL:
+                return BigDecimal.class;
+
+            case UUID:
+                return UUID.class;
+
+            case STRING:
+                return String.class;
+
+            case BYTES:
+                return byte[].class;
+
+            case BITMASK:
+                return BitSet.class;
+
+            default:
+                throw new IllegalArgumentException("Unsupported type " + type.spec());
         }
     }
 }

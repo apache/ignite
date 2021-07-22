@@ -35,7 +35,7 @@ import org.junit.jupiter.api.TestInstance;
  * Test table functions.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TableFunctionTest extends AbstractPlannerTest {
+public class TableFunctionPlannerTest extends AbstractPlannerTest {
     /** Public schema. */
     private IgniteSchema publicSchema;
 
