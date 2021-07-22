@@ -214,7 +214,7 @@ public class EncryptedFileIO implements FileIO {
 
         GroupKey key = keyProvider.getActiveKey(groupId);
 
-        assert key != null : "No encryption key found for cache group " + groupId;
+        assert key != null : "No active encryption key found for cache group " + groupId;
 
         encUtil.encrypt(srcBuf, res, key);
     }

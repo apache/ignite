@@ -1428,14 +1428,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (locSnpTasks.containsKey(snpName))
                 return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-            for (Integer grpId : parts.keySet()) {
-                if (!withMetaStorage && cctx.cache().isEncrypted(grpId)) {
-                    return new SnapshotFutureTask(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId +
-                        " but doesn't include metastore. Metastore is requird because it contains encryption keys required to start with " +
-                        "encrypted caches contained in the snapshot."));
-                }
-            }
-
             SnapshotFutureTask snpFutTask;
 
             SnapshotFutureTask prev = locSnpTasks.putIfAbsent(snpName,
@@ -1452,9 +1444,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (prev != null)
                 return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-            if (log.isInfoEnabled()) {
-                log.info("Snapshot task has been registered on local node [sctx=" + this +
-                    ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+            for (Integer grpId : parts.keySet()) {
+                if (!withMetaStorage && cctx.cache().isEncrypted(grpId)) {
+                    snpFutTask.onDone(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId + " but doesn't " +
+                        "include metastore. Metastore is requird because it contains encryption keys required to start with encrypted " +
+                        "caches contained in the snapshot."));
+
+                    return snpFutTask;
+                }
             }
 
             snpFutTask.listen(f -> locSnpTasks.remove(snpName));

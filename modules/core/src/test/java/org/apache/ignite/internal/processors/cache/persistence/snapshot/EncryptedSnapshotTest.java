@@ -26,13 +26,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 /**
- * Snapshot test only for encrypted-related cases.
+ * Snapshot test for encrypted snapshots.
  */
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Parameters. */
@@ -110,6 +112,19 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             IgniteCheckedException.class,
             "bad key is used during decryption"
         );
+    }
+
+    /** Checks it is unavailable to register snapshot task for encrypted caches witout metastore. */
+    @Test
+    public void testSnapshotTaskIsBlockedWithoutMetastore() throws Exception {
+        // Start grid node with data before each test.
+        IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME, ig.localNode().id(), F.asMap(CU.cacheId(dfltCacheCfg.getName()), null),
+                false, snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME)).get(TIMEOUT),
+            IgniteCheckedException.class,
+            "Metastore is requird because it contains encryption keys");
     }
 
     /**
