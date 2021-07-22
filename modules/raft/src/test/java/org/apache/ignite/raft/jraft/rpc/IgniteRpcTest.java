@@ -23,6 +23,7 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
@@ -42,7 +43,7 @@ public class IgniteRpcTest extends AbstractRpcTest {
     @Override public RpcServer<?> createServer(Endpoint endpoint) {
         ClusterService service = createService(endpoint.toString(), endpoint.getPort());
 
-        var server = new TestIgniteRpcServer(service, List.of(), new NodeManager(), new NodeOptions()) {
+        var server = new TestIgniteRpcServer(service, new NodeManager(), new NodeOptions()) {
             @Override public void shutdown() {
                 super.shutdown();
 
@@ -84,7 +85,8 @@ public class IgniteRpcTest extends AbstractRpcTest {
      */
     private static ClusterService createService(String name, int port, NetworkAddress... servers) {
         var registry = new MessageSerializationRegistryImpl();
-        var context = new ClusterLocalConfiguration(name, port, List.of(servers), registry);
+        var nodeFinder = new StaticNodeFinder(List.of(servers));
+        var context = new ClusterLocalConfiguration(name, port, nodeFinder, registry);
         var factory = new TestScaleCubeClusterServiceFactory();
 
         return factory.createClusterService(context);

@@ -18,18 +18,19 @@ package org.apache.ignite.network.scalecube;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
+import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -60,20 +61,11 @@ class ITNodeRestartsTest {
     public void testRestarts() {
         final int initPort = 3344;
 
-        String addr = "localhost";
-        List<NetworkAddress> addresses = IntStream.range(0, 5)
-            .mapToObj(i -> new NetworkAddress(addr, (initPort + i)))
-            .collect(toList());
+        var nodeFinder = new LocalPortRangeNodeFinder(initPort, initPort + 5);
 
-        services = new ArrayList<>(addresses.size());
-
-        for (int i = 0; i < addresses.size(); i++) {
-            NetworkAddress address = addresses.get(i);
-
-            ClusterService svc = startNetwork(address.toString(), initPort + i, addresses);
-
-            services.add(svc);
-        }
+        services = nodeFinder.findNodes().stream()
+            .map(addr -> startNetwork(addr, nodeFinder))
+            .collect(Collectors.toCollection(ArrayList::new)); // ensure mutability
 
         for (ClusterService service : services) {
             assertTrue(waitForTopology(service, 5, 5_000), service.topologyService().localMember().toString()
@@ -83,6 +75,8 @@ class ITNodeRestartsTest {
         int idx0 = 0;
         int idx1 = 2;
 
+        List<NetworkAddress> addresses = nodeFinder.findNodes();
+
         LOG.info("Shutdown {}", addresses.get(idx0));
         services.get(idx0).shutdown();
 
@@ -90,11 +84,11 @@ class ITNodeRestartsTest {
         services.get(idx1).shutdown();
 
         LOG.info("Starting {}", addresses.get(idx0));
-        ClusterService svc0 = startNetwork(addresses.get(idx0).toString(), initPort + idx0, addresses);
+        ClusterService svc0 = startNetwork(addresses.get(idx0), nodeFinder);
         services.set(idx0, svc0);
 
         LOG.info("Starting {}", addresses.get(idx1));
-        ClusterService svc2 = startNetwork(addresses.get(idx1).toString(), initPort + idx1, addresses);
+        ClusterService svc2 = startNetwork(addresses.get(idx1), nodeFinder);
         services.set(idx1, svc2);
 
         for (ClusterService service : services) {
@@ -106,8 +100,8 @@ class ITNodeRestartsTest {
     }
 
     /** */
-    private ClusterService startNetwork(String name, int port, List<NetworkAddress> addresses) {
-        var context = new ClusterLocalConfiguration(name, port, addresses, serializationRegistry);
+    private ClusterService startNetwork(NetworkAddress addr, NodeFinder nodeFinder) {
+        var context = new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, serializationRegistry);
 
         ClusterService clusterService = networkFactory.createClusterService(context);
 
