@@ -34,17 +34,28 @@ public final class WatchExactKeysCommand implements WriteCommand {
     /** Start revision inclusive. {@code 0} - all revisions. */
     private final long revision;
 
+    /** Id of the node that requests watch. */
+    @NotNull private final String requesterNodeId;
+
     /**
      * @param keys The keys collection. Couldn't be {@code null}.
      * @param revision Start revision inclusive. {@code 0} - all revisions.
+     * @param requesterNodeId Id of the node that requests watch.
+     *
      */
-    public WatchExactKeysCommand(@NotNull Set<ByteArray> keys, long revision) {
+    public WatchExactKeysCommand(
+        @NotNull Set<ByteArray> keys,
+        long revision,
+        @NotNull String requesterNodeId
+    ) {
         this.keys = new ArrayList<>(keys.size());
 
         for (ByteArray key : keys)
             this.keys.add(key.bytes());
 
         this.revision = revision;
+
+        this.requesterNodeId = requesterNodeId;
     }
 
     /**
@@ -59,5 +70,12 @@ public final class WatchExactKeysCommand implements WriteCommand {
      */
     public @NotNull Long revision() {
         return revision;
+    }
+
+    /**
+     * @return Id of the node that requests range.
+     */
+    public @NotNull String requesterNodeId() {
+        return requesterNodeId;
     }
 }

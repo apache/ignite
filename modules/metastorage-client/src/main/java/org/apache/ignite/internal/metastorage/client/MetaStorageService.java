@@ -333,5 +333,16 @@ public interface MetaStorageService {
      */
     @NotNull
     CompletableFuture<Void> compact();
+
+    /**
+     * Closes all cursors for specific node. Common use case for a given command is to close cursors for the node
+     * that left topology.
+     *
+     * @param nodeId Node id that changes between restarts.
+     * @return Completed future in case of operation success. Couldn't be {@code null}.
+     * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
+     */
+    @NotNull
+    CompletableFuture<Void> closeCursors(@NotNull String nodeId);
 }
 

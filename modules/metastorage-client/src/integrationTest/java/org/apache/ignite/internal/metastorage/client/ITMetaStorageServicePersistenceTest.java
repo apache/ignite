@@ -168,7 +168,7 @@ public class ITMetaStorageServicePersistenceTest {
         // Setup a metastorage raft service
         RaftGroupService metaStorageSvc = prepareMetaStorage();
 
-        MetaStorageServiceImpl metaStorage = new MetaStorageServiceImpl(metaStorageSvc);
+        MetaStorageServiceImpl metaStorage = new MetaStorageServiceImpl(metaStorageSvc, null);
 
         // Put some data in the metastorage
         metaStorage.put(firstKey, firstValue).get();

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.metastorage.client;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -108,8 +109,13 @@ public class CursorImpl<T> implements Cursor<T> {
         /** {@inheritDoc} */
         @Override public T next() {
             try {
-                return initOp.thenCompose(
-                        cursorId -> metaStorageRaftGrpSvc.run(new CursorNextCommand(cursorId))).thenApply(fn).get();
+                Object res = initOp.thenCompose(
+                    cursorId -> metaStorageRaftGrpSvc.run(new CursorNextCommand(cursorId))).get();
+
+                if (res instanceof NoSuchElementException)
+                    throw (NoSuchElementException)res;
+                else
+                    return fn.apply(res);
             }
             catch (InterruptedException | ExecutionException e) {
                 LOG.error("Unable to evaluate cursor hasNext command", e);

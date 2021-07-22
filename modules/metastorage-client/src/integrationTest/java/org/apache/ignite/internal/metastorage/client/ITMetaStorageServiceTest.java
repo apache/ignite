@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -121,6 +122,12 @@ public class ITMetaStorageServiceTest {
     private static final NavigableMap<ByteArray, Entry> EXPECTED_RESULT_MAP;
 
     private static final Collection<org.apache.ignite.internal.metastorage.server.Entry> EXPECTED_SRV_RESULT_COLL;
+
+    /** Node 0 id. */
+    public static final String NODE_ID_0 = "node-id-0";
+
+    /** Node 1 id. */
+    public static final String NODE_ID_1 = "node-id-1";
 
     /** Cluster. */
     private ArrayList<ClusterService> cluster = new ArrayList<>();
@@ -964,6 +971,76 @@ public class ITMetaStorageServiceTest {
     }
 
     /**
+     * Tests {@link MetaStorageService#closeCursors(String)}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCursorsCleanup() throws Exception {
+        MetaStorageService metaStorageSvc = prepareMetaStorage(
+            new AbstractKeyValueStorage() {
+                @Override public Cursor<org.apache.ignite.internal.metastorage.server.Entry> range(byte[] keyFrom, byte[] keyTo) {
+                    return new Cursor<>() {
+                        private final Iterator<org.apache.ignite.internal.metastorage.server.Entry> it = new Iterator<>() {
+                            @Override public boolean hasNext() {
+                                return true;
+                            }
+
+                            @Override public org.apache.ignite.internal.metastorage.server.Entry next() {
+                                return EXPECTED_SRV_RESULT_ENTRY;
+                            }
+                        };
+
+                        @Override public void close() throws Exception {
+
+                        }
+
+                        @NotNull @Override public Iterator<org.apache.ignite.internal.metastorage.server.Entry> iterator() {
+                            return it;
+                        }
+
+                        @Override public boolean hasNext() {
+                            return it.hasNext();
+                        }
+
+                        @Override
+                        public org.apache.ignite.internal.metastorage.server.Entry next() {
+                            return it.next();
+                        }
+                    };
+                }
+            });
+
+        List<Peer> peers = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
+
+        RaftGroupService metaStorageRaftGrpSvc = new RaftGroupServiceImpl(
+            METASTORAGE_RAFT_GROUP_NAME,
+            cluster.get(1),
+            FACTORY,
+            10_000,
+            peers,
+            true,
+            200
+        );
+
+        MetaStorageService metaStorageSvc2 =  new MetaStorageServiceImpl(metaStorageRaftGrpSvc, NODE_ID_1);
+
+        Cursor<Entry> cursorNode0 = metaStorageSvc.range(EXPECTED_RESULT_ENTRY.key(), null);
+
+        Cursor<Entry> cursor2Node0 = metaStorageSvc.range(EXPECTED_RESULT_ENTRY.key(), null);
+
+        Cursor<Entry> cursorNode1 = metaStorageSvc2.range(EXPECTED_RESULT_ENTRY.key(), null);
+
+        metaStorageSvc.closeCursors(NODE_ID_0).get();
+
+        assertThrows(NoSuchElementException.class, () -> cursorNode0.iterator().next());
+
+        assertThrows(NoSuchElementException.class, () -> cursor2Node0.iterator().next());
+
+        assertEquals(EXPECTED_RESULT_ENTRY, (cursorNode1.iterator().next()));
+    }
+
+    /**
      * @param addr Node address.
      * @param nodeFinder Node finder.
      * @return The client cluster view.
@@ -1028,7 +1105,7 @@ public class ITMetaStorageServiceTest {
             200
         );
 
-        return new MetaStorageServiceImpl(metaStorageRaftGrpSvc);
+        return new MetaStorageServiceImpl(metaStorageRaftGrpSvc, NODE_ID_0);
     }
 
     /**

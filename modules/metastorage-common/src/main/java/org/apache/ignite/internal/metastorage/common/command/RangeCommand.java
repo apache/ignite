@@ -23,8 +23,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Range command for MetaStorageCommandListener that retrieves entries for the given
- * key range in lexicographic order. Entries will be filtered out by upper bound of given revision number.
+ * Range command for MetaStorageCommandListener that retrieves entries for the given key range in lexicographic order.
+ * Entries will be filtered out by upper bound of given revision number.
  */
 public final class RangeCommand implements WriteCommand {
     /** Start key of range (inclusive). Couldn't be {@code null}. */
@@ -36,27 +36,38 @@ public final class RangeCommand implements WriteCommand {
     /** The upper bound for entry revision. {@code -1} means latest revision. */
     @NotNull private final long revUpperBound;
 
+    /** Id of the node that requests range. */
+    @NotNull private final String requesterNodeId;
+
     /**
      * @param keyFrom Start key of range (inclusive).
      * @param keyTo End key of range (exclusive).
+     * @param requesterNodeId Id of the node that requests range.
      */
-    public RangeCommand(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
-        this(keyFrom, keyTo, -1L);
+    public RangeCommand(
+        @NotNull ByteArray keyFrom,
+        @Nullable ByteArray keyTo,
+        @NotNull String requesterNodeId
+    ) {
+        this(keyFrom, keyTo, -1L, requesterNodeId);
     }
 
     /**
      * @param keyFrom Start key of range (inclusive).
      * @param keyTo End key of range (exclusive).
      * @param revUpperBound The upper bound for entry revision. {@code -1} means latest revision.
+     * @param requesterNodeId Id of the node that requests range.
      */
     public RangeCommand(
         @NotNull ByteArray keyFrom,
         @Nullable ByteArray keyTo,
-        long revUpperBound
+        long revUpperBound,
+        @NotNull String requesterNodeId
     ) {
         this.keyFrom = keyFrom.bytes();
         this.keyTo = keyTo == null ? null : keyTo.bytes();
         this.revUpperBound = revUpperBound;
+        this.requesterNodeId = requesterNodeId;
     }
 
     /**
@@ -78,5 +89,12 @@ public final class RangeCommand implements WriteCommand {
      */
     public @NotNull long revUpperBound() {
         return revUpperBound;
+    }
+
+    /**
+     * @return Id of the node that requests range.
+     */
+    public @NotNull String requesterNodeId() {
+        return requesterNodeId;
     }
 }

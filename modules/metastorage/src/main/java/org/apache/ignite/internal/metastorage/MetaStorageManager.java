@@ -52,6 +52,7 @@ import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.TopologyEventHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,6 +84,9 @@ public class MetaStorageManager {
 
     /** Vault manager in order to commit processed watches with corresponding applied revision. */
     private final VaultManager vaultMgr;
+
+    /** Configuration manager that handles local configuration. */
+    private final ConfigurationManager locCfgMgr;
 
     /** Cluster network service that is used in order to handle cluster init message. */
     private final ClusterService clusterNetSvc;
@@ -127,6 +131,7 @@ public class MetaStorageManager {
      * The constructor.
      *
      * @param vaultMgr Vault manager.
+     * @param locCfgMgr Local configuration manager.
      * @param clusterNetSvc Cluster network service.
      * @param raftMgr Raft manager.
      */
@@ -137,6 +142,7 @@ public class MetaStorageManager {
         Loza raftMgr
     ) {
         this.vaultMgr = vaultMgr;
+        this.locCfgMgr = locCfgMgr;
         this.clusterNetSvc = clusterNetSvc;
         this.raftMgr = raftMgr;
         watchAggregator = new WatchAggregator();
@@ -158,9 +164,22 @@ public class MetaStorageManager {
                             metaStorageNodesContainsLocPred).
                             collect(Collectors.toList()),
                         new MetaStorageListener(new SimpleInMemoryKeyValueStorage())
-                    )
+                    ),
+                    clusterNetSvc.topologyService().localMember().id()
                 )
             );
+
+            if (hasMetastorageLocally(locCfgMgr)) {
+                clusterNetSvc.topologyService().addEventHandler(new TopologyEventHandler() {
+                    @Override public void onAppeared(ClusterNode member) {
+                        // No-op.
+                    }
+
+                    @Override public void onDisappeared(ClusterNode member) {
+                        metaStorageSvcFut.thenCompose(svc -> svc.closeCursors(member.id()));
+                    }
+                });
+            }
         }
         else
             this.metaStorageSvcFut = new CompletableFuture<>();
