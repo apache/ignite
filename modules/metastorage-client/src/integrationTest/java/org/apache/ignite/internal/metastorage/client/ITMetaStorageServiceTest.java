@@ -36,6 +36,8 @@ import org.apache.ignite.internal.metastorage.server.KeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.RaftServerImpl;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
@@ -59,6 +61,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -75,6 +78,7 @@ import static org.mockito.Mockito.verify;
  * Meta storage client tests.
  */
 @SuppressWarnings("WeakerAccess")
+@ExtendWith(WorkDirectoryExtension.class)
 public class ITMetaStorageServiceTest {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ITMetaStorageServiceTest.class);
@@ -87,9 +91,6 @@ public class ITMetaStorageServiceTest {
 
     /** */
     private static final String METASTORAGE_RAFT_GROUP_NAME = "METASTORAGE_RAFT_GROUP";
-
-    /** */
-    public static final int LATEST_REVISION = -1;
 
     /** Factory. */
     private static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
@@ -134,6 +135,10 @@ public class ITMetaStorageServiceTest {
 
     /**  Meta storage raft server. */
     private RaftServer metaStorageRaftSrv;
+
+    /** */
+    @WorkDirectory
+    private Path dataPath;
 
     static {
         EXPECTED_RESULT_MAP = new TreeMap<>();

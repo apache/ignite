@@ -17,6 +17,7 @@
 
 package org.apache.ignite.distributed;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.affinity.RendezvousAffinityFunction;
 import org.apache.ignite.internal.raft.server.RaftServer;
-import org.apache.ignite.internal.raft.server.impl.RaftServerImpl;
+import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Column;
@@ -43,6 +44,8 @@ import org.apache.ignite.internal.table.distributed.command.InsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
@@ -64,6 +67,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Distributed internal table tests.
  */
+@ExtendWith(WorkDirectoryExtension.class)
 public class ITDistributedTableTest {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ITDistributedTableTest.class);
@@ -107,6 +112,10 @@ public class ITDistributedTableTest {
 
     /** Cluster. */
     private ArrayList<ClusterService> cluster = new ArrayList<>();
+
+    /** */
+    @WorkDirectory
+    private Path dataPath;
 
     /**
      * Start all cluster nodes before each test.
@@ -154,7 +163,7 @@ public class ITDistributedTableTest {
     public void partitionListener() throws Exception {
         String grpId = "part";
 
-        RaftServer partSrv = new RaftServerImpl(cluster.get(0), FACTORY);
+        RaftServer partSrv = new JRaftServerImpl(cluster.get(0), dataPath.toString());
 
         List<Peer> conf = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
 
@@ -215,7 +224,7 @@ public class ITDistributedTableTest {
         HashMap<ClusterNode, RaftServer> raftServers = new HashMap<>(NODES);
 
         for (int i = 0; i < NODES; i++)
-            raftServers.put(cluster.get(i).topologyService().localMember(), new RaftServerImpl(cluster.get(i), FACTORY));
+            raftServers.put(cluster.get(i).topologyService().localMember(), new JRaftServerImpl(cluster.get(i), dataPath.toString()));
 
         List<List<ClusterNode>> assignment = RendezvousAffinityFunction.assignPartitions(
             cluster.stream().map(node -> node.topologyService().localMember()).collect(Collectors.toList()),
