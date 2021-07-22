@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.Nullable;
 
@@ -272,6 +271,7 @@ public final class ArrayUtils {
      *
      * @param arr Array.
      * @param obj One or more elements.
+     * @param <T> Type of the elements of the array.
      * @return Concatenated array.
      */
     @SafeVarargs

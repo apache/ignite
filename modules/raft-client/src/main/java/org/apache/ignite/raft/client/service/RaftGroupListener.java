@@ -17,6 +17,7 @@
 
 package org.apache.ignite.raft.client.service;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.function.Consumer;
 import org.apache.ignite.raft.client.ReadCommand;
@@ -56,7 +57,7 @@ public interface RaftGroupListener {
      * @param doneClo The closure to call on finish. Pass the not null exception if the snapshot has not been created or
      *                null on successful creation.
      */
-    public void onSnapshotSave(String path, Consumer<Throwable> doneClo);
+    public void onSnapshotSave(Path path, Consumer<Throwable> doneClo);
 
     /**
      * The callback to load a snapshot.
@@ -64,5 +65,10 @@ public interface RaftGroupListener {
      * @param path Snapshot directory.
      * @return {@code True} if the snapshot was loaded successfully.
      */
-    boolean onSnapshotLoad(String path);
+    boolean onSnapshotLoad(Path path);
+
+    /**
+     * Invoked once after a raft node has been shut down.
+     */
+    void onShutdown();
 }

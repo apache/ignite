@@ -311,7 +311,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     @Test
     public void testCreateSnapshotGracefulFailure() throws Exception {
         listenerFactory = () -> new CounterListener() {
-            @Override public void onSnapshotSave(String path, Consumer<Throwable> doneClo) {
+            @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
                 doneClo.accept(new IgniteInternalException("Very bad"));
             }
         };
@@ -345,7 +345,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     @Test
     public void testCreateSnapshotAbnormalFailure() throws Exception {
         listenerFactory = () -> new CounterListener() {
-            @Override public void onSnapshotSave(String path, Consumer<Throwable> doneClo) {
+            @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
                 doneClo.accept(new IgniteInternalException("Very bad"));
             }
         };

@@ -41,7 +41,8 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
  * {@link WorkDirectory} annotation.
  * <p>
  * A new temporary folder is created for every test method and will be located relative to the module,
- * where the tests are being run, by the following path: "target/work/{@literal <name-of-the-test-method>}".
+ * where the tests are being run, by the following path:
+ * "target/work/{@literal <name-of-the-test-class>/<name-of-the-test-method>_<current_time_millis>}".
  * It is removed after a test has finished running, but this behaviour can be controlled by setting the
  * {@link WorkDirectoryExtension#KEEP_WORK_DIR_PROPERTY} property to {@code true}, in which case the created folder can
  * be kept intact for debugging purposes.
@@ -110,7 +111,11 @@ public class WorkDirectoryExtension implements BeforeEachCallback, AfterEachCall
         if (shouldRemoveDir())
             IgniteUtils.deleteIfExists(BASE_PATH);
 
-        Path workDir = BASE_PATH.resolve(extensionContext.getRequiredTestMethod().getName());
+        String testClassDir = extensionContext.getRequiredTestClass().getSimpleName();
+
+        String testMethodDir = extensionContext.getRequiredTestMethod().getName() + '_' + System.currentTimeMillis();
+
+        Path workDir = BASE_PATH.resolve(testClassDir).resolve(testMethodDir);
 
         Files.createDirectories(workDir);
 

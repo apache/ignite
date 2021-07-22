@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,6 +60,7 @@ public final class CollectionUtils {
      * Gets first element from given list or returns {@code null} if list is empty.
      *
      * @param list List to retrieve the first element.
+     * @param <T> Type of the elements of the list.
      * @return The first element of the given list or {@code null} in case the list is empty.
      */
     public static <T> T first(List<? extends T> list) {

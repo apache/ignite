@@ -19,6 +19,7 @@ package org.apache.ignite.internal.raft.server.impl;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -278,7 +279,7 @@ public class JRaftServerImpl implements RaftServer {
         /** {@inheritDoc} */
         @Override public void onSnapshotSave(SnapshotWriter writer, Closure done) {
             try {
-                listener.onSnapshotSave(writer.getPath(), res -> {
+                listener.onSnapshotSave(Path.of(writer.getPath()), res -> {
                     if (res == null) {
                         File file = new File(writer.getPath());
 
@@ -302,7 +303,12 @@ public class JRaftServerImpl implements RaftServer {
 
         /** {@inheritDoc} */
         @Override public boolean onSnapshotLoad(SnapshotReader reader) {
-            return listener.onSnapshotLoad(reader.getPath());
+            return listener.onSnapshotLoad(Path.of(reader.getPath()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onShutdown() {
+            listener.onShutdown();
         }
     }
 }

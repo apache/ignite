@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metastorage.server;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,9 +29,11 @@ import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.util.Cursor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.metastorage.server.Value.TOMBSTONE;
 
@@ -284,7 +287,7 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor<WatchEvent> watch(byte[] keyFrom, byte[] keyTo, long rev) {
+    @Override public Cursor<WatchEvent> watch(byte[] keyFrom, byte @Nullable [] keyTo, long rev) {
         assert keyFrom != null : "keyFrom couldn't be null.";
         assert rev > 0 : "rev must be positive.";
 
@@ -326,6 +329,22 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
 
             revsIdx = compactedRevsIdx;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override public CompletableFuture<Void> snapshot(Path snapshotPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restoreSnapshot(Path snapshotPath) {
+        throw new UnsupportedOperationException();
     }
 
     /** */
