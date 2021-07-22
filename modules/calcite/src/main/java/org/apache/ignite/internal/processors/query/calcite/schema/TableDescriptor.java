@@ -23,6 +23,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
@@ -34,6 +36,14 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Distribution.
      */
     IgniteDistribution distribution();
+
+    /**
+     * Returns nodes mapping.
+     *
+     * @param ctx Planning context.
+     * @return Nodes mapping.
+     */
+    ColocationGroup colocationGroup(PlanningContext ctx);
 
     /** {@inheritDoc} */
     @Override default RelDataType apply(RelDataTypeFactory factory) {

@@ -22,9 +22,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /** */
 public interface ColumnDescriptor {
     /** */
-    boolean field();
-
-    /** */
     boolean key();
 
     /** */

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 import static org.apache.ignite.internal.util.IgniteUtils.firstNotNull;
 
 /** */
-public class ColocationGroup {
+public class ColocationGroup implements Serializable {
     /** */
     private static final int SYNTHETIC_PARTITIONS_COUNT = 512;
         // TODO: IgniteSystemProperties.getInteger("IGNITE_CALCITE_SYNTHETIC_PARTITIONS_COUNT", 512);
@@ -45,18 +45,18 @@ public class ColocationGroup {
     private List<Long> sourceIds;
 
     /** */
-    private List<UUID> nodeIds;
+    private List<String> nodeIds;
 
     /** */
-    private List<List<UUID>> assignments;
+    private List<List<String>> assignments;
 
     /** */
-    public static ColocationGroup forNodes(List<UUID> nodeIds) {
+    public static ColocationGroup forNodes(List<String> nodeIds) {
         return new ColocationGroup(null, nodeIds, null);
     }
 
     /** */
-    public static ColocationGroup forAssignments(List<List<UUID>> assignments) {
+    public static ColocationGroup forAssignments(List<List<String>> assignments) {
         return new ColocationGroup(null, null, assignments);
     }
 
@@ -66,7 +66,7 @@ public class ColocationGroup {
     }
 
     /** */
-    private ColocationGroup(List<Long> sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
+    private ColocationGroup(List<Long> sourceIds, List<String> nodeIds, List<List<String>> assignments) {
         this.sourceIds = sourceIds;
         this.nodeIds = nodeIds;
         this.assignments = assignments;
@@ -82,7 +82,7 @@ public class ColocationGroup {
     /**
      * @return Lists of nodes capable to execute a query fragment for what the mapping is calculated.
      */
-    public List<UUID> nodeIds() {
+    public List<String> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
     }
 
@@ -90,7 +90,7 @@ public class ColocationGroup {
      * @return List of partitions (index) and nodes (items) having an appropriate partition in
      * OWNING state, calculated for distributed tables, involved in query execution.
      */
-    public List<List<UUID>> assignments() {
+    public List<List<String>> assignments() {
         return assignments == null ? Collections.emptyList() : assignments;
     }
 
@@ -123,7 +123,7 @@ public class ColocationGroup {
         else
             sourceIds = Commons.combine(this.sourceIds, other.sourceIds);
 
-        List<UUID> nodeIds;
+        List<String> nodeIds;
         if (this.nodeIds == null || other.nodeIds == null)
             nodeIds = firstNotNull(this.nodeIds, other.nodeIds);
         else
@@ -134,16 +134,16 @@ public class ColocationGroup {
                 "Replicated query parts are not co-located on all nodes");
         }
 
-        List<List<UUID>> assignments;
+        List<List<String>> assignments;
         if (this.assignments == null || other.assignments == null) {
             assignments = firstNotNull(this.assignments, other.assignments);
 
             if (assignments != null && nodeIds != null) {
-                Set<UUID> filter = new HashSet<>(nodeIds);
-                List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
+                Set<String> filter = new HashSet<>(nodeIds);
+                List<List<String>> assignments0 = new ArrayList<>(assignments.size());
 
                 for (int i = 0; i < assignments.size(); i++) {
-                    List<UUID> assignment = Commons.intersect(filter, assignments.get(i));
+                    List<String> assignment = Commons.intersect(filter, assignments.get(i));
 
                     if (assignment.isEmpty()) { // TODO check with partition filters
                         throw new ColocationMappingException("Failed to map fragment to location. " +
@@ -159,9 +159,9 @@ public class ColocationGroup {
         else {
             assert this.assignments.size() == other.assignments.size();
             assignments = new ArrayList<>(this.assignments.size());
-            Set<UUID> filter = nodeIds == null ? null : new HashSet<>(nodeIds);
+            Set<String> filter = nodeIds == null ? null : new HashSet<>(nodeIds);
             for (int i = 0; i < this.assignments.size(); i++) {
-                List<UUID> assignment = Commons.intersect(this.assignments.get(i), other.assignments.get(i));
+                List<String> assignment = Commons.intersect(this.assignments.get(i), other.assignments.get(i));
 
                 if (filter != null)
                     assignment.retainAll(filter);
@@ -182,10 +182,10 @@ public class ColocationGroup {
             return this;
 
         if (assignments != null) {
-            List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
-            Set<UUID> nodes = new HashSet<>();
-            for (List<UUID> assignment : this.assignments) {
-                UUID first = first(assignment);
+            List<List<String>> assignments = new ArrayList<>(this.assignments.size());
+            Set<String> nodes = new HashSet<>();
+            for (List<String> assignment : this.assignments) {
+                String first = first(assignment);
                 if (first != null)
                     nodes.add(first);
                 assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
@@ -198,13 +198,13 @@ public class ColocationGroup {
     }
 
     /** */
-    public ColocationGroup mapToNodes(List<UUID> nodeIds) {
+    public ColocationGroup mapToNodes(List<String> nodeIds) {
         return !nullOrEmpty(this.nodeIds) ? this : forNodes0(nodeIds);
     }
 
     /** */
-    @NotNull private ColocationGroup forNodes0(List<UUID> nodeIds) {
-        List<List<UUID>> assignments = new ArrayList<>(SYNTHETIC_PARTITIONS_COUNT);
+    @NotNull private ColocationGroup forNodes0(List<String> nodeIds) {
+        List<List<String>> assignments = new ArrayList<>(SYNTHETIC_PARTITIONS_COUNT);
         for (int i = 0; i < SYNTHETIC_PARTITIONS_COUNT; i++)
             assignments.add(asList(nodeIds.get(i % nodeIds.size())));
         return new ColocationGroup(sourceIds, nodeIds, assignments);
@@ -216,11 +216,11 @@ public class ColocationGroup {
      * @param nodeId Cluster node ID.
      * @return List of partitions to scan on the given node.
      */
-    public int[] partitions(UUID nodeId) {
+    public int[] partitions(String nodeId) {
         IgniteIntList parts = new IgniteIntList(assignments.size());
 
         for (int i = 0; i < assignments.size(); i++) {
-            List<UUID> assignment = assignments.get(i);
+            List<String> assignment = assignments.get(i);
             if (Objects.equals(nodeId, first(assignment)))
                 parts.add(i);
         }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Properties;
-import java.util.UUID;
 import java.util.function.Function;
 
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -56,10 +55,10 @@ public final class PlanningContext implements Context {
     private final Context parentCtx;
 
     /** */
-    private final UUID locNodeId;
+    private final String locNodeId;
 
     /** */
-    private final UUID originatingNodeId;
+    private final String originatingNodeId;
 
     /** */
     private final String qry;
@@ -91,8 +90,8 @@ public final class PlanningContext implements Context {
     private PlanningContext(
         FrameworkConfig cfg,
         Context parentCtx,
-        UUID locNodeId,
-        UUID originatingNodeId,
+        String locNodeId,
+        String originatingNodeId,
         String qry,
         Object[] parameters,
         long topVer
@@ -114,14 +113,14 @@ public final class PlanningContext implements Context {
     /**
      * @return Local node ID.
      */
-    public UUID localNodeId() {
+    public String localNodeId() {
         return locNodeId;
     }
 
     /**
      * @return Originating node ID (the node, who started the execution).
      */
-    public UUID originatingNodeId() {
+    public String originatingNodeId() {
         return originatingNodeId == null ? locNodeId : originatingNodeId;
     }
 
@@ -305,10 +304,10 @@ public final class PlanningContext implements Context {
         private Context parentCtx = Contexts.empty();
 
         /** */
-        private UUID locNodeId;
+        private String locNodeId;
 
         /** */
-        private UUID originatingNodeId;
+        private String originatingNodeId;
 
         /** */
         private String qry;
@@ -323,7 +322,7 @@ public final class PlanningContext implements Context {
          * @param locNodeId Local node ID.
          * @return Builder for chaining.
          */
-        public Builder localNodeId(@NotNull UUID locNodeId) {
+        public Builder localNodeId(@NotNull String locNodeId) {
             this.locNodeId = locNodeId;
             return this;
         }
@@ -332,7 +331,7 @@ public final class PlanningContext implements Context {
          * @param originatingNodeId Originating node ID (the node, who started the execution).
          * @return Builder for chaining.
          */
-        public Builder originatingNodeId(@NotNull UUID originatingNodeId) {
+        public Builder originatingNodeId(@NotNull String originatingNodeId) {
             this.originatingNodeId = originatingNodeId;
             return this;
         }

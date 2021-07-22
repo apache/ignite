@@ -18,31 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Physical node for MAP phase of MINUS (EXCEPT) operator.
  */
-public class IgniteMapMinus extends IgniteMinusBase {
+public class IgniteMapMinus extends IgniteMinus implements IgniteMapSetOp {
     /** */
     public IgniteMapMinus(
         RelOptCluster cluster,
@@ -75,67 +64,11 @@ public class IgniteMapMinus extends IgniteMinusBase {
 
     /** {@inheritDoc} */
     @Override protected RelDataType deriveRowType() {
-        RelDataTypeFactory typeFactory = Commons.typeFactory(getCluster());
-
-        assert typeFactory instanceof IgniteTypeFactory;
-
-        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-
-        builder.add("GROUP_KEY", typeFactory.createJavaType(Object.class/*GroupKey.class*/));
-        builder.add("COUNTERS", typeFactory.createJavaType(int[].class));
-
-        return builder.build();
+        return buildRowType();
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
-    ) {
-        boolean rewindable = inputTraits.stream()
-            .map(TraitUtils::rewindability)
-            .allMatch(RewindabilityTrait::rewindable);
-
-        if (rewindable)
-            return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
-            Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
-    ) {
-        if (inputTraits.stream().allMatch(t -> TraitUtils.distribution(t).satisfies(IgniteDistributions.single())))
-            return ImmutableList.of(); // If all distributions are single or broadcast IgniteSingleMinus should be used.
-
-        if (inputTraits.stream().anyMatch(t -> TraitUtils.distribution(t) == IgniteDistributions.single()))
-            return ImmutableList.of(); // Mixing of single and random is prohibited.
-
-        return ImmutableList.of(
-            Pair.of(nodeTraits.replace(IgniteDistributions.random()), Commons.transform(inputTraits,
-                t -> t.replace(IgniteDistributions.random())))
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits
-    ) {
-        Set<CorrelationId> correlationIds = inTraits.stream()
-            .map(TraitUtils::correlation)
-            .flatMap(corrTr -> corrTr.correlationIds().stream())
-            .collect(Collectors.toSet());
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
-            inTraits));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int aggregateFieldsCount() {
+    @Override public int aggregateFieldsCount() {
         return getInput(0).getRowType().getFieldCount() + COUNTER_FIELDS_CNT;
     }
 }

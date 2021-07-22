@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
 import org.apache.ignite.configuration.RootKey;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
+import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.schema.SchemaManager;
 import org.apache.ignite.internal.storage.DistributedConfigurationStorage;
@@ -58,7 +60,6 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
-import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.utils.IgniteProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -220,13 +221,18 @@ public class IgnitionImpl implements Ignition {
         SchemaManager schemaMgr = new SchemaManager(configurationMgr, metaStorageMgr, vaultMgr);
 
         // Distributed table manager startup.
-        IgniteTables distributedTblMgr = new TableManager(
+        TableManager distributedTblMgr = new TableManager(
             configurationMgr,
             metaStorageMgr,
             schemaMgr,
             affinityMgr,
             raftMgr,
             vaultMgr
+        );
+
+        SqlQueryProcessor qryProc = new SqlQueryProcessor(
+            clusterNetSvc,
+            distributedTblMgr
         );
 
         // TODO IGNITE-14579 Start rest manager.
@@ -236,7 +242,7 @@ public class IgnitionImpl implements Ignition {
 
         ackSuccessStart();
 
-        return new IgniteImpl(distributedTblMgr, vaultMgr);
+        return new IgniteImpl(distributedTblMgr, vaultMgr, qryProc);
     }
 
     /**

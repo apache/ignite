@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -36,7 +35,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.newHashMap;
  */
 public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** */
-    protected final Object fieldsMetadata;
+    protected final FieldsMetadata fieldsMetadata;
 
     /** */
     protected final QueryTemplate queryTemplate;
@@ -45,7 +44,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected ExecutionPlan executionPlan;
 
     /** */
-    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, Object fieldsMetadata) {
+    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMetadata) {
         this.queryTemplate = queryTemplate;
         this.fieldsMetadata = fieldsMetadata;
     }
@@ -53,6 +52,11 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** {@inheritDoc} */
     @Override public List<Fragment> fragments() {
         return Objects.requireNonNull(executionPlan).fragments();
+    }
+
+    /** {@inheritDoc} */
+    @Override public FieldsMetadata fieldsMetadata() {
+        return fieldsMetadata;
     }
 
     /** {@inheritDoc} */
@@ -70,13 +74,13 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Long, List<UUID>> remotes(Fragment fragment) {
+    @Override public Map<Long, List<String>> remotes(Fragment fragment) {
         List<IgniteReceiver> remotes = fragment.remotes();
 
         if (nullOrEmpty(remotes))
             return null;
 
-        HashMap<Long, List<UUID>> res = newHashMap(remotes.size());
+        HashMap<Long, List<String>> res = newHashMap(remotes.size());
 
         for (IgniteReceiver remote : remotes)
             res.put(remote.exchangeId(), mapping(remote.sourceFragmentId()).nodeIds());
