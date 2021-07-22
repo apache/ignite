@@ -22,7 +22,7 @@ import org.apache.ignite.network.annotations.MessageGroup;
 /**
  * Message types for the sql query processing module.
  */
-@MessageGroup(groupType = 3, groupName = "SqlQueryMessages")
+@MessageGroup(groupType = 4, groupName = "SqlQueryMessages")
 public final class SqlQueryMessageGroup {
     public static final short QUERY_START_REQUEST = 0;
 
