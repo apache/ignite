@@ -41,6 +41,7 @@ public class IgnitionManager {
      * @param configStr Node configuration in the HOCON format. Can be {@code null}.
      * @param workDir Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
+     * @throws IgniteException If error occurs while reading node configuration.
      */
     // TODO IGNITE-14580 Add exception handling logic to IgnitionProcessor.
     public static synchronized Ignite start(String nodeName, @Nullable String configStr, Path workDir) {

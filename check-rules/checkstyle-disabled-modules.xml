@@ -24,10 +24,8 @@
 <!-- To be removed once all javadoc issues will be fixed. -->
 <suppressions>
     <suppress files="[/\\]examples[/\\]" checks=".*" />
-    <suppress files="[/\\]modules/api[/\\]" checks=".*" />
     <suppress files="[/\\]modules/calcite[/\\]" checks=".*" />
     <suppress files="[/\\]modules/cli[/\\]" checks=".*" />
-    <suppress files="[/\\]modules/core[/\\]" checks=".*" />
     <suppress files="[/\\]modules/configuration-api[/\\]" checks=".*" />
     <suppress files="[/\\]modules/raft-client[/\\]" checks=".*" />
     <suppress files="[/\\]modules/network[/\\]" checks=".*" />

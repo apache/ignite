@@ -31,10 +31,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience class representing mutable tuple of two values.
+ *
+ * @param <V1> First element type.
+ * @param <V2> Second element type.
  */
 public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     Iterable<Object>, Externalizable, Cloneable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** First value. */

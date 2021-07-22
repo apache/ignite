@@ -26,13 +26,13 @@ import java.util.UUID;
  * internal UUID.
  */
 public final class IgniteUuid implements Comparable<IgniteUuid>, Cloneable, Serializable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Global identifier. */
     private final UUID gid;
 
-    /** */
+    /** Local identifier. */
     private final long locId;
 
     /**

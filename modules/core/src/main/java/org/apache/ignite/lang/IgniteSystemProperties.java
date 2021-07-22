@@ -34,6 +34,7 @@ public final class IgniteSystemProperties {
      * Setting to {@code NONE} disables writing sensitive information in {@code toString()} output.
      *
      * Default: {@code HASH}.
+     *
      * @see IgniteToStringBuilder
      */
     public static final String IGNITE_SENSITIVE_DATA_LOGGING = "IGNITE_SENSITIVE_DATA_LOGGING";
@@ -42,6 +43,7 @@ public final class IgniteSystemProperties {
      * Limit collection (map, array) elements number to output.
      *
      * Default: 100
+     *
      * @see IgniteToStringBuilder
      */
     public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
@@ -52,6 +54,7 @@ public final class IgniteSystemProperties {
      * or rethrow.
      *
      * Default: {@code True}.
+     *
      * @see IgniteToStringBuilder
      */
     public static final String IGNITE_TO_STRING_IGNORE_RUNTIME_EXCEPTION = "IGNITE_TO_STRING_IGNORE_RUNTIME_EXCEPTION";
@@ -60,6 +63,7 @@ public final class IgniteSystemProperties {
      * Maximum length for {@code IgniteToStringBuilder.toString(...)} methods result.
      *
      * Default: 10_000.
+     *
      * @see IgniteToStringBuilder
      */
     public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
@@ -72,6 +76,8 @@ public final class IgniteSystemProperties {
     }
 
     /**
+     * Gets either system property or environment variable with given name and convert to enum of given class.
+     *
      * @param enumCls Enum class.
      * @param name Name of the system property or environment variable.
      * @param <E> Enum type.
@@ -82,6 +88,8 @@ public final class IgniteSystemProperties {
     }
 
     /**
+     * Gets either system property or environment variable with given name and convert to enum of given class.
+     *
      * @param name Name of the system property or environment variable.
      * @param dflt Default value.
      * @param <E> Enum type.
@@ -92,6 +100,8 @@ public final class IgniteSystemProperties {
     }
 
     /**
+     * Gets either system property or environment variable with given name and convert to enum of given class.
+     *
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
      * @param dflt Default value.

@@ -40,6 +40,8 @@ public class IgniteLogger {
     private final System.Logger log;
 
     /**
+     * Creates logger instance for a category related to the given class.
+     *
      * @param cls The class for a logger.
      */
     protected IgniteLogger(@NotNull Class<?> cls) {
@@ -47,6 +49,8 @@ public class IgniteLogger {
     }
 
     /**
+     * Logs a message on {@link Level#INFO} level composed from args with given format.
+     *
      * @param msg The message pattern which will be formatted and passed to the {@link System.Logger}.
      * @param params A list of arguments to be substituted in place of formatting anchors.
      */
@@ -56,16 +60,18 @@ public class IgniteLogger {
 
     /**
      * Logs a message which produces in {@code msgSupplier}, on {@link Level#INFO} level with associated exception
-     * {@code thrown}.
+     * {@code th}.
      *
      * @param msgSupplier A supplier function that produces a message.
-     * @param thrown A {@code Throwable} associated with log message; can be {@code null}.
+     * @param th A {@code Throwable} associated with log message; can be {@code null}.
      */
-    public void info(Supplier<String> msgSupplier, Throwable thrown) {
-        logInternalExceptional(Level.INFO, msgSupplier, thrown);
+    public void info(Supplier<String> msgSupplier, Throwable th) {
+        logInternalExceptional(Level.INFO, msgSupplier, th);
     }
 
     /**
+     * Logs a message on {@link Level#INFO} level with associated exception {@code th}.
+     *
      * @param msg The message pattern which will be passed to the {@link System.Logger}.
      * @param th A {@code Throwable} associated with the log message.
      */
@@ -74,6 +80,8 @@ public class IgniteLogger {
     }
 
     /**
+     * Logs a message on {@link Level#DEBUG} level composed from args with given format.
+     *
      * @param msg The message pattern which will be formatted and passed to the {@link System.Logger}.
      * @param params A list of arguments to be substituted in place of formatting anchors.
      */
@@ -83,16 +91,18 @@ public class IgniteLogger {
 
     /**
      * Logs a message which produces in {@code msgSupplier}, on {@link Level#DEBUG} level with associated exception
-     * {@code thrown}.
+     * {@code th}.
      *
      * @param msgSupplier A supplier function that produces a message.
-     * @param thrown A {@code Throwable} associated with log message; can be {@code null}.
+     * @param th A {@code Throwable} associated with log message; can be {@code null}.
      */
-    public void debug(Supplier<String> msgSupplier, Throwable thrown) {
-        logInternalExceptional(Level.DEBUG, msgSupplier, thrown);
+    public void debug(Supplier<String> msgSupplier, Throwable th) {
+        logInternalExceptional(Level.DEBUG, msgSupplier, th);
     }
 
     /**
+     * Logs a message on {@link Level#DEBUG} level with associated exception {@code th}.
+     *
      * @param msg The message pattern which will be passed to the {@link System.Logger}.
      * @param th A {@code Throwable} associated with the log message;
      */
@@ -101,6 +111,8 @@ public class IgniteLogger {
     }
 
     /**
+     * Logs a message on {@link Level#WARNING} level composed from args with given format.
+     *
      * @param msg The message pattern which will be formatted and passed to the {@link System.Logger}.
      * @param params A list of arguments to be substituted in place of formatting anchors.
      */
@@ -110,16 +122,18 @@ public class IgniteLogger {
 
     /**
      * Logs a message which produces in {@code msgSupplier}, on {@link Level#WARNING} level with associated exception
-     * {@code thrown}.
+     * {@code th}.
      *
      * @param msgSupplier A supplier function that produces a message.
-     * @param thrown A {@code Throwable} associated with log message; can be {@code null}.
+     * @param th A {@code Throwable} associated with log message; can be {@code null}.
      */
-    public void warn(Supplier<String> msgSupplier, Throwable thrown) {
-        logInternalExceptional(Level.WARNING, msgSupplier, thrown);
+    public void warn(Supplier<String> msgSupplier, Throwable th) {
+        logInternalExceptional(Level.WARNING, msgSupplier, th);
     }
 
     /**
+     * Logs a message on {@link Level#WARNING} level with associated exception {@code th}.
+     *
      * @param msg The message pattern which will be passed to the {@link System.Logger}.
      * @param th A {@code Throwable} associated with the log message.
      */
@@ -128,6 +142,8 @@ public class IgniteLogger {
     }
 
     /**
+     * Logs a message on {@link Level#ERROR} level composed from args with given format.
+     *
      * @param msg The message pattern which will be formatted and passed to the {@link System.Logger}.
      * @param params A list of arguments to be substituted in place of formatting anchors.
      */
@@ -137,16 +153,18 @@ public class IgniteLogger {
 
     /**
      * Logs a message which produces in {@code msgSupplier}, on {@link Level#ERROR} level with associated exception
-     * {@code thrown}.
+     * {@code th}.
      *
      * @param msgSupplier A supplier function that produces a message.
-     * @param thrown A {@code Throwable} associated with log message; can be {@code null}.
+     * @param th A {@code Throwable} associated with log message; can be {@code null}.
      */
-    public void error(Supplier<String> msgSupplier, Throwable thrown) {
-        logInternalExceptional(Level.ERROR, msgSupplier, thrown);
+    public void error(Supplier<String> msgSupplier, Throwable th) {
+        logInternalExceptional(Level.ERROR, msgSupplier, th);
     }
 
     /**
+     * Logs a message on {@link Level#ERROR} level with associated exception {@code th}.
+     *
      * @param msg The message pattern which will be passed to the {@link System.Logger}.
      * @param th A {@code Throwable} associated with the log message.
      */
@@ -155,6 +173,8 @@ public class IgniteLogger {
     }
 
     /**
+     * Logs a message on {@link Level#TRACE} level composed from args with given format.
+     *
      * @param msg The message pattern which will be formatted and passed to the {@link System.Logger}.
      * @param params A list of arguments to be substituted in place of formatting anchors.
      */
@@ -164,16 +184,18 @@ public class IgniteLogger {
 
     /**
      * Logs a message which produces in {@code msgSupplier}, on {@link Level#TRACE} level with associated exception
-     * {@code thrown}.
+     * {@code th}.
      *
      * @param msgSupplier A supplier function that produces a message.
-     * @param thrown A {@code Throwable} associated with log message; can be {@code null}.
+     * @param th A {@code Throwable} associated with log message; can be {@code null}.
      */
-    public void trace(Supplier<String> msgSupplier, Throwable thrown) {
-        logInternalExceptional(Level.TRACE, msgSupplier, thrown);
+    public void trace(Supplier<String> msgSupplier, Throwable th) {
+        logInternalExceptional(Level.TRACE, msgSupplier, th);
     }
 
     /**
+     * Logs a message on {@link Level#TRACE} level with associated exception {@code th}.
+     *
      * @param msg The message pattern which will be passed to the {@link System.Logger}.
      * @param th A {@code Throwable} associated with the log message.
      */
@@ -203,42 +225,50 @@ public class IgniteLogger {
      *
      * @param level One of the log message level identifiers.
      * @param msgSupplier A supplier function that produces a message.
-     * @param thrown A {@code Throwable} associated with log message; can be {@code null}.
+     * @param th A {@code Throwable} associated with log message; can be {@code null}.
      * @throws NullPointerException If {@code level} is {@code null}, or {@code msgSupplier} is {@code null}.
      */
-    private void logInternalExceptional(Level level, Supplier<String> msgSupplier, Throwable thrown) {
+    private void logInternalExceptional(Level level, Supplier<String> msgSupplier, Throwable th) {
         Objects.requireNonNull(level);
         Objects.requireNonNull(msgSupplier);
 
         if (!log.isLoggable(level))
             return;
 
-        log.log(level, msgSupplier.get(), thrown);
+        log.log(level, msgSupplier.get(), th);
     }
 
     /**
-     * @return {@code true} if the {@link Level#TRACE} log message level is currently being logged.
+     * Checks if a message of the {@link Level#TRACE} level would be logged by this logger.
+     *
+     * @return {@code true} if the message level is currently being logged, {@code false} otherwise.
      */
     public boolean isTraceEnabled() {
         return log.isLoggable(Level.TRACE);
     }
 
     /**
-     * @return {@code true} if the {@link Level#DEBUG} log message level is currently being logged.
+     * Checks if a message of the {@link Level#DEBUG} level would be logged by this logger.
+     *
+     * @return {@code true} if the message level is currently being logged, {@code false} otherwise.
      */
     public boolean isDebugEnabled() {
         return log.isLoggable(Level.DEBUG);
     }
 
     /**
-     * @return {@code true} if the {@link Level#INFO} log message level is currently being logged.
+     * Checks if a message of the {@link Level#INFO} level would be logged by this logger.
+     *
+     * @return {@code true} if the message level is currently being logged, {@code false} otherwise.
      */
     public boolean isInfoEnabled() {
         return log.isLoggable(Level.INFO);
     }
 
     /**
-     * @return {@code true} if the {@link Level#WARNING} log message level is currently being logged.
+     * Checks if a message of the {@link Level#WARNING} level would be logged by this logger.
+     *
+     * @return {@code true} if the message level is currently being logged, {@code false} otherwise.
      */
     public boolean isWarnEnabled() {
         return log.isLoggable(Level.WARNING);

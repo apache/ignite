@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * General internal exception. This exception is used to indicate any error condition within the node.
  */
 public class IgniteInternalException extends RuntimeException {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /**

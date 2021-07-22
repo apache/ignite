@@ -28,7 +28,7 @@ public class IgniteUuidGenerator {
     /** VM ID. */
     private final UUID globalId;
 
-    /** */
+    /** Local monotonic counter. */
     private final AtomicLong cntGen;
 
     /**

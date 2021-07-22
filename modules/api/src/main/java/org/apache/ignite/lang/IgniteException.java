@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * General Ignite exception. This exception is used to indicate any error condition within the node.
  */
 public class IgniteException extends RuntimeException {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /**
