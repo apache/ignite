@@ -1,7 +1,6 @@
 # name: test/sql/function/timestamp/test_extract.test
 # description: Extract timestamp function
 # group: [timestamp]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14960
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
 
 statement ok
@@ -41,11 +40,11 @@ SELECT EXTRACT(century FROM i) FROM timestamps ORDER BY id
 20
 NULL
 
-# day of the week (Sunday = 0, Saturday = 6)
+# day of the week (Sunday = 1, Saturday = 7)
 query I
 SELECT EXTRACT(DOW FROM i) FROM timestamps ORDER BY id
 ----
-6
+7
 NULL
 
 # day of the year (1 - 365/366)

@@ -44,6 +44,13 @@ SELECT EXTRACT(century FROM i) FROM dates ORDER BY i
 20
 NULL
 
+# day of the week (Sunday = 1, Saturday = 7)
+query I
+SELECT EXTRACT(DOW FROM i) FROM dates ORDER BY i
+----
+7
+NULL
+
 # day of the year (1 - 365/366)
 query I
 SELECT EXTRACT(DOY FROM i) FROM dates ORDER BY i
