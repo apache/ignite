@@ -142,8 +142,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
                 qry.setLocalListener(this);
 
-                //noinspection deprecation
-                qry.setRemoteFilter(this); // Filter must be set always for correct resource release.
+                if (hasFilter || javaFilter != null) {
+                    //noinspection deprecation
+                    qry.setRemoteFilter(this); // Filter must be set always for correct resource release.
+                }
 
                 qry.setPageSize(bufSize);
                 qry.setTimeInterval(timeInterval);

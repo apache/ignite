@@ -21,9 +21,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -32,6 +37,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     [Category(TestUtils.CategoryIntensive)]
     public class ContinuousQueryTest
     {
+        /** */
+        private bool _enableSecurity;
+        
+        /** */
+        private readonly ListLogger _logger = new ListLogger(new ConsoleLogger())
+        {
+            EnabledLevels = new[] {LogLevel.Error}
+        };
+
         /// <summary>
         /// Tests same query on multiple nodes.
         /// This tests verifies that there are no exception on Java side during event delivery.
@@ -40,8 +54,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Category(TestUtils.CategoryIntensive)]
         public void TestSameQueryMultipleNodes()
         {
+            CheckSameQueryMultipleNodes();
+        }
+        
+        /// <summary>
+        /// Tests same query on multiple nodes with enabled security.
+        /// This test verifies that on the Java side the security wrapper for the event filter does not produce errors  
+        /// </summary>
+        [Test]
+        [Category(TestUtils.CategoryIntensive)]
+        public void TestSameQueryMultipleNodesSecurityEnabled()
+        {
+            _enableSecurity = true;
+
+            CheckSameQueryMultipleNodes();
+            
+            var errs = _logger.Entries.FindAll(e => e.Message.Contains("CacheEntryEventFilter failed"));
+
+            Assert.AreEqual(0, errs.Count);
+        }
+
+        /// <summary>
+        /// Tests same query on multiple nodes.
+        /// </summary>
+        private void CheckSameQueryMultipleNodes()
+        {
             using (var ignite = StartIgnite())
             {
+                ignite.GetCluster().SetActive(true);
+
                 var cache = ignite.GetOrCreateCache<Guid, Data>("data");
                 cache.QueryContinuous(new ContinuousQuery<Guid, Data>(new Listener()));
 
@@ -84,13 +125,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Starts the ignite.
         /// </summary>
-        private static IIgnite StartIgnite()
+        private IIgnite StartIgnite()
         {
-            return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new Core.Binary.BinaryConfiguration(typeof(Data)),
-                AutoGenerateIgniteInstanceName = true
+                BinaryConfiguration = new BinaryConfiguration(typeof(Data)),
+                AutoGenerateIgniteInstanceName = true,
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        PersistenceEnabled = _enableSecurity,
+                        Name = DataStorageConfiguration.DefaultDataRegionName,
+                    }
+                },
+                AuthenticationEnabled = _enableSecurity,
+                WorkDirectory = PathUtils.GetTempDirectoryName(),
+                Logger = _logger,
+                IsActiveOnStart = false
             });
+            
+            ignite.GetCluster().SetBaselineAutoAdjustEnabledFlag(true);
+
+            return ignite;
         }
 
         private class Data
@@ -110,6 +167,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     Events.Push(e);
                 }
             }
+        }
+        
+        [TearDown]
+        public void TearDown()
+        {
+            _logger.Clear();
+            Directory.Delete(PathUtils.GetTempDirectoryName(), true);
         }
     }
 }
