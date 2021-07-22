@@ -128,8 +128,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /** @throws Exception If failed. */
-    @Test
-    public void doRestoreAllGroups() throws Exception {
+    private void doRestoreAllGroups() throws Exception {
         CacheConfiguration<Integer, Object> cacheCfg1 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
 
