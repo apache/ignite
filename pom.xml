@@ -42,6 +42,9 @@
         <module>modules/calcite</module>
         <module>modules/cli</module>
         <module>modules/cli-common</module>
+        <module>modules/client</module>
+        <module>modules/client-common</module>
+        <module>modules/client-handler</module>
         <module>modules/configuration</module>
         <module>modules/configuration-annotation-processor</module>
         <module>modules/configuration-api</module>

@@ -85,6 +85,7 @@
         <disruptor.version>3.3.7</disruptor.version>
         <metrics.version>4.0.2</metrics.version>
         <jctools.version>3.3.0</jctools.version>
+        <msgpack.version>0.8.21</msgpack.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -280,6 +281,18 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-client-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-client-handler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- 3rd party dependencies -->
             <dependency>
                 <groupId>org.jetbrains</groupId>
@@ -429,6 +442,18 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.msgpack</groupId>
+                <artifactId>msgpack-core</artifactId>
+                <version>${msgpack.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.msgpack</groupId>
+                <artifactId>jackson-dataformat-msgpack</artifactId>
+                <version>${msgpack.version}</version>
             </dependency>
 
             <!-- Test dependencies -->

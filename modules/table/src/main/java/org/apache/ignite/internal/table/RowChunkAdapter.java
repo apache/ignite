@@ -23,13 +23,14 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.row.Row;
+import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Row to RowChunk adapter.
  */
-public abstract class RowChunkAdapter implements Tuple {
+public abstract class RowChunkAdapter implements Tuple, SchemaAware {
     /**
      * @param colName Column name.
      * @return Column.

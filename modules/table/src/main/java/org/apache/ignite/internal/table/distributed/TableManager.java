@@ -55,6 +55,7 @@ import org.apache.ignite.internal.schema.SchemaModificationException;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
+import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
@@ -78,7 +79,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Table manager.
  */
-public class TableManager extends Producer<TableEvent, TableEventParameters> implements IgniteTables {
+public class TableManager extends Producer<TableEvent, TableEventParameters> implements IgniteTables, IgniteTablesInternal {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(TableManager.class);
 
@@ -105,6 +106,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** Tables. */
     private final Map<String, TableImpl> tables = new ConcurrentHashMap<>();
+
+    /** Tables. */
+    private final Map<UUID, TableImpl> tablesById = new ConcurrentHashMap<>();
 
     /**
      * Creates a new table manager.
@@ -167,6 +171,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         var table = new TableImpl(internalTable, schemaReg, this, null);
 
         tables.put(name, table);
+        tablesById.put(table.tableId(), table);
 
         onEvent(TableEvent.CREATE, new TableEventParameters(table), null);
     }
@@ -598,9 +603,11 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     return false;
 
                 if (e == null) {
-                    Table droppedTable = tables.remove(tableName);
+                    TableImpl droppedTable = tables.remove(tableName);
 
                     assert droppedTable != null;
+
+                    tablesById.remove(droppedTable.tableId());
 
                     dropTblFut.complete(null);
                 }
@@ -696,7 +703,49 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Gets a table if it exists or {@code null} if it was not created or was removed before.
      *
-     * @param name Table name.
+     * @param id Table ID.
+     * false otherwise.
+     * @return A table or {@code null} if table does not exist.
+     */
+    @Override public TableImpl table(UUID id) {
+        var tbl = tablesById.get(id);
+
+        if (tbl != null)
+            return tbl;
+
+        CompletableFuture<TableImpl> getTblFut = new CompletableFuture<>();
+
+        EventListener<TableEventParameters> clo = new EventListener<>() {
+            @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
+                if (!id.equals(parameters.tableId()))
+                    return false;
+
+                if (e == null)
+                    getTblFut.complete(parameters.table());
+                else
+                    getTblFut.completeExceptionally(e);
+
+                return true;
+            }
+
+            @Override public void remove(@NotNull Throwable e) {
+                getTblFut.completeExceptionally(e);
+            }
+        };
+
+        listen(TableEvent.CREATE, clo);
+
+        tbl = tablesById.get(id);
+
+        if (tbl != null && getTblFut.complete(tbl) || getTblFut.complete(null))
+            removeListener(TableEvent.CREATE, clo, null);
+
+        return getTblFut.join();
+    }
+
+    /**
+     * Gets a table if it exists or {@code null} if it was not created or was removed before.
+     *
      * @param checkConfiguration True when the method checks a configuration before tries to get a table,
      * false otherwise.
      * @return A table or {@code null} if table does not exist.

@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.TupleBuilder;
@@ -32,7 +33,7 @@ import org.apache.ignite.table.TupleBuilder;
 /**
  * Buildable tuple.
  */
-public class TupleBuilderImpl implements TupleBuilder, Tuple {
+public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     /** Columns values. */
     protected Map<String, Object> map;
 
@@ -65,6 +66,23 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple {
         return this;
     }
 
+    /**
+     * Sets column value.
+     *
+     * @param col Column.
+     * @param value Value to set.
+     * @return {@code this} for chaining.
+     */
+    public TupleBuilder set(Column col, Object value) {
+        assert col != null;
+
+        col.validate(value);
+
+        map.put(col.name(), value);
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public Tuple build() {
         return this;
@@ -75,6 +93,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple {
         return (T)map.getOrDefault(colName, def);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T value(String colName) {
         return (T)map.get(colName);
     }
@@ -131,12 +150,8 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple {
         return value(colName);
     }
 
-    /**
-     * Get schema descriptor.
-     *
-     * @return Schema descriptor.
-     */
-    public SchemaDescriptor schema() {
+    /** {@inheritDoc} */
+    @Override public SchemaDescriptor schema() {
         return schemaDesc;
     }
 
