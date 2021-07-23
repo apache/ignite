@@ -27,22 +27,46 @@ import org.apache.ignite.network.annotations.MessageGroup;
  * Base class for {@link MessagingService} implementations.
  */
 public abstract class AbstractMessagingService implements MessagingService {
+    /**
+     * Class holding a pair of a message group class and corresponding handlers.
+     */
+    private static class Handler {
+        /** */
+        final Class<?> messageGroup;
+
+        /** */
+        final List<NetworkMessageHandler> handlers;
+
+        /** */
+        Handler(Class<?> messageGroup, List<NetworkMessageHandler> handlers) {
+            this.messageGroup = messageGroup;
+            this.handlers = handlers;
+        }
+    }
+
     /** Mapping from group type (array index) to a list of registered message handlers. */
-    private final AtomicReferenceArray<List<NetworkMessageHandler>> handlersByGroupType =
-        new AtomicReferenceArray<>(Short.MAX_VALUE + 1);
+    private final AtomicReferenceArray<Handler> handlersByGroupType = new AtomicReferenceArray<>(Short.MAX_VALUE + 1);
 
     /** {@inheritDoc} */
     @Override public void addMessageHandler(Class<?> messageGroup, NetworkMessageHandler handler) {
-        handlersByGroupType.getAndUpdate(getMessageGroupType(messageGroup), handlers -> {
-            if (handlers == null)
-                return List.of(handler);
+        handlersByGroupType.getAndUpdate(getMessageGroupType(messageGroup), oldHandler -> {
+            if (oldHandler == null)
+                return new Handler(messageGroup, List.of(handler));
 
-            var result = new ArrayList<NetworkMessageHandler>(handlers.size() + 1);
+            if (oldHandler.messageGroup != messageGroup) {
+                throw new IllegalArgumentException(String.format(
+                    "Handlers are already registered for a message group with the same group ID " +
+                        "but different class. Group ID: %d, given message group: %s, existing message group: %s",
+                    getMessageGroupType(messageGroup), messageGroup, oldHandler.messageGroup
+                ));
+            }
 
-            result.addAll(handlers);
-            result.add(handler);
+            var handlers = new ArrayList<NetworkMessageHandler>(oldHandler.handlers.size() + 1);
 
-            return result;
+            handlers.addAll(oldHandler.handlers);
+            handlers.add(handler);
+
+            return new Handler(messageGroup, handlers);
         });
     }
 
@@ -67,8 +91,8 @@ public abstract class AbstractMessagingService implements MessagingService {
     protected final Collection<NetworkMessageHandler> getMessageHandlers(short groupType) {
         assert groupType >= 0 : "Group type must not be negative";
 
-        List<NetworkMessageHandler> result = handlersByGroupType.get(groupType);
+        Handler result = handlersByGroupType.get(groupType);
 
-        return result == null ? List.of() : result;
+        return result == null ? List.of() : result.handlers;
     }
 }

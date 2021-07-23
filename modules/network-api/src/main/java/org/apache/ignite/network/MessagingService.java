@@ -97,6 +97,8 @@ public interface MessagingService {
      *
      * @param messageGroup Message group descriptor.
      * @param handler Message handler.
+     * @throws IllegalArgumentException If some handlers have already been registered for a different message group
+     * class that has the same ID as the given {@code messageGroup}.
      */
     void addMessageHandler(Class<?> messageGroup, NetworkMessageHandler handler);
 }
