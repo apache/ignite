@@ -61,3 +61,29 @@ class ThinClientTest(IgniteTest):
         ignite.start()
         thin_clients.run()
         ignite.stop()
+
+    @cluster(num_nodes=12)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_thin_client_max_reconnect(self, ignite_version):
+        """
+        Thin client compatibility test.
+        """
+
+        server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
+                                            client_connector_configuration=ClientConnectorConfiguration())
+
+        ignite = IgniteService(self.test_context, server_config, 1)
+
+        addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+
+        thin_clients = IgniteApplicationService(self.test_context,
+                                                IgniteThinClientConfiguration(addresses=addresses,
+                                                                              version=IgniteVersion(
+                                                                                  ignite_version)),
+                                                java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                                                num_nodes=11)
+
+        ignite.start()
+        thin_clients.run()
+        ignite.stop()
+
