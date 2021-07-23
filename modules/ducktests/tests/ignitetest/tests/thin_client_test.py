@@ -18,7 +18,10 @@ This module contains client tests.
 """
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
+from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration, \
+    DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -34,7 +37,7 @@ class ThinClientTest(IgniteTest):
     export GLOBALS='{"ssl":{"enabled":true}}' .
     """
 
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTestApplication"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientConnectAndWaitClient"
 
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH), str(LATEST), version_prefix="server_version")
@@ -70,6 +73,8 @@ class ThinClientTest(IgniteTest):
         """
 
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
+                                            data_storage=DataStorageConfiguration(
+                                                default=DataRegionConfiguration(persistent=True)),
                                             client_connector_configuration=ClientConnectorConfiguration())
 
         ignite = IgniteService(self.test_context, server_config, 1)
@@ -84,6 +89,7 @@ class ThinClientTest(IgniteTest):
                                                 num_nodes=11)
 
         ignite.start()
+        ControlUtility(cluster=ignite).activate()
         thin_clients.run()
         ignite.stop()
 
