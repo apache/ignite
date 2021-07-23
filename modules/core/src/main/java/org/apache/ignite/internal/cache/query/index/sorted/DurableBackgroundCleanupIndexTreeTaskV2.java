@@ -223,9 +223,15 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
 
         if (grpCtx != null) {
             try {
+                // Renaming should be done once when adding (and immediately launched) a task at the time of drop the index.
+                // To avoid problems due to node crash between renaming and adding a task.
                 if (needToRen) {
+                    // If the node falls before renaming, then the index was definitely not dropped.
+                    // If the node crashes after renaming, the task will delete the old index trees,
+                    // and the node will rebuild this index when the node starts.
                     renameIndexRootPages(grpCtx, cacheName, oldTreeName, newTreeName, segments);
 
+                    // After restoring from MetaStorage, it will also be {@code false}.
                     needToRen = false;
                 }
 
