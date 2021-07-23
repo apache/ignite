@@ -51,10 +51,8 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -64,11 +62,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -88,79 +82,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         cfg.getDataStorageConfiguration().setCheckpointFrequency(TimeUnit.DAYS.toMillis(365));
 
         return cfg;
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testSnapshotLocalPartitions() throws Exception {
-        // Writting deltas causes several page writes into file. Every page write calls encrypt(). Every repatable encrypt() produces
-        // different record even for same original data. Re-writting pages from delta to partition file in the shanpshot leads to additional
-        // encryption before writting to the snapshot partition file. Thus, page in original partition and in snapshot partiton has
-        // different encrypted CRC and same de-crypted CRC. Different encrypted CRC looks like different data in point of view of
-        // third-party observer.
-        if (encryption)
-            return;
-
-        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
-        for (int i = 4096; i < 8192; i++) {
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
-                @Override public String toString() {
-                    return "_" + super.toString();
-                }
-            });
-        }
-
-        GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
-        IgniteSnapshotManager mgr = snp(ig);
-
-        // Collection of pairs group and appropriate cache partition to be snapshot.
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
-            SNAPSHOT_NAME,
-            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
-
-        snpFut.get();
-
-        File cacheWorkDir = ((FilePageStoreManager)ig.context()
-            .cache()
-            .context()
-            .pageStore())
-            .cacheWorkDir(dfltCacheCfg);
-
-        // Checkpoint forces on cluster deactivation (currently only single node in cluster),
-        // so we must have the same data in snapshot partitions and those which left
-        // after node stop.
-        stopGrid(ig.name());
-
-        // Calculate CRCs.
-        IgniteConfiguration cfg = ig.context().config();
-        PdsFolderSettings settings = ig.context().pdsFolderResolver().resolveFolders();
-        String nodePath = databaseRelativePath(settings.folderName());
-        File binWorkDir = binaryWorkDir(cfg.getWorkDirectory(), settings.folderName());
-        File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
-        File snpBinWorkDir = binaryWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
-        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
-
-        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
-        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
-            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME)
-                    .getAbsolutePath(),
-                nodePath,
-                false),
-                cacheDirName(dfltCacheCfg)));
-
-        assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
-            origPartCRCs, snpPartCRCs);
-        assertEquals("Binary object mappings must be the same for local node and created snapshot",
-            calculateCRC32Partitions(binWorkDir), calculateCRC32Partitions(snpBinWorkDir));
-        assertEquals("Marshaller meta mast be the same for local node and created snapshot",
-            calculateCRC32Partitions(marshWorkDir), calculateCRC32Partitions(snpMarshWorkDir));
-
-        File snpWorkDir = mgr.snapshotTmpDir();
-
-        assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
     }
 
     /**
@@ -550,32 +471,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      */
     private static void snapshotStoreFactory(IgniteEx ignite, BiFunction<Integer, Boolean, FileVersionCheckingFactory> factory) {
         setFieldValue(snp(ignite), "storeFactory", factory);
-    }
-
-    /**
-     * @param snpName Unique snapshot name.
-     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
-     * @param snpSndr Sender which used for snapshot sub-task processing.
-     * @return Future which will be completed when snapshot is done.
-     */
-    private SnapshotFutureTask startLocalSnapshotTask(
-        GridCacheSharedContext<?, ?> cctx,
-        String snpName,
-        Map<Integer, Set<Integer>> parts,
-        SnapshotSender snpSndr
-    ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, encryption, snpSndr);
-
-        snpFutTask.start();
-
-        // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
-        // due to checkpoint already running and we need to schedule the next one
-        // right after current will be completed.
-        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
-
-        snpFutTask.started().get();
-
-        return snpFutTask;
     }
 
     /** */
