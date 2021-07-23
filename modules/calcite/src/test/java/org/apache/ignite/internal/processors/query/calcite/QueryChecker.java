@@ -111,6 +111,17 @@ public abstract class QueryChecker {
     }
 
     /**
+     * Ignite row count cost mather.
+     * @param rowCount Expected row count.
+     * @return Mather.
+     */
+    public static Matcher<String> containsRowCount(double rowCount) {
+        String rowCountStr = String.format(".*rowcount = %s,.*", printCostVal(rowCount));
+
+        return new RegexpMather(rowCountStr);
+    }
+
+    /**
      * Regexp string mather.
      */
     private static class RegexpMather extends CustomTypeSafeMatcher<String> {

@@ -29,6 +29,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.NumberUtil;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -47,7 +48,56 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
-        return rel.estimateRowCount(mq);
+        return Util.first(getJoinRowCount(mq, rel, rel.getCondition()), 1D);
+    }
+
+    public static Double getJoinRowCount(RelMetadataQuery mq, Join join,
+        RexNode condition) {
+        if (!join.getJoinType().projectsRight()) {
+            // Create a RexNode representing the selectivity of the
+            // semijoin filter and pass it to getSelectivity
+            RexNode semiJoinSelectivity =
+                RelMdUtil.makeSemiJoinSelectivityRexNode(mq, join);
+            Double selectivity = mq.getSelectivity(join.getLeft(), semiJoinSelectivity);
+            return NumberUtil.multiply(
+                join.getJoinType() == JoinRelType.SEMI
+                    ? selectivity
+                    : NumberUtil.subtract(1D, selectivity), // ANTI join
+                mq.getRowCount(join.getLeft()));
+        }
+        // Row count estimates of 0 will be rounded up to 1.
+        // So, use maxRowCount where the product is very small.
+        final Double left = mq.getRowCount(join.getLeft());
+        final Double right = mq.getRowCount(join.getRight());
+
+        if (left == null || right == null)
+            return null;
+
+        if (left <= 1D || right <= 1D) {
+            Double max = mq.getMaxRowCount(join);
+
+            if (max != null && max <= 1D)
+                return max;
+        }
+
+        Double selectivity = mq.getSelectivity(join, condition);
+
+        if (selectivity == null)
+            return null;
+
+        double innerRowCnt = left * right * selectivity;
+        switch (join.getJoinType()) {
+            case INNER:
+                return innerRowCnt;
+            case LEFT:
+                return left * (1D - selectivity) + innerRowCnt;
+            case RIGHT:
+                return right * (1D - selectivity) + innerRowCnt;
+            case FULL:
+                return (left + right) * (1D - selectivity) + innerRowCnt;
+            default:
+                throw Util.unexpected(join.getJoinType());
+        }
     }
 
     /** */

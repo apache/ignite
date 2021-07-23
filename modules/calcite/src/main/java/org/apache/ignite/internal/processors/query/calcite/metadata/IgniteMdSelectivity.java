@@ -17,28 +17,61 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.util.typedef.F;
+import org.h2.value.Value;
 
 /** */
 public class IgniteMdSelectivity extends RelMdSelectivity {
+    /**
+     * Math context to use in estimations calculations.
+     */
+    private final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
+
     /** */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
@@ -109,7 +142,579 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 
-    /** */
+    public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
+        RelNode best = rel.getBest();
+        if (best == null)
+            return super.getSelectivity(rel, mq, predicate);
+
+        return getSelectivity(best, mq, predicate);
+    }
+
+    public Double getSelectivity(IgniteIndexScan rel, RelMetadataQuery mq, RexNode predicate) {
+        return getTablePredicateBasedSelectivity(rel, rel.getTable().unwrap(IgniteTable.class), mq, predicate);
+    }
+
+    public Double getSelectivity(IgniteTableScan rel, RelMetadataQuery mq, RexNode predicate) {
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+
+        return getTablePredicateBasedSelectivity(rel, tbl, mq, predicate);
+    }
+
+    /**
+     * Convert specified value into comparable type: BigDecimal,
+     *
+     * @param value Value to convert to comparable form.
+     * @return Comparable form of value.
+     */
+    private BigDecimal toComparableValue(RexLiteral value) {
+        RelDataType type = value.getType();
+        if (type instanceof BasicSqlType) {
+            BasicSqlType bType = (BasicSqlType)type;
+
+            switch ((SqlTypeFamily)bType.getFamily()) {
+                case NULL:
+                    return null;
+
+                case NUMERIC:
+                    return value.getValueAs(BigDecimal.class);
+
+                case DATE:
+                case TIME:
+                    //return value.getValueAs()
+
+                case TIMESTAMP:
+                    // TODO:
+                    return null;
+
+                case BOOLEAN:
+                    return (value.getValueAs(Boolean.class)) ? BigDecimal.ONE : BigDecimal.ZERO;
+
+            }
+            //bType.getFieldNames()
+            value.getValueAs(BigDecimal.class);
+        }
+
+        //getOperand(value, );
+        return null;
+    }
+
+    /**
+     * Convert specified value into comparable type: BigDecimal,
+     *
+     * @param value Value to convert to comparable form.
+     * @return Comparable form of value.
+     */
+    private BigDecimal toComparableValue(Value value) {
+        if (value == null)
+            return null;
+
+        switch (value.getType()) {
+            case Value.NULL:
+                throw new IllegalArgumentException("Can't compare null values");
+
+            case Value.BOOLEAN:
+                return (value.getBoolean()) ? BigDecimal.ONE : BigDecimal.ZERO;
+
+            case Value.BYTE:
+                return new BigDecimal(value.getByte());
+
+            case Value.SHORT:
+                return new BigDecimal(value.getShort());
+
+            case Value.INT:
+                return new BigDecimal(value.getInt());
+
+            case Value.LONG:
+                return new BigDecimal(value.getLong());
+
+            case Value.DECIMAL:
+                return value.getBigDecimal();
+
+            case Value.DOUBLE:
+                return new BigDecimal(value.getDouble());
+
+            case Value.FLOAT:
+                return new BigDecimal(value.getFloat());
+
+            case Value.DATE:
+                return new BigDecimal(value.getDate().getTime());
+
+            case Value.TIME:
+                return new BigDecimal(value.getTime().getTime());
+
+            case Value.TIMESTAMP:
+                return new BigDecimal(value.getTimestamp().getTime());
+
+            case Value.BYTES:
+                BigInteger bigInteger = new BigInteger(1, value.getBytes());
+                return new BigDecimal(bigInteger);
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+            case Value.ARRAY:
+            case Value.JAVA_OBJECT:
+            case Value.GEOMETRY:
+                return null;
+
+            case Value.UUID:
+                BigInteger bigInt = new BigInteger(1, value.getBytes());
+                return new BigDecimal(bigInt);
+
+            default:
+                throw new IllegalStateException("Unsupported H2 type: " + value.getType());
+        }
+    }
+
+    /**
+     * Predicate based selectivity for table.
+     *
+     * @param rel Original rel node to fallback calculation by.
+     * @param tbl Underlying IgniteTable.
+     * @param mq RelMetadataQuery
+     * @param predicate Predicate to estimate selectivity by.
+     * @return Selectivity.
+     */
+    private double getTablePredicateBasedSelectivity(RelNode rel, IgniteTable tbl, RelMetadataQuery mq, RexNode predicate) {
+        if (tbl == null)
+            return super.getSelectivity(rel, mq, predicate);
+
+        IgniteTypeFactory typeFactory = Commons.typeFactory(rel);
+
+        double sel = 1.0;
+        for (RexNode pred : RelOptUtil.conjunctions(predicate)) {
+
+            if (pred.getKind() == SqlKind.IS_NULL)
+                sel *= estimateIsNullSelectivity(typeFactory, tbl, pred);
+            else if (pred.getKind() == SqlKind.IS_NOT_NULL)
+                sel *= estimateIsNotNullSelectivity(typeFactory, tbl, pred);
+            else if (pred.isA(SqlKind.EQUALS))
+                sel *= estimateEqualsSelectivity(typeFactory, tbl, pred);
+            else if (pred.isA(SqlKind.COMPARISON))
+                sel *= estimateComparisonSelectivity(typeFactory, tbl, pred);
+            else
+                sel *= .25;
+        }
+
+        return sel;
+    }
+
+    /**
+     * Compute selectivity for "is null" condition.
+     *
+     * @param typeFactory IgniteTypeFactory.
+     * @param tbl IgniteTable.
+     * @param pred RexNode.
+     * @return Selectivity estimation.
+     */
+    private double estimateIsNullSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+
+        if (colStat == null)
+            return guessSelectivity(pred);
+
+        return estimateNullSelectivity(colStat);
+    }
+
+    /**
+     * Compute selectivity for "is not null" condition.
+     *
+     * @param typeFactory IgniteTypeFactory.
+     * @param tbl IgniteTable.
+     * @param pred RexNode.
+     * @return Selectivity estimation.
+     */
+    private double estimateIsNotNullSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+
+        if (colStat == null)
+            return guessSelectivity(pred);
+
+        return estimateNotNullSelectivity(colStat);
+    }
+
+    private double estimateEqualsSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+
+        if (colStat == null)
+            return guessSelectivity(pred);
+
+        RexLiteral val = getOperand(pred, RexLiteral.class);
+
+        if (val == null)
+            return guessSelectivity(pred);
+
+        BigDecimal comparableVal = toComparableValue(val);
+
+        if (comparableVal == null)
+            return guessSelectivity(pred);
+
+        return estimateEqualsSelectivity(colStat, comparableVal);
+    }
+
+    private double estimateComparisonSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+
+        if (colStat == null)
+            return guessSelectivity(pred);
+
+        return estimateRangeSelectivity(colStat, pred);
+    }
+
+    /**
+     * Get column statistics.
+     *
+     * @param typeFactory IgniteTypeFactory.
+     * @param tbl IgniteTable to get statistics from.
+     * @param pred Predicate to get statistics by related column.
+     * @return ColumnStatistics or {@code null}.
+     */
+    private ColumnStatistics getColStat(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
+        Statistic stat = tbl.getStatistic();
+
+        if (stat == null)
+            return null;
+
+        List<String> columns = tbl.getRowType(typeFactory).getFieldNames();
+
+        String colName = getColName(pred, columns);
+
+        if (QueryUtils.KEY_FIELD_NAME.equals(colName))
+            colName = tbl.descriptor().typeDescription().keyFieldName();
+
+        return ((IgniteStatisticsImpl)stat).getColumnsStatistics().get(colName);
+    }
+
+    /**
+     * Estimate range selectivity based on predicate.
+     *
+     * @param colStat Column statistics to use.
+     * @param pred  Condition.
+     * @return Selectivity.
+     */
+    private double estimateRangeSelectivity(ColumnStatistics colStat, RexNode pred) {
+        // TODO: use min/max statistics value comparison.
+        if (pred instanceof RexCall) {
+            RexLiteral literal = getOperand(pred, RexLiteral.class);
+            BigDecimal val = toComparableValue(literal);
+
+            return estimateSelectivity(colStat, val, pred);
+        }
+
+        return estimateNotNullSelectivity(colStat);
+    }
+
+    /**
+     * Estimate range selectivity based on predicate, condition and column statistics.
+     *
+     * @param colStat Column statistics to use.
+     * @param val Condition value.
+     * @param pred Condition.
+     * @return Selectivity.
+     */
+    private double estimateSelectivity(ColumnStatistics colStat, BigDecimal val, RexNode pred) {
+        // Without value or statistics we can only guess.
+        if (val == null)
+            return guessSelectivity(pred);
+
+        SqlOperator op = ((RexCall)pred).op;
+
+        BigDecimal min = toComparableValue(colStat.min());
+        BigDecimal max = toComparableValue(colStat.max());
+        BigDecimal total = (min == null || max == null) ? null : max.subtract(min).abs();
+
+        double notNullSelectivity = estimateNotNullSelectivity(colStat);
+
+        if (total == null)
+            // No min/max mean that all values are null for coumn.
+            return 0.;
+
+        // All values the same so check confition and return all or nothing selectivity.
+        if (total.signum() == 0) {
+            BigDecimal diff = val.subtract(min);
+            int diffSign = diff.signum();
+
+            switch (op.getKind()) {
+                case GREATER_THAN:
+                    return (diffSign < 0) ? notNullSelectivity : 0.;
+
+                case LESS_THAN:
+                    return (diffSign > 0) ? notNullSelectivity : 0.;
+
+                case GREATER_THAN_OR_EQUAL:
+                    return (diffSign <= 0) ? notNullSelectivity : 0.;
+
+                case LESS_THAN_OR_EQUAL:
+                    return (diffSign >= 0) ? notNullSelectivity : 0.;
+
+                default:
+                    return guessSelectivity(pred);
+            }
+        }
+
+        // Estimate percent of selectivity by ranges.
+        BigDecimal actual = BigDecimal.ZERO;
+
+        switch (op.getKind()) {
+            case GREATER_THAN:
+            case GREATER_THAN_OR_EQUAL:
+                actual = max.subtract(val);
+
+                if (actual.signum() < 0)
+                    return 0.;
+
+                break;
+
+            case LESS_THAN:
+            case LESS_THAN_OR_EQUAL:
+                actual = val.subtract(min);
+
+                if (actual.signum() < 0)
+                    return 0.;
+
+                break;
+
+            default:
+                return guessSelectivity(pred);
+        }
+
+        double estimation = actual.divide(total, MATH_CONTEXT).doubleValue();
+
+        // If value less than min or greater than max for > and < conditions respectively.
+
+        if (estimation > notNullSelectivity)
+            estimation = notNullSelectivity;
+
+        return estimation;
+    }
+
+    /**
+     * Estimate "=" selectivity by column statistics.
+     *
+     * @param colStat Column statistics.
+     * @param comparableVal Comparable value to compare with.
+     * @return Selectivity.
+     */
+    private double estimateEqualsSelectivity(ColumnStatistics colStat, BigDecimal comparableVal) {
+        if (colStat.total() == 0)
+            return 1.;
+
+        if (colStat.total() - colStat.nulls() == 0)
+            return 0.;
+
+        if (colStat.min() != null) {
+            BigDecimal minComparable = toComparableValue(colStat.min());
+            if (minComparable != null && minComparable.compareTo(comparableVal) > 0)
+                return 0.;
+        }
+
+        if (colStat.max() != null) {
+            BigDecimal maxComparable = toComparableValue(colStat.max());
+            if (maxComparable != null && maxComparable.compareTo(comparableVal) < 0)
+                return 0.;
+        }
+
+        double expectedRows = (double)(colStat.distinct()) / (colStat.total() - colStat.nulls());
+
+        return expectedRows / colStat.total();
+    }
+
+    /**
+     * Estimate "is not null" selectivity by column statistics.
+     *
+     * @param colStat Column statistics.
+     * @return Selectivity.
+     */
+    private double estimateNotNullSelectivity(ColumnStatistics colStat) {
+        if (colStat.total() == 0)
+            return 1;
+
+        return (double)(colStat.total() - colStat.nulls()) / colStat.total();
+    }
+
+    /**
+     * Estimate "is null" selectivity by column statistics.
+     *
+     * @param colStat Column statistics.
+     * @return Selectivity.
+     */
+    private double estimateNullSelectivity(ColumnStatistics colStat) {
+        if (colStat.total() == 0)
+            return 1;
+
+        return (double)colStat.nulls() / colStat.total();
+    }
+
+    /**
+     * Get field name by predicate.
+     *
+     * @param pred Predicate.
+     * @param fieldNames Field names.
+     * @return Predicate related field name or {@code null} if it unable to get the name.
+     */
+    private String getColName(RexNode pred, List<String> fieldNames) {
+        RexNode operand = getOperand(pred, RexLocalRef.class);
+
+        if (operand == null)
+            return null;
+
+        int colIdx = ((RexSlot)operand).getIndex();
+
+        return fieldNames.get(colIdx);
+    }
+
+    /**
+     * Get RexNode operand by type.
+     *
+     * @param pred RexNode to get operand by.
+     * @param cls Operand class.
+     * @return Operand or {@code null} if it unable to find operand with specified type.
+     */
+    private <T> T getOperand(RexNode pred, Class<T> cls) {
+        if (pred instanceof RexCall) {
+            List<RexNode> operands = ((RexCall)pred).getOperands();
+
+            if (operands.size() > 2)
+                return null;
+
+            for (RexNode operand : operands) {
+                if (cls.isAssignableFrom(operand.getClass()))
+                    return (T)operand;
+
+                if (operand instanceof RexCall) {
+                    T res = getOperand(operand, cls);
+
+                    if (res != null)
+                        return res;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Guess selectivity by predicate type only.
+     *
+     * @param pred Predicate to guess selectivity by.
+     * @return Selectivity.
+     */
+    private double guessSelectivity(RexNode pred) {
+        if (pred.getKind() == SqlKind.IS_NULL)
+            return .1;
+        else if (pred.getKind() == SqlKind.IS_NOT_NULL)
+            return .9;
+        else if (pred.isA(SqlKind.EQUALS))
+            return .15;
+        else if (pred.isA(SqlKind.COMPARISON))
+            return .5;
+        else
+            return .25;
+    }
+
+    /**
+     * Get selectivity of exchange by it's input selectivity.
+     *
+     * @param exch IgniteExchange.
+     * @param mq RelMetadataQuery
+     * @param predicate Predicate.
+     * @return Selectivity or {@code null} if it can't be estimated.
+     */
+    public Double getSelectivity(IgniteExchange exch, RelMetadataQuery mq, RexNode predicate) {
+        RelNode input = exch.getInput();
+
+        if (input == null)
+            return null;
+
+        return getSelectivity(input, mq, predicate);
+    }
+
+    /**
+     * Get selectivity of table spool by it's input selectivity.
+     *
+     * @param tspool IgniteTableSpool.
+     * @param mq RelMetadataQuery
+     * @param predicate Predicate.
+     * @return Selectivity or {@code null} if it can't be estimated.
+     */
+    public Double getSelectivity(IgniteTableSpool tspool, RelMetadataQuery mq, RexNode predicate) {
+        RelNode input = tspool.getInput();
+
+        if (input == null)
+            return null;
+
+        return getSelectivity(input, mq, predicate);
+    }
+
+    /**
+     * Get selectivity of join by it's input selectivity.
+     *
+     * @param join AbstractIgniteJoin.
+     * @param mq RelMetadataQuery
+     * @param predicate Predicate.
+     * @return Selectivity or {@code null} if it can't be estimated.
+     */
+    public Double getSelectivity(AbstractIgniteJoin join, RelMetadataQuery mq, RexNode predicate) {
+        double sel = 1.0;
+        JoinRelType joinType = join.getJoinType();
+        RexNode leftPred, rightPred;
+        final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
+        int[] adjustments = new int[join.getRowType().getFieldCount()];
+
+        if (predicate != null) {
+            RexNode pred;
+            List<RexNode> leftFilters = new ArrayList<>();
+            List<RexNode> rightFilters = new ArrayList<>();
+            List<RexNode> joinFilters = new ArrayList<>();
+            List<RexNode> predList = RelOptUtil.conjunctions(predicate);
+
+            RelOptUtil.classifyFilters(
+                join,
+                predList,
+                joinType,
+                joinType == JoinRelType.INNER,
+                !joinType.generatesNullsOnLeft(),
+                !joinType.generatesNullsOnRight(),
+                joinFilters,
+                leftFilters,
+                rightFilters);
+            leftPred =
+                RexUtil.composeConjunction(rexBuilder, leftFilters, true);
+            rightPred =
+                RexUtil.composeConjunction(rexBuilder, rightFilters, true);
+
+            for (RelNode child : join.getInputs()) {
+                RexNode modifiedPred = null;
+
+                if (child == join.getLeft())
+                    pred = leftPred;
+                else
+                    pred = rightPred;
+
+                if (pred != null) {
+                    // convert the predicate to reference the types of the children
+                    modifiedPred =
+                        pred.accept(new RelOptUtil.RexInputConverter(
+                            rexBuilder,
+                            null,
+                            child.getRowType().getFieldList(),
+                            adjustments));
+                }
+                sel *= mq.getSelectivity(child, modifiedPred);
+            }
+            sel *= RelMdUtil.guessSelectivity(RexUtil.composeConjunction(rexBuilder, joinFilters, true));
+        }
+
+        return sel;
+    }
+
+    /**
+     * Get selectivity of hash index spool by it's input selectivity.
+     *
+     * @param rel IgniteHashIndexSpool.
+     * @param mq RelMetadataQuery
+     * @param predicate Predicate.
+     * @return Selectivity or {@code null} if it can't be estimated.
+     */
     public Double getSelectivity(IgniteHashIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
         if (predicate != null) {
             return mq.getSelectivity(rel.getInput(),

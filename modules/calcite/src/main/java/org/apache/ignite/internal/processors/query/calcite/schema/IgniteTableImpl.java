@@ -18,19 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Statistic;
@@ -48,7 +44,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -98,7 +93,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
             new StatisticsKey(schemaName, tblName));
 
-        return new StatisticsImpl(statistics);
+        return new IgniteStatisticsImpl(statistics);
     }
 
 
@@ -189,71 +184,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             catch (IgniteCheckedException ex) {
                 throw U.convertException(ex);
             }
-        }
-    }
-
-    /** Calcite statistics wrapper. */
-    private class StatisticsImpl implements Statistic {
-        /** Internal statistics implementation. */
-        private final ObjectStatisticsImpl statistics;
-
-        /**
-         * Constructor.
-         *
-         * @param statistics Internal object statistics or {@code null}.
-         */
-        public StatisticsImpl(ObjectStatisticsImpl statistics) {
-            this.statistics = statistics;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Double getRowCount() {
-            // TBD: default values.
-            long rows = (statistics == null) ? 1000 : statistics.rowCount();
-
-            return (double)rows;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKey(ImmutableBitSet cols) {
-            return false; // TODO
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<ImmutableBitSet> getKeys() {
-            return null; // TODO
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-            return ImmutableList.of();
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelCollation> getCollations() {
-            return ImmutableList.of(); // The method isn't used
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteDistribution getDistribution() {
-            return distribution();
-        }
-
-        /**
-         * @return Column statistics map.
-         */
-        public Map<String, ColumnStatistics> getColumnsStatistics() {
-            return (statistics == null) ? Collections.EMPTY_MAP : statistics.columnsStatistics();
-        }
-
-        /**
-         * Get column statistics.
-         *
-         * @param colName Column name.
-         * @return Column statistics or {@code null} if there are no statistics for specified column.
-         */
-        public ColumnStatistics getColumnStatistics(String colName) {
-            return (statistics == null) ? null : statistics.columnStatistics(colName);
         }
     }
 }
