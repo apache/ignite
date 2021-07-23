@@ -31,5 +31,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Documented
 public @interface Min {
+    /**
+     * Returns the lower bound for the value.
+     *
+     * @return lower bound for the value.
+     */
     long value();
 }

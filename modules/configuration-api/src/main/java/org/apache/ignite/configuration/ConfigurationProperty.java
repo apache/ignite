@@ -21,24 +21,28 @@ import org.apache.ignite.configuration.notifications.ConfigurationListener;
 
 /**
  * Base interface for configuration.
+ *
  * @param <VIEW> Type of the value.
  * @param <CHANGE> Type of the object that changes the value of configuration.
  */
 public interface ConfigurationProperty<VIEW, CHANGE> {
     /**
      * Get key of this node.
+     *
      * @return Key.
      */
     String key();
 
     /**
      * Get value of this property.
+     *
      * @return Value of this property.
      */
     VIEW value();
 
     /**
      * Add configuration values listener.
+     *
      * @param listener Listener.
      */
     void listen(ConfigurationListener<VIEW> listener);

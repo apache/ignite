@@ -23,18 +23,21 @@ import java.util.function.Consumer;
 
 /**
  * Configuration tree with configuration values and other configuration trees as child nodes.
+ *
  * @param <VIEW> Value type of the node.
  * @param <CHANGE> Type of the object that changes this node's value.
  */
 public interface ConfigurationTree<VIEW, CHANGE> extends ConfigurationProperty<VIEW, CHANGE> {
     /**
      * Children of the tree.
+     *
      * @return Map from {@code String} to a corresponding {@link ConfigurationProperty}.
      */
     Map<String, ConfigurationProperty<?, ?>> members();
 
     /**
      * Changes this configuration node value.
+     *
      * @param change CHANGE object.
      * @return Future that is completed when configuration change is finished either successfully or not.
      */

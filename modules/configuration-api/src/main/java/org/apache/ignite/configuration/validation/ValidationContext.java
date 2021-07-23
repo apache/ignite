@@ -25,19 +25,34 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Validation context for the validators.
  *
+ * @param <VIEW> Type of the subtree or the value that is being validated.
  * @see Validator#validate(Annotation, ValidationContext)
  */
 public interface ValidationContext<VIEW> {
-    /** @return String representation of currently validated value, i.e. {@code root.config.node} */
+    /**
+     * Returns the key of validated node.
+     *
+     * @return String representation of currently validated value, i.e. {@code root.config.node}.
+     */
     String currentKey();
 
-    /** @return Previous value of the configuration. Might be null for leaves only. */
+    /**
+     * Returns previous value of the configuration.
+     *
+     * @return Previous value of the configuration. Might be null for leaves only.
+     */
     @Nullable VIEW getOldValue();
 
-    /** @return Updated value of the configuration. Cannot be null. */
+    /**
+     * Returns updated value of the configuration.
+     *
+     * @return Updated value of the configuration. Cannot be null.
+     */
     @NotNull VIEW getNewValue();
 
     /**
+     * Returns previous value of the configuration root.
+     *
      * @param rootKey Root key.
      * @return Configuration root view before updates. Guaranteed to return valid value only if root belongs to the same
      *      storage as currently validated value. Otherwise result of the method may very between invocations or even
@@ -48,6 +63,8 @@ public interface ValidationContext<VIEW> {
     @Nullable <ROOT> ROOT getOldRoot(RootKey<?, ROOT> rootKey);
 
     /**
+     * Returns updated value of the configuration root.
+     *
      * @param rootKey Root key.
      * @return Configuration root view after updates. Guaranteed to return valid value only if root belongs to the same
      *      storage as currently validated value. Otherwise result of the method may very between invocations or even

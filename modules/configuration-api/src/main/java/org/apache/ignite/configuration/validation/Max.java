@@ -31,5 +31,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Documented
 public @interface Max {
+    /**
+     * Returns the upper bound for the value.
+     *
+     * @return upper bound for the value.
+     */
     long value();
 }

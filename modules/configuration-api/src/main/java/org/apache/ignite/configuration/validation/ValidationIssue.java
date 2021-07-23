@@ -18,12 +18,16 @@ package org.apache.ignite.configuration.validation;
 
 import org.apache.ignite.internal.tostring.S;
 
-/** */
+/**
+ * Class that stores information about issues found during the configuration validation.
+ */
 public class ValidationIssue {
-    /** */
+    /** Message. */
     private final String message;
 
     /**
+     * Constructor.
+     *
      * @param message Error message.
      */
     public ValidationIssue(String message) {
@@ -31,6 +35,8 @@ public class ValidationIssue {
     }
 
     /**
+     * Returns error message.
+     *
      * @return Error message.
      */
     public String message() {

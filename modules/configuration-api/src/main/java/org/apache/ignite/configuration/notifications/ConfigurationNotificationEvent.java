@@ -23,24 +23,31 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Event object propogated on configuration change. Passed to listeners after configuration changes are applied.
  *
+ * @param <VIEW> Type of the subtree or the value that has been changed.
  * @see ConfigurationProperty#listen(ConfigurationListener)
  * @see ConfigurationListener
  * @see ConfigurationNotificationEvent
  */
 public interface ConfigurationNotificationEvent<VIEW> {
     /**
+     * Returns the previous value of the updated configuration.
+     *
      * @return Previous value of the updated configuration.
      */
     @Nullable VIEW oldValue();
 
     /**
+     * Returns updated value of the configuration.
+     *
      * @return Updated value of the configuration.
      */
     @Nullable VIEW newValue();
 
     /**
-     * @return Monotonously increasing counter, linked to the specific storage for current configuration values. Gives
+     * Returns monotonously increasing counter, linked to the specific storage for current configuration values. Gives
      * a unique change identifier inside a specific configuration storage.
+     *
+     * @return Counter value.
      */
     long storageRevision();
 }

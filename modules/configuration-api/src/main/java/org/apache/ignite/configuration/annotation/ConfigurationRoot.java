@@ -34,9 +34,17 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Documented
 public @interface ConfigurationRoot {
-    /** @return Unique root name. */
+    /**
+     * Returns the unique root name.
+     *
+     * @return Unique root name.
+     */
     String rootName();
 
-    /** @return Type of the configuration. */
+    /**
+     * Returns the type of the configuration.
+     *
+     * @return Type of the configuration.
+     */
     ConfigurationType type() default ConfigurationType.LOCAL;
 }

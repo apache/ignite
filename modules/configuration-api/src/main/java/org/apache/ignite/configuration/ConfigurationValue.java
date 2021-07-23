@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
 
 /**
  * Configuration value.
+ *
  * @param <VIEW> Type of the value.
  */
 public interface ConfigurationValue<VIEW> extends ConfigurationProperty<VIEW, VIEW> {
