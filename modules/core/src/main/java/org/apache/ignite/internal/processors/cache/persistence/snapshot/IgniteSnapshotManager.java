@@ -286,7 +286,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-    /** File store manager to create page store for restoring. */
+    /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
 
     /** Snapshot thread pool to perform local partition snapshots. */
@@ -1452,6 +1452,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     return snpFutTask;
                 }
+            }
+
+            if (log.isInfoEnabled()) {
+                log.info("Snapshot task has been registered on local node [sctx=" + this +
+                    ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 
             snpFutTask.listen(f -> locSnpTasks.remove(snpName));

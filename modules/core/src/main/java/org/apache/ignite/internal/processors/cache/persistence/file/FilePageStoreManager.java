@@ -677,7 +677,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param grpId Cache group id.
      * @param encrypted {@code true} if cache group encryption enabled.
-     * @return Factory to create page stores with default encription keys.
+     * @return Factory to create page stores.
      */
     public FileVersionCheckingFactory getPageStoreFactory(int grpId, boolean encrypted) {
         FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
