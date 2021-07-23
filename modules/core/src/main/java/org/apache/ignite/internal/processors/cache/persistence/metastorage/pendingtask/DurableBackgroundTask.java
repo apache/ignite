@@ -56,4 +56,11 @@ public interface DurableBackgroundTask<R> extends Serializable {
     default DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
         return this;
     }
+
+    /**
+     * Callback on cluster deactivation.
+     */
+    default void onDeactivationCluster() {
+        // No-op.
+    }
 }

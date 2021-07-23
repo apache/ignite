@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,15 +29,18 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState;
+import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -49,8 +53,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.IDX_TREE_FACTORY;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.destroyIndexTrees;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.existMetaPage;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.findIndexRootPages;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.indexTrees;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.rootPage;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -60,21 +65,21 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 @WithSystemProperty(key = IGNITE_MAX_INDEX_PAYLOAD_SIZE, value = "1000000")
 public class DropIndexTest extends AbstractRebuildIndexTest {
-    /** Original index tree factory. */
-    private InlineIndexTreeFactory originalIdxTreeFactory;
+    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#IDX_TREE_FACTORY}. */
+    private InlineIndexTreeFactory originalTaskIdxTreeFactory;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        originalIdxTreeFactory = IDX_TREE_FACTORY;
+        originalTaskIdxTreeFactory = IDX_TREE_FACTORY;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IDX_TREE_FACTORY = originalIdxTreeFactory;
+        IDX_TREE_FACTORY = originalTaskIdxTreeFactory;
     }
 
     /** {@inheritDoc} */
@@ -92,34 +97,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testDestroyIndexTrees() throws Exception {
-        IgniteEx n = startGrid(0);
-
-        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
-
-        populate(cache, 100);
-
-        String idxName = "IDX0";
-        createIdx(cache, idxName);
-
-        GridCacheContext<Integer, Person> cctx = cacheContext(cache);
-        SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
-
-        String treeName = idxDef.treeName();
-        int segments = idxDef.segments();
-
-        Map<Integer, RootPage> rootPages = findIndexRootPages(cctx.group(), cctx.name(), treeName, segments);
-        assertFalse(rootPages.isEmpty());
-
-        Map<Integer, InlineIndexTree> idxTrees = indexTrees(cctx.group(), rootPages, treeName);
-        assertFalse(F.isEmpty(idxTrees));
-
-        long pageCnt = 0;
-
-        for (Map.Entry<Integer, InlineIndexTree> e : idxTrees.entrySet())
-            pageCnt += destroyIndexTrees(cctx.group(), e.getValue(), cctx.name(), treeName, e.getKey());
-
-        assertTrue(pageCnt >= 3);
-        assertTrue(findIndexRootPages(cctx.group(), cctx.name(), treeName, segments).isEmpty());
+        checkDestroyIndexTrees(true, 3);
     }
 
     /**
@@ -170,7 +148,14 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         createIdx(cache, idxName);
 
         GridCacheContext<Integer, Person> cctx = cacheContext(cache);
-        SortedIndexDefinition idxDef = indexDefinition(index(n, cache, idxName));
+
+        Index idx = index(n, cache, idxName);
+
+        SortedIndexDefinition idxDef = indexDefinition(idx);
+        InlineIndexTree[] trees = segments(idx);
+
+        for (InlineIndexTree tree : trees)
+            assertEquals(new FullPageId(tree.getMetaPageId(), tree.groupId()), rootPage(tree).pageId());
 
         String oldTreeName = idxDef.treeName();
         String newTreeName = UUID.randomUUID().toString();
@@ -186,7 +171,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
             oldTreeName,
             newTreeName,
             segments,
-            null
+            trees
         );
 
         assertTrue(task.name().startsWith(taskNamePrefix(cctx.name(), idxName)));
@@ -195,7 +180,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
         GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
 
-        IDX_TREE_FACTORY = indexTreeFactoryEx(startFut, endFut, false);
+        IDX_TREE_FACTORY = taskIndexTreeFactoryEx(startFut, endFut);
 
         IgniteInternalFuture<DurableBackgroundTaskResult<Long>> taskFut = task.executeAsync(n.context());
 
@@ -226,29 +211,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testExecuteTaskOnDropIdx() throws Exception {
-        IgniteEx n = startGrid(0);
-
-        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
-
-        populate(cache, 100);
-
-        String idxName = "IDX0";
-        createIdx(cache, idxName);
-
-        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
-        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
-
-        IDX_TREE_FACTORY = indexTreeFactoryEx(startFut, endFut, false);
-
-        IgniteInternalFuture<List<List<?>>> dropIdxFut = runAsync(() -> dropIdx(cache, idxName));
-
-        startFut.get(getTestTimeout());
-
-        assertFalse(dropIdxFut.isDone());
-
-        endFut.onDone();
-
-        dropIdxFut.get(getTestTimeout());
+        checkExecuteTask(true, 3L);
     }
 
     /**
@@ -259,39 +222,78 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testExecuteTaskOnDropIdxAfterRestart() throws Exception {
-        IgniteEx n = startGrid(0);
+        checkExecuteTaskAfterRestart(true, 3L, n -> {
+            // Disable auto activation.
+            n.cluster().baselineAutoAdjustEnabled(false);
+            stopGrid(0);
 
-        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+            n = startGrid(0, cfg -> {
+                cfg.setClusterStateOnStart(INACTIVE);
+            });
 
-        populate(cache, 100);
-
-        String idxName = "IDX0";
-        createIdx(cache, idxName);
-
-        IDX_TREE_FACTORY = indexTreeFactoryEx(null, null, true);
-
-        // Removing the index will succeed, but the trees not.
-        dropIdx(cache, idxName);
-
-        String taskNamePrefix = taskNamePrefix(cacheContext(cache).name(), idxName);
-        assertFalse(taskState(n, taskNamePrefix).outFuture().isDone());
-
-        // Disable auto activation.
-        n.cluster().baselineAutoAdjustEnabled(false);
-        stopGrid(0);
-
-        n = startGrid(0, cfg -> {
-            cfg.setClusterStateOnStart(INACTIVE);
+            return n;
         });
+    }
 
-        IDX_TREE_FACTORY = originalIdxTreeFactory;
+    /**
+     * Checking that when the node is re-activated, the
+     * {@link DurableBackgroundCleanupIndexTreeTaskV2} will finish correctly.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExecuteTaskOnDropIdxAfterReActivated() throws Exception {
+        checkExecuteTaskAfterRestart(true, 3L, n -> {
+            n.cluster().state(INACTIVE);
 
-        GridFutureAdapter<?> taskFut = taskState(n, taskNamePrefix).outFuture();
-        assertFalse(taskFut.isDone());
+            return n;
+        });
+    }
 
-        n.cluster().state(ACTIVE);
+    /**
+     * Checking that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will
+     * work correctly for in-memory cache.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExecuteTaskOnDropIdxForInMemory() throws Exception {
+        checkExecuteTask(false, 2L);
+    }
 
-        assertTrue((Long)taskFut.get(getTestTimeout()) >= 3);
+    /**
+     * Checking that when the node is re-activated, the
+     * {@link DurableBackgroundCleanupIndexTreeTaskV2} will finish correctly for in-memory cache.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExecuteTaskOnDropIdxAfterReActivatedForInMemory() throws Exception {
+        checkExecuteTaskAfterRestart(false, null, n -> {
+            n.cluster().state(INACTIVE);
+
+            return n;
+        });
+    }
+
+    /**
+     * Checking {@link DurableBackgroundCleanupIndexTreeTaskV2#destroyIndexTrees} for in-memory cache.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDestroyIndexTreesForInMemory() throws Exception {
+        checkDestroyIndexTrees(false, 2);
+    }
+
+    /**
+     * Getting index trees.
+     *
+     * @param idx Index.
+     * @return Index trees.
+     */
+    private InlineIndexTree[] segments(Index idx) {
+        return getFieldValue(idx, "segments");
     }
 
     /**
@@ -324,13 +326,11 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
      *
      * @param startFut Future to indicate that the tree for the tak has begun to be created.
      * @param endFut Future to wait for the continuation of the tree creation for the task.
-     * @param throwEx Throw an exception.
      * @return Extending the {@link InlineIndexTreeFactory}.
      */
-    private InlineIndexTreeFactory indexTreeFactoryEx(
-        @Nullable GridFutureAdapter<Void> startFut,
-        @Nullable GridFutureAdapter<Void> endFut,
-        boolean throwEx
+    private InlineIndexTreeFactory taskIndexTreeFactoryEx(
+        GridFutureAdapter<Void> startFut,
+        GridFutureAdapter<Void> endFut
     ) {
         return new InlineIndexTreeFactory() {
             /** {@inheritDoc} */
@@ -339,16 +339,9 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
                 RootPage rootPage,
                 String treeName
             ) throws IgniteCheckedException {
-                if (throwEx)
-                    throw new IgniteCheckedException("From test");
-                else {
-                    assertNotNull(startFut);
-                    assertNotNull(endFut);
+                startFut.onDone();
 
-                    startFut.onDone();
-
-                    endFut.get(getTestTimeout());
-                }
+                endFut.get(getTestTimeout());
 
                 return super.create(grpCtx, rootPage, treeName);
             }
@@ -365,5 +358,173 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
      */
     private List<List<?>> dropIdx(IgniteCache<Integer, Person> cache, String idxName) {
         return cache.query(new SqlFieldsQuery("DROP INDEX " + idxName)).getAll();
+    }
+
+    /**
+     * Check that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will be completed successfully.
+     *
+     * @param persistent Persistent default data region.
+     * @param expRes Expected result should not be less than which.
+     * @throws Exception If failed.
+     */
+    private void checkExecuteTask(
+        boolean persistent,
+        long expRes
+    ) throws Exception {
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(persistent);
+        });
+
+        n.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
+
+        IDX_TREE_FACTORY = taskIndexTreeFactoryEx(startFut, endFut);
+
+        IgniteInternalFuture<List<List<?>>> dropIdxFut = runAsync(() -> dropIdx(cache, idxName));
+
+        startFut.get(getTestTimeout());
+
+        GridFutureAdapter<?> taskFut = taskState(n, taskNamePrefix(DEFAULT_CACHE_NAME, idxName)).outFuture();
+        assertFalse(taskFut.isDone());
+
+        endFut.onDone();
+
+        assertTrue((Long)taskFut.get(getTestTimeout()) >= expRes);
+
+        dropIdxFut.get(getTestTimeout());
+    }
+
+    /**
+     * Check that after restart / reactivation of the node,
+     * the {@link DurableBackgroundCleanupIndexTreeTaskV2} will be completed successfully.
+     *
+     * @param persistent Persistent default data region.
+     * @param expRes Expected result should not be less than which, or {@code null} if there should be no result.
+     * @param restartFun Node restart/reactivation function.
+     * @throws Exception If failed.
+     */
+    private void checkExecuteTaskAfterRestart(
+        boolean persistent,
+        @Nullable Long expRes,
+        ThrowableFunction<IgniteEx, IgniteEx, Exception> restartFun
+    ) throws Exception {
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(persistent);
+        });
+
+        n.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
+
+        IDX_TREE_FACTORY = taskIndexTreeFactoryEx(startFut, endFut);
+
+        endFut.onDone(new IgniteCheckedException("Stop drop idx"));
+
+        // Removing the index will succeed, but the trees not.
+        dropIdx(cache, idxName);
+
+        String taskNamePrefix = taskNamePrefix(cacheContext(cache).name(), idxName);
+        assertFalse(taskState(n, taskNamePrefix).outFuture().isDone());
+
+        n = restartFun.apply(n);
+
+        IDX_TREE_FACTORY = originalTaskIdxTreeFactory;
+
+        GridFutureAdapter<?> taskFut = taskState(n, taskNamePrefix).outFuture();
+        assertFalse(taskFut.isDone());
+
+        n.cluster().state(ACTIVE);
+
+        if (expRes == null)
+            assertNull(taskFut.get(getTestTimeout()));
+        else
+            assertTrue((Long)taskFut.get(getTestTimeout()) >= expRes);
+    }
+
+    /**
+     * Checking {@link DurableBackgroundCleanupIndexTreeTaskV2#destroyIndexTrees}.
+     *
+     * @param persistent Persistent default data region.
+     * @param expRes Expected result should not be less than which.
+     * @throws Exception If failed.
+     */
+    private void checkDestroyIndexTrees(
+        boolean persistent,
+        long expRes
+    ) throws Exception {
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(persistent);
+        });
+
+        n.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        GridCacheContext<Integer, Person> cctx = cacheContext(cache);
+
+        Index idx = index(n, cache, idxName);
+
+        SortedIndexDefinition idxDef = indexDefinition(idx);
+
+        String treeName = idxDef.treeName();
+        int segments = idxDef.segments();
+
+        Map<Integer, RootPage> rootPages = new HashMap<>();
+
+        if (persistent)
+            rootPages.putAll(findIndexRootPages(cctx.group(), cctx.name(), treeName, segments));
+
+        else {
+            InlineIndexTree[] trees = segments(idx);
+
+            for (int i = 0; i < trees.length; i++)
+                rootPages.put(i, rootPage(trees[i]));
+        }
+
+        assertFalse(rootPages.isEmpty());
+
+        long pageCnt = 0;
+
+        for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
+            assertTrue(existMetaPage(cctx.group(), e.getValue().pageId().pageId()));
+
+            pageCnt += destroyIndexTrees(cctx.group(), e.getValue(), cctx.name(), treeName, e.getKey());
+        }
+
+        assertTrue(pageCnt >= expRes);
+        assertTrue(findIndexRootPages(cctx.group(), cctx.name(), treeName, segments).isEmpty());
+
+        // Check for re-deletion of index trees.
+        pageCnt = 0;
+
+        for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
+            assertFalse(existMetaPage(cctx.group(), e.getValue().pageId().pageId()));
+
+            pageCnt += destroyIndexTrees(cctx.group(), e.getValue(), cctx.name(), treeName, e.getKey());
+        }
+
+        assertEquals(0, pageCnt);
     }
 }

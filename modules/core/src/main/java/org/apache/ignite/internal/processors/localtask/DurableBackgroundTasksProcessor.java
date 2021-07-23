@@ -358,6 +358,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
             prohibitionExecTasks = true;
 
             for (DurableBackgroundTaskState<?> taskState : tasks.values()) {
+                taskState.task().onDeactivationCluster();
+
                 if (taskState.state() == STARTED)
                     taskState.task().cancel();
             }
