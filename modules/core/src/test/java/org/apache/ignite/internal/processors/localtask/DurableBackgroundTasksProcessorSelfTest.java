@@ -256,6 +256,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         simpleTask0.onExecFut.get(getTestTimeout());
 
+        forceCheckpoint();
         dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
         simpleTask0.taskFut.onDone(DurableBackgroundTaskResult.complete(null));
@@ -339,6 +340,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
             ObservingCheckpointListener checkpointLsnr = new ObservingCheckpointListener();
             dbMgr(n).addCheckpointListener(checkpointLsnr);
 
+            forceCheckpoint();
             dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
             t.taskFut.onDone(restart(null));
@@ -400,6 +402,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         assertFalse(execAsyncFut.isDone());
 
         if (save) {
+            forceCheckpoint();
             dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
             t.taskFut.onDone(complete(null));
