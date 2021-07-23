@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
@@ -431,18 +432,25 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             cctx.kernalContext().metric().remove(stats.metricRegistryName());
 
-            // Actual destroy index task.
-            DurableBackgroundTask<Long> task = new DurableBackgroundCleanupIndexTreeTaskV2(
-                cctx.group().name(),
-                cctx.name(),
-                def.idxName().idxName(),
-                treeName,
-                UUID.randomUUID().toString(),
-                segments.length,
-                segments
-            );
+            if (cctx.group().persistenceEnabled() ||
+                cctx.shared().kernalContext().state().clusterState().state() != INACTIVE) {
+                // Actual destroy index task.
+                DurableBackgroundTask<Long> task = new DurableBackgroundCleanupIndexTreeTaskV2(
+                    cctx.group().name(),
+                    cctx.name(),
+                    def.idxName().idxName(),
+                    treeName,
+                    UUID.randomUUID().toString(),
+                    segments.length,
+                    segments
+                );
 
-            cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
+                cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
+            }
+            else {
+                for (InlineIndexTree segment : segments)
+                    segment.close();
+            }
         }
     }
 

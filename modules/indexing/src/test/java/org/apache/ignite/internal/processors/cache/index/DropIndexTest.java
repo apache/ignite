@@ -287,6 +287,32 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
+     * Checks that {@link DurableBackgroundCleanupIndexTreeTaskV2} will not be
+     * added when the cluster is deactivated for in-memory caches.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDonotAddTaskOnDeactivateForInMemory() throws Exception {
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(false);
+        });
+
+        n.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        n.cluster().state(INACTIVE);
+
+        assertTrue(tasks(n).isEmpty());
+    }
+
+    /**
      * Getting index trees.
      *
      * @param idx Index.
@@ -304,10 +330,17 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
      * @return Task state.
      */
     @Nullable private DurableBackgroundTaskState<?> taskState(IgniteEx n, String taskNamePrefix) {
-        Map<String, DurableBackgroundTaskState<?>> tasks = getFieldValue(n.context().durableBackgroundTask(), "tasks");
-
-        return tasks.entrySet().stream()
+        return tasks(n).entrySet().stream()
             .filter(e -> e.getKey().startsWith(taskNamePrefix)).map(Map.Entry::getValue).findAny().orElse(null);
+    }
+
+    /**
+     * Getting {@code DurableBackgroundTasksProcessor#tasks}.
+     *
+     * @return Tasks.
+     */
+    private Map<String, DurableBackgroundTaskState<?>> tasks(IgniteEx n) {
+        return getFieldValue(n.context().durableBackgroundTask(), "tasks");
     }
 
     /**
