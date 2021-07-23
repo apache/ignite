@@ -201,7 +201,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
-        processor.start();
 
         comps.add(processor);
 
