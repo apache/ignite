@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
@@ -32,19 +31,39 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests continuous queries.
+    /// Tests continuous queries with security enabled and disabled.
     /// </summary>
+    [TestFixture(false)]
+    [TestFixture(true)]
     [Category(TestUtils.CategoryIntensive)]
     public class ContinuousQueryTest
     {
-        /** */
-        private bool _enableSecurity;
-        
-        /** */
+        /** Flag to enable Ignite security. */
+        private readonly bool _enableSecurity;
+
+        /** Logger for tracking errors. */
         private readonly ListLogger _logger = new ListLogger(new ConsoleLogger())
         {
             EnabledLevels = new[] {LogLevel.Error}
         };
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ContinuousQueryTest"/>. 
+        /// </summary>
+        public ContinuousQueryTest(bool enableSecurity)
+        {
+            _enableSecurity = enableSecurity;
+        }
+        
+        /// <summary>
+        /// Clears persistence directory before and after the test.
+        /// </summary>
+        [TestFixtureSetUp]
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            TestUtils.ClearWorkDir();
+        }
 
         /// <summary>
         /// Tests same query on multiple nodes.
@@ -53,31 +72,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestSameQueryMultipleNodes()
-        {
-            CheckSameQueryMultipleNodes();
-        }
-        
-        /// <summary>
-        /// Tests same query on multiple nodes with enabled security.
-        /// This test verifies that on the Java side the security wrapper for the event filter does not produce errors  
-        /// </summary>
-        [Test]
-        [Category(TestUtils.CategoryIntensive)]
-        public void TestSameQueryMultipleNodesSecurityEnabled()
-        {
-            _enableSecurity = true;
-
-            CheckSameQueryMultipleNodes();
-            
-            var errs = _logger.Entries.FindAll(e => e.Message.Contains("CacheEntryEventFilter failed"));
-
-            Assert.AreEqual(0, errs.Count);
-        }
-
-        /// <summary>
-        /// Tests same query on multiple nodes.
-        /// </summary>
-        private void CheckSameQueryMultipleNodes()
         {
             using (var ignite = StartIgnite())
             {
@@ -98,6 +92,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     }
                 }
             }
+
+            Assert.AreEqual(0,
+                _logger.Entries.FindAll(e => e.Message.Contains("CacheEntryEventFilter failed")).Count);
         }
 
         /// <summary>
@@ -140,7 +137,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     }
                 },
                 AuthenticationEnabled = _enableSecurity,
-                WorkDirectory = PathUtils.GetTempDirectoryName(),
                 Logger = _logger,
                 IsActiveOnStart = false
             });
@@ -167,13 +163,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     Events.Push(e);
                 }
             }
-        }
-        
-        [TearDown]
-        public void TearDown()
-        {
-            _logger.Clear();
-            Directory.Delete(PathUtils.GetTempDirectoryName(), true);
         }
     }
 }
