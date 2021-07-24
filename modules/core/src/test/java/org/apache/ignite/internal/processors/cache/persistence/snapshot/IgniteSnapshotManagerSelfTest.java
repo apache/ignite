@@ -400,32 +400,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotCheckMultipleTimes() throws Exception {
-        IgniteEx ignite = startGridsWithCache(3,
-            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(1024)), CACHE_KEYS_RANGE);
-
-        startClientGrid();
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        int iterations = 10;
-
-        // Warmup.
-        for (int i = 0; i < iterations; i++)
-            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
-
-        int activeThreadsCntBefore = Thread.activeCount();
-
-        for (int i = 0; i < iterations; i++)
-            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
-
-        int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
-
-        assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
     public void testSnapshotIteratorRandomizedLoader() throws Exception {
         Random rnd = new Random();
         int maxKey = 15_000;

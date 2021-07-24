@@ -1985,8 +1985,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 copy(ioFactory, part, snpPart, len);
 
-                if (log.isInfoEnabled()) {
-                    log.info("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
+                if (log.isDebugEnabled()) {
+                    log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
                         ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }

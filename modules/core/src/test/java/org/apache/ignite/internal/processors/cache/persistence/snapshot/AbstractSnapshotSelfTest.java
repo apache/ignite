@@ -100,7 +100,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Default number of partitions for cache. */
-    protected static final int CACHE_PARTS_COUNT = 8;
+    protected static final int CACHE_PARTS_COUNT = 1024;
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
