@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareIoPool;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
@@ -859,7 +860,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** */
+    /** Creates instance {@link IgniteStripedThreadPoolExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
     private IgniteStripedThreadPoolExecutor createStripedThreadPoolExecutor(
         int concurrentLvl,
         String igniteInstanceName,
@@ -884,10 +885,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                  eHnd,
                  allowCoreThreadTimeOut,
                  keepAliveTime);
-
     }
 
-    /** */
+    /** Creates instance {@link StripedExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
     private StripedExecutor createStripedExecutor(
         int cnt,
         String igniteInstanceName,
@@ -912,7 +912,7 @@ public class PoolProcessor extends GridProcessorAdapter {
             : new StripedExecutor(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout);
     }
 
-    /** */
+    /** Creates instance {@link IgniteThreadPoolExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
     private IgniteThreadPoolExecutor createExecutorService(
         String threadNamePrefix,
         String igniteInstanceName,

@@ -104,41 +104,41 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** Tests that compute tasks are executed with the security context of the task initiator. */
 @RunWith(Parameterized.class)
 public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
-    /** */
-    static final String DFLT_REST_PORT = "11080";
+    /** Port for REST client connection. */
+    private static final String DFLT_REST_PORT = "11080";
 
-    /** */
+    /** Task timeout.*/
     private static final long TEST_TASK_TIMEOUT = 500;
 
-    /** */
+    /** Custom object mapper for HTTP REST API.  */
     private static final ObjectMapper OBJECT_MAPPER = new GridJettyObjectMapper();
 
-    /** */
+    /** Events paired with the nodes on which they were listened to. */
     private static final Map<ClusterNode, Collection<Event>> LISTENED_TASK_EVENTS = new HashMap<>();
 
-    /** */
+    /** Indicates whether the test task can proceed with its execution. */
     private static CountDownLatch taskExecutionUnlockedLatch;
 
-    /** */
+    /** All possible task events. */
     private static final int[] TASK_EVENTS = {
         EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED, EVT_JOB_MAPPED, EVT_JOB_RESULTED, EVT_JOB_STARTED,
         EVT_JOB_FINISHED, EVT_JOB_QUEUED, EVT_TASK_TIMEDOUT, EVT_TASK_FAILED, EVT_JOB_CANCELLED, EVT_JOB_FAILED};
 
-    /** */
+    /** Events that occur on the task reducer if task execution completes successfully. */
     private static final List<Integer> REDUCER_SUCCEEDED_TASK_EVENTS = Arrays.asList(
         EVT_JOB_QUEUED, EVT_JOB_STARTED, EVT_JOB_FINISHED, EVT_TASK_STARTED, EVT_JOB_MAPPED, EVT_TASK_REDUCED,
         EVT_JOB_RESULTED, EVT_TASK_FINISHED);
 
-    /** */
+    /** Events that occur on task map node if task execution fails. */
     private static final List<Integer> REDUCER_FAILED_TASK_EVENTS = Arrays.asList(
         EVT_JOB_QUEUED, EVT_JOB_STARTED, EVT_JOB_CANCELLED, EVT_JOB_FAILED, EVT_TASK_STARTED, EVT_JOB_MAPPED,
         EVT_TASK_TIMEDOUT, EVT_TASK_FAILED);
 
-    /** */
+    /** Events that occur on task reducer if task execution completes successfully. */
     private static final List<Integer> MAP_NODE_SUCCEEDED_TASK_EVENTS = Arrays.asList(
         EVT_JOB_QUEUED, EVT_JOB_STARTED, EVT_JOB_FINISHED);
 
-    /** */
+    /** Events that occur on task map node if task execution fails. */
     private static final List<Integer> MAP_NODE_FAILED_TASK_EVENTS = Arrays.asList(
         EVT_JOB_QUEUED, EVT_JOB_STARTED, EVT_JOB_CANCELLED, EVT_JOB_FAILED);
 
@@ -157,15 +157,15 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         return res;
     }
 
-    /** */
+    /** Whether task is executed asynchronously. */
     @Parameterized.Parameter()
     public boolean async;
 
-    /** */
+    /** Whether task fails with timeout exception. */
     @Parameterized.Parameter(1)
     public boolean failWithTimeout;
 
-    /** */
+    /** Whether task mapping is processed asynchronously. */
     @Parameterized.Parameter(2)
     public boolean mapAsync;
 
@@ -225,7 +225,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         return ignite;
     }
 
-    /** */
+    /** Tests task execution security context in case task was initiated from the {@link GridClient}. */
     @Test
     public void testGridClient() throws Exception {
         Assume.assumeFalse(failWithTimeout);
@@ -254,7 +254,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
+    /** Tests task execution security context in case task was initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
         String login = "thin_client";
@@ -298,7 +298,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
+    /** Tests task execution security context in case task was initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
         String login = "rest_client";
@@ -345,14 +345,14 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
+    /** Tests task execution security context in case task was initiated from the {@link Ignite} server node. */
     @Test
     public void testServerNode() throws Exception {
         doNodeTest(false);
     }
 
 
-    /** */
+    /** Tests task execution security context in case task was initiated from the {@link Ignite} client node. */
     @Test
     public void testClientNode() throws Exception {
         doNodeTest(true);
@@ -451,7 +451,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         // No-op.
     }
 
-    /** Test compute task. */
+    /** Test compute task that checks security context of the task initiator. */
     public static class TestTask implements ComputeTask<String, Void> {
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(

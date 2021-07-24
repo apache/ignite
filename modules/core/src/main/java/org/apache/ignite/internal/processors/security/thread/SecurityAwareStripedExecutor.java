@@ -24,7 +24,10 @@ import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
-/** */
+/**
+ * Extends {@link StripedExecutor} with the ability to execute tasks in security context that was actual when task was
+ * added to executor's queue.
+ */
 public class SecurityAwareStripedExecutor extends StripedExecutor {
     /** */
     private final IgniteSecurity security;

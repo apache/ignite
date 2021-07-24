@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
@@ -31,7 +32,10 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.security.thread.SecurityAwareCallable.toSecurityAware;
 
-/** */
+/**
+ * Extends {@link ThreadPoolExecutor} with the ability to execute tasks in security context that was actual when task was
+ * added to executor's queue.
+ */
 public class SecurityAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
     /** */
     private final IgniteSecurity security;

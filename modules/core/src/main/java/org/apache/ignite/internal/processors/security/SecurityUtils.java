@@ -165,7 +165,7 @@ public class SecurityUtils {
         }
     }
 
-    /** @return Current security subject id if security is enabled otherwise null. */
+    /** @return Current security subject ID if security is enabled, otherwise null. */
     public static UUID securitySubjectId(GridKernalContext ctx) {
         IgniteSecurity security = ctx.security();
 

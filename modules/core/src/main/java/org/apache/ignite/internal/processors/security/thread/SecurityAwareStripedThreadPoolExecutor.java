@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.security.thread;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
-/** */
+/**
+ * Extends {@link IgniteStripedThreadPoolExecutor} with the ability to execute tasks in security context that was actual
+ * when task was added to executor's queue.
+ */
 public class SecurityAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
     /** */
     private final IgniteSecurity security;

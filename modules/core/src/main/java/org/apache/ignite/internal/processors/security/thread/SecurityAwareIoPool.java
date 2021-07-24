@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.NotNull;
 
-/** */
+/** Wrapper of {@link IoPool} that executes tasks in security context that was actual when task was added to pool queue. */
 public class SecurityAwareIoPool implements IoPool {
     /** */
     private final IgniteSecurity security;

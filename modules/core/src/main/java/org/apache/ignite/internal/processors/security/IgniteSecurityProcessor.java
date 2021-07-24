@@ -108,7 +108,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Instance of IgniteSandbox. */
     private IgniteSandbox sandbox;
 
-    /** Node local security context ready future.*/
+    /** Node local security context ready future. */
     private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
 
     /**
@@ -437,8 +437,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /**
-     * Represents {@link SecurityContext} wrapper that makes it possible to block the current thread until the security
-     * context to which wrapper delegates operations becomes available.
+     * Represents {@link SecurityContext} wrapper that blocks all interface methods until security context becomes
+     * available. The main reason of such implementation is that local node security context is undefined until node
+     * joins the topology.
      */
     public static class DeferredSecurityContext implements SecurityContext {
         /** */

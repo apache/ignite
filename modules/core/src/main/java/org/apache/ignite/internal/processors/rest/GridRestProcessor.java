@@ -299,7 +299,12 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             return handleRequest0(req);
     }
 
-    /** */
+    /**
+     * Performs request handling.
+     *
+     * @param req Request to handle.
+     * @return Future of request execution.
+     */
     private IgniteInternalFuture<GridRestResponse> handleRequest0(GridRestRequest req) {
         interceptRequest(req);
 
