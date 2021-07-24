@@ -401,15 +401,20 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckMultipleTimes() throws Exception {
-        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ignite = startGridsWithCache(3,
+            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(1024)), CACHE_KEYS_RANGE);
 
         startClientGrid();
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        int activeThreadsCntBefore = Thread.activeCount();
-
         int iterations = 10;
+
+        // Warmup.
+        for (int i = 0; i < iterations; i++)
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        int activeThreadsCntBefore = Thread.activeCount();
 
         for (int i = 0; i < iterations; i++)
             snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
@@ -452,7 +457,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         Map<Integer, Value> iterated = new HashMap<>();
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(ignite.context(),
+            SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             ccfg.getName(),
             0)
@@ -495,7 +501,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(ignite.context(),
+            SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)
@@ -537,7 +544,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(ignite.context(),
+            SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)

@@ -193,11 +193,10 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * {@code null} means no specific folder is configured. <br> In this case folder for metadata is composed from work
      * directory and consistentId
      * @return Cache object processor able to restore data records content into binary objects
-     * @throws IgniteCheckedException Throws in case of initialization errors.
      */
     private IgniteCacheObjectProcessor binaryProcessor(
         final GridKernalContext ctx,
-        final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+        final File binaryMetadataFileStoreDir) {
 
         final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);

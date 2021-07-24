@@ -381,29 +381,6 @@ public class IgniteWalIteratorFactory {
     }
 
     /**
-     * @return Fake shared context required for create minimal services for record reading.
-     */
-    @NotNull private GridCacheSharedContext prepareSharedCtx(
-        IteratorParametersBuilder iteratorParametersBuilder
-    ) throws IgniteCheckedException {
-        GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
-            iteratorParametersBuilder.binaryMetadataFileStoreDir,
-            iteratorParametersBuilder.marshallerMappingFileStoreDir
-        );
-
-        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
-
-        dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
-
-        return new GridCacheSharedContext<>(
-            kernalCtx, null, null, null,
-            null, null, null, dbMgr, null, null,
-            null, null, null, null, null,
-            null, null, null, null, null, null
-        );
-    }
-
-    /**
      * Wal iterator parameter builder.
      */
     public static class IteratorParametersBuilder {
