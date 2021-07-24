@@ -1115,7 +1115,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (smfs.isEmpty())
-            throw new IgniteException("Snapshot directory doesn't exists or an I/O error occurred during directory read: " + snpName);
+            throw new IgniteException("Snapshot metadata files not found: " + snpName);
 
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
