@@ -24,14 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigRenderOptions;
+import com.typesafe.config.ConfigObject;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.validation.Validator;
-import org.apache.ignite.internal.configuration.json.JsonConverter;
+import org.apache.ignite.internal.configuration.hocon.HoconConverter;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 
 /**
@@ -84,18 +82,16 @@ public class ConfigurationManager {
 
     /**
      * Bootstrap configuration manager with customer user cfg.
+     *
      * @param hoconStr Customer configuration in hocon format.
      * @param type Configuration type.
      * @throws InterruptedException If thread is interrupted during bootstrap.
      * @throws ExecutionException If configuration update failed for some reason.
      */
     public void bootstrap(String hoconStr, ConfigurationType type) throws InterruptedException, ExecutionException {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-14924 Implement HoconConfigurationSource
-        String jsonStr = ConfigFactory.parseString(hoconStr).root().render(ConfigRenderOptions.concise());
+        ConfigObject hoconCfg = ConfigFactory.parseString(hoconStr).root();
 
-        JsonObject jsonCfg = JsonParser.parseString(jsonStr).getAsJsonObject();
-
-        confRegistry.change(JsonConverter.jsonSource(jsonCfg), configurationStorages.get(type)).get();
+        confRegistry.change(HoconConverter.hoconSource(hoconCfg), configurationStorages.get(type)).get();
     }
 
     /**

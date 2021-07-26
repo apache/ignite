@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** Test with basic {@link OrderedMap} invariants. */
 public class OrderedMapTest {
@@ -38,10 +39,13 @@ public class OrderedMapTest {
 
         assertEquals(1, map.size());
         assertEquals("value", map.get("key"));
+        assertEquals("value", map.get(0));
 
         map.remove("key");
 
         assertNull(map.get("key1"));
+
+        assertThrows(IndexOutOfBoundsException.class, () -> map.get(0));
     }
 
     /** Tests that {@link OrderedMap#put(String, Object)} preserves order. */

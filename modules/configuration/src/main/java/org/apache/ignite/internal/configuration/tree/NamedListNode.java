@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.configuration.NamedListChange;
+import org.apache.ignite.configuration.annotation.NamedConfigValue;
 
 /**
  * Configuration node implementation for the collection of named {@link InnerNode}s. Unlike implementations of
@@ -34,6 +35,9 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     /** Name of a synthetic configuration property that describes the order of elements in a named list. */
     public static final String ORDER_IDX = "<idx>";
 
+    /** Configuration name for the synthetic key. */
+    private final String syntheticKeyName;
+
     /** Supplier of new node objects when new list element node has to be created. */
     private final Supplier<N> valSupplier;
 
@@ -43,9 +47,12 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     /**
      * Default constructor.
      *
+     * @param syntheticKeyName Name of the synthetic configuration value that will represent keys in a specially ordered
+     *      representation syntax.
      * @param valSupplier Closure to instantiate values.
      */
-    public NamedListNode(Supplier<N> valSupplier) {
+    public NamedListNode(String syntheticKeyName, Supplier<N> valSupplier) {
+        this.syntheticKeyName = syntheticKeyName;
         this.valSupplier = valSupplier;
         map = new OrderedMap<>();
     }
@@ -56,6 +63,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
      * @param node Other node.
      */
     private NamedListNode(NamedListNode<N> node) {
+        syntheticKeyName = node.syntheticKeyName;
         valSupplier = node.valSupplier;
         map = new OrderedMap<>(node.map);
     }
@@ -73,6 +81,11 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     /** {@inheritDoc} */
     @Override public final N get(String key) {
         return map.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public N get(int index) throws IndexOutOfBoundsException {
+        return map.get(index);
     }
 
     /** {@inheritDoc} */
@@ -177,6 +190,15 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
             map.put(key, null);
 
         return this;
+    }
+
+    /**
+     * @return Configuration name for the synthetic key.
+     *
+     * @see NamedConfigValue#syntheticKeyName()
+     */
+    public String syntheticKeyName() {
+        return syntheticKeyName;
     }
 
     /**

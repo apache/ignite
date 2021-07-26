@@ -72,6 +72,17 @@ class OrderedMap<V> {
     }
 
     /**
+     * Returns value located at the specified index.
+     *
+     * @param index Value index.
+     * @return Requested value.
+     * @throws IndexOutOfBoundsException If index is out of bounds.
+     */
+    public V get(int index) {
+        return map.get(orderedKeys.get(index));
+    }
+
+    /**
      * Same as {@link Map#remove(Object)}.
      *
      * @param key Key to remove.

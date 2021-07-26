@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** */
@@ -197,7 +198,13 @@ public class TraversableTreeNodeTest {
 
         assertNotNull(elementNode);
 
+        assertSame(elementNode, elementsNode.get(0));
+
         assertNull(elementNode.strCfg());
+
+        assertThrows(IndexOutOfBoundsException.class, () -> elementsNode.get(-1));
+
+        assertThrows(IndexOutOfBoundsException.class, () -> elementsNode.get(1));
 
         elementsNode.createOrUpdate("keyPut", element -> element.changeStrCfg("val"));
 

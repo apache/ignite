@@ -41,6 +41,15 @@ public interface NamedListView<View> {
     View get(String key);
 
     /**
+     * Returns value located at the specified index.
+     *
+     * @param index Value index.
+     * @return Requested value.
+     * @throws IndexOutOfBoundsException If index is out of bounds.
+     */
+    View get(int index) throws IndexOutOfBoundsException;
+
+    /**
      * Returns the number of elements in this list.
      *
      * @return Number of elements.

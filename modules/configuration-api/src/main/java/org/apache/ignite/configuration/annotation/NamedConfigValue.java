@@ -41,8 +41,30 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * }
  * </code></pre>
  */
-@Target({ FIELD })
+@Target(FIELD)
 @Retention(RUNTIME)
 @Documented
 public @interface NamedConfigValue {
+    /**
+     * Key that can be used in HOCON configuration syntax to declare named list with fixed order.
+     * <pre><code>
+     * {
+     *     root : {
+     *         namedList : [
+     *             {
+     *                 syntheticKey : Element1,
+     *                 someValue = Value1
+     *             },
+     *             {
+     *                 syntheticKey : Element2,
+     *                 someValue = Value2
+     *             }
+     *         ]
+     *     }
+     * }
+     * </code></pre>
+     *
+     * @return Name for the synthetic key.
+     */
+    String syntheticKeyName() default "name";
 }

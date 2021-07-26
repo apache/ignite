@@ -88,7 +88,8 @@ public interface NamedListChange<Change> extends NamedListView<Change> {
      * @return {@code this} for chaining.
      *
      * @throws NullPointerException If key is null.
-     * @throws IllegalArgumentException If {@link #createOrUpdate(String, Consumer)} has been invoked with the same key previously.
+     * @throws IllegalArgumentException If {@link #createOrUpdate(String, Consumer)} has been invoked with the same key
+     *      previously.
      */
     NamedListChange<Change> delete(String key);
 }
