@@ -1368,7 +1368,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Standalone kernal context related to the snapshot.
      * @throws IgniteCheckedException If fails.
      */
-    public StandaloneGridKernalContext snapshotKernalContext(String snpName, String folderName) throws IgniteCheckedException {
+    public StandaloneGridKernalContext createStandaloneKernalContext(String snpName, String folderName) throws IgniteCheckedException {
         File snpDir = resolveSnapshotDir(snpName);
 
         return new StandaloneGridKernalContext(log,

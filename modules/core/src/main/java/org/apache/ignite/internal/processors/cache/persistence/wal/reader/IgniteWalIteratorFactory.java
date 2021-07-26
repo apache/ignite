@@ -176,20 +176,9 @@ public class IgniteWalIteratorFactory {
         GridCacheSharedContext<?, ?> sctx;
 
         if (iteratorParametersBuilder.sharedCtx == null) {
-            GridKernalContext ctx = new StandaloneGridKernalContext(log,
-                iteratorParametersBuilder.binaryMetadataFileStoreDir,
-                iteratorParametersBuilder.marshallerMappingFileStoreDir);
+            sctx = prepareSharedCtx(iteratorParametersBuilder);
 
-            StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
-
-            dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
-
-            sctx = new GridCacheSharedContext<>(ctx, null, null, null,
-                null, null, null, dbMgr, null, null,
-                null, null, null, null, null,
-                null, null, null, null, null, null);
-
-            for (GridComponent comp : ctx)
+            for (GridComponent comp : sctx.kernalContext())
                 comp.start();
         }
         else
@@ -378,6 +367,29 @@ public class IgniteWalIteratorFactory {
 
             return null;
         }
+    }
+
+    /**
+     * @return Fake shared context required for create minimal services for record reading.
+     */
+    @NotNull private GridCacheSharedContext prepareSharedCtx(
+        IteratorParametersBuilder iteratorParametersBuilder
+    ) throws IgniteCheckedException {
+        GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
+            iteratorParametersBuilder.binaryMetadataFileStoreDir,
+            iteratorParametersBuilder.marshallerMappingFileStoreDir
+        );
+
+        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
+
+        dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
+
+        return new GridCacheSharedContext<>(
+            kernalCtx, null, null, null,
+            null, null, null, dbMgr, null, null,
+            null, null, null, null, null,
+            null, null, null, null, null, null
+        );
     }
 
     /**

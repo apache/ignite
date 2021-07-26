@@ -241,7 +241,7 @@ public class SnapshotPartitionsVerifyTask
                 .order(ByteOrder.nativeOrder()));
 
             try {
-                GridKernalContext snpCtx = snpMgr.snapshotKernalContext(snpName, meta.folderName());
+                GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
 
                 for (GridComponent comp : snpCtx)
                     comp.start();

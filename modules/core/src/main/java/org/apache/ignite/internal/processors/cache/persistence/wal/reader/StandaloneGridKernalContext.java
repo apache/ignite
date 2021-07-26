@@ -178,6 +178,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
+        comps.add(cacheObjProcessor);
+
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
             marshallerCtx.onMarshallerProcessorStarted(this, null);
@@ -200,8 +202,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
-
-        comps.add(processor);
 
         return processor;
     }
