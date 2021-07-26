@@ -532,8 +532,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckMultipleTimes() throws Exception {
-        IgniteEx ignite = startGridsWithCache(3,
-            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(1024)), CACHE_KEYS_RANGE);
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         startClientGrid();
 
