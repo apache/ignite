@@ -37,7 +37,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTre
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -57,6 +56,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
 
 /**
@@ -67,8 +67,11 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Index tree index factory. */
-    public static InlineIndexTreeFactory IDX_TREE_FACTORY = new InlineIndexTreeFactory();
+    /**
+     * Index tree index factory.
+     * NOTE: Change only in tests, to control the creation of trees in the task.
+     */
+    public static InlineIndexTreeFactory idxTreeFactory = new InlineIndexTreeFactory();
 
     /** Logger. */
     @Nullable private transient volatile IgniteLogger log;
@@ -98,13 +101,13 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     private transient volatile boolean needToRen;
 
     /** Index root pages. Mapping: segment number -> index root page. */
-    @Nullable private transient volatile Map<Integer, RootPage> rootPages;
+    private final transient Map<Integer, RootPage> rootPages = new ConcurrentHashMap<>();
 
     /** Worker cleaning index trees. */
     @Nullable private transient volatile GridWorker worker;
 
     /** Total number of pages recycled from index trees. */
-    private final AtomicLong pageCnt = new AtomicLong();
+    private final transient AtomicLong pageCnt = new AtomicLong();
 
     /**
      * Constructor.
@@ -138,19 +141,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
             assert trees.length == segments :
                 "Invalid number of index trees [trees=" + trees.length + ", segments=" + segments + ']';
 
-            Map<Integer, RootPage> rootPages0 = new ConcurrentHashMap<>();
-
-            for (int i = 0; i < trees.length; i++) {
-                InlineIndexTree tree = trees[i];
-
-                assert tree != null;
-
-                tree.close();
-
-                rootPages0.put(i, rootPage(tree));
-            }
-
-            this.rootPages = rootPages0;
+            this.rootPages.putAll(toRootPages(trees));
         }
 
         needToRen = true;
@@ -195,7 +186,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        rootPages = null;
+        rootPages.clear();
 
         GridWorker w = worker;
 
@@ -208,7 +199,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
 
     /** {@inheritDoc} */
     @Override public void onDeactivationCluster() {
-        rootPages = null;
+        rootPages.clear();
     }
 
     /** {@inheritDoc} */
@@ -235,19 +226,11 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                     needToRen = false;
                 }
 
-                @Nullable Map<Integer, RootPage> rootPages0 = this.rootPages;
+                if (rootPages.isEmpty())
+                    rootPages.putAll(findIndexRootPages(grpCtx, cacheName, newTreeName, segments));
 
-                if (rootPages0 == null) {
-                    Map<Integer, RootPage> rootPages1 = findIndexRootPages(grpCtx, cacheName, newTreeName, segments);
-
-                    if (!rootPages1.isEmpty())
-                        this.rootPages = rootPages0 = new ConcurrentHashMap<>(rootPages1);
-                }
-
-                if (!F.isEmpty(rootPages0)) {
+                if (!rootPages.isEmpty()) {
                     GridFutureAdapter<DurableBackgroundTaskResult<Long>> fut = new GridFutureAdapter<>();
-
-                    Map<Integer, RootPage> finalRootPages = rootPages0;
 
                     GridWorker w = new GridWorker(
                         ctx.igniteInstanceName(),
@@ -257,7 +240,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                         /** {@inheritDoc} */
                         @Override protected void body() {
                             try {
-                                Iterator<Map.Entry<Integer, RootPage>> it = finalRootPages.entrySet().iterator();
+                                Iterator<Map.Entry<Integer, RootPage>> it = rootPages.entrySet().iterator();
 
                                 while (it.hasNext()) {
                                     Map.Entry<Integer, RootPage> e = it.next();
@@ -326,51 +309,18 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
         grpCtx.shared().database().checkpointReadLock();
 
         try {
-            if (existMetaPage(grpCtx, rootPage.pageId().pageId())) {
-                InlineIndexTree tree = IDX_TREE_FACTORY.create(grpCtx, rootPage, treeName);
+            InlineIndexTree tree = idxTreeFactory.create(grpCtx, rootPage, treeName);
 
-                pageCnt += tree.destroy(null, true);
+            pageCnt += tree.destroy(null, true);
 
-                if (grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, segment) != null)
-                    pageCnt++;
-            }
+            if (grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, segment) != null)
+                pageCnt++;
         }
         finally {
             grpCtx.shared().database().checkpointReadUnlock();
         }
 
         return pageCnt;
-    }
-
-    /**
-     * Checking the existence of a index tree meta page.
-     *
-     * @param grpCtx Cache group context.
-     * @param metaPageId Meta page id.
-     * @return {@code True} if exist.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static boolean existMetaPage(CacheGroupContext grpCtx, long metaPageId) throws IgniteCheckedException {
-        PageMemory pageMemory = grpCtx.dataRegion().pageMemory();
-
-        int grpId = grpCtx.groupId();
-
-        long metaPage = pageMemory.acquirePage(grpId, metaPageId);
-
-        try {
-            long metaPageAddr = pageMemory.readLock(grpId, metaPageId, metaPage);
-
-            try {
-                return metaPageAddr != 0;
-            }
-            finally {
-                if (metaPageAddr != 0)
-                    pageMemory.readUnlock(grpId, metaPageId, metaPage);
-            }
-        }
-        finally {
-            pageMemory.releasePage(grpId, metaPageId, metaPage);
-        }
     }
 
     /**
@@ -437,13 +387,26 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     }
 
     /**
-     * Creating a root page from a index tree.
+     * Create index root pages based on its trees.
      *
-     * @param tree Index tree.
-     * @return Index root page.
+     * @param trees Index trees.
+     * @return Index root pages. Mapping: segment number -> index root page.
      */
-    public static RootPage rootPage(InlineIndexTree tree) {
-        return new RootPage(new FullPageId(tree.getMetaPageId(), tree.groupId()), tree.created());
+    public static Map<Integer, RootPage> toRootPages(InlineIndexTree[] trees) {
+        if (F.isEmpty(trees))
+            return emptyMap();
+        else {
+            Map<Integer, RootPage> res = new HashMap<>();
+
+            for (int i = 0; i < trees.length; i++) {
+                InlineIndexTree tree = trees[i];
+
+                assert tree != null : "No tree for segment: " + i;
+
+                res.put(i, new RootPage(new FullPageId(tree.getMetaPageId(), tree.groupId()), tree.created()));
+            }
+            return res;
+        }
     }
     
     /**

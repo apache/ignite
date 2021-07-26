@@ -111,22 +111,34 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 metaStorage.iterate(
                     TASK_PREFIX,
                     (k, v) -> {
-                        DurableBackgroundTask t = ((DurableBackgroundTask<?>)v);
-                        DurableBackgroundTask converted = t.convertAfterRestoreIfNeeded();
+                        DurableBackgroundTask task = ((DurableBackgroundTask<?>)v);
+                        DurableBackgroundTask convertedTask = task.convertAfterRestoreIfNeeded();
 
-                        if (t != converted) {
+                        boolean converted = false;
+
+                        if (task != convertedTask) {
+                            assert !task.name().equals(convertedTask.name()) :
+                                "Duplicate task names [original=" + task.name() +
+                                    ", converted=" + convertedTask.name() + ']';
+
                             GridFutureAdapter<?> outFut = new GridFutureAdapter<>();
                             outFut.onDone();
 
-                            DurableBackgroundTaskState<?> state = new DurableBackgroundTaskState<>(t, outFut, true);
+                            DurableBackgroundTaskState<?> state =
+                                new DurableBackgroundTaskState<>(task, outFut, true, false);
+
                             state.state(COMPLETED);
 
-                            tasks.put(t.name(), state);
+                            tasks.put(task.name(), state);
 
-                            t = converted;
+                            task = convertedTask;
+                            converted = true;
                         }
 
-                        tasks.put(t.name(), new DurableBackgroundTaskState<>(t, new GridFutureAdapter<>(), true));
+                        tasks.put(
+                            task.name(),
+                            new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), true, converted)
+                        );
                     },
                     true
                 );
@@ -139,7 +151,27 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) {
-        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
+        if (!stopLock.enterBusy())
+            return;
+
+        try {
+            for (DurableBackgroundTaskState<?> state : tasks.values()) {
+                if (state.converted()) {
+                    metaStorageOperation(metaStorage -> {
+                        assert metaStorage != null;
+
+                        DurableBackgroundTask<?> task = state.task();
+
+                        metaStorage.write(metaStorageKey(state.task()), task);
+                    });
+                }
+            }
+
+            ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
+        }
+        finally {
+            stopLock.leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -254,7 +286,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                             taskName);
                     }
 
-                    return new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), save);
+                    return new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), save, false);
                 });
 
             if (save) {

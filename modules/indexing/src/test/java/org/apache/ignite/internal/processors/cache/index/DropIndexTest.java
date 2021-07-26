@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,11 +50,10 @@ import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.IDX_TREE_FACTORY;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.destroyIndexTrees;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.existMetaPage;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.findIndexRootPages;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.rootPage;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.toRootPages;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -65,21 +63,21 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 @WithSystemProperty(key = IGNITE_MAX_INDEX_PAYLOAD_SIZE, value = "1000000")
 public class DropIndexTest extends AbstractRebuildIndexTest {
-    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#IDX_TREE_FACTORY}. */
+    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
     private InlineIndexTreeFactory originalTaskIdxTreeFactory;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        originalTaskIdxTreeFactory = IDX_TREE_FACTORY;
+        originalTaskIdxTreeFactory = idxTreeFactory;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IDX_TREE_FACTORY = originalTaskIdxTreeFactory;
+        idxTreeFactory = originalTaskIdxTreeFactory;
     }
 
     /** {@inheritDoc} */
@@ -110,10 +108,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     public void testTaskNotExecuteIfAbsentCacheGroupOrRootPages() throws Exception {
         IgniteEx n = startGrid(0);
 
-        String fake = IntStream.generate(() -> ThreadLocalRandom.current().nextInt())
-            .filter(i -> n.context().cache().cacheGroup(i) == null)
-            .mapToObj(String::valueOf)
-            .findAny().get();
+        String fake = UUID.randomUUID().toString();
 
         GridCacheContext<Integer, Person> cctx = cacheContext(n.cache(DEFAULT_CACHE_NAME));
 
@@ -154,8 +149,13 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         SortedIndexDefinition idxDef = indexDefinition(idx);
         InlineIndexTree[] trees = segments(idx);
 
-        for (InlineIndexTree tree : trees)
-            assertEquals(new FullPageId(tree.getMetaPageId(), tree.groupId()), rootPage(tree).pageId());
+        Map<Integer, RootPage> rootPages = toRootPages(trees);
+
+        for (int i = 0; i < trees.length; i++) {
+            InlineIndexTree tree = trees[i];
+
+            assertEquals(new FullPageId(tree.getMetaPageId(), tree.groupId()), rootPages.get(i).pageId());
+        }
 
         String oldTreeName = idxDef.treeName();
         String newTreeName = UUID.randomUUID().toString();
@@ -180,7 +180,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
         GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
 
-        IDX_TREE_FACTORY = taskIndexTreeFactoryEx(startFut, endFut);
+        idxTreeFactory = taskIndexTreeFactoryEx(startFut, endFut);
 
         IgniteInternalFuture<DurableBackgroundTaskResult<Long>> taskFut = task.executeAsync(n.context());
 
@@ -420,7 +420,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
         GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
 
-        IDX_TREE_FACTORY = taskIndexTreeFactoryEx(startFut, endFut);
+        idxTreeFactory = taskIndexTreeFactoryEx(startFut, endFut);
 
         IgniteInternalFuture<List<List<?>>> dropIdxFut = runAsync(() -> dropIdx(cache, idxName));
 
@@ -466,7 +466,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
         GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
 
-        IDX_TREE_FACTORY = taskIndexTreeFactoryEx(startFut, endFut);
+        idxTreeFactory = taskIndexTreeFactoryEx(startFut, endFut);
 
         endFut.onDone(new IgniteCheckedException("Stop drop idx"));
 
@@ -478,7 +478,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
         n = restartFun.apply(n);
 
-        IDX_TREE_FACTORY = originalTaskIdxTreeFactory;
+        idxTreeFactory = originalTaskIdxTreeFactory;
 
         GridFutureAdapter<?> taskFut = taskState(n, taskNamePrefix).outFuture();
         assertFalse(taskFut.isDone());
@@ -528,36 +528,20 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
         if (persistent)
             rootPages.putAll(findIndexRootPages(cctx.group(), cctx.name(), treeName, segments));
-
-        else {
-            InlineIndexTree[] trees = segments(idx);
-
-            for (int i = 0; i < trees.length; i++)
-                rootPages.put(i, rootPage(trees[i]));
-        }
+        else
+            rootPages.putAll(toRootPages(segments(idx)));
 
         assertFalse(rootPages.isEmpty());
 
+        // Emulating worker cancellation, let's make sure it doesn't cause problems.
+        Thread.currentThread().interrupt();
+
         long pageCnt = 0;
 
-        for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
-            assertTrue(existMetaPage(cctx.group(), e.getValue().pageId().pageId()));
-
+        for (Map.Entry<Integer, RootPage> e : rootPages.entrySet())
             pageCnt += destroyIndexTrees(cctx.group(), e.getValue(), cctx.name(), treeName, e.getKey());
-        }
 
         assertTrue(pageCnt >= expRes);
         assertTrue(findIndexRootPages(cctx.group(), cctx.name(), treeName, segments).isEmpty());
-
-        // Check for re-deletion of index trees.
-        pageCnt = 0;
-
-        for (Map.Entry<Integer, RootPage> e : rootPages.entrySet()) {
-            assertFalse(existMetaPage(cctx.group(), e.getValue().pageId().pageId()));
-
-            pageCnt += destroyIndexTrees(cctx.group(), e.getValue(), cctx.name(), treeName, e.getKey());
-        }
-
-        assertEquals(0, pageCnt);
     }
 }

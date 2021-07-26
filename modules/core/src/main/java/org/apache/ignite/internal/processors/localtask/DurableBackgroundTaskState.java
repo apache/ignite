@@ -66,6 +66,9 @@ public class DurableBackgroundTaskState<R> {
     /** Current state of the task. */
     private volatile State state = INIT;
 
+    /** Converted from another task. */
+    private final boolean converted;
+
     /**
      * Constructor.
      *
@@ -73,10 +76,16 @@ public class DurableBackgroundTaskState<R> {
      * @param outFut Outside task future.
      * @param saved  Task has been saved to the MetaStorage.
      */
-    public DurableBackgroundTaskState(DurableBackgroundTask<R> task, GridFutureAdapter<R> outFut, boolean saved) {
+    public DurableBackgroundTaskState(
+        DurableBackgroundTask<R> task,
+        GridFutureAdapter<R> outFut,
+        boolean saved,
+        boolean converted
+    ) {
         this.task = task;
         this.outFut = outFut;
         this.saved = saved;
+        this.converted = converted;
     }
 
     /**
@@ -133,6 +142,15 @@ public class DurableBackgroundTaskState<R> {
      */
     public boolean state(State exp, State newState) {
         return STATE_UPDATER.compareAndSet(this, exp, newState);
+    }
+
+    /**
+     * Check if the task has been converted from another.
+     *
+     * @return {@code True} if it was converted from another task.
+     */
+    public boolean converted() {
+        return converted;
     }
 
     /** {@inheritDoc} */

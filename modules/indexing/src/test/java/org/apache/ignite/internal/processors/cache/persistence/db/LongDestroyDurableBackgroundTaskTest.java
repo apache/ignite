@@ -98,7 +98,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.IDX_TREE_FACTORY;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -173,7 +173,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     /** */
     private DurableBackgroundTaskTestListener durableBackgroundTaskTestLsnr;
 
-    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#IDX_TREE_FACTORY}. */
+    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
     private InlineIndexTreeFactory originalFactory;
 
     /** */
@@ -218,8 +218,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         pendingDelLatch = new CountDownLatch(1);
         idxsRebuildLatch = new CountDownLatch(1);
 
-        originalFactory = IDX_TREE_FACTORY;
-        IDX_TREE_FACTORY = new InlineIndexTreeFactoryEx();
+        originalFactory = idxTreeFactory;
+        idxTreeFactory = new InlineIndexTreeFactoryEx();
     }
 
     /** {@inheritDoc} */
@@ -232,7 +232,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         durableBackgroundTaskTestLsnr = null;
 
-        IDX_TREE_FACTORY = originalFactory;
+        idxTreeFactory = originalFactory;
         originalFactory = null;
 
         super.afterTest();

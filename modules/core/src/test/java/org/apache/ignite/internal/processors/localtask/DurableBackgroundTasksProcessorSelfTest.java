@@ -314,9 +314,12 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         assertEquals(3, tasks(n).size());
 
-        checkStateAndMetaStorage(n, t0, COMPLETED, true, true);
-        checkStateAndMetaStorage(n, t1, INIT, true, false);
-        checkStateAndMetaStorage(n, t1, INIT, true, false);
+        checkStateAndMetaStorage(n, t0, COMPLETED, true, true, false);
+        checkStateAndMetaStorage(n, t1, INIT, true, false, false);
+
+        n.cluster().state(ACTIVE);
+
+        checkStateAndMetaStorage(n, t2, STARTED, true, false, true);
     }
 
     /**
@@ -471,6 +474,29 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         boolean expSaved,
         boolean expDone
     ) throws IgniteCheckedException {
+        checkStateAndMetaStorage(n, t, expState, expSaved, expDone, null);
+    }
+
+    /**
+     * Checking the internal {@link DurableBackgroundTaskState state} of the task and storage in the MetaStorage.
+     *
+     * @param n Node.
+     * @param t Task.
+     * @param expState Expected state of the task, {@code null} means that the task should not be.
+     * @param expSaved Task is expected to be stored in MetaStorage.
+     * @param expDone Expect completion of the futures task.
+     * @param expConverted Expected value of the {@link DurableBackgroundTaskState#converted()},
+     *      {@code null} if no validation is required.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkStateAndMetaStorage(
+        IgniteEx n,
+        DurableBackgroundTask<?> t,
+        @Nullable State expState,
+        boolean expSaved,
+        boolean expDone,
+        @Nullable Boolean expConverted
+    ) throws IgniteCheckedException {
         DurableBackgroundTaskState<?> taskState = tasks(n).get(t.name());
 
         if (expState == null)
@@ -479,6 +505,9 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
             assertEquals(expState, taskState.state());
             assertEquals(expSaved, taskState.saved());
             assertEquals(expDone, taskState.outFuture().isDone());
+
+            if (expConverted != null)
+                assertEquals(expConverted.booleanValue(), taskState.converted());
         }
 
         DurableBackgroundTask<?> ser =

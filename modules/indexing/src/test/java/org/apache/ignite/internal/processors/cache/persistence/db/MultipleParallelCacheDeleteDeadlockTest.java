@@ -54,7 +54,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.IDX_TREE_FACTORY;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
@@ -82,7 +82,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
     /** */
     private static final String CACHE_GRP_2 = "cache_grp_2";
 
-    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#IDX_TREE_FACTORY}. */
+    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
     private InlineIndexTreeFactory originalFactory;
 
     /** {@inheritDoc} */
@@ -114,8 +114,8 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        originalFactory = IDX_TREE_FACTORY;
-        IDX_TREE_FACTORY = new InlineIndexTreeFactoryEx();
+        originalFactory = idxTreeFactory;
+        idxTreeFactory = new InlineIndexTreeFactoryEx();
     }
 
     /** {@inheritDoc} */
@@ -124,7 +124,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        IDX_TREE_FACTORY = originalFactory;
+        idxTreeFactory = originalFactory;
         originalFactory = null;
 
         super.afterTest();
