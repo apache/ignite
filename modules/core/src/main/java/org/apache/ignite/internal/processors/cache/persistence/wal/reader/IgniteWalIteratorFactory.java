@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -172,10 +173,20 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
+        GridCacheSharedContext<?, ?> sctx;
+
+        if (iteratorParametersBuilder.sharedCtx == null) {
+            sctx = prepareSharedCtx(iteratorParametersBuilder);
+
+            for (GridComponent comp : sctx.kernalContext())
+                comp.start();
+        }
+        else
+            sctx = iteratorParametersBuilder.sharedCtx;
+
         return new StandaloneWalRecordsIterator(
             iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-            iteratorParametersBuilder.sharedCtx == null ? prepareSharedCtx(iteratorParametersBuilder) :
-                iteratorParametersBuilder.sharedCtx,
+            sctx,
             iteratorParametersBuilder.ioFactory,
             resolveWalFiles(iteratorParametersBuilder),
             iteratorParametersBuilder.filter,
