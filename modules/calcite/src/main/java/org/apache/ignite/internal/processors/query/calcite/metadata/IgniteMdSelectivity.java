@@ -21,7 +21,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -267,7 +269,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     }
 
     /**
-     * Predicate based selectivity for table.
+     * Predicate based selectivity for table. Estimate condition on each column taking in comparison it's statistics.
      *
      * @param rel Original rel node to fallback calculation by.
      * @param tbl Underlying IgniteTable.
@@ -282,19 +284,43 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         IgniteTypeFactory typeFactory = Commons.typeFactory(rel);
 
         double sel = 1.0;
+
+        Map<ColumnStatistics, Boolean> addNotNull = new HashMap<>();
+
         for (RexNode pred : RelOptUtil.conjunctions(predicate)) {
+            ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
 
             if (pred.getKind() == SqlKind.IS_NULL)
                 sel *= estimateIsNullSelectivity(typeFactory, tbl, pred);
-            else if (pred.getKind() == SqlKind.IS_NOT_NULL)
+            else if (pred.getKind() == SqlKind.IS_NOT_NULL) {
+                if (colStat != null)
+                    addNotNull.put(colStat, Boolean.FALSE);
+
                 sel *= estimateIsNotNullSelectivity(typeFactory, tbl, pred);
-            else if (pred.isA(SqlKind.EQUALS))
+            } else if (pred.isA(SqlKind.EQUALS)) {
+                if (colStat != null) {
+                    Boolean colNotNull = addNotNull.get(colStat);
+
+                    addNotNull.put(colStat, (colNotNull == null) || colNotNull);
+                }
+
                 sel *= estimateEqualsSelectivity(typeFactory, tbl, pred);
-            else if (pred.isA(SqlKind.COMPARISON))
+            } else if (pred.isA(SqlKind.COMPARISON)) {
+                if (colStat != null) {
+                    Boolean colNotNull = addNotNull.get(colStat);
+
+                    addNotNull.put(colStat, (colNotNull == null) || colNotNull);
+                }
+
                 sel *= estimateComparisonSelectivity(typeFactory, tbl, pred);
-            else
+            } else
                 sel *= .25;
         }
+
+        // Estimate not null selectivity in addition to comparison.
+        for (Map.Entry<ColumnStatistics, Boolean> colAddNotNull : addNotNull.entrySet())
+            if (colAddNotNull.getValue())
+                sel *= estimateNotNullSelectivity(colAddNotNull.getKey());
 
         return sel;
     }
@@ -333,6 +359,15 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return estimateNotNullSelectivity(colStat);
     }
 
+    /**
+     * Estimate selectivity for equals predicate.
+     *
+     * @param typeFactory IgniteTypeFactory.
+     * @param tbl IgniteTable.
+     * @param pred RexNode with predicate.
+     *
+     * @return Selectivity.
+     */
     private double estimateEqualsSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
         ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
 
@@ -352,6 +387,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return estimateEqualsSelectivity(colStat, comparableVal);
     }
 
+    /**
+     * Estimate selectivity for comparison predicate.
+     *
+     * @param typeFactory IgniteTypeFactory.
+     * @param tbl IgniteTable.
+     * @param pred RexNode.
+     * @return Selectivity.
+     */
     private double estimateComparisonSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
         ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
 
@@ -393,7 +436,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @return Selectivity.
      */
     private double estimateRangeSelectivity(ColumnStatistics colStat, RexNode pred) {
-        // TODO: use min/max statistics value comparison.
         if (pred instanceof RexCall) {
             RexLiteral literal = getOperand(pred, RexLiteral.class);
             BigDecimal val = toComparableValue(literal);
@@ -401,7 +443,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return estimateSelectivity(colStat, val, pred);
         }
 
-        return estimateNotNullSelectivity(colStat);
+        return 1.;
     }
 
     /**
@@ -423,29 +465,27 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         BigDecimal max = toComparableValue(colStat.max());
         BigDecimal total = (min == null || max == null) ? null : max.subtract(min).abs();
 
-        double notNullSelectivity = estimateNotNullSelectivity(colStat);
-
         if (total == null)
             // No min/max mean that all values are null for coumn.
             return 0.;
 
-        // All values the same so check confition and return all or nothing selectivity.
+        // All values the same so check condition and return all or nothing selectivity.
         if (total.signum() == 0) {
             BigDecimal diff = val.subtract(min);
             int diffSign = diff.signum();
 
             switch (op.getKind()) {
                 case GREATER_THAN:
-                    return (diffSign < 0) ? notNullSelectivity : 0.;
+                    return (diffSign < 0) ? 1. : 0.;
 
                 case LESS_THAN:
-                    return (diffSign > 0) ? notNullSelectivity : 0.;
+                    return (diffSign > 0) ? 1. : 0.;
 
                 case GREATER_THAN_OR_EQUAL:
-                    return (diffSign <= 0) ? notNullSelectivity : 0.;
+                    return (diffSign <= 0) ? 1. : 0.;
 
                 case LESS_THAN_OR_EQUAL:
-                    return (diffSign >= 0) ? notNullSelectivity : 0.;
+                    return (diffSign >= 0) ? 1. : 0.;
 
                 default:
                     return guessSelectivity(pred);
@@ -478,14 +518,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 return guessSelectivity(pred);
         }
 
-        double estimation = actual.divide(total, MATH_CONTEXT).doubleValue();
-
-        // If value less than min or greater than max for > and < conditions respectively.
-
-        if (estimation > notNullSelectivity)
-            estimation = notNullSelectivity;
-
-        return estimation;
+        return (actual.compareTo(total) > 0) ? 1 : actual.divide(total, MATH_CONTEXT).doubleValue();
     }
 
     /**

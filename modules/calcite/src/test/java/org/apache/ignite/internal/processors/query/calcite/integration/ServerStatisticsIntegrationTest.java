@@ -135,29 +135,16 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         assertQuerySrv("select count(name) from person").matches(QueryChecker.containsCost(costWoStats)).check();
     }
 
-    @Test
-    public void testAllTypesCost() throws IgniteCheckedException, InterruptedException {
-        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
-        srv = ignite(0);
-
-        TestCost costWoStats = new TestCost(1000., 1000., null, null, null);
-
-        collectStatistics(srv, key);
-
-        testNullableFields();
-
-        testBorders();
-
-        statMgr(srv).dropStatistics(new StatisticsTarget(key));
-        clearQryCache(srv);
-
-        assertQuerySrv("select * from all_types").matches(QueryChecker.containsCost(costWoStats)).check();
-    }
-
     /**
      * Check is null conditions.
      */
-    public void testNullableFields() {
+    @Test
+    public void testNullableFields() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
+
+        collectStatistics(srv, key);
+
         String sql = "select * from all_types ";
 
         for (String nullableField : NULLABLE_FIELDS) {
@@ -170,25 +157,95 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             assertQuerySrv(sql + "where " + nullableField + " is null").matches(QueryChecker.containsRowCount(25.)).check();
 
             assertQuerySrv(sql + "where " + nullableField + " is not null").matches(QueryChecker.containsRowCount(75.)).check();
+        }
+    }
+
+    /**
+     * Test multiple condition for the same query.
+     * @throws IgniteCheckedException
+     */
+    @Test
+    public void testMultipleConditionQuery() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
+
+        collectStatistics(srv, key);
+
+        Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
+
+        for (String numericField : NUMERIC_FIELDS) {
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? 100. : 75.;
+
+            String fieldSql = String.format("select * from all_types where %s > -100 and %s > 0", numericField, numericField);
+
+            assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+
+            fieldSql = String.format("select * from all_types where %s < 1000 and %s < 101", numericField, numericField);
+
+            assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+            fieldSql = String.format("select * from all_types where %s > -100 and %s < 1000", numericField, numericField);
+
+            assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+        }
+    }
+
+    /**
+     * Check range condition with not null conditions.
+     *
+     * @throws IgniteCheckedException In case of error.
+     */
+    @Test
+    public void testNonNullMultipleConditionQuery() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
+
+        collectStatistics(srv, key);
+
+        Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
+
+        for (String numericField : NUMERIC_FIELDS) {
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? 100. : 75.;
+
+            String fieldSql = String.format("select * from all_types where %s is not null and %s > 0", numericField, numericField);
+
+            assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+
         }
     }
 
     /**
      * Check randge with min/max borders.
      */
-    private void testBorders() {
+    @Test
+    public void testBorders() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
+
+        collectStatistics(srv, key);
+
         String sql = "select * from all_types ";
 
         Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
         for (String numericField : NUMERIC_FIELDS) {
-            double rowCount = (nonNullableFields.contains(numericField)) ? 100. : 75.;
-            System.out.println(numericField);
-            // TODO: why 1
-            assertQuerySrv(sql + "where " + numericField + " <  -1").matches(QueryChecker.containsRowCount(1.)).check();
-            assertQuerySrv(sql + "where " + numericField + " <  0").matches(QueryChecker.containsRowCount(1.)).check();
-            assertQuerySrv(sql + "where " + numericField + " <=  0").matches(QueryChecker.containsRowCount(1.)).check();
-            assertQuerySrv(sql + "where " + numericField + " >=  0").matches(QueryChecker.containsRowCount(rowCount)).check();
-            assertQuerySrv(sql + "where " + numericField + " > 0").matches(QueryChecker.containsRowCount(rowCount)).check();
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? 100. : 75.;
+            double firstRowCnt = (nonNullableFields.contains(numericField)) ? 10. : 7.;
+
+            String fieldSql = sql + "where " + numericField;
+
+            assertQuerySrv(fieldSql + " <  -1").matches(QueryChecker.containsRowCount(1.)).check();
+            assertQuerySrv(fieldSql + " <  0").matches(QueryChecker.containsRowCount(1.)).check();
+            assertQuerySrv(fieldSql + " <=  0").matches(QueryChecker.containsRowCount(1.)).check();
+            assertQuerySrv(fieldSql + " >=  0").matches(QueryChecker.containsRowCount(allRowCnt)).check();
+            assertQuerySrv(fieldSql + " > 0").matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+            assertQuerySrv(fieldSql + " > 101").matches(QueryChecker.containsRowCount(1.)).check();
+            assertQuerySrv(fieldSql + " > 100").matches(QueryChecker.containsRowCount(1.)).check();
+            assertQuerySrv(fieldSql + " >= 100").matches(QueryChecker.containsRowCount(1.)).check();
+            assertQuerySrv(fieldSql + " <= 100").matches(QueryChecker.containsRowCount(allRowCnt)).check();
+            assertQuerySrv(fieldSql + " < 100").matches(QueryChecker.containsRowCount(allRowCnt)).check();
         }
     }
 
@@ -243,9 +300,9 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     /**
      * Create (if not exists) and populate cache with all types.
      *
-     * @param start
-     * @param count
-     * @return
+     * @param start first key idx.
+     * @param count rows count.
+     * @return Populated cache.
      */
     protected IgniteCache<Integer, AllTypes> createAndPopulateAllTypesTable(int start, int count) {
         IgniteCache<Integer, AllTypes> all_types = grid(0).getOrCreateCache(new CacheConfiguration<Integer, AllTypes>()
