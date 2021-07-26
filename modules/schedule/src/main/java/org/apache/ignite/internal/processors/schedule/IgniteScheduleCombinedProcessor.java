@@ -53,15 +53,17 @@ public class IgniteScheduleCombinedProcessor extends IgniteScheduleProcessorAdap
 
     /** {@inheritDoc} */
     @Override public SchedulerFuture<?> schedule(Runnable c, String jobName, Date startTime,
-                                                 int repeatCount, long repeatInterval, int delay) {
+                                                 int repeatCount, long repeatIntervalInMS, int delayInSeconds) {
         return igniteScheduleQuartzProcessor.schedule(c, jobName, startTime,
-                repeatCount, repeatInterval, delay);
+                repeatCount, repeatIntervalInMS, delayInSeconds);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime, int repeatCount, long repeatInterval, int delay) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName,
+                                                     Date startTime, int repeatCount,
+                                                     long repeatIntervalInMS, int delayInSeconds) {
         return igniteScheduleQuartzProcessor.schedule(c, jobName, startTime,
-                repeatCount, repeatInterval, delay);
+                repeatCount, repeatIntervalInMS, delayInSeconds);
     }
 
     /** {@inheritDoc} */

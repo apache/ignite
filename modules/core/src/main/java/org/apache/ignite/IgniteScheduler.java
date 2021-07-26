@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.io.Closeable;
+import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.lang.IgniteFuture;
@@ -98,6 +99,35 @@ public interface IgniteScheduler {
      * @return Scheduled execution future.
      */
     public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String ptrn);
+
+    /**
+     * Schedules job for execution using local <b>cron-based</b> scheduling.
+     *
+     * @param job Not null job to schedule to run as a background cron-based job.
+     * @param jobName Name of the job to be run
+     * @param startTime Starting time for the job
+     * @param repeatCount Repeat count of the job
+     * @param repeatInterval Repeat interval of the job
+     * @param delay Delay of the job
+     * @return Scheduled execution future.
+     */
+    public <R> SchedulerFuture<R> scheduleLocal(@NotNull Callable<R> job, String jobName, Date startTime,
+                                                int repeatCount, long repeatInterval, int delay);
+
+    /**
+     * Schedules job for execution using local <b>quartz-based</b> scheduling.
+     *
+     * @param job Not null job to schedule to run as a background cron-based job.
+     *
+     * @param jobName Name of the job to be run
+     * @param startTime Starting time for the job
+     * @param repeatCount Repeat count of the job
+     * @param repeatInterval Repeat interval of the job
+     * @param delay Delay of the job
+     * @return Scheduled execution future.
+     */
+    public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String jobName, Date startTime,
+                                            int repeatCount, long repeatInterval, int delay);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.

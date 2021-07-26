@@ -29,12 +29,15 @@ import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerContext;
 import org.quartz.SchedulerException;
-import org.quartz.impl.triggers.SimpleTriggerImpl;
+import org.quartz.SimpleTrigger;
+import org.quartz.TriggerBuilder;
 
 import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 
 public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
     /** Used to represent CountDownLatch in JobContext **/
@@ -49,12 +52,14 @@ public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
     /** Used to represent IgniteLogger in JobContext **/
     public static final String IGNITELOGGER_KEY = "IgniteLogger";
 
+    private static final String TRIGGER_NAME = "StandardTrigger";
+
     /** Quartz scheduler. */
     @GridToStringExclude
     private Scheduler sched;
 
     /** Trigger */
-    private SimpleTriggerImpl trigger;
+    private SimpleTrigger trigger;
 
     /** Execution task. */
     @GridToStringExclude
@@ -81,6 +86,8 @@ public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
         this.sched = sched;
         this.ctx = ctx;
         this.igniteScheduledJobInfo = igniteScheduledJobInfo;
+
+        maxCalls = igniteScheduledJobInfo.getRepeatCount();
 
         log = ctx.log(getClass());
     }
@@ -143,18 +150,22 @@ public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
         context.put(IGNITELOGGER_KEY, log);
 
         JobDetail job = JobBuilder.newJob(ExecutableJob.class)
+                .withIdentity(igniteScheduledJobInfo.getJobName())
                 .build();
 
-        trigger = new SimpleTriggerImpl();
-        trigger.setStartTime(igniteScheduledJobInfo.getStartTime());
-        trigger.setRepeatCount(igniteScheduledJobInfo.getRepeatCount());
-        trigger.setRepeatInterval(igniteScheduledJobInfo.getRepeatInterval());
+        trigger = TriggerBuilder.newTrigger()
+                .withIdentity(TRIGGER_NAME)
+                .withSchedule(simpleSchedule()
+                        .withIntervalInMilliseconds(igniteScheduledJobInfo.getRepeatIntervalInMS())
+                        .withRepeatCount(igniteScheduledJobInfo.getRepeatCount()))
+                .forJob(igniteScheduledJobInfo.getJobName())
+                .build();
 
-        ((IgniteScheduleProcessor)ctx.schedule()).onScheduled(this);
+        (ctx.schedule()).onScheduled(this);
 
-        if (igniteScheduledJobInfo.getDelay() > 0) {
+        if (igniteScheduledJobInfo.getDelayInSeconds() > 0) {
             try {
-                sched.startDelayed(igniteScheduledJobInfo.getDelay());
+                sched.startDelayed(igniteScheduledJobInfo.getDelayInSeconds());
             } catch (SchedulerException e) {
                 e.printStackTrace();
             }
@@ -180,7 +191,7 @@ public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
                 return;
             }
 
-            ((IgniteScheduleProcessor)ctx.schedule()).onDescheduled(this);
+            (ctx.schedule()).onDescheduled(this);
         }
     }
 
@@ -209,13 +220,13 @@ public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
 
         long[] times = new long[cnt];
 
-        if (start < createTime() + igniteScheduledJobInfo.getDelay() * 1000)
-            start = createTime() + igniteScheduledJobInfo.getDelay() * 1000;
+        if (start < createTime() + igniteScheduledJobInfo.getDelayInSeconds() * 1000)
+            start = createTime() + igniteScheduledJobInfo.getDelayInSeconds() * 1000;
 
         long current = start;
 
         for (int i = 0; i < cnt; i++) {
-            current = current + igniteScheduledJobInfo.getRepeatInterval();
+            current = current + igniteScheduledJobInfo.getRepeatIntervalInMS();
             times[i] = trigger.getFireTimeAfter(new Date(current)).getTime();
         }
 

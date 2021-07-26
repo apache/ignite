@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -112,6 +113,40 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
 
         try {
             return ctx.schedule().schedule(securityRunnable(job), ptrn);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> SchedulerFuture<R> scheduleLocal(@NotNull Callable<R> job, String jobName,
+                                                          Date startTime, int repeatCount, long repeatIntervalInMS,
+                                                          int delayInSeconds) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.schedule().schedule(securityCallable(job), jobName, startTime, repeatCount,
+                    repeatIntervalInMS, delayInSeconds);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String jobName,
+                                                      Date startTime, int repeatCount, long repeatIntervalInMS,
+                                                      int delayInSeconds) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.schedule().schedule(securityRunnable(job), jobName, startTime,
+                    repeatCount, repeatIntervalInMS, delayInSeconds);
         }
         finally {
             unguard();

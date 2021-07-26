@@ -476,7 +476,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * Test runnable job.
      */
-    private static class TestRunnable implements IgniteRunnable {
+    static class TestRunnable implements IgniteRunnable {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -498,7 +498,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * Test callable job.
      */
-    private static class TestCallable implements IgniteCallable<Integer> {
+    static class TestCallable implements IgniteCallable<Integer> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;

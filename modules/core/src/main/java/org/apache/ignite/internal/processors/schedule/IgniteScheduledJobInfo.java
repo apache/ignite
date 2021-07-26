@@ -31,18 +31,19 @@ public class IgniteScheduledJobInfo {
     /** Repeat count */
     private final int repeatCount;
 
-    /** Repeat interval */
-    private final long repeatInterval;
+    /** Repeat interval in MS */
+    private final long repeatIntervalInMS;
 
-    /** Delay */
-    private final int delay;
+    /** Delay in seconds */
+    private final int delayInSeconds;
 
-    public IgniteScheduledJobInfo(String jobName, Date startTime, int repeatCount, long repeatInterval, int delay) {
+    public IgniteScheduledJobInfo(String jobName, Date startTime, int repeatCount, long repeatIntervalInMS,
+                                  int delayInSeconds) {
         this.jobName = jobName;
         this.startTime = startTime;
         this.repeatCount = repeatCount;
-        this.repeatInterval = repeatInterval;
-        this.delay = delay;
+        this.repeatIntervalInMS = repeatIntervalInMS;
+        this.delayInSeconds = delayInSeconds;
     }
 
     /** Get the job name */
@@ -61,12 +62,12 @@ public class IgniteScheduledJobInfo {
     }
 
     /** Get the repeat interval */
-    public long getRepeatInterval() {
-        return repeatInterval;
+    public long getRepeatIntervalInMS() {
+        return repeatIntervalInMS;
     }
 
     /** Get delay */
-    public int getDelay() {
-        return delay;
+    public int getDelayInSeconds() {
+        return delayInSeconds;
     }
 }

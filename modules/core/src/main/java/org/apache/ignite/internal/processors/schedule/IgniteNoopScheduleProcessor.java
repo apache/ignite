@@ -46,13 +46,13 @@ public class IgniteNoopScheduleProcessor extends IgniteScheduleProcessorAdapter 
 
     /** {@inheritDoc} */
     @Override public SchedulerFuture<?> schedule(Runnable c, String jobName, Date startTime,
-                                                 int repeatCount, long repeatInterval, int delay) {
+                                                 int repeatCount, long repeatIntervalInMS, int delayInSeconds) {
         throw processorException();
     }
 
     /** {@inheritDoc} */
     @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime,
-                                                     int repeatCount, long repeatInterval, int delay) {
+                                                     int repeatCount, long repeatIntervalInMS, int delayInSeconds) {
         throw processorException();
     }
 

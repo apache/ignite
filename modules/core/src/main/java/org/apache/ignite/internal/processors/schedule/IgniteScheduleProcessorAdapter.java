@@ -56,25 +56,24 @@ public abstract class IgniteScheduleProcessorAdapter extends GridProcessorAdapte
      * @param jobName Name of the job
      * @param startTime Start time of the job
      * @param repeatCount Repeat count of the job
-     * @param repeatInterval Repeat interval of the job
-     * @param delay Delay in execution of the job
+     * @param repeatIntervalInMS Repeat interval of the job
+     * @param delayInSeconds Delay in execution of the job
      * @return Descriptor of the scheduled execution.
      */
     public abstract SchedulerFuture<?> schedule(final Runnable c, String jobName, Date startTime,
-                                                int repeatCount, long repeatInterval, int delay);
+                                                int repeatCount, long repeatIntervalInMS, int delayInSeconds);
 
     /**
      * @param c Closure to schedule to run as a background cron-based job.
      * @param jobName Name of the job
      * @param startTime Start time of the job
      * @param repeatCount Repeat count of the job
-     * @param repeatInterval Repeat interval of the job
-     * @param delay Delay in execution of the job
+     * @param repeatIntervalInMS Repeat interval of the job
+     * @param delayInSeconds Delay in execution of the job
      * @return Descriptor of the scheduled execution.
      */
     public abstract <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime,
-                                                    int repeatCount, long repeatInterval, int delay);
-
+                                                    int repeatCount, long repeatIntervalInMS, int delayInSeconds);
 
     /**
      *

@@ -64,13 +64,13 @@ public class IgniteScheduleQuartzProcessor extends IgniteScheduleProcessorAdapte
 
     /** {@inheritDoc} */
     @Override public SchedulerFuture<?> schedule(Runnable c, String jobName, Date startTime,
-                                                 int repeatCount, long repeatInterval, int delay) {
+                                                 int repeatCount, long repeatIntervalInMS, int delayInSeconds) {
         assert c != null;
         assert jobName != null;
         assert startTime != null;
 
         IgniteScheduledJobInfo igniteScheduledJobInfo = new IgniteScheduledJobInfo(jobName, startTime,
-                repeatCount, repeatInterval, delay);
+                repeatCount, repeatIntervalInMS, delayInSeconds);
 
         ScheduleFutureUsingQuartzImpl<Object> fut = new ScheduleFutureUsingQuartzImpl<>(sched, ctx, igniteScheduledJobInfo);
 
@@ -86,13 +86,14 @@ public class IgniteScheduleQuartzProcessor extends IgniteScheduleProcessorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime, int repeatCount, long repeatInterval, int delay) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime,
+                                                     int repeatCount, long repeatIntervalInMS, int delayInSeconds) {
         assert c != null;
         assert jobName != null;
         assert startTime != null;
 
         IgniteScheduledJobInfo igniteScheduledJobInfo = new IgniteScheduledJobInfo(jobName, startTime,
-                repeatCount, repeatInterval, delay);
+                repeatCount, repeatIntervalInMS, delayInSeconds);
 
         ScheduleFutureUsingQuartzImpl<R> fut = new ScheduleFutureUsingQuartzImpl<>(sched, ctx, igniteScheduledJobInfo);
 
