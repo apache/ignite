@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
+import java.util.Date;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -40,6 +41,28 @@ public class IgniteNoopScheduleProcessor extends IgniteScheduleProcessorAdapter 
 
     /** {@inheritDoc} */
     @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+        throw processorException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public SchedulerFuture<?> schedule(Runnable c, String jobName, Date startTime,
+                                                 int repeatCount, long repeatInterval, int delay) {
+        throw processorException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime,
+                                                     int repeatCount, long repeatInterval, int delay) {
+        throw processorException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onScheduled(SchedulerFuture<?> fut) {
+        throw processorException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDescheduled(SchedulerFuture<?> fut) {
         throw processorException();
     }
 

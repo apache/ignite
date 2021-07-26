@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import it.sauronsoftware.cron4j.Scheduler;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -31,13 +24,22 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.scheduler.SchedulerFuture;
 import org.jetbrains.annotations.Nullable;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.SchedulerFactory;
+import org.quartz.impl.StdSchedulerFactory;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-/**
- * Schedules cron-based execution of grid tasks and closures.
- */
-public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
-    /** Cron scheduler. */
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Set;
+import java.util.concurrent.Callable;
+
+/** Scheduler which allows scheduling jobs using Quartz scheduler */
+public class IgniteScheduleQuartzProcessor extends IgniteScheduleProcessorAdapter {
+    /** Quartz scheduler. */
     private Scheduler sched;
 
     /** Schedule futures. */
@@ -46,17 +48,31 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public IgniteScheduleProcessor(GridKernalContext ctx) {
+    public IgniteScheduleQuartzProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public SchedulerFuture<?> schedule(final Runnable c, String ptrn) {
+        throw new NotImplementedException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+        throw new NotImplementedException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public SchedulerFuture<?> schedule(Runnable c, String jobName, Date startTime,
+                                                 int repeatCount, long repeatInterval, int delay) {
         assert c != null;
-        assert ptrn != null;
+        assert jobName != null;
+        assert startTime != null;
 
-        ScheduleFutureImpl<Object> fut = new ScheduleFutureImpl<>(sched, ctx, ptrn);
+        IgniteScheduledJobInfo igniteScheduledJobInfo = new IgniteScheduledJobInfo(jobName, startTime,
+                repeatCount, repeatInterval, delay);
 
+        ScheduleFutureUsingQuartzImpl<Object> fut = new ScheduleFutureUsingQuartzImpl<>(sched, ctx, igniteScheduledJobInfo);
 
         fut.schedule(new IgniteCallable<Object>() {
             @Nullable @Override public Object call() {
@@ -70,25 +86,19 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime, int repeatCount, long repeatInterval, int delay) {
         assert c != null;
-        assert pattern != null;
+        assert jobName != null;
+        assert startTime != null;
 
-        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
+        IgniteScheduledJobInfo igniteScheduledJobInfo = new IgniteScheduledJobInfo(jobName, startTime,
+                repeatCount, repeatInterval, delay);
+
+        ScheduleFutureUsingQuartzImpl<R> fut = new ScheduleFutureUsingQuartzImpl<>(sched, ctx, igniteScheduledJobInfo);
 
         fut.schedule(c);
 
         return fut;
-    }
-
-    @Override public SchedulerFuture<?> schedule(Runnable c, String jobName, Date startTime,
-                                                 int repeatCount, long repeatInterval, int delay) {
-        throw new NotImplementedException();
-    }
-
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime,
-                                                     int repeatCount, long repeatInterval, int delay) {
-        throw new NotImplementedException();
     }
 
     /**
@@ -107,7 +117,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     @Override public void onDescheduled(SchedulerFuture<?> fut) {
         assert fut != null;
 
-        if (!(fut instanceof ScheduleFutureImpl)) {
+        if (!(fut instanceof ScheduleFutureUsingQuartzImpl)) {
             return;
         }
 
@@ -122,7 +132,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     @Override public void onScheduled(SchedulerFuture<?> fut) {
         assert fut != null;
 
-        if (!(fut instanceof ScheduleFutureImpl)) {
+        if (!(fut instanceof ScheduleFutureUsingQuartzImpl)) {
             return;
         }
 
@@ -130,16 +140,27 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        sched = new Scheduler();
+    @Override public void start() {
+        SchedulerFactory schedulerFactory = new StdSchedulerFactory();
 
-        sched.start();
+        try {
+            sched = schedulerFactory.getScheduler();
+            sched.start();
+        } catch (SchedulerException e) {
+            log.error(e.getMessage());
+            return;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (sched.isStarted())
-            sched.stop();
+        try {
+            if (sched.isStarted())
+                sched.shutdown();
+        } catch (SchedulerException e) {
+            log.error(e.getMessage());
+            return;
+        }
 
         sched = null;
     }

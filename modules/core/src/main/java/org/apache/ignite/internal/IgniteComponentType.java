@@ -93,7 +93,7 @@ public enum IgniteComponentType {
     /** Cron-based scheduling, see {@link org.apache.ignite.IgniteScheduler}. */
     SCHEDULE(
         "org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor",
-        "org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessor",
+        "org.apache.ignite.internal.processors.schedule.IgniteScheduleCombinedProcessor",
         "ignite-schedule"
     ),
 

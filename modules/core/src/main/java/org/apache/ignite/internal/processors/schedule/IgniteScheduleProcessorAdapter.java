@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
+import java.util.Date;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.scheduler.SchedulerFuture;
 
 /**
- * Schedules cron-based execution of grid tasks and closures. Abstract class was introduced to
- * avoid mandatory runtime dependency on cron library.
+ * Schedules cron-based or Quartz execution of grid tasks and closures. Abstract class was introduced to
+ * avoid mandatory runtime dependency on the libraries.
  */
 public abstract class IgniteScheduleProcessorAdapter extends GridProcessorAdapter {
     /**
@@ -49,4 +50,41 @@ public abstract class IgniteScheduleProcessorAdapter extends GridProcessorAdapte
      * @return Descriptor of the scheduled execution.
      */
     public abstract <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern);
+
+    /**
+     * @param c Closure to schedule to run as a background cron-based job.
+     * @param jobName Name of the job
+     * @param startTime Start time of the job
+     * @param repeatCount Repeat count of the job
+     * @param repeatInterval Repeat interval of the job
+     * @param delay Delay in execution of the job
+     * @return Descriptor of the scheduled execution.
+     */
+    public abstract SchedulerFuture<?> schedule(final Runnable c, String jobName, Date startTime,
+                                                int repeatCount, long repeatInterval, int delay);
+
+    /**
+     * @param c Closure to schedule to run as a background cron-based job.
+     * @param jobName Name of the job
+     * @param startTime Start time of the job
+     * @param repeatCount Repeat count of the job
+     * @param repeatInterval Repeat interval of the job
+     * @param delay Delay in execution of the job
+     * @return Descriptor of the scheduled execution.
+     */
+    public abstract <R> SchedulerFuture<R> schedule(Callable<R> c, String jobName, Date startTime,
+                                                    int repeatCount, long repeatInterval, int delay);
+
+
+    /**
+     *
+     * @param fut Future to use for scheduling
+     */
+    public abstract void onScheduled(SchedulerFuture<?> fut);
+
+    /**
+     *
+     * @param fut Future to use for scheduling
+     */
+    public abstract void onDescheduled(SchedulerFuture<?> fut);
 }

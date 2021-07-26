@@ -293,7 +293,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
         this.task = task;
 
-        ((IgniteScheduleProcessor)ctx.schedule()).onScheduled(this);
+        (ctx.schedule()).onScheduled(this);
 
         if (delay > 0) {
             // Schedule after delay.
@@ -335,7 +335,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         if (descheduled.compareAndSet(false, true)) {
             sched.deschedule(id);
 
-            ((IgniteScheduleProcessor)ctx.schedule()).onDescheduled(this);
+            (ctx.schedule()).onDescheduled(this);
         }
     }
 
