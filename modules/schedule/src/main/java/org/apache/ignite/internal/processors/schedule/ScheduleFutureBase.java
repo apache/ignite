@@ -628,5 +628,8 @@ public abstract class ScheduleFutureBase<R> implements SchedulerFuture<R> {
         }
     }
 
+    /**
+     * Deschedule a scheduled task
+     */
     public abstract void deschedule();
 }
