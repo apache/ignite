@@ -25,6 +25,11 @@ SELECT EXTRACT(millennium FROM cast('2001-10-10' AS DATE));
 3
 
 query I
+SELECT EXTRACT(dow FROM cast('1793-05-26' AS DATE));
+----
+1
+
+query I
 SELECT EXTRACT(isodow FROM cast('1793-05-26' AS DATE));
 ----
 7

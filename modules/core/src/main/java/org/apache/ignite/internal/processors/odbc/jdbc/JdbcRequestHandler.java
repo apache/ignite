@@ -31,7 +31,6 @@ import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -115,7 +114,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.executeWithExperimentalEngine;
 
 /**
  * JDBC request handler.
@@ -775,10 +773,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         if (experimentalQueryEngine != null) {
-            if (executeWithExperimentalEngine(qry.getSql())) {
-                return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx, cancel), qry.getSchema(),
-                    qry.getSql(), qry.getArgs());
-            }
+            return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx, cancel), qry.getSchema(),
+                qry.getSql(), qry.getArgs());
         }
 
         return connCtx.kernalContext().query().querySqlFields(null, qry,

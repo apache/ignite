@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -142,7 +141,6 @@ import static java.util.Collections.newSetFromMap;
 import static java.util.Collections.singleton;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -172,10 +170,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
-
-    /** Pattern to test incoming query to decide whether this query should be executed with Calcite or H2. */
-    public static final Pattern H2_REDIRECTION_RULES =
-        Pattern.compile("\\s*(alter\\s+table)", CASE_INSENSITIVE);
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
@@ -2871,10 +2865,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            if (executeWithExperimentalEngine(qry.getSql())) {
-                return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx), qry.getSchema(), qry.getSql(),
-                    X.EMPTY_OBJECT_ARRAY);
-            }
+            return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx), qry.getSchema(), qry.getSql(),
+                X.EMPTY_OBJECT_ARRAY);
         }
 
         return executeQuerySafe(cctx, () -> {
@@ -3659,14 +3651,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
         requestTopVer.set(ver);
-    }
-
-    /**
-     * @param sql Query to execute.
-     * @return {@code true} if the given query should be executed with Calcite-based engine.
-     */
-    public static boolean executeWithExperimentalEngine(String sql) {
-        return !H2_REDIRECTION_RULES.matcher(sql).find();
     }
 
     /**
