@@ -42,6 +42,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -520,7 +521,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testNodeFailDuringFilesCopy() throws Exception {
-        dfltCacheCfg.setCacheMode(CacheMode.REPLICATED);
+        dfltCacheCfg.setCacheMode(CacheMode.REPLICATED)
+            .setAffinity(new RendezvousAffinityFunction());
 
         startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
 

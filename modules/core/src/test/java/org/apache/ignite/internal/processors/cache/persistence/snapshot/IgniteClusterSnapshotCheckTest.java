@@ -528,6 +528,31 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertContains(log, b.toString(), "Failed to read page (CRC validation failed)");
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckMultipleTimes() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        startClientGrid();
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int iterations = 10;
+
+        // Warmup.
+        for (int i = 0; i < iterations; i++)
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        int activeThreadsCntBefore = Thread.activeCount();
+
+        for (int i = 0; i < iterations; i++)
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
+
+        assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
+    }
+
     /**
      * @param cls Class of running task.
      * @param results Results of compute.
