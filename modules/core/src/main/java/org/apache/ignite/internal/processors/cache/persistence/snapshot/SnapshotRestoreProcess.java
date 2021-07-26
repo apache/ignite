@@ -214,7 +214,7 @@ public class SnapshotRestoreProcess {
 
                 assert meta != null : entry.getKey().id();
 
-                if (!entry.getKey().consistentId().equals(meta.consistentId()))
+                if (!entry.getKey().consistentId().toString().equals(meta.consistentId()))
                     continue;
 
                 if (snpBltNodes == null)
