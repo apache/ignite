@@ -34,7 +34,6 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.impl.StdSchedulerFactory;
-
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /** Scheduler which allows scheduling jobs using Quartz scheduler */
