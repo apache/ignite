@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -1019,7 +1020,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 // 2) unregister runing query
                 running.remove(ctx.queryId());
 
-                // 4) close remote fragments
                 IgniteException wrpEx = null;
 
                 // 3) close remote fragments
@@ -1036,7 +1036,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 }
 
                 // 4) Cancel local fragment
-                ctx.cancel();
+                root.context().execute(ctx::cancel, root::onError);
 
                 if (wrpEx != null)
                     throw wrpEx;

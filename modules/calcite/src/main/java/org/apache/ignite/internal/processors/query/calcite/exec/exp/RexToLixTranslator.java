@@ -63,6 +63,7 @@ import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
@@ -502,6 +503,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                         break;
                 }
         }
+        if (targetType.getSqlTypeName() == SqlTypeName.DECIMAL)
+            convert = ConverterUtils.convertToDecimal(operand, targetType);
+
         if (convert == null)
             convert = ConverterUtils.convert(operand, typeFactory.getJavaClass(targetType));
 
@@ -640,8 +644,17 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 else if (javaClass == double.class)
                     return Expressions.constant(bd, javaClass);
                 assert javaClass == BigDecimal.class;
-                return Expressions.new_(BigDecimal.class,
-                    Expressions.constant(bd.toString()));
+                return Expressions.call(
+                    IgniteSqlFunctions.class,
+                    "toBigDecimal",
+                    /*
+                    The ConstantExpression class, when converting from BigDecimal to Bigdecimal,
+                    removes trailing zeros from the original object, regardless of the original scale value.
+                    Therefore, BigDecimal must be converted to a string to avoid this.
+                     */
+                    Expressions.constant(bd.toString()),
+                    Expressions.constant(type.getPrecision()),
+                    Expressions.constant(type.getScale()));
             case DATE:
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:

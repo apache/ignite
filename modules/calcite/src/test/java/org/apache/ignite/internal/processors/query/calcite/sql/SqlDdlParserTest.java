@@ -247,7 +247,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     public void createIndexColumns() throws SqlParseException {
         String qry = "create index my_index on my_table(id, val1 asc, val2 desc)";
 
-        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex) parse(qry);
+        IgniteSqlCreateIndex createIdx = parse(qry);
 
         assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
         assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
@@ -264,7 +264,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     public void createIndexOnTableWithSchema() throws SqlParseException {
         String qry = "create index my_index on my_schema.my_table(id)";
 
-        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex)parse(qry);
+        IgniteSqlCreateIndex createIdx = parse(qry);
 
         assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
         assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
@@ -277,7 +277,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     public void createIndexIfNotExists() throws SqlParseException {
         String qry = "create index if not exists my_index on my_table(id)";
 
-        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex)parse(qry);
+        IgniteSqlCreateIndex createIdx = parse(qry);
 
         assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
         assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
@@ -291,7 +291,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     public void createIndexWithOptions() throws SqlParseException {
         String qry = "create index my_index on my_table(id) parallel 10 inline_size 20";
 
-        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex)parse(qry);
+        IgniteSqlCreateIndex createIdx = parse(qry);
 
         assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
         assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
@@ -300,21 +300,21 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
 
         qry = "create index my_index on my_table(id) parallel 10";
 
-        createIdx = (IgniteSqlCreateIndex)parse(qry);
+        createIdx = parse(qry);
 
         assertEquals(10, createIdx.parallel().intValue(true));
         assertNull(createIdx.inlineSize());
 
         qry = "create index my_index on my_table(id) inline_size 20";
 
-        createIdx = (IgniteSqlCreateIndex)parse(qry);
+        createIdx = parse(qry);
 
         assertNull(createIdx.parallel());
         assertEquals(20, createIdx.inlineSize().intValue(true));
 
         qry = "create index my_index on my_table(id) inline_size 20 parallel 10";
 
-        createIdx = (IgniteSqlCreateIndex)parse(qry);
+        createIdx = parse(qry);
 
         assertEquals(20, createIdx.inlineSize().intValue(true));
         assertEquals(10, createIdx.parallel().intValue(true));
@@ -345,6 +345,171 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertParserThrows("create index my_index on my_table(id.id2)", SqlParseException.class);
     }
 
+    /**
+     * Alter table with LOGGING/NOLOGING clause.
+     */
+    @Test
+    public void alterTableLoggingNologging() throws SqlParseException {
+        IgniteSqlAlterTable alterTbl = parse("alter table my_table logging");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(false, alterTbl.ifExists());
+        assertEquals(true, alterTbl.logging());
+
+        alterTbl = parse("alter table if exists my_table nologging");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(true, alterTbl.ifExists());
+        assertEquals(false, alterTbl.logging());
+    }
+
+    /**
+     * Alter table with schema.
+     */
+    @Test
+    public void alterTableWithSchema() throws SqlParseException {
+        IgniteSqlAlterTable alterTbl1 = parse("alter table my_schema.my_table logging");
+        assertThat(alterTbl1.name().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+
+        IgniteSqlAlterTableAddColumn alterTbl2 = parse("alter table my_schema.my_table add column a int");
+
+        assertThat(alterTbl2.name().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+
+        IgniteSqlAlterTableDropColumn alterTbl3 = parse("alter table my_schema.my_table drop column a");
+
+        assertThat(alterTbl3.name().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+    }
+
+    /**
+     * Alter table add column.
+     */
+    @Test
+    public void alterTableAddColumn() throws SqlParseException {
+        IgniteSqlAlterTableAddColumn alterTbl;
+
+        alterTbl = parse("alter table my_table add column a int");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column if not exists a int");
+
+        assertEquals(true, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add a int");
+
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add if not exists a int");
+
+        assertEquals(true, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column (a int)");
+
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column if not exists (a int)");
+
+        assertEquals(true, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column (a int, \"b\" varchar, c date not null)");
+
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(3, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnDeclaration("A", "INTEGER", true)));
+        assertThat(alterTbl.columns(), hasItem(columnDeclaration("b", "VARCHAR", true)));
+        assertThat(alterTbl.columns(), hasItem(columnDeclaration("C", "DATE", false)));
+    }
+
+    /**
+     * Alter table drop column.
+     */
+    @Test
+    public void alterTableDropColumn() throws SqlParseException {
+        IgniteSqlAlterTableDropColumn alterTbl;
+
+        alterTbl = parse("alter table my_table drop column a");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column if exists a");
+
+        assertEquals(true, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop a");
+
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop if exists a");
+
+        assertEquals(true, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column (a)");
+
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column if exists (a)");
+
+        assertEquals(true, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column (a, \"b\", c)");
+
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(3, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("b")));
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("C")));
+    }
+
+    /**
+     * Malformed alter table statements.
+     */
+    @Test
+    public void alterTableMalformed() {
+        assertParserThrows("alter table my_table logging nologging", SqlParseException.class);
+
+        assertParserThrows("alter table my_table logging add column a int", SqlParseException.class);
+
+        assertParserThrows("alter table if not exists my_table logging", SqlParseException.class);
+
+        assertParserThrows("alter table my_table add column if exists (a int)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table add column (a)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table drop column if not exists (a)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table drop column (a int)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table add column (a.b int)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table drop column (a.b)", SqlParseException.class);
+    }
+
     /** */
     private void assertParserThrows(String sql, Class<? extends Exception> cls) {
         assertParserThrows(sql, cls, "");
@@ -361,10 +526,10 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
      * @param stmt Statement to parse.
      * @return An AST.
      */
-    private static SqlNode parse(String stmt) throws SqlParseException {
+    private static <T extends SqlNode> T parse(String stmt) throws SqlParseException {
         SqlParser parser = SqlParser.create(stmt, SqlParser.config().withParserFactory(IgniteSqlParserImpl.FACTORY));
 
-        return parser.parseStmt();
+        return (T)parser.parseStmt();
     }
 
     /**
@@ -421,6 +586,33 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
             @Override public boolean matches(Object item) {
                 return item instanceof SqlColumnDeclaration
                     && ((SqlColumnDeclaration)item).name.names.get(0).equals(name);
+            }
+        };
+    }
+
+    /**
+     * Matcher to verify identifier.
+     */
+    private static <T extends SqlIdentifier> Matcher<T> identifierWithName(String name) {
+        return new CustomMatcher<T>("identifier with name=" + name) {
+            @Override public boolean matches(Object item) {
+                return item instanceof SqlIdentifier
+                    && ((SqlIdentifier)item).names.get(0).equals(name);
+            }
+        };
+    }
+
+    /**
+     * Matcher to verify column declaration.
+     */
+    private static <T extends SqlColumnDeclaration> Matcher<T> columnDeclaration(String name, String type,
+        boolean nullable) {
+        return new CustomMatcher<T>("column declaration [name=" + name + ", type=" + type + ']') {
+            @Override public boolean matches(Object item) {
+                return item instanceof SqlColumnDeclaration
+                    && ((SqlColumnDeclaration)item).name.names.get(0).equals(name)
+                    && ((SqlColumnDeclaration)item).dataType.getTypeName().names.get(0).equals(type)
+                    && ((SqlColumnDeclaration)item).dataType.getNullable() == nullable;
             }
         };
     }

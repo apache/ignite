@@ -1,0 +1,19 @@
+# name: test/sql/function/string/test_overlay.test
+# description: Just simple test to check support of OVERLAY function.
+# group: [string]
+
+
+query T
+select overlay('w3333333rce' placing 'resou' from 3)
+----
+w3resou3rce
+
+query T
+SELECT overlay('w3333333rce' placing 'resou' from 3 for 4);
+----
+w3resou33rce
+
+query T
+SELECT overlay('w333333rce' placing 'resou' from 3 for 6);
+----
+w3resouce

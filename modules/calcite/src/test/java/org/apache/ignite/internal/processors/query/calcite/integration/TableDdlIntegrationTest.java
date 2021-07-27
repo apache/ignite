@@ -43,6 +43,7 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.map;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -337,15 +338,333 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         GridTestUtils.assertThrows(log,
             () -> executeSql("drop table my_table"),
-            IgniteSQLException.class, "Table doesn't exist: MY_TABLE]");
+            IgniteSQLException.class, "Table doesn't exist: MY_TABLE");
 
         executeSql("drop table my_schema.my_table");
 
         GridTestUtils.assertThrows(log,
             () -> executeSql("drop table my_schema.my_table"),
-            IgniteSQLException.class, "Table doesn't exist: MY_TABLE]");
+            IgniteSQLException.class, "Table doesn't exist: MY_TABLE");
 
         executeSql("drop table if exists my_schema.my_table");
+    }
+
+    /**
+     * Add/drop column simple case.
+     */
+    @Test
+    public void alterTableAddDropSimpleCase() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column val2 varchar");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+
+        executeSql("alter table my_table drop column val2");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop two columns at the same time.
+     */
+    @Test
+    public void alterTableAddDropTwoColumns() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column (val2 varchar, val3 int)");
+
+        executeSql("insert into my_table (id, val, val2, val3) values (0, '1', '2', 3)");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+        assertEquals(3, res.get(0).get(3));
+
+        executeSql("alter table my_table drop column (val2, val3)");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop column for table in custom schema.
+     */
+    @Test
+    public void alterTableAddDropCustomSchema() {
+        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_schema.my_table add column val2 varchar");
+
+        executeSql("insert into my_schema.my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_schema.my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+
+        executeSql("alter table my_schema.my_table drop column val2");
+
+        res = executeSql("select * from my_schema.my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop column if table exists.
+     */
+    @Test
+    public void alterTableAddDropIfTableExists() {
+        assertThrows("alter table my_table add val2 varchar", IgniteSQLException.class, "Table doesn't exist");
+
+        executeSql("alter table if exists my_table add column val2 varchar");
+
+        assertThrows("alter table my_table drop column val2", IgniteSQLException.class, "Table doesn't exist");
+
+        executeSql("alter table if exists my_table drop column val2");
+
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table if exists my_table add column val3 varchar");
+
+        executeSql("insert into my_table (id, val, val3) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+
+        executeSql("alter table if exists my_table drop column val3");
+
+        assertThrows("alter table if exists my_table drop column val3", IgniteSQLException.class,
+            "Column doesn't exist");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop column if column not exists/exists.
+     */
+    @Test
+    public void alterTableAddDropIfColumnExists() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("insert into my_table (id, val) values (0, '1')");
+
+        assertThrows("alter table my_table add column val varchar", IgniteSQLException.class,
+            "Column already exist");
+
+        executeSql("alter table my_table add column if not exists val varchar");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        assertThrows("alter table my_table drop column val2", IgniteSQLException.class,
+            "Column doesn't exist");
+
+        executeSql("alter table my_table drop column if exists val2");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        executeSql("alter table my_table add column if not exists val3 varchar");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql("alter table my_table drop column if exists val3");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        // Mixing existsing and not existsing columns
+        executeSql("alter table my_table add column if not exists (val varchar, val4 varchar)");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql("alter table my_table drop column if exists (val4, val5)");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add not null column.
+     */
+    @Test
+    public void alterTableAddNotNullColumn() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column val2 varchar not null");
+
+        assertThrows("insert into my_table (id, val, val2) values (0, '1', null)", IgniteSQLException.class,
+            "Null value is not allowed");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+    }
+
+    /**
+     * Drop forbidden column.
+     */
+    @Test
+    public void alterTableDropForbiddenColumn() {
+        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+
+        executeSql("create index my_index on my_table(val)");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        assertThrows("alter table my_table drop column id", IgniteSQLException.class,
+            "Cannot drop column");
+
+        assertThrows("alter table my_table drop column val", IgniteSQLException.class,
+            "Cannot drop column");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql("alter table my_table drop column val2");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Alter table from server and client nodes.
+     */
+    @Test
+    public void alterTableServerAndClient() throws Exception {
+        executeSql(grid(0), "create table my_table (id int primary key, val varchar)");
+
+        executeSql(grid(0), "alter table my_table add column val2 varchar");
+
+        executeSql(grid(0), "insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql(grid(0), "select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql(grid(0), "drop table my_table");
+
+        awaitPartitionMapExchange();
+
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column val2 varchar");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        awaitPartitionMapExchange();
+
+        executeSql(grid(0), "alter table my_table drop column val2");
+
+        awaitPartitionMapExchange();
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Drop and add the same column with different NOT NULL modificator.
+     */
+    @Test
+    public void alterTableDropAddColumn() {
+        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        executeSql("alter table my_table drop column val2");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        executeSql("alter table my_table add column val2 varchar not null");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+        // The command DROP COLUMN does not remove actual data from the cluster, it's a known and documented limitation.
+        assertEquals("2", res.get(0).get(2));
+
+        assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
+            "Null value is not allowed");
+
+        executeSql("insert into my_table (id, val, val2) values (1, '2', '3')");
+
+        assertEquals(2, executeSql("select * from my_table").size());
+    }
+
+    /**
+     * Alter table logging/nologing.
+     */
+    @Test
+    public void alterTableLogging() {
+        String cacheName = "cache";
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(cacheName)
+            .setDataRegionName(PERSISTENT_DATA_REGION).setIndexedTypes(Integer.class, Integer.class));
+
+        assertTrue(client.cluster().isWalEnabled(cacheName));
+
+        executeSql("alter table \"" + cacheName + "\".Integer nologging");
+
+        assertFalse(client.cluster().isWalEnabled(cacheName));
+
+        executeSql("alter table \"" + cacheName + "\".Integer logging");
+
+        assertTrue(client.cluster().isWalEnabled(cacheName));
+    }
+
+    /**
+     * Asserts that executeSql throws an exception.
+     *
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    private void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
+        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
     }
 
     /**

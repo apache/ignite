@@ -1,0 +1,15 @@
+# name: test/sql/function/generic/test_coalesce.test
+# description: Test COALESCE function
+# group: [generic]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15080
+
+# COALESCE
+query T
+SELECT COALESCE(null, null, 'first', 'second', null)
+----
+first
+
+query T
+SELECT COALESCE(COALESCE(null, 'world'), 'blabla')
+----
+world

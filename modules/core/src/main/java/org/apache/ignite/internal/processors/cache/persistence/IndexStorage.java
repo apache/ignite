@@ -78,6 +78,23 @@ public interface IndexStorage {
     public RootPage dropIndex(String idxName) throws IgniteCheckedException;
 
     /**
+     * Renaming the root page of the index tree.
+     *
+     * @param cacheId Cache id.
+     * @param oldIdxName Old name of the index tree.
+     * @param newIdxName New name of the index tree.
+     * @param segment Segment index.
+     * @return Renamed root page of the index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable RootPage renameCacheIndex(
+        Integer cacheId,
+        String oldIdxName,
+        String newIdxName,
+        int segment
+    ) throws IgniteCheckedException;
+
+    /**
      * Destroy this meta store.
      *
      * @throws IgniteCheckedException  If failed.

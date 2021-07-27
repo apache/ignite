@@ -172,7 +172,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                if (isRestoring() || fut != null)
+                if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
@@ -184,101 +184,108 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
-            f -> {
-                if (f.error() != null) {
-                    finishProcess(fut0.rqId, f.error());
+        ctx.cache().context().snapshotMgr().checkSnapshot(snpName, cacheGrpNames).listen(f -> {
+            if (f.error() != null) {
+                finishProcess(fut0.rqId, f.error());
 
-                    return;
-                }
-
-                Set<UUID> dataNodes = new HashSet<>();
-                Set<String> snpBltNodes = null;
-                Map<ClusterNode, List<SnapshotMetadata>> metas = f.result();
-                Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
-                    cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
-
-                for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
-                    SnapshotMetadata meta = F.first(entry.getValue());
-
-                    assert meta != null : entry.getKey().id();
-
-                    if (!entry.getKey().consistentId().equals(meta.consistentId()))
-                        continue;
-
-                    if (snpBltNodes == null)
-                        snpBltNodes = new HashSet<>(meta.baselineNodes());
-
-                    dataNodes.add(entry.getKey().id());
-
-                    reqGrpIds.keySet().removeAll(meta.partitions().keySet());
-                }
-
-                if (snpBltNodes == null) {
-                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "No snapshot data " +
-                        "has been found [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                    return;
-                }
-
-                if (!reqGrpIds.isEmpty()) {
-                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
-                        "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                    return;
-                }
-
-                Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-                    node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
-
-                snpBltNodes.removeAll(bltNodes);
-
-                if (!snpBltNodes.isEmpty()) {
-                    finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
-                        "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
-
-                    return;
-                }
-
-                ctx.cache().context().snapshotMgr().runSnapshotVerification(metas).listen(
-                    f0 -> {
-                        if (f0.error() != null) {
-                            finishProcess(fut0.rqId, f0.error());
-
-                            return;
-                        }
-
-                        IdleVerifyResultV2 res = f0.result();
-
-                        if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
-                            StringBuilder sb = new StringBuilder();
-
-                            res.print(sb::append, true);
-
-                            finishProcess(fut0.rqId, new IgniteException(sb.toString()));
-
-                            return;
-                        }
-
-                        SnapshotOperationRequest req = new SnapshotOperationRequest(
-                            fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
-
-                        prepareRestoreProc.start(req.requestId(), req);
-                    }
-                );
+                return;
             }
-        );
+
+            if (!F.isEmpty(f.result().exceptions())) {
+                finishProcess(fut0.rqId, F.first(f.result().exceptions().values()));
+
+                return;
+            }
+
+            if (fut0.interruptEx != null) {
+                finishProcess(fut0.rqId, fut0.interruptEx);
+
+                return;
+            }
+
+            Set<UUID> dataNodes = new HashSet<>();
+            Set<String> snpBltNodes = null;
+            Map<ClusterNode, List<SnapshotMetadata>> metas = f.result().metas();
+            Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
+                cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
+
+            for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
+                SnapshotMetadata meta = F.first(entry.getValue());
+
+                assert meta != null : entry.getKey().id();
+
+                if (!entry.getKey().consistentId().equals(meta.consistentId()))
+                    continue;
+
+                if (snpBltNodes == null)
+                    snpBltNodes = new HashSet<>(meta.baselineNodes());
+
+                dataNodes.add(entry.getKey().id());
+
+                reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+            }
+
+            if (snpBltNodes == null) {
+                finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "No snapshot data " +
+                    "has been found [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                return;
+            }
+
+            if (!reqGrpIds.isEmpty()) {
+                finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
+                    "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                return;
+            }
+
+            Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+                node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
+
+            snpBltNodes.removeAll(bltNodes);
+
+            if (!snpBltNodes.isEmpty()) {
+                finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
+                    "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
+
+                return;
+            }
+
+            IdleVerifyResultV2 res = f.result().idleVerifyResult();
+
+            if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
+                StringBuilder sb = new StringBuilder();
+
+                res.print(sb::append, true);
+
+                finishProcess(fut0.rqId, new IgniteException(sb.toString()));
+
+                return;
+            }
+
+            SnapshotOperationRequest req = new SnapshotOperationRequest(
+                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+
+            prepareRestoreProc.start(req.requestId(), req);
+        });
 
         return new IgniteFutureImpl<>(fut0);
     }
 
     /**
-     * Check if snapshot restore process is currently running.
+     * Get the name of the snapshot currently being restored
      *
-     * @return {@code True} if the snapshot restore operation is in progress.
+     * @return Name of the snapshot currently being restored or {@code null} if the restore process is not running.
      */
-    public boolean isRestoring() {
-        return isRestoring(null, null);
+    public @Nullable String restoringSnapshotName() {
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (opCtx0 != null)
+            return opCtx0.snpName;
+
+        ClusterSnapshotFuture fut0 = fut;
+
+        return fut0 != null ? fut0.name : null;
     }
 
     /**
@@ -288,14 +295,13 @@ public class SnapshotRestoreProcess {
      * @param grpName Cache group name.
      * @return {@code True} if the cache or group with the specified name is currently being restored.
      */
-    public boolean isRestoring(@Nullable String cacheName, @Nullable String grpName) {
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        assert cacheName != null;
+
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
             return false;
-
-        if (cacheName == null)
-            return true;
 
         Map<Integer, StoredCacheData> cacheCfgs = opCtx0.cfgs;
 
@@ -387,22 +393,61 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Abort the currently running restore procedure (if any).
+     * Cancel the currently running local restore procedure.
+     *
+     * @param reason Interruption reason.
+     * @param snpName Snapshot name.
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancel(IgniteCheckedException reason, String snpName) {
+        SnapshotRestoreContext opCtx0;
+        ClusterSnapshotFuture fut0 = null;
+
+        synchronized (this) {
+            opCtx0 = opCtx;
+
+            if (fut != null && fut.name.equals(snpName)) {
+                fut0 = fut;
+
+                fut0.interruptEx = reason;
+            }
+        }
+
+        boolean ctxStop = opCtx0 != null && opCtx0.snpName.equals(snpName);
+
+        if (ctxStop)
+            interrupt(opCtx0, reason);
+
+        return fut0 == null ? new IgniteFinishedFutureImpl<>(ctxStop) :
+            new IgniteFutureImpl<>(fut0.chain(f -> true));
+    }
+
+    /**
+     * Interrupt the currently running local restore procedure.
      *
      * @param reason Interruption reason.
      */
-    public void interrupt(Exception reason) {
+    public void interrupt(IgniteCheckedException reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 == null)
-            return;
+        if (opCtx0 != null)
+            interrupt(opCtx0, reason);
+    }
 
-        opCtx0.err.compareAndSet(null, reason);
+    /**
+     * Interrupt the currently running local restore procedure.
+     *
+     * @param opCtx Snapshot restore operation context.
+     * @param reason Interruption reason.
+     */
+    private void interrupt(SnapshotRestoreContext opCtx, IgniteCheckedException reason) {
+        opCtx.err.compareAndSet(null, reason);
 
         IgniteFuture<?> stopFut;
 
         synchronized (this) {
-            stopFut = opCtx0.stopFut;
+            stopFut = opCtx.stopFut;
         }
 
         if (stopFut != null)
@@ -449,9 +494,16 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            opCtx = prepareContext(req);
+            SnapshotRestoreContext opCtx0 = prepareContext(req);
 
-            SnapshotRestoreContext opCtx0 = opCtx;
+            synchronized (this) {
+                opCtx = opCtx0;
+
+                ClusterSnapshotFuture fut0 = fut;
+
+                if (fut0 != null && fut0.interruptEx != null)
+                    opCtx0.err.compareAndSet(null, fut0.interruptEx);
+            }
 
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();
@@ -812,7 +864,7 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (F.isEmpty(opCtx0.dirs))
+        if (opCtx0 == null || F.isEmpty(opCtx0.dirs))
             return new GridFinishedFuture<>();
 
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();

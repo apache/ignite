@@ -137,12 +137,19 @@ public class SqlScriptRunner {
 
         /** */
         String nextLine() throws IOException {
+            String ret = nextLineWithoutTrim();
+
+            return ret == null ? null : ret.trim();
+        }
+
+        /** */
+        String nextLineWithoutTrim() throws IOException {
             if (r.ready()) {
                 String s = r.readLine();
 
                 lineNum++;
 
-                return s.trim();
+                return s;
             }
 
             return null;
@@ -451,7 +458,7 @@ public class SqlScriptRunner {
             }
 
             // Read expected results
-            String s = script.nextLine();
+            String s = script.nextLineWithoutTrim();
             Matcher m = HASHING_PTRN.matcher(s);
 
             if (m.matches()) {
@@ -501,7 +508,7 @@ public class SqlScriptRunner {
                             + script.positionDescription() + "[row=\"" + s + "\", types=" + resTypes + ']', e);
                     }
 
-                    s = script.nextLine();
+                    s = script.nextLineWithoutTrim();
                 }
             }
         }
@@ -530,7 +537,8 @@ public class SqlScriptRunner {
         private void checkResultTuples(List<List<?>> res) {
             if (expectedRes.size() != res.size()) {
                 throw new AssertionError("Invalid results rows count at: " + posDesc +
-                    ". [expected=" + expectedRes + ", actual=" + res + ']');
+                    ". [expectedRows=" + expectedRes.size() + ", actualRows=" + res.size() +
+                    ", expected=" + expectedRes + ", actual=" + res + ']');
             }
 
             for (int i = 0; i < expectedRes.size(); ++i) {
@@ -556,15 +564,22 @@ public class SqlScriptRunner {
                 throw new AssertionError(msg);
 
             if (actual instanceof Number) {
-                BigDecimal actDec = new BigDecimal(String.valueOf(actual));
-                BigDecimal expDec = new BigDecimal(expectedStr);
+                if ("NaN".equals(expectedStr) || expectedStr.endsWith("Infinity")) {
+                    if (!expectedStr.equals(String.valueOf(actual)))
+                        throw new AssertionError(msg);
+                }
+                else {
+                    BigDecimal actDec = new BigDecimal(String.valueOf(actual));
+                    BigDecimal expDec = new BigDecimal(expectedStr);
 
-                if (actDec.compareTo(expDec) != 0)
-                    throw new AssertionError(msg);
+                    if (actDec.compareTo(expDec) != 0)
+                        throw new AssertionError(msg);
+                }
             }
             else {
-                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)))
-                    throw new AssertionError(msg);
+                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)) &&
+                    !("(empty)".equals(expectedStr) && String.valueOf(actual).isEmpty()))
+                     throw new AssertionError(msg);
             }
         }
 

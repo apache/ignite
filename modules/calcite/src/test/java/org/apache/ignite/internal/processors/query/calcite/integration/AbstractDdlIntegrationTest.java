@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -39,6 +40,9 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     protected static final String DATA_REGION_NAME = "test_data_region";
 
     /** */
+    protected static final String PERSISTENT_DATA_REGION = "pds_data_region";
+
+    /** */
     protected IgniteEx client;
 
     /** {@inheritDoc} */
@@ -46,6 +50,8 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
         startGrids(1);
 
         client = startClientGrid(CLIENT_NODE_NAME);
+
+        client.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -56,7 +62,8 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
             )
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
-                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME))
+                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME),
+                        new DataRegionConfiguration().setName(PERSISTENT_DATA_REGION).setPersistenceEnabled(true))
             );
     }
 
@@ -74,7 +81,12 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> executeSql(String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql);
+        return executeSql(client, sql);
+    }
+
+    /** */
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql) {
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
@@ -82,7 +94,7 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CalciteQueryProcessor queryProcessor() {
-        return Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+    private CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
+        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
     }
 }

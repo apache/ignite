@@ -21,6 +21,7 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -192,14 +193,11 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** {@inheritDoc} */
     @Override public void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException {
         if (localNodeId().equals(nodeId))
-            onMessage(nodeId, msg, true);
+            onMessage(nodeId, msg);
         else {
-            byte plc = msg instanceof ExecutionContextAware ?
-                ((ExecutionContextAware) msg).ioPolicy() : GridIoPolicy.QUERY_POOL;
-
             prepareMarshal(msg);
 
-            ioManager().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, plc);
+            ioManager().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.CALLER_THREAD);
         }
     }
 
@@ -250,25 +248,23 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    protected void onMessage(UUID nodeId, CalciteMessage msg, boolean async) {
+    protected void onMessage(UUID nodeId, CalciteMessage msg) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware) msg;
             taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
         }
-        else if (async)
+        else
             taskExecutor().execute(
                 IgniteUuid.VM_ID,
                 ThreadLocalRandom.current().nextLong(1024),
                 () -> onMessageInternal(nodeId, msg)
             );
-        else
-            onMessageInternal(nodeId, msg);
     }
 
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
         if (msg instanceof CalciteMessage)
-            onMessage(nodeId, (CalciteMessage) msg, false);
+            onMessage(nodeId, (CalciteMessage) msg);
     }
 
     /** */

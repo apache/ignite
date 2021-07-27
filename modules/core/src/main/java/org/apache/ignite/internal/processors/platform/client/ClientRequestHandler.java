@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -106,8 +107,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         assert req != null;
         assert e != null;
 
-        int status = e instanceof IgniteClientException ?
-            ((IgniteClientException)e).statusCode() : ClientStatus.FAILED;
+        int status = getStatus(e);
 
         return new ClientResponse(req.requestId(), status, e.getMessage());
     }
@@ -146,5 +146,32 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion protocolVersion() {
         return protocolCtx.version();
+    }
+
+    /**
+     * Gets the status based on the provided exception.
+     *
+     * @param e Exception.
+     * @return Status code.
+     */
+    private int getStatus(Throwable e) {
+        if (e instanceof IgniteClientException)
+            return ((IgniteClientException) e).statusCode();
+
+        if (e instanceof IgniteIllegalStateException) {
+            IgniteIllegalStateException ex = (IgniteIllegalStateException) e;
+
+            if (ex.getMessage().startsWith("Grid is in invalid state"))
+                return ClientStatus.INVALID_NODE_STATE;
+        }
+
+        if (e instanceof IllegalStateException) {
+            IllegalStateException ex = (IllegalStateException) e;
+
+            if (ex.getMessage().contains("grid is stopping"))
+                return ClientStatus.INVALID_NODE_STATE;
+        }
+
+        return ClientStatus.FAILED;
     }
 }

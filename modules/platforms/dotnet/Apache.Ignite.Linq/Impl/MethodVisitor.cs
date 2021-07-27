@@ -217,7 +217,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string func, string suffix, params int[] adjust)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            visitor.ResultBuilder.Append(func).Append('(');
 
             var isInstanceMethod = expression.Object != null;
 
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Linq.Impl
                 AppendAdjustment(visitor, adjust, i + 1);
             }
 
-            visitor.ResultBuilder.Append(suffix).Append(")");
+            visitor.ResultBuilder.Append(suffix).Append(')');
 
             AppendAdjustment(visitor, adjust, 0);
         }
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitParameterizedTrimFunc(MethodCallExpression expression,
             CacheQueryExpressionVisitor visitor, string func)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            visitor.ResultBuilder.Append(func).Append('(');
 
             visitor.Visit(expression.Object);
 
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Linq.Impl
                 }
             }
 
-            visitor.ResultBuilder.Append(")");
+            visitor.ResultBuilder.Append(')');
         }
 
         /// <summary>
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitSqlLike(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string likeFormat)
         {
-            visitor.ResultBuilder.Append("(");
+            visitor.ResultBuilder.Append('(');
 
             visitor.Visit(expression.Object);
 
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Linq.Impl
             visitor.Visit(expression.Arguments[idx]);
 
             if (lower)
-                visitor.ResultBuilder.Append(")");
+                visitor.ResultBuilder.Append(')');
         }
 
         /// <summary>
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Linq.Impl
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 #endif
-        
+
         /// <summary>
         /// Gets the math method.
         /// </summary>

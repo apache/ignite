@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -30,6 +33,7 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -51,6 +55,90 @@ public class IgniteSqlFunctions {
     /** SQL SYSTEM_RANGE(start, end, increment) table function. */
     public static ScannableTable systemRange(Object rangeStart, Object rangeEnd, Object increment) {
         return new RangeTable(rangeStart, rangeEnd, increment);
+    }
+
+    /** CAST(DECIMAL AS VARCHAR). */
+    public static String toString(BigDecimal x) {
+        return x == null ? null : x.toPlainString();
+    }
+
+    private static BigDecimal setScale(int precision, int scale, BigDecimal decimal) {
+        return precision == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL)
+            ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(DOUBLE AS DECIMAL). */
+    public static BigDecimal toBigDecimal(double val, int precision, int scale) {
+        BigDecimal decimal = BigDecimal.valueOf(val);
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(FLOAT AS DECIMAL). */
+    public static BigDecimal toBigDecimal(float val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(java long AS DECIMAL). */
+    public static BigDecimal toBigDecimal(long val, int precision, int scale) {
+        BigDecimal decimal = BigDecimal.valueOf(val);
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(INT AS DECIMAL). */
+    public static BigDecimal toBigDecimal(int val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(val);
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(java short AS DECIMAL). */
+    public static BigDecimal toBigDecimal(short val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(java byte AS DECIMAL). */
+    public static BigDecimal toBigDecimal(byte val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(BOOL AS DECIMAL). */
+    public static BigDecimal toBigDecimal(boolean val, int precision, int scale) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** CAST(VARCHAR AS DECIMAL). */
+    public static BigDecimal toBigDecimal(String s, int precision, int scale) {
+        if (s == null)
+            return null;
+        BigDecimal decimal = new BigDecimal(s.trim());
+        return setScale(precision, scale, decimal);
+    }
+
+    /** CAST(REAL AS DECIMAL). */
+    public static BigDecimal toBigDecimal(Number num, int precision, int scale) {
+        if (num == null)
+            return null;
+        // There are some values of "long" that cannot be represented as "double".
+        // Not so "int". If it isn't a long, go straight to double.
+        BigDecimal decimal = num instanceof BigDecimal ? ((BigDecimal)num)
+            : num instanceof BigInteger ? new BigDecimal((BigInteger)num)
+            : num instanceof Long ? new BigDecimal(num.longValue())
+            : BigDecimal.valueOf(num.doubleValue());
+        return setScale(precision, scale, decimal);
+    }
+
+    /** Cast object depending on type to DECIMAL. */
+    public static BigDecimal toBigDecimal(Object o, int precision, int scale) {
+        if (o == null)
+            return null;
+
+        if (o instanceof Boolean)
+            throw new UnsupportedOperationException();
+
+        return o instanceof Number ? toBigDecimal((Number) o, precision, scale)
+            : toBigDecimal(o.toString(), precision, scale);
     }
 
     /** */

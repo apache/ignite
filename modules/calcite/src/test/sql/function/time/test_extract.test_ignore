@@ -1,0 +1,102 @@
+# name: test/sql/function/time/test_extract.test
+# description: Extract function
+# group: [time]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
+
+statement ok
+CREATE TABLE times(id INTEGER, i TIME)
+
+statement ok
+INSERT INTO times VALUES (0, TIME '00:01:20'), (1, TIME '20:08:10.998'), (2, TIME '20:08:10.33'), (3, TIME '20:08:10.001'), (4, NULL)
+
+# extract various parts of the time
+query I
+SELECT EXTRACT(second FROM i) FROM times ORDER BY id
+----
+20
+10
+10
+10
+NULL
+
+query I
+SELECT EXTRACT(minute FROM i) FROM times ORDER BY id
+----
+1
+8
+8
+8
+NULL
+
+query I
+SELECT EXTRACT(hour FROM i) FROM times ORDER BY id
+----
+0
+20
+20
+20
+NULL
+
+query I
+SELECT EXTRACT(milliseconds FROM i) FROM times ORDER BY id
+----
+20000
+10998
+10330
+10001
+NULL
+
+query I
+SELECT EXTRACT(microseconds FROM i) FROM times ORDER BY id
+----
+20000000
+10998000
+10330000
+10001000
+NULL
+
+query I
+SELECT EXTRACT(epoch FROM i) FROM times ORDER BY id
+----
+20
+10
+10
+10
+NULL
+
+# time gives errors for date-only parts
+statement error
+SELECT EXTRACT(year FROM i) FROM times
+
+statement error
+SELECT EXTRACT(month FROM i) FROM times
+
+statement error
+SELECT EXTRACT(day FROM i) FROM times
+
+statement error
+SELECT EXTRACT(decade FROM i) FROM times
+
+statement error
+SELECT EXTRACT(century FROM i) FROM times
+
+statement error
+SELECT EXTRACT(millenium FROM i) FROM times
+
+statement error
+SELECT EXTRACT(quarter FROM i) FROM times
+
+statement error
+SELECT EXTRACT(dayofweek FROM i) FROM times
+
+statement error
+SELECT EXTRACT(isodow FROM i) FROM times
+
+statement error
+SELECT EXTRACT(dayofyear FROM i) FROM times
+
+statement error
+SELECT EXTRACT(week FROM i) FROM times
+
+statement error
+SELECT EXTRACT(yearweek FROM i) FROM times

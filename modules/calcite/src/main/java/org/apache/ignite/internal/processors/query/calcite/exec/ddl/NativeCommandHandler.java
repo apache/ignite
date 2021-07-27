@@ -19,18 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.ddl;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Table;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
 
 /**
@@ -43,8 +37,8 @@ public class NativeCommandHandler {
     /**
      * @param ctx Context.
      */
-    public NativeCommandHandler(GridKernalContext ctx, Supplier<SchemaPlus> schemaSupp) {
-        proc = new SqlCommandProcessor(ctx, new SchemaManager(schemaSupp));
+    public NativeCommandHandler(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
+        proc = new SqlCommandProcessor(ctx, schemaMgr);
     }
 
     /**
@@ -56,61 +50,5 @@ public class NativeCommandHandler {
         assert proc.isCommandSupported(cmd.command()) : cmd.command();
 
         return proc.runCommand(pctx.query(), cmd.command(), pctx.unwrap(SqlClientContext.class));
-    }
-
-    /**
-     * Schema manager.
-     */
-    private static class SchemaManager implements GridQuerySchemaManager {
-        /** Schema holder. */
-        private final Supplier<SchemaPlus> schemaSupp;
-
-        /**
-         * @param schemaSupp Schema supplier.
-         */
-        private SchemaManager(Supplier<SchemaPlus> schemaSupp) {
-            this.schemaSupp = schemaSupp;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName) {
-            SchemaPlus schema = schemaSupp.get().getSubSchema(schemaName);
-
-            if (schema == null)
-                return null;
-
-            IgniteTable tbl = (IgniteTable)schema.getTable(tableName);
-
-            return tbl == null ? null : tbl.descriptor().typeDescription();
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName) {
-            SchemaPlus schema = schemaSupp.get().getSubSchema(schemaName);
-
-            if (schema == null)
-                return null;
-
-            for (String tableName : schema.getTableNames()) {
-                Table tbl = schema.getTable(tableName);
-
-                if (tbl instanceof IgniteTable && ((IgniteTable)tbl).getIndex(idxName) != null)
-                    return ((IgniteTable)tbl).descriptor().typeDescription();
-            }
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName) {
-            SchemaPlus schema = schemaSupp.get().getSubSchema(schemaName);
-
-            if (schema == null)
-                return null;
-
-            IgniteTable tbl = (IgniteTable)schema.getTable(tableName);
-
-            return tbl == null ? null : (GridCacheContextInfo<K, V>)tbl.descriptor().cacheInfo();
-        }
     }
 }

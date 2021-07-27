@@ -3,9 +3,6 @@
 # group: [numeric]
 
 statement ok
-PRAGMA enable_verification
-
-statement ok
 CREATE TABLE roundme(a DOUBLE, b INTEGER)
 
 statement ok
@@ -27,9 +24,9 @@ select round(42.12345::DOUBLE, 2)
 42.120000
 
 query RR
-select round(42.12345::DOUBLE, 4), round(42.1235::DOUBLE, 1000)
+select round(42.12345::DOUBLE, 4), round(42.12345::DOUBLE, 1000)
 ----
-42.123400	42.12345
+42.1235	42.12345
 
 query I
 select round(42::DOUBLE, 0)
