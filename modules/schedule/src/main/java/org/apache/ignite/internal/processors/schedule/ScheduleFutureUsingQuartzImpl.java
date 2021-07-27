@@ -16,13 +16,10 @@
  */
 package org.apache.ignite.internal.processors.schedule;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
+import java.util.Date;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -31,11 +28,13 @@ import org.quartz.SchedulerContext;
 import org.quartz.SchedulerException;
 import org.quartz.SimpleTrigger;
 import org.quartz.TriggerBuilder;
-
-import java.util.Date;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 
@@ -47,7 +46,7 @@ public class ScheduleFutureUsingQuartzImpl<R> extends ScheduleFutureBase<R> {
     public static final String SCHEDULEFUTURE_KEY = "ScheduleFutureUsingQuartzImpl";
 
     /** Used to represent Task in JobContext **/
-    public static final String TASK_KEY  = "Task";
+    public static final String TASK_KEY = "Task";
 
     /** Used to represent IgniteLogger in JobContext **/
     public static final String IGNITELOGGER_KEY = "IgniteLogger";

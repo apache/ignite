@@ -16,12 +16,11 @@
  */
 package org.apache.ignite.internal.processors.schedule;
 
+import java.util.Date;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.scheduler.SchedulerFuture;
-
-import java.util.Date;
-import java.util.concurrent.Callable;
 
 /**  Wrapper processor which schedules given task using the appropriate scheduler */
 public class IgniteScheduleCombinedProcessor extends IgniteScheduleProcessorAdapter {

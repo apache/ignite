@@ -16,15 +16,14 @@
  */
 package org.apache.ignite.internal.processors.schedule;
 
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.SchedulerContext;
 import org.quartz.SchedulerException;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.schedule.ScheduleFutureUsingQuartzImpl.COUNTDOWNLATCH_KEY;
 import static org.apache.ignite.internal.processors.schedule.ScheduleFutureUsingQuartzImpl.IGNITELOGGER_KEY;
@@ -49,7 +48,7 @@ public class ExecutableJob<R> implements Job {
         assert context != null;
 
         CountDownLatch countDownLatch = (CountDownLatch) context.get(COUNTDOWNLATCH_KEY);
-        ScheduleFutureUsingQuartzImpl scheduleFutureUsingQuartzImpl= (ScheduleFutureUsingQuartzImpl) context.get(SCHEDULEFUTURE_KEY);
+        ScheduleFutureUsingQuartzImpl scheduleFutureUsingQuartzImpl = (ScheduleFutureUsingQuartzImpl) context.get(SCHEDULEFUTURE_KEY);
         Callable task = (Callable) context.get(TASK_KEY);
         IgniteLogger log = (IgniteLogger) context.get(IGNITELOGGER_KEY);
 

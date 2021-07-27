@@ -16,6 +16,12 @@
  */
 package org.apache.ignite.internal.processors.schedule;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -35,13 +41,6 @@ import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.scheduler.SchedulerFuture;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -429,7 +428,7 @@ public abstract class ScheduleFutureBase<R> implements SchedulerFuture<R> {
      * @param className Class name of the child class
      * @return Chained future.
      */
-    protected  <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb, @Nullable Executor exec,
+    protected <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb, @Nullable Executor exec,
                                          String className) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public String toString() {
