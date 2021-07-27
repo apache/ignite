@@ -18,17 +18,16 @@ package org.apache.ignite.raft.jraft.conf;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A configuration entry with current peers and old peers.
  */
 public class ConfigurationEntry {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigurationEntry.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ConfigurationEntry.class);
 
     private LogId id = new LogId(0, 0);
     private Configuration conf = new Configuration();

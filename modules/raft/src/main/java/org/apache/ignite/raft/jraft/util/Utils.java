@@ -38,13 +38,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.util.concurrent.MpscSingleThreadExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.lang.Runtime.getRuntime;
 
@@ -52,7 +51,7 @@ import static java.lang.Runtime.getRuntime;
  * Helper methods for jraft.
  */
 public final class Utils {
-    private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(Utils.class);
 
     /**
      * The configured number of available processors. The default is {@link Runtime#availableProcessors()}. This can be

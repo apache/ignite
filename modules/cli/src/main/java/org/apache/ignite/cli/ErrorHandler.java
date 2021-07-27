@@ -19,8 +19,7 @@ package org.apache.ignite.cli;
 
 import javax.inject.Singleton;
 import org.apache.ignite.cli.spec.CategorySpec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 import picocli.CommandLine;
 
 /**
@@ -29,7 +28,7 @@ import picocli.CommandLine;
 @Singleton
 public class ErrorHandler implements CommandLine.IExecutionExceptionHandler, CommandLine.IParameterExceptionHandler {
     /** Logger. */
-    private final Logger log = LoggerFactory.getLogger(ErrorHandler.class);
+    private final IgniteLogger log = IgniteLogger.forClass(ErrorHandler.class);
 
     /** {@inheritDoc} */
     @Override public int handleExecutionException(

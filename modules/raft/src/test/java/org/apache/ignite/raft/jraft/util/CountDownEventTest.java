@@ -20,15 +20,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.lang.IgniteLogger;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CountDownEventTest {
-    private static final Logger LOG = LoggerFactory.getLogger(CountDownEventTest.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(CountDownEventTest.class);
 
     @Test
     public void testAwait() throws Exception {

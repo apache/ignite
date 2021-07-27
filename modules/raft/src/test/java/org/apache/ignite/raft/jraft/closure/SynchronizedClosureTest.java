@@ -18,18 +18,17 @@ package org.apache.ignite.raft.jraft.closure;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SynchronizedClosureTest {
-    private static final Logger LOG = LoggerFactory.getLogger(SynchronizedClosureTest.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(SynchronizedClosureTest.class);
 
     private SynchronizedClosure done;
 

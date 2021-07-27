@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.entity;
 
 import java.io.Serializable;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.jraft.core.ElectionPriority;
@@ -26,8 +27,6 @@ import org.apache.ignite.raft.jraft.util.CrcUtil;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represent a participant in a replicating group.
@@ -35,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
     private static final long serialVersionUID = 8083529734784884641L;
 
-    private static final Logger LOG = LoggerFactory.getLogger(PeerId.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(PeerId.class);
 
     /**
      * Peer address.
@@ -232,7 +231,7 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
             return true;
         }
         catch (final Exception e) {
-            LOG.error("Parse peer from string failed: {}.", s, e);
+            LOG.error("Parse peer from string failed: {}.", e, s);
             return false;
         }
     }

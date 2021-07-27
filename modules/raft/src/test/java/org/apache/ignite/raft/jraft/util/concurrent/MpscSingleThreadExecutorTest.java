@@ -22,10 +22,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  */
 public class MpscSingleThreadExecutorTest {
-    private static final Logger LOG = LoggerFactory.getLogger(MpscSingleThreadExecutorTest.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(MpscSingleThreadExecutorTest.class);
 
     private static final ThreadFactory THREAD_FACTORY = new NamedThreadFactory("test", true);
 

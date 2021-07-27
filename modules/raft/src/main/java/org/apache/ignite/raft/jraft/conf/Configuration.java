@@ -23,19 +23,18 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.util.Copiable;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A configuration with a set of peers.
  */
 public class Configuration implements Iterable<PeerId>, Copiable<Configuration> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(Configuration.class);
 
     private static final String LEARNER_POSTFIX = "/learner";
 

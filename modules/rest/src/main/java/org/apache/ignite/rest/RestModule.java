@@ -36,11 +36,11 @@ import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
 import org.apache.ignite.configuration.schemas.rest.RestView;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.rest.netty.RestApiInitializer;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.apache.ignite.rest.presentation.json.JsonPresentation;
 import org.apache.ignite.rest.routes.Router;
-import org.slf4j.Logger;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 
@@ -67,12 +67,12 @@ public class RestModule {
     private volatile ConfigurationPresentation<String> presentation;
 
     /** */
-    private final Logger log;
+    private final IgniteLogger log;
 
     /**
      * @param log Logger.
      */
-    public RestModule(Logger log) {
+    public RestModule(IgniteLogger log) {
         this.log = log;
     }
 

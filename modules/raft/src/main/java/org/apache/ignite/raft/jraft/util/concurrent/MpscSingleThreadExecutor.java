@@ -27,16 +27,15 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.util.Mpsc;
 import org.apache.ignite.raft.jraft.util.Requires;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class MpscSingleThreadExecutor implements SingleThreadExecutor {
-    private static final Logger LOG = LoggerFactory.getLogger(MpscSingleThreadExecutor.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(MpscSingleThreadExecutor.class);
 
     private static final AtomicIntegerFieldUpdater<MpscSingleThreadExecutor> STATE_UPDATER = AtomicIntegerFieldUpdater
         .newUpdater(MpscSingleThreadExecutor.class, "state");

@@ -20,8 +20,7 @@ package org.apache.ignite.cli.ui;
 import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.concurrent.locks.LockSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 import picocli.CommandLine.Help.Ansi;
 
 /**
@@ -29,7 +28,7 @@ import picocli.CommandLine.Help.Ansi;
  */
 public class ProgressBar implements AutoCloseable {
     /** Logger. **/
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final IgniteLogger log = IgniteLogger.forClass(getClass());
 
     /** Out to output the progress bar UI.. */
     private final PrintWriter out;

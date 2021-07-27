@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.LogEntry;
 import org.apache.ignite.raft.jraft.entity.LogId;
@@ -33,14 +34,12 @@ import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.LogStorage;
 import org.apache.ignite.raft.jraft.util.Describer;
 import org.apache.ignite.raft.jraft.util.Requires;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Stores log in heap.
  */
 public class LocalLogStorage implements LogStorage, Describer {
-    private static final Logger LOG = LoggerFactory.getLogger(LocalLogStorage.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LocalLogStorage.class);
 
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock readLock = this.readWriteLock.readLock();
@@ -226,7 +225,7 @@ public class LocalLogStorage implements LogStorage, Describer {
             return true;
         }
         catch (Exception e) {
-            LOG.error("Fail to truncateSuffix {}.", lastIndexKept, e);
+            LOG.error("Fail to truncateSuffix {}.", e, lastIndexKept);
         }
         finally {
             this.readLock.unlock();

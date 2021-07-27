@@ -141,7 +141,7 @@ public class DefaultRaftClientService extends AbstractClientService implements R
                     done.run(new Status(RaftError.EINTERNAL, "Check connection[%s] fail and try to create new one", endpoint));
                 }
                 catch (final Throwable t) {
-                    LOG.error("Fail to run RpcResponseClosure, the request is {}.", request, t);
+                    LOG.error("Fail to run RpcResponseClosure, the request is {}.", t, request);
                 }
             }
 

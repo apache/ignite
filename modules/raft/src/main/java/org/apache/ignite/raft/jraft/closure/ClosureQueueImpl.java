@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.error.RaftError;
@@ -27,15 +28,13 @@ import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Closure queue implementation.
  */
 public class ClosureQueueImpl implements ClosureQueue {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ClosureQueueImpl.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ClosureQueueImpl.class);
 
     private final Lock lock;
     private final NodeOptions options;

@@ -31,6 +31,7 @@ import javax.inject.Singleton;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
 import org.apache.ignite.cli.ui.ProgressBar;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ivy.Ivy;
 import org.apache.ivy.core.IvyContext;
 import org.apache.ivy.core.event.EventManager;
@@ -52,8 +53,6 @@ import org.apache.ivy.plugins.resolver.IBiblioResolver;
 import org.apache.ivy.util.AbstractMessageLogger;
 import org.apache.ivy.util.Message;
 import org.jline.terminal.Terminal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Resolver of maven artifacts with Ivy.
@@ -311,8 +310,8 @@ public class MavenArtifactResolver {
      * Ivy logger for routing all ivy logs to general logging system of CLI.
      */
     private static class IvyLogger extends AbstractMessageLogger {
-        /** Common loogger */
-        private final Logger log = LoggerFactory.getLogger(IvyLogger.class);
+        /** Common logger. */
+        private final IgniteLogger log = IgniteLogger.forClass(IvyLogger.class);
 
         /** {@inheritDoc} */
         @Override protected void doProgress() {

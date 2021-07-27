@@ -19,9 +19,8 @@ package org.apache.ignite.raft.server;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Counter snapshot file.
@@ -30,7 +29,7 @@ class CounterSnapshotFile {
     /**
      * The logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(CounterSnapshotFile.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(CounterSnapshotFile.class);
 
     /**
      * The path.

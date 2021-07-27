@@ -20,15 +20,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 
 /**
  * Replicator id with lock.
  */
 public class ThreadId {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ThreadId.class);
+    private static final IgniteLogger LOG =IgniteLogger.forClass(ThreadId.class);
 
     private static final int TRY_LOCK_TIMEOUT_MS = 10;
 

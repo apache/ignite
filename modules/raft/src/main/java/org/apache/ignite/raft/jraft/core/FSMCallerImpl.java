@@ -28,6 +28,7 @@ import com.lmax.disruptor.EventTranslator;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
@@ -60,8 +61,6 @@ import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toList;
 
@@ -70,7 +69,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class FSMCallerImpl implements FSMCaller {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FSMCallerImpl.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(FSMCallerImpl.class);
 
     /**
      * Task type

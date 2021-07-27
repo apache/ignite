@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.raft.jraft.Status;
@@ -41,14 +42,12 @@ import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.concurrent.ConcurrentHashSet;
 import org.apache.ignite.raft.jraft.util.internal.ThrowUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Abstract RPC client service based.
  */
 public abstract class AbstractClientService implements ClientService, TopologyEventHandler {
-    protected static final Logger LOG = LoggerFactory.getLogger(AbstractClientService.class);
+    protected static final IgniteLogger LOG = IgniteLogger.forClass(AbstractClientService.class);
 
     protected volatile RpcClient rpcClient;
     protected ExecutorService rpcExecutor;
@@ -208,7 +207,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
                                 done.run(status);
                             }
                             catch (final Throwable t) {
-                                LOG.error("Fail to run RpcResponseClosure, the request is {}.", request, t);
+                                LOG.error("Fail to run RpcResponseClosure, the request is {}.", t, request);
                             }
                         }
                         if (!future.isDone()) {
@@ -225,7 +224,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
                                     : RaftError.EINTERNAL, "RPC exception:" + err.getMessage()));
                             }
                             catch (final Throwable t) {
-                                LOG.error("Fail to run RpcResponseClosure, the request is {}.", request, t);
+                                LOG.error("Fail to run RpcResponseClosure, the request is {}.", t, request);
                             }
                         }
                         if (!future.isDone()) {

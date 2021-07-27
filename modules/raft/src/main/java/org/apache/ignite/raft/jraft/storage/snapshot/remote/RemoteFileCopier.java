@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.core.Scheduler;
 import org.apache.ignite.raft.jraft.option.CopyOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
@@ -34,15 +35,13 @@ import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Remote file copier
  */
 public class RemoteFileCopier {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RemoteFileCopier.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(RemoteFileCopier.class);
 
     private long readId;
     private RaftClientService rpcService;

@@ -17,9 +17,8 @@
 package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Abstract AsyncUserProcessor for RPC processors.
@@ -30,7 +29,7 @@ public abstract class RpcRequestProcessor<T extends Message> implements RpcProce
     /**
      * The logger.
      */
-    protected static final Logger LOG = LoggerFactory.getLogger(RpcRequestProcessor.class);
+    protected static final IgniteLogger LOG = IgniteLogger.forClass(RpcRequestProcessor.class);
 
     private final Executor executor;
 
@@ -53,7 +52,7 @@ public abstract class RpcRequestProcessor<T extends Message> implements RpcProce
             }
         }
         catch (final Throwable t) {
-            LOG.error("handleRequest {} failed", request, t);
+            LOG.error("handleRequest {} failed", t, request);
             rpcCtx.sendResponse(RaftRpcFactory.DEFAULT //
                 .newResponse(msgFactory, -1, "handleRequest internal error"));
         }

@@ -22,15 +22,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 
 /**
  * A {@link java.util.concurrent.ThreadPoolExecutor} that can additionally schedule commands to run after a given delay
  * with a logger witch can print error message for failed execution.
  */
 public class LogScheduledThreadPoolExecutor extends ScheduledThreadPoolExecutor {
-    private static final Logger LOG = LoggerFactory.getLogger(LogScheduledThreadPoolExecutor.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LogScheduledThreadPoolExecutor.class);
 
     private final String name;
 
@@ -80,7 +79,7 @@ public class LogScheduledThreadPoolExecutor extends ScheduledThreadPoolExecutor 
             }
         }
         if (t != null) {
-            LOG.error("Uncaught exception in pool: {}, {}.", this.name, super.toString(), t);
+            LOG.error("Uncaught exception in pool: {}, {}.", t, this.name, super.toString());
         }
     }
 

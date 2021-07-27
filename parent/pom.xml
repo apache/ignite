@@ -62,7 +62,6 @@
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <jmh.framework.version>1.13</jmh.framework.version>
         <junit.jupiter.version>5.7.0</junit.jupiter.version>
-        <logback.version>1.2.3</logback.version>
         <micronaut.version>2.1.2</micronaut.version>
         <micronaut.test.junit5.version>2.3.1</micronaut.test.junit5.version>
         <mockito.framework.version>3.4.6</mockito.framework.version>
@@ -298,12 +297,6 @@
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
                 <version>${jetbrains.annotations.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
             </dependency>
 
             <dependency>

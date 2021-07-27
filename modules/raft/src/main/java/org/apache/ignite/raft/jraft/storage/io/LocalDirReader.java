@@ -20,18 +20,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.error.RetryAgainException;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Read a file data form local dir by fileName.
  */
 public class LocalDirReader implements FileReader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LocalDirReader.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LocalDirReader.class);
 
     private final String path;
 

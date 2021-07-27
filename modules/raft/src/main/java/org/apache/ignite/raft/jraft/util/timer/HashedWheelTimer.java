@@ -30,8 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 
 /**
  * <h3>Implementation Details</h3>
@@ -46,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class HashedWheelTimer implements Timer {
-    private static final Logger LOG = LoggerFactory.getLogger(HashedWheelTimer.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(HashedWheelTimer.class);
 
     private static final int INSTANCE_COUNT_LIMIT = 256;
     private static final AtomicInteger instanceCounter = new AtomicInteger();

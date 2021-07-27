@@ -20,19 +20,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.util.FileOutputSignalHandler;
 import org.apache.ignite.raft.jraft.util.MetricReporter;
 import org.apache.ignite.raft.jraft.util.SystemPropertyUtil;
 import org.apache.ignite.raft.jraft.util.ThreadPoolMetricRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class ThreadPoolMetricsSignalHandler extends FileOutputSignalHandler {
 
-    private static Logger LOG = LoggerFactory.getLogger(ThreadPoolMetricsSignalHandler.class);
+    private static IgniteLogger LOG = IgniteLogger.forClass(ThreadPoolMetricsSignalHandler.class);
 
     private static final String DIR = SystemPropertyUtil.get("jraft.signal.thread.pool.metrics.dir", "");
     private static final String BASE_NAME = "thread_pool_metrics.log";

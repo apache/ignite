@@ -17,15 +17,14 @@
 package org.apache.ignite.raft.jraft.util;
 
 import java.util.Locale;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 
 /**
  *
  */
 public class Platform {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Platform.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(Platform.class);
 
     private static final boolean IS_WINDOWS = isWindows0();
 

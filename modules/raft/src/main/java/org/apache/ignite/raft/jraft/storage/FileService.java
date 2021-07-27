@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.error.RetryAgainException;
@@ -35,14 +36,12 @@ import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * File reader service.
  */
 public final class FileService {
-    private static final Logger LOG = LoggerFactory.getLogger(FileService.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(FileService.class);
 
     private static final FileService INSTANCE = new FileService(new RaftMessagesFactory()); // TODO asch fixme IGNITE-14832
 
@@ -125,7 +124,7 @@ public final class FileService {
                     e.getMessage());
         }
         catch (final IOException e) {
-            LOG.error("Fail to read file path={} filename={}", reader.getPath(), request.filename(), e);
+            LOG.error("Fail to read file path={} filename={}", e, reader.getPath(), request.filename());
             return RaftRpcFactory.DEFAULT //
                 .newResponse(msgFactory, RaftError.EIO,
                     "Fail to read from path=%s filename=%s", reader.getPath(), request.filename());

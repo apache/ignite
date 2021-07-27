@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft;
 
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
@@ -25,14 +26,12 @@ import org.apache.ignite.raft.jraft.rpc.RpcServer;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A raft group service.
  */
 public class RaftGroupService {
-    private static final Logger LOG = LoggerFactory.getLogger(RaftGroupService.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(RaftGroupService.class);
 
     private volatile boolean started = false;
 

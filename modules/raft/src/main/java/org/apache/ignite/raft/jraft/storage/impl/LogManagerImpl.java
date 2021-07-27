@@ -33,6 +33,7 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.TimeoutBlockingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.conf.Configuration;
@@ -63,8 +64,6 @@ import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.SegmentList;
 import org.apache.ignite.raft.jraft.util.ThreadHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * LogManager implementation.
@@ -72,7 +71,7 @@ import org.slf4j.LoggerFactory;
 public class LogManagerImpl implements LogManager {
     private static final int APPEND_LOG_RETRY_TIMES = 50;
 
-    private static final Logger LOG = LoggerFactory.getLogger(LogManagerImpl.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LogManagerImpl.class);
 
     private LogStorage logStorage;
     private ConfigurationManager configManager;
@@ -476,7 +475,7 @@ public class LogManagerImpl implements LogManager {
                         this.storage.get(i).run(st);
                     }
                     catch (Throwable t) {
-                        LOG.error("Fail to run closure with status: {}.", st, t);
+                        LOG.error("Fail to run closure with status: {}.", t, st);
                     }
                 }
                 this.toAppend.clear();

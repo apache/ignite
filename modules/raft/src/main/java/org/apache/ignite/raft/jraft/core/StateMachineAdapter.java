@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Iterator;
 import org.apache.ignite.raft.jraft.StateMachine;
@@ -25,15 +26,13 @@ import org.apache.ignite.raft.jraft.entity.LeaderChangeContext;
 import org.apache.ignite.raft.jraft.error.RaftException;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * State machine adapter that implements all methods with default behavior except {@link #onApply(Iterator)}.
  */
 public abstract class StateMachineAdapter implements StateMachine {
     /** The logger */
-    private static final Logger LOG = LoggerFactory.getLogger(StateMachineAdapter.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(StateMachineAdapter.class);
 
     @Override
     public void onShutdown() {
@@ -66,7 +65,7 @@ public abstract class StateMachineAdapter implements StateMachine {
     public void onError(final RaftException e) {
         LOG.error(
             "Encountered an error={} on StateMachine {}, it's highly recommended to implement this method as raft stops working since some error occurs, you should figure out the cause and repair or remove this node.",
-            e.getStatus(), getClassName(), e);
+            e, e.getStatus(), getClassName());
     }
 
     @Override

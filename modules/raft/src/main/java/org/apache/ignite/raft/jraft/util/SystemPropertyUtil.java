@@ -18,15 +18,14 @@ package org.apache.ignite.raft.jraft.util;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 
 /**
  * A collection of utility methods to retrieve and parse the values of the Java system properties.
  */
 public final class SystemPropertyUtil {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SystemPropertyUtil.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(SystemPropertyUtil.class);
 
     /**
      * Returns {@code true} if and only if the system property with the specified {@code key} exists.
@@ -71,7 +70,7 @@ public final class SystemPropertyUtil {
         }
         catch (Exception e) {
             if (LOG.isWarnEnabled()) {
-                LOG.warn("Unable to retrieve a system property '{}'; default values will be used, {}.", key, e);
+                LOG.warn("Unable to retrieve a system property '{}'; default values will be used, {}.", key, (Object)e);
             }
         }
 

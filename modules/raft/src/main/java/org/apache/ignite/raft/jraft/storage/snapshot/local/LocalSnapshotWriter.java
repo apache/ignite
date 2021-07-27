@@ -19,6 +19,7 @@ package org.apache.ignite.raft.jraft.storage.snapshot.local;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaBuilder;
 import org.apache.ignite.raft.jraft.entity.LocalFileMetaOutter.LocalFileMeta;
@@ -28,15 +29,13 @@ import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Snapshot writer to write snapshot into local file system.
  */
 public class LocalSnapshotWriter extends SnapshotWriter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LocalSnapshotWriter.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LocalSnapshotWriter.class);
 
     private final LocalSnapshotMetaTable metaTable;
     private final String path;

@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
@@ -48,14 +49,12 @@ import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Snapshot executor implementation.
  */
 public class SnapshotExecutorImpl implements SnapshotExecutor {
-    private static final Logger LOG = LoggerFactory.getLogger(SnapshotExecutorImpl.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(SnapshotExecutorImpl.class);
 
     private final Lock lock = new ReentrantLock();
 

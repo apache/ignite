@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.ReplicatorGroup;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.closure.CatchUpClosure;
@@ -37,16 +38,13 @@ import org.apache.ignite.raft.jraft.rpc.RpcResponseClosure;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.ThreadId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Replicator group for a raft group.
  */
 public class ReplicatorGroupImpl implements ReplicatorGroup {
 
-    private static final Logger LOG = LoggerFactory
-        .getLogger(ReplicatorGroupImpl.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ReplicatorGroupImpl.class);
 
     // <peerId, replicatorId>
     private final ConcurrentMap<PeerId, ThreadId> replicatorMap = new ConcurrentHashMap<>();

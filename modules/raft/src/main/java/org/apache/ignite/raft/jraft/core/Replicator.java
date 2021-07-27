@@ -32,6 +32,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.closure.CatchUpClosure;
@@ -66,8 +67,6 @@ import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.ThreadId;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.internal.ThrowUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toList;
 
@@ -76,7 +75,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class Replicator implements ThreadId.OnError {
     /** The log. */
-    private static final Logger LOG = LoggerFactory.getLogger(Replicator.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(Replicator.class);
 
     private final RaftClientService rpcService;
     // Next sending log index

@@ -17,17 +17,16 @@
 package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.Status;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * RPC request Closure encapsulates the RPC contexts.
  */
 public class RpcRequestClosure implements Closure {
-    private static final Logger LOG = LoggerFactory.getLogger(RpcRequestClosure.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(RpcRequestClosure.class);
 
     private static final AtomicIntegerFieldUpdater<RpcRequestClosure> STATE_UPDATER = AtomicIntegerFieldUpdater
         .newUpdater(RpcRequestClosure.class, "state");

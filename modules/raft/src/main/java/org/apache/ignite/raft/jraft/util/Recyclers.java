@@ -19,8 +19,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.ignite.lang.IgniteLogger;
 
 /**
  * Light-weight object pool based on a thread-local stack.
@@ -30,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * @param <T> the type of the pooled object
  */
 public abstract class Recyclers<T> {
-    private static final Logger LOG = LoggerFactory.getLogger(Recyclers.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(Recyclers.class);
 
     private static final AtomicInteger idGenerator = new AtomicInteger(Integer.MIN_VALUE);
 

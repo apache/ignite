@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.option.SnapshotCopierOptions;
@@ -41,14 +42,12 @@ import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Snapshot storage based on local file storage.
  */
 public class LocalSnapshotStorage implements SnapshotStorage {
-    private static final Logger LOG = LoggerFactory.getLogger(LocalSnapshotStorage.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LocalSnapshotStorage.class);
 
     private static final String TEMP_PATH = "temp";
     private final ConcurrentMap<Long, AtomicInteger> refMap = new ConcurrentHashMap<>();
