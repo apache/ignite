@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -36,13 +35,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Test for Quartz Based Scheduler */
 public class GridScheduleQuartzSelfTest extends GridCommonAbstractTest {
     /** Name of the job */
     private static final String JOB_NAME = "job1";
-    
+
     /** */
     private static final int NODES_CNT = 2;
 

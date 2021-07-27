@@ -18,12 +18,12 @@ package org.apache.ignite.internal.processors.schedule;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.SchedulerContext;
 import org.quartz.SchedulerException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.schedule.ScheduleFutureUsingQuartzImpl.COUNTDOWNLATCH_KEY;
 import static org.apache.ignite.internal.processors.schedule.ScheduleFutureUsingQuartzImpl.IGNITELOGGER_KEY;
