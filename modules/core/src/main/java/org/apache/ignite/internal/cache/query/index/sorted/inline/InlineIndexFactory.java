@@ -79,7 +79,7 @@ public class InlineIndexFactory implements IndexFactory {
         RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender, int segmentNum) throws Exception {
         return new InlineIndexTree(
             def,
-            cctx,
+            cctx.group(),
             def.treeName(),
             cctx.offheap(),
             cctx.offheap().reuseListForIndex(def.treeName()),
@@ -88,6 +88,7 @@ public class InlineIndexFactory implements IndexFactory {
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             def.inlineSize(),
+            cctx.config().getSqlIndexMaxInlineSize(),
             def.keyTypeSettings(),
             def.idxRowCache(),
             stats,
