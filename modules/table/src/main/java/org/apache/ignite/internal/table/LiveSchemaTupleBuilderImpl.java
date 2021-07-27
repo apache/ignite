@@ -69,8 +69,8 @@ public class LiveSchemaTupleBuilderImpl extends TupleBuilderImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public TupleBuilder set(String colName, Object val) {
-        Column col = schema().column(colName);
+    @Override public TupleBuilder set(String columnName, Object val) {
+        Column col = schema().column(columnName);
 
         if (col == null) {
             if (val == null)
@@ -79,11 +79,11 @@ public class LiveSchemaTupleBuilderImpl extends TupleBuilderImpl {
             if (extraColumnsMap == null)
                 extraColumnsMap = new HashMap<>();
                 
-            extraColumnsMap.put(colName, val);
+            extraColumnsMap.put(columnName, val);
             
             return this;
         }
-        super.set(colName, val);
+        super.set(columnName, val);
 
         return this;
     }

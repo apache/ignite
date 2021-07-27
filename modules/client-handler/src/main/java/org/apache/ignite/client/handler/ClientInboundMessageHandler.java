@@ -41,10 +41,10 @@ import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
-import org.apache.ignite.internal.table.TupleBuilderImpl;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.table.TupleBuilder;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.buffer.ByteBufferInput;
 import org.slf4j.Logger;
@@ -340,7 +340,7 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
     private Tuple readTuple(ClientMessageUnpacker unpacker, TableImpl table, boolean keyOnly) throws IOException {
         var schemaId = unpacker.unpackInt();
         var schema = table.schemaView().schema(schemaId);
-        var builder = (TupleBuilderImpl) table.tupleBuilder();
+        var builder = table.tupleBuilder();
 
         var cnt = keyOnly ? schema.keyColumns().length() : schema.length();
 
@@ -375,7 +375,7 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
         return ((IgniteTablesInternal)ignite.tables()).table(tableId);
     }
 
-    private void readAndSetColumnValue(ClientMessageUnpacker unpacker, TupleBuilderImpl builder, Column col)
+    private void readAndSetColumnValue(ClientMessageUnpacker unpacker, TupleBuilder builder, Column col)
             throws IOException {
         builder.set(col.name(), unpacker.unpackObject(getClientDataType(col.type().spec())));
     }

@@ -26,103 +26,215 @@ import org.apache.ignite.binary.BinaryObject;
  * <p>
  * Provides specialized method for some value-types to avoid boxing/unboxing.
  */
-public interface Tuple {
+public interface Tuple extends Iterable<Object> {
     /**
-     * Returns {@code true} if this tuple contains a column with the specified name.
+     * Gets the number of columns in this tuple.
      *
-     * @param colName Column name.
+     * @return Number of columns.
+     */
+    int columnCount();
+
+    /**
+     * Gets the name of the column with the specified index.
+     *
+     * @param columnIndex Column index.
+     * @return Column name.
+     */
+    String columnName(int columnIndex);
+
+    /**
+     * Gets the index of the column with the specified name.
+     *
+     * @param columnName Column name.
+     * @return Column index, or null when a column with given name is not present.
+     */
+    Integer columnIndex(String columnName);
+
+    /**
+     * Gets column value when a column with specified name is present in this tuple; returns default value otherwise.
+     *
+     * @param columnName Column name.
      * @param def Default value.
      * @param <T> Column default value type.
      * @return Column value if this tuple contains a column with the specified name. Otherwise returns {@code default}.
      */
-    <T> T valueOrDefault(String colName, T def);
+    <T> T valueOrDefault(String columnName, T def);
 
     /**
      * Gets column value for given column name.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @param <T> Value type.
      * @return Column value.
      */
-    <T> T value(String colName);
+    <T> T value(String columnName);
+
+    /**
+     * Gets column value for given column index.
+     *
+     * @param columnIndex Column index.
+     * @param <T> Value type.
+     * @return Column value.
+     */
+    <T> T value(int columnIndex);
 
     /**
      * Gets binary object column.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    BinaryObject binaryObjectField(String colName);
+    BinaryObject binaryObjectValue(String columnName);
+
+    /**
+     * Gets binary object column.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    BinaryObject binaryObjectValue(int columnIndex);
 
     /**
      * Gets {@code byte} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    byte byteValue(String colName);
+    byte byteValue(String columnName);
+
+    /**
+     * Gets {@code byte} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    byte byteValue(int columnIndex);
 
     /**
      * Gets {@code short} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    short shortValue(String colName);
+    short shortValue(String columnName);
+
+    /**
+     * Gets {@code short} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    short shortValue(int columnIndex);
 
     /**
      * Gets {@code int} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    int intValue(String colName);
+    int intValue(String columnName);
+
+    /**
+     * Gets {@code int} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    int intValue(int columnIndex);
 
     /**
      * Gets {@code long} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    long longValue(String colName);
+    long longValue(String columnName);
+
+    /**
+     * Gets {@code long} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    long longValue(int columnIndex);
 
     /**
      * Gets {@code float} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    float floatValue(String colName);
+    float floatValue(String columnName);
+
+    /**
+     * Gets {@code float} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    float floatValue(int columnIndex);
 
     /**
      * Gets {@code double} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    double doubleValue(String colName);
+    double doubleValue(String columnName);
+
+    /**
+     * Gets {@code double} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    double doubleValue(int columnIndex);
 
     /**
      * Gets {@code String} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    String stringValue(String colName);
+    String stringValue(String columnName);
+
+    /**
+     * Gets {@code String} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    String stringValue(int columnIndex);
 
     /**
      * Gets {@code UUID} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    UUID uuidValue(String colName);
+    UUID uuidValue(String columnName);
+
+    /**
+     * Gets {@code UUID} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    UUID uuidValue(int columnIndex);
 
     /**
      * Gets {@code BitSet} column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @return Column value.
      */
-    BitSet bitmaskValue(String colName);
+    BitSet bitmaskValue(String columnName);
+
+    /**
+     * Gets {@code BitSet} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    BitSet bitmaskValue(int columnIndex);
 }

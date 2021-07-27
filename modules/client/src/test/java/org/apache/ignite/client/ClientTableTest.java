@@ -24,6 +24,8 @@ import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,11 +37,12 @@ public class ClientTableTest extends AbstractClientTest {
     public void testGetWithNullInNotNullableKeyColumnThrowsException() {
         Table table = getDefaultTable();
 
-        var key = table.tupleBuilder().set("foo", "123").build();
+        var key = table.tupleBuilder().set("name", "123").build();
 
         var ex = assertThrows(CompletionException.class, () -> table.get(key));
 
-        assertTrue(ex.getMessage().contains("Column is not present in schema: foo"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("Failed to set column (null was passed, but column is not nullable)"),
+                ex.getMessage());
     }
 
     @Test
@@ -58,6 +61,26 @@ public class ClientTableTest extends AbstractClientTest {
 
         assertEquals("John", resTuple.stringValue("name"));
         assertEquals(123L, resTuple.longValue("id"));
+        assertEquals("foo", resTuple.valueOrDefault("bar", "foo"));
+
+        assertEquals("John", resTuple.value(1));
+        assertEquals(123L, (Long) resTuple.value(0));
+
+        assertEquals(2, resTuple.columnCount());
+        assertEquals("id", resTuple.columnName(0));
+        assertEquals("name", resTuple.columnName(1));
+
+        var iter = tuple.iterator();
+
+        assertTrue(iter.hasNext());
+        assertEquals(123L, iter.next());
+
+        assertTrue(iter.hasNext());
+        assertEquals("John", iter.next());
+
+        assertFalse(iter.hasNext());
+        assertNull(iter.next());
+
         assertTupleEquals(tuple, resTuple);
     }
 

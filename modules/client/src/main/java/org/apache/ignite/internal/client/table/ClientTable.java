@@ -124,7 +124,7 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public TupleBuilder tupleBuilder() {
-        return new ClientTupleBuilder();
+        return new ClientTupleBuilder(getLatestSchema().join());
     }
 
     /** {@inheritDoc} */
@@ -181,7 +181,7 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> upsertAllAsync(@NotNull Collection<Tuple> recs) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -402,19 +402,17 @@ public class ClientTable implements Table {
     }
 
     private void writeTuple(@NotNull Tuple tuple, ClientSchema schema, PayloadOutputChannel w, boolean keyOnly) throws IOException {
-        // TODO: We should accept any Tuple implementation, but this requires extending the Tuple interface
-        // with methods to retrieve column list.
-        var rec = (ClientTupleBuilder) tuple;
-
         var vals = new Object[keyOnly ? schema.keyColumnCount() : schema.columns().length];
+        var tupleSize = tuple.columnCount();
 
-        for (var entry : rec.map().entrySet()) {
-            var col = schema.column(entry.getKey());
+        for (var i = 0; i < tupleSize; i++) {
+            var colName = tuple.columnName(i);
+            var col = schema.column(colName);
 
             if (keyOnly && !col.key())
                 continue;
 
-            vals[col.schemaIndex()] = entry.getValue();
+            vals[col.schemaIndex()] = tuple.value(i);
         }
 
         w.out().packUuid(id);
@@ -425,11 +423,11 @@ public class ClientTable implements Table {
     }
 
     private Tuple readTuple(ClientSchema schema, PayloadInputChannel r) {
-        var builder = new ClientTupleBuilder();
+        var builder = new ClientTupleBuilder(schema);
 
         try {
             for (var col : schema.columns())
-                builder.set(col.name(), r.in().unpackObject(col.type()));
+                builder.setInternal(col.schemaIndex(), r.in().unpackObject(col.type()));
         } catch (IOException e) {
             throw new CompletionException(e);
         }

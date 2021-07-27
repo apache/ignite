@@ -19,12 +19,14 @@ package org.apache.ignite.internal.table.impl;
 
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.TupleBuilder;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Dummy table storage implementation.
@@ -34,8 +36,8 @@ public class TestTupleBuilder implements TupleBuilder, Tuple {
     private final Map<String, Object> map = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public TestTupleBuilder set(String colName, Object value) {
-        map.put(colName, value);
+    @Override public TestTupleBuilder set(String columnName, Object value) {
+        map.put(columnName, value);
 
         return this;
     }
@@ -46,64 +48,139 @@ public class TestTupleBuilder implements TupleBuilder, Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T valueOrDefault(String colName, T def) {
-        return (T)map.getOrDefault(colName, def);
+    @Override public <T> T valueOrDefault(String columnName, T def) {
+        return (T)map.getOrDefault(columnName, def);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T value(String colName) {
-        return (T)map.get(colName);
+    @Override public <T> T value(String columnName) {
+        return (T)map.get(columnName);
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectField(String colName) {
-        byte[] data = value(colName);
+    @Override public <T> T value(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int columnCount() {
+        return map.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String columnName(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Integer columnIndex(String columnName) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject binaryObjectValue(String columnName) {
+        byte[] data = value(columnName);
 
         return BinaryObjects.wrap(data);
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(String colName) {
-        return value(colName);
+    @Override public BinaryObject binaryObjectValue(int columnIndex) {
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(String colName) {
-        return value(colName);
+    @Override public byte byteValue(String columnName) {
+        return value(columnName);
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(String colName) {
-        return value(colName);
+    @Override public byte byteValue(int columnIndex) {
+        return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(String colName) {
-        return value(colName);
+    @Override public short shortValue(String columnName) {
+        return value(columnName);
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(String colName) {
-        return value(colName);
+    @Override public short shortValue(int columnIndex) {
+        return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(String colName) {
-        return value(colName);
+    @Override public int intValue(String columnName) {
+        return value(columnName);
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(String colName) {
-        return value(colName);
+    @Override public int intValue(int columnIndex) {
+        return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(String colName) {
-        return value(colName);
+    @Override public long longValue(String columnName) {
+        return value(columnName);
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(String colName) {
-        return value(colName);
+    @Override public long longValue(int columnIndex) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float floatValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public float floatValue(int columnIndex) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double doubleValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double doubleValue(int columnIndex) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String stringValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String stringValue(int columnIndex) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID uuidValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID uuidValue(int columnIndex) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet bitmaskValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet bitmaskValue(int columnIndex) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<Object> iterator() {
+        throw new UnsupportedOperationException();
     }
 }

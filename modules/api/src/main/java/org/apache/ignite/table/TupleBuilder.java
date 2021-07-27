@@ -24,11 +24,11 @@ public interface TupleBuilder {
     /**
      * Sets column value.
      *
-     * @param colName Column name.
+     * @param columnName Column name.
      * @param value Value to set.
      * @return {@code this} for chaining.
      */
-    TupleBuilder set(String colName, Object value);
+    TupleBuilder set(String columnName, Object value);
 
     /**
      * Builds tuple.

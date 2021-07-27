@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client schema.
@@ -83,6 +84,7 @@ public class ClientSchema {
      *
      * @param name Column name.
      * @return Column by name.
+     * @throws IgniteException When a column with the specified name does not exist.
      */
     public @NotNull ClientColumn column(String name) {
         var column = map.get(name);
@@ -91,6 +93,16 @@ public class ClientSchema {
             throw new IgniteException("Column is not present in schema: " + name);
 
         return column;
+    }
+
+    /**
+     * Gets a column by name.
+     *
+     * @param name Column name.
+     * @return Column by name.
+     */
+    public @Nullable ClientColumn columnSafe(String name) {
+        return map.get(name);
     }
 
     /**
