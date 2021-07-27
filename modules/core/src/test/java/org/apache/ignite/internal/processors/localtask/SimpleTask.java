@@ -47,9 +47,6 @@ class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTa
     /** Future that will be completed at the beginning of the {@link #cancel}. */
     final GridFutureAdapter<Void> onCancelFut = new GridFutureAdapter<>();
 
-    /** Future that will be completed at the beginning of the {@link #onDeactivationCluster}. */
-    final GridFutureAdapter<Void> onDeactivationClusterFut = new GridFutureAdapter<>();
-
     /**
      * Default constructor.
      */
@@ -72,12 +69,7 @@ class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTa
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        onDeactivationClusterFut.onDone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeactivationCluster() {
-        onDeactivationClusterFut.onDone();
+        onCancelFut.onDone();
     }
 
     /** {@inheritDoc} */

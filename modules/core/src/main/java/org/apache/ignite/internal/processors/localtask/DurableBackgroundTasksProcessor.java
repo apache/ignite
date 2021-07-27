@@ -380,7 +380,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     }
 
     /**
-     * Canceling tasks that are currently being executed.
+     * Canceling tasks.
      * Prohibiting the execution of tasks.
      */
     private void cancelTasks() {
@@ -389,12 +389,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
         try {
             prohibitionExecTasks = true;
 
-            for (DurableBackgroundTaskState<?> taskState : tasks.values()) {
-                taskState.task().onDeactivationCluster();
-
-                if (taskState.state() == STARTED)
-                    taskState.task().cancel();
-            }
+            for (DurableBackgroundTaskState<?> taskState : tasks.values())
+                taskState.task().cancel();
         }
         finally {
             cancelLock.writeLock().unlock();

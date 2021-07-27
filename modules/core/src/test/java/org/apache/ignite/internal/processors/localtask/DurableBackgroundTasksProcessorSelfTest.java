@@ -140,7 +140,6 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         n.cluster().state(INACTIVE);
 
         t.onExecFut.get(getTestTimeout());
-        t.onDeactivationClusterFut.get(getTestTimeout());
         t.taskFut.onDone(complete(null));
 
         execAsyncFut.get(getTestTimeout());

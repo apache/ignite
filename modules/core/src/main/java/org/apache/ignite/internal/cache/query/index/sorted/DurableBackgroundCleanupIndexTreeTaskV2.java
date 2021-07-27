@@ -198,11 +198,6 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeactivationCluster() {
-        rootPages.clear();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<DurableBackgroundTaskResult<Long>> executeAsync(GridKernalContext ctx) {
         assert worker == null;
 
