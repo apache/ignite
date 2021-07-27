@@ -792,6 +792,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return The request id of restoring snapshot operation.
+     */
+    public @Nullable UUID restoringId() {
+        return restoreCacheGrpProc.restoringId();
+    }
+
+    /**
      * Check if snapshot restore process is currently running.
      *
      * @param snpName Snapshot name.

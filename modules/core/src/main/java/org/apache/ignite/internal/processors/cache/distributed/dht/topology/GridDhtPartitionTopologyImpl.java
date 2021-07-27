@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -433,10 +434,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (localNode(p, affAssignment)) {
                             // Partition is created first time, so it's safe to own it.
                             boolean shouldOwn = locParts.get(p) == null;
+                            boolean restore = exchFut.exchangeActions().cacheGroupsToStart().stream()
+                                .filter(g -> Objects.nonNull(g.restartId()))
+                                .filter(g -> g.descriptor().groupId() == groupId())
+                                .map(g -> Boolean.TRUE)
+                                .findFirst()
+                                .orElse(false);
 
                             GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
-                            if (shouldOwn) {
+                            if (shouldOwn && !restore) {
                                 locPart.own();
 
                                 if (log.isDebugEnabled())

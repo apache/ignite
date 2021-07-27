@@ -1066,7 +1066,8 @@ public class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
-            req.cacheConfigurationEnrichment()
+            req.cacheConfigurationEnrichment(),
+            req.restartId()
         );
 
         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
@@ -1829,7 +1830,7 @@ public class ClusterCachesInfo {
             }
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
-                exchangeActions.addCacheGroupToStart(grpDesc);
+                exchangeActions.addCacheGroupToStart(grpDesc, null);
 
             List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
 
@@ -2139,7 +2140,8 @@ public class ClusterCachesInfo {
             nodeId,
             joinData.cacheDeploymentId(),
             null,
-            cacheInfo.cacheData().cacheConfigurationEnrichment()
+            cacheInfo.cacheData().cacheConfigurationEnrichment(),
+            null
         );
 
         ctx.discovery().setCacheFilter(
@@ -2272,7 +2274,8 @@ public class ClusterCachesInfo {
         UUID rcvdFrom,
         IgniteUuid deploymentId,
         @Nullable byte[] encKey,
-        CacheConfigurationEnrichment cacheCfgEnrichment
+        CacheConfigurationEnrichment cacheCfgEnrichment,
+        IgniteUuid restartId
     ) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = cacheGroupByName(startedCacheCfg.getGroupName());
@@ -2321,7 +2324,7 @@ public class ClusterCachesInfo {
         ctx.discovery().addCacheGroup(grpDesc, grpDesc.config().getNodeFilter(), startedCacheCfg.getCacheMode());
 
         if (exchActions != null)
-            exchActions.addCacheGroupToStart(grpDesc);
+            exchActions.addCacheGroupToStart(grpDesc, restartId);
 
         return grpDesc;
     }

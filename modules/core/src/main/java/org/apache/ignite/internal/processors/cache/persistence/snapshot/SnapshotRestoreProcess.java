@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -289,6 +287,15 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @return The request id of restoring snapshot operation.
+     */
+    public @Nullable UUID restoringId() {
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        return opCtx0 == null ? null : opCtx0.reqId;
+    }
+
+    /**
      * Check if the cache or group with the specified name is currently being restored from the snapshot.
      *
      * @param cacheName Cache name.
@@ -532,28 +539,56 @@ public class SnapshotRestoreProcess {
 
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
-                .thenAccept(res -> {
+            IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+
+            if (ctx.localNodeId().equals(req.operationalNodeId())) {
+                File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(opCtx0.snpName).getAbsolutePath(),
+                    ctx.pdsFolderResolver().resolveFolders().folderName());
+
+                CompletableFuture.runAsync(() -> {
                     try {
-                        Throwable err = opCtx.err.get();
-
-                        if (err != null)
-                            throw err;
-
-                        for (File src : opCtx0.dirs)
-                            Files.move(formatTmpDirName(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                        ctx.cacheObjects().updateMetadata(binDir, stopChecker);
                     }
                     catch (Throwable t) {
+                        errHnd.accept(t);
+                    }
+                }, snapshotMgr.snapshotExecutorService())
+                .whenComplete((res, t) -> {
+                    if (t == null)
+                        retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
+                    else {
                         log.error("Unable to restore cache group(s) from the snapshot " +
                             "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', t);
 
                         retFut.onDone(t);
-
-                        return;
                     }
-
-                    retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
                 });
+            }
+            else
+                retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
+
+//            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
+//                .thenAccept(res -> {
+//                    try {
+//                        Throwable err = opCtx.err.get();
+//
+//                        if (err != null)
+//                            throw err;
+//
+//                        for (File src : opCtx0.dirs)
+//                            Files.move(formatTmpDirName(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
+//                    }
+//                    catch (Throwable t) {
+//                        log.error("Unable to restore cache group(s) from the snapshot " +
+//                            "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', t);
+//
+//                        retFut.onDone(t);
+//
+//                        return;
+//                    }
+//
+//                    retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
+//                });
 
             return retFut;
         }
@@ -594,19 +629,6 @@ public class SnapshotRestoreProcess {
         String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
 
         List<CompletableFuture<Void>> futs = new ArrayList<>();
-
-        if (updateMeta) {
-            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(), pdsFolderName);
-
-            futs.add(CompletableFuture.runAsync(() -> {
-                try {
-                    ctx.cacheObjects().updateMetadata(binDir, stopChecker);
-                }
-                catch (Throwable t) {
-                    errHnd.accept(t);
-                }
-            }, snapshotMgr.snapshotExecutorService()));
-        }
 
         for (File cacheDir : dirs) {
             File tmpCacheDir = formatTmpDirName(cacheDir);
@@ -807,7 +829,7 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId));
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, true, IgniteUuid.fromUuid(reqId));
     }
 
     /**
