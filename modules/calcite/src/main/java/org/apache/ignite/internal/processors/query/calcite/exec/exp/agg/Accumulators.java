@@ -54,7 +54,7 @@ public class Accumulators {
     public static <Row> Supplier<Accumulator> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
 
-        Comparator<Row> comp = ctx.expressionFactory().comparator(getMappedCorrelations(call.getCollation()));
+        Comparator<Row> comp = ctx.expressionFactory().comparator(getMappedCollation(call.getCollation()));
 
         Supplier<Accumulator> supplier;
 
@@ -70,7 +70,7 @@ public class Accumulators {
     }
 
     /** */
-    private static RelCollation getMappedCorrelations(RelCollation collation) {
+    private static RelCollation getMappedCollation(RelCollation collation) {
         if (collation == null || collation.getFieldCollations().isEmpty())
             return null;
 

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -40,7 +38,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
@@ -192,9 +189,6 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         @Override public AccumulatorWrapper<Row> get() {
             Accumulator accumulator = accumulator();
 
-            if ("LISTAGG".equals(call.getAggregation().getName()))
-                return new CollationAccumulatorWrapperImpl(accumulator, call, inAdapter, outAdapter);
-
             return new AccumulatorWrapperImpl(accumulator, call, inAdapter, outAdapter);
         }
 
@@ -230,7 +224,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             return new Function<Object[], Object[]>() {
                 @Override public Object[] apply(Object[] args) {
                     for (int i = 0; i < args.length; i++)
-                        args[i] = casts.size() > i ? casts.get(i).apply(args[i]) : args[i];
+                        args[i] = casts.get(i).apply(args[i]);
                     return args;
                 }
             };
@@ -254,27 +248,27 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     }
 
     /** */
-    private class AccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
+    private final class AccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
         /** */
-        protected final Accumulator accumulator;
+        private final Accumulator accumulator;
 
         /** */
-        protected final Function<Object, Object> outAdapter;
+        private final Function<Object[], Object[]> inAdapter;
 
         /** */
-        protected final Function<Object[], Object[]> inAdapter;
+        private final Function<Object, Object> outAdapter;
 
         /** */
-        protected final List<Integer> argList;
+        private final List<Integer> argList;
 
         /** */
-        protected final int filterArg;
+        private final int filterArg;
 
         /** */
-        protected final boolean ignoreNulls;
+        private final boolean ignoreNulls;
 
         /** */
-        protected final RowHandler<Row> handler;
+        private final RowHandler<Row> handler;
 
         /** */
         AccumulatorWrapperImpl(
@@ -287,8 +281,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             this.inAdapter = inAdapter;
             this.outAdapter = outAdapter;
 
-            argList = new ArrayList<>(call.getArgList());
-
+            argList = call.getArgList();
             ignoreNulls = call.ignoreNulls();
             filterArg = call.hasFilter() ? call.filterArg : -1;
 
@@ -332,57 +325,6 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             assert type == AggregateType.MAP;
 
             return accumulator;
-        }
-    }
-
-    /** */
-    private class CollationAccumulatorWrapperImpl extends AccumulatorWrapperImpl {
-        /** Collation indexes. */
-        private List<Integer> collations;
-
-        /** */
-        CollationAccumulatorWrapperImpl(
-            Accumulator accumulator,
-            AggregateCall call,
-            Function<Object[], Object[]> inAdapter,
-            Function<Object, Object> outAdapter
-        ) {
-            super(accumulator, call, inAdapter, outAdapter);
-
-            if (call.getCollation().getFieldCollations() != null) {
-                for (RelFieldCollation collation : call.getCollation().getFieldCollations()) {
-                    if (!call.getArgList().contains(collation.getFieldIndex())) {
-                        if (collations == null)
-                            collations = new ArrayList<>();
-
-                        collations.add(collation.getFieldIndex());
-                    }
-                }
-            }
-
-            if (collations == null)
-                collations = Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Row row) {
-            assert type != AggregateType.REDUCE;
-
-            if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
-                return;
-
-            Object[] args = new Object[argList.size() + collations.size()];
-            for (int i = 0; i < argList.size(); i++) {
-                args[i] = handler.get(argList.get(i), row);
-
-                if (ignoreNulls && args[i] == null)
-                    return;
-            }
-
-            for (int i = 0; i < collations.size(); i++)
-                args[argList.size() + i] = handler.get(collations.get(i), row);
-
-            accumulator.add(inAdapter.apply(args));
         }
     }
 }
