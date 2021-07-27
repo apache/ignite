@@ -27,7 +27,7 @@ statement ok
 INSERT INTO integers VALUES (1), (2), (2);
 
 query TT
-SELECT STRING_AGG(s,',' ORDER BY s ASC), STRING_AGG(DISTINCT s, ',' ORDER BY s ASC) FROM integers
+SELECT STRING_AGG(s,',' ORDER BY s::VARCHAR ASC), STRING_AGG(DISTINCT s, ',' ORDER BY s::VARCHAR ASC) FROM integers
 ----
 1,2,2
 1,2

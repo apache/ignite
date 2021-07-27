@@ -54,7 +54,7 @@ public class Accumulators {
     public static <Row> Supplier<Accumulator> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
 
-        Comparator<Row> comp = ctx.expressionFactory().comparator(getMappedCollation(call.getCollation()));
+        Comparator<Row> comp = ctx.expressionFactory().comparator(getMappedCollation(call));
 
         Supplier<Accumulator> supplier;
 
@@ -70,11 +70,12 @@ public class Accumulators {
     }
 
     /** */
-    private static RelCollation getMappedCollation(RelCollation collation) {
-        if (collation == null || collation.getFieldCollations().isEmpty())
+    private static RelCollation getMappedCollation(AggregateCall call) {
+        if (call.getCollation() == null || call.getCollation().getFieldCollations().isEmpty())
             return null;
 
-        List<RelFieldCollation> collations = collation.getFieldCollations();
+        List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
+        List<Integer> argList = call.getArgList();
 
         // The target value will be accessed by field index in mapping array (targets[fieldIndex]),
         // so srcCnt should be "max_field_index + 1" to prevent IndexOutOfBoundsException.
@@ -83,10 +84,13 @@ public class Accumulators {
 
         Map<Integer, Integer> mapping = new HashMap<>();
 
-        for (int i = 0; i < collations.size(); i++)
-            mapping.put(collations.get(i).getFieldIndex(), i);
+        for (int i = 0; i < collations.size(); i++) {
+            int idx = collations.get(i).getFieldIndex();
+            int mapIdx = argList.indexOf(idx);
+            mapping.put(idx, mapIdx);
+        }
 
-        return collation.apply(Mappings.target(mapping, srcCnt, collations.size()));
+        return call.getCollation().apply(Mappings.target(mapping, srcCnt, collations.size()));
     }
 
     /** */
