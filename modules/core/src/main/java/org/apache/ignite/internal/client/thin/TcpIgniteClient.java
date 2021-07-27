@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -380,8 +381,12 @@ public class TcpIgniteClient implements IgniteClient {
             // If type wasn't registered before or metadata changed, send registration request.
             if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {
-                    if (ch != null) // Postpone binary type registration requests to server before channels initiated.
-                        sendMeta(newMeta);
+                    if (ch != null) { // Postpone binary type registration requests to server before channels initiated.
+                        ch.request(
+                            ClientOperation.PUT_BINARY_TYPE,
+                            req -> serDes.binaryMetadata(newMeta, req.out())
+                        );
+                    }
                 }
                 catch (ClientException e) {
                     throw new BinaryObjectException(e);
@@ -393,13 +398,20 @@ public class TcpIgniteClient implements IgniteClient {
 
         /** Send registration requests to the server for all collected metadata. */
         public void sendAllMeta() {
-            for (BinaryType type : cache.metadata())
-                sendMeta(((BinaryTypeImpl)type).metadata());
+            try {
+                CompletableFuture.allOf(cache.metadata().stream()
+                    .map(type -> sendMetaAsync(((BinaryTypeImpl)type).metadata()).toCompletableFuture())
+                    .toArray(CompletableFuture[]::new)
+                ).get();
+            }
+            catch (Exception e) {
+                throw new ClientException(e);
+            }
         }
 
         /** Send metadata registration request to the server. */
-        private void sendMeta(BinaryMetadata meta) {
-            ch.request(ClientOperation.PUT_BINARY_TYPE, req -> serDes.binaryMetadata(meta, req.out()));
+        private IgniteClientFuture<Void> sendMetaAsync(BinaryMetadata meta) {
+            return ch.requestAsync(ClientOperation.PUT_BINARY_TYPE, req -> serDes.binaryMetadata(meta, req.out()));
         }
 
         /** {@inheritDoc} */
