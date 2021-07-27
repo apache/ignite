@@ -16,6 +16,7 @@
 """
 This module contains client tests.
 """
+import time
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
@@ -77,19 +78,36 @@ class ThinClientTest(IgniteTest):
                                                 default=DataRegionConfiguration(persistent=True)),
                                             client_connector_configuration=ClientConnectorConfiguration())
 
-        ignite = IgniteService(self.test_context, server_config, 1)
+        ignite = IgniteService(self.test_context, server_config, 2)
 
-        addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+        addresses = ignite.nodes[1].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
         thin_clients = IgniteApplicationService(self.test_context,
                                                 IgniteThinClientConfiguration(addresses=addresses,
                                                                               version=IgniteVersion(
                                                                                   ignite_version)),
                                                 java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                                num_nodes=11)
+                                                num_nodes=10,
+                                                startup_timeout_sec=60)
 
         ignite.start()
         ControlUtility(cluster=ignite).activate()
-        thin_clients.run()
+
+        # ignite.freeze_node(ignite.nodes[0])
+        for i in range(20):
+            thin_clients.start_async()
+            thin_clients.await_started()
+            thin_clients.stop()
+
+        # time.sleep(3)
+
+        # ignite.unfreeze_node(ignite.nodes[0])
+
+        # thin_clients.await_started()
+
+        ControlUtility(cluster=ignite).baseline()
+
+        ControlUtility(cluster=ignite).deactivate()
+
         ignite.stop()
 
