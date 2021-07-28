@@ -27,7 +27,7 @@ public interface WorkProgressDispatcher {
     public long heartbeatTs();
 
     /**
-     * Notifying dispatcher that work is in progress and thread didn't freeze.
+     * Notifying dispatcher that work is in progress.
      */
     public void updateHeartbeat();
 

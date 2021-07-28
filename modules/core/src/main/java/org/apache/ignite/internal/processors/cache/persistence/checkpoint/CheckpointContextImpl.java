@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,9 +44,6 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private final IgniteThreadPoolExecutor asyncRunner;
 
-    /** Heartbeat updater. */
-    private final WorkProgressDispatcher heartbeatUpdater;
-
     /** Pending tasks from executor. */
     private GridCompoundFuture pendingTaskFuture;
 
@@ -55,18 +51,15 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
      * @param curr Current checkpoint progress.
      * @param map Partition map.
      * @param asyncRunner Checkpoint runner thread pool.
-     * @param heartbeat Heartbeat updater.
      */
     CheckpointContextImpl(
         CheckpointProgressImpl curr,
         PartitionAllocationMap map,
-        @Nullable IgniteThreadPoolExecutor asyncRunner,
-        WorkProgressDispatcher heartbeat
+        @Nullable IgniteThreadPoolExecutor asyncRunner
     ) {
         this.curr = curr;
         this.map = map;
         this.asyncRunner = asyncRunner;
-        this.heartbeatUpdater = heartbeat;
         this.pendingTaskFuture = this.asyncRunner == null ? null : new GridCompoundFuture();
     }
 
@@ -101,11 +94,10 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
             try {
                 GridFutureAdapter<?> res = new GridFutureAdapter<>();
 
-                res.listen(fut -> heartbeatUpdater.updateHeartbeat());
+                //register future before task execution to avoid race on waiting pendingTaskFuture to complit
+                pendingTaskFuture.add(res);
 
                 asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
-
-                pendingTaskFuture.add(res);
             }
             catch (RejectedExecutionException e) {
                 assert false : "A task should never be rejected by async runner";
