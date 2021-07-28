@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +50,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -3289,7 +3293,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         continue;
                     }
 
-                    Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
+                    Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap = new TreeMap<>(new CacheRebalanceOrderComparator());
 
                     boolean forcePreload = false;
 
@@ -3503,7 +3507,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if ((delay == 0 || forcePreload) && !disableRebalance)
                                 assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                            assignsMap.put(grp.groupId(), assigns);
+                            assignsMap.put(grp, assigns);
 
                             if (resVer == null && !grp.isLocal())
                                 resVer = grp.topology().readyTopologyVersion();
@@ -3600,6 +3604,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 ", node=" + exchId.nodeId() + ']');
                         }
                     }
+                    else if (!exchFut.exchangeActions().cacheGroupsToRestart(cctx.snapshotMgr().restoringId()).isEmpty()) {
+                        Set<Integer> grpIds = exchFut.exchangeActions().cacheGroupsToRestart(cctx.snapshotMgr().restoringId());
+
+
+                    }
                     else {
                         U.log(log, "Skipping rebalancing (no affinity changes) " +
                             "[top=" + resVer +
@@ -3650,6 +3659,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (exchFut == null)
                 return true;
+
+            if (!exchFut.exchangeActions().cacheGroupsToRestart(cctx.snapshotMgr().restoringId()).isEmpty())
+                return false;
 
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
@@ -4021,6 +4033,36 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             actionsCnt.keySet().removeIf(key -> !activeObjects.contains(key));
 
             activeObjects.clear();
+        }
+    }
+
+    /**
+     * Represents a cache rebalance order that takes into account both values: rebalance order itself and rebalance mode.
+     * It is assumed SYNC caches should be rebalanced in the first place.
+     */
+    private static class CacheRebalanceOrderComparator implements Comparator<CacheGroupContext>, Serializable {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public int compare(CacheGroupContext ctx1, CacheGroupContext ctx2) {
+            CacheConfiguration<?, ?> cfg1 = ctx1.config();
+            CacheConfiguration<?, ?> cfg2 = ctx2.config();
+
+            if (cfg1.getRebalanceOrder() == cfg2.getRebalanceOrder()) {
+                if (cfg1.getRebalanceMode() == cfg2.getRebalanceMode())
+                    return 0;
+
+                switch (cfg1.getRebalanceMode()) {
+                    case SYNC: return -1;
+                    case ASYNC: return cfg2.getRebalanceMode() == CacheRebalanceMode.SYNC ? 1 : -1;
+                    case NONE: return 1;
+                    default:
+                        throw new IllegalArgumentException("Unknown cache rebalance mode [mode=" + cfg1.getRebalanceMode() + ']');
+                }
+            }
+            else
+                return (cfg1.getRebalanceOrder() < cfg2.getRebalanceOrder()) ? -1 : 1;
         }
     }
 

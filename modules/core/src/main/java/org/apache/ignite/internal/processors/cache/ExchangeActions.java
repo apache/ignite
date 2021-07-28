@@ -24,12 +24,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -296,7 +297,7 @@ public class ExchangeActions {
     /**
      * @param grpDesc Group descriptor.
      */
-    void addCacheGroupToStart(CacheGroupDescriptor grpDesc, @Nullable IgniteUuid restartId) {
+    void addCacheGroupToStart(CacheGroupDescriptor grpDesc, @Nullable UUID restartId) {
         assert grpDesc != null;
 
         if (cacheGrpsToStart == null)
@@ -310,6 +311,21 @@ public class ExchangeActions {
      */
     public List<CacheGroupActionData> cacheGroupsToStart() {
         return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupActionData>emptyList();
+    }
+
+    /**
+     * @param restartId Unique restart id.
+     * @return List of cache groups which associated with given restart id.
+     */
+    public Set<Integer> cacheGroupsToRestart(UUID restartId) {
+        if (restartId == null || cacheGrpsToStart == null)
+            return Collections.emptySet();
+
+        return cacheGrpsToStart.stream()
+            .filter(g -> Objects.nonNull(g.restartId()))
+            .filter(g -> g.restartId().equals(restartId))
+            .map(g -> g.descriptor().groupId())
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -454,14 +470,14 @@ public class ExchangeActions {
         private final boolean destroy;
 
         /** Restart requester id (it'll allow to start this cache only him). */
-        private final IgniteUuid restartId;
+        private final UUID restartId;
 
         /**
          * @param desc Group descriptor
          * @param destroy Destroy flag
          * @param restartId Restart requester id (it'll allow to start this cache only him).
          */
-        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy, @Nullable IgniteUuid restartId) {
+        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy, @Nullable UUID restartId) {
             assert desc != null;
 
             this.desc = desc;
@@ -472,7 +488,7 @@ public class ExchangeActions {
         /**
          * @param desc Group descriptor
          */
-        CacheGroupActionData(CacheGroupDescriptor desc, IgniteUuid restartId) {
+        CacheGroupActionData(CacheGroupDescriptor desc, UUID restartId) {
             this(desc, false, restartId);
         }
 
@@ -494,7 +510,7 @@ public class ExchangeActions {
          * @return Restart requester id (it'll allow to start this cache only him).
          */
         public @Nullable UUID restartId() {
-            return restartId == null ? null : restartId.globalId();
+            return restartId;
         }
     }
 

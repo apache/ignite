@@ -4094,13 +4094,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 .map(CU::cacheId))
                             .collect(Collectors.toSet());
 
-                        Set<Integer> fullReloadCacheGroups = exchActions.cacheGroupsToStart().stream()
-                            .filter(g -> Objects.nonNull(g.restartId()))
-                            .filter(g -> g.restartId().equals(cctx.snapshotMgr().restoringId()))
-                            .map(g -> g.descriptor().groupId())
-                            .collect(Collectors.toSet());
-
-                        assignPartitionsStates(cacheGroupsToResetOwners, fullReloadCacheGroups);
+                        assignPartitionsStates(cacheGroupsToResetOwners,
+                            exchActions.cacheGroupsToRestart(cctx.snapshotMgr().restoringId()));
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage

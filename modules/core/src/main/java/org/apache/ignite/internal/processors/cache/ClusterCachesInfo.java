@@ -2324,7 +2324,7 @@ public class ClusterCachesInfo {
         ctx.discovery().addCacheGroup(grpDesc, grpDesc.config().getNodeFilter(), startedCacheCfg.getCacheMode());
 
         if (exchActions != null)
-            exchActions.addCacheGroupToStart(grpDesc, restartId);
+            exchActions.addCacheGroupToStart(grpDesc, restartId.globalId());
 
         return grpDesc;
     }
