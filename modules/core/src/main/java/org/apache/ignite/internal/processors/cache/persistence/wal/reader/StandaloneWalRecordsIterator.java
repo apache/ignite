@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -518,9 +517,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
-
-        for (GridComponent comp : sharedCtx.kernalContext())
-            comp.stop(true);
     }
 
     /** {@inheritDoc} */
