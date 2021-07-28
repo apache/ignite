@@ -1062,7 +1062,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         plan.init(ctx);
 
-        assertEquals(2, plan.fragments().size());
+        assertEquals(3, plan.fragments().size());
     }
 
     /**
@@ -1152,7 +1152,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        assertEquals(3, plan.fragments().size());
+        assertEquals(2, plan.fragments().size());
     }
 
     /**

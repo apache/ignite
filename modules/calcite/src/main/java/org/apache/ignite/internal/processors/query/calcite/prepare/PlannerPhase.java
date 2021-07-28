@@ -91,10 +91,15 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
-                CoreRules.FILTER_INTO_JOIN,
                 CoreRules.FILTER_MERGE,
-                CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+                CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+                CoreRules.FILTER_SET_OP_TRANSPOSE,
                 CoreRules.JOIN_CONDITION_PUSH,
+
+                FilterIntoJoinRule.Config.DEFAULT
+                    .withOperandSupplier(b0 ->
+                        b0.operand(LogicalFilter.class).oneInput(b1 ->
+                            b1.operand(LogicalJoin.class).anyInputs())).toRule(),
 
                 FilterProjectTransposeRule.Config.DEFAULT
                         .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule()
@@ -116,11 +121,6 @@ public enum PlannerPhase {
                 ProjectScanMergeRule.INDEX_SCAN_SKIP_CORRELATED,
 
                 CoreRules.JOIN_PUSH_EXPRESSIONS,
-
-                FilterIntoJoinRule.Config.DEFAULT
-                    .withOperandSupplier(b0 ->
-                        b0.operand(LogicalFilter.class).oneInput(b1 ->
-                            b1.operand(LogicalJoin.class).anyInputs())).toRule(),
 
                 ProjectFilterTransposeRule.Config.DEFAULT
                     .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),

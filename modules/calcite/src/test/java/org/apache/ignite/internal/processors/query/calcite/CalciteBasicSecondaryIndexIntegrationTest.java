@@ -376,7 +376,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyColumnLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<?")
             .withParams(3)
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -386,7 +386,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<=2")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
