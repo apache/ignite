@@ -22,7 +22,6 @@ import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
 import org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest;
 import org.apache.ignite.common.NodeSslConnectionMetricTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
-import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientSslParametersTest;
@@ -157,7 +156,6 @@ import org.junit.runners.Suite;
     // Rest task command handler test.
     TaskCommandHandlerSelfTest.class,
     ChangeStateCommandHandlerTest.class,
-    TaskEventSubjectIdSelfTest.class,
 
     // Default cache only test.
     ClientDefaultCacheSelfTest.class,

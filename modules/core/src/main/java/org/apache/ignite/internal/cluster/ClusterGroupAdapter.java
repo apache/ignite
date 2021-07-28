@@ -64,7 +64,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableCollection;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  *
@@ -208,7 +207,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new IgniteComputeImpl(ctx, this, securitySubjectId(ctx));
+            compute = new IgniteComputeImpl(ctx, this);
         }
 
         return compute;

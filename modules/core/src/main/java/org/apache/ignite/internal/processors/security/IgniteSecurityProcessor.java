@@ -387,7 +387,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
                 ctx.discovery().localNode());
 
             nodeSecCtxReadyFut.onDone(secCtx);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             nodeSecCtxReadyFut.onDone(e);
 
             throw e;
