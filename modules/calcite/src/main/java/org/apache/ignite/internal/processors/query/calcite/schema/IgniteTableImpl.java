@@ -33,6 +33,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -107,21 +108,32 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
-        RelTraitSet traitSet = cluster.traitSetOf(distribution())
-            .replace(RewindabilityTrait.REWINDABLE);
-
-        return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
+    @Override public boolean rewindable() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
-        RelTraitSet traitSet = cluster.traitSetOf(Convention.Impl.NONE)
-            .replace(distribution())
-            .replace(RewindabilityTrait.REWINDABLE)
-            .replace(getIndex(idxName).collation());
+    @Override public IgniteLogicalTableScan toRel(
+        RelOptCluster cluster,
+        RelOptTable relOptTbl,
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+    }
 
-        return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
+    /** {@inheritDoc} */
+    @Override public IgniteLogicalIndexScan toRel(
+        RelOptCluster cluster,
+        RelOptTable relOptTbl,
+        String idxName,
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */

@@ -70,13 +70,70 @@ import static org.apache.ignite.internal.processors.query.calcite.prepare.Ignite
  */
 public enum PlannerPhase {
     /** */
-    HEURISTIC_OPTIMIZATION("Heuristic optimization phase") {
+    HEP_DECORRELATE("Heuristic phase to decorrelate subqueries") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
                 CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                 CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE);
+                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    /** */
+    HEP_FILTER_PUSH_DOWN("Heuristic phase to push down filters") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return RuleSets.ofList(
+                CoreRules.FILTER_INTO_JOIN,
+                CoreRules.FILTER_MERGE,
+                CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+                CoreRules.JOIN_CONDITION_PUSH,
+
+                FilterProjectTransposeRule.Config.DEFAULT
+                        .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule()
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    /** */
+    HEP_PROJECT_PUSH_DOWN("Heuristic phase to push down and merge projects") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return RuleSets.ofList(
+                ProjectScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
+                ProjectScanMergeRule.INDEX_SCAN_SKIP_CORRELATED,
+
+                CoreRules.JOIN_PUSH_EXPRESSIONS,
+
+                FilterIntoJoinRule.Config.DEFAULT
+                    .withOperandSupplier(b0 ->
+                        b0.operand(LogicalFilter.class).oneInput(b1 ->
+                            b1.operand(LogicalJoin.class).anyInputs())).toRule(),
+
+                ProjectFilterTransposeRule.Config.DEFAULT
+                    .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
+
+                ProjectMergeRule.Config.DEFAULT
+                    .withOperandFor(LogicalProject.class).toRule(),
+
+                ProjectRemoveRule.Config.DEFAULT
+                    .withOperandSupplier(b ->
+                        b.operand(LogicalProject.class)
+                            .predicate(ProjectRemoveRule::isTrivial)
+                            .anyInputs()).toRule()
+            );
         }
 
         /** {@inheritDoc} */
@@ -165,6 +222,8 @@ public enum PlannerPhase {
                     ProjectScanMergeRule.INDEX_SCAN,
                     FilterScanMergeRule.TABLE_SCAN,
                     FilterScanMergeRule.INDEX_SCAN,
+                    FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
+                    FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
 
                     LogicalOrToUnionRule.INSTANCE,
 
@@ -189,8 +248,6 @@ public enum PlannerPhase {
                     TableModifyConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
-                    FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
-                    FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
                     TableFunctionScanConverterRule.INSTANCE
                 )
             );

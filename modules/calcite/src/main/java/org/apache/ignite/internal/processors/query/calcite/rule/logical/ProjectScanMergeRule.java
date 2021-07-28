@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -44,49 +45,19 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
     extends RelRule<ProjectScanMergeRule.Config> {
     /** Instance. */
     public static final ProjectScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new ProjectScanMergeRule<IgniteLogicalIndexScan>(Config.INDEX_SCAN) {
-            /** {@inheritDoc} */
-            @Override protected IgniteLogicalIndexScan createNode(
-                RelOptCluster cluster,
-                IgniteLogicalIndexScan scan,
-                RelTraitSet traits,
-                List<RexNode> projections,
-                RexNode cond,
-                ImmutableBitSet requiredColumns
-            ) {
-                return IgniteLogicalIndexScan.create(
-                    cluster,
-                    traits,
-                    scan.getTable(),
-                    scan.indexName(),
-                    projections,
-                    cond, requiredColumns
-                );
-            }
-        };
+        new ProjectIndexScanMergeRule(Config.INDEX_SCAN);
+
+    /** Instance. */
+    public static final ProjectScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN_SKIP_CORRELATED =
+            new ProjectIndexScanMergeRule(Config.INDEX_SCAN_SKIP_CORRELATED);
 
     /** Instance. */
     public static final ProjectScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new ProjectScanMergeRule<IgniteLogicalTableScan>(Config.TABLE_SCAN) {
-            /** {@inheritDoc} */
-            @Override protected IgniteLogicalTableScan createNode(
-                RelOptCluster cluster,
-                IgniteLogicalTableScan scan,
-                RelTraitSet traits,
-                List<RexNode> projections,
-                RexNode cond,
-                ImmutableBitSet requiredColumns
-            ) {
-                return IgniteLogicalTableScan.create(
-                    cluster,
-                    traits,
-                    scan.getTable(),
-                    projections,
-                    cond,
-                    requiredColumns
-                );
-            }
-        };
+        new ProjectTableScanMergeRule(Config.TABLE_SCAN);
+
+    /** Instance. */
+    public static final ProjectScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN_SKIP_CORRELATED =
+            new ProjectTableScanMergeRule(Config.TABLE_SCAN_SKIP_CORRELATED);
 
     /** */
     protected abstract T createNode(
@@ -170,6 +141,71 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         }.apply(cond);
 
         call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColumns));
+
+        if (!RexUtils.hasCorrelation(relProject.getProjects()))
+            cluster.getPlanner().prune(relProject);
+    }
+
+    /** */
+    private static class ProjectTableScanMergeRule extends ProjectScanMergeRule<IgniteLogicalTableScan> {
+        /**
+         * Constructor.
+         *
+         * @param config Project scan merge rule config,
+         */
+        private ProjectTableScanMergeRule(ProjectScanMergeRule.Config config) {
+            super(config);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteLogicalTableScan createNode(
+            RelOptCluster cluster,
+            IgniteLogicalTableScan scan,
+            RelTraitSet traits,
+            List<RexNode> projections,
+            RexNode cond,
+            ImmutableBitSet requiredColumns
+        ) {
+            return IgniteLogicalTableScan.create(
+                cluster,
+                traits,
+                scan.getTable(),
+                projections,
+                cond,
+                requiredColumns
+            );
+        }
+    }
+
+    /** */
+    private static class ProjectIndexScanMergeRule extends ProjectScanMergeRule<IgniteLogicalIndexScan> {
+        /**
+         * Constructor.
+         *
+         * @param config Project scan merge rule config,
+         */
+        private ProjectIndexScanMergeRule(ProjectScanMergeRule.Config config) {
+            super(config);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteLogicalIndexScan createNode(
+            RelOptCluster cluster,
+            IgniteLogicalIndexScan scan,
+            RelTraitSet traits,
+            List<RexNode> projections,
+            RexNode cond,
+            ImmutableBitSet requiredColumns
+        ) {
+            return IgniteLogicalIndexScan.create(
+                cluster,
+                traits,
+                scan.getTable(),
+                scan.indexName(),
+                projections,
+                cond, requiredColumns
+            );
+        }
     }
 
     /** */
@@ -179,16 +215,27 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         Config DEFAULT = EMPTY.withRelBuilderFactory(RelFactories.LOGICAL_BUILDER).as(Config.class);
 
         /** */
-        Config TABLE_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalTableScan.class, "ProjectTableScanMergeRule");
+        Config TABLE_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalTableScan.class, "ProjectTableScanMergeRule", false);
 
         /** */
-        Config INDEX_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalIndexScan.class, "ProjectIndexScanMergeRule");
+        Config TABLE_SCAN_SKIP_CORRELATED = DEFAULT.withScanRuleConfig(IgniteLogicalTableScan.class, "ProjectTableScanMergeSkipCorrelatedRule", true);
 
         /** */
-        default Config withScanRuleConfig(Class<? extends ProjectableFilterableTableScan> scanCls, String desc) {
+        Config INDEX_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalIndexScan.class, "ProjectIndexScanMergeRule", false);
+
+        /** */
+        Config INDEX_SCAN_SKIP_CORRELATED = DEFAULT.withScanRuleConfig(IgniteLogicalIndexScan.class, "ProjectIndexScanMergeSkipCorrelatedRule", true);
+
+        /** */
+        default Config withScanRuleConfig(
+            Class<? extends ProjectableFilterableTableScan> scanCls,
+            String desc,
+            boolean skipCorrelated
+        ) {
             return withDescription(desc)
-                .withOperandSupplier(b ->
-                    b.operand(LogicalProject.class).oneInput(b1 -> b1.operand(scanCls).noInputs()))
+                .withOperandSupplier(b -> b.operand(LogicalProject.class)
+                    .predicate(p -> !skipCorrelated || !RexUtils.hasCorrelation(p.getProjects()))
+                    .oneInput(b1 -> b1.operand(scanCls).noInputs()))
                 .as(Config.class);
         }
     }

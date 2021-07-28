@@ -34,6 +34,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsOneProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
@@ -104,7 +105,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
     @Test
     public void testProjects() {
         checkQuery("SELECT NAME FROM products d;")
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .matches(containsOneProject("PUBLIC", "PRODUCTS", 7))
             .returns("noname1")
             .returns("noname2")
@@ -113,7 +114,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .check();
 
         checkQuery("SELECT SUBCAT_ID, NAME FROM products d;")
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .matches(containsOneProject("PUBLIC", "PRODUCTS", 6, 7))
             .returns(11, "noname1")
             .returns(11, "noname2")
@@ -122,7 +123,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .check();
 
         checkQuery("SELECT NAME FROM products d WHERE CAT_ID > 1;")
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .matches(containsProject("PUBLIC", "PRODUCTS", 4, 7))
             .returns("noname2")
             .returns("noname3")

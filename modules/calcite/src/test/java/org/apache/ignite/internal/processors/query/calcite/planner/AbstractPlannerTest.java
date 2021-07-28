@@ -268,12 +268,12 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        PlanningContext ctx = plannerCtx(sql, publicSchema, disabledRules);
+        return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+    }
 
+    protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
-
-            planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
             String qry = ctx.query();
 
@@ -684,22 +684,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
-            RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
-
-            return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
+        @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, @Nullable List<RexNode> proj, @Nullable RexNode cond, @Nullable ImmutableBitSet requiredColumns) {
+            return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
-            RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
-                .replaceIf(RelCollationTraitDef.INSTANCE, getIndex(idxName)::collation);
-
-            return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
+        @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName, @Nullable List<RexNode> proj, @Nullable RexNode cond, @Nullable ImmutableBitSet requiredColumns) {
+            return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */
@@ -794,6 +785,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public TableDescriptor descriptor() {
             return desc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean rewindable() {
+            return rewindable == RewindabilityTrait.REWINDABLE;
         }
 
         /** {@inheritDoc} */

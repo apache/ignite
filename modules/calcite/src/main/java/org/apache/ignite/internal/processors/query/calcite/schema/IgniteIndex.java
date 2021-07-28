@@ -60,6 +60,11 @@ public class IgniteIndex {
     }
 
     /** */
+    public boolean rewindable() {
+        return true;
+    }
+
+    /** */
     public String name() {
         return idxName;
     }
