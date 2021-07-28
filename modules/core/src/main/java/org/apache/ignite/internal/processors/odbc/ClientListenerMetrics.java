@@ -33,20 +33,14 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
  * Client listener metrics.
  */
 public class ClientListenerMetrics {
-    /** Connections metric label. */
-    public static final String METRIC_CONNECTIONS = "connections";
-
     /** Handshakes rejected by timeout metric label. */
-    public static final String METRIC_REJECTED_TIMEOUT =
-            MetricUtils.metricName(METRIC_CONNECTIONS, "rejectedByTimeout");
+    public static final String METRIC_REJECTED_TIMEOUT = "RejectedConnectionsByTimeout";
 
     /** Handshakes rejected by authentication metric label. */
-    public static final String METRIC_REJECTED_AUTHENTICATION =
-            MetricUtils.metricName(METRIC_CONNECTIONS, "rejectedAuthentication");
+    public static final String METRIC_REJECTED_AUTHENTICATION = "RejectedConnectionsDueAuthentication";
 
     /** Total number of rejected handshakes. */
-    public static final String METRIC_REJECTED_TOTAL =
-            MetricUtils.metricName(METRIC_CONNECTIONS, "rejectedTotal");
+    public static final String METRIC_REJECTED_TOTAL = "RejectedConnectionsTotal";
 
     /** Rejected by timeout. */
     private final IntMetricImpl rejectedTimeout;
@@ -70,25 +64,24 @@ public class ClientListenerMetrics {
         MetricRegistry mreg = ctx.metric().registry(CLIENT_METRICS);
 
         rejectedTimeout = mreg.intMetric(METRIC_REJECTED_TIMEOUT,
-                "Number of sessions that were not established because of handshake timeout.");
+                "TCP sessions count that were rejected due to handshake timeout.");
 
         rejectedAuth = mreg.intMetric(METRIC_REJECTED_AUTHENTICATION,
-                "Number of sessions that were not established because of failed authentication.");
+                "TCP sessions count that were rejected due to failed authentication.");
 
-        rejectedTotal = mreg.intMetric(METRIC_REJECTED_TOTAL, "Total number of rejected connections.");
+        rejectedTotal = mreg.intMetric(METRIC_REJECTED_TOTAL, "Total number of rejected TCP connections.");
 
         final byte[] supportedClients = { ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT };
         accepted = new HashMap<>(supportedClients.length);
         active = new HashMap<>(supportedClients.length);
 
         for (byte clientType : supportedClients) {
-            String labelAccepted = MetricUtils.metricName(METRIC_CONNECTIONS,
-                    clientTypeLabel(clientType), "accepted");
+            String clientLabel = clientTypeLabel(clientType);
 
-            String labelActive = MetricUtils.metricName(METRIC_CONNECTIONS,
-                    clientTypeLabel(clientType), "active");
-
+            String labelAccepted = MetricUtils.metricName(clientLabel, "AcceptedConnections");
             accepted.put(clientType, mreg.intMetric(labelAccepted, "Number of successfully established sessions."));
+
+            String labelActive = MetricUtils.metricName(clientLabel, "ActiveConnections");
             active.put(clientType, mreg.intMetric(labelActive, "Number of active sessions."));
         }
     }

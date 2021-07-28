@@ -73,9 +73,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
     public static final String CLI_CONN_VIEW_DESC = "Client connections";
 
-    /** The name of the metric registry associated with the thin client connector. */
-    public static final String CLIENT_CONNECTOR_TCP_METRIC_REGISTRY_NAME = metricName(CLIENT_METRICS, "tcp");
-
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -178,7 +175,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
-                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_TCP_METRIC_REGISTRY_NAME))
+                            .metricRegistry(ctx.metric().registry(CLIENT_METRICS))
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -336,7 +333,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_TCP_METRIC_REGISTRY_NAME));
+                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_METRICS));
 
             sslFilter.directMode(true);
 
