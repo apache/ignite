@@ -16,13 +16,12 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_METRICS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;

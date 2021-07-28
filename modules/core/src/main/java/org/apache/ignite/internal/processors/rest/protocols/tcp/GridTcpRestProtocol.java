@@ -53,8 +53,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-
 /**
  * TCP binary protocol implementation.
  */
