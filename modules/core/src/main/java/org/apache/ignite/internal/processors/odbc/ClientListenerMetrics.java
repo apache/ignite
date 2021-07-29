@@ -82,10 +82,11 @@ public class ClientListenerMetrics {
             String clientLabel = clientTypeLabel(clientType);
 
             String labelAccepted = MetricUtils.metricName(clientLabel, METRIC_ACEPTED);
-            accepted[clientType] = mreg.intMetric(labelAccepted, "Number of successfully established sessions.");
+            accepted[clientType] = mreg.intMetric(labelAccepted,
+                    "Number of successfully established sessions for the client type.");
 
             String labelActive = MetricUtils.metricName(clientLabel, METRIC_ACTIVE);
-            active[clientType] = mreg.intMetric(labelActive, "Number of active sessions.");
+            active[clientType] = mreg.intMetric(labelActive, "Number of active sessions for the client type.");
         }
     }
 
