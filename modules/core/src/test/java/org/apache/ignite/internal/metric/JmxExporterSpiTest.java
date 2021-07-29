@@ -950,7 +950,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSysStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite.context().pools().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
     }
@@ -958,7 +958,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStreamerStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
     }

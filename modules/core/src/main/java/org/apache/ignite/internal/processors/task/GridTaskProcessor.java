@@ -826,9 +826,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         try {
                             // Start task execution in another thread.
                             if (sys)
-                                ctx.getSystemExecutorService().execute(taskWorker);
+                                ctx.pools().getSystemExecutorService().execute(taskWorker);
                             else
-                                ctx.getExecutorService().execute(taskWorker);
+                                ctx.pools().getExecutorService().execute(taskWorker);
                         }
                         catch (RejectedExecutionException e) {
                             tasks.remove(sesId);

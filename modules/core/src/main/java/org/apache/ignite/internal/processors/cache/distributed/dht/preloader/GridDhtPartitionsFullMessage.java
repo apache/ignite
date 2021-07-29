@@ -497,7 +497,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             Collection<byte[]> marshalled = U.doInParallel(
                 parallelismLvl,
-                ctx.kernalContext().getSystemExecutorService(),
+                ctx.kernalContext().pools().getSystemExecutorService(),
                 objectsToMarshall,
                 new IgniteThrowableFunction<Object, byte[]>() {
                     @Override public byte[] apply(Object payload) throws IgniteCheckedException {
@@ -577,7 +577,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         Collection<Object> unmarshalled = U.doInParallel(
             parallelismLvl,
-            ctx.kernalContext().getSystemExecutorService(),
+            ctx.kernalContext().pools().getSystemExecutorService(),
             objectsToUnmarshall,
             new IgniteThrowableFunction<byte[], Object>() {
                 @Override public Object apply(byte[] binary) throws IgniteCheckedException {
