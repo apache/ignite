@@ -145,7 +145,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public static final String CLUSTER_METRICS = "cluster";
 
     /** Client metrics prefix. */
-    public static final String CLIENT_METRICS = metricName("client", "connector");
+    public static final String CLIENT_CONNECTOR_METRICS = metricName("client", "connector");
 
     /** Transaction metrics prefix. */
     public static final String TX_METRICS = "tx";

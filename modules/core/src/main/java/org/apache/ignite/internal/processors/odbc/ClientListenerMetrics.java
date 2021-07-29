@@ -39,6 +39,12 @@ public class ClientListenerMetrics {
     /** Total number of rejected handshakes. */
     public static final String METRIC_REJECTED_TOTAL = "RejectedConnectionsTotal";
 
+    /** Number of successfully established sessions. */
+    public static final String METRIC_ACEPTED = "AcceptedConnections";
+
+    /** Number of active sessions. */
+    public static final String METRIC_ACTIVE = "ActiveConnections";
+
     /** Rejected by timeout. */
     private final IntMetricImpl rejectedTimeout;
 
@@ -75,11 +81,11 @@ public class ClientListenerMetrics {
         for (byte clientType : supportedClients) {
             String clientLabel = clientTypeLabel(clientType);
 
-            String labelAccepted = MetricUtils.metricName(clientLabel, "AcceptedConnections");
-            accepted.put(clientType, mreg.intMetric(labelAccepted, "Number of successfully established sessions."));
+            String labelAccepted = MetricUtils.metricName(clientLabel, METRIC_ACEPTED);
+            accepted[clientType] = mreg.intMetric(labelAccepted, "Number of successfully established sessions.");
 
-            String labelActive = MetricUtils.metricName(clientLabel, "ActiveConnections");
-            active.put(clientType, mreg.intMetric(labelActive, "Number of active sessions."));
+            String labelActive = MetricUtils.metricName(clientLabel, METRIC_ACTIVE);
+            active[clientType] = mreg.intMetric(labelActive, "Number of active sessions.");
         }
     }
 

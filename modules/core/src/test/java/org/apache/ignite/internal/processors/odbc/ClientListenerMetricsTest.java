@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -39,6 +40,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_ACEPTED;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_ACTIVE;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_AUTHENTICATION;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TIMEOUT;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TOTAL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
@@ -191,11 +197,11 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      */
     private void checkRejectMetrics(MetricRegistry mreg, int rejectedTimeout, int rejectedAuth, int rejectedTotal)
         throws IgniteInterruptedCheckedException {
-        waitForMetricValue(mreg, "rejectedTotal", rejectedTotal, 10_000);
-        assertEquals(rejectedTimeout, mreg.<IntMetric>findMetric("rejectedByTimeout").value());
-        assertEquals(rejectedAuth, mreg.<IntMetric>findMetric("rejectedAuthentication").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("thin.accepted").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("thin.active").value());
+        waitForMetricValue(mreg, METRIC_REJECTED_TOTAL, rejectedTotal, 10_000);
+        assertEquals(rejectedTimeout, mreg.<IntMetric>findMetric(METRIC_REJECTED_TIMEOUT).value());
+        assertEquals(rejectedAuth, mreg.<IntMetric>findMetric(METRIC_REJECTED_AUTHENTICATION).value());
+        assertEquals(0, mreg.<IntMetric>findMetric(MetricUtils.metricName("thin", METRIC_ACEPTED)).value());
+        assertEquals(0, mreg.<IntMetric>findMetric(MetricUtils.metricName("thin", METRIC_ACTIVE)).value());
     }
 
     /**
@@ -206,10 +212,10 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      */
     private void checkConnectionsMetrics(MetricRegistry mreg, int accepted, int active)
         throws IgniteInterruptedCheckedException {
-        waitForMetricValue(mreg, "thin.active", active, 10_000);
-        assertEquals(accepted, mreg.<IntMetric>findMetric("thin.accepted").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("rejectedByTimeout").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("rejectedAuthentication").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("rejectedTotal").value());
+        waitForMetricValue(mreg, MetricUtils.metricName("thin", METRIC_ACTIVE), active, 10_000);
+        assertEquals(accepted, mreg.<IntMetric>findMetric(MetricUtils.metricName("thin", METRIC_ACEPTED)).value());
+        assertEquals(0, mreg.<IntMetric>findMetric(METRIC_REJECTED_TIMEOUT).value());
+        assertEquals(0, mreg.<IntMetric>findMetric(METRIC_REJECTED_AUTHENTICATION).value());
+        assertEquals(0, mreg.<IntMetric>findMetric(METRIC_REJECTED_TOTAL).value());
     }
 }
