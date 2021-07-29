@@ -146,9 +146,17 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     /**
      * Returns column descriptor for given field name.
      *
-     * @return Column descriptor
+     * @param fieldName Field name.
+     * @return Column descriptor.
      */
     ColumnDescriptor columnDescriptor(String fieldName);
+
+    /**
+     * Returns column descriptor for the given field idx.
+     * @param fieldIdx Field index.
+     * @return Column descriptor.
+     */
+    ColumnDescriptor columnDescriptor(int fieldIdx);
 
     /**
      * @return Type descriptor.

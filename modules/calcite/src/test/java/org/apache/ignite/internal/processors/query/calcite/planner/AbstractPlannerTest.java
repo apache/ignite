@@ -871,6 +871,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public ColumnDescriptor columnDescriptor(int fieldIdx) {
+            RelDataTypeField field = rowType.getFieldList().get(fieldIdx);
+
+            return new TestColumnDescriptor(field.getIndex(), field.getName());
+        }
+
+        /** {@inheritDoc} */
         @Override public GridQueryTypeDescriptor typeDescription() {
             throw new AssertionError();
         }

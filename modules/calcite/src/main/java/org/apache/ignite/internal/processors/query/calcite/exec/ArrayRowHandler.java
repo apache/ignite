@@ -33,7 +33,7 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
 
     /** {@inheritDoc} */
     @Override public Object get(int field, Object[] row) {
-        return row[field];
+        return (row == null) ? null : row[field];
     }
 
     /** {@inheritDoc} */

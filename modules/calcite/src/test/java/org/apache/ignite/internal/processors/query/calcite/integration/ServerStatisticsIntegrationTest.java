@@ -51,23 +51,21 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     /** Server instance. */
     private IgniteEx srv;
 
+    /** All types table row count. */
+    private static final int ROW_COUNT = 100;
+
     /** All types table nullable fields. */
-    private static final String[] NULLABLE_FIELDS = {//"string_field",
-        //"byte_arr_field",
+    private static final String[] NULLABLE_FIELDS = {
         "boolean_obj_field",
         "short_obj_field",
         "integer_field",
         "long_obj_field",
         "float_obj_field",
         "double_obj_field",
-        //"date_field",
-        //"time_field",
-        //"timestamp_field"
     };
 
     /** All types table non nullable fields. */
     String[] NON_NULLABLE_FIELDS = {
-        //"boolean_field", // TODO: 25 row?
         "short_field",
         "int_field",
         "long_field",
@@ -93,9 +91,10 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        createAndPopulateAllTypesTable(0, 100);
+        createAndPopulateAllTypesTable(0, ROW_COUNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
     }
@@ -148,15 +147,19 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         String sql = "select * from all_types ";
 
         for (String nullableField : NULLABLE_FIELDS) {
-            assertQuerySrv(sql + "where " + nullableField + " is null").matches(QueryChecker.containsRowCount(25.)).check();
+            assertQuerySrv(sql + "where " + nullableField + " is null")
+                .matches(QueryChecker.containsRowCount(25.)).check();
 
-            assertQuerySrv(sql + "where " + nullableField + " is not null").matches(QueryChecker.containsRowCount(75.)).check();
+            assertQuerySrv(sql + "where " + nullableField + " is not null")
+                .matches(QueryChecker.containsRowCount(75.)).check();
         }
 
         for (String nullableField : NULLABLE_FIELDS) {
-            assertQuerySrv(sql + "where " + nullableField + " is null").matches(QueryChecker.containsRowCount(25.)).check();
+            assertQuerySrv(sql + "where " + nullableField + " is null")
+                .matches(QueryChecker.containsRowCount(25.)).check();
 
-            assertQuerySrv(sql + "where " + nullableField + " is not null").matches(QueryChecker.containsRowCount(75.)).check();
+            assertQuerySrv(sql + "where " + nullableField + " is not null")
+                .matches(QueryChecker.containsRowCount(75.)).check();
         }
     }
 
@@ -174,12 +177,11 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
 
         for (String numericField : NUMERIC_FIELDS) {
-            double allRowCnt = (nonNullableFields.contains(numericField)) ? 100. : 75.;
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
             String fieldSql = String.format("select * from all_types where %s > -100 and %s > 0", numericField, numericField);
 
             assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
-
 
             fieldSql = String.format("select * from all_types where %s < 1000 and %s < 101", numericField, numericField);
 
@@ -206,13 +208,58 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
 
         for (String numericField : NUMERIC_FIELDS) {
-            double allRowCnt = (nonNullableFields.contains(numericField)) ? 100. : 75.;
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
             String fieldSql = String.format("select * from all_types where %s is not null and %s > 0", numericField, numericField);
 
             assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+        }
+    }
 
+    /**
+     * Check condition with projections:
+     *
+     * 1) Condition on the one of fields in select list.
+     * 2) Confition on the field not from select list.
+     */
+    @Test
+    public void testProjections() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
 
+        collectStatistics(srv, key);
+
+        String sql = "select %s, %s from all_types where %s < " + ROW_COUNT;
+
+        String sql2 = "select %s from all_types where %s >= " + (-ROW_COUNT);
+
+        Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
+
+        for (int firstFieldIdx = 0; firstFieldIdx < NUMERIC_FIELDS.length - 1; firstFieldIdx++) {
+            String firstField = NUMERIC_FIELDS[firstFieldIdx];
+            double firstAllRowCnt = (nonNullableFields.contains(firstField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
+
+            for (int secFieldIdx = firstFieldIdx + 1; secFieldIdx < NUMERIC_FIELDS.length; secFieldIdx++) {
+                String secField = NUMERIC_FIELDS[secFieldIdx];
+
+                double secAllRowCnt = (nonNullableFields.contains(secField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
+
+                String qry = String.format(sql, firstField, secField, secField);
+
+                assertQuerySrv(qry).matches(QueryChecker.containsRowCount(secAllRowCnt)).check();
+
+                qry = String.format(sql, firstField, secField, firstField);
+
+                assertQuerySrv(qry).matches(QueryChecker.containsRowCount(firstAllRowCnt)).check();
+
+                qry = String.format(sql2, firstField, secField);
+
+                assertQuerySrv(qry).matches(QueryChecker.containsRowCount(secAllRowCnt)).check();
+
+                qry = String.format(sql2, secField, firstField);
+
+                assertQuerySrv(qry).matches(QueryChecker.containsRowCount(firstAllRowCnt)).check();
+            }
         }
     }
 
@@ -230,8 +277,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
         Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
         for (String numericField : NUMERIC_FIELDS) {
-            double allRowCnt = (nonNullableFields.contains(numericField)) ? 100. : 75.;
-            double firstRowCnt = (nonNullableFields.contains(numericField)) ? 10. : 7.;
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
             String fieldSql = sql + "where " + numericField;
 
@@ -424,14 +470,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         @QuerySqlField
         public Boolean boolean_obj_field;
 
-//        /** */
-//        @QuerySqlField
-//        public char char_field;
-//
-//        /** */
-//        @QuerySqlField
-//        public Character character_field;
-
         /** */
         @QuerySqlField
         public short short_field;
@@ -489,8 +527,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             byte_arr_field = (null_val) ? null : BigInteger.valueOf(i).toByteArray();
             boolean_field = (i & 1) == 0;
             boolean_obj_field = (null_val) ? null : (i & 1) == 0;
-            // char_field = (char)((i % 20) + (int)('a'));
-            // character_field = (null_val) ? null : char_field;
             short_field = (short)i;
             short_obj_field = (null_val) ? null : short_field;
             int_field = i;
@@ -514,8 +550,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             this.byte_arr_field = byte_arr_field;
             this.boolean_field = boolean_field;
             this.boolean_obj_field = boolean_obj_field;
-//            this.char_field = char_field;
-//            this.character_field = character_field;
             this.short_field = short_field;
             this.short_obj_field = short_obj_field;
             this.int_field = int_field;
@@ -537,8 +571,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
                 ", byte_arr_field=" + byte_arr_field +
                 ", boolean_field=" + boolean_field +
                 ", boolean_obj_field=" + boolean_obj_field +
-//                ", char_field=" + char_field +
-//                ", character_field=" + character_field +
                 ", short_field=" + short_field +
                 ", short_obj_field=" + short_obj_field +
                 ", int_field=" + int_field +

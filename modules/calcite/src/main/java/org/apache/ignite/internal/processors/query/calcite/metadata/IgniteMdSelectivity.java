@@ -24,12 +24,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -281,22 +283,20 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         if (tbl == null)
             return super.getSelectivity(rel, mq, predicate);
 
-        IgniteTypeFactory typeFactory = Commons.typeFactory(rel);
-
         double sel = 1.0;
 
         Map<ColumnStatistics, Boolean> addNotNull = new HashMap<>();
 
         for (RexNode pred : RelOptUtil.conjunctions(predicate)) {
-            ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+            ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
 
             if (pred.getKind() == SqlKind.IS_NULL)
-                sel *= estimateIsNullSelectivity(typeFactory, tbl, pred);
+                sel *= estimateIsNullSelectivity(rel, mq, tbl, pred);
             else if (pred.getKind() == SqlKind.IS_NOT_NULL) {
                 if (colStat != null)
                     addNotNull.put(colStat, Boolean.FALSE);
 
-                sel *= estimateIsNotNullSelectivity(typeFactory, tbl, pred);
+                sel *= estimateIsNotNullSelectivity(rel, mq, tbl, pred);
             } else if (pred.isA(SqlKind.EQUALS)) {
                 if (colStat != null) {
                     Boolean colNotNull = addNotNull.get(colStat);
@@ -304,7 +304,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                     addNotNull.put(colStat, (colNotNull == null) || colNotNull);
                 }
 
-                sel *= estimateEqualsSelectivity(typeFactory, tbl, pred);
+                sel *= estimateEqualsSelectivity(rel, mq, tbl, pred);
             } else if (pred.isA(SqlKind.COMPARISON)) {
                 if (colStat != null) {
                     Boolean colNotNull = addNotNull.get(colStat);
@@ -312,7 +312,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                     addNotNull.put(colStat, (colNotNull == null) || colNotNull);
                 }
 
-                sel *= estimateComparisonSelectivity(typeFactory, tbl, pred);
+                sel *= estimateComparisonSelectivity(rel, mq, tbl, pred);
             } else
                 sel *= .25;
         }
@@ -328,13 +328,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Compute selectivity for "is null" condition.
      *
-     * @param typeFactory IgniteTypeFactory.
+     * @param rel RelNode.
+     * @param mq RelMetadataQuery.
      * @param tbl IgniteTable.
      * @param pred RexNode.
      * @return Selectivity estimation.
      */
-    private double estimateIsNullSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
-        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+    private double estimateIsNullSelectivity(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
 
         if (colStat == null)
             return guessSelectivity(pred);
@@ -345,13 +346,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Compute selectivity for "is not null" condition.
      *
-     * @param typeFactory IgniteTypeFactory.
+     * @param rel RelNode.
+     * @param mq  RelMetadataQuery.
      * @param tbl IgniteTable.
      * @param pred RexNode.
      * @return Selectivity estimation.
      */
-    private double estimateIsNotNullSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
-        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+    private double estimateIsNotNullSelectivity(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
 
         if (colStat == null)
             return guessSelectivity(pred);
@@ -362,14 +364,19 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Estimate selectivity for equals predicate.
      *
-     * @param typeFactory IgniteTypeFactory.
+     * @param rel RElNode.
+     * @param mq RelMetadataQuery.
      * @param tbl IgniteTable.
      * @param pred RexNode with predicate.
      *
      * @return Selectivity.
      */
-    private double estimateEqualsSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
-        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+    private double estimateEqualsSelectivity(
+        RelNode rel,
+        RelMetadataQuery mq,
+        IgniteTable tbl,
+        RexNode pred) {
+        ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
 
         if (colStat == null)
             return guessSelectivity(pred);
@@ -390,13 +397,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Estimate selectivity for comparison predicate.
      *
-     * @param typeFactory IgniteTypeFactory.
+     * @param rel RelNode.
+     * @param mq RelMetadataQuery.
      * @param tbl IgniteTable.
      * @param pred RexNode.
      * @return Selectivity.
      */
-    private double estimateComparisonSelectivity(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
-        ColumnStatistics colStat = getColStat(typeFactory, tbl, pred);
+    private double estimateComparisonSelectivity(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
 
         if (colStat == null)
             return guessSelectivity(pred);
@@ -407,20 +415,35 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Get column statistics.
      *
-     * @param typeFactory IgniteTypeFactory.
+     * @param rel RelNode.
+     * @param mq RelMetadataQuery.
      * @param tbl IgniteTable to get statistics from.
      * @param pred Predicate to get statistics by related column.
      * @return ColumnStatistics or {@code null}.
      */
-    private ColumnStatistics getColStat(IgniteTypeFactory typeFactory, IgniteTable tbl, RexNode pred) {
+    private ColumnStatistics getColStat(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
         Statistic stat = tbl.getStatistic();
 
         if (stat == null)
             return null;
 
+        RexNode operand = getOperand(pred, RexLocalRef.class);
+
+        if (operand == null)
+            return null;
+
+        Set<RelColumnOrigin> origins = mq.getColumnOrigins(rel, ((RexSlot)operand).getIndex());
+
+        if (origins == null || origins.isEmpty())
+            return null;
+
+        IgniteTypeFactory typeFactory = Commons.typeFactory(rel);
+
         List<String> columns = tbl.getRowType(typeFactory).getFieldNames();
 
-        String colName = getColName(pred, columns);
+        String colName = columns.get(origins.iterator().next().getOriginColumnOrdinal());
+
+        //        String colName = getColName(pred, columns);
 
         if (QueryUtils.KEY_FIELD_NAME.equals(colName))
             colName = tbl.descriptor().typeDescription().keyFieldName();
