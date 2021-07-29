@@ -517,7 +517,6 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
             return ComputeJobResultPolicy.WAIT;
         }
 
-
         /** {@inheritDoc} */
         @Override public @Nullable Void reduce(List<ComputeJobResult> results) throws IgniteException {
             assertEquals(allGrids().size(), results.size());
