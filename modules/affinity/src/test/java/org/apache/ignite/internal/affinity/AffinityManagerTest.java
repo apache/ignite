@@ -45,6 +45,7 @@ import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -76,10 +77,12 @@ public class AffinityManagerTest {
 
     /** Before all test scenarios. */
     @BeforeEach
-    private void before() {
+    private void setUp() {
         try {
             cfrMgr = new ConfigurationManager(rootConfigurationKeys(), Arrays.asList(
                 new TestConfigurationStorage(ConfigurationType.DISTRIBUTED)));
+
+            cfrMgr.start();
 
             cfrMgr.bootstrap("{\n" +
                 "   \"table\":{\n" +
@@ -121,6 +124,12 @@ public class AffinityManagerTest {
             fail("Failed to configure manager [err=" + e.getMessage() + ']');
         }
 
+    }
+
+    /** Stop configuration manager. */
+    @AfterEach
+    private void tearDown() {
+        cfrMgr.stop();
     }
 
     /**
@@ -189,21 +198,28 @@ public class AffinityManagerTest {
 
         AffinityManager affinityManager = new AffinityManager(cfrMgr, mm, bm);
 
-        CompletableFuture<Boolean> assignmentCalculated = new CompletableFuture<>();
+        try {
+            affinityManager.start();
 
-        affinityManager.listen(AffinityEvent.CALCULATED, new EventListener<AffinityEventParameters>() {
-            @Override public boolean notify(@NotNull AffinityEventParameters parameters, @Nullable Throwable e) {
-                return assignmentCalculated.complete(e == null);
-            }
+            CompletableFuture<Boolean> assignmentCalculated = new CompletableFuture<>();
 
-            @Override public void remove(@NotNull Throwable e) {
-                assignmentCalculated.completeExceptionally(e);
-            }
-        });
+            affinityManager.listen(AffinityEvent.CALCULATED, new EventListener<AffinityEventParameters>() {
+                @Override public boolean notify(@NotNull AffinityEventParameters parameters, @Nullable Throwable e) {
+                    return assignmentCalculated.complete(e == null);
+                }
 
-        affinityManager.calculateAssignments(tblId, STATIC_TABLE_NAME);
+                @Override public void remove(@NotNull Throwable e) {
+                    assignmentCalculated.completeExceptionally(e);
+                }
+            });
 
-        assertTrue(assignmentCalculated.join());
+            affinityManager.calculateAssignments(tblId, STATIC_TABLE_NAME);
+
+            assertTrue(assignmentCalculated.join());
+        }
+        finally {
+            affinityManager.stop();
+        }
     }
 
     /**
@@ -252,6 +268,8 @@ public class AffinityManagerTest {
 
         AffinityManager affinityManager = new AffinityManager(cfrMgr, mm, bm);
 
+        affinityManager.start();
+
         CompletableFuture<Boolean> assignmentRemoved = new CompletableFuture<>();
 
         affinityManager.listen(AffinityEvent.REMOVED, new EventListener<AffinityEventParameters>() {
@@ -267,5 +285,7 @@ public class AffinityManagerTest {
         affinityManager.removeAssignment(tblId);
 
         assertTrue(assignmentRemoved.join());
+
+        affinityManager.stop();
     }
 }

@@ -102,7 +102,10 @@ public class JRaftServerImpl implements RaftServer {
 
         if (opts.getServerName() == null)
             opts.setServerName(service.localConfiguration().getName());
+    }
 
+    /** {@inheritDoc} */
+    @Override public void start() {
         if (opts.getCommonExecutor() == null)
             opts.setCommonExecutor(JRaftUtils.createCommonExecutor(opts));
 
@@ -124,6 +127,14 @@ public class JRaftServerImpl implements RaftServer {
         );
 
         rpcServer.init(null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        for (RaftGroupService groupService : groups.values())
+            groupService.shutdown();
+
+        rpcServer.shutdown();
     }
 
     /** {@inheritDoc} */
@@ -212,14 +223,6 @@ public class JRaftServerImpl implements RaftServer {
      */
     public RaftGroupService raftGroupService(String groupId) {
         return groups.get(groupId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void shutdown() throws Exception {
-        for (RaftGroupService groupService : groups.values())
-            groupService.shutdown();
-
-        rpcServer.shutdown();
     }
 
     /**

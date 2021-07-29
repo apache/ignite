@@ -42,6 +42,22 @@ public class InMemoryVaultService implements VaultService {
     private final Object mux = new Object();
 
     /** {@inheritDoc} */
+    @Override public void start() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO: IGNITE-15161 Implement component's stop.
+        close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override @NotNull public CompletableFuture<VaultEntry> get(@NotNull ByteArray key) {
         synchronized (mux) {
             return CompletableFuture.completedFuture(new VaultEntry(key, storage.get(key)));
@@ -111,9 +127,5 @@ public class InMemoryVaultService implements VaultService {
 
             return CompletableFuture.completedFuture(null);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
     }
 }

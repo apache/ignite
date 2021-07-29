@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.raft.server;
 
 import java.util.List;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * The server listens for client commands, submits them to a replicated log and calls
  * {@link RaftGroupListener} {@code onRead} and {@code onWrite} methods after the command was committed to the log.
  */
-public interface RaftServer {
+public interface RaftServer extends IgniteComponent {
     /**
      * @return Cluster service.
      */
@@ -59,11 +60,4 @@ public interface RaftServer {
      * @return Local peer or null if the group is not started.
      */
     @Nullable Peer localPeer(String groupId);
-
-    /**
-     * Shutdown a server.
-     *
-     * @throws Exception If failed.
-     */
-    void shutdown() throws Exception;
 }

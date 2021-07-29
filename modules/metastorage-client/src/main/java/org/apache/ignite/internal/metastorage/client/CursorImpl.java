@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.jetbrains.annotations.NotNull;
 
@@ -100,6 +101,9 @@ public class CursorImpl<T> implements Cursor<T> {
                         cursorId -> metaStorageRaftGrpSvc.<Boolean>run(new CursorHasNextCommand(cursorId))).get();
             }
             catch (InterruptedException | ExecutionException e) {
+                if (e.getCause().getClass().equals(NodeStoppingException.class))
+                    return false;
+
                 LOG.error("Unable to evaluate cursor hasNext command", e);
 
                 throw new IgniteInternalException(e);
@@ -118,6 +122,9 @@ public class CursorImpl<T> implements Cursor<T> {
                     return fn.apply(res);
             }
             catch (InterruptedException | ExecutionException e) {
+                if (e.getCause().getClass().equals(NodeStoppingException.class))
+                    throw new NoSuchElementException();
+
                 LOG.error("Unable to evaluate cursor hasNext command", e);
 
                 throw new IgniteInternalException(e);

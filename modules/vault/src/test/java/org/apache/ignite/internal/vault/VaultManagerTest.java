@@ -41,7 +41,7 @@ public class VaultManagerTest {
     /** */
     @AfterEach
     void tearDown() throws Exception {
-        vaultManager.close();
+        vaultManager.stop();
     }
 
     /**

@@ -54,6 +54,8 @@ public class UsageTest {
             Collections.singletonList(new TestConfigurationStorage())
         );
 
+        registry.start();
+
         LocalConfiguration root = registry.getConfiguration(LocalConfiguration.KEY);
 
         root.change(local ->
@@ -109,6 +111,8 @@ public class UsageTest {
             Collections.emptyMap(),
             Collections.singletonList(new TestConfigurationStorage())
         );
+
+        registry.start();
 
         registry.getConfiguration(LocalConfiguration.KEY).change(local ->
             local.changeBaseline(baseline ->

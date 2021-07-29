@@ -176,6 +176,8 @@ public class ClientHandlerIntegrationTest {
                 Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
         );
 
+        registry.start();
+
         var module = new ClientHandlerModule(mock(Ignite.class), NOPLogger.NOP_LOGGER);
 
         module.prepareStart(registry);

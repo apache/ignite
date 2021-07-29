@@ -151,7 +151,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
             iterSrv.remove();
 
-            server.shutdown();
+            server.stop();
         }
 
         LOG.info(">>>>>>>>>>>>>>> End test method: {}", testInfo.getTestMethod().orElseThrow().getName());
@@ -167,14 +167,16 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         ClusterService service = clusterService("server" + idx, PORT + idx, List.of(addr), true);
 
         JRaftServerImpl server = new JRaftServerImpl(service, dataPath.toString()) {
-            @Override public void shutdown() throws Exception {
+            @Override public void stop() {
                 servers.remove(this);
 
-                super.shutdown();
+                super.stop();
 
-                service.shutdown();
+                service.stop();
             }
         };
+
+        server.start();
 
         clo.accept(server);
 
@@ -202,7 +204,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
                 super.shutdown();
 
-                clientNode.shutdown();
+                clientNode.stop();
             }
         };
 
@@ -526,7 +528,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         int stopIdx = servers.indexOf(toStop);
 
-        toStop.shutdown();
+        toStop.stop();
 
         applyIncrements(client1, 11, 20);
         applyIncrements(client2, 21, 30);
@@ -549,7 +551,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         waitForCondition(() -> validateStateMachine(sum(20), svc2, COUNTER_GROUP_0), 5_000);
         waitForCondition(() -> validateStateMachine(sum(30), svc2, COUNTER_GROUP_1), 5_000);
 
-        svc2.shutdown();
+        svc2.stop();
 
         var svc3 = startServer(stopIdx, r -> {
             r.startRaftGroup(COUNTER_GROUP_0, listenerFactory.get(), INITIAL_CONF);

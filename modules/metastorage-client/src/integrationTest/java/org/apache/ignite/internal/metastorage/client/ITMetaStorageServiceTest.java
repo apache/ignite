@@ -196,10 +196,10 @@ public class ITMetaStorageServiceTest {
      */
     @AfterEach
     public void afterTest() throws Exception {
-        metaStorageRaftSrv.shutdown();
+        metaStorageRaftSrv.stop();
 
         for (ClusterService node : cluster)
-            node.shutdown();
+            node.stop();
     }
 
     /**
@@ -1096,6 +1096,8 @@ public class ITMetaStorageServiceTest {
         List<Peer> peers = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
 
         metaStorageRaftSrv = new RaftServerImpl(cluster.get(0), FACTORY);
+
+        metaStorageRaftSrv.start();
 
         metaStorageRaftSrv.
             startRaftGroup(METASTORAGE_RAFT_GROUP_NAME, new MetaStorageListener(keyValStorageMock), peers);

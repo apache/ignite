@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.List;
 
 import org.apache.ignite.internal.manager.EventListener;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
@@ -33,24 +34,35 @@ import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
 import org.apache.ignite.internal.util.Cursor;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class SqlQueryProcessor {
+public class SqlQueryProcessor implements IgniteComponent {
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
 
-    private final ExecutionService executionSrvc;
+    private volatile ExecutionService executionSrvc;
 
-    private final MessageService msgSrvc;
+    private volatile MessageService msgSrvc;
 
-    private final QueryTaskExecutor taskExecutor;
+    private volatile QueryTaskExecutor taskExecutor;
+
+    private final ClusterService clusterSrvc;
+
+    private final TableManager tableManager;
 
     public SqlQueryProcessor(
         ClusterService clusterSrvc,
         TableManager tableManager
     ) {
+        this.clusterSrvc = clusterSrvc;
+        this.tableManager = tableManager;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
         taskExecutor = new QueryTaskExecutorImpl(
             new StripedThreadPoolExecutor(
                 4,
@@ -81,6 +93,12 @@ public class SqlQueryProcessor {
         tableManager.listen(TableEvent.CREATE, new TableCreatedListener(schemaHolder));
         tableManager.listen(TableEvent.ALTER, new TableUpdatedListener(schemaHolder));
         tableManager.listen(TableEvent.DROP, new TableDroppedListener(schemaHolder));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws NodeStoppingException {
+        // TODO: IGNITE-15161 Implement component's stop.
     }
 
     public List<Cursor<List<?>>> query(String schemaName, String qry, Object... params) {

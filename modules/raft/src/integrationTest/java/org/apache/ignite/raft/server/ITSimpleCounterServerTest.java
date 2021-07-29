@@ -87,12 +87,14 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
         ClusterService service = clusterService(addr.toString(), PORT, List.of(), true);
 
         server = new JRaftServerImpl(service, dataPath.toString()) {
-            @Override public synchronized void shutdown() throws Exception {
-                super.shutdown();
+            @Override public synchronized void stop() {
+                super.stop();
 
-                service.shutdown();
+                service.stop();
             }
         };
+
+        server.start();
 
         ClusterNode serverNode = server.clusterService().topologyService().localMember();
 
@@ -106,7 +108,7 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
             @Override public void shutdown() {
                 super.shutdown();
 
-                clientNode1.shutdown();
+                clientNode1.stop();
             }
         };
 
@@ -117,7 +119,7 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
             @Override public void shutdown() {
                 super.shutdown();
 
-                clientNode2.shutdown();
+                clientNode2.stop();
             }
         };
 
@@ -131,7 +133,7 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
      */
     @AfterEach
     void after() throws Exception {
-        server.shutdown();
+        server.stop();
         client1.shutdown();
         client2.shutdown();
     }

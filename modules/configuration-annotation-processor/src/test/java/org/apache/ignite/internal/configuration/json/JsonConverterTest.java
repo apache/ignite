@@ -163,6 +163,8 @@ public class JsonConverterTest {
             Collections.singletonList(new TestConfigurationStorage())
         );
 
+        registry.start();
+
         configuration = registry.getConfiguration(JsonRootConfiguration.KEY);
     }
 

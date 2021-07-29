@@ -148,10 +148,10 @@ public class ITDistributedTableTest {
     @AfterEach
     public void afterTest() throws Exception {
         for (ClusterService node : cluster) {
-            node.shutdown();
+            node.stop();
         }
 
-        client.shutdown();
+        client.stop();
     }
 
     /**
@@ -164,6 +164,8 @@ public class ITDistributedTableTest {
         String grpId = "part";
 
         RaftServer partSrv = new JRaftServerImpl(cluster.get(0), dataPath.toString());
+
+        partSrv.start();
 
         List<Peer> conf = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
 
@@ -186,7 +188,7 @@ public class ITDistributedTableTest {
 
         assertEquals(testRow.longValue(1), new Row(SCHEMA, getFut.get().getValue()).longValue(1));
 
-        partSrv.shutdown();
+        partSrv.stop();
     }
 
     /**
@@ -223,8 +225,13 @@ public class ITDistributedTableTest {
     public void partitionedTable() {
         HashMap<ClusterNode, RaftServer> raftServers = new HashMap<>(NODES);
 
-        for (int i = 0; i < NODES; i++)
-            raftServers.put(cluster.get(i).topologyService().localMember(), new JRaftServerImpl(cluster.get(i), dataPath.toString()));
+        for (int i = 0; i < NODES; i++) {
+            var raftSrv = new JRaftServerImpl(cluster.get(i), dataPath.toString());
+
+            raftSrv.start();
+
+            raftServers.put(cluster.get(i).topologyService().localMember(), raftSrv);
+        }
 
         List<List<ClusterNode>> assignment = RendezvousAffinityFunction.assignPartitions(
             cluster.stream().map(node -> node.topologyService().localMember()).collect(Collectors.toList()),

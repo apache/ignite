@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Command;
@@ -72,10 +73,10 @@ public class RaftServerImpl implements RaftServer {
     private final BlockingQueue<CommandClosureEx<WriteCommand>> writeQueue;
 
     /** */
-    private final Thread readWorker;
+    private volatile Thread readWorker;
 
     /** */
-    private final Thread writeWorker;
+    private volatile Thread writeWorker;
 
     /**
      * @param service Network service.
@@ -90,7 +91,10 @@ public class RaftServerImpl implements RaftServer {
 
         readQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
         writeQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
+    }
 
+    /** {@inheritDoc} */
+    @Override public void start() {
         service.messagingService().addMessageHandler(
             RaftClientMessageGroup.class,
             (message, senderAddr, correlationId) -> {
@@ -133,6 +137,31 @@ public class RaftServerImpl implements RaftServer {
     }
 
     /** {@inheritDoc} */
+    @Override public void stop() throws NodeStoppingException {
+        if (readWorker != null) {
+            readWorker.interrupt();
+            try {
+                readWorker.join();
+            }
+            catch (InterruptedException e) {
+                throw new NodeStoppingException("Unable to stop read worker.", e);
+            }
+        }
+
+        if (writeWorker != null) {
+            writeWorker.interrupt();
+            try {
+                writeWorker.join();
+            }
+            catch (InterruptedException e) {
+                throw new NodeStoppingException("Unable to stop write worker.", e);
+            }
+        }
+
+        LOG.info("Stopped replication server [node={}]", service);
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterService clusterService() {
         return service;
     }
@@ -156,17 +185,6 @@ public class RaftServerImpl implements RaftServer {
     /** {@inheritDoc} */
     @Override public @Nullable Peer localPeer(String groupId) {
         return new Peer(service.topologyService().localMember().address());
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void shutdown() throws Exception {
-        readWorker.interrupt();
-        readWorker.join();
-
-        writeWorker.interrupt();
-        writeWorker.join();
-
-        LOG.info("Stopped replication server [node={}]", service);
     }
 
     /**

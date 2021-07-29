@@ -93,4 +93,10 @@ public class TcpIgniteClient implements Ignite {
     @Override public void close() throws Exception {
         ch.close();
     }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        // TODO: improve and finalize IGNITE-15164.
+        return null;
+    }
 }

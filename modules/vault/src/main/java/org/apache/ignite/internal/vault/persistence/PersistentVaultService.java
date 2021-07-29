@@ -60,14 +60,24 @@ public class PersistentVaultService implements VaultService {
     private final Options options = new Options();
 
     /** */
-    private final RocksDB db;
+    private volatile RocksDB db;
+
+    /** Base path for RocksDB. */
+    private final Path path;
 
     /**
-     * Creates and starts the RocksDB instance using the recommended options on the given {@code path}.
+     * Creates persistent vault service.
      *
      * @param path base path for RocksDB
      */
     public PersistentVaultService(Path path) {
+        this.path = path;
+    }
+
+    /**
+     * Creates and starts the RocksDB instance using the recommended options on the given {@code path}.
+     */
+    @Override public void start() {
         // using the recommended options from https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning
         options
             .setCreateIfMissing(true)
@@ -95,13 +105,26 @@ public class PersistentVaultService implements VaultService {
     }
 
     /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO: IGNITE-15161 Implement component's stop.
+        try {
+            close();
+        }
+        catch (RocksDBException e) {
+            throw new IgniteInternalException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override
     public void close() throws RocksDBException {
-        try (options; db) {
-            db.syncWal();
+        db.syncWal();
 
-            IgniteUtils.shutdownAndAwaitTermination(threadPool, 10, TimeUnit.SECONDS);
-        }
+        IgniteUtils.shutdownAndAwaitTermination(threadPool, 10, TimeUnit.SECONDS);
+
+        options.close();
+
+        db.close();
     }
 
     /** {@inheritDoc} */

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 import org.apache.ignite.internal.configuration.validation.ImmutableValidator;
 import org.apache.ignite.internal.configuration.validation.MaxValidator;
 import org.apache.ignite.internal.configuration.validation.MinValidator;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,30 +54,27 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationNotific
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.innerNodeVisitor;
 
 /** */
-public class ConfigurationRegistry {
+public class ConfigurationRegistry implements IgniteComponent {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ConfigurationRegistry.class);
 
     /** */
     private final Map<String, DynamicConfiguration<?, ?>> configs = new HashMap<>();
 
+    /** Root keys. */
+    private final Collection<RootKey<?, ?>> rootKeys;
+
+    /** Validators. */
+    private final Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators;
+
+    /** Configuration storages. */
+    private final Collection<ConfigurationStorage> configurationStorages;
+
     /** */
-    private final ConfigurationChanger changer = new ConfigurationChanger(this::notificator) {
-        /** {@inheritDoc} */
-        @Override public InnerNode createRootNode(RootKey<?, ?> rootKey) {
-            return cgen.instantiateNode(rootKey.schemaClass());
-        }
-    };
+    private volatile ConfigurationChanger changer;
 
     /** */
     private final ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
-
-    {
-        // Default vaildators implemented in current module.
-        changer.addValidator(Min.class, new MinValidator());
-        changer.addValidator(Max.class, new MaxValidator());
-        changer.addValidator(Immutable.class, new ImmutableValidator());
-    }
 
     /**
      * Constructor.
@@ -90,6 +88,24 @@ public class ConfigurationRegistry {
         Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
         Collection<ConfigurationStorage> configurationStorages
     ) {
+        this.rootKeys = rootKeys;
+        this.validators = validators;
+        this.configurationStorages = configurationStorages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        this.changer = new ConfigurationChanger(this::notificator) {
+            /** {@inheritDoc} */
+            @Override public InnerNode createRootNode(RootKey<?, ?> rootKey) {
+                return cgen.instantiateNode(rootKey.schemaClass());
+            }
+        };
+
+        changer.addValidator(Min.class, new MinValidator());
+        changer.addValidator(Max.class, new MaxValidator());
+        changer.addValidator(Immutable.class, new ImmutableValidator());
+
         rootKeys.forEach(rootKey -> {
             cgen.compileRootSchema(rootKey.schemaClass());
 
@@ -103,6 +119,12 @@ public class ConfigurationRegistry {
         validators.forEach(changer::addValidators);
 
         configurationStorages.forEach(changer::register);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        if (changer != null)
+            changer.stop();
     }
 
     /**
@@ -162,11 +184,6 @@ public class ConfigurationRegistry {
      */
     public CompletableFuture<Void> change(ConfigurationSource changesSource, @Nullable ConfigurationStorage storage) {
         return changer.change(changesSource, storage);
-    }
-
-    /** */
-    public void stop() {
-        changer.stop();
     }
 
     /** */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.app;
 
 import org.apache.ignite.app.Ignite;
-import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.tx.IgniteTransactions;
@@ -28,27 +28,31 @@ import org.apache.ignite.tx.IgniteTransactions;
  */
 public class IgniteImpl implements Ignite {
     /** Distributed table manager. */
-    private final IgniteTables distributedTableManager;
+    private final IgniteTables distributedTblMgr;
 
-    /** Vault manager */
-    private final VaultManager vaultManager;
+    /** Ignite node name. */
+    private final String name;
 
     private final SqlQueryProcessor qryEngine;
 
     /**
-     * @param tableManager Table manager.
-     * @param vaultManager Vault manager.
+     * @param name Ignite node name.
+     * @param tblMgr Table manager.
      * @param qryEngine Query processor.
      */
-    IgniteImpl(IgniteTables tableManager, VaultManager vaultManager, SqlQueryProcessor qryEngine) {
-        this.distributedTableManager = tableManager;
-        this.vaultManager = vaultManager;
+    IgniteImpl(
+        String name,
+        IgniteTables tblMgr,
+        SqlQueryProcessor qryEngine
+    ) {
+        this.name = name;
+        this.distributedTblMgr = tblMgr;
         this.qryEngine = qryEngine;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTables tables() {
-        return distributedTableManager;
+        return distributedTblMgr;
     }
 
     public SqlQueryProcessor queryEngine() {
@@ -61,7 +65,12 @@ public class IgniteImpl implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        vaultManager.close();
+    @Override public void close() {
+        IgnitionManager.stop(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return name;
     }
 }

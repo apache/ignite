@@ -3410,7 +3410,7 @@ public class ITNodeTest {
             @Override public synchronized void shutdown() {
                 super.shutdown();
 
-                clusterService.shutdown();
+                clusterService.stop();
             }
         };
 

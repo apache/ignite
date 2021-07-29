@@ -19,6 +19,7 @@ package org.apache.ignite.internal.baseline;
 
 import java.util.Collection;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -28,7 +29,7 @@ import org.apache.ignite.network.ClusterService;
  */
 // TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
 // TODO: https://issues.apache.org/jira/browse/IGNITE-14716 Adapt concept of baseline topology IEP-4.
-@SuppressWarnings({"FieldCanBeLocal", "unused"}) public class BaselineManager {
+@SuppressWarnings({"FieldCanBeLocal", "unused"}) public class BaselineManager implements IgniteComponent {
     /** Configuration manager in order to handle and listen baseline specific configuration.*/
     private final ConfigurationManager configurationMgr;
 
@@ -56,6 +57,16 @@ import org.apache.ignite.network.ClusterService;
         this.configurationMgr = configurationMgr;
         this.metastorageMgr = metastorageMgr;
         this.clusterSvc = clusterSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO: IGNITE-15161 Implement component's stop.
     }
 
     /**

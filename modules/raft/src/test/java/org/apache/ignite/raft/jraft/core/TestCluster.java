@@ -239,7 +239,7 @@ public class TestCluster {
 
                     rpcServer.shutdown();
 
-                    clusterService.shutdown();
+                    clusterService.stop();
                 }
             };
 

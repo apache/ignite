@@ -47,7 +47,7 @@ public class IgniteRpcTest extends AbstractRpcTest {
             @Override public void shutdown() {
                 super.shutdown();
 
-                service.shutdown();
+                service.stop();
             }
         };
 
@@ -66,7 +66,7 @@ public class IgniteRpcTest extends AbstractRpcTest {
             @Override public void shutdown() {
                 super.shutdown();
 
-                service.shutdown();
+                service.stop();
             }
         };
 

@@ -31,11 +31,12 @@ import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.hocon.HoconConverter;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.internal.manager.IgniteComponent;
 
 /**
  * Configuration manager is responsible for handling configuration lifecycle and provides configuration API.
  */
-public class ConfigurationManager {
+public class ConfigurationManager implements IgniteComponent {
     /** Configuration registry. */
     private final ConfigurationRegistry confRegistry;
 
@@ -65,6 +66,17 @@ public class ConfigurationManager {
         this.configurationStorages = Map.copyOf(storageByType);
 
         confRegistry = new ConfigurationRegistry(rootKeys, validators, configurationStorages);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        confRegistry.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO: IGNITE-15161 Implement component's stop.
+        confRegistry.stop();
     }
 
     /**

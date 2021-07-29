@@ -19,6 +19,7 @@ package org.apache.ignite.internal.vault;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Defines interface for accessing to a vault service.
  */
-public interface VaultService extends AutoCloseable {
+public interface VaultService extends AutoCloseable, IgniteComponent {
     /**
      * Retrieves an entry for the given key.
      *

@@ -163,6 +163,8 @@ public class HoconConverterTest {
             Collections.singletonList(new TestConfigurationStorage())
         );
 
+        registry.start();
+
         configuration = registry.getConfiguration(HoconRootConfiguration.KEY);
     }
 

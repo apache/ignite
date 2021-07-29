@@ -164,3 +164,42 @@ Once the projected keys are synced to the vault, the partition manager can creat
 the log and storage, write hard state, register message handlers, etc). Upon startup, the node checks the existing 
 projected keys (finishing the raft log and storage initialization in case it crashed in the midst) and starts the Raft
 servers.
+
+### Stop node flow.
+It's possible to stop node both when node was already started or during the startup process, in that case
+node stop will prevent any new components startup and stop already started ones.
+
+Following method was added to Ignition interface:
+```
+    /**
+     * Stops the node with given {@code name}.
+     * It's possible to stop both already started node or node that is currently starting.
+     * Has no effect if node with specified name doesn't exist.
+     *
+     * @param name Node name to stop.
+     * @throws IllegalArgumentException if null is specified instead of node name.
+     */
+    public void stop(@NotNull String name);
+```
+It's also possible to stop a node by calling ``close()`` on an already started Ignite instance.
+
+As a starting point stop process checks node status:
+ * If it's STOPPING - nothing happens, cause previous intention to stop node was already detected.
+ * If it's STARTING (means that node is somewhere in the middle of the startup process) - node status will be updated to
+STOPPING and later on startup process will detect status change on attempt of starting next component, prevent further
+startup process and stop already started managers and corresponding inner components.
+ * if it's STARTED - explicit stop will take an action. All components will be stopped.
+
+In all cases the node stop process consists of two phases:
+ * At phase one ``onNodeStop()`` will be called on all started components in reverse order, meaning that the last
+  started component will run ``onNodeStop()`` first. For most components ``onNodeStop()`` will be No-op. Core idea here
+   is to stop network communication on ``onNodeStop()`` in order to terminate distributed operations gracefully:
+   no network communication is allowed but node local logic still remains consistent.
+ * At phase two within a write busy lock, ``stop()`` will be called on all started components also in reverse order, 
+ here thread stopping logic, inner structures cleanup and other related logic takes it time. Please pay attention that
+  at this point network communication isn't possible.
+
+Besides local node stopping logic two more actions took place on a cluster as a result of node left event:
+ * Both range and watch cursors will be removed on server side. Given process is linearized with meta storage
+  operations by using a meta storage raft.
+ * Baseline update and corresponding baseline recalculation with ongoing partition raft groups redeployment.

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.affinity.event.AffinityEvent;
 import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
 import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.manager.Producer;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.metastorage.client.Conditions;
@@ -42,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Affinity manager is responsible for affinity function related logic including calculating affinity assignments.
  */
-public class AffinityManager extends Producer<AffinityEvent, AffinityEventParameters> {
+public class AffinityManager extends Producer<AffinityEvent, AffinityEventParameters> implements IgniteComponent {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(AffinityManager.class);
 
@@ -76,7 +77,10 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
         this.configurationMgr = configurationMgr;
         this.metaStorageMgr = metaStorageMgr;
         this.baselineMgr = baselineMgr;
+    }
 
+    /** {@inheritDoc} */
+    @Override public void start() {
         metaStorageMgr.registerWatchByPrefix(new ByteArray(INTERNAL_PREFIX), new WatchListener() {
             @Override public boolean onUpdate(@NotNull WatchEvent watchEvt) {
                 for (EntryEvent evt : watchEvt.entryEvents()) {
@@ -109,6 +113,11 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
                 LOG.error("Meta storage listener issue", e);
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO: IGNITE-15161 Implement component's stop.
     }
 
     /**

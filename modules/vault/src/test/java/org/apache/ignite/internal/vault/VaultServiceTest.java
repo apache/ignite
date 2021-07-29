@@ -55,12 +55,14 @@ public abstract class VaultServiceTest {
     @BeforeEach
     public void setUp() throws IOException {
         vaultService = getVaultService();
+
+        vaultService.start();
     }
 
     /** */
     @AfterEach
-    public void tearDown() throws Exception {
-        vaultService.close();
+    private void tearDown() throws Exception {
+        vaultService.stop();
     }
 
     /**

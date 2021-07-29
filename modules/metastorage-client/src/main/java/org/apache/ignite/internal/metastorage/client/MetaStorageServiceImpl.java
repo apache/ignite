@@ -51,6 +51,7 @@ import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -460,7 +461,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
                             Thread.sleep(10);
                     }
                     catch (Throwable e) {
-                        if (e instanceof InterruptedException || e.getCause() instanceof InterruptedException)
+                        if (e instanceof NodeStoppingException || e.getCause() instanceof NodeStoppingException)
                             break;
                         else {
                             // TODO: IGNITE-14693 Implement Meta storage exception handling logic.

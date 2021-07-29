@@ -42,4 +42,9 @@ public class FakeIgnite implements Ignite {
     @Override public void close() throws Exception {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return null;
+    }
 }

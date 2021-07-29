@@ -61,30 +61,36 @@ class PersistencePropertiesVaultServiceTest {
         );
 
         try (var vaultService = new PersistentVaultService(vaultDir)) {
+            vaultService.start();
+
             vaultService.putAll(data).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         }
 
         try (var vaultService = new PersistentVaultService(vaultDir)) {
+            vaultService.start();
+
             assertThat(
                 vaultService.get(new ByteArray("key" + 1)),
                 willBe(equalTo(new VaultEntry(new ByteArray("key" + 1), fromString("value" + 1))))
             );
         }
 
-        try (
-            var vaultService = new PersistentVaultService(vaultDir);
-            var cursor = vaultService.range(new ByteArray("key" + 1), new ByteArray("key" + 4))
-        ) {
-            var actualData = new ArrayList<VaultEntry>();
+        try (var vaultService = new PersistentVaultService(vaultDir)) {
+            vaultService.start();
 
-            cursor.forEachRemaining(actualData::add);
+            try (var cursor = vaultService.range(new ByteArray("key" + 1), new ByteArray("key" + 4))) {
 
-            List<VaultEntry> expectedData = data.entrySet().stream()
-                .map(e -> new VaultEntry(e.getKey(), e.getValue()))
-                .sorted(Comparator.comparing(VaultEntry::key))
-                .collect(Collectors.toList());
+                var actualData = new ArrayList<VaultEntry>();
 
-            assertThat(actualData, is(expectedData));
+                cursor.forEachRemaining(actualData::add);
+
+                List<VaultEntry> expectedData = data.entrySet().stream()
+                    .map(e -> new VaultEntry(e.getKey(), e.getValue()))
+                    .sorted(Comparator.comparing(VaultEntry::key))
+                    .collect(Collectors.toList());
+
+                assertThat(actualData, is(expectedData));
+            }
         }
     }
 

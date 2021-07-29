@@ -83,6 +83,8 @@ public abstract class AbstractClientTest {
                 Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
         );
 
+        registry.start();
+
         server = new FakeIgnite();
 
         var module = new ClientHandlerModule(server, NOPLogger.NOP_LOGGER);
