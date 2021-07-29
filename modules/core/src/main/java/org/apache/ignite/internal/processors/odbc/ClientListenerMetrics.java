@@ -31,19 +31,19 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
  */
 public class ClientListenerMetrics {
     /** Handshakes rejected by timeout metric label. */
-    public static final String METRIC_REJECTED_TIMEOUT = "RejectedConnectionsByTimeout";
+    public static final String METRIC_REJECTED_TIMEOUT = "RejectedSessionsByTimeout";
 
     /** Handshakes rejected by authentication metric label. */
-    public static final String METRIC_REJECTED_AUTHENTICATION = "RejectedConnectionsDueAuthentication";
+    public static final String METRIC_REJECTED_AUTHENTICATION = "RejectedSessionsDueAuthentication";
 
     /** Total number of rejected handshakes. */
-    public static final String METRIC_REJECTED_TOTAL = "RejectedConnectionsTotal";
+    public static final String METRIC_REJECTED_TOTAL = "RejectedSessionsTotal";
 
     /** Number of successfully established sessions. */
-    public static final String METRIC_ACEPTED = "AcceptedConnections";
+    public static final String METRIC_ACEPTED = "AcceptedSessions";
 
     /** Number of active sessions. */
-    public static final String METRIC_ACTIVE = "ActiveConnections";
+    public static final String METRIC_ACTIVE = "ActiveSessions";
 
     /** Rejected by timeout. */
     private final IntMetricImpl rejectedTimeout;
