@@ -61,6 +61,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -677,15 +678,24 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param grpId Cache group id.
      * @param encrypted {@code true} if cache group encryption enabled.
-     * @return Factory to create page stores.
+     * @return Factory to create page stores with default encription keys.
      */
     public FileVersionCheckingFactory getPageStoreFactory(int grpId, boolean encrypted) {
+        return getPageStoreFactory(grpId, encrypted ? cctx.kernalContext().encryption() : null);
+    }
+
+    /**
+     * @param grpId Cache group id.
+     * @param encrKeyProvider Encryption keys provider for encrypted IO. If {@code null}, no encryption is used.
+     * @return Factory to create page stores with certain encryption keys provider.
+     */
+    public FileVersionCheckingFactory getPageStoreFactory(int grpId, EncryptionCacheKeyProvider encrKeyProvider) {
         FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
-        if (encrypted) {
-            pageStoreFileIoFactory = getEncryptedFileIoFactory(this.pageStoreFileIoFactory, grpId);
-            pageStoreV1FileIoFactory = getEncryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId);
+        if (encrKeyProvider != null) {
+            pageStoreFileIoFactory = getEncryptedFileIoFactory(this.pageStoreFileIoFactory, grpId, encrKeyProvider);
+            pageStoreV1FileIoFactory = getEncryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId, encrKeyProvider);
         }
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
@@ -694,7 +704,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             igniteCfg.getDataStorageConfiguration()::getPageSize
         );
 
-        if (encrypted) {
+        if (encrKeyProvider != null) {
             int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
 
             ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
@@ -707,15 +717,24 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param plainFileIOFactory Not-encrypting file io factory.
      * @param cacheGrpId Cache group id.
+     * @param encrKeyProvider Encryption keys provider for encrypted IO. If {@code null}, no encryption is used.
      * @return Encrypted file IO factory.
      */
-    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId,
+        EncryptionCacheKeyProvider encrKeyProvider) {
         return new EncryptedFileIOFactory(
             plainFileIOFactory,
             cacheGrpId,
             pageSize(),
-            cctx.kernalContext().encryption(),
+            encrKeyProvider,
             cctx.gridConfig().getEncryptionSpi());
+    }
+
+    /**
+     * @return Encrypted file IO factory with stored internal encryption keys.
+     */
+    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+        return getEncryptedFileIoFactory(plainFileIOFactory, cacheGrpId, cctx.kernalContext().encryption());
     }
 
     /**

@@ -63,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -76,6 +77,12 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Snapshot restore tests.
  */
 public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Encryption={0}")
+    public static Iterable<Boolean> encryptionParams() {
+        return Arrays.asList(true);
+    }
+
     /** Type name used for binary and SQL. */
     private static final String TYPE_NAME = "CustomType";
 
@@ -657,7 +664,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
      * @param expMsg Expected exception message.
      * @throws Exception if failed.
      */
-    private void checkClusterStateChange(
+    private void  checkClusterStateChange(
         ClusterState state,
         DistributedProcessType procType,
         @Nullable Class<? extends Throwable> exCls,
