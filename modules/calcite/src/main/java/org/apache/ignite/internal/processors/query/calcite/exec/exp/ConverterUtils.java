@@ -240,6 +240,8 @@ public class ConverterUtils {
             }
             if (toBox != null) {
                 switch (toBox) {
+                    case VOID:
+                        return Expressions.constant(null);
                     case CHAR:
                         // Generate "SqlFunctions.toCharBoxed(x)".
                         return Expressions.call(

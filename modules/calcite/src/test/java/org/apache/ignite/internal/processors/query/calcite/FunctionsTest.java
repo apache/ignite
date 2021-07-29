@@ -97,6 +97,16 @@ public class FunctionsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testReplace() {
+        checkQuery("SELECT REPLACE('12341234', '1', '55')").returns("5523455234").check();
+        checkQuery("SELECT REPLACE(NULL, '1', '5')").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE('1', NULL, '5')").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE('11', '1', NULL)").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE('11', '1', '')").returns("").check();
+    }
+
+    /** */
+    @Test
     public void testRange() {
         checkQuery("SELECT * FROM table(system_range(1, 4))")
             .returns(1L)
