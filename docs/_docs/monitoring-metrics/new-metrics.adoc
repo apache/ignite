@@ -303,8 +303,8 @@ Register name: `client.connector`
 |ActiveSessionsCount|   integer|   Active TCP sessions count.
 |ReceivedBytesCount|   long|   Received bytes count.
 |RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
-|RejectedSessionsByTimeout|   integer|   TCP sessions count that were rejected due to handshake timeout.
-|RejectedSessionsDueAuthentication|   integer|   TCP sessions count that were rejected due to failed authentication.
+|RejectedSessionsTimeout|   integer|   TCP sessions count that were rejected due to handshake timeout.
+|RejectedSessionsAuthenticationFailed|   integer|   TCP sessions count that were rejected due to failed authentication.
 |RejectedSessionsTotal|   integer|   Total number of rejected TCP connections.
 |{clientType}.AcceptedSessions|   integer|   Number of successfully established sessions for the client type.
 |{clientType}.ActiveSessions|   integer|   Number of active sessions for the client type.
