@@ -134,18 +134,19 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
          * Searches the lower bound (skipping duplicates) using a binary search.
          *
          * @param rows List of rows.
-         * @param target Lower bound.
+         * @param bound Lower bound.
          * @return Lower bound position in the list.
          */
-        private int lowerBound(List<Row> rows, Row target) {
+        private int lowerBound(List<Row> rows, Row bound) {
             int low = 0, high = rows.size() - 1, idx = -1;
 
             while (low <= high) {
                 int mid = (high - low) / 2 + low;
+                int compRes = comp.compare(rows.get(mid), bound);
 
-                if (comp.compare(rows.get(mid), target) > 0)
+                if (compRes > 0)
                     high = mid - 1;
-                else if (comp.compare(rows.get(mid), target) == 0) {
+                else if (compRes == 0) {
                     idx = mid;
                     high = mid - 1;
                 }
