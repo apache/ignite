@@ -159,17 +159,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut) {
-        if (ctx.kernalContext().clientNode())
-            return false; // No-op.
-
-        AffinityTopologyVersion lastAffChangeTopVer =
-            ctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
-
-        return lastAffChangeTopVer.equals(exchFut.topologyVersion());
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDhtPreloaderAssignments generateAssignments(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut

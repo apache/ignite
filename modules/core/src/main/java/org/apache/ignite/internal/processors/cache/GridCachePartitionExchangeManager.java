@@ -3619,8 +3619,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /**
          * Rebalance is not required on a client node and is always required when the exchange future is null.
-         * In other cases, this method checks all caches and decides whether rebalancing is required or not
-         * for the specific exchange.
          *
          * @param exchFut Exchange future.
          * @return {@code True} if rebalance is required at least for one of cache groups.
@@ -3632,15 +3630,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (exchFut == null)
                 return true;
 
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.isLocal())
-                    continue;
-
-                if (grp.preloader().rebalanceRequired(exchFut))
-                    return true;
-            }
-
-            return false;
+            return lastAffinityChangedTopologyVersion(exchFut.topologyVersion()).equals(exchFut.topologyVersion());
         }
     }
 

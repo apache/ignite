@@ -139,11 +139,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDhtPreloaderAssignments generateAssignments(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut) {

@@ -66,12 +66,6 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param exchFut Completed exchange future.
-     * @return {@code True} if rebalance should be started (previous will be interrupted).
-     */
-    public boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut);
-
-    /**
      * @param exchId Exchange ID.
      * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
      * @return Partition assignments which will be requested from supplier nodes.
