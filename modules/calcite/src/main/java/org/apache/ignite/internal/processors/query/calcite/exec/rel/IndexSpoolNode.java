@@ -27,7 +27,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeIndex;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndex;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -167,7 +167,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         Supplier<Row> lowerIdxBound,
         Supplier<Row> upperIdxBound
     ) {
-        RuntimeTreeIndex<Row> idx = new RuntimeTreeIndex<>(ctx, collation, comp);
+        RuntimeSortedIndex<Row> idx = new RuntimeSortedIndex<>(ctx, collation, comp);
 
         ScanNode<Row> scan = new ScanNode<>(
             ctx,
