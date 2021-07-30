@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-/** Pure marker interface. */
-public interface Scalar {
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+
+@FunctionalInterface
+public interface BiScalar extends Scalar {
+    /** Multi input and single output. */
+    void execute(ExecutionContext ctx, Object in1, Object in2, Object out);
 }
