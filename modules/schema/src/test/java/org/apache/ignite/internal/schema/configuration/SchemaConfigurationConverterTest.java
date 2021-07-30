@@ -92,7 +92,7 @@ public class SchemaConfigurationConverterTest {
     }
 
     @AfterEach
-    private void tearDown() {
+    void tearDown() {
         confRegistry.stop();
     }
 

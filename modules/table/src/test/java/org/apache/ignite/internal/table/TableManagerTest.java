@@ -140,7 +140,7 @@ public class TableManagerTest {
 
     /** Before all test scenarios. */
     @BeforeEach
-    private void setUp() {
+    void setUp() {
         try {
             cfrMgr = new ConfigurationManager(rootConfigurationKeys(), Arrays.asList(
                 new TestConfigurationStorage(ConfigurationType.LOCAL),
@@ -204,7 +204,7 @@ public class TableManagerTest {
 
     /** Stop configuration manager. */
     @AfterEach
-    private void tearDown() {
+    void tearDown() {
         cfrMgr.stop();
     }
 

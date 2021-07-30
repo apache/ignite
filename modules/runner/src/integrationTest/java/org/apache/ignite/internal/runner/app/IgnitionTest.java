@@ -80,7 +80,7 @@ class IgnitionTest {
 
     /** */
     @AfterEach
-    private void tearDown() throws Exception {
+    void tearDown() throws Exception {
         IgniteUtils.closeAll(Lists.reverse(startedNodes));
     }
 

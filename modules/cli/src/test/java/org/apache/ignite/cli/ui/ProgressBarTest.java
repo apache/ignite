@@ -38,14 +38,14 @@ public class ProgressBarTest extends AbstractCliTest {
 
     /** */
     @BeforeEach
-    private void setUp() {
+    void setUp() {
         outputStream = new ByteArrayOutputStream();
         out = new PrintWriter(outputStream, true);
     }
 
     /** */
     @AfterEach
-    private void tearDown() throws IOException {
+    void tearDown() throws IOException {
         out.close();
         outputStream.close();
     }

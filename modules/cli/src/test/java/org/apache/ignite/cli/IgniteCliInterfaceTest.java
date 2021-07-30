@@ -88,7 +88,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
     }
 
     @AfterEach
-    private void tearDown() {
+    void tearDown() {
         ctx.stop();
     }
 
