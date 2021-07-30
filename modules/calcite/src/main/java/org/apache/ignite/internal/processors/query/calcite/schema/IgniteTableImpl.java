@@ -101,7 +101,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         return statistic;
     }
 
-
     /** {@inheritDoc} */
     @Override public TableDescriptor descriptor() {
         return desc;
@@ -132,7 +131,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-
         return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
     }
 
