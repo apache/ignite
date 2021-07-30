@@ -171,6 +171,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         return false;
     }
 
+    /** Explicit predefined single mapping (backup or primary). */
+    public ClusterNode affNode(){
+        return affNode;
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);

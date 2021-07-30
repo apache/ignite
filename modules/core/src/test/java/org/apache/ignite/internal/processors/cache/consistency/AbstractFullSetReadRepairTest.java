@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -29,6 +27,9 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
+/**
+ *
+ */
 public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTest {
     /**
      *
@@ -55,8 +56,6 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                         cache.withReadRepair().get(key);
 
             assertEquals(latest, res);
-
-            checkEvent(data);
         }
     };
 
@@ -89,8 +88,6 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             for (Map.Entry<Integer, Integer> entry : res.entrySet())
                 assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
         }
-
-        checkEvent(data);
     };
 
     /**
@@ -104,8 +101,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
 
         assert keys.size() == 1;
 
-        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
-            Integer key = entry.getKey();
+        for (Integer key : data.data.keySet()) { // Once.
             Integer missed = key * -1; // Negative to gain null.
 
             Object res =
@@ -118,15 +114,6 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                         cache.withReadRepair().get(missed);
 
             assertEquals(null, res);
-
-            checkEvent( // Checking on null expectations.
-                new ReadRepairData(
-                    cache,
-                    Collections.singletonMap(
-                        missed,
-                        new InconsistentMapping(new HashMap<>(), null, null)),
-                    raw,
-                    async));
         }
     };
 
@@ -140,16 +127,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
 
         assert keys.size() == 1;
 
-        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
-            Integer key = entry.getKey();
-
+        for (Integer key : data.data.keySet()) { // Once.
             boolean res = async ?
                 cache.withReadRepair().containsKeyAsync(key).get() :
                 cache.withReadRepair().containsKey(key);
 
             assertEquals(true, res);
-
-            checkEvent(data);
         }
     };
 
@@ -166,14 +149,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             cache.withReadRepair().containsKeys(keys);
 
         assertEquals(true, res);
-
-        checkEvent(data);
     };
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> ENSURE_FIXED = (data) -> {
+    protected static final Consumer<ReadRepairData> CHECK_FIXED = (data) -> {
         IgniteCache<Integer, Integer> cache = data.cache;
         boolean raw = data.raw;
 
@@ -188,6 +169,19 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             assertEquals(latest, res);
         }
     };
+
+    /**
+     * @param data Data.
+     */
+    protected void check(ReadRepairData data, boolean checkEvtRecorded, boolean checkFixed){
+        if (checkEvtRecorded)
+            checkEvent(data, checkFixed);
+        else
+            checkEventMissed();
+
+        if (checkFixed)
+            CHECK_FIXED.accept(data);
+    }
 
     /**
      *
