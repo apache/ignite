@@ -215,16 +215,20 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         Config DEFAULT = EMPTY.withRelBuilderFactory(RelFactories.LOGICAL_BUILDER).as(Config.class);
 
         /** */
-        Config TABLE_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalTableScan.class, "ProjectTableScanMergeRule", false);
+        Config TABLE_SCAN = DEFAULT.withScanRuleConfig(
+            IgniteLogicalTableScan.class, "ProjectTableScanMergeRule", false);
 
         /** */
-        Config TABLE_SCAN_SKIP_CORRELATED = DEFAULT.withScanRuleConfig(IgniteLogicalTableScan.class, "ProjectTableScanMergeSkipCorrelatedRule", true);
+        Config TABLE_SCAN_SKIP_CORRELATED = DEFAULT.withScanRuleConfig(
+            IgniteLogicalTableScan.class, "ProjectTableScanMergeSkipCorrelatedRule", true);
 
         /** */
-        Config INDEX_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalIndexScan.class, "ProjectIndexScanMergeRule", false);
+        Config INDEX_SCAN = DEFAULT.withScanRuleConfig(
+            IgniteLogicalIndexScan.class, "ProjectIndexScanMergeRule", false);
 
         /** */
-        Config INDEX_SCAN_SKIP_CORRELATED = DEFAULT.withScanRuleConfig(IgniteLogicalIndexScan.class, "ProjectIndexScanMergeSkipCorrelatedRule", true);
+        Config INDEX_SCAN_SKIP_CORRELATED = DEFAULT.withScanRuleConfig(
+            IgniteLogicalIndexScan.class, "ProjectIndexScanMergeSkipCorrelatedRule", true);
 
         /** */
         default Config withScanRuleConfig(
