@@ -50,6 +50,9 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.DateString;
+import org.apache.calcite.util.TimeString;
+import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
@@ -183,19 +186,18 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                     return value.getValueAs(BigDecimal.class);
 
                 case DATE:
+                    return new BigDecimal(value.getValueAs(DateString.class).getMillisSinceEpoch());
+
                 case TIME:
-                    //return value.getValueAs()
+                    return new BigDecimal(value.getValueAs(TimeString.class).getMillisOfDay());
 
                 case TIMESTAMP:
-                    // TODO:
-                    return null;
+                    return new BigDecimal(value.getValueAs(TimestampString.class).getMillisSinceEpoch());
 
                 case BOOLEAN:
                     return (value.getValueAs(Boolean.class)) ? BigDecimal.ONE : BigDecimal.ZERO;
 
             }
-            //bType.getFieldNames()
-            value.getValueAs(BigDecimal.class);
         }
 
         //getOperand(value, );
@@ -599,24 +601,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return 1;
 
         return (double)colStat.nulls() / colStat.total();
-    }
-
-    /**
-     * Get field name by predicate.
-     *
-     * @param pred Predicate.
-     * @param fieldNames Field names.
-     * @return Predicate related field name or {@code null} if it unable to get the name.
-     */
-    private String getColName(RexNode pred, List<String> fieldNames) {
-        RexNode operand = getOperand(pred, RexLocalRef.class);
-
-        if (operand == null)
-            return null;
-
-        int colIdx = ((RexSlot)operand).getIndex();
-
-        return fieldNames.get(colIdx);
     }
 
     /**

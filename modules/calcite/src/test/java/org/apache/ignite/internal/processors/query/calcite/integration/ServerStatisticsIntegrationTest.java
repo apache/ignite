@@ -207,12 +207,47 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
         Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
 
+        // time
+        String timeSql = "select * from all_types where time_field is not null";
+
+        assertQuerySrv(timeSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        timeSql += " and time_field > '00:00:00'";
+
+        assertQuerySrv(timeSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        // date
+        String dateSql = "select * from all_types where date_field is not null";
+
+        assertQuerySrv(dateSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        dateSql += " and date_field > '1000-01-01'";
+
+        assertQuerySrv(dateSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        // timestamp
+        String timestampSql = "select * from all_types where timestamp_field is not null ";
+
+        assertQuerySrv(timestampSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        timestampSql += " and timestamp_field > '1000-01-10 11:59:59'";
+
+        assertQuerySrv(timestampSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        // numeric fields
         for (String numericField : NUMERIC_FIELDS) {
             double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
-            String fieldSql = String.format("select * from all_types where %s is not null and %s > 0", numericField, numericField);
+            String fieldSql = String.format("select * from all_types where %s is not null",
+                numericField, numericField);
 
             assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+            fieldSql = String.format("select * from all_types where %s is not null and %s > 0",
+                numericField, numericField);
+
+            assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
         }
     }
 
@@ -272,6 +307,21 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         srv = ignite(0);
 
         collectStatistics(srv, key);
+
+        // time
+        String timeSql = "select * from all_types where time_field > '00:00:00'";
+
+        assertQuerySrv(timeSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        // date
+        String dateSql = "select * from all_types where date_field > '1000-01-10'";
+
+        assertQuerySrv(dateSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
+
+        // timestamp
+        String timestampSql = "select * from all_types where timestamp_field > '1000-01-10 11:59:59'";
+
+        assertQuerySrv(timestampSql).matches(QueryChecker.containsRowCount(ROW_COUNT * 0.75)).check();
 
         String sql = "select * from all_types ";
 
@@ -537,9 +587,9 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             float_obj_field = (null_val) ? null : float_field;
             double_field = i;
             double_obj_field = (null_val) ? null : double_field;
-            date_field = (null_val) ? null : Date.valueOf(String.format("%04d-04-09", i));
-            time_field = (null_val) ? null : new Time(i);
-            timestamp_field = (null_val) ? null : new Timestamp(i);
+            date_field = (null_val) ? null : Date.valueOf(String.format("%04d-04-09", 1000 + i));
+            time_field = (null_val) ? null : new Time(i * 1000);
+            timestamp_field = (null_val) ? null : Timestamp.valueOf(String.format("%04d-04-09 12:00:00", 1000 + i));
         }
 
         public AllTypes(String string_field, byte[] byte_arr_field, boolean boolean_field, Boolean boolean_obj_field,
