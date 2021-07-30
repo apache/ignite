@@ -387,7 +387,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             }.apply(nodes.get(i));
         }
 
-        b.append(", biParam=" + biParam);
+        b.append(", biParam=").append(biParam);
 
         b.append(']');
 
@@ -398,58 +398,55 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    private class PredicateImpl implements Predicate<Row> {
+    private abstract class AbstractScalarPredicate<T extends Scalar> {
         /** */
-        private final SingleScalar scalar;
+        protected final T scalar;
 
         /** */
-        private final Row out;
+        protected final Row out;
 
         /** */
-        private final RowHandler<Row> handler;
+        protected final RowHandler<Row> hnd;
 
         /**
          * @param scalar Scalar.
          */
-        private PredicateImpl(SingleScalar scalar) {
+        private AbstractScalarPredicate(T scalar) {
             this.scalar = scalar;
-            handler = ctx.rowHandler();
-            out = handler.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+            hnd = ctx.rowHandler();
+            out = hnd.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+        }
+    }
+
+    /** */
+    private class PredicateImpl extends AbstractScalarPredicate<SingleScalar> implements Predicate<Row> {
+        /**
+         * @param scalar Scalar.
+         */
+        private PredicateImpl(SingleScalar scalar) {
+            super(scalar);
         }
 
         /** {@inheritDoc} */
         @Override public boolean test(Row r) {
             scalar.execute(ctx, r, out);
-
-            return Boolean.TRUE == handler.get(0, out);
+            return Boolean.TRUE == hnd.get(0, out);
         }
     }
 
     /** */
-    private class BiPredicateImpl implements BiPredicate<Row, Row> {
-        /** */
-        private final BiScalar scalar;
-
-        /** */
-        private final Row out;
-
-        /** */
-        private final RowHandler<Row> handler;
-
+    private class BiPredicateImpl extends AbstractScalarPredicate<BiScalar> implements BiPredicate<Row, Row> {
         /**
          * @param scalar Scalar.
          */
         private BiPredicateImpl(BiScalar scalar) {
-            this.scalar = scalar;
-            handler = ctx.rowHandler();
-            out = handler.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+            super(scalar);
         }
 
         /** {@inheritDoc} */
         @Override public boolean test(Row r1, Row r2) {
             scalar.execute(ctx, r1, r2, out);
-
-            return Boolean.TRUE == handler.get(0, out);
+            return Boolean.TRUE == hnd.get(0, out);
         }
     }
 
