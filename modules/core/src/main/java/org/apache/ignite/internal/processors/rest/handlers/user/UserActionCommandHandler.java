@@ -66,8 +66,6 @@ public class UserActionCommandHandler extends GridRestCommandHandlerAdapter {
 
             IgniteSecurity security = ctx.security();
 
-            security.withContext(req.securityContext());
-
             switch (cmd) {
                 case ADD_USER:
                     security.createUser(req0.user(), req0.password().toCharArray());
