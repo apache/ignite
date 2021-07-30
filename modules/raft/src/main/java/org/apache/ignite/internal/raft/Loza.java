@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.raft;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
-import org.apache.ignite.internal.manager.IgniteComponent;
-import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
@@ -55,7 +55,7 @@ public class Loza implements IgniteComponent {
      *
      * @param clusterNetSvc Cluster network service.
      */
-    public Loza(ClusterService clusterNetSvc, String dataPath) {
+    public Loza(ClusterService clusterNetSvc, Path dataPath) {
         this.clusterNetSvc = clusterNetSvc;
 
         this.raftServer = new JRaftServerImpl(clusterNetSvc, dataPath);
@@ -67,9 +67,9 @@ public class Loza implements IgniteComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws NodeStoppingException {
+    @Override public void stop() throws Exception {
         // TODO: IGNITE-15161 Implement component's stop.
-//        raftServer.stop();
+        raftServer.stop();
     }
 
     /**

@@ -21,9 +21,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
@@ -40,8 +38,9 @@ import org.apache.ignite.internal.metastorage.client.Operations;
 import org.apache.ignite.internal.metastorage.client.WatchEvent;
 import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.internal.util.ByteUtils;
-import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultEntry;
+import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
@@ -56,10 +55,15 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     private static final IgniteLogger LOG = IgniteLogger.forClass(DistributedConfigurationStorage.class);
 
     /**
-     * Key for CAS-ing configuration keys to meta storage. This key is expected to be the first key in lexicographical
+     * Key for CAS-ing configuration keys to meta storage.
+     */
+    private static final ByteArray MASTER_KEY = new ByteArray(DISTRIBUTED_PREFIX + "$master$key");
+
+    /**
+     * Prefix for all keys in the distributed storage. This key is expected to be the first key in lexicographical
      * order of distributed configuration keys.
      */
-    private static final ByteArray MASTER_KEY = new ByteArray(DISTRIBUTED_PREFIX);
+    private static final ByteArray DST_KEYS_START_RANGE = new ByteArray(DISTRIBUTED_PREFIX);
 
     /**
      * This key is expected to be the last key in lexicographical order of distributed configuration keys. It is
@@ -76,7 +80,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     private final VaultManager vaultMgr;
 
     /** Configuration changes listener. */
-    private ConfigurationStorageListener lsnr;
+    private volatile ConfigurationStorageListener lsnr;
 
     /** Storage version. It stores actual meta storage revision, that is applied to configuration manager. */
     private final AtomicLong ver = new AtomicLong(0L);
@@ -95,25 +99,34 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override public synchronized Data readAll() throws StorageException {
-        HashMap<String, Serializable> data = new HashMap<>();
-
-        Iterator<VaultEntry> entries = storedDistributedConfigKeys();
+        var data = new HashMap<String, Serializable>();
 
         long appliedRevision = 0L;
 
-        if (!entries.hasNext())
-            return new Data(data, ver.get());
+        try (Cursor<VaultEntry> entries = storedDistributedConfigKeys()) {
+            for (VaultEntry entry : entries) {
+                ByteArray key = entry.key();
+                byte[] value = entry.value();
 
-        while (entries.hasNext()) {
-            var entry = entries.next();
+                // vault iterator should not return nulls as values
+                assert value != null;
 
-            if (entry.key().equals(MetaStorageManager.APPLIED_REV)) {
-                appliedRevision = ByteUtils.bytesToLong(Objects.requireNonNull(entry.value()));
+                if (key.equals(MetaStorageManager.APPLIED_REV)) {
+                    appliedRevision = ByteUtils.bytesToLong(value);
 
-                continue;
+                    continue;
+                }
+
+                if (key.equals(MASTER_KEY))
+                    continue;
+
+                String dataKey = key.toString().substring((DISTRIBUTED_PREFIX).length());
+
+                data.put(dataKey, (Serializable)ByteUtils.fromBytes(value));
             }
-
-            data.put(entry.key().toString().substring((DISTRIBUTED_PREFIX).length()), (Serializable)ByteUtils.fromBytes(entry.value()));
+        }
+        catch (Exception e) {
+            throw new StorageException("Exception when closing a Vault cursor", e);
         }
 
         if (!data.isEmpty()) {
@@ -175,7 +188,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
             // TODO: registerWatchByPrefix could throw OperationTimeoutException and CompactedException and we should
             // TODO: properly handle such cases https://issues.apache.org/jira/browse/IGNITE-14604
-            metaStorageMgr.registerWatchByPrefix(MASTER_KEY, new WatchListener() {
+            metaStorageMgr.registerWatchByPrefix(DST_KEYS_START_RANGE, new WatchListener() {
                 @Override public boolean onUpdate(@NotNull WatchEvent events) {
                     HashMap<String, Serializable> data = new HashMap<>();
 
@@ -186,14 +199,20 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
                     for (EntryEvent event : events.entryEvents()) {
                         Entry e = event.newEntry();
 
-                        if (!e.key().equals(MASTER_KEY)) {
-                            data.put(e.key().toString().substring((DISTRIBUTED_PREFIX).length()),
-                                e.value() == null ? null : (Serializable)ByteUtils.fromBytes(e.value()));
+                        if (e.key().equals(MASTER_KEY))
+                            entryForMasterKey = e;
+                        else {
+                            String key = e.key().toString().substring((DISTRIBUTED_PREFIX).length());
+
+                            Serializable value = e.value() == null ?
+                                null :
+                                (Serializable)ByteUtils.fromBytes(e.value());
+
+                            data.put(key, value);
 
                             if (maxRevision < e.revision())
                                 maxRevision = e.revision();
-                        } else
-                            entryForMasterKey = e;
+                        }
                     }
 
                     // Contract of meta storage ensures that all updates of one revision will come in one batch.
@@ -239,17 +258,18 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     }
 
     /**
-     * Method that returns all distributed configuration keys from the meta storage that were stored in the vault filtered out by the
-     * current applied revision as an upper bound. Applied revision is a revision of the last successful vault update.
+     * Method that returns all distributed configuration keys from the meta storage that were stored in the vault
+     * filtered out by the current applied revision as an upper bound. Applied revision is a revision of the last
+     * successful vault update.
      * <p>
      * This is possible to distinguish cfg keys from meta storage because we add a special prefix {@link
      * MetaStorageManager#DISTRIBUTED_PREFIX} to all configuration keys that we put to the meta storage.
      *
      * @return Iterator built upon all distributed configuration entries stored in vault.
      */
-    private @NotNull Iterator<VaultEntry> storedDistributedConfigKeys() {
+    private @NotNull Cursor<VaultEntry> storedDistributedConfigKeys() {
         // TODO: rangeWithAppliedRevision could throw OperationTimeoutException and CompactedException and we should
         // TODO: properly handle such cases https://issues.apache.org/jira/browse/IGNITE-14604
-        return vaultMgr.range(MASTER_KEY, DST_KEYS_END_RANGE);
+        return vaultMgr.range(DST_KEYS_START_RANGE, DST_KEYS_END_RANGE);
     }
 }

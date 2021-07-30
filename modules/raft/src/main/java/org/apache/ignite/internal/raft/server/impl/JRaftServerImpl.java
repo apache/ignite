@@ -17,14 +17,17 @@
 package org.apache.ignite.internal.raft.server.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.raft.server.RaftServer;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
@@ -61,7 +64,7 @@ public class JRaftServerImpl implements RaftServer {
     private final ClusterService service;
 
     /** Data path. */
-    private final String dataPath;
+    private final Path dataPath;
 
     /** Server instance. */
     private IgniteRpcServer rpcServer;
@@ -79,7 +82,7 @@ public class JRaftServerImpl implements RaftServer {
      * @param service Cluster service.
      * @param dataPath Data path.
      */
-    public JRaftServerImpl(ClusterService service, String dataPath) {
+    public JRaftServerImpl(ClusterService service, Path dataPath) {
         this(service, dataPath, new NodeOptions());
     }
 
@@ -90,15 +93,13 @@ public class JRaftServerImpl implements RaftServer {
      */
     public JRaftServerImpl(
         ClusterService service,
-        String dataPath,
+        Path dataPath,
         NodeOptions opts
     ) {
         this.service = service;
         this.dataPath = dataPath;
         this.nodeManager = new NodeManager();
         this.opts = opts;
-
-        assert service.topologyService().localMember() != null;
 
         if (opts.getServerName() == null)
             opts.setServerName(service.localConfiguration().getName());
@@ -146,10 +147,12 @@ public class JRaftServerImpl implements RaftServer {
      * @param groupId Group id.
      * @return The path to persistence folder.
      */
-    public String getServerDataPath(String groupId) {
+    public Path getServerDataPath(String groupId) {
         ClusterNode clusterNode = service.topologyService().localMember();
 
-        return this.dataPath + File.separator + groupId + "_" + clusterNode.address().toString().replace(':', '_');
+        String dirName = groupId + "_" + clusterNode.address().toString().replace(':', '_');
+
+        return this.dataPath.resolve(dirName);
     }
 
     /** {@inheritDoc} */
@@ -159,14 +162,20 @@ public class JRaftServerImpl implements RaftServer {
             return false;
 
         // Thread pools are shared by all raft groups.
-        final NodeOptions nodeOptions = opts.copy();
+        NodeOptions nodeOptions = opts.copy();
 
-        final String serverDataPath = getServerDataPath(groupId);
-        new File(serverDataPath).mkdirs();
+        Path serverDataPath = getServerDataPath(groupId);
 
-        nodeOptions.setLogUri(serverDataPath + File.separator + "logs");
-        nodeOptions.setRaftMetaUri(serverDataPath + File.separator + "meta");
-        nodeOptions.setSnapshotUri(serverDataPath + File.separator + "snapshot");
+        try {
+            Files.createDirectories(serverDataPath);
+        }
+        catch (IOException e) {
+            throw new IgniteInternalException(e);
+        }
+
+        nodeOptions.setLogUri(serverDataPath.resolve("logs").toString());
+        nodeOptions.setRaftMetaUri(serverDataPath.resolve("meta").toString());
+        nodeOptions.setSnapshotUri(serverDataPath.resolve("snapshot").toString());
 
         nodeOptions.setFsm(new DelegatingStateMachine(lsnr));
 

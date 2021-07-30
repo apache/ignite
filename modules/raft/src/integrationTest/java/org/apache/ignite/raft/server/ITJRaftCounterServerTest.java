@@ -17,9 +17,9 @@
 
 package org.apache.ignite.raft.server;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
@@ -166,7 +167,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         ClusterService service = clusterService("server" + idx, PORT + idx, List.of(addr), true);
 
-        JRaftServerImpl server = new JRaftServerImpl(service, dataPath.toString()) {
+        JRaftServerImpl server = new JRaftServerImpl(service, dataPath) {
             @Override public void stop() {
                 servers.remove(this);
 
@@ -303,11 +304,20 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         client2.snapshot(server.localPeer(COUNTER_GROUP_1)).get();
 
-        String snapshotDir0 = server.getServerDataPath(COUNTER_GROUP_0) + File.separator + "snapshot";
-        assertEquals(1, new File(snapshotDir0).list().length);
+        Path snapshotDir0 = server.getServerDataPath(COUNTER_GROUP_0).resolve("snapshot");
+        assertEquals(1L, countFiles(snapshotDir0));
 
-        String snapshotDir1 = server.getServerDataPath(COUNTER_GROUP_1) + File.separator + "snapshot";
-        assertEquals(1, new File(snapshotDir1).list().length);
+        Path snapshotDir1 = server.getServerDataPath(COUNTER_GROUP_1).resolve("snapshot");
+        assertEquals(1L, countFiles(snapshotDir1));
+    }
+
+    /**
+     * Returns the number of files in the given directory (non-recursive).
+     */
+    private static long countFiles(Path dir) throws IOException {
+        try (Stream<Path> files = Files.list(dir)) {
+            return files.count();
+        }
     }
 
     @Test
@@ -523,8 +533,8 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
             }
         }
 
-        String serverDataPath0 = toStop.getServerDataPath(COUNTER_GROUP_0);
-        String serverDataPath1 = toStop.getServerDataPath(COUNTER_GROUP_1);
+        Path serverDataPath0 = toStop.getServerDataPath(COUNTER_GROUP_0);
+        Path serverDataPath1 = toStop.getServerDataPath(COUNTER_GROUP_1);
 
         int stopIdx = servers.indexOf(toStop);
 
@@ -539,8 +549,8 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         }
 
         if (cleanDir) {
-            IgniteUtils.deleteIfExists(Paths.get(serverDataPath0));
-            IgniteUtils.deleteIfExists(Paths.get(serverDataPath1));
+            IgniteUtils.deleteIfExists(serverDataPath0);
+            IgniteUtils.deleteIfExists(serverDataPath1);
         }
 
         var svc2 = startServer(stopIdx, r -> {

@@ -257,7 +257,7 @@ public class IgnitionImpl implements Ignition {
             Loza raftMgr = doStartComponent(
                 nodeName,
                 startedComponents,
-                new Loza(clusterNetSvc, workDir.toString())
+                new Loza(clusterNetSvc, workDir)
             );
 
             // Meta storage Component startup.

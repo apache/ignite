@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -183,7 +182,7 @@ public class ITMetaStorageServicePersistenceTest {
             .orElseThrow();
 
         // Get the path to that node's raft directory
-        String serverDataPath = toStop.getServerDataPath(METASTORAGE_RAFT_GROUP_NAME);
+        Path serverDataPath = toStop.getServerDataPath(METASTORAGE_RAFT_GROUP_NAME);
 
         // Get the path to that node's RocksDB key-value storage
         Path dbPath = getStorage(toStop).getDbPath();
@@ -221,7 +220,7 @@ public class ITMetaStorageServicePersistenceTest {
             // Delete stopped node's raft directory and key-value storage directory
             // to check if snapshot could be restored by the restarted node
             IgniteUtils.deleteIfExists(dbPath);
-            IgniteUtils.deleteIfExists(Paths.get(serverDataPath));
+            IgniteUtils.deleteIfExists(serverDataPath);
         }
 
         if (testData.writeAfterSnapshot) {
@@ -372,7 +371,7 @@ public class ITMetaStorageServicePersistenceTest {
 
         Path jraft = workDir.resolve("jraft" + idx);
 
-        JRaftServerImpl server = new JRaftServerImpl(service, jraft.toString()) {
+        JRaftServerImpl server = new JRaftServerImpl(service, jraft) {
             @Override public void stop() {
                 super.stop();
 

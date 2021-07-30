@@ -163,7 +163,7 @@ public class ITDistributedTableTest {
     public void partitionListener() throws Exception {
         String grpId = "part";
 
-        RaftServer partSrv = new JRaftServerImpl(cluster.get(0), dataPath.toString());
+        RaftServer partSrv = new JRaftServerImpl(cluster.get(0), dataPath);
 
         partSrv.start();
 
@@ -226,7 +226,7 @@ public class ITDistributedTableTest {
         HashMap<ClusterNode, RaftServer> raftServers = new HashMap<>(NODES);
 
         for (int i = 0; i < NODES; i++) {
-            var raftSrv = new JRaftServerImpl(cluster.get(i), dataPath.toString());
+            var raftSrv = new JRaftServerImpl(cluster.get(i), dataPath);
 
             raftSrv.start();
 
