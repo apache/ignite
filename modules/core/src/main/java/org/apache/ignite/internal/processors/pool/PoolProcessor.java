@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -40,10 +41,16 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.thread.SecurityAwareIoPool;
+import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedExecutor;
+import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
+import org.apache.ignite.internal.processors.security.thread.SecurityAwareThreadPoolExecutor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
@@ -165,7 +172,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Failed to register IO executor pool because its ID as " +
                             "already used: " + id);
 
-                    extPools[id] = ex;
+                    extPools[id] = ctx.security().enabled() ? new SecurityAwareIoPool(ctx.security(), ex) : ex;
                 }
             }
         }
@@ -187,7 +194,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
 
-        execSvc = new IgniteThreadPoolExecutor(
+        execSvc = createExecutorService(
             "pub",
             cfg.getIgniteInstanceName(),
             cfg.getPublicThreadPoolSize(),
@@ -201,7 +208,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
 
-        svcExecSvc = new IgniteThreadPoolExecutor(
+        svcExecSvc = createExecutorService(
             "svc",
             cfg.getIgniteInstanceName(),
             cfg.getServiceThreadPoolSize(),
@@ -215,7 +222,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
 
-        sysExecSvc = new IgniteThreadPoolExecutor(
+        sysExecSvc = createExecutorService(
             "sys",
             cfg.getIgniteInstanceName(),
             cfg.getSystemThreadPoolSize(),
@@ -231,7 +238,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         WorkersRegistry workerRegistry = ctx.workersRegistry();
 
-        stripedExecSvc = new StripedExecutor(
+        stripedExecSvc = createStripedExecutor(
             cfg.getStripedPoolSize(),
             cfg.getIgniteInstanceName(),
             "sys",
@@ -241,6 +248,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                     ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 }
             },
+            false,
             workerRegistry,
             cfg.getFailureDetectionTimeout());
 
@@ -250,7 +258,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         // not be needed.
         validateThreadPoolSize(cfg.getManagementThreadPoolSize(), "management");
 
-        mgmtExecSvc = new IgniteThreadPoolExecutor(
+        mgmtExecSvc = createExecutorService(
             "mgmt",
             cfg.getIgniteInstanceName(),
             cfg.getManagementThreadPoolSize(),
@@ -268,7 +276,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         // not be needed.
         validateThreadPoolSize(cfg.getPeerClassLoadingThreadPoolSize(), "peer class loading");
 
-        p2pExecSvc = new IgniteThreadPoolExecutor(
+        p2pExecSvc = createExecutorService(
             "p2p",
             cfg.getIgniteInstanceName(),
             cfg.getPeerClassLoadingThreadPoolSize(),
@@ -280,7 +288,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         p2pExecSvc.allowCoreThreadTimeOut(true);
 
-        dataStreamerExecSvc = new StripedExecutor(
+        dataStreamerExecSvc = createStripedExecutor(
             cfg.getDataStreamerThreadPoolSize(),
             cfg.getIgniteInstanceName(),
             "data-streamer",
@@ -308,7 +316,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         if (cfg.getConnectorConfiguration() != null) {
             validateThreadPoolSize(cfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
 
-            restExecSvc = new IgniteThreadPoolExecutor(
+            restExecSvc = createExecutorService(
                 "rest",
                 cfg.getIgniteInstanceName(),
                 cfg.getConnectorConfiguration().getThreadPoolSize(),
@@ -324,7 +332,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         validateThreadPoolSize(cfg.getUtilityCacheThreadPoolSize(), "utility cache");
 
-        utilityCacheExecSvc = new IgniteThreadPoolExecutor(
+        utilityCacheExecSvc = createExecutorService(
             "utility",
             cfg.getIgniteInstanceName(),
             cfg.getUtilityCacheThreadPoolSize(),
@@ -336,7 +344,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
-        affExecSvc = new IgniteThreadPoolExecutor(
+        affExecSvc = createExecutorService(
             "aff",
             cfg.getIgniteInstanceName(),
             1,
@@ -351,7 +359,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         if (IgniteComponentType.INDEXING.inClassPath()) {
             int cpus = Runtime.getRuntime().availableProcessors();
 
-            idxExecSvc = new IgniteThreadPoolExecutor(
+            idxExecSvc = createExecutorService(
                 "idx",
                 cfg.getIgniteInstanceName(),
                 cpus,
@@ -366,7 +374,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
             validateThreadPoolSize(buildIdxThreadPoolSize, "build-idx");
 
-            buildIdxExecSvc = new IgniteThreadPoolExecutor(
+            buildIdxExecSvc = createExecutorService(
                 "build-idx-runner",
                 cfg.getIgniteInstanceName(),
                 buildIdxThreadPoolSize,
@@ -382,7 +390,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");
 
-        qryExecSvc = new IgniteThreadPoolExecutor(
+        qryExecSvc = createExecutorService(
             "query",
             cfg.getIgniteInstanceName(),
             cfg.getQueryThreadPoolSize(),
@@ -394,7 +402,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         qryExecSvc.allowCoreThreadTimeOut(true);
 
-        schemaExecSvc = new IgniteThreadPoolExecutor(
+        schemaExecSvc = createExecutorService(
             "schema",
             cfg.getIgniteInstanceName(),
             2,
@@ -408,7 +416,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         validateThreadPoolSize(cfg.getRebalanceThreadPoolSize(), "rebalance");
 
-        rebalanceExecSvc = new IgniteThreadPoolExecutor(
+        rebalanceExecSvc = createExecutorService(
             "rebalance",
             cfg.getIgniteInstanceName(),
             cfg.getRebalanceThreadPoolSize(),
@@ -420,7 +428,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
-        rebalanceStripedExecSvc = new IgniteStripedThreadPoolExecutor(
+        rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
             cfg.getRebalanceThreadPoolSize(),
             cfg.getIgniteInstanceName(),
             "rebalance-striped",
@@ -434,7 +442,7 @@ public class PoolProcessor extends GridProcessorAdapter {
             customExecs = new HashMap<>();
 
             for (ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
-                ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
+                ThreadPoolExecutor exec = createExecutorService(
                     execCfg.getName(),
                     cfg.getIgniteInstanceName(),
                     execCfg.getSize(),
@@ -850,5 +858,90 @@ public class PoolProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Custom executor size must be positive [name=" + cfg.getName() +
                     ", size=" + cfg.getSize() + ']');
         }
+    }
+
+    /** Creates instance {@link IgniteStripedThreadPoolExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
+    private IgniteStripedThreadPoolExecutor createStripedThreadPoolExecutor(
+        int concurrentLvl,
+        String igniteInstanceName,
+        String threadNamePrefix,
+        UncaughtExceptionHandler eHnd,
+        boolean allowCoreThreadTimeOut,
+        long keepAliveTime
+    ) {
+         return ctx.security().enabled()
+             ? new SecurityAwareStripedThreadPoolExecutor(
+                 ctx.security(),
+                 concurrentLvl,
+                 igniteInstanceName,
+                 threadNamePrefix,
+                 eHnd,
+                 allowCoreThreadTimeOut,
+                 keepAliveTime)
+             : new IgniteStripedThreadPoolExecutor(
+                 concurrentLvl,
+                 igniteInstanceName,
+                 threadNamePrefix,
+                 eHnd,
+                 allowCoreThreadTimeOut,
+                 keepAliveTime);
+    }
+
+    /** Creates instance {@link StripedExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
+    private StripedExecutor createStripedExecutor(
+        int cnt,
+        String igniteInstanceName,
+        String poolName,
+        final IgniteLogger log,
+        IgniteInClosure<Throwable> errHnd,
+        boolean stealTasks,
+        GridWorkerListener gridWorkerLsnr,
+        long failureDetectionTimeout
+    ) {
+        return ctx.security().enabled()
+            ? new SecurityAwareStripedExecutor(
+                ctx.security(),
+                cnt,
+                igniteInstanceName,
+                poolName,
+                log,
+                errHnd,
+                stealTasks,
+                gridWorkerLsnr,
+                failureDetectionTimeout)
+            : new StripedExecutor(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout);
+    }
+
+    /** Creates instance {@link IgniteThreadPoolExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
+    private IgniteThreadPoolExecutor createExecutorService(
+        String threadNamePrefix,
+        String igniteInstanceName,
+        int corePoolSize,
+        int maxPoolSize,
+        long keepAliveTime,
+        BlockingQueue<Runnable> workQ,
+        byte plc,
+        UncaughtExceptionHandler eHnd
+    ) {
+        return ctx.security().enabled()
+            ? new SecurityAwareThreadPoolExecutor(
+                ctx.security(),
+                threadNamePrefix,
+                igniteInstanceName,
+                corePoolSize,
+                maxPoolSize,
+                keepAliveTime,
+                workQ,
+                plc,
+                eHnd)
+            : new IgniteThreadPoolExecutor(
+                threadNamePrefix,
+                igniteInstanceName,
+                corePoolSize,
+                maxPoolSize,
+                keepAliveTime,
+                workQ,
+                plc,
+                eHnd);
     }
 }

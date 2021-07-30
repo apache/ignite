@@ -78,7 +78,6 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param attrs Map of attributes.
      * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
      * @param internal {@code True} in case of internal task.
-     * @param subjId Subject ID.
      * @param execName Custom executor name.
      * @return New session if one did not exist, or existing one.
      */
@@ -96,7 +95,6 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         Map<Object, Object> attrs,
         boolean fullSup,
         boolean internal,
-        UUID subjId,
         @Nullable String execName) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
@@ -114,7 +112,6 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 ctx,
                 false,
                 internal,
-                subjId,
                 execName);
         }
 
@@ -139,7 +136,6 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         ctx,
                         true,
                         internal,
-                        subjId,
                         execName));
 
                 if (old != null)

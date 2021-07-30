@@ -1097,6 +1097,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new FailureProcessor(ctx));
 
+            // Start security processors.
+            startProcessor(securityProcessor());
+
             PoolProcessor pools = new PoolProcessor(ctx);
 
             startProcessor(pools);
@@ -1115,9 +1118,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Timeout processor needs to be started before managers,
             // as managers may depend on it.
             startProcessor(new GridTimeoutProcessor(ctx));
-
-            // Start security processors.
-            startProcessor(securityProcessor());
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
