@@ -86,15 +86,9 @@ public final class Commons {
      * @param row2 row2.
      * @return Returns field by offset.
      */
-    public static Object getFieldFromBiRows(RowHandler<Object[]> hnd, int offset, Object row1, Object row2) {
-        if (!row1.getClass().isArray() || !row2.getClass().isArray())
-            throw new IllegalArgumentException();
-
-        Object[] cols1 = (Object[])row1;
-        Object[] cols2 = (Object[])row2;
-
-        return offset < hnd.columnCount(cols1) ? hnd.get(offset, cols1) :
-            hnd.get(offset - hnd.columnCount(cols1), cols2);
+    public static <Row> Object getFieldFromBiRows(RowHandler<Row> hnd, int offset, Row row1, Row row2) {
+        return offset < hnd.columnCount(row1) ? hnd.get(offset, row1) :
+            hnd.get(offset - hnd.columnCount(row1), row2);
     }
 
     /**
