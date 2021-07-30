@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
@@ -164,6 +165,11 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      */
     public ClientResourceRegistry resources() {
         return resReg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte clientType() {
+        return THIN_CLIENT;
     }
 
     /** {@inheritDoc} */
