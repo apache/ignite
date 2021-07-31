@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -106,7 +105,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -3292,8 +3290,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         continue;
                     }
 
-                    NavigableMap<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap = null;
-
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
@@ -3538,12 +3534,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             });
                         }
                         else {
-                            resVer = assignsSet.stream()
+                            resVer = resVer == null ? assignsSet.stream()
                                 .filter(g -> !g.isLocal())
                                 .map(g -> g.topology().readyTopologyVersion())
                                 .filter(Objects::nonNull)
                                 .findFirst()
-                                .orElse(exchId.topologyVersion());
+                                .orElse(exchId.topologyVersion()) : resVer;
 
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", force=" + (exchFut == null) +
@@ -3553,7 +3549,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                     else {
                         U.log(log, "Skipping rebalancing (no affinity changes) " +
-                            "[top=" + exchId.topologyVersion() +
+                            "[top=" + resVer == null ? exchId.topologyVersion() : resVer +
                             ", evt=" + exchId.discoveryEventName() +
                             ", evtNode=" + exchId.nodeId() +
                             ", client=" + cctx.kernalContext().clientNode() + ']');
