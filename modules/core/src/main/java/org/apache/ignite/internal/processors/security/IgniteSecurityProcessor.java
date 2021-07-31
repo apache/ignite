@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.SecurityAwarePredicate;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
@@ -56,6 +60,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNIT
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.util.lang.GridFunc.asList;
 
 /**
  * Default {@code IgniteSecurity} implementation.
@@ -110,6 +115,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Node local security context ready future. */
     private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
+
+    /** Security wrappers for exclude from P2P class loader. */
+    private final String[] p2pSecurityWrappsExcl = {SecurityAwarePredicate.class.getName()};
 
     /**
      * @param ctx Grid kernal context.
@@ -243,6 +251,21 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             sandbox = new NoOpSandbox();
         }
+
+        String[] p2pExc = ctx.config().getPeerClassLoadingLocalClassPathExclude();
+        String[] p2pExclWithSecWrapps;
+
+        if (p2pExc == null) {
+            p2pExclWithSecWrapps = p2pSecurityWrappsExcl;
+        }
+        else {
+            List<String> strings = new ArrayList<>(Arrays.asList(p2pExc));
+            strings.addAll(asList(p2pSecurityWrappsExcl));
+
+            p2pExclWithSecWrapps = Arrays.copyOf(strings.toArray(), strings.size(), String[].class);
+        }
+
+        ctx.config().setPeerClassLoadingLocalClassPathExclude(p2pExclWithSecWrapps);
     }
 
     /**
