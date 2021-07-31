@@ -306,9 +306,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Histogram of blocking PME durations. */
     private volatile HistogramMetricImpl blockingDurationHistogram;
 
-    /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
-    private volatile long rebalanceDelay;
-
     /** Metric that shows whether cluster is in fully rebalanced state. */
     private volatile BooleanMetricImpl rebalanced;
 
@@ -2646,13 +2643,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         this.exchMergeTestWaitVer = exchMergeTestWaitVer;
         this.mergedEvtsForTest = mergedEvtsForTest;
-    }
-
-    /**
-     * @param delay Rebalance delay.
-     */
-    public void rebalanceDelay(long delay) {
-        this.rebalanceDelay = delay;
     }
 
     /**
