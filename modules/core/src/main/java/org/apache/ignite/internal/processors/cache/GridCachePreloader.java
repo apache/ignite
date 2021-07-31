@@ -26,13 +26,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,27 +64,19 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param exchId Exchange ID.
-     * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
-     * @return Partition assignments which will be requested from supplier nodes.
-     */
-    @Nullable public GridDhtPreloaderAssignments generateAssignments(
-        GridDhtPartitionExchangeId exchId,
-        @Nullable GridDhtPartitionsExchangeFuture exchFut);
-
-    /**
      * Adds assignments to preloader.
      *
-     * @param assignments Assignments to add.
-     * @param forcePreload {@code True} if preload requested by {@link ForceRebalanceExchangeTask}.
+     * @param exchId Exchange ID.
+     * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
      * @param rebalanceId Rebalance id created by exchange thread.
-     * @param next Rebalance's future follows after the current one.
+     * @param next Rebalance future follows after the current one.
      * @param forcedRebFut External future for forced rebalance.
      * @param compatibleRebFut Future for waiting for compatible rebalances.
      * @return Future if rebalance was planned or null.
      */
-    public RebalanceFuture addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload,
+    public RebalanceFuture addAssignments(
+        GridDhtPartitionExchangeId exchId,
+        @Nullable GridDhtPartitionsExchangeFuture exchFut,
         long rebalanceId,
         final RebalanceFuture next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,

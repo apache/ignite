@@ -30,10 +30,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -50,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -114,7 +116,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.lat
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -3293,8 +3294,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     NavigableMap<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap = null;
 
-                    boolean forcePreload = false;
-
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
@@ -3337,8 +3336,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                          }
                     }
                     else if (task instanceof ForceRebalanceExchangeTask) {
-                        forcePreload = true;
-
                         timeout = 0; // Force refresh.
 
                         exchId = ((ForceRebalanceExchangeTask)task).exchangeId();
@@ -3487,63 +3484,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (rebalanceRequired(exchFut)) {
-                        if (rebalanceDelay > 0)
-                            U.sleep(rebalanceDelay);
+                        NavigableSet<CacheGroupContext> assignsSet = cctx.cache().cacheGroups().stream()
+                            .collect(Collectors.toCollection(() -> new TreeSet<>(new CacheRebalanceOrderComparator())));
 
-                        assignsMap = new TreeMap<>(new CacheRebalanceOrderComparator());
-
-                        IgniteCacheSnapshotManager snp = cctx.snapshot();
-
-                        for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                            long delay = grp.config().getRebalanceDelay();
-
-                            boolean disableRebalance = snp.partitionsAreFrozen(grp);
-
-                            GridDhtPreloaderAssignments assigns = null;
-
-                            // Don't delay for dummy reassigns to avoid infinite recursion.
-                            if ((delay == 0 || forcePreload) && !disableRebalance)
-                                assigns = grp.preloader().generateAssignments(exchId, exchFut);
-
-                            assignsMap.put(grp, assigns);
-
-                            if (resVer == null && !grp.isLocal())
-                                resVer = grp.topology().readyTopologyVersion();
-                        }
-                    }
-
-                    if (resVer == null)
-                        resVer = exchId.topologyVersion();
-
-                    if (!F.isEmpty(assignsMap)) {
-                        int size = assignsMap.size();
-
-                        RebalanceFuture r = null;
+                        RebalanceFuture next = null;
 
                         GridCompoundFuture<Boolean, Boolean> rebFut = new GridCompoundFuture<>();
-
-                        ArrayList<String> rebList = new ArrayList<>(size);
 
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
-                        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.descendingMap().entrySet()) {
-                            CacheGroupContext grp = e.getKey();
-
-                            RebalanceFuture cur = grp.preloader().addAssignments(e.getValue(),
-                                forcePreload,
+                        for (CacheGroupContext grp : assignsSet.descendingSet()) {
+                            RebalanceFuture cur = grp.preloader().addAssignments(exchId,
+                                exchFut,
                                 cnt,
-                                r,
+                                next,
                                 forcedRebFut,
                                 rebFut);
 
-                            if (cur != null) {
-                                rebList.add(grp.cacheOrGroupName());
-
-                                r = cur;
-                            }
+                            if (cur != null)
+                                next = cur;
                         }
 
                         rebFut.markInitialized();
@@ -3551,15 +3513,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (r != null) {
-                            Collections.reverse(rebList);
-
-                            RebalanceFuture finalR = r;
+                        if (next != null) {
+                            RebalanceFuture finalR = next;
 
                             // Waits until compatible rebalances are finished.
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
+                            List<String> rebList = assignsSet.stream().map(CacheGroupContext::cacheOrGroupName)
+                                .collect(Collectors.toList());
+
                             long rebId = cnt;
 
                             rebFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
@@ -3575,6 +3538,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             });
                         }
                         else {
+                            resVer = assignsSet.stream()
+                                .filter(g -> !g.isLocal())
+                                .map(g -> g.topology().readyTopologyVersion())
+                                .filter(Objects::nonNull)
+                                .findFirst()
+                                .orElse(exchId.topologyVersion());
+
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", force=" + (exchFut == null) +
                                 ", evt=" + exchId.discoveryEventName() +
@@ -3583,7 +3553,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                     else {
                         U.log(log, "Skipping rebalancing (no affinity changes) " +
-                            "[top=" + resVer +
+                            "[top=" + exchId.topologyVersion() +
                             ", evt=" + exchId.discoveryEventName() +
                             ", evtNode=" + exchId.nodeId() +
                             ", client=" + cctx.kernalContext().clientNode() + ']');
@@ -3620,7 +3590,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          * Rebalance is not required on a client node and is always required when the exchange future is null.
          *
-         * @param exchFut Exchange future.
+         * @param exchFut Exchange future or {@code null} if it is force rebalance task.
          * @return {@code True} if rebalance is required at least for one of cache groups.
          */
         private boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut) {
