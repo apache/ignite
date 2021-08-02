@@ -88,10 +88,10 @@ public class SnapshotRestoreProcess {
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
 
     /** Snapshot restore operation finish message. */
-    private static final String OP_FINISHED_MSG = "Successfully restored cache group(s) from the snapshot [reqId=%s]";
+    private static final String OP_FINISHED_MSG = "Cache groups have been successfully restored from the snapshot [reqId=%s].";
 
     /** Snapshot restore operation failed message. */
-    private static final String OP_FAILED_MSG = "Failed to restore snapshot cache group [reqId=%s%s]";
+    private static final String OP_FAILED_MSG = "Failed to restore snapshot cache groups [reqId=%s%s].";
 
     /** Kernal context. */
     private final GridKernalContext ctx;
