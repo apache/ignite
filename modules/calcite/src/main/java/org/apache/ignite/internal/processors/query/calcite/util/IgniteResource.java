@@ -46,4 +46,9 @@ public interface IgniteResource {
 
     @Resources.BaseMessage("Option ''{0}'' has already been defined")
     Resources.ExInst<SqlValidatorException> optionAlreadyDefined(String optName);
+
+    /** */
+    @Resources.BaseMessage("Illegal ''{0}'' function params. " +
+        "In an aggregate with DISTINCT, ORDER BY expressions must appear in argument list.")
+    Resources.ExInst<SqlValidatorException> illegalAggregationFunctionParams(String a0);
 }

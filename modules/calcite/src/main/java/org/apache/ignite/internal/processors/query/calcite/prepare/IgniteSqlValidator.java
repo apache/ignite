@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.calcite.plan.RelOptTable;
@@ -41,6 +42,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
@@ -53,6 +55,7 @@ import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.util.Litmus;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl;
@@ -312,14 +315,47 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case AVG:
             case MIN:
             case MAX:
+                return;
             case STRING_AGG:
             case GROUP_CONCAT:
-
+                validateStringAggFunction(call, aggFunction);
                 return;
             default:
                 throw newValidationError(call,
                     IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
         }
+    }
+
+    /** */
+    private void validateStringAggFunction(SqlCall call, SqlAggFunction function) {
+        if (call.getFunctionQuantifier() == null)
+            return;
+
+        SqlLiteral quantifier = call.getFunctionQuantifier();
+
+        if (!(quantifier.getValue() instanceof SqlSelectKeyword))
+            return;
+
+        SqlSelectKeyword keyword = (SqlSelectKeyword)quantifier.getValue();
+
+        if (SqlSelectKeyword.DISTINCT != keyword)
+            return;
+
+        List<SqlNode> operands = call.getOperandList();
+
+        Optional<SqlNode> nodeList = operands.stream().filter(operand -> operand instanceof SqlNodeList).findFirst();
+
+        if (!nodeList.isPresent())
+            return;
+
+        Optional<SqlNode> illegalArguments = ((SqlNodeList)nodeList.get()).stream()
+            .filter(
+                node -> operands.stream().noneMatch(operand -> operand.equalsDeep(node, Litmus.IGNORE))
+            ).findAny();
+
+        if (illegalArguments.isPresent())
+            throw newValidationError(call,
+                IgniteResource.INSTANCE.illegalAggregationFunctionParams(function.getName()));
     }
 
     /** */

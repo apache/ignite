@@ -60,13 +60,32 @@ public class Accumulators {
 
         if (comp == null)
             supplier = fac;
-        else
-            supplier = () -> new SortingAccumulator(fac, comp);
+        else {
+            int colFieldsCnt = (int) calculateOuterCollations(call);
+            if (colFieldsCnt > 0)
+                supplier = () -> new SortingAccumulator(
+                    () -> new CollationExtracorAccumulator(fac, colFieldsCnt),
+                    comp
+                );
+            else
+                supplier = () -> new SortingAccumulator(fac, comp);
+        }
 
         if (call.isDistinct())
             return () -> new DistinctAccumulator(supplier);
 
         return supplier;
+    }
+
+    /** */
+    private static long calculateOuterCollations(AggregateCall call) {
+        List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
+        List<Integer> argList = call.getArgList();
+
+        return collations.stream().map(RelFieldCollation::getFieldIndex)
+            .map(argList::indexOf)
+            .filter(index -> index == -1) //collation not found in arglist
+            .count();
     }
 
     /** */
@@ -84,13 +103,20 @@ public class Accumulators {
 
         Map<Integer, Integer> mapping = new HashMap<>();
 
+        int collOff = 0;
         for (int i = 0; i < collations.size(); i++) {
             int idx = collations.get(i).getFieldIndex();
             int mapIdx = argList.indexOf(idx);
-            mapping.put(idx, mapIdx);
+            if (mapIdx == -1) { //collation not found in arglist
+                mapIdx = argList.size() + collOff;
+                collOff++;
+            }
+            if (idx != mapIdx)
+                mapping.put(idx, mapIdx);
         }
 
-        return call.getCollation().apply(Mappings.target(mapping, srcCnt, collations.size()));
+        return mapping.isEmpty() ?
+            call.getCollation() : call.getCollation().apply(Mappings.target(mapping, srcCnt, collations.size()));
     }
 
     /** */
@@ -1231,6 +1257,54 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true);
+        }
+    }
+
+    /** */
+    private static class CollationExtracorAccumulator implements Accumulator {
+        /** */
+        private final Accumulator acc;
+
+        /** */
+        private final int outerCollsCnt;
+
+        /**
+         * @param accSup Accumulator.
+         * @param outerCollsCnt Outer collations count.
+         */
+        public CollationExtracorAccumulator(Supplier<Accumulator> accSup, int outerCollsCnt) {
+            this.outerCollsCnt = outerCollsCnt;
+            this.acc = accSup.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            Object[] finalObjects = new Object[args.length - outerCollsCnt];
+
+            System.arraycopy(args, 0, finalObjects, 0, args.length - outerCollsCnt);
+
+            acc.add(finalObjects);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            CollationExtracorAccumulator other1 = (CollationExtracorAccumulator)other;
+            acc.apply(other1.acc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return acc.argumentTypes(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return acc.returnType(typeFactory);
         }
     }
 }

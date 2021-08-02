@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -38,6 +40,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
@@ -224,7 +227,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             return new Function<Object[], Object[]>() {
                 @Override public Object[] apply(Object[] args) {
                     for (int i = 0; i < args.length; i++)
-                        args[i] = casts.get(i).apply(args[i]);
+                        args[i] = casts.size() > i ? casts.get(i).apply(args[i]) : args[i];
                     return args;
                 }
             };
@@ -270,6 +273,9 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         /** */
         private final RowHandler<Row> handler;
 
+        /** Collation indexes. */
+        private final List<Integer> collations;
+
         /** */
         AccumulatorWrapperImpl(
             Accumulator accumulator,
@@ -286,6 +292,22 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             filterArg = call.hasFilter() ? call.filterArg : -1;
 
             handler = ctx.rowHandler();
+
+            collations = calculateCollationsFields(call);
+        }
+
+        /** */
+        private List<Integer> calculateCollationsFields(AggregateCall call) {
+            if (call.getCollation() == null || call.getCollation().getFieldCollations().isEmpty())
+                return Collections.emptyList();
+
+            List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
+            List<Integer> argList = call.getArgList();
+
+            return collations.stream()
+                .map(RelFieldCollation::getFieldIndex)
+                .filter(index -> !argList.contains(index))
+                .collect(Collectors.toList());
         }
 
         /** {@inheritDoc} */
@@ -295,13 +317,16 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            Object[] args = new Object[argList.size()];
+            Object[] args = new Object[argList.size() + collations.size()];
             for (int i = 0; i < argList.size(); i++) {
                 args[i] = handler.get(argList.get(i), row);
 
                 if (ignoreNulls && args[i] == null)
                     return;
             }
+
+            for (int i = 0; i < collations.size(); i++)
+                args[argList.size() + i] = handler.get(collations.get(i), row);
 
             accumulator.add(inAdapter.apply(args));
         }
