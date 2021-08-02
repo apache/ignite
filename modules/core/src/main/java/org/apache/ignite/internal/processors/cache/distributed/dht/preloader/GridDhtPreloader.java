@@ -367,7 +367,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public RebalanceFuture addAssignments(
+    @Override public RebalanceFuture prepare(
         GridDhtPartitionExchangeId exchId,
         @Nullable GridDhtPartitionsExchangeFuture exchFut,
         long rebalanceId,
@@ -376,16 +376,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         GridCompoundFuture<Boolean, Boolean> compatibleRebFut
     ) {
         long delay = grp.config().getRebalanceDelay();
-        boolean disableRebalance = ctx.snapshot().partitionsAreFrozen(grp);
         boolean forceRebalance = forcedRebFut != null;
 
-        GridDhtPreloaderAssignments assigns = null;
-
         // Don't delay for dummy reassigns to avoid infinite recursion.
-        if ((delay == 0 || forceRebalance) && !disableRebalance)
-            assigns = generateAssignments(exchId, exchFut);
-
-        return demander.addAssignments(assigns, forceRebalance, rebalanceId, next, forcedRebFut, compatibleRebFut);
+        return (delay == 0 || forceRebalance) ? demander.addAssignments(generateAssignments(exchId, exchFut), forceRebalance,
+            rebalanceId, next, forcedRebFut, compatibleRebFut) : null;
     }
 
     /**

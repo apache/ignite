@@ -151,7 +151,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public RebalanceFuture addAssignments(
+    @Override public RebalanceFuture prepare(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut,
         long rebalanceId,
