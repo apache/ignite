@@ -88,10 +88,10 @@ public class SnapshotRestoreProcess {
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
 
     /** Snapshot restore operation finish message. */
-    private static final String OP_FINISHED_MSG = "Cache groups have been successfully restored from the snapshot [reqId=%s].";
+    private static final String OP_FINISHED_MSG = "Cache groups have been successfully restored from the snapshot";
 
     /** Snapshot restore operation failed message. */
-    private static final String OP_FAILED_MSG = "Failed to restore snapshot cache groups [reqId=%s%s].";
+    private static final String OP_FAILED_MSG = "Failed to restore snapshot cache groups";
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -191,7 +191,7 @@ public class SnapshotRestoreProcess {
         catch (IgniteException e) {
             snpMgr.recordSnapshotEvent(
                 snpName,
-                String.format(OP_FAILED_MSG, "", e.getMessage()),
+                OP_FAILED_MSG + ": " + e.getMessage(),
                 EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
             );
 
@@ -202,14 +202,14 @@ public class SnapshotRestoreProcess {
             if (f.error() != null) {
                 snpMgr.recordSnapshotEvent(
                     snpName,
-                    String.format(OP_FAILED_MSG, fut0.rqId, f.error().getMessage()),
+                    OP_FAILED_MSG + ": " + f.error().getMessage() + " [reqId=" + fut0.rqId + "].",
                     EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
                 );
             }
             else {
                 snpMgr.recordSnapshotEvent(
                     snpName,
-                    String.format(OP_FINISHED_MSG, fut0.rqId),
+                    OP_FINISHED_MSG + " [reqId=" + fut0.rqId + "].",
                     EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED
                 );
             }
@@ -397,9 +397,9 @@ public class SnapshotRestoreProcess {
      */
     private void finishProcess(UUID reqId, @Nullable Throwable err) {
         if (err != null)
-            log.error(String.format(OP_FAILED_MSG, reqId, ""), err);
+            log.error(OP_FAILED_MSG + " [reqId=" + reqId + "].", err);
         else if (log.isInfoEnabled())
-            log.info(String.format(OP_FINISHED_MSG, reqId));
+            log.info(OP_FINISHED_MSG + " [reqId=" + reqId + "].");
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
