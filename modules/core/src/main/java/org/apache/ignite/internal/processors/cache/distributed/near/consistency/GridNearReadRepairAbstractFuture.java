@@ -139,7 +139,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected synchronized void map(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
 
-        assert futs.isEmpty();
+        assert futs.isEmpty(); // Any map or remap should start with empty future set.
 
         Map<KeyCacheObject, ClusterNode> primaryNodes = new HashMap<>();
 
