@@ -152,13 +152,6 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     ColumnDescriptor columnDescriptor(String fieldName);
 
     /**
-     * Returns column descriptor for the given field idx.
-     * @param fieldIdx Field index.
-     * @return Column descriptor.
-     */
-    ColumnDescriptor columnDescriptor(int fieldIdx);
-
-    /**
      * @return Type descriptor.
      */
     GridQueryTypeDescriptor typeDescription();

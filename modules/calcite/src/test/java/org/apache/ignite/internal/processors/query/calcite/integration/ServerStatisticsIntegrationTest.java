@@ -65,7 +65,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     };
 
     /** All types table non nullable fields. */
-    String[] NON_NULLABLE_FIELDS = {
+    private static final String[] NON_NULLABLE_FIELDS = {
         "short_field",
         "int_field",
         "long_field",
@@ -572,6 +572,12 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         @QuerySqlField
         public Timestamp timestamp_field;
 
+        /**
+         * Constructor.
+         *
+         * @param i idx to generate all fields values by.
+         * @param null_val Should object fields be equal to {@code null}.
+         */
         public AllTypes(int i, boolean null_val) {
             string_field = (null_val) ? null : "string_field_value" + i;
             byte_arr_field = (null_val) ? null : BigInteger.valueOf(i).toByteArray();
@@ -592,29 +598,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             timestamp_field = (null_val) ? null : Timestamp.valueOf(String.format("%04d-04-09 12:00:00", 1000 + i));
         }
 
-        public AllTypes(String string_field, byte[] byte_arr_field, boolean boolean_field, Boolean boolean_obj_field,
-            char char_field, Character character_field, short short_field, Short short_obj_field, int int_field,
-            Integer integer_field, long long_field, Long long_obj_field, float float_field, Float float_obj_field,
-            double double_field, Double double_obj_field, Date date_field, Time time_field, Timestamp timestamp_field) {
-            this.string_field = string_field;
-            this.byte_arr_field = byte_arr_field;
-            this.boolean_field = boolean_field;
-            this.boolean_obj_field = boolean_obj_field;
-            this.short_field = short_field;
-            this.short_obj_field = short_obj_field;
-            this.int_field = int_field;
-            this.integer_field = integer_field;
-            this.long_field = long_field;
-            this.long_obj_field = long_obj_field;
-            this.float_field = float_field;
-            this.float_obj_field = float_obj_field;
-            this.double_field = double_field;
-            this.double_obj_field = double_obj_field;
-            this.date_field = date_field;
-            this.time_field = time_field;
-            this.timestamp_field = timestamp_field;
-        }
-
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "AllTypes{" +
                 "string_field='" + string_field + '\'' +

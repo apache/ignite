@@ -170,11 +170,11 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Convert specified value into comparable type: BigDecimal,
      *
-     * @param value Value to convert to comparable form.
+     * @param val Value to convert to comparable form.
      * @return Comparable form of value.
      */
-    private BigDecimal toComparableValue(RexLiteral value) {
-        RelDataType type = value.getType();
+    private BigDecimal toComparableValue(RexLiteral val) {
+        RelDataType type = val.getType();
         if (type instanceof BasicSqlType) {
             BasicSqlType bType = (BasicSqlType)type;
 
@@ -183,76 +183,75 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                     return null;
 
                 case NUMERIC:
-                    return value.getValueAs(BigDecimal.class);
+                    return val.getValueAs(BigDecimal.class);
 
                 case DATE:
-                    return new BigDecimal(value.getValueAs(DateString.class).getMillisSinceEpoch());
+                    return new BigDecimal(val.getValueAs(DateString.class).getMillisSinceEpoch());
 
                 case TIME:
-                    return new BigDecimal(value.getValueAs(TimeString.class).getMillisOfDay());
+                    return new BigDecimal(val.getValueAs(TimeString.class).getMillisOfDay());
 
                 case TIMESTAMP:
-                    return new BigDecimal(value.getValueAs(TimestampString.class).getMillisSinceEpoch());
+                    return new BigDecimal(val.getValueAs(TimestampString.class).getMillisSinceEpoch());
 
                 case BOOLEAN:
-                    return (value.getValueAs(Boolean.class)) ? BigDecimal.ONE : BigDecimal.ZERO;
+                    return (val.getValueAs(Boolean.class)) ? BigDecimal.ONE : BigDecimal.ZERO;
 
             }
         }
 
-        //getOperand(value, );
         return null;
     }
 
     /**
      * Convert specified value into comparable type: BigDecimal,
      *
-     * @param value Value to convert to comparable form.
+     * @param val Value to convert to comparable form.
      * @return Comparable form of value.
      */
-    private BigDecimal toComparableValue(Value value) {
-        if (value == null)
+    private BigDecimal toComparableValue(Value val) {
+        if (val == null)
             return null;
 
-        switch (value.getType()) {
+        switch (val.getType()) {
             case Value.NULL:
                 throw new IllegalArgumentException("Can't compare null values");
 
             case Value.BOOLEAN:
-                return (value.getBoolean()) ? BigDecimal.ONE : BigDecimal.ZERO;
+                return (val.getBoolean()) ? BigDecimal.ONE : BigDecimal.ZERO;
 
             case Value.BYTE:
-                return new BigDecimal(value.getByte());
+                return new BigDecimal(val.getByte());
 
             case Value.SHORT:
-                return new BigDecimal(value.getShort());
+                return new BigDecimal(val.getShort());
 
             case Value.INT:
-                return new BigDecimal(value.getInt());
+                return new BigDecimal(val.getInt());
 
             case Value.LONG:
-                return new BigDecimal(value.getLong());
+                return new BigDecimal(val.getLong());
 
             case Value.DECIMAL:
-                return value.getBigDecimal();
+                return val.getBigDecimal();
 
             case Value.DOUBLE:
-                return new BigDecimal(value.getDouble());
+                return BigDecimal.valueOf(val.getDouble());
 
             case Value.FLOAT:
-                return new BigDecimal(value.getFloat());
+                return BigDecimal.valueOf(val.getFloat());
 
             case Value.DATE:
-                return new BigDecimal(value.getDate().getTime());
+                return BigDecimal.valueOf(val.getDate().getTime());
 
             case Value.TIME:
-                return new BigDecimal(value.getTime().getTime());
+                return BigDecimal.valueOf(val.getTime().getTime());
 
             case Value.TIMESTAMP:
-                return new BigDecimal(value.getTimestamp().getTime());
+                return BigDecimal.valueOf(val.getTimestamp().getTime());
 
             case Value.BYTES:
-                BigInteger bigInteger = new BigInteger(1, value.getBytes());
+                BigInteger bigInteger = new BigInteger(1, val.getBytes());
                 return new BigDecimal(bigInteger);
 
             case Value.STRING:
@@ -264,11 +263,11 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 return null;
 
             case Value.UUID:
-                BigInteger bigInt = new BigInteger(1, value.getBytes());
+                BigInteger bigInt = new BigInteger(1, val.getBytes());
                 return new BigDecimal(bigInt);
 
             default:
-                throw new IllegalStateException("Unsupported H2 type: " + value.getType());
+                throw new IllegalStateException("Unsupported H2 type: " + val.getType());
         }
     }
 
@@ -299,7 +298,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                     addNotNull.put(colStat, Boolean.FALSE);
 
                 sel *= estimateIsNotNullSelectivity(rel, mq, tbl, pred);
-            } else if (pred.isA(SqlKind.EQUALS)) {
+            }
+            else if (pred.isA(SqlKind.EQUALS)) {
                 if (colStat != null) {
                     Boolean colNotNull = addNotNull.get(colStat);
 
@@ -307,7 +307,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 }
 
                 sel *= estimateEqualsSelectivity(rel, mq, tbl, pred);
-            } else if (pred.isA(SqlKind.COMPARISON)) {
+            }
+            else if (pred.isA(SqlKind.COMPARISON)) {
                 if (colStat != null) {
                     Boolean colNotNull = addNotNull.get(colStat);
 
@@ -315,7 +316,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 }
 
                 sel *= estimateComparisonSelectivity(rel, mq, tbl, pred);
-            } else
+            }
+            else
                 sel *= .25;
         }
 
@@ -717,10 +719,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 joinFilters,
                 leftFilters,
                 rightFilters);
-            leftPred =
-                RexUtil.composeConjunction(rexBuilder, leftFilters, true);
-            rightPred =
-                RexUtil.composeConjunction(rexBuilder, rightFilters, true);
+            leftPred = RexUtil.composeConjunction(rexBuilder, leftFilters, true);
+            rightPred = RexUtil.composeConjunction(rexBuilder, rightFilters, true);
 
             for (RelNode child : join.getInputs()) {
                 RexNode modifiedPred = null;
@@ -739,7 +739,12 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                             child.getRowType().getFieldList(),
                             adjustments));
                 }
-                sel *= mq.getSelectivity(child, modifiedPred);
+                Double childSelectivity = mq.getSelectivity(child, modifiedPred);
+
+                if (childSelectivity == null)
+                    return null;
+
+                sel *= childSelectivity;
             }
             sel *= RelMdUtil.guessSelectivity(RexUtil.composeConjunction(rexBuilder, joinFilters, true));
         }

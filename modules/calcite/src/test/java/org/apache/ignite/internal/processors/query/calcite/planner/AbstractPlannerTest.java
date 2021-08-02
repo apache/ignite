@@ -43,7 +43,9 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.TableModify;
@@ -104,7 +106,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -616,7 +617,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         for (int i = 0; i < fields.length; i += 2)
             b.add((String)fields[i], TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]));
 
-        return new TestTable(name, b.build(), RewindabilityTrait.REWINDABLE, (double)size) {
+        return new TestTable(name, b.build(), RewindabilityTrait.REWINDABLE, size) {
             @Override public IgniteDistribution distribution() {
                 return distr;
             }
@@ -653,10 +654,10 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final RewindabilityTrait rewindable;
 
         /** */
-        private final TableDescriptor desc;
+        private final double rowCnt;
 
         /** */
-        private ObjectStatisticsImpl stat;
+        private final TableDescriptor desc;
 
         /** */
         TestTable(RelDataType type) {
@@ -674,17 +675,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** */
-        TestTable(String name, RelDataType type, RewindabilityTrait rewindable, Double rowCnt) {
+        TestTable(String name, RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
             protoType = RelDataTypeImpl.proto(type);
             this.rewindable = rewindable;
+            this.rowCnt = rowCnt;
             this.name = name;
 
             desc = new TestTableDescriptor(this::distribution, type);
-            stat = (rowCnt == null) ? null : new ObjectStatisticsImpl(rowCnt.longValue(), Collections.emptyMap());
-        }
-
-        public void setStat(ObjectStatisticsImpl stat) {
-            this.stat = stat;
         }
 
         /** {@inheritDoc} */
@@ -722,7 +719,37 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Statistic getStatistic() {
-            return new IgniteStatisticsImpl(stat);
+            return new Statistic() {
+                /** {@inheritDoc */
+                @Override public Double getRowCount() {
+                    return rowCnt;
+                }
+
+                /** {@inheritDoc */
+                @Override public boolean isKey(ImmutableBitSet cols) {
+                    return false;
+                }
+
+                /** {@inheritDoc */
+                @Override public List<ImmutableBitSet> getKeys() {
+                    throw new AssertionError();
+                }
+
+                /** {@inheritDoc */
+                @Override public List<RelReferentialConstraint> getReferentialConstraints() {
+                    throw new AssertionError();
+                }
+
+                /** {@inheritDoc */
+                @Override public List<RelCollation> getCollations() {
+                    return Collections.emptyList();
+                }
+
+                /** {@inheritDoc */
+                @Override public RelDistribution getDistribution() {
+                    throw new AssertionError();
+                }
+            };
         }
 
         /** {@inheritDoc} */
@@ -868,13 +895,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Override public ColumnDescriptor columnDescriptor(String fieldName) {
             RelDataTypeField field = rowType.getField(fieldName, false, false);
             return new TestColumnDescriptor(field.getIndex(), fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ColumnDescriptor columnDescriptor(int fieldIdx) {
-            RelDataTypeField field = rowType.getFieldList().get(fieldIdx);
-
-            return new TestColumnDescriptor(field.getIndex(), field.getName());
         }
 
         /** {@inheritDoc} */

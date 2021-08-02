@@ -517,11 +517,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDescriptor columnDescriptor(int fieldIdx) {
-        return descriptors[fieldIdx];
-    }
-
-    /** {@inheritDoc} */
     @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
         GridCacheContext<?, ?> cctx = cacheContext();
 

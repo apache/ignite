@@ -68,7 +68,7 @@ public class IgniteStatisticsImpl implements Statistic {
 
     /** {@inheritDoc} */
     @Override public List<RelCollation> getCollations() {
-        return ImmutableList.of(); // The method isn't used
+        return ImmutableList.of();
     }
 
     /** {@inheritDoc} */

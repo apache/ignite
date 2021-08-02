@@ -57,13 +57,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private final TableDescriptor desc;
 
     /** */
-    //private final Statistic statistic;
-
-    /** */
     private final GridKernalContext ctx;
-
-    /** */
-    //private volatile GridH2Table tbl;
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
@@ -75,7 +69,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     public IgniteTableImpl(GridKernalContext ctx, TableDescriptor desc) {
         this.ctx = ctx;
         this.desc = desc;
-        //statistic = new StatisticsImpl();
     }
 
     /** {@inheritDoc} */
