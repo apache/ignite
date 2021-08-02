@@ -260,7 +260,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      */
     protected void recordConsistencyViolation(
         Set<KeyCacheObject> inconsistentKeys,
-        Map<KeyCacheObject, EntryGetResult> fixedEntries) {
+        Map<KeyCacheObject, EntryGetResult> fixedEntries
+    ) {
         GridEventStorageManager evtMgr = ctx.gridEvents();
 
         if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
