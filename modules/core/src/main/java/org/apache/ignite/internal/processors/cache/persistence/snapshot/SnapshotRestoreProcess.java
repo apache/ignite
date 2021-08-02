@@ -214,7 +214,7 @@ public class SnapshotRestoreProcess {
 
                 assert meta != null : entry.getKey().id();
 
-                if (!entry.getKey().consistentId().equals(meta.consistentId()))
+                if (!entry.getKey().consistentId().toString().equals(meta.consistentId()))
                     continue;
 
                 if (snpBltNodes == null)
@@ -373,7 +373,7 @@ public class SnapshotRestoreProcess {
             if (fut0 != null && reqId.equals(fut0.rqId)) {
                 fut = null;
 
-                ctx.getSystemExecutorService().submit(() -> fut0.onDone(null, err));
+                ctx.pools().getSystemExecutorService().submit(() -> fut0.onDone(null, err));
             }
         }
     }

@@ -50,8 +50,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -789,7 +787,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         assert thread.stripe() >= 0 || thread.policy() != GridIoPolicy.UNDEFINED : thread;
 
         if (thread.stripe() >= 0)
-            ctx.getStripedExecutorService().execute(thread.stripe(), c);
+            ctx.pools().getStripedExecutorService().execute(thread.stripe(), c);
         else {
             try {
                 ctx.pools().poolForPolicy(thread.policy()).execute(c);
@@ -962,11 +960,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
-            final SecurityContext secCtx = ctx.security().securityContext();
-
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
-                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
+                    try {
                         if (ldr != null)
                             fut.onDone(U.wrapThreadLoader(ldr, c));
                         else
