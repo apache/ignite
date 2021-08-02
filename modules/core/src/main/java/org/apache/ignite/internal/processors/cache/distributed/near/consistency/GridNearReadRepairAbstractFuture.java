@@ -290,7 +290,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     boolean primary = primaries.get(key).equals(fut.affNode());
                     boolean correct = fixedEntries != null && fixedEntries.get(key).equals(res);
 
-                    map.put(node, new EventEventEntryInfo(val, ver, primary, correct));
+                    map.put(node, new EventEntryInfo(val, ver, primary, correct));
                 }
             }
         }
@@ -304,18 +304,18 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    private static class EventEventEntryInfo implements CacheConsistencyViolationEvent.EntryInfo {
+    private static final class EventEntryInfo implements CacheConsistencyViolationEvent.EntryInfo {
         /** Value. */
-        Object val;
+        final Object val;
 
         /** Version. */
-        CacheEntryVersion ver;
+        final CacheEntryVersion ver;
 
         /** Located at the primary. */
-        boolean primary;
+        final boolean primary;
 
         /** Marked as correct during the fix. */
-        boolean correct;
+        final boolean correct;
 
         /**
          * @param val Value.
@@ -323,7 +323,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
          * @param primary Primary.
          * @param correct Chosen.
          */
-        public EventEventEntryInfo(Object val, CacheEntryVersion ver, boolean primary, boolean correct) {
+        public EventEntryInfo(Object val, CacheEntryVersion ver, boolean primary, boolean correct) {
             this.val = val;
             this.ver = ver;
             this.primary = primary;
