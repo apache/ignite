@@ -30,7 +30,7 @@ public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePart
     /**
      * Constructor.
      *
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param msg Discovery message.
      */
     public TxTimeoutOnPartitionMapExchangeChangeTask(SecurityContext secCtx, TxTimeoutOnPartitionMapExchangeChangeMessage msg) {

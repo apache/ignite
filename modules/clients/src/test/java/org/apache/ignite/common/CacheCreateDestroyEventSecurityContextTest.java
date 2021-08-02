@@ -17,10 +17,9 @@
 
 package org.apache.ignite.common;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -31,6 +30,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -55,27 +56,29 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest.DFLT_REST_PORT;
-import static org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest.sendRestRequest;
 import static org.apache.ignite.events.EventType.EVTS_CACHE_LIFECYCLE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
-/** */
+/** Tests that security information specified in cache create/destroy events belongs to the operation initiator. */
 public class CacheCreateDestroyEventSecurityContextTest extends AbstractSecurityTest {
-    /** */
-    private static final Map<UUID, Set<CacheEvent>> LISTENED_CACHE_EVTS = new HashMap<>();
+    /** Events paired with the nodes on which they were listened to. */
+    private static final Map<ClusterNode, Collection<CacheEvent>> LISTENED_CACHE_EVTS = new HashMap<>();
 
-    /** */
+    /** Counter of the created cache. */
     private static final AtomicInteger CACHE_COUNTER = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        LISTENED_CACHE_EVTS.put(startGridAllowAll("crd").localNode().id(), ConcurrentHashMap.newKeySet());
-        LISTENED_CACHE_EVTS.put(startGridAllowAll("srv").localNode().id(), ConcurrentHashMap.newKeySet());
+        LISTENED_CACHE_EVTS.put(startGridAllowAll("crd").localNode(), ConcurrentHashMap.newKeySet());
+        LISTENED_CACHE_EVTS.put(startGridAllowAll("srv").localNode(), ConcurrentHashMap.newKeySet());
 
         startClientAllowAll("cli");
     }
@@ -96,16 +99,18 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractSecurity
     @Override protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
         IgniteEx ignite = startGrid(login, prmSet, null, isClient);
 
-        ignite.events().localListen(evt -> {
-            LISTENED_CACHE_EVTS.get(evt.node().id()).add((CacheEvent)evt);
+        if (!isClient) {
+            ignite.events().localListen(evt -> {
+                LISTENED_CACHE_EVTS.get(evt.node()).add((CacheEvent)evt);
 
-            return true;
-        }, EVTS_CACHE_LIFECYCLE);
+                return true;
+            }, EVTS_CACHE_LIFECYCLE);
+        }
 
         return ignite;
     }
 
-    /** */
+    /** Tests cache create/destroy event security context in case operation is initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
         String login = "thin_client";
@@ -132,7 +137,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractSecurity
         }
     }
 
-    /** */
+    /** Tests cache create/destroy event security context in case operation is initiated from the {@link GridClient}. */
     @Test
     public void testGridClient() throws Exception {
         String login = "grid_client";
@@ -149,63 +154,29 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractSecurity
         }
     }
 
-    /** */
+    /** Tests cache create/destroy event security context in case operation is initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
         String cacheName = "rest_client_cache";
 
-        String createCacheLogin = "rest_client_create_cache";
+        String login = "rest_client";
 
-        checkCacheEvents(() -> sendRestRequest("http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-                "?ignite.login=" + createCacheLogin +
-                "&ignite.password=" +
-                "&cmd=" + GridRestCommand.GET_OR_CREATE_CACHE.key() +
-                "&cacheName=" + cacheName),
-            EVT_CACHE_STARTED,
-            createCacheLogin);
-
-        String destroyCacheLogin = "rest_client_destroy_cache";
-
-        checkCacheEvents(() -> sendRestRequest("http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-                "?ignite.login=" + destroyCacheLogin +
-                "&ignite.password=" +
-                "&cmd=" + GridRestCommand.DESTROY_CACHE.key() +
-                "&cacheName=" + cacheName),
-            EVT_CACHE_STOPPED,
-            destroyCacheLogin);
+        checkCacheEvents(() -> sendRestRequest(login, GET_OR_CREATE_CACHE, cacheName, null), EVT_CACHE_STARTED, login);
+        checkCacheEvents(() -> sendRestRequest(login, DESTROY_CACHE, cacheName, null), EVT_CACHE_STOPPED, login);
 
         grid("crd").createCache(cacheConfiguration());
 
-        String deactivateLogin = "rest_client_deactivate";
-
-        checkCacheEvents(() -> sendRestRequest("http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-                "?ignite.login=" + deactivateLogin +
-                "&ignite.password=" +
-                "&cmd=" + GridRestCommand.CLUSTER_SET_STATE.key() +
-                "&force=true" +
-                "&state=" + INACTIVE.name()),
-            EVT_CACHE_STOPPED,
-            deactivateLogin);
-
-        String activateLogin = "rest_client_activate";
-
-        checkCacheEvents(() -> sendRestRequest("http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-                "?ignite.login=" + activateLogin +
-                "&ignite.password=" +
-                "&cmd=" + GridRestCommand.CLUSTER_SET_STATE.key() +
-                "&force=true" +
-                "&state=" + ACTIVE.name()),
-            EVT_CACHE_STARTED,
-            activateLogin);
+        checkCacheEvents(() -> sendRestRequest(login, CLUSTER_SET_STATE, null, INACTIVE), EVT_CACHE_STOPPED, login);
+        checkCacheEvents(() -> sendRestRequest(login, CLUSTER_SET_STATE, null, ACTIVE), EVT_CACHE_STARTED, login);
     }
 
-    /** */
+    /** Tests cache create/destroy event security context in case operation is initiated from the server node. */
     @Test
     public void testServerNode() throws Exception {
         testNode(false);
     }
 
-    /** */
+    /** Tests cache create/destroy event security context in case operation is initiated from the client node. */
     @Test
     public void testClientNode() throws Exception {
         testNode(true);
@@ -255,12 +226,28 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractSecurity
     }
 
     /** */
+    private void sendRestRequest(String login, GridRestCommand cmd, String cacheName, ClusterState state) throws Exception {
+        String req = "http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
+            "?ignite.login=" + login +
+            "&ignite.password=" +
+            "&cmd=" + cmd.key();
+
+        if (cacheName != null)
+            req += "&cacheName=" + cacheName;
+
+        if (state != null)
+            req += "&force=true&state=" + state.name();
+
+        ComputeTaskRemoteSecurityContextTest.sendRestRequest(req);
+    }
+
+    /** */
     private void checkCacheEvents(RunnableX op, int expEvtType, String expLogin) throws Exception {
-        LISTENED_CACHE_EVTS.values().forEach(Set::clear);
+        LISTENED_CACHE_EVTS.values().forEach(Collection::clear);
 
         op.run();
 
-        for (Set<CacheEvent> nodeCacheEvts : LISTENED_CACHE_EVTS.values()) {
+        for (Collection<CacheEvent> nodeCacheEvts : LISTENED_CACHE_EVTS.values()) {
             assertTrue(waitForCondition(() ->
                 nodeCacheEvts.stream()
                     .map(EventAdapter::type)

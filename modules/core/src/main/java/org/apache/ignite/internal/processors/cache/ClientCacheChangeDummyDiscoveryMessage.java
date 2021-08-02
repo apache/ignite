@@ -49,7 +49,7 @@ public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartiti
     private final Set<String> cachesToClose;
 
     /**
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param reqId Start request ID.
      * @param startReqs Caches start requests.
      * @param cachesToClose Cache to close.

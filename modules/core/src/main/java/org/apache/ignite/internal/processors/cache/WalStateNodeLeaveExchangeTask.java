@@ -31,7 +31,7 @@ public class WalStateNodeLeaveExchangeTask extends AbstractCachePartitionExchang
     /**
      * Constructor.
      *
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param node Node that has left the grid.
      */
     public WalStateNodeLeaveExchangeTask(SecurityContext secCtx, ClusterNode node) {

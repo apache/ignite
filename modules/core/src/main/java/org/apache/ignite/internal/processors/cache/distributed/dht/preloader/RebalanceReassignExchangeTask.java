@@ -31,7 +31,7 @@ public class RebalanceReassignExchangeTask extends AbstractCachePartitionExchang
     private final GridDhtPartitionsExchangeFuture exchFut;
 
     /**
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      */

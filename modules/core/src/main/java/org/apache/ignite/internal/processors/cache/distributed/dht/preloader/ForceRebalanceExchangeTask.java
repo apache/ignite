@@ -32,7 +32,7 @@ public class ForceRebalanceExchangeTask extends AbstractCachePartitionExchangeWo
     private final GridCompoundFuture<Boolean, Boolean> forcedRebFut;
 
     /**
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param exchId Exchange ID.
      * @param forcedRebFut Rebalance future.
      */

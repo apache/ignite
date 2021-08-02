@@ -31,11 +31,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
@@ -106,22 +108,22 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_R
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE_VALUE;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
-/** */
+/** Tests that security information specified in cache events belongs to the operation initiator. */
 @RunWith(Parameterized.class)
 public class CacheEventSecurityContextTest extends AbstractSecurityTest {
-    /** */
+    /** Events paired with the nodes on which they were listened to. */
     private static final Map<ClusterNode, Collection<Event>> LISTENED_CACHE_EVTS = new HashMap<>();
 
-    /** */
+    /** Counter of inserted cache keys. */
     private static final AtomicInteger KEY_COUNTER = new AtomicInteger();
-    
-    /** */
+
+    /** Name of the cache with {@link CacheAtomicityMode#ATOMIC} mode. */
     private static final String ATOMIC_CACHE = "atomic";
     
-    /** */
+    /** Name of the cache with {@link CacheAtomicityMode#TRANSACTIONAL} mode. */
     private static final String TRANSACTIONAL_CACHE = "transactional";
 
-    /** */
+    /** Cache event types involved in testing. */
     private static final int[] CACHE_EVT_TYPES = {
         EVT_CACHE_OBJECT_PUT,
         EVT_CACHE_OBJECT_READ,
@@ -212,7 +214,7 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         return ignite;
     }
 
-    /** */
+    /** Tests cache event security context in case operation is initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
         operationInitiatorLogin = "thin_client";
@@ -225,55 +227,55 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         try (IgniteClient cli = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = cli.cache(cacheName);
 
-            checkCacheEvents(cli, k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cli, k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cli, cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
-            checkCacheEvents(cli, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(cli, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
 
             // TODO Add test case inside transaction after resolving IGNITE-14317.
-            checkCacheEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(cli, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
-            checkCacheEvents(cli, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(cli, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-            checkCacheEvents(cli, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(cli, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cli, k -> cache.getAndPut(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.getAndPutAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.getAndPut(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.getAndPutAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cli, cache::get, true, EVT_CACHE_OBJECT_READ);
-            checkCacheEvents(cli, k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
+            checkEvents(cli, cache::get, true, EVT_CACHE_OBJECT_READ);
+            checkEvents(cli, k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
 
-            checkCacheEvents(cli, k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
-            checkCacheEvents(cli, k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
+            checkEvents(cli, k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
+            checkEvents(cli, k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
 
-            checkCacheEvents(cli, k -> cache.getAndReplace(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.getAndReplaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.getAndReplace(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.getAndReplaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cli, cache::getAndRemove, true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
-            checkCacheEvents(cli, k -> cache.getAndRemoveAsync(k).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, cache::getAndRemove, true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.getAndRemoveAsync(k).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(cli, k -> cache.replace(k, "new_val"), true, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.replaceAsync(k, "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.replace(k, "new_val"), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.replaceAsync(k, "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cli, k -> cache.replace(k, "val", "new_val"), true, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(cli, k -> cache.replaceAsync(k, "val", "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.replace(k, "val", "new_val"), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(cli, k -> cache.replaceAsync(k, "val", "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(() -> cache.query(new ScanQuery<>()).getAll(), asList(EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ));
+            checkEvents(() -> cache.query(new ScanQuery<>()).getAll(), asList(EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ));
         }
     }
 
-    /** */
+    /** Tests cache event security context in case operation is initiated from the {@link GridClient}. */
     @Test
     public void testGridClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
@@ -288,71 +290,71 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         try (GridClient cli = GridClientFactory.start(cfg)) {
             GridClientData cache = cli.data(cacheName);
 
-            checkCacheEvents(k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
-            checkCacheEvents(k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
-            checkCacheEvents(k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkCacheEvents(cache::get, true, EVT_CACHE_OBJECT_READ);
-            checkCacheEvents(k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
+            checkEvents(cache::get, true, EVT_CACHE_OBJECT_READ);
+            checkEvents(k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
 
-            checkCacheEvents(k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
-            checkCacheEvents(k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
+            checkEvents(k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
+            checkEvents(k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
 
-            checkCacheEvents(k -> cache.replace(k, "val"), true, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(k -> cache.replaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.replace(k, "val"), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.replaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(k -> cache.append(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(k -> cache.appendAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.append(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.appendAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(k -> cache.prepend(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(k -> cache.prependAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.prepend(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.prependAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-            checkCacheEvents(k -> cache.cas(k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
-            checkCacheEvents(k -> cache.casAsync(k, "new_val", "val").get(), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.cas(k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
+            checkEvents(k -> cache.casAsync(k, "new_val", "val").get(), true, EVT_CACHE_OBJECT_PUT);
         }
     }
 
-    /** */
+    /** Tests cache event security context in case operation is initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
 
         operationInitiatorLogin = "rest_client";
 
-        checkCacheEvents(k -> sendRestRequest(CACHE_PUT, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_PUT_ALL, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_REMOVE, k, null, null), true, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(k -> sendRestRequest(CACHE_REMOVE_ALL, k, null, null), true, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(k -> sendRestRequest(CACHE_GET, k, null, null), true, EVT_CACHE_OBJECT_READ);
-        checkCacheEvents(k -> sendRestRequest(CACHE_GET_ALL, k, null, null), true, EVT_CACHE_OBJECT_READ);
-        checkCacheEvents(k -> sendRestRequest(CACHE_REPLACE, k, "val", null), true, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_APPEND, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_PREPEND, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_GET_AND_PUT, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_GET_AND_REPLACE, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_PUT_IF_ABSENT, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_GET_AND_REMOVE, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(k -> sendRestRequest(CACHE_ADD, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_REMOVE_VALUE, k, "val", null), true, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(k -> sendRestRequest(CACHE_REPLACE_VALUE, k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(k -> sendRestRequest(CACHE_CAS, k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_PUT, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_PUT_ALL, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_REMOVE, k, null, null), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(k -> sendRestRequest(CACHE_REMOVE_ALL, k, null, null), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(k -> sendRestRequest(CACHE_GET, k, null, null), true, EVT_CACHE_OBJECT_READ);
+        checkEvents(k -> sendRestRequest(CACHE_GET_ALL, k, null, null), true, EVT_CACHE_OBJECT_READ);
+        checkEvents(k -> sendRestRequest(CACHE_REPLACE, k, "val", null), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_APPEND, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_PREPEND, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_GET_AND_PUT, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_GET_AND_REPLACE, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_PUT_IF_ABSENT, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_GET_AND_REMOVE, k, "val", null), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(k -> sendRestRequest(CACHE_ADD, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_REMOVE_VALUE, k, "val", null), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(k -> sendRestRequest(CACHE_REPLACE_VALUE, k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(k -> sendRestRequest(CACHE_CAS, k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
     }
 
-    /** */
+    /** Tests cache event security context in case operation is initiated from the server node. */
     @Test
     public void testServerNode() throws Exception {
         testNode(false);
     }
 
-    /** */
+    /** Tests cache event security context in case operation is initiated from the client node. */
     @Test
     public void testClientNode() throws Exception {
         testNode(true);
@@ -366,52 +368,52 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
 
         IgniteCache<Integer, String> cache = ignite.cache(cacheName);
 
-        checkCacheEvents(ignite, k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(ignite, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-        checkCacheEvents(ignite, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
 
         // TODO Add test case inside transaction after resolving IGNITE-14317.
-        checkCacheEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-        checkCacheEvents(ignite, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(ignite, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-        checkCacheEvents(ignite, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(ignite, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-        checkCacheEvents(ignite, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, k -> cache.getAndPut(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.getAndPutAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.getAndPut(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.getAndPutAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, cache::get, true, EVT_CACHE_OBJECT_READ);
-        checkCacheEvents(ignite, k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
+        checkEvents(ignite, cache::get, true, EVT_CACHE_OBJECT_READ);
+        checkEvents(ignite, k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
 
-        checkCacheEvents(ignite, k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
-        checkCacheEvents(ignite, k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
+        checkEvents(ignite, k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
+        checkEvents(ignite, k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
 
-        checkCacheEvents(ignite, k -> cache.getAndReplace(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.getAndReplaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.getAndReplace(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.getAndReplaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, cache::getAndRemove, true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
-        checkCacheEvents(ignite, k -> cache.getAndRemoveAsync(k).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, cache::getAndRemove, true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.getAndRemoveAsync(k).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
-        checkCacheEvents(ignite, k -> cache.replace(k, "new_val"), true, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.replaceAsync(k, "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.replace(k, "new_val"), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.replaceAsync(k, "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, k -> cache.replace(k, "val", "new_val"), true, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.replaceAsync(k, "val", "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.replace(k, "val", "new_val"), true, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.replaceAsync(k, "val", "new_val").get(), true, EVT_CACHE_OBJECT_PUT);
 
         if (TRANSACTIONAL_CACHE.equals(cacheName)) {
-            checkCacheEvents(k -> {
+            checkEvents(k -> {
                 Lock lock = cache.lock(k);
 
                 lock.lock();
@@ -420,7 +422,7 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
             }, true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
         }
 
-        checkCacheEvents(() -> cache.query(new ScanQuery<>()).getAll(), asList(EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ));
+        checkEvents(() -> cache.query(new ScanQuery<>()).getAll(), asList(EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ));
 
         CacheEntryProcessor<Integer, String, Void> proc = new CacheEntryProcessor<Integer, String, Void>() {
             @Override public Void process(MutableEntry<Integer, String> entry, Object... arguments) throws EntryProcessorException {
@@ -430,19 +432,22 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
             }
         };
 
-        checkCacheEvents(ignite, k -> cache.invoke(k, proc), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.invokeAsync(k, proc).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.invoke(k, proc), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.invokeAsync(k, proc).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, k -> cache.invokeAll(of(k), proc), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.invokeAllAsync(of(k), proc).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.invokeAll(of(k), proc), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.invokeAllAsync(of(k), proc).get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
 
-        checkCacheEvents(ignite, k -> cache.invokeAll(singletonMap(k, proc)), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-        checkCacheEvents(ignite, k -> cache.invokeAllAsync(singletonMap(k, proc)), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.invokeAll(singletonMap(k, proc)), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
+        checkEvents(ignite, k -> cache.invokeAllAsync(singletonMap(k, proc)), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
     }
 
-    /** */
-    private void checkCacheEvents(IgniteClient cli, ConsumerX<Integer> c, boolean withInitVal, Integer... expEvtTypes) throws Exception {
-        checkCacheEvents(txIsolation != null || txConcurrency != null ? key -> {
+    /**
+     * Executes test operation considering whether it should be executed inside transaction in case {@link IgniteClient}
+     * is operation initiator and checks events.
+     */
+    private void checkEvents(IgniteClient cli, ConsumerX<Integer> c, boolean withInitVal, Integer... expEvtTypes) throws Exception {
+        checkEvents(txIsolation != null || txConcurrency != null ? key -> {
             ClientTransactions txs = cli.transactions();
 
             try (ClientTransaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -453,9 +458,12 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         } : c, withInitVal, expEvtTypes);
     }
 
-    /** */
-    private void checkCacheEvents(IgniteEx ignite, ConsumerX<Integer> op, boolean withInitVal, Integer... expEvtTypes) throws Exception {
-        checkCacheEvents(txIsolation != null || txConcurrency != null ? key -> {
+    /**
+     * Executes test operation considering whether it should be executed inside transaction in case {@link Ignite} node
+     * is operation initiator and checks events.
+     */
+    private void checkEvents(IgniteEx ignite, ConsumerX<Integer> op, boolean withInitVal, Integer... expEvtTypes) throws Exception {
+        checkEvents(txIsolation != null || txConcurrency != null ? key -> {
             IgniteTransactions txs = ignite.transactions();
 
             try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -466,8 +474,8 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         } : op, withInitVal, expEvtTypes);
     }
 
-    /** */
-    private void checkCacheEvents(ConsumerX<Integer> op, boolean withInitVal, Integer... expEvtTypes) throws Exception {
+    /** Executes specified cache operation on each server node and checks events. */
+    private void checkEvents(ConsumerX<Integer> op, boolean withInitVal, Integer... expEvtTypes) throws Exception {
         IgniteEx crd = grid("crd");
 
         Set<Integer> evts = Arrays.stream(expEvtTypes).collect(Collectors.toSet());
@@ -491,11 +499,14 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         if (withInitVal)
             keys.forEach(key -> crd.cache(cacheName).put(key, "val"));
 
-        checkCacheEvents(() -> keys.forEach(op), evts);
+        checkEvents(() -> keys.forEach(op), evts);
     }
 
-    /** */
-    private void checkCacheEvents(RunnableX op, Collection<Integer> expEvtTypes) throws Exception {
+    /**
+     * Checks that execution of specified {@link Runnable} raises events with the security subject ID owned by
+     * operation initiator.
+     */
+    private void checkEvents(RunnableX op, Collection<Integer> expEvtTypes) throws Exception {
         LISTENED_CACHE_EVTS.values().forEach(Collection::clear);
 
         op.run();

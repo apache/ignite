@@ -32,7 +32,7 @@ public class SchemaExchangeWorkerTask extends AbstractCachePartitionExchangeWork
     /**
      * Constructor.
      *
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param msg Message.
      */
     public SchemaExchangeWorkerTask(SecurityContext secCtx, SchemaAbstractDiscoveryMessage msg) {

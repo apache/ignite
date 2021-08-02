@@ -34,7 +34,7 @@ public class SchemaNodeLeaveExchangeWorkerTask extends AbstractCachePartitionExc
     /**
      * Constructor.
      *
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param node Node.
      */
     public SchemaNodeLeaveExchangeWorkerTask(SecurityContext secCtx, ClusterNode node) {

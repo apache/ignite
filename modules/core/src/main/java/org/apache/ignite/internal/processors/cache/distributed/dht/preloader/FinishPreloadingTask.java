@@ -35,7 +35,7 @@ public class FinishPreloadingTask extends AbstractCachePartitionExchangeWorkerTa
     private final long rebalanceId;
 
     /**
-     * @param secCtx Security context.
+     * @param secCtx Security context in which current task must be executed.
      * @param topVer Topology version.
      */
     public FinishPreloadingTask(SecurityContext secCtx, AffinityTopologyVersion topVer, int grpId, long rebalanceId) {

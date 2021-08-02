@@ -957,13 +957,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
                     else {
-                        SecurityContext secCtx = nodeSecurityContext(
+                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
                             marshaller,
                             U.resolveClassLoader(ctx.config()),
                             notification.getNode()
                         );
 
-                        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
+                        try (OperationSecurityContext ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
                             super.run();
                         }
                     }

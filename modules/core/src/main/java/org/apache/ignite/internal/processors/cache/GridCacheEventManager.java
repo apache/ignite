@@ -349,7 +349,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         }
     }
 
-    /** */
+    /** @return The ID of security subject that was an initiator of the event with the specified type. */
     private UUID cacheEventSubjectId(int type) {
         return type == EVT_CACHE_NODES_LEFT ||
             type == EVT_CACHE_ENTRY_EVICTED ||
