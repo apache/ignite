@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Collections;
-
 import io.netty.channel.ChannelFuture;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
@@ -47,6 +46,8 @@ public class ClientHandlerIntegrationTest {
 
     private ChannelFuture serverFuture;
 
+    private ConfigurationRegistry configurationRegistry;
+
     @BeforeEach
     public void setUp() throws Exception {
         serverFuture = startServer();
@@ -56,6 +57,7 @@ public class ClientHandlerIntegrationTest {
     public void tearDown() throws Exception {
         serverFuture.cancel(true);
         serverFuture.await();
+        configurationRegistry.stop();
     }
 
     @Test
@@ -170,17 +172,17 @@ public class ClientHandlerIntegrationTest {
     }
 
     private ChannelFuture startServer() throws InterruptedException {
-        var registry = new ConfigurationRegistry(
+        configurationRegistry = new ConfigurationRegistry(
                 Collections.singletonList(ClientConnectorConfiguration.KEY),
                 Collections.emptyMap(),
                 Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
         );
 
-        registry.start();
+        configurationRegistry.start();
 
         var module = new ClientHandlerModule(mock(Ignite.class), NOPLogger.NOP_LOGGER);
 
-        module.prepareStart(registry);
+        module.prepareStart(configurationRegistry);
 
         return module.start();
     }

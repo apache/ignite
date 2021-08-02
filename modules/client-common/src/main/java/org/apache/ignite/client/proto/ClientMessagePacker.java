@@ -22,21 +22,57 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.UUID;
-
-import org.msgpack.core.MessageBufferPacker;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import org.apache.ignite.lang.IgniteException;
 import org.msgpack.core.MessagePack;
-import org.msgpack.core.buffer.ArrayBufferOutput;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.buffer.OutputStreamBufferOutput;
+
+import static org.apache.ignite.client.proto.ClientMessageCommon.HEADER_SIZE;
 
 /**
- * Ignite-specific MsgPack extension.
+ * Ignite-specific MsgPack extension based on Netty ByteBuf.
+ * <p>
+ * Releases wrapped buffer on {@link #close()} .
  */
-public class ClientMessagePacker extends MessageBufferPacker {
+public class ClientMessagePacker extends MessagePacker {
+    /** Underlying buffer. */
+    private final ByteBuf buf;
+
+    /** Closed flag. */
+    private boolean closed = false;
+
     /**
      * Constructor.
+     *
+     * @param buf Buffer.
      */
-    public ClientMessagePacker() {
-        // TODO: Pooled buffers IGNITE-15162.
-        super(new ArrayBufferOutput(), MessagePack.DEFAULT_PACKER_CONFIG);
+    public ClientMessagePacker(ByteBuf buf) {
+        // Reserve 4 bytes for the message length.
+        super(new OutputStreamBufferOutput(new ByteBufOutputStream(buf.writerIndex(HEADER_SIZE))),
+                MessagePack.DEFAULT_PACKER_CONFIG);
+
+        this.buf = buf;
+    }
+
+    /**
+     * Gets the underlying buffer.
+     *
+     * @return Underlying buffer.
+     * @throws IgniteException When flush fails.
+     */
+    public ByteBuf getBuffer() {
+        try {
+            flush();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+
+        buf.setInt(0, buf.writerIndex() - HEADER_SIZE);
+
+        return buf;
     }
 
     /**
@@ -121,5 +157,16 @@ public class ClientMessagePacker extends MessageBufferPacker {
 
         // TODO: Support all basic types IGNITE-15163
         throw new IOException("Unsupported type, can't serialize: " + val.getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+
+        if (buf.refCnt() > 0)
+            buf.release();
     }
 }

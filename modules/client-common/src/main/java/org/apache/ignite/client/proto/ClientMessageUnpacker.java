@@ -22,13 +22,14 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.UUID;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
 import org.apache.ignite.lang.IgniteException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageSizeException;
 import org.msgpack.core.MessageTypeException;
 import org.msgpack.core.MessageUnpacker;
-import org.msgpack.core.buffer.MessageBufferInput;
+import org.msgpack.core.buffer.InputStreamBufferInput;
 
 import static org.apache.ignite.client.proto.ClientDataType.BITMASK;
 import static org.apache.ignite.client.proto.ClientDataType.BYTES;
@@ -42,16 +43,26 @@ import static org.apache.ignite.client.proto.ClientDataType.INT8;
 import static org.apache.ignite.client.proto.ClientDataType.STRING;
 
 /**
- * Ignite-specific MsgPack extension.
+ * Ignite-specific MsgPack extension based on Netty ByteBuf.
+ * <p>
+ * Releases wrapped buffer on {@link #close()} .
  */
 public class ClientMessageUnpacker extends MessageUnpacker {
+    /** Underlying buffer. */
+    private final ByteBuf buf;
+
+    /** Closed flag. */
+    private boolean closed = false;
+
     /**
      * Constructor.
      *
-     * @param in Input.
+     * @param buf Input.
      */
-    public ClientMessageUnpacker(MessageBufferInput in) {
-        super(in, MessagePack.DEFAULT_UNPACKER_CONFIG);
+    public ClientMessageUnpacker(ByteBuf buf) {
+        super(new InputStreamBufferInput(new ByteBufInputStream(buf)), MessagePack.DEFAULT_UNPACKER_CONFIG);
+
+        this.buf = buf;
     }
 
     /**
@@ -151,5 +162,16 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         }
 
         throw new IgniteException("Unknown client data type: " + dataType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+
+        if (buf.refCnt() > 0)
+            buf.release();
     }
 }

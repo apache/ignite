@@ -15,33 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.io;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import org.apache.ignite.lang.IgniteException;
-
 /**
- * Client connection: abstracts away sending and receiving messages.
+ * Table API requests.
  */
-public interface ClientConnection extends AutoCloseable {
-    /**
-     * Sends a message.
-     *
-     * @param msg Message buffer.
-     * @return Future for the operation.
-     */
-    ChannelFuture send(ByteBuf msg) throws IgniteException;
-
-    /**
-     * Gets a buffer to write to.
-     *
-     * @return Buffer.
-     */
-    ByteBuf getBuffer();
-
-    /**
-     * Closes the connection.
-     */
-    @Override void close();
-}
+package org.apache.ignite.client.handler.requests.table;

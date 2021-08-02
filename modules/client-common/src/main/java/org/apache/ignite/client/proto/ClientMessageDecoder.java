@@ -17,48 +17,43 @@
 
 package org.apache.ignite.client.proto;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.CharsetUtil;
 import org.apache.ignite.lang.IgniteException;
+
+import static org.apache.ignite.client.proto.ClientMessageCommon.HEADER_SIZE;
+import static org.apache.ignite.client.proto.ClientMessageCommon.MAGIC_BYTES;
 
 /**
  * Decodes full client messages:
  * 1. MAGIC for first message.
- * 2. Payload length (varint).
- * 3. Payload (bytes).
+ * 2. Payload length (4 bytes).
+ * 3. Payload (N bytes).
  */
-public class ClientMessageDecoder extends ByteToMessageDecoder {
-    /** Magic bytes before handshake. */
-    public static final byte[] MAGIC_BYTES = new byte[]{0x49, 0x47, 0x4E, 0x49}; // IGNI
-
-    /** Data buffer. */
-    private byte[] data = new byte[4]; // TODO: Pooled buffers IGNITE-15162.
-
-    /** Remaining byte count. */
-    private int cnt = -4;
-
-    /** Message size. */
-    private int msgSize = -1;
-
+public class ClientMessageDecoder extends LengthFieldBasedFrameDecoder {
     /** Magic decoded flag. */
     private boolean magicDecoded;
 
     /** Magic decoding failed flag. */
     private boolean magicFailed;
 
-    /** {@inheritDoc} */
-    @Override protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> list) {
-        if (!readMagic(byteBuf))
-            return;
+    /**
+     * Constructor.
+     */
+    public ClientMessageDecoder() {
+        // TODO: Configurable maximum frame length IGNITE-15164.
+        super(Integer.MAX_VALUE - HEADER_SIZE, 0, HEADER_SIZE, 0, HEADER_SIZE, true);
+    }
 
-        while (read(byteBuf))
-            list.add(ByteBuffer.wrap(data));
+    /** {@inheritDoc} */
+    @Override protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+        if (!readMagic(in))
+            return null;
+
+        return super.decode(ctx, in);
     }
 
     /**
@@ -78,13 +73,10 @@ public class ClientMessageDecoder extends ByteToMessageDecoder {
         if (byteBuf.readableBytes() < MAGIC_BYTES.length)
             return false;
 
-        assert data.length == MAGIC_BYTES.length;
-
-        byteBuf.readBytes(data, 0, MAGIC_BYTES.length);
+        var data = new byte[MAGIC_BYTES.length];
+        byteBuf.readBytes(data);
 
         magicDecoded = true;
-        cnt = -1;
-        msgSize = 0;
 
         if (Arrays.equals(data, MAGIC_BYTES))
             return true;
@@ -93,54 +85,5 @@ public class ClientMessageDecoder extends ByteToMessageDecoder {
 
         throw new IgniteException("Invalid magic header in thin client connection. " +
                 "Expected 'IGNI', but was '" + new String(data, CharsetUtil.US_ASCII) + "'.");
-    }
-
-    /**
-     * Reads the buffer.
-     *
-     * @param buf Buffer.
-     * @return True when a complete message has been received; false otherwise.
-     * @throws IgniteException when message is invalid.
-     */
-    private boolean read(ByteBuf buf) {
-        if (buf.readableBytes() == 0)
-            return false;
-
-        if (cnt < 0) {
-            if (buf.readableBytes() < 4)
-                return false;
-
-            msgSize = buf.readInt();
-
-            assert msgSize >= 0;
-            data = new byte[msgSize];
-            cnt = 0;
-        }
-
-        assert data != null;
-        assert msgSize >= 0;
-
-        int remaining = buf.readableBytes();
-
-        if (remaining > 0) {
-            int missing = msgSize - cnt;
-
-            if (missing > 0) {
-                int len = Math.min(missing, remaining);
-
-                buf.readBytes(data, cnt, len);
-
-                cnt += len;
-            }
-        }
-
-        if (cnt == msgSize) {
-            cnt = -1;
-            msgSize = -1;
-
-            return true;
-        }
-
-        return false;
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -30,13 +29,15 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import org.apache.ignite.client.IgniteClientAuthenticationException;
 import org.apache.ignite.client.IgniteClientAuthorizationException;
 import org.apache.ignite.client.IgniteClientConnectionException;
 import org.apache.ignite.client.IgniteClientException;
 import org.apache.ignite.client.proto.ClientErrorCode;
+import org.apache.ignite.client.proto.ClientMessageCommon;
 import org.apache.ignite.client.proto.ClientMessagePacker;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.client.proto.ProtocolVersion;
@@ -47,7 +48,6 @@ import org.apache.ignite.internal.client.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.io.ClientMessageHandler;
 import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.Nullable;
-import org.msgpack.core.buffer.ByteBufferInput;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -106,7 +106,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessage(ByteBuffer buf) throws IOException {
+    @Override public void onMessage(ByteBuf buf) throws IOException {
         processNextMessage(buf);
     }
 
@@ -155,14 +155,16 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             throws IgniteClientException {
         long id = reqId.getAndIncrement();
 
-        try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
-            if (closed())
-                throw new IgniteClientConnectionException("Channel is closed");
+        if (closed())
+            throw new IgniteClientConnectionException("Channel is closed");
 
-            ClientRequestFuture fut = new ClientRequestFuture();
+        ClientRequestFuture fut = new ClientRequestFuture();
 
-            pendingReqs.put(id, fut);
+        pendingReqs.put(id, fut);
 
+        PayloadOutputChannel payloadCh = new PayloadOutputChannel(this, new ClientMessagePacker(sock.getBuffer()));
+
+        try {
             var req = payloadCh.out();
 
             req.packInt(opCode);
@@ -177,8 +179,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             });
 
             return fut;
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
+            // Close buffer manually on fail. Successful write closes the buffer automatically.
+            payloadCh.close();
             pendingReqs.remove(id);
 
             throw convertException(t);
@@ -197,8 +200,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (payload == null || payloadReader == null)
                 return null;
 
-            try {
-                return payloadReader.apply(new PayloadInputChannel(this, payload));
+            try (var in = new PayloadInputChannel(this, payload)) {
+                return payloadReader.apply(in);
             } catch (Exception e) {
                 throw new IgniteException("Failed to deserialize server response: " + e.getMessage(), e);
             }
@@ -227,8 +230,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /**
      * Process next message from the input stream and complete corresponding future.
      */
-    private void processNextMessage(ByteBuffer buf) throws IgniteClientException, IOException {
-        var unpacker = new ClientMessageUnpacker(new ByteBufferInput(buf));
+    private void processNextMessage(ByteBuf buf) throws IgniteClientException, IOException {
+        var unpacker = new ClientMessageUnpacker(buf);
 
         if (protocolCtx == null) {
             // Process handshake.
@@ -297,18 +300,19 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** Send handshake request. */
     private void handshakeReq(ProtocolVersion proposedVer) throws IOException {
-        try (var req = new ClientMessagePacker()) {
-            req.packInt(proposedVer.major());
-            req.packInt(proposedVer.minor());
-            req.packInt(proposedVer.patch());
+        sock.send(Unpooled.wrappedBuffer(ClientMessageCommon.MAGIC_BYTES));
 
-            req.packInt(2); // Client type: general purpose.
+        var req = new ClientMessagePacker(sock.getBuffer());
+        req.packInt(proposedVer.major());
+        req.packInt(proposedVer.minor());
+        req.packInt(proposedVer.patch());
 
-            req.packBinaryHeader(0); // Features.
-            req.packMapHeader(0); // Extensions.
+        req.packInt(2); // Client type: general purpose.
 
-            write(req).syncUninterruptibly();
-        }
+        req.packBinaryHeader(0); // Features.
+        req.packMapHeader(0); // Extensions.
+
+        write(req).syncUninterruptibly();
     }
 
     /**
@@ -322,7 +326,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Receive and handle handshake response. */
     private void handshakeRes(ClientMessageUnpacker unpacker, ProtocolVersion proposedVer)
             throws IgniteClientConnectionException, IgniteClientAuthenticationException {
-        try {
+        try (unpacker) {
             ProtocolVersion srvVer = new ProtocolVersion(unpacker.unpackShort(), unpacker.unpackShort(),
                     unpacker.unpackShort());
 
@@ -363,7 +367,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** Write bytes to the output stream. */
     private ChannelFuture write(ClientMessagePacker packer) throws IgniteClientConnectionException {
-        var buf = packer.toMessageBuffer().sliceAsByteBuffer();
+        var buf = packer.getBuffer();
 
         return sock.send(buf);
     }

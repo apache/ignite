@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.client.io.netty;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -31,11 +30,11 @@ import static org.apache.ignite.internal.client.io.netty.NettyClientConnection.A
 public class NettyClientMessageHandler extends ChannelInboundHandlerAdapter {
     /** {@inheritDoc} */
     @Override public void channelRead(ChannelHandlerContext ctx, Object msg) throws IOException {
-        ctx.channel().attr(ATTR_CONN).get().onMessage((ByteBuffer) msg);
+        ctx.channel().attr(ATTR_CONN).get().onMessage((ByteBuf) msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    @Override public void channelInactive(ChannelHandlerContext ctx) {
         ctx.channel().attr(ATTR_CONN).get().onDisconnected(null);
     }
 }

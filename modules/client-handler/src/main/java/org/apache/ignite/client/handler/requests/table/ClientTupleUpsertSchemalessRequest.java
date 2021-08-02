@@ -15,51 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client;
+package org.apache.ignite.client.handler.requests.table;
 
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.table.manager.IgniteTables;
+
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTupleSchemaless;
 
 /**
- * Thin client payload input channel.
+ * Client tuple upsert request.
  */
-public class PayloadInputChannel implements AutoCloseable {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Input stream. */
-    private final ClientMessageUnpacker in;
-
+public class ClientTupleUpsertSchemalessRequest {
     /**
-     * Constructor.
+     * Processes the request.
      *
-     * @param ch Channel.
      * @param in Unpacker.
+     * @param tables Ignite tables.
+     * @return Future.
+     * @throws IOException On serialization error.
      */
-    PayloadInputChannel(ClientChannel ch, ClientMessageUnpacker in) {
-        this.in = in;
-        this.ch = ch;
-    }
+    public static CompletableFuture<Void> process(ClientMessageUnpacker in, IgniteTables tables) throws IOException {
+        var table = readTable(in, tables);
+        var tuple = readTupleSchemaless(in, table);
 
-    /**
-     * Gets client channel.
-     *
-     * @return Client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
-
-    /**
-     * Gets the unpacker.
-     *
-     * @return Unpacker.
-     */
-    public ClientMessageUnpacker in() {
-        return in;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        in.close();
+        return table.upsertAsync(tuple);
     }
 }

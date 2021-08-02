@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.client.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Handles thin client responses and server to client notifications.
@@ -30,5 +30,5 @@ public interface ClientMessageHandler {
      * @param buf Buffer.
      * @throws IOException on failure.
      */
-    void onMessage(ByteBuffer buf) throws IOException;
+    void onMessage(ByteBuf buf) throws IOException;
 }

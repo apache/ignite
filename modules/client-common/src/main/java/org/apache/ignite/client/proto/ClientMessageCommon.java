@@ -15,33 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.io;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import org.apache.ignite.lang.IgniteException;
+package org.apache.ignite.client.proto;
 
 /**
- * Client connection: abstracts away sending and receiving messages.
+ * Common client message constants.
  */
-public interface ClientConnection extends AutoCloseable {
-    /**
-     * Sends a message.
-     *
-     * @param msg Message buffer.
-     * @return Future for the operation.
-     */
-    ChannelFuture send(ByteBuf msg) throws IgniteException;
+public class ClientMessageCommon {
+    /** Message header size. */
+    public static final int HEADER_SIZE = 4;
 
-    /**
-     * Gets a buffer to write to.
-     *
-     * @return Buffer.
-     */
-    ByteBuf getBuffer();
-
-    /**
-     * Closes the connection.
-     */
-    @Override void close();
+    /** Magic bytes before handshake. */
+    public static final byte[] MAGIC_BYTES = new byte[]{0x49, 0x47, 0x4E, 0x49}; // IGNI
 }

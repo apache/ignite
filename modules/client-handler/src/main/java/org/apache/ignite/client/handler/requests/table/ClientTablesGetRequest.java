@@ -15,51 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client;
+package org.apache.ignite.client.handler.requests.table;
 
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.table.manager.IgniteTables;
 
 /**
- * Thin client payload output channel.
+ * Client tables retrieval request.
  */
-public class PayloadOutputChannel implements AutoCloseable {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Output stream. */
-    private final ClientMessagePacker out;
-
+public class ClientTablesGetRequest {
     /**
-     * Constructor.
+     * Processes the request.
      *
-     * @param ch Channel.
      * @param out Packer.
+     * @param igniteTables Ignite tables.
+     * @return Future.
+     * @throws IOException On serialization error.
      */
-    PayloadOutputChannel(ClientChannel ch, ClientMessagePacker out) {
-        this.ch = ch;
-        this.out = out;
-    }
+    public static CompletableFuture<Object> process(
+            ClientMessagePacker out,
+            IgniteTables igniteTables
+    ) throws IOException {
+        var tables = igniteTables.tables();
 
-    /**
-     * Gets client channel.
-     *
-     * @return Client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
+        out.packMapHeader(tables.size());
 
-    /**
-     * Gets the unpacker.
-     *
-     * @return Unpacker.
-     */
-    public ClientMessagePacker out() {
-        return out;
-    }
+        for (var table : tables) {
+            var tableImpl = (TableImpl) table;
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        out.close();
+            out.packUuid(tableImpl.tableId());
+            out.packString(table.tableName());
+        }
+
+        return null;
     }
 }

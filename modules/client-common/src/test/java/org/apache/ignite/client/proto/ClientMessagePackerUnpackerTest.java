@@ -17,13 +17,11 @@
 
 package org.apache.ignite.client.proto;
 
-import org.apache.ignite.client.proto.ClientMessagePacker;
-import org.apache.ignite.client.proto.ClientMessageUnpacker;
-import org.junit.jupiter.api.Test;
-import org.msgpack.core.buffer.ArrayBufferInput;
-
 import java.io.IOException;
 import java.util.UUID;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -32,19 +30,65 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class ClientMessagePackerUnpackerTest {
     @Test
+    public void testPackerCloseReleasesPooledBuffer() {
+        var buf = PooledByteBufAllocator.DEFAULT.directBuffer();
+        var packer = new ClientMessagePacker(buf);
+
+        assertEquals(1, buf.refCnt());
+
+        packer.close();
+
+        assertEquals(0, buf.refCnt());
+    }
+
+    @Test
+    public void testPackerIncludesFourByteMessageLength() throws IOException {
+        try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
+            packer.packInt(1); // 1 byte
+            packer.packString("Foo"); // 4 bytes
+
+            var buf = packer.getBuffer();
+            var len = buf.readInt();
+
+            assertEquals(5, len);
+            assertEquals(9, buf.writerIndex());
+            assertEquals(Integer.MAX_VALUE, buf.maxCapacity());
+        }
+    }
+
+    @Test
+    public void testEmptyPackerReturnsFourZeroBytes() {
+        try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
+            var buf = packer.getBuffer();
+            var len = buf.readInt();
+
+            assertEquals(0, len);
+            assertEquals(4, buf.writerIndex());
+        }
+    }
+
+    @Test
     public void testUUID() throws IOException {
         testUUID(UUID.randomUUID());
         testUUID(new UUID(0, 0));
     }
 
     private void testUUID(UUID u) throws IOException {
-        var packer = new ClientMessagePacker();
-        packer.packUuid(u);
-        byte[] data = packer.toByteArray();
+        try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
+            packer.packUuid(u);
 
-        var unpacker = new ClientMessageUnpacker(new ArrayBufferInput(data));
-        var res = unpacker.unpackUuid();
+            var buf = packer.getBuffer();
+            var len = buf.readInt();
 
-        assertEquals(u, res);
+            byte[] data = new byte[buf.readableBytes()];
+            buf.readBytes(data);
+
+            try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
+                var res = unpacker.unpackUuid();
+
+                assertEquals(18, len); // 1 ext + 1 ext type + 16 UUID data
+                assertEquals(u, res);
+            }
+        }
     }
 }

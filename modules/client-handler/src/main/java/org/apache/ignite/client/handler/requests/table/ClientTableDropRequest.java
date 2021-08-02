@@ -15,33 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
+package org.apache.ignite.client.handler.requests.table;
 
-import java.nio.ByteBuffer;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.table.manager.IgniteTables;
 
 /**
- * Encodes client messages:
- * 1. MAGIC for first message.
- * 2. Payload length (varint).
- * 3. Payload (bytes).
+ * Client table drop request.
  */
-public class ClientMessageEncoder extends MessageToByteEncoder<ByteBuffer> {
-    /** Magic encoded flag. */
-    private boolean magicEncoded;
+public class ClientTableDropRequest {
+    /**
+     * Processes the request.
+     *
+     * @param in Unpacker.
+     * @param tables Ignite tables.
+     * @return Future.
+     * @throws IOException On serialization error.
+     */
+    public static CompletableFuture<Object> process(
+            ClientMessageUnpacker in,
+            IgniteTables tables
+    ) throws IOException {
+        var tableName = in.unpackString();
 
-    /** {@inheritDoc} */
-    @Override protected void encode(ChannelHandlerContext ctx, ByteBuffer message, ByteBuf out) {
-        if (!magicEncoded) {
-            out.writeBytes(ClientMessageDecoder.MAGIC_BYTES);
+        tables.dropTable(tableName);
 
-            magicEncoded = true;
-        }
-
-        out.writeInt(message.remaining());
-        out.writeBytes(message);
+        return null;
     }
 }

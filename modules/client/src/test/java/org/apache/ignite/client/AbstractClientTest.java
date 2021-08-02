@@ -17,9 +17,10 @@
 
 package org.apache.ignite.client;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
-
 import io.netty.channel.ChannelFuture;
+import io.netty.util.ResourceLeakDetector;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.client.fakes.FakeIgnite;
 import org.apache.ignite.client.handler.ClientHandlerModule;
@@ -42,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public abstract class AbstractClientTest {
     protected static final String DEFAULT_TABLE = "default_test_table";
 
+    protected static ConfigurationRegistry configurationRegistry;
+
     protected static ChannelFuture serverFuture;
 
     protected static Ignite server;
@@ -50,6 +53,8 @@ public abstract class AbstractClientTest {
 
     @BeforeAll
     public static void beforeAll() throws Exception {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+
         serverFuture = startServer(null);
         client = startClient();
     }
@@ -59,6 +64,7 @@ public abstract class AbstractClientTest {
         client.close();
         serverFuture.cancel(true);
         serverFuture.await();
+        configurationRegistry.stop();
     }
 
     @BeforeEach
@@ -68,8 +74,11 @@ public abstract class AbstractClientTest {
     }
 
     public static Ignite startClient(String... addrs) {
-        if (addrs == null || addrs.length == 0)
-            addrs = new String[]{"127.0.0.2:10800"};
+        if (addrs == null || addrs.length == 0) {
+            var serverPort = ((InetSocketAddress)serverFuture.channel().localAddress()).getPort();
+
+            addrs = new String[]{"127.0.0.2:" + serverPort};
+        }
 
         var builder = IgniteClient.builder().addresses(addrs);
 
@@ -77,19 +86,19 @@ public abstract class AbstractClientTest {
     }
 
     public static ChannelFuture startServer(String host) throws InterruptedException {
-        var registry = new ConfigurationRegistry(
+        configurationRegistry = new ConfigurationRegistry(
                 Collections.singletonList(ClientConnectorConfiguration.KEY),
                 Collections.emptyMap(),
                 Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
         );
 
-        registry.start();
+        configurationRegistry.start();
 
         server = new FakeIgnite();
 
         var module = new ClientHandlerModule(server, NOPLogger.NOP_LOGGER);
 
-        module.prepareStart(registry);
+        module.prepareStart(configurationRegistry);
 
         return module.start();
     }
