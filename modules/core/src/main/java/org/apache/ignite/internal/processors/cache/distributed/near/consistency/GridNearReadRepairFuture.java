@@ -68,7 +68,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             expiryPlc,
             tx);
 
-        assert ctx.transactional();
+        assert ctx.transactional() : "Atomic cache should not be recovered using this future";
     }
 
     /** {@inheritDoc} */
