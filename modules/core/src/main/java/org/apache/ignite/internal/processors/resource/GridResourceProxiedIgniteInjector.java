@@ -43,7 +43,8 @@ public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        GridResourceUtils.inject(field.getField(), target, ignite(target));
+        GridResourceUtils.inject(field.getField(), target, getResource());
+//        GridResourceUtils.inject(field.getField(), target, ignite(target));
     }
 
     /** {@inheritDoc} */

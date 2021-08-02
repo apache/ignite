@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.security.Security;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,7 +117,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
 
     /** Security wrappers for exclude from P2P class loader. */
-    private final String[] p2pSecurityWrappsExcl = {SecurityAwarePredicate.class.getName()};
+    private final String[] p2pSecurityWrappsExcl = {"org.apache.ignite.internal.SecurityAwarePredicate"};
 
     /**
      * @param ctx Grid kernal context.
@@ -251,21 +251,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             sandbox = new NoOpSandbox();
         }
-
-        String[] p2pExc = ctx.config().getPeerClassLoadingLocalClassPathExclude();
-        String[] p2pExclWithSecWrapps;
-
-        if (p2pExc == null) {
-            p2pExclWithSecWrapps = p2pSecurityWrappsExcl;
-        }
-        else {
-            List<String> strings = new ArrayList<>(Arrays.asList(p2pExc));
-            strings.addAll(asList(p2pSecurityWrappsExcl));
-
-            p2pExclWithSecWrapps = Arrays.copyOf(strings.toArray(), strings.size(), String[].class);
-        }
-
-        ctx.config().setPeerClassLoadingLocalClassPathExclude(p2pExclWithSecWrapps);
     }
 
     /**
@@ -318,6 +303,24 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         );
 
         secPrc.onKernalStart(active);
+
+        if (ctx.config().isPeerClassLoadingEnabled()) {
+            String[] p2pExc = ctx.config().getPeerClassLoadingLocalClassPathExclude();
+            String[] p2pExclWithSecWrapps;
+
+            if (p2pExc != null && p2pExc.length >= 0) {
+                Set<String> strings = new HashSet<>(Arrays.asList(p2pExc));
+
+                strings.addAll(asList(p2pSecurityWrappsExcl));
+
+                p2pExclWithSecWrapps = Arrays.copyOf(strings.toArray(), strings.size(), String[].class);
+            }
+            else {
+                p2pExclWithSecWrapps = p2pSecurityWrappsExcl;
+            }
+
+            ctx.config().setPeerClassLoadingLocalClassPathExclude(p2pExclWithSecWrapps);
+        }
     }
 
     /** {@inheritDoc} */
