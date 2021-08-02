@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
 import org.apache.ignite.client.proto.ClientOp;
 import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.internal.client.ReliableChannel;
@@ -49,17 +48,28 @@ public class ClientTables implements IgniteTables {
         return createTableAsync(name, tableInitChange).join();
     }
 
-    public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void alterTable(String name, Consumer<TableChange> tableChange) {
+        alterTableAsync(name, tableChange).join();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public Table getOrCreateTable(String name, Consumer<TableChange> tableInitChange) {
+        return getOrCreateTableAsync(name, tableInitChange).join();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Table> getOrCreateTableAsync(String name, Consumer<TableChange> tableInitChange) {
         throw new UnsupportedOperationException();
     }
 
@@ -68,7 +78,8 @@ public class ClientTables implements IgniteTables {
         dropTableAsync(name).join();
     }
 
-    public CompletableFuture<Void> dropTableAsync(String name) {
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Void> dropTableAsync(String name) {
         return ch.requestAsync(ClientOp.TABLE_DROP, w -> w.out().packString(name));
     }
 
@@ -77,7 +88,8 @@ public class ClientTables implements IgniteTables {
         return tablesAsync().join();
     }
 
-    public CompletableFuture<List<Table>> tablesAsync() {
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<List<Table>> tablesAsync() {
         return ch.serviceAsync(ClientOp.TABLES_GET, r -> {
             var in = r.in();
             var cnt = in.unpackMapHeader();
@@ -95,7 +107,8 @@ public class ClientTables implements IgniteTables {
         return tableAsync(name).join();
     }
 
-    public CompletableFuture<Table> tableAsync(String name) {
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Table> tableAsync(String name) {
         return ch.serviceAsync(ClientOp.TABLE_GET, w -> w.out().packString(name),
                 r -> new ClientTable(ch, r.in().unpackUuid(), name));
     }

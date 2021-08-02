@@ -20,9 +20,9 @@ package org.apache.ignite.client.fakes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-
 import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
@@ -63,8 +63,17 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     }
 
     /** {@inheritDoc} */
+    @Override public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
+        return CompletableFuture.completedFuture(createTable(name, tableInitChange));
+    }
+
+    /** {@inheritDoc} */
     @Override public void alterTable(String name, Consumer<TableChange> tableChange) {
-        throw new IgniteException("Not supported");
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -82,6 +91,11 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     }
 
     /** {@inheritDoc} */
+    @Override public CompletableFuture<Table> getOrCreateTableAsync(String name, Consumer<TableChange> tableInitChange) {
+        return CompletableFuture.completedFuture(getOrCreateTable(name, tableInitChange));
+    }
+
+    /** {@inheritDoc} */
     @Override public void dropTable(String name) {
         var table = tables.remove(name);
 
@@ -90,13 +104,30 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     }
 
     /** {@inheritDoc} */
+    @Override public CompletableFuture<Void> dropTableAsync(String name) {
+        dropTable(name);
+
+        return CompletableFuture.completedFuture(null);
+    }
+
+    /** {@inheritDoc} */
     @Override public List<Table> tables() {
         return new ArrayList<>(tables.values());
     }
 
     /** {@inheritDoc} */
+    @Override public CompletableFuture<List<Table>> tablesAsync() {
+        return CompletableFuture.completedFuture(tables());
+    }
+
+    /** {@inheritDoc} */
     @Override public Table table(String name) {
         return tables.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Table> tableAsync(String name) {
+        return CompletableFuture.completedFuture(table(name));
     }
 
     @NotNull private TableImpl getNewTable(String name) {
@@ -129,5 +160,4 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     @Override public TableImpl table(UUID id) {
         return tablesById.get(id);
     }
-
 }
