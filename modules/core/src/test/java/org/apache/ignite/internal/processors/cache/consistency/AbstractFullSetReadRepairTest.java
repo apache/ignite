@@ -173,7 +173,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      * @param data Data.
      */
-    protected void check(ReadRepairData data, boolean checkEvtRecorded, boolean checkFixed){
+    protected void check(ReadRepairData data, boolean checkEvtRecorded, boolean checkFixed) {
         if (checkEvtRecorded)
             checkEvent(data, checkFixed);
         else

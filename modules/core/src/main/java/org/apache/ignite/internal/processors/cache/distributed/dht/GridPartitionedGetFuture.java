@@ -172,7 +172,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /** Explicit predefined single mapping (backup or primary). */
-    public ClusterNode affNode(){
+    public ClusterNode affNode() {
         return affNode;
     }
 

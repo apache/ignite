@@ -149,7 +149,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected void checkEventMissed(){
+    protected void checkEventMissed() {
         assertTrue(evtDeq.isEmpty());
     }
 
