@@ -212,9 +212,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param finished Future represents a result of GET operation.
      */
     protected synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
-        if (/*all subfutures (including currently processing) were finished at previous future processing*/ isDone() ||
-            /*remapping, ignoring any updates until remapped*/ (topVer == null) ||
-            /*remapped*/ !futs.containsValue((GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>)finished))
+        if (isDone() // All subfutures (including currently processing) were successfully finished at previous future processing.
+            || (topVer == null) // Remapping, ignoring any updates until remapped.
+            || !futs.containsValue((GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>)finished)) // Remapped.
             return;
 
         if (finished.error() != null) {
