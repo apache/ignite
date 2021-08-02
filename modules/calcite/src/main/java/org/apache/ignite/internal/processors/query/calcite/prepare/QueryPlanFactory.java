@@ -27,5 +27,5 @@ public interface QueryPlanFactory {
      * @param ctx Planning context.
      * @return Query plan.
      */
-    List<QueryPlan> create(PlanningContext ctx);
+    QueryPlan create(PlanningContext ctx);
 }

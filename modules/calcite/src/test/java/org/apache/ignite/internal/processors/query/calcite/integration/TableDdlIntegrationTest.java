@@ -656,6 +656,11 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertTrue(client.cluster().isWalEnabled(cacheName));
     }
 
+    @Test
+    public void test() throws Exception {
+        executeSql("CREATE TABLE test (val int);\nINSERT INTO test VALUES (0);");
+    }
+
     /**
      * Asserts that executeSql throws an exception.
      *

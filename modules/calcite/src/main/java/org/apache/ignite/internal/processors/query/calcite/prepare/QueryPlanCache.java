@@ -30,7 +30,7 @@ public interface QueryPlanCache extends Service {
      * @param factory Factory method to generate a plan on cache miss.
      * @return Query plan.
      */
-    List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
+    QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
 
     /**
      * Clear cache.
