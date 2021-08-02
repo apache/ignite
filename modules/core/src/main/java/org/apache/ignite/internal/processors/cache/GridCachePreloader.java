@@ -64,8 +64,6 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * Adds assignments to preloader.
-     *
      * @param exchId Exchange ID.
      * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
      * @param rebalanceId Rebalance id created by exchange thread.
@@ -74,7 +72,7 @@ public interface GridCachePreloader {
      * @param compatibleRebFut Future for waiting for compatible rebalances.
      * @return Future if rebalance was planned or null.
      */
-    public RebalanceFuture addAssignments(
+    public RebalanceFuture prepare(
         GridDhtPartitionExchangeId exchId,
         @Nullable GridDhtPartitionsExchangeFuture exchFut,
         long rebalanceId,
