@@ -240,8 +240,6 @@ public class SnapshotPartitionsVerifyTask
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
-            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
             try {
                 GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
 
@@ -257,10 +255,12 @@ public class SnapshotPartitionsVerifyTask
                             int grpId = CU.cacheId(grpName);
                             int partId = partId(part.getName());
 
-                        try {
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false).
-                                createPageStore(getTypeByPartId(partId),
-                                    part::toPath, val -> {
+                            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
+                                .createPageStore(getTypeByPartId(partId),
+                                    part::toPath,
+                                    val -> {
                                     })
                             ) {
                                 if (partId == INDEX_PARTITION) {
