@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
+import java.util.stream.LongStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -43,6 +44,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.processedPartitionComparator;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.toStringTopProcessingPartitions;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.trimToSize;
 
 /**
  * Class for testing the restoration of the status of partitions.
@@ -108,17 +110,47 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Testing Method {@link GridCacheProcessor#trimToSize}.
+     */
+    @Test
+    public void testTrimToSize() {
+        TreeSet<Long> act = new TreeSet<>();
+
+        trimToSize(act, 0);
+        trimToSize(act, 1);
+
+        LongStream.range(0, 10).forEach(act::add);
+
+        trimToSize(act, act.size());
+        assertEquals(10, act.size());
+
+        TreeSet<Long> exp = new TreeSet<>(act);
+
+        trimToSize(act, 9);
+        assertEqualsCollections(exp.tailSet(1L), act);
+
+        trimToSize(act, 5);
+        assertEqualsCollections(exp.tailSet(5L), act);
+
+        trimToSize(act, 3);
+        assertEqualsCollections(exp.tailSet(7L), act);
+
+        trimToSize(act, 0);
+        assertEqualsCollections(exp.tailSet(10L), act);
+    }
+
+    /**
      * Testing Method {@link GridCacheProcessor#processedPartitionComparator}.
      */
     @Test
     public void testProcessedPartitionComparator() {
         List<T3<Long, Long, GroupPartitionId>> exp = F.asList(
-            new T3<>(1L, 2L, new GroupPartitionId(1, 1)),
-            new T3<>(1L, 2L, new GroupPartitionId(1, 0)),
-            new T3<>(1L, 2L, new GroupPartitionId(0, 0)),
-            new T3<>(1L, 1L, new GroupPartitionId(0, 0)),
+            new T3<>(0L, 0L, new GroupPartitionId(0, 0)),
             new T3<>(0L, 1L, new GroupPartitionId(0, 0)),
-            new T3<>(0L, 0L, new GroupPartitionId(0, 0))
+            new T3<>(1L, 1L, new GroupPartitionId(0, 0)),
+            new T3<>(1L, 2L, new GroupPartitionId(0, 0)),
+            new T3<>(1L, 2L, new GroupPartitionId(1, 0)),
+            new T3<>(1L, 2L, new GroupPartitionId(1, 1))
         );
 
         TreeSet<T3<Long, Long, GroupPartitionId>> act = new TreeSet<>(processedPartitionComparator());

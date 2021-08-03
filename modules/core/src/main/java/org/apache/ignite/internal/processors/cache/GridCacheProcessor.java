@@ -5529,9 +5529,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             AtomicReference<SortedSet<T3<Long, Long, GroupPartitionId>>> topPartRef = new AtomicReference<>();
 
-            SortedSet<T3<Long, Long, GroupPartitionId>> topParts =
-                new ConcurrentSkipListSet<>(processedPartitionComparator());
-
             long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
 
             int poolSize = ctx.config().getSystemThreadPoolSize();
@@ -5566,42 +5563,65 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     Map<GroupPartitionId, Long> processed = new HashMap<>();
 
-                    for (GroupPartitionId grpPartId : batch) {
-                        T2<CacheGroupContext, AtomicInteger> grpTuple = grps.get(grpPartId.getGroupId());
+                    try {
+                        for (GroupPartitionId grpPartId : batch) {
+                            T2<CacheGroupContext, AtomicInteger> grpTuple = grps.get(grpPartId.getGroupId());
 
-                        CacheGroupContext grpCtx = grpTuple.get1();
+                            CacheGroupContext grpCtx = grpTuple.get1();
 
-                        try {
-                            long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(), partStates);
+                            try {
+                                long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(), partStates);
 
-                            processed.put(grpPartId, time);
+                                processed.put(grpPartId, time);
 
-                            totalProcessed.incrementAndGet();
+                                totalProcessed.incrementAndGet();
+                            }
+                            catch (IgniteCheckedException | RuntimeException | Error e) {
+                                U.error(log, "Failed to restore partition state for " +
+                                    "groupName=" + grpCtx.name() + " groupId=" + grpCtx.groupId(), e);
 
-                            if (log.isInfoEnabled()) {
-                                long ts = System.currentTimeMillis();
+                                IgniteCheckedException ex = e instanceof IgniteCheckedException
+                                    ? ((IgniteCheckedException)e)
+                                    : new IgniteCheckedException(e);
 
-                                topParts.add(new T3<>(time, ts, grpPartId));
+                                if (!restoreStateError.compareAndSet(null, ex))
+                                    restoreStateError.get().addSuppressed(ex);
+                            }
+                            finally {
+                                completionLatch.countDown();
+
+                                AtomicInteger completedCntr = grpTuple.get2();
+
+                                if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions())
+                                    grpCtx.offheap().confirmPartitionStatesRestored();
                             }
                         }
-                        catch (IgniteCheckedException | RuntimeException | Error e) {
-                            U.error(log, "Failed to restore partition state for " +
-                                "groupName=" + grpCtx.name() + " groupId=" + grpCtx.groupId(), e);
+                    }
+                    finally {
+                        if (log.isInfoEnabled()) {
+                            TreeSet<T3<Long, Long, GroupPartitionId>> top =
+                                new TreeSet<>(processedPartitionComparator());
 
-                            IgniteCheckedException ex = e instanceof IgniteCheckedException
-                                ? ((IgniteCheckedException)e)
-                                : new IgniteCheckedException(e);
+                            long ts = System.currentTimeMillis();
 
-                            if (!restoreStateError.compareAndSet(null, ex))
-                                restoreStateError.get().addSuppressed(ex);
-                        }
-                        finally {
-                            completionLatch.countDown();
+                            for (Map.Entry<GroupPartitionId, Long> e : processed.entrySet()) {
+                                top.add(new T3<>(e.getValue(), ts, e.getKey()));
 
-                            AtomicInteger completedCntr = grpTuple.get2();
+                                trimToSize(top, 5);
+                            }
 
-                            if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions())
-                                grpCtx.offheap().confirmPartitionStatesRestored();
+                            topPartRef.updateAndGet(top0 -> {
+                                if (top0 == null)
+                                    return top;
+
+                                for (T3<Long, Long, GroupPartitionId> t2 : top0) {
+                                    top.add(t2);
+
+                                    trimToSize(top, 5);
+                                }
+
+                                return top;
+                            });
                         }
                     }
                 });
@@ -5618,13 +5638,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     while (!completionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
                         if (log.isInfoEnabled()) {
-                            @Nullable SortedSet<T3<Long, Long, GroupPartitionId>> top =
-                                new TreeSet<>(processedPartitionComparator());
-
-                            Iterator<T3<Long, Long, GroupPartitionId>> topPartsIter = topParts.iterator();
-
-                            while (top.size() < 5 && topPartsIter.hasNext())
-                                top.add(topPartsIter.next());
+                            @Nullable SortedSet<T3<Long, Long, GroupPartitionId>> top = topPartRef.get();
 
                             log.info("Restore partitions state progress [grpCnt=" +
                                 (forGroups.size() - completionLatch.getCount()) + '/' + forGroups.size() +
@@ -5958,15 +5972,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Trimming the set to the required size.
+     * Removing items will be in ascending order.
+     *
+     * @param set Set.
+     * @param size Size.
+     */
+    static <E> void trimToSize(SortedSet<E> set, int size) {
+        while (set.size() > size)
+            set.remove(set.first());
+    }
+
+    /**
      * Comparator of processed partitions.
      * T3 -> 1 - duration, 2 - timestamp, 3 - partition of group.
-     * Sort order: duration -> timestamp -> partition of group; and order is reversed.
+     * Sort order: duration -> timestamp -> partition of group.
      *
      * @return Comparator.
      */
     static Comparator<T3<Long, Long, GroupPartitionId>> processedPartitionComparator() {
         Comparator<T3<Long, Long, GroupPartitionId>> comp = Comparator.comparing(T3::get1);
 
-        return comp.thenComparing(T3::get2).thenComparing(T3::get3).reversed();
+        return comp.thenComparing(T3::get2).thenComparing(T3::get3);
     }
 }
