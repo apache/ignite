@@ -206,6 +206,22 @@ public class FunctionsTest extends GridCommonAbstractTest {
         checkQuery("SELECT 4 % 2").returns(0).check();
         checkQuery("SELECT NULL % 2").returns(new Object[] { null }).check();
         checkQuery("SELECT 3 % NULL::int").returns(new Object[] { null }).check();
+        checkQuery("SELECT 3 % NULL").returns(new Object[] { null }).check();
+    }
+
+    /** */
+    @Test
+    public void testNullFunctionArguments() {
+        // Don't infer result data type from arguments (result is always INTEGER_NULLABLE).
+        checkQuery("SELECT ASCII(NULL)").returns(new Object[] { null }).check();
+        // Inferring result data type from first STRING argument.
+        checkQuery("SELECT REPLACE(NULL, '1', '2')").returns(new Object[] { null }).check();
+        // Inferring result data type from both arguments.
+        checkQuery("SELECT MOD(1, null)").returns(new Object[] { null }).check();
+        // Inferring result data type from first NUMERIC argument.
+        checkQuery("SELECT TRUNCATE(NULL, 0)").returns(new Object[] { null }).check();
+        // Inferring arguments data types and then inferring result data type from all arguments.
+        checkQuery("SELECT FALSE AND NULL").returns(false).check();
     }
 
     /** */
