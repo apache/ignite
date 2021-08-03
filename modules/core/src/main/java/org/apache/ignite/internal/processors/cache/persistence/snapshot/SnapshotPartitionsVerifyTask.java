@@ -40,6 +40,8 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -241,13 +243,19 @@ public class SnapshotPartitionsVerifyTask
             FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
             try {
-                U.doInParallel(
-                    ignite.context().getSystemExecutorService(),
-                    partFiles,
-                    part -> {
-                        String grpName = cacheGroupName(part.getParentFile());
-                        int grpId = CU.cacheId(grpName);
-                        int partId = partId(part.getName());
+                GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
+
+                for (GridComponent comp : snpCtx)
+                    comp.start();
+
+                try {
+                    U.doInParallel(
+                        snpMgr.snapshotExecutorService(),
+                        partFiles,
+                        part -> {
+                            String grpName = cacheGroupName(part.getParentFile());
+                            int grpId = CU.cacheId(grpName);
+                            int partId = partId(part.getName());
 
                         try {
                             try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false).
@@ -301,20 +309,24 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+                                    snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
 
                                 assert hash != null : "OWNING must have hash: " + key;
 
                                 res.put(key, hash);
                             }
-                        }
-                        catch (IOException e) {
-                            throw new IgniteCheckedException(e);
-                        }
+                            catch (IOException e) {
+                                throw new IgniteCheckedException(e);
+                            }
 
-                        return null;
-                    }
-                );
+                            return null;
+                        }
+                    );
+                }
+                finally {
+                    for (GridComponent comp : snpCtx)
+                        comp.stop(true);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

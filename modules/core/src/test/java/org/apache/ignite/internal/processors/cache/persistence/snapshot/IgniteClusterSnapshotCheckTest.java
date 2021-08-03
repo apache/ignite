@@ -254,10 +254,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        int grpId = CU.cacheId(dfltCacheCfg.getName());
-
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
+            .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
             .createPageStore(getTypeByPartId(PART_ID),
                 () -> part0,
                 val -> {
@@ -541,6 +539,31 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(res.metas());
         assertContains(log, b.toString(), "The check procedure failed on 1 node.");
         assertContains(log, b.toString(), "Failed to read page (CRC validation failed)");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckMultipleTimes() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        startClientGrid();
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int iterations = 10;
+
+        // Warmup.
+        for (int i = 0; i < iterations; i++)
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        int activeThreadsCntBefore = Thread.activeCount();
+
+        for (int i = 0; i < iterations; i++)
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
+
+        assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
     }
 
     /** Checks bytes, signature of partion files. Compares before and after snapshot. Assumes the files are equal.  */

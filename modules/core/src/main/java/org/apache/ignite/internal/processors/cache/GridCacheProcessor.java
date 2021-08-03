@@ -1878,7 +1878,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             doInParallel(
                 parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
+                sharedCtx.kernalContext().pools().getSystemExecutorService(),
                 startCacheInfos,
                 startCacheInfo -> {
                     cacheStartFailHandler.handle(
@@ -1940,7 +1940,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             doInParallel(
                 parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
+                sharedCtx.kernalContext().pools().getSystemExecutorService(),
                 cacheContexts.entrySet(),
                 cacheCtxEntry -> {
                     cacheStartFailHandler.handle(
@@ -2801,7 +2801,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             doInParallel(
                 parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
+                sharedCtx.kernalContext().pools().getSystemExecutorService(),
                 cachesToStop.entrySet(),
                 cachesToStopByGrp -> {
                     CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
@@ -5530,7 +5530,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
 
-            ExecutorService sysPool = ctx.getSystemExecutorService();
+            ExecutorService sysPool = ctx.pools().getSystemExecutorService();
 
             CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
 
