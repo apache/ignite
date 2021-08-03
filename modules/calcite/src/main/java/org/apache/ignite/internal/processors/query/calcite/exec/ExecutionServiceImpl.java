@@ -624,7 +624,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
         switch (plan.type()) {
             case DML:
-                // TODO a barrier between previous operation and this one
+                FieldsQueryCursor<List<?>> cur = executeQuery(qryId, (MultiStepPlan)plan, pctx);
+                return new QueryCursorImpl<>(cur.getAll());
             case QUERY:
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
             case EXPLAIN:

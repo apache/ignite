@@ -656,9 +656,29 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertTrue(client.cluster().isWalEnabled(cacheName));
     }
 
+    /**
+     * Tests that multiline statements with DDL and DML works as expected.
+     */
     @Test
-    public void test() throws Exception {
-        executeSql("CREATE TABLE test (val int);\nINSERT INTO test VALUES (0);");
+    public void testMulitlineWithCreateTable() throws Exception {
+        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+            "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
+            "ALTER TABLE test ADD COLUMN val2 int;" +
+            "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
+            "ALTER TABLE test DROP COLUMN val2;";
+
+        executeSql(multiLineQuery);
+
+        List<List<?>> res = executeSql("SELECT * FROM test");
+        assertEquals(2, res.size());
+
+        for(int i = 0; i < res.size(); i++) {
+            List<?> row = res.get(i);
+
+            assertEquals(2, row.size());
+            assertEquals(i, row.get(0));
+            assertEquals("test" + i, row.get(1));
+        }
     }
 
     /**
