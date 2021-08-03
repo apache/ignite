@@ -162,7 +162,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             IgniteInternalCache<?, ?> encrypted0 = grid0.cachex(cacheName);
 
-            int grpId = CU.cacheGroupId(cacheName, ccfg.getGroupName());
+            int grpId = CU.cacheGroupId(ccfg);
 
             assertNotNull(encrypted0);
 

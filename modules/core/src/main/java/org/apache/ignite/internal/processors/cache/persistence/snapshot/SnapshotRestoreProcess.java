@@ -51,6 +51,8 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -71,6 +73,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -161,8 +164,13 @@ public class SnapshotRestoreProcess {
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
-            if (clusterState.state() != ClusterState.ACTIVE || clusterState.transition())
+            System.err.println("TEST | starting on " + ctx.localNodeId());
+
+            if (clusterState.state() != ClusterState.ACTIVE || clusterState.transition()) {
+                System.err.println("TEST | failed on " + ctx.localNodeId());
+
                 throw new IgniteException(OP_REJECT_MSG + "The cluster should be active.");
+            }
 
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException(OP_REJECT_MSG + "The baseline topology is not configured for cluster.");
@@ -457,14 +465,14 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Ensures that a cache with the specified name does not exist locally.
+     * Ensures that cache data does not exist locally.
      *
      * @param cacheCfg Cache configuration.
      */
-    private void ensureCacheAbsent(CacheConfiguration<?, ?> cacheCfg) {
-        int grpId = CU.cacheGroupId(cacheCfg.getName(), cacheCfg.getGroupName());
+    private void ensureCacheDataAbsent(CacheConfiguration<?, ?> cacheCfg) {
+        int id = CU.cacheGroupId(cacheCfg);
 
-        if (ctx.cache().cacheGroupDescriptors().containsKey(grpId) || ctx.cache().cacheDescriptor(grpId) != null) {
+        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null) {
             throw new IgniteIllegalStateException("Cache \"" + cacheCfg.getName() +
                 "\" should be destroyed manually before perform restore operation.");
         }
@@ -515,19 +523,7 @@ public class SnapshotRestoreProcess {
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();
 
-            // Ensure that shared cache groups has no conflicts.
-            for (StoredCacheData cfg : opCtx0.cfgs.values()) {
-                ensureCacheAbsent(cfg.config());
-
-                int grpId = CU.cacheGroupId(cfg.config().getName(), cfg.config().getGroupName());
-
-                if (cfg.config().isEncryptionEnabled()) {
-//                    assert opCtx0.encrGrpKeys.get(grpId) != null;
-
-//                    if (ctx.encryption().getActiveKey(grpId) == null)
-//                        ctx.encryption().setInitialGroupKey(grpId, opCtx0.encrGrpKeys.get(grpId).key(), null);
-                }
-            }
+            boolean onLocNode = ctx.localNodeId().equals(req.operationalNodeId());
 
             if (log.isInfoEnabled()) {
                 log.info("Starting local snapshot restore operation" +
@@ -536,16 +532,22 @@ public class SnapshotRestoreProcess {
                     ", cache(s)=" + F.viewReadOnly(opCtx0.cfgs.values(), data -> data.config().getName()) + ']');
             }
 
+            if (ctx.isStopping())
+                throw new NodeStoppingException("Node is stopping.");
+
+            // Ensure that shared cache groups has no conflicts.
+            for (StoredCacheData cfg : opCtx0.cfgs.values())
+                ensureCacheDataAbsent(cfg.config());
+
+            processEncrKeys(opCtx0, true);
+
             Consumer<Throwable> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
             BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
-            if (ctx.isStopping())
-                throw new NodeStoppingException("Node is stopping.");
-
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
+            restoreAsync(opCtx0, onLocNode, stopChecker, errHnd)
                 .thenAccept(res -> {
                     try {
                         Throwable err = opCtx.err.get();
@@ -553,8 +555,25 @@ public class SnapshotRestoreProcess {
                         if (err != null)
                             throw err;
 
-                        for (File src : opCtx0.dirs)
+                        for (File src : opCtx0.dirs) {
                             Files.move(formatTmpDirName(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
+
+//                            src.mkdirs();
+//
+//                            int grpId = CU.cacheId(FilePageStoreManager.cacheGroupName(src));
+//
+//                            if (opCtx0.cfgs.get(grpId).config().getGroupName() != null) {
+//                                //TODO
+//                                for (GridCacheContext<?, ?> cacheCtx : ctx.cache().cacheGroup(grpId).caches()) {
+//                                    Files.move(new File(formatTmpDirName(src), cacheCtx.name() + CACHE_DATA_FILENAME).toPath(),
+//                                        new File(src, cacheCtx.name() + CACHE_DATA_FILENAME).toPath(), StandardCopyOption.ATOMIC_MOVE);
+//                                }
+//                            }
+//                            else {
+//                                Files.move(new File(formatTmpDirName(src), CACHE_DATA_FILENAME).toPath(),
+//                                    new File(src, CACHE_DATA_FILENAME).toPath(), StandardCopyOption.ATOMIC_MOVE);
+//                            }
+                        }
                     }
                     catch (Throwable t) {
                         log.error("Unable to restore cache group(s) from the snapshot " +
@@ -749,6 +768,8 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return;
 
+        System.err.println("TEST | finishe finishPrepare on " + ctx.localNodeId());
+
         SnapshotRestoreContext opCtx0 = opCtx;
 
         Exception failure = F.first(errs.values());
@@ -818,7 +839,9 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId), opCtx0.encrGrpKeys);
+//        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId), opCtx0.encrGrpKeys);
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId),
+            Collections.emptyMap());
     }
 
     /**
@@ -885,13 +908,6 @@ public class SnapshotRestoreProcess {
 
             try {
                 ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
-                    for (Integer grpId : opCtx0.encrGrpKeys.keySet()) {
-                        if (log.isInfoEnabled())
-                            log.info("Removing encryption key for cache group " + grpId);
-
-                        ctx.encryption().removeGroupKey(grpId);
-                    }
-
                     if (log.isInfoEnabled()) {
                         log.info("Removing restored cache directories [reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
@@ -917,6 +933,8 @@ public class SnapshotRestoreProcess {
                         }
                     }
 
+                    processEncrKeys(opCtx0, false);
+
                     if (ex != null)
                         retFut.onDone(ex);
                     else
@@ -934,6 +952,40 @@ public class SnapshotRestoreProcess {
         return retFut;
     }
 
+    /** TODO */
+    private void processEncrKeys(SnapshotRestoreContext opCtx, boolean addKeys) {
+        Set<Integer> processedGroups = new HashSet<>();
+
+        for (StoredCacheData cfg : opCtx.cfgs.values()) {
+            int grpId = CU.cacheGroupId(cfg.config());
+
+            if (cfg.config().isEncryptionEnabled() && !processedGroups.contains(grpId)) {
+                if (addKeys) {
+                    assert ctx.encryption().getActiveKey(grpId) != null;
+
+                    if (log.isInfoEnabled())
+                        log.info("Adding encryption key for cache " + cfg.config().getName());
+
+                    GroupKeyEncrypted grpKeyEncrypted = opCtx.encrGrpKeys.get(grpId);
+
+                    assert grpKeyEncrypted != null;
+
+                    ctx.encryption().setInitialGroupKey(grpId, grpKeyEncrypted.key(), grpKeyEncrypted.id());
+                }
+                else {
+                    assert ctx.encryption().getActiveKey(grpId) == null;
+
+                    if (log.isInfoEnabled())
+                        log.info("Removing encryption key for cache " + cfg.config().getName());
+
+                    ctx.encryption().removeGroupKey(grpId);
+                }
+
+                processedGroups.add(grpId);
+            }
+        }
+    }
+
     /**
      * @param reqId Request ID.
      * @param res Results.
@@ -942,6 +994,8 @@ public class SnapshotRestoreProcess {
     private void finishRollback(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
         if (ctx.clientNode())
             return;
+
+        System.err.println("TEST | finishe rollback on " + ctx.localNodeId());
 
         if (!errs.isEmpty()) {
             log.warning("Some nodes were unable to complete the rollback routine completely, check the local log " +

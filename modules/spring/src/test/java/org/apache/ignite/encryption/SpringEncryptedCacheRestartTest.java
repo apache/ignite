@@ -80,7 +80,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
             assertNotNull(enc);
 
-            int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
+            int grpId = CU.cacheGroupId(enc.configuration());
 
             GroupKey grpKey0 = g.get1().context().encryption().getActiveKey(grpId);
             GroupKey grpKey1 = g.get2().context().encryption().getActiveKey(grpId);
@@ -130,8 +130,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         assertNotNull(encrypted2);
 
-        GroupKey grpKey = g0.context().encryption().getActiveKey(
-            CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
+        GroupKey grpKey = g0.context().encryption().getActiveKey(CU.cacheGroupId(encrypted.configuration()));
 
         assertNotNull(grpKey);
 
@@ -140,8 +139,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         assertNotNull(key);
         assertNotNull(key.key());
 
-        GroupKey grpKey2 = g0.context().encryption().getActiveKey(
-            CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
+        GroupKey grpKey2 = g0.context().encryption().getActiveKey(CU.cacheGroupId(encrypted2.configuration()));
 
         assertNotNull(grpKey2);
 

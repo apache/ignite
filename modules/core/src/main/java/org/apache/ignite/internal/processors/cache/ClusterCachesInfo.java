@@ -1925,6 +1925,9 @@ public class ClusterCachesInfo {
             if (joiningNodeData instanceof CacheJoinNodeDiscoveryData) {
                 CacheJoinNodeDiscoveryData joinData = (CacheJoinNodeDiscoveryData)joiningNodeData;
 
+                System.err.println("TEST | finishe validateJoiningNodeData on " + ctx.localNodeId() + ". Joining node: " +
+                    data.joiningNodeId());
+
                 Set<String> problemCaches = null;
                 Set<String> encClientCaches = null;
 
@@ -2025,7 +2028,7 @@ public class ClusterCachesInfo {
                     ", conflictingCacheName=" + desc.cacheName() + ']';
         }
 
-        int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
+        int grpId = CU.cacheGroupId(cfg);
 
         if (cfg.getGroupName() != null) {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
@@ -2288,7 +2291,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        int grpId = CU.cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
+        int grpId = CU.cacheGroupId(startedCacheCfg);
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 

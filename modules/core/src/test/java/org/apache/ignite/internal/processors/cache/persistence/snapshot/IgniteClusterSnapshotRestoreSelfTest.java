@@ -57,11 +57,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -78,7 +80,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption={0}")
+    @Parameterized.Parameters(name = "Encryption enabled")
     public static Iterable<Boolean> encryptionParams() {
         return Arrays.asList(true);
     }
@@ -132,6 +134,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
+//        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
+//            dfltCacheCfg.setBackups(0));
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -308,6 +312,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         awaitPartitionMapExchange();
 
         ensureCacheAbsent(dfltCacheCfg);
+
+        if (encryption) {
+            Assert.assertNull("Encryption key must not exist after failure of snapshot restore process.",
+                grid(1).context().encryption().getActiveKey(CU.cacheGroupId(dfltCacheCfg)));
+        }
     }
 
     /** @throws Exception If failed. */
@@ -664,7 +673,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
      * @param expMsg Expected exception message.
      * @throws Exception if failed.
      */
-    private void  checkClusterStateChange(
+    private void checkClusterStateChange(
         ClusterState state,
         DistributedProcessType procType,
         @Nullable Class<? extends Throwable> exCls,

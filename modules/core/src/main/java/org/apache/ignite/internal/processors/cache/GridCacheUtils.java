@@ -1110,6 +1110,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cacheCfg Cache configuration.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(CacheConfiguration<?,?> cacheCfg) {
+        return cacheGroupId(cacheCfg.getName(), cacheCfg.getGroupName());
+    }
+
+    /**
      * Convert TTL to expire time.
      *
      * @param ttl TTL.

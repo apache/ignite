@@ -3789,7 +3789,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
                 for (StoredCacheData ccfg : storedCacheDataList) {
-                    int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
+                    int gid = CU.cacheGroupId(ccfg.config());
 
                     assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
 
@@ -3856,7 +3856,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (StoredCacheData ccfg : storedCacheDataList) {
             // Do not generate extra key if reuse-key is set.
-            int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
+            int gid = CU.cacheGroupId(ccfg.config());
 
             if (ccfg.config().isEncryptionEnabled() && !reuseEncrKeys.containsKey(gid))
                 encGrpCnt++;

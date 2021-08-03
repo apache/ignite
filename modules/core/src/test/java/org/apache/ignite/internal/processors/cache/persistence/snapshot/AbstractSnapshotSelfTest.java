@@ -265,6 +265,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
 
             assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
+
+            if (ccfg.isEncryptionEnabled()) {
+                assertNull("Encryption key for cache " + dfltCacheCfg.getName(),
+                    ((IgniteEx)ignite).context().encryption().getActiveKey(CU.cacheGroupId(dfltCacheCfg)));
+            }
         }
     }
 
