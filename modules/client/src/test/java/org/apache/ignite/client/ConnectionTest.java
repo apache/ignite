@@ -42,11 +42,11 @@ public class ConnectionTest extends AbstractClientTest {
 
     @Test
     public void testValidNodeAddresses() throws Exception {
-        testConnection("127.0.0.1:10800");
+        testConnection("127.0.0.1:" + serverPort);
     }
 
     @Test
-    public void testInvalidNodeAddresses() throws Exception {
+    public void testInvalidNodeAddresses() {
         var ex = assertThrows(IgniteClientConnectionException.class,
                 () -> testConnection("127.0.0.1:47500"));
 
@@ -55,13 +55,13 @@ public class ConnectionTest extends AbstractClientTest {
 
     @Test
     public void testValidInvalidNodeAddressesMix() throws Exception {
-        testConnection("127.0.0.1:47500", "127.0.0.1:10801", "127.0.0.1:10800");
+        testConnection("127.0.0.1:47500", "127.0.0.1:10801", "127.0.0.1:" + serverPort);
     }
 
     @Disabled("IPv6 is not enabled by default on some systems.")
     @Test
     public void testIPv6NodeAddresses() throws Exception {
-        testConnection("[::1]:10800");
+        testConnection("[::1]:" + serverPort);
     }
 
     private void testConnection(String... addrs) throws Exception {

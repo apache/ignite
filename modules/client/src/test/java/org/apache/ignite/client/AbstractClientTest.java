@@ -51,11 +51,15 @@ public abstract class AbstractClientTest {
 
     protected static Ignite client;
 
+    protected static int serverPort;
+
     @BeforeAll
     public static void beforeAll() throws Exception {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
 
         serverFuture = startServer(null);
+        serverPort = ((InetSocketAddress)serverFuture.channel().localAddress()).getPort();
+
         client = startClient();
     }
 
@@ -64,6 +68,7 @@ public abstract class AbstractClientTest {
         client.close();
         serverFuture.cancel(true);
         serverFuture.await();
+        serverFuture.channel().closeFuture().await();
         configurationRegistry.stop();
     }
 
@@ -74,11 +79,8 @@ public abstract class AbstractClientTest {
     }
 
     public static Ignite startClient(String... addrs) {
-        if (addrs == null || addrs.length == 0) {
-            var serverPort = ((InetSocketAddress)serverFuture.channel().localAddress()).getPort();
-
+        if (addrs == null || addrs.length == 0)
             addrs = new String[]{"127.0.0.2:" + serverPort};
-        }
 
         var builder = IgniteClient.builder().addresses(addrs);
 
