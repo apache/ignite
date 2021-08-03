@@ -1000,7 +1000,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         int size = G.allGrids().size();
 
         if (beforeState != state)
-            waitForCondition(() -> globStateMsgCntr.get() == size, getTestTimeout());
+            assertTrue(waitForCondition(() -> globStateMsgCntr.get() == size, getTestTimeout()));
 
         ClusterStateTestUtils.putSomeDataAndCheck(log, nodes, cacheNames);
 
