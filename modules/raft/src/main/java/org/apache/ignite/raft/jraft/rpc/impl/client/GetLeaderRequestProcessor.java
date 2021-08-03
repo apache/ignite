@@ -48,8 +48,13 @@ public class GetLeaderRequestProcessor implements RpcProcessor<GetLeaderRequest>
 
         Node node = rpcCtx.getNodeManager().get(request.groupId(), new PeerId(localAddr.host(), localAddr.port()));
 
+        // There's a race between starting a raft group and requesting a leader for it.
+        // Let's say that there are 3 ignite nodes {A,B,C} in the cluster and according to an affinity raft group
+        // with only one raft node should be created on ignite node A. However it's possible to request given
+        // raft group from another ignite node B from within {@link RaftGroupService}. So that it's possible
+        // that raftGroupService will be already created and requests a leader from a not yet existing raft group.
         if (node == null) {
-            rpcCtx.sendResponse(factory.raftErrorResponse().errorCode(RaftErrorCode.ILLEGAL_STATE).build());
+            rpcCtx.sendResponse(factory.raftErrorResponse().errorCode(RaftErrorCode.NO_LEADER).build());
 
             return;
         }

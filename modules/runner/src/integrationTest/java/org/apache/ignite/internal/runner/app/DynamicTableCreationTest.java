@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.google.common.collect.Lists;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
@@ -37,7 +38,6 @@ import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Ignition interface tests.
  */
-@Disabled("https://issues.apache.org/jira/browse/IGNITE-14581")
 @ExtendWith(WorkDirectoryExtension.class)
 class DynamicTableCreationTest {
     /** Nodes bootstrap configuration. */
@@ -94,7 +93,7 @@ class DynamicTableCreationTest {
     /** */
     @AfterEach
     void tearDown() throws Exception {
-        IgniteUtils.closeAll(clusterNodes);
+        IgniteUtils.closeAll(Lists.reverse(clusterNodes));
     }
 
     /**

@@ -62,11 +62,6 @@ public class UtilsTest {
     }
 
     @Test
-    public void tetsVerifyGroupId3() {
-        assertThrows(IllegalArgumentException.class, () -> Utils.verifyGroupId("1abc"));
-    }
-
-    @Test
     public void tetsVerifyGroupId4() {
         assertThrows(IllegalArgumentException.class, () -> Utils.verifyGroupId("*test"));
     }
@@ -80,6 +75,7 @@ public class UtilsTest {
         Utils.verifyGroupId("test-hello");
         Utils.verifyGroupId("test123");
         Utils.verifyGroupId("t_hello");
+        Utils.verifyGroupId("1abc");
     }
 
     @Test
