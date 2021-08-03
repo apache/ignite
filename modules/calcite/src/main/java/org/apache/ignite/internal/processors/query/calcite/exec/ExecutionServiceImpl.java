@@ -402,7 +402,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             else
                 plan = prepareSingle(qry0, pctx);
 
-            cursors.add(executePlan(qryId, pctx, plan));
+            cursors.add(executePlan(qryId, pctx, plan, qryList.size() > 1));
         }
 
         return cursors;
@@ -621,11 +621,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
+    private FieldsQueryCursor<List<?>> executePlan(
+        UUID qryId,
+        PlanningContext pctx,
+        QueryPlan plan,
+        boolean immediateDml
+    ) {
         switch (plan.type()) {
             case DML:
-                FieldsQueryCursor<List<?>> cur = executeQuery(qryId, (MultiStepPlan)plan, pctx);
-                return new QueryCursorImpl<>(cur.getAll());
+                if (immediateDml) {
+                    FieldsQueryCursor<List<?>> cur = executeQuery(qryId, (MultiStepPlan)plan, pctx);
+                    return new QueryCursorImpl<>(cur.getAll());
+                }
             case QUERY:
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
             case EXPLAIN:

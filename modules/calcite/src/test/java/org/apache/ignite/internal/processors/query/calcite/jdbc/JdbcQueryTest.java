@@ -103,6 +103,31 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      * @throws SQLException If failed.
      */
     @Test
+    public void testMultilineQuery() throws Exception {
+        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+            "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
+            "ALTER TABLE test ADD COLUMN val2 int;" +
+            "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
+            "ALTER TABLE test DROP COLUMN val2;";
+        stmt.execute(multiLineQuery);
+
+        try (ResultSet rs = stmt.executeQuery("select * from test")) {
+            int i;
+            for (i = 0; rs.next(); i++) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("test" + i, rs.getString(2));
+            }
+            assertEquals(2, i);
+        }
+
+        stmt.execute("drop table test");
+        stmt.close();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
     public void testQueryColumnTypes() throws Exception {
         stmt.execute("CREATE TABLE t1 (id INT NOT NULL, " +
             "bool_col BOOLEAN, " +
