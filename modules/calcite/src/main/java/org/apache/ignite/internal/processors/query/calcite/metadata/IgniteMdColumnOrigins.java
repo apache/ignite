@@ -62,19 +62,13 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.COLUMN_ORIGIN.method, new IgniteMdColumnOrigins());
 
-    //~ Constructors -----------------------------------------------------------
-
-    /** */
-    private IgniteMdColumnOrigins() {}
-
-    //~ Methods ----------------------------------------------------------------
-
+    /** {@inheritDoc} */
     @Override public MetadataDef<BuiltInMetadata.ColumnOrigin> getDef() {
         return BuiltInMetadata.ColumnOrigin.DEF;
     }
 
+    /** {@inheritDoc} */
     public @Nullable Set<RelColumnOrigin> getColumnOrigins(Aggregate rel, RelMetadataQuery mq, int iOutputColumn) {
-
         if (iOutputColumn < rel.getGroupCount()) {
             // get actual index of Group columns.
             return mq.getColumnOrigins(rel.getInput(), rel.getGroupSet().asList().get(iOutputColumn));
@@ -206,9 +200,11 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
     }
 
     /** */
-    public @Nullable Set<RelColumnOrigin> getColumnOrigins(TableFunctionScan rel,
-        RelMetadataQuery mq, int iOutputColumn) {
-        final Set<RelColumnOrigin> set = new HashSet<>();
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(
+        TableFunctionScan rel,
+        RelMetadataQuery mq,
+        int iOutputColumn
+    ) {
         Set<RelColumnMapping> mappings = rel.getColumnMappings();
 
         if (mappings == null) {
@@ -219,11 +215,13 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
                 return null;
             }
             else {
-                // This is a leaf transformation: say there are fer sure no
+                // This is a leaf transformation: say there are for sure no
                 // column origins.
-                return set;
+                return Collections.emptySet();
             }
         }
+
+        final Set<RelColumnOrigin> set = new HashSet<>();
 
         for (RelColumnMapping mapping : mappings) {
             if (mapping.iOutputColumn != iOutputColumn)
@@ -253,13 +251,25 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
      * @param iOutputColumn Column idx.
      * @return Set of column origins.
      */
-    public @Nullable Set<RelColumnOrigin> getColumnOrigins(ProjectableFilterableTableScan rel, RelMetadataQuery mq, int iOutputColumn) {
-        int originColIdx = (rel.requiredColumns() == null) ? iOutputColumn : rel.requiredColumns().toArray()[iOutputColumn];
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(
+        ProjectableFilterableTableScan rel,
+        RelMetadataQuery mq,
+        int iOutputColumn
+    ) {
+        int originColIdx = (rel.requiredColumns() == null) ? iOutputColumn :
+            rel.requiredColumns().toArray()[iOutputColumn];
 
         return Collections.singleton(new RelColumnOrigin(rel.getTable(), originColIdx, false));
     }
 
-    // Catch-all rule when none of the others apply.
+    /**
+     * Catch-all rule when none of the others apply.
+     *
+     * @param rel RelNode.
+     * @param mq RelMetadataQuery.
+     * @param iOutputColumn output column idx.
+     * @return Set of column origins.
+     */
     public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelNode rel, RelMetadataQuery mq, int iOutputColumn) {
         // NOTE jvs 28-Mar-2006: We may get this wrong for a physical table
         // expression which supports projections.  In that case,

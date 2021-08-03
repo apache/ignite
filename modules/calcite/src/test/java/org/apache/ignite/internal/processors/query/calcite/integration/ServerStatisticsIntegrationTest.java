@@ -56,6 +56,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
     /** All types table nullable fields. */
     private static final String[] NULLABLE_FIELDS = {
+        "string_field",
         "boolean_obj_field",
         "short_obj_field",
         "integer_field",
@@ -505,72 +506,72 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
      */
     public static class AllTypes {
         /** */
-        @QuerySqlField
-        public String string_field;
+        @QuerySqlField(name = "string_field")
+        public String stringField;
 
         /** */
-        @QuerySqlField
-        public byte[] byte_arr_field;
+        @QuerySqlField(name = "byte_arr_field")
+        public byte[] byteArrField;
 
         /** */
-        @QuerySqlField
-        public boolean boolean_field;
+        @QuerySqlField(name = "boolean_field")
+        public boolean booleanField;
 
         /** */
-        @QuerySqlField
-        public Boolean boolean_obj_field;
+        @QuerySqlField(name = "boolean_obj_field")
+        public Boolean booleanObjField;
 
         /** */
-        @QuerySqlField
-        public short short_field;
+        @QuerySqlField(name = "short_field")
+        public short shortField;
 
         /** */
-        @QuerySqlField
-        public Short short_obj_field;
+        @QuerySqlField(name = "short_obj_field")
+        public Short shortObjField;
 
         /** */
-        @QuerySqlField
-        public int int_field;
+        @QuerySqlField(name = "int_field")
+        public int intField;
 
         /** */
-        @QuerySqlField
-        public Integer integer_field;
+        @QuerySqlField(name = "integer_field")
+        public Integer integerField;
 
         /** */
-        @QuerySqlField
-        public long long_field;
+        @QuerySqlField(name = "long_field")
+        public long longField;
 
         /** */
-        @QuerySqlField
-        public Long long_obj_field;
+        @QuerySqlField(name = "long_obj_field")
+        public Long longObjField;
 
         /** */
-        @QuerySqlField
-        public float float_field;
+        @QuerySqlField(name = "float_field")
+        public float floatField;
 
         /** */
-        @QuerySqlField
-        public Float float_obj_field;
+        @QuerySqlField(name = "float_obj_field")
+        public Float floatObjField;
 
         /** */
-        @QuerySqlField
-        public double double_field;
+        @QuerySqlField(name = "double_field")
+        public double doubleField;
 
         /** */
-        @QuerySqlField
-        public Double double_obj_field;
+        @QuerySqlField(name = "double_obj_field")
+        public Double doubleObjField;
 
         /** */
-        @QuerySqlField
-        public Date date_field;
+        @QuerySqlField(name = "date_field")
+        public Date dateField;
 
         /** */
-        @QuerySqlField
-        public Time time_field;
+        @QuerySqlField(name = "time_field")
+        public Time timeField;
 
         /** */
-        @QuerySqlField
-        public Timestamp timestamp_field;
+        @QuerySqlField(name = "timestamp_field")
+        public Timestamp timestampField;
 
         /**
          * Constructor.
@@ -579,45 +580,45 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
          * @param null_val Should object fields be equal to {@code null}.
          */
         public AllTypes(int i, boolean null_val) {
-            string_field = (null_val) ? null : "string_field_value" + i;
-            byte_arr_field = (null_val) ? null : BigInteger.valueOf(i).toByteArray();
-            boolean_field = (i & 1) == 0;
-            boolean_obj_field = (null_val) ? null : (i & 1) == 0;
-            short_field = (short)i;
-            short_obj_field = (null_val) ? null : short_field;
-            int_field = i;
-            integer_field = (null_val) ? null : i;
-            long_field = i;
-            long_obj_field = (null_val) ? null : long_field;
-            float_field = i;
-            float_obj_field = (null_val) ? null : float_field;
-            double_field = i;
-            double_obj_field = (null_val) ? null : double_field;
-            date_field = (null_val) ? null : Date.valueOf(String.format("%04d-04-09", 1000 + i));
-            time_field = (null_val) ? null : new Time(i * 1000);
-            timestamp_field = (null_val) ? null : Timestamp.valueOf(String.format("%04d-04-09 12:00:00", 1000 + i));
+            stringField = (null_val) ? null : "string_field_value" + i;
+            byteArrField = (null_val) ? null : BigInteger.valueOf(i).toByteArray();
+            booleanField = (i & 1) == 0;
+            booleanObjField = (null_val) ? null : (i & 1) == 0;
+            shortField = (short)i;
+            shortObjField = (null_val) ? null : shortField;
+            intField = i;
+            integerField = (null_val) ? null : i;
+            longField = i;
+            longObjField = (null_val) ? null : longField;
+            floatField = i;
+            floatObjField = (null_val) ? null : floatField;
+            doubleField = i;
+            doubleObjField = (null_val) ? null : doubleField;
+            dateField = (null_val) ? null : Date.valueOf(String.format("%04d-04-09", 1000 + i));
+            timeField = (null_val) ? null : new Time(i * 1000);
+            timestampField = (null_val) ? null : Timestamp.valueOf(String.format("%04d-04-09 12:00:00", 1000 + i));
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return "AllTypes{" +
-                "string_field='" + string_field + '\'' +
-                ", byte_arr_field=" + byte_arr_field +
-                ", boolean_field=" + boolean_field +
-                ", boolean_obj_field=" + boolean_obj_field +
-                ", short_field=" + short_field +
-                ", short_obj_field=" + short_obj_field +
-                ", int_field=" + int_field +
-                ", Integer_field=" + integer_field +
-                ", long_field=" + long_field +
-                ", long_obj_field=" + long_obj_field +
-                ", float_field=" + float_field +
-                ", float_obj_field=" + float_obj_field +
-                ", double_field=" + double_field +
-                ", double_obj_field=" + double_obj_field +
-                ", date_field=" + date_field +
-                ", time_field=" + time_field +
-                ", timestamp_field=" + timestamp_field +
+                "stringField='" + stringField + '\'' +
+                ", byteArrField=" + byteArrField +
+                ", booleanField=" + booleanField +
+                ", boolean_obj_field=" + booleanObjField +
+                ", short_field=" + shortField +
+                ", short_obj_field=" + shortObjField +
+                ", int_field=" + intField +
+                ", Integer_field=" + integerField +
+                ", long_field=" + longField +
+                ", long_obj_field=" + longObjField +
+                ", float_field=" + floatField +
+                ", float_obj_field=" + floatObjField +
+                ", double_field=" + doubleField +
+                ", double_obj_field=" + doubleObjField +
+                ", date_field=" + dateField +
+                ", time_field=" + timeField +
+                ", timestamp_field=" + timestampField +
                 '}';
         }
     }

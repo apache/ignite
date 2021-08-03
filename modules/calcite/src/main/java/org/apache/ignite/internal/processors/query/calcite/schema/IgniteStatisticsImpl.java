@@ -45,7 +45,6 @@ public class IgniteStatisticsImpl implements Statistic {
 
     /** {@inheritDoc} */
     @Override public Double getRowCount() {
-        // TBD: default values.
         long rows = (statistics == null) ? 1000 : statistics.rowCount();
 
         return (double)rows;
@@ -53,12 +52,12 @@ public class IgniteStatisticsImpl implements Statistic {
 
     /** {@inheritDoc} */
     @Override public boolean isKey(ImmutableBitSet cols) {
-        return false; // TODO
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public List<ImmutableBitSet> getKeys() {
-        return null; // TODO
+        return null;
     }
 
     /** {@inheritDoc} */
