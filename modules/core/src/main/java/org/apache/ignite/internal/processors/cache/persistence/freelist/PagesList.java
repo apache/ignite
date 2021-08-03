@@ -1401,9 +1401,8 @@ public abstract class PagesList extends DataStructure {
 
                         dirty = true;
 
-                        assert !isReuseBucket(bucket) ||
-                            PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM
-                            : "Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId);
+                        if (isReuseBucket(bucket) && !(PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM))
+                            throw corruptedFreeListException("Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId), pageId);
 
                         if (isReuseBucket(bucket)) {
                             byte flag = getFlag(initIoVers);
@@ -2000,6 +1999,37 @@ public abstract class PagesList extends DataStructure {
      */
     public long metaPageId() {
         return metaPageId;
+    }
+
+    /**
+     * @param err Error that caused this exception.
+     * @param pageIds Ids of possibly corrupted pages.
+     * @return Exception of type {@link CorruptedFreeListException} that wraps original error and ids of
+     *  possibly corrupted pages.
+     */
+    protected CorruptedFreeListException corruptedFreeListException(Throwable err, long... pageIds) {
+        return corruptedFreeListException(err.getMessage(), err, pageIds);
+    }
+
+    /**
+     * @param msg Exception message.
+     * @param pageIds Ids of possibly corrupted pages.
+     * @return Exception of type {@link CorruptedFreeListException} that wraps original error and ids of
+     *  possibly corrupted pages.
+     */
+    protected CorruptedFreeListException corruptedFreeListException(String msg, long... pageIds) {
+        return corruptedFreeListException(msg, null, pageIds);
+    }
+
+    /**
+     * @param msg Exception message.
+     * @param err Error that caused this exception.
+     * @param pageIds Ids of possibly corrupted pages.
+     * @return Exception of type {@link CorruptedFreeListException} that wraps original error and ids of
+     *  possibly corrupted pages.
+     */
+    protected CorruptedFreeListException corruptedFreeListException(String msg, @Nullable Throwable err, long... pageIds) {
+        return new CorruptedFreeListException(msg, err, grpId, pageIds);
     }
 
     /**

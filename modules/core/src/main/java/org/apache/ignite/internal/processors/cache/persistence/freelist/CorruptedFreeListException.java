@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.Collection;
 import org.apache.ignite.internal.processors.cache.persistence.AbstractCorruptedPersistenceException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +28,16 @@ import org.jetbrains.annotations.Nullable;
 public class CorruptedFreeListException extends AbstractCorruptedPersistenceException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Ids of pages that are possibly corrupted.
+     */
+    public CorruptedFreeListException(String msg, @Nullable Throwable cause, int grpId, Collection<Long> pageIds) {
+        this(msg, cause, grpId, pageIds.stream().mapToLong(Long::longValue).toArray());
+    }
 
     /**
      * @param msg Message.

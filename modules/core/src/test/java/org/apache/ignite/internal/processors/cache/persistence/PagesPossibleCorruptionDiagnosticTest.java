@@ -20,6 +20,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -29,12 +31,17 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandlerWithCallback;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CorruptedFreeListException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -42,6 +49,8 @@ import org.junit.Test;
 import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2.PART_META_REUSE_LIST_ROOT_OFF;
@@ -49,7 +58,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 /**
  * Tests that grid with corrupted partitions, where meta page is corrupted, fails on start with correct error.
  */
-public class PartitionMetasInconsistencyOnNodeStartTest extends GridCommonAbstractTest {
+@WithSystemProperty(key = IGNITE_PDS_SKIP_CRC, value = "true")
+public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = 4096;
 
@@ -60,10 +70,10 @@ public class PartitionMetasInconsistencyOnNodeStartTest extends GridCommonAbstra
     private volatile boolean correctFailure = false;
 
     /** */
-    private FilePageStoreFactory storeFactory = new FileVersionCheckingFactory(
+    private FileVersionCheckingFactory storeFactory = new FileVersionCheckingFactory(
         new AsyncFileIOFactory(),
         new AsyncFileIOFactory(),
-        new DataStorageConfiguration().setPageSize(PAGE_SIZE)
+        () -> PAGE_SIZE
     ) {
         /** {@inheritDoc} */
         @Override public int latestVersion() {
@@ -79,6 +89,7 @@ public class PartitionMetasInconsistencyOnNodeStartTest extends GridCommonAbstra
             )
             .setFailureHandler(new FailureHandlerWithCallback(failureCtx ->
                 correctFailure = failureCtx.error() instanceof CorruptedPartitionMetaPageException
+                     && ((AbstractCorruptedPersistenceException)failureCtx.error()).pages().length > 0
             ));
     }
 
@@ -100,9 +111,26 @@ public class PartitionMetasInconsistencyOnNodeStartTest extends GridCommonAbstra
         super.afterTest();
     }
 
+    /**
+     * @param ignite Ignite instance.
+     * @param partId Partition id.
+     * @return File page store for given partition id.
+     * @throws IgniteCheckedException If failed.
+     */
+    private FilePageStore filePageStore(IgniteEx ignite, int partId) throws IgniteCheckedException {
+        final PdsFolderSettings folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
+
+        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+
+        File cacheWorkDir = new File(storeWorkDir, CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME);
+
+        File partFile = new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
+
+        return (FilePageStore)storeFactory.createPageStore(FLAG_DATA, partFile, a -> {});
+    }
+
     /** Tests that node with corrupted partition fails on start. */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CRC, value = "true")
     public void testCorruptedNodeFailsOnStart() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -121,17 +149,9 @@ public class PartitionMetasInconsistencyOnNodeStartTest extends GridCommonAbstra
 
         forceCheckpoint();
 
-        final PdsFolderSettings folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
-
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        File cacheWorkDir = new File(storeWorkDir, CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME);
-
-        File partFile = new File(cacheWorkDir, format(PART_FILE_TEMPLATE, 0));
+        FilePageStore store = filePageStore(ignite, 0);
 
         stopAllGrids();
-
-        FilePageStore store = (FilePageStore)storeFactory.createPageStore(FLAG_DATA, partFile, a -> {});
 
         store.ensure();
 
@@ -150,6 +170,49 @@ public class PartitionMetasInconsistencyOnNodeStartTest extends GridCommonAbstra
         }
 
         assertTrue(correctFailure);
+    }
+
+    /** Tests page list pages are collected in {@link CorruptedFreeListException}. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, value = "true")
+    public void testDiagnosticCollectedOnCorruptedPageList() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 1))
+        );
+
+        cache.put(1, 1);
+
+        cache.remove(1);
+
+        int grpId = cacheGroupId(DEFAULT_CACHE_NAME, null);
+
+        IgniteCacheOffheapManager.CacheDataStore dataStore =
+            ignite.context().cache().cacheGroup(grpId).offheap().cacheDataStores().iterator().next();
+
+        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore) dataStore;
+
+        AbstractFreeList freeList = store.getCacheStoreFreeList();
+
+        ReuseBag bag = new LongListReuseBag();
+
+        bag.addFreePage(pageId(0, FLAG_DATA, 10));
+        bag.addFreePage(pageId(0, FLAG_DATA, 11));
+
+        T2<Integer, Long>[] pages = null;
+
+        try {
+            freeList.addForRecycle(bag);
+        }
+        catch (CorruptedFreeListException e) {
+            pages = e.pages();
+        }
+
+        assertNotNull(pages);
     }
 
     /**

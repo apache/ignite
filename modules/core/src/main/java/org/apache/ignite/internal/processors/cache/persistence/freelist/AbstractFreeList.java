@@ -784,6 +784,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             return updated;
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
@@ -806,6 +809,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             assert updRes != null; // Can't fail here.
 
             return updRes;
+        }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;
@@ -841,6 +847,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
 
             reuseList.addForRecycle(bag);
+        }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;
@@ -897,6 +906,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         try {
             put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsHolderNoOp.INSTANCE);
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
@@ -911,6 +923,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         try {
             return takeEmptyPage(REUSE_BUCKET, null, IoStatisticsHolderNoOp.INSTANCE);
+        }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;
@@ -931,6 +946,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         try {
             return storedPagesCount(REUSE_BUCKET);
+        }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;
