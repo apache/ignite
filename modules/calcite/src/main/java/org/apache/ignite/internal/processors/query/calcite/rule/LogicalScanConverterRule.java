@@ -76,7 +76,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 }
 
                 RelTraitSet traits = rel.getCluster().traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(index.rewindable() ? RewindabilityTrait.REWINDABLE : RewindabilityTrait.ONE_WAY)
+                    .replace(RewindabilityTrait.REWINDABLE)
                     .replace(distribution)
                     .replace(collation);
 
@@ -121,7 +121,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 }
 
                 RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(table.rewindable() ? RewindabilityTrait.REWINDABLE : RewindabilityTrait.ONE_WAY)
+                    .replace(RewindabilityTrait.REWINDABLE)
                     .replace(distribution);
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());

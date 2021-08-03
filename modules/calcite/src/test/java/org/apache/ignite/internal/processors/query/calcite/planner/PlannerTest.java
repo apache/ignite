@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
@@ -1391,7 +1390,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("DEPTNO", f.createJavaType(Integer.class))
-                .build(), RewindabilityTrait.REWINDABLE, 1000) {
+                .build(), 1000) {
 
             @Override public IgniteDistribution distribution() {
                 return IgniteDistributions.broadcast();
@@ -1404,7 +1403,7 @@ public class PlannerTest extends AbstractPlannerTest {
             new RelDataTypeFactory.Builder(f)
                 .add("DEPTNO", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
-                .build(), RewindabilityTrait.REWINDABLE, 100) {
+                .build(), 100) {
 
             @Override public IgniteDistribution distribution() {
                 return IgniteDistributions.broadcast();

@@ -1011,6 +1011,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
+    /**
+     * A test to verify that the planner is able to optimize such a query in
+     * a reasonable amount of time.
+     *
+     * A "reasonable" here is the time less than test's timeout. Despite
+     * timeout is too big, it's less than INF though.
+     */
+    @Test
+    public void testToPlanQueryWithAllOperator() {
+        assertQuery("SELECT name FROM Developer WHERE age > ALL ( SELECT 88 )")
+            .returns("Stravinsky")
+            .check();
+    }
+
     /** */
     private QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry) {

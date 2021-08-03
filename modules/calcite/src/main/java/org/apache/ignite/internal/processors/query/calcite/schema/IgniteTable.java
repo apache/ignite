@@ -46,11 +46,6 @@ public interface IgniteTable extends TranslatableTable {
      */
     TableDescriptor descriptor();
 
-    /**
-     * @return {@code true} if the table could be rewinded.
-     */
-    boolean rewindable();
-
     /** {@inheritDoc} */
     default @Override RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return getRowType(typeFactory, null);

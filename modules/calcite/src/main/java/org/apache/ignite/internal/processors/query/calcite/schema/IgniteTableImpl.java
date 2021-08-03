@@ -105,11 +105,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean rewindable() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogicalTableScan toRel(
         RelOptCluster cluster,
         RelOptTable relOptTbl,
