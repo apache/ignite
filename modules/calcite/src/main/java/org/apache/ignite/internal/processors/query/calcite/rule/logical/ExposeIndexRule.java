@@ -28,6 +28,8 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -51,8 +53,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
     /** */
     private static boolean preMatch(IgniteLogicalTableScan scan) {
-        return scan.simple() // was not modified by ProjectScanMergeRule or FilterScanMergeRule
-            && !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes to expose
+        return !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes to expose
     }
 
     /** {@inheritDoc} */
@@ -62,9 +63,12 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         RelOptTable optTable = scan.getTable();
         IgniteTable igniteTable = optTable.unwrap(IgniteTable.class);
+        List<RexNode> proj = scan.projects();
+        RexNode condition = scan.condition();
+        ImmutableBitSet requiredCols = scan.requiredColumns();
 
         List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().keySet().stream()
-            .map(idxName -> igniteTable.toRel(cluster, optTable, idxName))
+            .map(idxName -> igniteTable.toRel(cluster, optTable, idxName, proj, condition, requiredCols))
             .collect(Collectors.toList());
 
         assert !indexes.isEmpty();

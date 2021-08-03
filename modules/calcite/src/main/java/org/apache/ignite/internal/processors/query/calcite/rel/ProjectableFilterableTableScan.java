@@ -146,11 +146,6 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     }
 
     /** */
-    public boolean simple() {
-        return condition == null && projects == null && requiredColumns == null;
-    }
-
-    /** */
     public RexNode pushUpPredicate() {
         if (condition == null || projects == null)
             return replaceLocalRefs(condition);
