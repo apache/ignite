@@ -16,11 +16,16 @@
  */
 package org.apache.ignite.raft.jraft.option;
 
-import java.util.concurrent.ExecutorService;
 import com.codahale.metrics.MetricRegistry;
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
+import org.apache.ignite.raft.jraft.core.FSMCallerImpl;
+import org.apache.ignite.raft.jraft.core.NodeImpl;
+import org.apache.ignite.raft.jraft.core.ReadOnlyServiceImpl;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.rpc.RpcClient;
+import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 
 public class RpcOptions {
     /** Raft message factory. */
@@ -63,6 +68,50 @@ public class RpcOptions {
      * The client executor is used by RPC client.
      */
     private ExecutorService clientExecutor;
+
+    /** Striped disruptor for FSMCaller service. The queue serves of an Append entry requests in the RAFT state machine. */
+    private StripedDisruptor<FSMCallerImpl.ApplyTask> fSMCallerExecutorDisruptor;
+
+    /** Striped disruptor for Node apply service. */
+    private StripedDisruptor<NodeImpl.LogEntryAndClosure> nodeApplyDisruptor;
+
+    /** Striped disruptor for Read only service. */
+    private StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor;
+
+    /** Striped disruptor for Log manager service. */
+    private StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor;
+
+    public StripedDisruptor<FSMCallerImpl.ApplyTask> getfSMCallerExecutorDisruptor() {
+        return fSMCallerExecutorDisruptor;
+    }
+
+    public void setfSMCallerExecutorDisruptor(StripedDisruptor<FSMCallerImpl.ApplyTask> fSMCallerExecutorDisruptor) {
+        this.fSMCallerExecutorDisruptor = fSMCallerExecutorDisruptor;
+    }
+
+    public StripedDisruptor<NodeImpl.LogEntryAndClosure> getNodeApplyDisruptor() {
+        return nodeApplyDisruptor;
+    }
+
+    public void setNodeApplyDisruptor(StripedDisruptor<NodeImpl.LogEntryAndClosure> nodeApplyDisruptor) {
+        this.nodeApplyDisruptor = nodeApplyDisruptor;
+    }
+
+    public StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> getReadOnlyServiceDisruptor() {
+        return readOnlyServiceDisruptor;
+    }
+
+    public void setReadOnlyServiceDisruptor(StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor) {
+        this.readOnlyServiceDisruptor = readOnlyServiceDisruptor;
+    }
+
+    public StripedDisruptor<LogManagerImpl.StableClosureEvent> getLogManagerDisruptor() {
+        return logManagerDisruptor;
+    }
+
+    public void setLogManagerDisruptor(StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor) {
+        this.logManagerDisruptor = logManagerDisruptor;
+    }
 
     /**
      * Metric registry for RPC services, user should not use this field.

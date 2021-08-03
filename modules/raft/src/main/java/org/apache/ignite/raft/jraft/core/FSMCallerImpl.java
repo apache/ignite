@@ -16,18 +16,14 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslator;
+import com.lmax.disruptor.RingBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
-import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.EventTranslator;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.FSMCaller;
@@ -40,6 +36,8 @@ import org.apache.ignite.raft.jraft.closure.SaveSnapshotClosure;
 import org.apache.ignite.raft.jraft.closure.TaskClosure;
 import org.apache.ignite.raft.jraft.conf.Configuration;
 import org.apache.ignite.raft.jraft.conf.ConfigurationEntry;
+import org.apache.ignite.raft.jraft.disruptor.GroupAware;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.EnumOutter.ErrorType;
 import org.apache.ignite.raft.jraft.entity.LeaderChangeContext;
@@ -54,10 +52,7 @@ import org.apache.ignite.raft.jraft.option.FSMCallerOptions;
 import org.apache.ignite.raft.jraft.storage.LogManager;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
-import org.apache.ignite.raft.jraft.util.DisruptorBuilder;
 import org.apache.ignite.raft.jraft.util.DisruptorMetricSet;
-import org.apache.ignite.raft.jraft.util.LogExceptionHandler;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.Utils;
@@ -100,7 +95,10 @@ public class FSMCallerImpl implements FSMCaller {
     /**
      * Apply task for disruptor.
      */
-    private static class ApplyTask {
+    public static class ApplyTask implements GroupAware {
+        /** Raft group id. */
+        String groupId;
+
         TaskType type;
         // union fields
         long committedIndex;
@@ -110,6 +108,11 @@ public class FSMCallerImpl implements FSMCaller {
         Closure done;
         CountDownLatch shutdownLatch;
 
+        /** {@inheritDoc} */
+        @Override public String groupId() {
+            return groupId;
+        }
+
         public void reset() {
             this.type = null;
             this.committedIndex = 0;
@@ -118,14 +121,7 @@ public class FSMCallerImpl implements FSMCaller {
             this.leaderChangeCtx = null;
             this.done = null;
             this.shutdownLatch = null;
-        }
-    }
-
-    private static class ApplyTaskFactory implements EventFactory<ApplyTask> {
-
-        @Override
-        public ApplyTask newInstance() {
-            return new ApplyTask();
+            this.groupId = null;
         }
     }
 
@@ -139,6 +135,9 @@ public class FSMCallerImpl implements FSMCaller {
         }
     }
 
+    /** Raft group id. */
+    String groupId;
+
     private LogManager logManager;
     private StateMachine fsm;
     private ClosureQueue closureQueue;
@@ -149,7 +148,7 @@ public class FSMCallerImpl implements FSMCaller {
     private volatile TaskType currTask;
     private final AtomicLong applyingIndex;
     private volatile RaftException error;
-    private Disruptor<ApplyTask> disruptor;
+    private StripedDisruptor<ApplyTask> disruptor;
     private RingBuffer<ApplyTask> taskQueue;
     private volatile CountDownLatch shutdownLatch;
     private NodeMetrics nodeMetrics;
@@ -165,6 +164,7 @@ public class FSMCallerImpl implements FSMCaller {
 
     @Override
     public boolean init(final FSMCallerOptions opts) {
+        this.groupId = opts.getGroupId();
         this.logManager = opts.getLogManager();
         this.fsm = opts.getFsm();
         this.closureQueue = opts.getClosureQueue();
@@ -174,17 +174,11 @@ public class FSMCallerImpl implements FSMCaller {
         this.lastAppliedIndex.set(opts.getBootstrapId().getIndex());
         notifyLastAppliedIndexUpdated(this.lastAppliedIndex.get());
         this.lastAppliedTerm = opts.getBootstrapId().getTerm();
-        this.disruptor = DisruptorBuilder.<ApplyTask>newInstance() //
-            .setEventFactory(new ApplyTaskFactory()) //
-            .setRingBufferSize(opts.getDisruptorBufferSize()) //
-            .setThreadFactory(new NamedThreadFactory("JRaft-FSMCaller-Disruptor-" +
-                node.getOptions().getServerName() + "-" + node.getNodeId().toString(), true)) //
-            .setProducerType(ProducerType.MULTI) //
-            .setWaitStrategy(new BlockingWaitStrategy()) //
-            .build();
-        this.disruptor.handleEventsWith(new ApplyTaskHandler());
-        this.disruptor.setDefaultExceptionHandler(new LogExceptionHandler<Object>(getClass().getSimpleName()));
-        this.taskQueue = this.disruptor.start();
+
+        disruptor = opts.getfSMCallerExecutorDisruptor();
+
+        taskQueue = disruptor.subscribe(groupId, new ApplyTaskHandler());
+
         if (this.nodeMetrics.getMetricRegistry() != null) {
             this.nodeMetrics.getMetricRegistry().register("jraft-fsm-caller-disruptor",
                 new DisruptorMetricSet(this.taskQueue));
@@ -207,6 +201,7 @@ public class FSMCallerImpl implements FSMCaller {
             this.shutdownLatch = latch;
             Utils.runInThread(this.node.getOptions().getCommonExecutor(), () -> this.taskQueue.publishEvent((task, sequence) -> {
                 task.reset();
+                task.groupId = groupId;
                 task.type = TaskType.SHUTDOWN;
                 task.shutdownLatch = latch;
             }));
@@ -225,6 +220,7 @@ public class FSMCallerImpl implements FSMCaller {
             LOG.warn("FSMCaller is stopped, can not apply new task.");
             return false;
         }
+
         if (!this.taskQueue.tryPublishEvent(tpl)) {
             setError(new RaftException(ErrorType.ERROR_TYPE_STATE_MACHINE, new Status(RaftError.EBUSY,
                 "FSMCaller is overload.")));
@@ -236,6 +232,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onCommitted(final long committedIndex) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.COMMITTED;
             task.committedIndex = committedIndex;
         });
@@ -248,6 +245,7 @@ public class FSMCallerImpl implements FSMCaller {
     void flush() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.FLUSH;
             task.shutdownLatch = latch;
         });
@@ -257,6 +255,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onSnapshotLoad(final LoadSnapshotClosure done) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.SNAPSHOT_LOAD;
             task.done = done;
         });
@@ -265,6 +264,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onSnapshotSave(final SaveSnapshotClosure done) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.SNAPSHOT_SAVE;
             task.done = done;
         });
@@ -273,6 +273,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onLeaderStop(final Status status) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.LEADER_STOP;
             task.status = new Status(status);
         });
@@ -281,6 +282,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onLeaderStart(final long term) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.LEADER_START;
             task.term = term;
         });
@@ -289,6 +291,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onStartFollowing(final LeaderChangeContext ctx) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.START_FOLLOWING;
             task.leaderChangeCtx = new LeaderChangeContext(ctx.getLeaderId(), ctx.getTerm(), ctx.getStatus());
         });
@@ -297,6 +300,7 @@ public class FSMCallerImpl implements FSMCaller {
     @Override
     public boolean onStopFollowing(final LeaderChangeContext ctx) {
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.STOP_FOLLOWING;
             task.leaderChangeCtx = new LeaderChangeContext(ctx.getLeaderId(), ctx.getTerm(), ctx.getStatus());
         });
@@ -334,6 +338,7 @@ public class FSMCallerImpl implements FSMCaller {
         }
         final OnErrorClosure c = new OnErrorClosure(error);
         return enqueueTask((task, sequence) -> {
+            task.groupId = groupId;
             task.type = TaskType.ERROR;
             task.done = c;
         });
@@ -348,7 +353,7 @@ public class FSMCallerImpl implements FSMCaller {
     public synchronized void join() throws InterruptedException {
         if (this.shutdownLatch != null) {
             this.shutdownLatch.await();
-            this.disruptor.shutdown();
+            this.disruptor.unsubscribe(groupId);
             if (this.afterShutdown != null) {
                 this.afterShutdown.run(Status.OK());
                 this.afterShutdown = null;

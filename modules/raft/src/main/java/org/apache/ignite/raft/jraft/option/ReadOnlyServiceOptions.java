@@ -18,15 +18,36 @@ package org.apache.ignite.raft.jraft.option;
 
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
+import org.apache.ignite.raft.jraft.core.ReadOnlyServiceImpl;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 
 /**
  * Read-Only service options.
  */
 public class ReadOnlyServiceOptions {
+    /** Raft group id. */
+    private String groupId;
 
     private RaftOptions raftOptions;
     private NodeImpl node;
     private FSMCaller fsmCaller;
+    private StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor;
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> getReadOnlyServiceDisruptor() {
+        return readOnlyServiceDisruptor;
+    }
+
+    public void setReadOnlyServiceDisruptor(StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor) {
+        this.readOnlyServiceDisruptor = readOnlyServiceDisruptor;
+    }
 
     public NodeImpl getNode() {
         return node;

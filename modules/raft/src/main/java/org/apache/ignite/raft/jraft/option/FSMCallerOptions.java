@@ -20,7 +20,9 @@ import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.StateMachine;
 import org.apache.ignite.raft.jraft.closure.ClosureQueue;
+import org.apache.ignite.raft.jraft.core.FSMCallerImpl;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.storage.LogManager;
 
@@ -28,6 +30,9 @@ import org.apache.ignite.raft.jraft.storage.LogManager;
  * FSM caller options.
  */
 public class FSMCallerOptions {
+    /** Raft group id. */
+    private String groupId;
+
     private LogManager logManager;
     private StateMachine fsm;
     private Closure afterShutdown;
@@ -35,17 +40,22 @@ public class FSMCallerOptions {
     private ClosureQueue closureQueue;
     private NodeImpl node;
     private RaftMessagesFactory raftMessagesFactory;
-    /**
-     * disruptor buffer size.
-     */
-    private int disruptorBufferSize = 1024;
+    private StripedDisruptor<FSMCallerImpl.ApplyTask> fSMCallerExecutorDisruptor;
 
-    public int getDisruptorBufferSize() {
-        return this.disruptorBufferSize;
+    public String getGroupId() {
+        return groupId;
     }
 
-    public void setDisruptorBufferSize(int disruptorBufferSize) {
-        this.disruptorBufferSize = disruptorBufferSize;
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public StripedDisruptor<FSMCallerImpl.ApplyTask> getfSMCallerExecutorDisruptor() {
+        return fSMCallerExecutorDisruptor;
+    }
+
+    public void setfSMCallerExecutorDisruptor(StripedDisruptor<FSMCallerImpl.ApplyTask> fSMCallerExecutorDisruptor) {
+        this.fSMCallerExecutorDisruptor = fSMCallerExecutorDisruptor;
     }
 
     public NodeImpl getNode() {

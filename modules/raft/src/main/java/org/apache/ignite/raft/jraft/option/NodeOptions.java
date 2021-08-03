@@ -35,6 +35,9 @@ import org.apache.ignite.raft.jraft.util.concurrent.FixedThreadsExecutorGroup;
  * Node options.
  */
 public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
+    /** This value is used by default to determine the count of stripes in the striped queue. */
+    public static final int DEFAULT_STRIPES = Utils.cpus() * 2;
+
     // A follower would become a candidate if it doesn't receive any message
     // from the leader in |election_timeout_ms| milliseconds
     // Default: 1000 (1s)
@@ -198,9 +201,26 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
     /** Server name. */
     private String serverName;
 
+    /** Amount of Disruptors that will handle the RAFT server. */
+    private int stripes = DEFAULT_STRIPES;
+
     public NodeOptions() {
         raftOptions.setRaftMessagesFactory(getRaftMessagesFactory());
         raftOptions.setRaftClientMessagesFactory(getRaftClientMessagesFactory());
+    }
+
+    /**
+     * @return Stripe count.
+     */
+    public int getStripes() {
+        return stripes;
+    }
+
+    /**
+     * @param stripes Stripe count.
+     */
+    public void setStripes(int stripes) {
+        this.stripes = stripes;
     }
 
     /**
@@ -507,6 +527,10 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         nodeOptions.setServerName(this.getServerName());
         nodeOptions.setScheduler(this.getScheduler());
         nodeOptions.setClientExecutor(this.getClientExecutor());
+        nodeOptions.setNodeApplyDisruptor(this.getNodeApplyDisruptor());
+        nodeOptions.setfSMCallerExecutorDisruptor(this.getfSMCallerExecutorDisruptor());
+        nodeOptions.setReadOnlyServiceDisruptor(this.getReadOnlyServiceDisruptor());
+        nodeOptions.setLogManagerDisruptor(this.getLogManagerDisruptor());
 
         return nodeOptions;
     }

@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslator;
+import com.lmax.disruptor.RingBuffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,13 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.EventTranslator;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.jraft.Closure;
@@ -54,6 +50,8 @@ import org.apache.ignite.raft.jraft.closure.SynchronizedClosure;
 import org.apache.ignite.raft.jraft.conf.Configuration;
 import org.apache.ignite.raft.jraft.conf.ConfigurationEntry;
 import org.apache.ignite.raft.jraft.conf.ConfigurationManager;
+import org.apache.ignite.raft.jraft.disruptor.GroupAware;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.Ballot;
 import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.LeaderChangeContext;
@@ -106,10 +104,7 @@ import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotExecutorImpl;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.Describer;
-import org.apache.ignite.raft.jraft.util.DisruptorBuilder;
 import org.apache.ignite.raft.jraft.util.DisruptorMetricSet;
-import org.apache.ignite.raft.jraft.util.LogExceptionHandler;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.OnlyForTest;
 import org.apache.ignite.raft.jraft.util.RepeatedTimer;
 import org.apache.ignite.raft.jraft.util.Requires;
@@ -192,7 +187,7 @@ public class NodeImpl implements Node, RaftServerService {
     /**
      * Disruptor to run node service
      */
-    private Disruptor<LogEntryAndClosure> applyDisruptor;
+    private StripedDisruptor<LogEntryAndClosure> applyDisruptor;
     private RingBuffer<LogEntryAndClosure> applyQueue;
 
     /**
@@ -251,25 +246,26 @@ public class NodeImpl implements Node, RaftServerService {
     /**
      * Node service event.
      */
-    private static class LogEntryAndClosure {
+    public static class LogEntryAndClosure implements GroupAware {
+        /** Raft group id. */
+        String groupId;
+
         LogEntry entry;
         Closure done;
         long expectedTerm;
         CountDownLatch shutdownLatch;
 
+        /** {@inheritDoc} */
+        @Override public String groupId() {
+            return groupId;
+        }
+
         public void reset() {
+            this.groupId = null;
             this.entry = null;
             this.done = null;
             this.expectedTerm = 0;
             this.shutdownLatch = null;
-        }
-    }
-
-    private static class LogEntryAndClosureFactory implements EventFactory<LogEntryAndClosure> {
-
-        @Override
-        public LogEntryAndClosure newInstance() {
-            return new LogEntryAndClosure();
         }
     }
 
@@ -281,8 +277,7 @@ public class NodeImpl implements Node, RaftServerService {
         private final List<LogEntryAndClosure> tasks = new ArrayList<>(NodeImpl.this.raftOptions.getApplyBatch());
 
         @Override
-        public void onEvent(final LogEntryAndClosure event, final long sequence, final boolean endOfBatch)
-            throws Exception {
+        public void onEvent(final LogEntryAndClosure event, final long sequence, final boolean endOfBatch) throws Exception {
             if (event.shutdownLatch != null) {
                 if (!this.tasks.isEmpty()) {
                     executeApplyingTasks(this.tasks);
@@ -512,10 +507,6 @@ public class NodeImpl implements Node, RaftServerService {
         }
     }
 
-    public NodeImpl() {
-        this(null, null);
-    }
-
     public NodeImpl(final String groupId, final PeerId serverId) {
         super();
         if (groupId != null) {
@@ -554,14 +545,16 @@ public class NodeImpl implements Node, RaftServerService {
         this.logStorage = this.serviceFactory.createLogStorage(this.options.getLogUri(), this.raftOptions);
         this.logManager = new LogManagerImpl();
         final LogManagerOptions opts = new LogManagerOptions();
+        opts.setGroupId(groupId);
         opts.setLogEntryCodecFactory(this.serviceFactory.createLogEntryCodecFactory());
         opts.setLogStorage(this.logStorage);
         opts.setConfigurationManager(this.configManager);
         opts.setNode(this);
         opts.setFsmCaller(this.fsmCaller);
         opts.setNodeMetrics(this.metrics);
-        opts.setDisruptorBufferSize(this.raftOptions.getDisruptorBufferSize());
         opts.setRaftOptions(this.raftOptions);
+        opts.setLogManagerDisruptor(options.getLogManagerDisruptor());
+
         return this.logManager.init(opts);
     }
 
@@ -741,8 +734,10 @@ public class NodeImpl implements Node, RaftServerService {
         opts.setClosureQueue(this.closureQueue);
         opts.setNode(this);
         opts.setBootstrapId(bootstrapId);
-        opts.setDisruptorBufferSize(this.raftOptions.getDisruptorBufferSize());
         opts.setRaftMessagesFactory(raftOptions.getRaftMessagesFactory());
+        opts.setfSMCallerExecutorDisruptor(options.getfSMCallerExecutorDisruptor());
+        opts.setGroupId(groupId);
+
         return this.fsmCaller.init(opts);
     }
 
@@ -954,16 +949,10 @@ public class NodeImpl implements Node, RaftServerService {
 
         this.configManager = new ConfigurationManager();
 
-        this.applyDisruptor = DisruptorBuilder.<LogEntryAndClosure>newInstance() //
-            .setRingBufferSize(this.raftOptions.getDisruptorBufferSize()) //
-            .setEventFactory(new LogEntryAndClosureFactory()) //
-            .setThreadFactory(new NamedThreadFactory("JRaft-NodeImpl-Disruptor-" + suffix, true)) //
-            .setProducerType(ProducerType.MULTI) //
-            .setWaitStrategy(new BlockingWaitStrategy()) //
-            .build();
-        this.applyDisruptor.handleEventsWith(new LogEntryAndClosureHandler());
-        this.applyDisruptor.setDefaultExceptionHandler(new LogExceptionHandler<Object>(getClass().getSimpleName()));
-        this.applyQueue = this.applyDisruptor.start();
+        applyDisruptor = opts.getNodeApplyDisruptor();
+
+        applyQueue = applyDisruptor.subscribe(groupId, new LogEntryAndClosureHandler());
+
         if (this.metrics.getMetricRegistry() != null) {
             this.metrics.getMetricRegistry().register("jraft-node-impl-disruptor",
                 new DisruptorMetricSet(this.applyQueue));
@@ -1044,9 +1033,11 @@ public class NodeImpl implements Node, RaftServerService {
 
         this.readOnlyService = new ReadOnlyServiceImpl();
         final ReadOnlyServiceOptions rosOpts = new ReadOnlyServiceOptions();
+        rosOpts.setGroupId(groupId);
         rosOpts.setFsmCaller(this.fsmCaller);
         rosOpts.setNode(this);
         rosOpts.setRaftOptions(this.raftOptions);
+        rosOpts.setReadOnlyServiceDisruptor(opts.getReadOnlyServiceDisruptor());
 
         if (!this.readOnlyService.init(rosOpts)) {
             LOG.error("Fail to init readOnlyService.");
@@ -1603,6 +1594,7 @@ public class NodeImpl implements Node, RaftServerService {
         try {
             final EventTranslator<LogEntryAndClosure> translator = (event, sequence) -> {
                 event.reset();
+                event.groupId = groupId;
                 event.done = task.getDone();
                 event.entry = entry;
                 event.expectedTerm = task.getExpectedTerm();
@@ -2800,7 +2792,10 @@ public class NodeImpl implements Node, RaftServerService {
                     this.shutdownLatch = latch;
 
                     Utils.runInThread(this.getOptions().getCommonExecutor(),
-                        () -> this.applyQueue.publishEvent((event, sequence) -> event.shutdownLatch = latch));
+                        () -> this.applyQueue.publishEvent((event, sequence) -> {
+                            event.groupId = groupId;
+                            event.shutdownLatch = latch;
+                        }));
                 }
                 if (this.timerManager != null) {
                     this.timerManager.shutdown();
@@ -2875,7 +2870,7 @@ public class NodeImpl implements Node, RaftServerService {
                 Replicator.join(this.wakingCandidate);
             }
             this.shutdownLatch.await();
-            this.applyDisruptor.shutdown();
+            this.applyDisruptor.unsubscribe(groupId);
             this.shutdownLatch = null;
         }
         if (this.fsmCaller != null) {

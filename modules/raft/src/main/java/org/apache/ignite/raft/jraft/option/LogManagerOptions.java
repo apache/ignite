@@ -20,22 +20,43 @@ import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.conf.ConfigurationManager;
 import org.apache.ignite.raft.jraft.core.NodeMetrics;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.codec.LogEntryCodecFactory;
 import org.apache.ignite.raft.jraft.entity.codec.v1.LogEntryV1CodecFactory;
 import org.apache.ignite.raft.jraft.storage.LogStorage;
+import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 
 /**
  * Options for log manager.
  */
 public class LogManagerOptions {
+    /** Raft group id. */
+    private String groupId;
+
     private Node node;
     private LogStorage logStorage;
     private ConfigurationManager configurationManager;
     private FSMCaller fsmCaller;
-    private int disruptorBufferSize = 1024;
     private RaftOptions raftOptions;
     private NodeMetrics nodeMetrics;
     private LogEntryCodecFactory logEntryCodecFactory = LogEntryV1CodecFactory.getInstance();
+    private StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor;
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public StripedDisruptor<LogManagerImpl.StableClosureEvent> getLogManagerDisruptor() {
+        return logManagerDisruptor;
+    }
+
+    public void setLogManagerDisruptor(StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor) {
+        this.logManagerDisruptor = logManagerDisruptor;
+    }
 
     public LogEntryCodecFactory getLogEntryCodecFactory() {
         return this.logEntryCodecFactory;
@@ -59,14 +80,6 @@ public class LogManagerOptions {
 
     public void setRaftOptions(final RaftOptions raftOptions) {
         this.raftOptions = raftOptions;
-    }
-
-    public int getDisruptorBufferSize() {
-        return this.disruptorBufferSize;
-    }
-
-    public void setDisruptorBufferSize(final int disruptorBufferSize) {
-        this.disruptorBufferSize = disruptorBufferSize;
     }
 
     public LogStorage getLogStorage() {

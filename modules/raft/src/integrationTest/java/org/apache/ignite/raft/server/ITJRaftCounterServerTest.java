@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -45,6 +46,8 @@ import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
+import org.apache.ignite.raft.jraft.option.NodeOptions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -109,7 +112,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     /**
      * Servers list.
      */
-    protected final List<JRaftServerImpl> servers = new ArrayList<>();
+    private final List<JRaftServerImpl> servers = new ArrayList<>();
 
     /**
      * Clients list.
@@ -227,6 +230,53 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         startClient(COUNTER_GROUP_0);
         startClient(COUNTER_GROUP_1);
+    }
+
+    /**
+     * Checks that the number of Disruptor threads does not depend on  count started RAFT nodes.
+     */
+    @Test
+    public void testDisruptorThreadsCount() {
+        startServer(0, raftServer -> {
+            raftServer.startRaftGroup("test_raft_group", listenerFactory.get(), INITIAL_CONF);
+        });
+
+        Set<Thread> threads = getAllDisruptoCurrentThreads();
+
+        int threadsBefore = threads.size();
+
+        Set<String> threadNamesBefore = threads.stream().map(Thread::getName).collect(Collectors.toSet());
+
+        assertEquals(NodeOptions.DEFAULT_STRIPES * 4/*services*/, threadsBefore, "Started thread names: " + threadNamesBefore);
+
+        servers.forEach(srv -> {
+            for (int i = 0; i < 10; i++)
+                srv.startRaftGroup("test_raft_group_" + i, listenerFactory.get(), INITIAL_CONF);
+        });
+
+        threads = getAllDisruptoCurrentThreads();
+
+        int threadsAfter = threads.size();
+
+        Set<String> threadNamesAfter = threads.stream().map(Thread::getName).collect(Collectors.toSet());
+
+        threadNamesAfter.removeAll(threadNamesBefore);
+
+        assertEquals(threadsBefore, threadsAfter, "Difference: " + threadNamesAfter);
+    }
+
+    /**
+     * Get a set of Disruptor threads for the well known JRaft services.
+     *
+     * @return Set of Disruptor threads.
+     */
+    @NotNull private Set<Thread> getAllDisruptoCurrentThreads() {
+        return Thread.getAllStackTraces().keySet().stream().filter(t ->
+            t.getName().contains("JRaft-FSMCaller-Disruptor") ||
+                t.getName().contains("JRaft-NodeImpl-Disruptor") ||
+                t.getName().contains("JRaft-ReadOnlyService-Disruptor") ||
+                t.getName().contains("JRaft-LogManager-Disruptor"))
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -420,7 +470,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         client1.refreshLeader().get();
         client2.refreshLeader().get();
 
-        NodeImpl leader = servers.stream().map(s -> ((NodeImpl) s.raftGroupService(COUNTER_GROUP_0).getRaftNode())).
+        NodeImpl leader = servers.stream().map(s -> ((NodeImpl)s.raftGroupService(COUNTER_GROUP_0).getRaftNode())).
             filter(n -> n.getState() == STATE_LEADER).findFirst().orElse(null);
 
         assertNotNull(leader);
@@ -611,8 +661,8 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         org.apache.ignite.raft.jraft.RaftGroupService svc = server.raftGroupService(groupId);
 
         JRaftServerImpl.DelegatingStateMachine fsm0 =
-            (JRaftServerImpl.DelegatingStateMachine) svc.getRaftNode().getOptions().getFsm();
+            (JRaftServerImpl.DelegatingStateMachine)svc.getRaftNode().getOptions().getFsm();
 
-        return expected == ((CounterListener) fsm0.getListener()).value();
+        return expected == ((CounterListener)fsm0.getListener()).value();
     }
 }

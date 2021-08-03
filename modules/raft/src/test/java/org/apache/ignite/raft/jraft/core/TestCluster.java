@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,12 +47,14 @@ import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.RaftGroupService;
 import org.apache.ignite.raft.jraft.conf.Configuration;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.rpc.TestIgniteRpcServer;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.storage.SnapshotThrottle;
+import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.jetbrains.annotations.Nullable;
@@ -84,6 +87,26 @@ public class TestCluster {
     private final int electionTimeoutMs;
     private final Lock lock = new ReentrantLock();
     private final Consumer<NodeOptions> optsClo;
+
+    /**
+     * These disruptors will be used for all RAFT servers in the cluster.
+     */
+    private final HashMap<Endpoint, StripedDisruptor<FSMCallerImpl.ApplyTask>> fsmCallerDusruptors = new HashMap<>();
+
+    /**
+     * These disruptors will be used for all RAFT servers in the cluster.
+     */
+    private final HashMap<Endpoint, StripedDisruptor<NodeImpl.LogEntryAndClosure>> nodeDisruptors = new HashMap<>();
+
+    /**
+     * These disruptors will be used for all RAFT servers in the cluster.
+     */
+    private final HashMap<Endpoint, StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent>> readOnlyServiceDisruptors = new HashMap<>();
+
+    /**
+     * These disruptors will be used for all RAFT servers in the cluster.
+     */
+    private final HashMap<Endpoint, StripedDisruptor<LogManagerImpl.StableClosureEvent>> logManagerDisruptors = new HashMap<>();
 
     private JRaftServiceFactory raftServiceFactory = new TestJRaftServiceFactory();
 
@@ -206,6 +229,30 @@ public class TestCluster {
             nodeOptions.setSnapshotUri(serverDataPath + File.separator + "snapshot");
             nodeOptions.setElectionPriority(priority);
 
+            nodeOptions.setfSMCallerExecutorDisruptor(fsmCallerDusruptors.computeIfAbsent(listenAddr, endpoint -> new StripedDisruptor<>(
+                "JRaft-FSMCaller-Disruptor_TestCluster",
+                nodeOptions.getRaftOptions().getDisruptorBufferSize(),
+                () -> new FSMCallerImpl.ApplyTask(),
+                nodeOptions.getStripes())));
+
+            nodeOptions.setNodeApplyDisruptor(nodeDisruptors.computeIfAbsent(listenAddr, endpoint -> new StripedDisruptor<>(
+                "JRaft-NodeImpl-Disruptor_TestCluster",
+                nodeOptions.getRaftOptions().getDisruptorBufferSize(),
+                () -> new NodeImpl.LogEntryAndClosure(),
+                nodeOptions.getStripes())));
+
+            nodeOptions.setReadOnlyServiceDisruptor(readOnlyServiceDisruptors.computeIfAbsent(listenAddr, endpoint -> new StripedDisruptor<>(
+                "JRaft-ReadOnlyService-Disruptor_TestCluster",
+                nodeOptions.getRaftOptions().getDisruptorBufferSize(),
+                () -> new ReadOnlyServiceImpl.ReadIndexEvent(),
+                nodeOptions.getStripes())));
+
+            nodeOptions.setLogManagerDisruptor(logManagerDisruptors.computeIfAbsent(listenAddr, endpoint -> new StripedDisruptor<>(
+                "JRaft-LogManager-Disruptor_TestCluster",
+                nodeOptions.getRaftOptions().getDisruptorBufferSize(),
+                () -> new LogManagerImpl.StableClosureEvent(),
+                nodeOptions.getStripes())));
+
             final MockStateMachine fsm = new MockStateMachine(listenAddr);
             nodeOptions.setFsm(fsm);
 
@@ -319,6 +366,11 @@ public class TestCluster {
         final List<Endpoint> addrs = getAllNodes();
         for (final Endpoint addr : addrs)
             stop(addr);
+
+        fsmCallerDusruptors.values().forEach(StripedDisruptor::shutdown);
+        nodeDisruptors.values().forEach(StripedDisruptor::shutdown);
+        readOnlyServiceDisruptors.values().forEach(StripedDisruptor::shutdown);
+        logManagerDisruptors.values().forEach(StripedDisruptor::shutdown);
     }
 
     public void clean(final Endpoint listenAddr) {

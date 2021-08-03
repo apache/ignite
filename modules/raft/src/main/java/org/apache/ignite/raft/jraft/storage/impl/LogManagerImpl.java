@@ -16,23 +16,18 @@
  */
 package org.apache.ignite.raft.jraft.storage.impl;
 
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslator;
+import com.lmax.disruptor.RingBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.EventTranslator;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.TimeoutBlockingWaitStrategy;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.Status;
@@ -40,6 +35,8 @@ import org.apache.ignite.raft.jraft.conf.Configuration;
 import org.apache.ignite.raft.jraft.conf.ConfigurationEntry;
 import org.apache.ignite.raft.jraft.conf.ConfigurationManager;
 import org.apache.ignite.raft.jraft.core.NodeMetrics;
+import org.apache.ignite.raft.jraft.disruptor.GroupAware;
+import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.EnumOutter.EntryType;
 import org.apache.ignite.raft.jraft.entity.EnumOutter.ErrorType;
 import org.apache.ignite.raft.jraft.entity.LogEntry;
@@ -56,10 +53,7 @@ import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.storage.LogManager;
 import org.apache.ignite.raft.jraft.storage.LogStorage;
 import org.apache.ignite.raft.jraft.util.ArrayDeque;
-import org.apache.ignite.raft.jraft.util.DisruptorBuilder;
 import org.apache.ignite.raft.jraft.util.DisruptorMetricSet;
-import org.apache.ignite.raft.jraft.util.LogExceptionHandler;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.SegmentList;
 import org.apache.ignite.raft.jraft.util.ThreadHelper;
@@ -72,6 +66,9 @@ public class LogManagerImpl implements LogManager {
     private static final int APPEND_LOG_RETRY_TIMES = 50;
 
     private static final IgniteLogger LOG = IgniteLogger.forClass(LogManagerImpl.class);
+
+    /** Raft group id. */
+    String groupId;
 
     private LogStorage logStorage;
     private ConfigurationManager configManager;
@@ -89,7 +86,7 @@ public class LogManagerImpl implements LogManager {
     private volatile long lastLogIndex;
     private volatile LogId lastSnapshotId = new LogId(0, 0);
     private final Map<Long, WaitMeta> waitMap = new HashMap<>();
-    private Disruptor<StableClosureEvent> disruptor;
+    private StripedDisruptor<StableClosureEvent> disruptor;
     private RingBuffer<StableClosureEvent> diskQueue;
     private RaftOptions raftOptions;
     private volatile CountDownLatch shutDownLatch;
@@ -106,20 +103,22 @@ public class LogManagerImpl implements LogManager {
         LAST_LOG_ID // get last log id
     }
 
-    private static class StableClosureEvent {
+    public static class StableClosureEvent implements GroupAware {
+        /** Raft group id. */
+        String groupId;
+
         StableClosure done;
         EventType type;
 
+        /** {@inheritDoc} */
+        @Override public String groupId() {
+            return groupId;
+        }
+
         void reset() {
+            this.groupId = null;
             this.done = null;
             this.type = null;
-        }
-    }
-
-    private static class StableClosureEventFactory implements EventFactory<StableClosureEvent> {
-        @Override
-        public StableClosureEvent newInstance() {
-            return new StableClosureEvent();
         }
     }
 
@@ -175,6 +174,7 @@ public class LogManagerImpl implements LogManager {
             this.logStorage = opts.getLogStorage();
             this.configManager = opts.getConfigurationManager();
             this.nodeOptions = opts.getNode().getOptions();
+            this.groupId = opts.getGroupId();
 
             LogStorageOptions lsOpts = new LogStorageOptions();
             lsOpts.setConfigurationManager(this.configManager);
@@ -188,22 +188,11 @@ public class LogManagerImpl implements LogManager {
             this.lastLogIndex = this.logStorage.getLastLogIndex();
             this.diskId = new LogId(this.lastLogIndex, getTermFromLogStorage(this.lastLogIndex));
             this.fsmCaller = opts.getFsmCaller();
-            this.disruptor = DisruptorBuilder.<StableClosureEvent>newInstance() //
-                .setEventFactory(new StableClosureEventFactory()) //
-                .setRingBufferSize(opts.getDisruptorBufferSize()) //
-                .setThreadFactory(new NamedThreadFactory("JRaft-LogManager-Disruptor-" +
-                    opts.getNode().getOptions().getServerName() + "-" + opts.getNode().getNodeId(), true)) //
-                .setProducerType(ProducerType.MULTI) //
-                /*
-                 *  Use timeout strategy in log manager. If timeout happens, it will called reportError to halt the node.
-                 */
-                .setWaitStrategy(new TimeoutBlockingWaitStrategy(
-                    this.raftOptions.getDisruptorPublishEventWaitTimeoutSecs(), TimeUnit.SECONDS)) //
-                .build();
-            this.disruptor.handleEventsWith(new StableClosureEventHandler());
-            this.disruptor.setDefaultExceptionHandler(new LogExceptionHandler<Object>(this.getClass().getSimpleName(),
-                (event, ex) -> reportError(-1, "LogManager handle event error")));
-            this.diskQueue = this.disruptor.start();
+            this.disruptor = opts.getLogManagerDisruptor();
+
+            this.diskQueue = disruptor.subscribe(groupId, new StableClosureEventHandler(),
+                (event, ex) -> reportError(-1, "LogManager handle event error"));
+
             if (this.nodeMetrics.getMetricRegistry() != null) {
                 this.nodeMetrics.getMetricRegistry().register("jraft-log-manager-disruptor",
                     new DisruptorMetricSet(this.diskQueue));
@@ -219,6 +208,7 @@ public class LogManagerImpl implements LogManager {
         this.shutDownLatch = new CountDownLatch(1);
         Utils.runInThread(nodeOptions.getCommonExecutor(), () -> this.diskQueue.publishEvent((event, sequence) -> {
             event.reset();
+            event.groupId = groupId;
             event.type = EventType.SHUTDOWN;
         }));
     }
@@ -229,7 +219,7 @@ public class LogManagerImpl implements LogManager {
             return;
         }
         this.shutDownLatch.await();
-        this.disruptor.shutdown();
+        this.disruptor.unsubscribe(groupId);
     }
 
     @Override
@@ -328,6 +318,7 @@ public class LogManagerImpl implements LogManager {
             int retryTimes = 0;
             final EventTranslator<StableClosureEvent> translator = (event, sequence) -> {
                 event.reset();
+                event.groupId = groupId;
                 event.type = EventType.OTHER;
                 event.done = done;
             };
@@ -363,6 +354,7 @@ public class LogManagerImpl implements LogManager {
         }
         if (!this.diskQueue.tryPublishEvent((event, sequence) -> {
             event.reset();
+            event.groupId = groupId;
             event.type = type;
             event.done = done;
         })) {
@@ -376,6 +368,7 @@ public class LogManagerImpl implements LogManager {
             Utils.runClosureInThread(nodeOptions.getCommonExecutor(), done, new Status(RaftError.ESTOP, "Log manager is stopped."));
             return true;
         }
+
         return this.diskQueue.tryPublishEvent(translator);
     }
 
