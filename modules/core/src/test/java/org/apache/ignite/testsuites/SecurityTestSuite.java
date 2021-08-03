@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.managers.deployment.P2PDeploymentSecurityWrapperTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
@@ -122,7 +123,8 @@ import org.junit.runners.Suite;
     SchedulerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
-    MultipleSSLContextsTest.class
+    MultipleSSLContextsTest.class,
+    P2PDeploymentSecurityWrapperTest.class
 })
 public class SecurityTestSuite {
     /** */

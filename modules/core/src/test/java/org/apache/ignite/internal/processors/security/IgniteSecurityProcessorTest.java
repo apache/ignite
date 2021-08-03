@@ -17,26 +17,23 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit test for {@link IgniteSecurityProcessor}.
  */
-public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
+public class IgniteSecurityProcessorTest {
     /**
      * Checks that {@link IgniteSecurityProcessor#withContext(UUID)} throws exception in case a node ID is unknown.
      */
@@ -64,32 +61,5 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
         assertThrowsWithCause(() -> ignSecPrc.withContext(UUID.randomUUID()), IllegalStateException.class);
 
         assertTrue(logLsnr.check());
-    }
-
-    /** */
-    @Test
-    public void testPeerClassLoadingLocalClassPathExclude() throws Exception {
-        try (IgniteEx server = startGrid()) {
-            assertTrue(server.configuration().getPeerClassLoadingLocalClassPathExclude().length == 0);
-        }
-
-        try (IgniteEx server = startGridAllowAll("server")) {
-            assertTrue(server.configuration().getPeerClassLoadingLocalClassPathExclude().length > 0);
-        }
-
-        String testCls = "test.class";
-
-        IgniteConfiguration cfg = getConfiguration("server",
-            new TestSecurityPluginProvider("server", "", ALLOW_ALL, null, globalAuth))
-            .setClientMode(false)
-            .setPeerClassLoadingLocalClassPathExclude(testCls);
-
-        try (IgniteEx server = startGrid(cfg)) {
-            String[] p2pExcl = server.configuration().getPeerClassLoadingLocalClassPathExclude();
-
-            assertTrue(p2pExcl.length > 1);
-
-            assertTrue(Arrays.asList(p2pExcl).contains(testCls));
-        }
     }
 }

@@ -46,16 +46,8 @@ final class GridResourceUtils {
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     static void inject(Field field, Object target, Object rsrc) throws IgniteCheckedException {
-//        if (rsrc != null && !field.getType().isAssignableFrom(rsrc.getClass()))
-//            throw new IgniteCheckedException("Resource field is not assignable from the resource: " + rsrc.getClass());
-//
-////        if (rsrc != null) {
-////            if (rsrc instanceof Proxy)
-////                Class clazz = ((SandboxIgniteComponentProxy.SandboxIgniteComponentProxyHandler)((Proxy)rsrc).h).original.getClass()
-////            if (!field.getType().isAssignableFrom(rsrc.getClass()))
-////                throw new IgniteCheckedException("Resource field is not assignable from the resource: " + rsrc.getClass()
-////                    + ", field:" + field.getName() + "=" + field.getType());
-////        }
+        if (rsrc != null && !field.getType().isAssignableFrom(rsrc.getClass()))
+            throw new IgniteCheckedException("Resource field is not assignable from the resource: " + rsrc.getClass());
 
         try {
             // Override default Java access check.
