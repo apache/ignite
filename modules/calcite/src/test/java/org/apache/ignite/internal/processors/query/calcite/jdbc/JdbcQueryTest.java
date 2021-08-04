@@ -111,7 +111,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             "ALTER TABLE test DROP COLUMN val2;";
         stmt.execute(multiLineQuery);
 
-        try (ResultSet rs = stmt.executeQuery("select * from test")) {
+        try (ResultSet rs = stmt.executeQuery("select * from test order by val0")) {
             int i;
             for (i = 0; rs.next(); i++) {
                 assertEquals(i, rs.getInt(1));

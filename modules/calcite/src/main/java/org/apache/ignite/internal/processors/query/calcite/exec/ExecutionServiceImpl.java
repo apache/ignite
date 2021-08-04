@@ -402,7 +402,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             else
                 plan = prepareSingle(qry0, pctx);
 
-            cursors.add(executePlan(qryId, pctx, plan, qryList.size() > 1));
+            cursors.add(executePlan(qryId, pctx, plan));
         }
 
         return cursors;
@@ -624,15 +624,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsQueryCursor<List<?>> executePlan(
         UUID qryId,
         PlanningContext pctx,
-        QueryPlan plan,
-        boolean immediateDml
+        QueryPlan plan
     ) {
         switch (plan.type()) {
             case DML:
-                if (immediateDml) {
-                    FieldsQueryCursor<List<?>> cur = executeQuery(qryId, (MultiStepPlan)plan, pctx);
-                    return new QueryCursorImpl<>(cur.getAll());
-                }
+                ListFieldsQueryCursor<?> cur = executeQuery(qryId, (MultiStepPlan)plan, pctx);
+                return new ListFieldsQueryCursor<>(cur.getAll(), cur.fieldsMeta(), cur.isQuery());
             case QUERY:
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
             case EXPLAIN:
@@ -659,7 +656,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
+    private ListFieldsQueryCursor<?> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
         plan.init(pctx);
 
         List<Fragment> fragments = plan.fragments();

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,6 +58,18 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
         isQry = plan.type() == QueryPlan.Type.QUERY;
 
         this.it = new ConvertingClosableIterator<>(it, ectx);
+    }
+
+    /**
+     *
+     * @param data
+     * @param fieldsMeta
+     * @param isQry
+     */
+    public ListFieldsQueryCursor(Collection<List<?>> data, List<GridQueryFieldMetadata> fieldsMeta, boolean isQry) {
+        this.fieldsMeta = ImmutableList.copyOf(fieldsMeta);
+        this.isQry = isQry;
+        it = data.iterator();
     }
 
     /** {@inheritDoc} */
