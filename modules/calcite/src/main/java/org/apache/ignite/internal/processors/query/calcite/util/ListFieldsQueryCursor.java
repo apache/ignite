@@ -61,10 +61,11 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
     }
 
     /**
+     * Construct cursor from fetched data from another cursor.
      *
-     * @param data
-     * @param fieldsMeta
-     * @param isQry
+     * @param data Underlying data.
+     * @param fieldsMeta Fields meta.
+     * @param isQry isQry flag.
      */
     public ListFieldsQueryCursor(Collection<List<?>> data, List<GridQueryFieldMetadata> fieldsMeta, boolean isQry) {
         this.fieldsMeta = ImmutableList.copyOf(fieldsMeta);
