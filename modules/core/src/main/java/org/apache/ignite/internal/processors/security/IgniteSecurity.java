@@ -152,4 +152,11 @@ public interface IgniteSecurity {
      * @throws IgniteCheckedException If error occurred.
      */
     public void dropUser(String login) throws IgniteCheckedException;
+
+    /**
+     * Callback for local join events for which the regular events are not generated.
+     * <p/>
+     * Local join event is expected in cases of joining to topology or client reconnect.
+     */
+    public void onLocalJoin();
 }

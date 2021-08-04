@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -546,6 +547,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert U.alphanumericUnderscore(snpName) : snpName;
 
         return new File(locSnpDir, snpName);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @return Local snapshot directory for snapshot with given name.
+     * @throws IgniteCheckedException If directory doesn't exists.
+     */
+    private File resolveSnapshotDir(String snpName) throws IgniteCheckedException {
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!snpDir.exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
+
+        return snpDir;
     }
 
     /**
@@ -1087,11 +1102,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        File[] smfs = snapshotLocalDir(snpName).listFiles((dir, name) ->
-            name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
+        List<File> smfs = new ArrayList<>();
 
-        if (smfs == null)
-            throw new IgniteException("Snapshot directory doesn't exists or an I/O error occurred during directory read.");
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snapshotLocalDir(snpName).toPath())) {
+            for (Path d : ds) {
+                if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
+                    smfs.add(d.toFile());
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+
+        if (smfs.isEmpty())
+            throw new IgniteException("Snapshot metadata files not found: " + snpName);
 
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
@@ -1341,20 +1365,55 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
+     * @return Standalone kernal context related to the snapshot.
+     * @throws IgniteCheckedException If fails.
+     */
+    public StandaloneGridKernalContext createStandaloneKernalContext(String snpName, String folderName) throws IgniteCheckedException {
+        File snpDir = resolveSnapshotDir(snpName);
+
+        return new StandaloneGridKernalContext(log,
+            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
+            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
+    }
+
+    /**
+     * @param grpName Cache group name.
+     * @param partId Partition id.
+     * @param pageStore File page store to iterate over.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If and error occurs.
+     */
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+        String grpName,
+        int partId,
+        FilePageStore pageStore
+    ) throws IgniteCheckedException {
+        CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
+            false, false, false, false);
+
+        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(ctx, null, null, null,
+            null, null, null, null, null, null,
+            null, null, null, null, null,
+            null, null, null, null, null, null);
+
+        return new DataPageIterator(sctx, coctx, pageStore, partId);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+        String snpName,
         String folderName,
         String grpName,
         int partId
     ) throws IgniteCheckedException {
-        File snpDir = snapshotLocalDir(snpName);
-
-        if (!snpDir.exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
+        File snpDir = resolveSnapshotDir(snpName);
 
         File nodePath = new File(snpDir, databaseRelativePath(folderName));
 
@@ -1386,19 +1445,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 val -> {
                 });
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(log,
-            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
-            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(ctx, grpName, partId, pageStore);
 
-        CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
-            false, false, false, false);
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** {@inheritDoc} */
+            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+                return partIter.nextX();
+            }
 
-        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(kctx, null, null, null,
-            null, null, null, null, null, null,
-            null, null, null, null, null,
-            null, null, null, null, null, null);
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return partIter.hasNextX();
+            }
 
-        return new DataPageIterator(sctx, coctx, pageStore, partId);
+            /** {@inheritDoc} */
+            @Override protected void onClose() {
+                U.closeQuiet(pageStore);
+            }
+        };
     }
 
     /**
@@ -1486,7 +1550,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param msg Event message.
      * @param type Snapshot event type.
      */
-    private void recordSnapshotEvent(String snpName, String msg, int type) {
+    void recordSnapshotEvent(String snpName, String msg, int type) {
         if (!cctx.gridEvents().isRecordable(type) || !cctx.gridEvents().hasListener(type))
             return;
 
@@ -1921,8 +1985,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 copy(ioFactory, part, snpPart, len);
 
-                if (log.isInfoEnabled()) {
-                    log.info("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
+                if (log.isDebugEnabled()) {
+                    log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
                         ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }
@@ -1936,8 +2000,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
 
-            if (log.isInfoEnabled()) {
-                log.info("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+            if (log.isDebugEnabled()) {
+                log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                     ", delta=" + delta + ']');
             }
 

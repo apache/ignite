@@ -119,7 +119,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
                         BPlusTree.Result res =
                             delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
 
-                        if (failWithCorruptTree.get() && tree.getName().contains(IDX_NAME))
+                        if (failWithCorruptTree.get() && tree.name().contains(IDX_NAME))
                             throw new RuntimeException("test exception");
 
                         return res;
