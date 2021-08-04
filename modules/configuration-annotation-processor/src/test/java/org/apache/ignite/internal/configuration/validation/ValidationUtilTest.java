@@ -112,7 +112,7 @@ public class ValidationUtilTest {
     public void before() {
         root = cgen.instantiateNode(ValidatedRootConfigurationSchema.class);
 
-        ConfigurationUtil.addDefaults(root, root);
+        ConfigurationUtil.addDefaults(root);
     }
 
     /** */

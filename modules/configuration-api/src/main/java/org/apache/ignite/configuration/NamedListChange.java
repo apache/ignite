@@ -18,6 +18,8 @@
 package org.apache.ignite.configuration;
 
 import java.util.function.Consumer;
+import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
+import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 
 /**
  * Closure parameter for {@link NamedConfigurationTree#change(Consumer)} method. Contains methods to modify named lists.
@@ -82,7 +84,25 @@ public interface NamedListChange<Change> extends NamedListView<Change> {
     NamedListChange<Change> createOrUpdate(String key, Consumer<Change> valConsumer);
 
     /**
-     * Remove the value from named list configuration.
+     * Renames the existing value in the named list configuration. Element with key {@code oldKey} must exist and key
+     * {@code newKey} must not. Error will occur if {@code newKey} has just been deleted on the same
+     * {@link NamedListChange} instance (to distinguish between
+     * {@link ConfigurationNamedListListener#onRename(String, String, ConfigurationNotificationEvent)} and
+     * {@link ConfigurationNamedListListener#onUpdate(ConfigurationNotificationEvent)} on {@code newKey}).
+     *
+     * @param oldKey Key for the value to be updated.
+     * @param newKey New key for the same value.
+     * @return {@code this} for chaining.
+     *
+     * @throws NullPointerException If one of parameters is null.
+     * @throws IllegalArgumentException If an element with name {@code newKey} already exists, or an element with name
+     *      {@code oldKey} doesn't exist, or {@link #delete(String)} has previously been invoked with either the
+     *      {@code newKey} or the {@code oldKey}.
+     */
+    NamedListChange<Change> rename(String oldKey, String newKey);
+
+    /**
+     * Removes the value from the named list configuration.
      *
      * @param key Key for the value to be removed.
      * @return {@code this} for chaining.

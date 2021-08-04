@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationTree;
@@ -66,7 +66,7 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
     }
 
     /** {@inheritDoc} */
-    @Override public final Future<Void> change(Consumer<CHANGE> change) {
+    @Override public final CompletableFuture<Void> change(Consumer<CHANGE> change) {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
 
         assert keys instanceof RandomAccess;
@@ -100,8 +100,12 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
         return refreshValue();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, ConfigurationProperty<?, ?>> members() {
+    /**
+     * Returns all child nodes of the current configuration tree node.
+     *
+     * @return Map from childs keys to a corresponding {@link ConfigurationProperty}.
+     */
+    public Map<String, ConfigurationProperty<?, ?>> members() {
         return Collections.unmodifiableMap(members);
     }
 }

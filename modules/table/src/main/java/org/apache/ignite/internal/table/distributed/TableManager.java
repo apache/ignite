@@ -43,6 +43,7 @@ import org.apache.ignite.internal.affinity.AffinityManager;
 import org.apache.ignite.internal.affinity.event.AffinityEvent;
 import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.manager.IgniteComponent;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
+import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -708,26 +710,20 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      *
      * @return A set of table names.
      */
-    private HashSet<String> tableNamesConfigured() {
+    //TODO This is an egregious violation of encapsulation. Current approach has to be revisited.
+    private Set<String> tableNamesConfigured() {
         IgniteBiTuple<ByteArray, ByteArray> range = toRange(new ByteArray(PUBLIC_PREFIX));
 
-        HashSet<String> tableNames = new HashSet<>();
+        Set<String> tableNames = new HashSet<>();
 
         try (Cursor<Entry> cursor = metaStorageMgr.range(range.get1(), range.get2())) {
             while (cursor.hasNext()) {
                 Entry entry = cursor.next();
 
-                String keyTail = entry.key().toString().substring(PUBLIC_PREFIX.length());
+                List<String> keySplit = ConfigurationUtil.split(entry.key().toString());
 
-                int idx = -1;
-
-                //noinspection StatementWithEmptyBody
-                while ((idx = keyTail.indexOf('.', idx + 1)) > 0 && keyTail.charAt(idx - 1) == '\\')
-                    ;
-
-                String tablName = keyTail.substring(0, idx);
-
-                tableNames.add(ConfigurationUtil.unescape(tablName));
+                if (keySplit.size() == 5 && NamedListNode.NAME.equals(keySplit.get(4)))
+                    tableNames.add(ByteUtils.fromBytes(entry.value()).toString());
             }
         }
         catch (Exception e) {
@@ -846,11 +842,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return True if table configured, false otherwise.
      */
     private boolean isTableConfigured(String name) {
-        return metaStorageMgr.invoke(Conditions.exists(
-            new ByteArray(PUBLIC_PREFIX + ConfigurationUtil.escape(name) + ".name")),
-            Operations.noop(),
-            Operations.noop()
-        ).join();
+        return tableNamesConfigured().contains(name);
     }
 
     /**

@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.SuperRoot;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
-import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.internal.configuration.tree.NamedListNode.NAME;
 import static org.apache.ignite.internal.configuration.tree.NamedListNode.ORDER_IDX;
 import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,10 +46,11 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -258,13 +259,15 @@ public class ConfigurationUtilTest {
 
         ConfigurationUtil.fillFromPrefixMap(parentNode, Map.of(
             "elements", Map.of(
-                "name2", Map.of(
+                "0123456789abcde0123456789abcde", Map.of(
                     "child", Map.of("str", "value2"),
-                    ORDER_IDX, 1
+                    ORDER_IDX, 1,
+                    NAME, "name2"
                 ),
-                "name1", Map.of(
+                "12345689abcdef0123456789abcdef0", Map.of(
                     "child", Map.of("str", "value1"),
-                    ORDER_IDX, 0
+                    ORDER_IDX, 0,
+                    NAME, "name1"
                 )
             )
         ));
@@ -311,9 +314,10 @@ public class ConfigurationUtilTest {
                 )
             ),
             is(allOf(
-                aMapWithSize(2),
-                hasEntry("root.elements.name.child.str", (Serializable)"foo"),
-                hasEntry("root.elements.name.<idx>", 0)
+                aMapWithSize(3),
+                hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]child[.]str"), hasToString("foo")),
+                hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<order>"), is(0)),
+                hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<name>"), hasToString("name"))
             ))
         );
 
@@ -329,9 +333,10 @@ public class ConfigurationUtilTest {
                 .changeElements(elements -> elements.delete("name"))
             ),
             is(allOf(
-                aMapWithSize(2),
-                hasEntry("root.elements.name.child.str", null),
-                hasEntry("root.elements.name.<idx>", null)
+                aMapWithSize(3),
+                hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]child[.]str"), nullValue()),
+                hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<order>"), nullValue()),
+                hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<name>"), nullValue())
             ))
         );
     }
@@ -356,71 +361,5 @@ public class ConfigurationUtilTest {
 
         // Create flat diff between two super trees.
         return createFlattenedUpdatesMap(originalSuperRoot, superRoot);
-    }
-
-    /**
-     * Tests basic invariants of {@link ConfigurationUtil#patch(ConstructableTreeNode, TraversableTreeNode)} method.
-     */
-    @Test
-    public void patch() {
-        var originalRoot = newParentInstance();
-
-        originalRoot.changeElements(elements ->
-            elements.create("name1", element ->
-                element.changeChild(child -> child.changeStr("value1"))
-            )
-        );
-
-        // Updating config.
-        ParentView updatedRoot = ConfigurationUtil.patch(originalRoot, (TraversableTreeNode)copy(originalRoot).changeElements(elements ->
-            elements.createOrUpdate("name1", element ->
-                element.changeChild(child -> child.changeStr("value2"))
-            )
-        ));
-
-        assertNotSame(originalRoot, updatedRoot);
-        assertNotSame(originalRoot.elements(), updatedRoot.elements());
-        assertNotSame(originalRoot.elements().get("name1"), updatedRoot.elements().get("name1"));
-        assertNotSame(originalRoot.elements().get("name1").child(), updatedRoot.elements().get("name1").child());
-
-        assertEquals("value1", originalRoot.elements().get("name1").child().str());
-        assertEquals("value2", updatedRoot.elements().get("name1").child().str());
-
-        // Expanding config.
-        ParentView expandedRoot = ConfigurationUtil.patch(originalRoot, (TraversableTreeNode)copy(originalRoot).changeElements(elements ->
-            elements.createOrUpdate("name2", element ->
-                element.changeChild(child -> child.changeStr("value2"))
-            )
-        ));
-
-        assertNotSame(originalRoot, expandedRoot);
-        assertNotSame(originalRoot.elements(), expandedRoot.elements());
-
-        assertSame(originalRoot.elements().get("name1"), expandedRoot.elements().get("name1"));
-        assertNull(originalRoot.elements().get("name2"));
-        assertNotNull(expandedRoot.elements().get("name2"));
-
-        assertEquals("value2", expandedRoot.elements().get("name2").child().str());
-
-        // Shrinking config.
-        ParentView shrinkedRoot = (ParentView)ConfigurationUtil.patch((InnerNode)expandedRoot, (TraversableTreeNode)copy(expandedRoot).changeElements(elements ->
-            elements.delete("name1")
-        ));
-
-        assertNotSame(expandedRoot, shrinkedRoot);
-        assertNotSame(expandedRoot.elements(), shrinkedRoot.elements());
-
-        assertNotNull(expandedRoot.elements().get("name1"));
-        assertNull(shrinkedRoot.elements().get("name1"));
-        assertNotNull(shrinkedRoot.elements().get("name2"));
-    }
-
-    /**
-     * @param parent {@link ParentView} object.
-     * @return Copy of the {@code parent} objects cast to {@link ParentChange}.
-     * @see ConstructableTreeNode#copy()
-     */
-    private ParentChange copy(ParentView parent) {
-        return (ParentChange)((ConstructableTreeNode)parent).copy();
     }
 }

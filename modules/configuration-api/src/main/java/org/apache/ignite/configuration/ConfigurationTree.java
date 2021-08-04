@@ -17,8 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
@@ -29,17 +28,10 @@ import java.util.function.Consumer;
  */
 public interface ConfigurationTree<VIEW, CHANGE> extends ConfigurationProperty<VIEW, CHANGE> {
     /**
-     * Children of the tree.
-     *
-     * @return Map from {@code String} to a corresponding {@link ConfigurationProperty}.
-     */
-    Map<String, ConfigurationProperty<?, ?>> members();
-
-    /**
      * Changes this configuration node value.
      *
      * @param change CHANGE object.
      * @return Future that is completed when configuration change is finished either successfully or not.
      */
-    Future<Void> change(Consumer<CHANGE> change);
+    CompletableFuture<Void> change(Consumer<CHANGE> change);
 }

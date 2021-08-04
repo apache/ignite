@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.RandomAccess;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
@@ -53,7 +53,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     }
 
     /** {@inheritDoc} */
-    @Override public Future<Void> update(T newValue) {
+    @Override public CompletableFuture<Void> update(T newValue) {
         Objects.requireNonNull(newValue, "Configuration value cannot be null.");
 
         assert keys instanceof RandomAccess;

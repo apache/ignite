@@ -36,6 +36,7 @@ import org.apache.ignite.internal.affinity.AffinityManager;
 import org.apache.ignite.internal.affinity.event.AffinityEvent;
 import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
 import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
@@ -67,6 +69,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -87,6 +91,7 @@ import static org.mockito.Mockito.when;
  * Tests scenarios for table manager.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class TableManagerTest {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(TableManagerTest.class);
@@ -488,8 +493,9 @@ public class TableManagerTest {
 
                     Entry mockEntry = mock(Entry.class);
 
-                    when(mockEntry.key()).thenReturn(new ByteArray(PUBLIC_PREFIX +
-                        ConfigurationUtil.escape(schemaTable.canonicalName()) + ".name"));
+                    when(mockEntry.key()).thenReturn(new ByteArray(PUBLIC_PREFIX + "uuid." + NamedListNode.NAME));
+
+                    when(mockEntry.value()).thenReturn(ByteUtils.toBytes(schemaTable.canonicalName()));
 
                     when(cursor.next()).thenReturn(mockEntry);
 

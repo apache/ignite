@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 
 /**
@@ -34,5 +34,5 @@ public interface ConfigurationValue<VIEW> extends ConfigurationProperty<VIEW, VI
      * @return Future that signifies end of the update operation. Can also be completed with
      *      {@link ConfigurationValidationException} and {@link ConfigurationChangeException}.
      */
-    Future<Void> update(VIEW change);
+    CompletableFuture<Void> update(VIEW change);
 }

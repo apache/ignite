@@ -148,10 +148,14 @@ public class ConfigurationFlattener {
             Map<String, Integer> newKeysToOrderIdxMap = deletion ? null
                 : keysToOrderIdx(newNode);
 
-            for (String namedListKey : newNode.namedListKeys()) {
-                withTracking(namedListKey, true, false, () -> {
-                    InnerNode oldNamedElement = oldNode.get(namedListKey);
-                    InnerNode newNamedElement = newNode.get(namedListKey);
+            for (String newNodeKey : newNode.namedListKeys()) {
+                String newNodeInternalId = newNode.internalId(newNodeKey);
+
+                withTracking(newNodeInternalId, false, false, () -> {
+                    InnerNode newNamedElement = newNode.get(newNodeKey);
+
+                    String oldNodeKey = oldNode.keyByInternalId(newNodeInternalId);
+                    InnerNode oldNamedElement = oldNode.get(oldNodeKey);
 
                     // Deletion of nonexistent element.
                     if (oldNamedElement == null && newNamedElement == null)
@@ -173,14 +177,23 @@ public class ConfigurationFlattener {
                         }
                     }
 
-                    Integer newIdx = newKeysToOrderIdxMap == null ? null : newKeysToOrderIdxMap.get(namedListKey);
-                    Integer oldIdx = oldKeysToOrderIdxMap == null ? null : oldKeysToOrderIdxMap.get(namedListKey);
+                    Integer newIdx = newKeysToOrderIdxMap == null ? null : newKeysToOrderIdxMap.get(newNodeKey);
+                    Integer oldIdx = oldKeysToOrderIdxMap == null ? null : oldKeysToOrderIdxMap.get(newNodeKey);
 
                     // We should "persist" changed indexes only.
                     if (newIdx != oldIdx || singleTreeTraversal || newNamedElement == null) {
                         String orderKey = currentKey() + NamedListNode.ORDER_IDX;
 
                         resMap.put(orderKey, deletion || newNamedElement == null ? null : newIdx);
+                    }
+
+                    // If it's creation / deletion / rename.
+                    if (singleTreeTraversal || oldNamedElement == null || newNamedElement == null
+                        || !oldNodeKey.equals(newNodeKey)
+                    ) {
+                        String idKey = currentKey() + NamedListNode.NAME;
+
+                        resMap.put(idKey, deletion || newNamedElement == null ? null : newNodeKey);
                     }
 
                     return null;
