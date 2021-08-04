@@ -3482,8 +3482,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
+                        cctx.snapshotMgr().onRebalanceReady(assignsSet, exchFut);
+
                         for (CacheGroupContext grp : assignsSet.descendingSet()) {
-                            boolean disableRebalance = cctx.snapshot().partitionsAreFrozen(grp);
+                            boolean disableRebalance = cctx.snapshot().partitionsAreFrozen(grp) ||
+                                cctx.snapshotMgr().isRestoring(grp.config());
 
                             if (disableRebalance)
                                 continue;
@@ -3541,9 +3544,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                         }
-                    }
-                    else if (!exchFut.exchangeActions().cacheGroupsToRestart(cctx.snapshotMgr().restoringId()).isEmpty()) {
-                        Set<Integer> grpIds = exchFut.exchangeActions().cacheGroupsToRestart(cctx.snapshotMgr().restoringId());
                     }
                     else {
                         U.log(log, "Skipping rebalancing (no affinity changes) " +
@@ -3974,12 +3974,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (cfg1.getRebalanceOrder() == cfg2.getRebalanceOrder()) {
                 if (cfg1.getRebalanceMode() == cfg2.getRebalanceMode())
-                    return 0;
+                    return ctx1.cacheOrGroupName().compareTo(ctx2.cacheOrGroupName());
 
                 switch (cfg1.getRebalanceMode()) {
-                    case SYNC: return -1;
-                    case ASYNC: return cfg2.getRebalanceMode() == CacheRebalanceMode.SYNC ? 1 : -1;
-                    case NONE: return 1;
+                    case SYNC:
+                        return -1;
+                    case ASYNC:
+                        return cfg2.getRebalanceMode() == CacheRebalanceMode.SYNC ? 1 : -1;
+                    case NONE:
+                        return 1;
                     default:
                         throw new IllegalArgumentException("Unknown cache rebalance mode [mode=" + cfg1.getRebalanceMode() + ']');
                 }

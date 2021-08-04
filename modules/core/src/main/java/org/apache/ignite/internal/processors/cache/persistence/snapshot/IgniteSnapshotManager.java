@@ -65,6 +65,7 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -826,12 +828,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Check if the cache or group with the specified name is currently being restored from the snapshot.
      *
-     * @param cacheName Cache name.
-     * @param grpName Cache group name.
+     * @param ccfg Cache configuration.
      * @return {@code True} if the cache or group with the specified name is being restored.
      */
-    public boolean isRestoring(String cacheName, @Nullable String grpName) {
-        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
+    public boolean isRestoring(CacheConfiguration<?, ?> ccfg) {
+        return restoreCacheGrpProc.isRestoring(ccfg);
     }
 
     /**
@@ -856,6 +857,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptySet();
 
         return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
+    }
+
+    /**
+     * @param grps Ordered list of cache groups sorted by priority.
+     * @param exchFut Exchange future.
+     */
+    public void onRebalanceReady(Set<CacheGroupContext> grps, GridDhtPartitionsExchangeFuture exchFut) {
+        restoreCacheGrpProc.onRebalanceReady(grps, exchFut);
     }
 
     /**
