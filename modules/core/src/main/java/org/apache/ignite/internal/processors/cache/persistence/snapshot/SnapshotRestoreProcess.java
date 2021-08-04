@@ -885,41 +885,44 @@ public class SnapshotRestoreProcess {
 
         // Register partitions to be processed.
         for (CacheGroupContext grp : filtered) {
+            if (F.isEmpty(locMetas))
+                break;
+
             notScheduled.put(grp.groupId(),
                 affinityPartitions(grp.affinity(), ctx.cache().context().localNode(), Integer::new));
 
             if (grp.queriesEnabled())
                 notScheduled.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(INDEX_PARTITION);
-        }
 
-        CacheGroupContext grp0 = F.first(filtered);
-        Set<Integer> left = notScheduled.get(grp0.groupId());
+            Set<Integer> left = notScheduled.get(grp.groupId());
 
-        if (left.isEmpty())
-            opCtx0.cacheStartLoadFut.onDone();
-
-        Set<PartitionLoadFuture> loadFuts = opCtx0.locProgress.get(grp0.groupId());
-
-        // TODO partitions may not be even created in a snapshot.
-        // Check if partitions might be copied right with index.
-        locMetas.stream()
-            .filter(m -> m.partitions().get(grp0.groupId()).containsAll(left))
-            .findFirst()
-            .ifPresent(meta ->
-                left.removeIf(partId ->
-                    runLocalAsync(grp0, opCtx0, meta.folderName(), partId, loadFuts::add)));
-
-        for (SnapshotMetadata meta : locMetas) {
             if (left.isEmpty())
-                break;
+                opCtx0.cacheStartLoadFut.onDone();
 
-            left.removeIf(partId -> {
-                if (partId == INDEX_PARTITION)
-                    return loadFuts.add(new PartitionLoadFuture(INDEX_PARTITION));
-                else
-                    return meta.partitions().get(grp0.groupId()).contains(partId) &&
-                        runLocalAsync(grp0, opCtx0, meta.folderName(), partId, loadFuts::add);
-            });
+            Set<PartitionLoadFuture> loadFuts = opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>());
+
+            // TODO partitions may not be even created in a snapshot.
+            // Check if partitions might be copied right with index.
+            locMetas.stream()
+                .filter(m -> Objects.nonNull(m.partitions().get(grp.groupId())))
+                .filter(m -> m.partitions().get(grp.groupId()).containsAll(left))
+                .findFirst()
+                .ifPresent(meta ->
+                    left.removeIf(partId ->
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, loadFuts::add)));
+
+            for (SnapshotMetadata meta : locMetas) {
+                if (left.isEmpty())
+                    break;
+
+                left.removeIf(partId -> {
+                    if (partId == INDEX_PARTITION)
+                        return loadFuts.add(new PartitionLoadFuture(INDEX_PARTITION));
+                    else
+                        return meta.partitions().get(grp.groupId()).contains(partId) &&
+                            runLocalAsync(grp, opCtx0, meta.folderName(), partId, loadFuts::add);
+                });
+            }
         }
 
         // TODO Second preload partitions from remote nodes.
