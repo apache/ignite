@@ -74,6 +74,9 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             raw,
             async,
             (ReadRepairData data) -> {
+                boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
+                    isolation == TransactionIsolation.READ_COMMITTED;
+
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     // Recovery (inside tx).
                     if (all)
@@ -81,7 +84,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                     else
                         GET_CHECK_AND_FIX.accept(data);
 
-                    ENSURE_FIXED.accept(data); // Checks (inside tx).
+                    check(data, fixByOtherTx, true); // Checks (inside tx).
 
                     try {
                         tx.commit();
@@ -91,7 +94,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                     }
                 }
 
-                ENSURE_FIXED.accept(data); // Checks (outside tx).
+                check(data, !fixByOtherTx, true); // Checks (outside tx).
             });
     }
 
@@ -106,6 +109,8 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     GET_NULL.accept(data);
 
+                    checkEventMissed();
+
                     try {
                         tx.commit();
                     }
@@ -115,6 +120,8 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                 }
 
                 GET_NULL.accept(data); // Checks (outside tx).
+
+                checkEventMissed();
             });
     }
 
@@ -126,6 +133,9 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             raw,
             async,
             (ReadRepairData data) -> {
+                // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
+                boolean fixByOtherTx = true;
+
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     // Recovery (inside tx).
                     if (all)
@@ -133,7 +143,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                     else
                         CONTAINS_CHECK_AND_FIX.accept(data);
 
-                    ENSURE_FIXED.accept(data); // Checks (inside tx).
+                    check(data, fixByOtherTx, true); // Checks (inside tx).
 
                     try {
                         tx.commit();
@@ -143,7 +153,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                     }
                 }
 
-                ENSURE_FIXED.accept(data); // Checks (outside tx).
+                check(data, !fixByOtherTx, true); // Checks (outside tx).
             });
     }
 }
