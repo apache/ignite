@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -174,8 +175,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param evts Events to check.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    protected void waitForEvents(List<Integer> evts) throws IgniteInterruptedCheckedException {
-        boolean caught = waitForCondition(() -> locEvts.containsAll(evts), 10_000);
+    protected void waitForEvents(Integer... evts) throws IgniteInterruptedCheckedException {
+        boolean caught = waitForCondition(() -> locEvts.containsAll(Arrays.asList(evts)), TIMEOUT);
 
         assertTrue("Events must be caught [locEvts=" + locEvts + ']', caught);
     }
