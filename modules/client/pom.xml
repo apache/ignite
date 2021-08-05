@@ -106,12 +106,19 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-client-handler</artifactId>
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-configuration</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
     </dependencies>
 
     <build>

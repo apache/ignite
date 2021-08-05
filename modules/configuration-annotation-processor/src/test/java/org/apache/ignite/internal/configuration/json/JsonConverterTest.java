@@ -160,7 +160,7 @@ public class JsonConverterTest {
         registry = new ConfigurationRegistry(
             Collections.singletonList(JsonRootConfiguration.KEY),
             Collections.emptyMap(),
-            Collections.singletonList(new TestConfigurationStorage())
+            Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
         );
 
         registry.start();

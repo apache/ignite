@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.TestConfigurationChanger;
@@ -86,7 +87,7 @@ public class NamedListNodeTest {
     /** */
     @BeforeEach
     public void before() {
-        storage = new TestConfigurationStorage();
+        storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         changer = new TestConfigurationChanger(cgen);
         changer.addRootKey(AConfiguration.KEY);

@@ -27,6 +27,7 @@ import org.apache.ignite.app.Ignite;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

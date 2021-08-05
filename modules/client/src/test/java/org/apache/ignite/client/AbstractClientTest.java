@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.client.table.ClientTupleBuilder;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

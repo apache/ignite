@@ -108,7 +108,7 @@ public class ConfigurationChangerTest {
      */
     @Test
     public void testSimpleConfigurationChange() throws Exception {
-        final TestConfigurationStorage storage = new TestConfigurationStorage();
+        var storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         ConfigurationChanger changer = new TestConfigurationChanger(cgen);
         changer.addRootKey(KEY);
@@ -131,7 +131,7 @@ public class ConfigurationChangerTest {
      */
     @Test
     public void testModifiedFromAnotherStorage() throws Exception {
-        final TestConfigurationStorage storage = new TestConfigurationStorage();
+        var storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         ConfigurationChanger changer1 = new TestConfigurationChanger(cgen);
         changer1.addRootKey(KEY);
@@ -174,7 +174,7 @@ public class ConfigurationChangerTest {
      */
     @Test
     public void testModifiedFromAnotherStorageWithIncompatibleChanges() throws Exception {
-        final TestConfigurationStorage storage = new TestConfigurationStorage();
+        var storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         ConfigurationChanger changer1 = new TestConfigurationChanger(cgen);
         changer1.addRootKey(KEY);
@@ -215,7 +215,7 @@ public class ConfigurationChangerTest {
      */
     @Test
     public void testFailedToWrite() {
-        final TestConfigurationStorage storage = new TestConfigurationStorage();
+        var storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         ConfigurationChanger changer = new TestConfigurationChanger(cgen);
         changer.addRootKey(KEY);
@@ -279,7 +279,7 @@ public class ConfigurationChangerTest {
 
         changer.addRootKey(DefaultsConfiguration.KEY);
 
-        TestConfigurationStorage storage = new TestConfigurationStorage();
+        var storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         changer.register(storage);
 

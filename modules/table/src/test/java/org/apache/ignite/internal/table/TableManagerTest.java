@@ -36,6 +36,7 @@ import org.apache.ignite.internal.affinity.AffinityManager;
 import org.apache.ignite.internal.affinity.event.AffinityEvent;
 import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.manager.EventListener;

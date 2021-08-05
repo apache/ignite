@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
-import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +77,7 @@ public class ConfigurationListenerTest {
     /** */
     @BeforeEach
     public void before() {
-        ConfigurationStorage testConfigurationStorage = new TestConfigurationStorage();
+        var testConfigurationStorage = new TestConfigurationStorage(ConfigurationType.LOCAL);
 
         registry = new ConfigurationRegistry(
             Collections.singletonList(ParentConfiguration.KEY),

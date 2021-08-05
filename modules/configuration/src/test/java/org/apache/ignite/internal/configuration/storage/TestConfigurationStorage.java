@@ -29,6 +29,9 @@ import org.apache.ignite.configuration.annotation.ConfigurationType;
  * Test configuration storage.
  */
 public class TestConfigurationStorage implements ConfigurationStorage {
+    /** Configuration type.*/
+    private final ConfigurationType configurationType;
+
     /** Map to store values. */
     private Map<String, Serializable> map = new HashMap<>();
 
@@ -40,6 +43,15 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
     /** Should fail on every operation. */
     private boolean fail = false;
+
+    /**
+     * Constructor.
+     *
+     * @param type Configuration type.
+     */
+    public TestConfigurationStorage(ConfigurationType type) {
+        configurationType = type;
+    }
 
     /**
      * Set fail flag.
@@ -90,6 +102,6 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override public ConfigurationType type() {
-        return ConfigurationType.LOCAL;
+        return configurationType;
     }
 }

@@ -21,10 +21,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.HashIndex;
 import org.apache.ignite.schema.PartialIndex;
@@ -68,7 +70,7 @@ public class SchemaConfigurationConverterTest {
         confRegistry = new ConfigurationRegistry(
             Collections.singleton(TablesConfiguration.KEY),
             Collections.singletonMap(TableValidator.class, Collections.singleton(SchemaTableValidatorImpl.INSTANCE)),
-            Collections.singleton(new TestConfigurationStorage()));
+            Collections.singleton(new TestConfigurationStorage(ConfigurationType.DISTRIBUTED)));
 
         confRegistry.start();
 
