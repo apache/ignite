@@ -27,13 +27,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
@@ -99,9 +96,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -475,21 +469,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
         @Nullable String schema, String qry, Object[] params) {
-        RelTraitDef<?>[] traitDefs = {
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            DistributionTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE,
-        };
-
         return PlanningContext.builder()
             .localNodeId(localNodeId())
             .originatingNodeId(originator)
             .parentContext(parent)
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(getDefaultSchema(schema))
-                .traitDefs(traitDefs)
                 .build())
             .query(qry)
             .parameters(params)
