@@ -26,6 +26,7 @@
 #include <ignite/common/common.h>
 #include <ignite/common/promise.h>
 #include <ignite/impl/interop/interop_target.h>
+#include <ignite/impl/compute/java_compute_task_holder.h>
 #include <ignite/impl/compute/single_job_compute_task_holder.h>
 #include <ignite/impl/compute/multiple_job_compute_task_holder.h>
 #include <ignite/impl/compute/cancelable_impl.h>
@@ -50,6 +51,10 @@ namespace ignite
                     enum Type
                     {
                         BROADCAST = 2,
+
+                        EXEC = 3,
+
+                        EXEC_ASYNC = 4,
 
                         UNICAST = 5,
 
@@ -117,7 +122,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously calls provided ComputeFunc on a node within
+                 * Asynchronously calls provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
                  * @tparam F Compute function type. Should implement
@@ -139,7 +144,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously runs provided ComputeFunc on a node within
+                 * Asynchronously runs provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
                  * @tparam F Compute action type. Should implement
@@ -158,7 +163,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously broadcasts provided ComputeFunc to all nodes
+                 * Asynchronously broadcasts provided ComputeFunc to all nodes
                  * in the underlying cluster group.
                  *
                  * @tparam F Compute function type. Should implement
@@ -180,7 +185,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously broadcasts provided ComputeFunc to all nodes
+                 * Asynchronously broadcasts provided ComputeFunc to all nodes
                  * in the underlying cluster group.
                  *
                  * @tparam F Compute function type. Should implement
@@ -198,7 +203,76 @@ namespace ignite
                     return PerformTask<void, F, JobType, TaskType>(Operation::BROADCAST, func);
                 }
 
+                /**
+                 * Asynchronously executes given Java task on the grid projection. If task for given name has not been
+                 * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Future containing a result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                Future<R> ExecuteJavaTaskAsync(const std::string& taskName, const A& taskArg)
+                {
+                    return PerformJavaTaskAsync<R, A>(Operation::EXEC_ASYNC, taskName, &taskArg);
+                }
+
+                /**
+                 * Asynchronously executes given Java task on the grid projection. If task for given name has not been
+                 * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @return Future containing a result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 */
+                template<typename R>
+                Future<R> ExecuteJavaTaskAsync(const std::string& taskName)
+                {
+                    return PerformJavaTaskAsync<R, void>(Operation::EXEC_ASYNC, taskName, 0);
+                }
+
             private:
+                template<typename R, typename A>
+                Future<R> PerformJavaTaskAsync(Operation::Type operation, const std::string& taskName, const A* arg)
+                {
+                    typedef JavaComputeTaskHolder<R> TaskHolder;
+                    common::concurrent::SharedPointer<TaskHolder> task(new TaskHolder());
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    writer.WriteString(taskName);
+                    // Keep binary
+                    writer.WriteBool(false);
+                    if (arg)
+                        writer.WriteObject<A>(*arg);
+                    else
+                        writer.WriteNull();
+                    writer.WriteBool(false);
+
+                    writer.WriteInt64(taskHandle);
+                    writer.WriteInt32(5);
+
+                    out.Synchronize();
+
+                    IgniteError err;
+                    jobject target = InStreamOutObject(operation, *mem.Get(), err);
+                    IgniteError::ThrowIfNeeded(err);
+
+                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+
+                    common::Promise<R>& promise = task.Get()->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
+                }
+
                 /**
                  * Perform job.
                  *

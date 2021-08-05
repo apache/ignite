@@ -268,9 +268,7 @@ namespace ignite
 
                 case OperationCallback::FUTURE_NULL_RESULT:
                 {
-                    SharedPointer<InteropMemory> mem = env->Get()->AllocateMemory();
-
-                    env->Get()->OnFutureResult(val, mem);
+                    env->Get()->OnFutureNullResult(val);
 
                     break;
                 }
@@ -827,6 +825,21 @@ namespace ignite
             compute::ComputeTaskHolder* task = task0.Get();
 
             task->JobResultSuccess(reader);
+            task->Reduce();
+
+            return 1;
+        }
+
+        int64_t IgniteEnvironment::OnFutureNullResult(int64_t handle)
+        {
+            SharedPointer<compute::ComputeTaskHolder> task0 =
+                    StaticPointerCast<compute::ComputeTaskHolder>(registry.Get(handle));
+
+            registry.Release(handle);
+
+            compute::ComputeTaskHolder* task = task0.Get();
+
+            task->JobNullResultSuccess();
             task->Reduce();
 
             return 1;

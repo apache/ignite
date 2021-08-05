@@ -83,12 +83,16 @@ namespace ignite
                 virtual void JobResultError(const IgniteError& err) = 0;
 
                 /**
-                 * Process successfull result.
+                 * Process successful result.
                  *
                  * @param reader Reader for stream with result.
-                 * @param err Error.
                  */
                 virtual void JobResultSuccess(binary::BinaryReaderImpl& reader) = 0;
+
+                /**
+                 * Process successful result.
+                 */
+                virtual void JobNullResultSuccess() = 0;
 
                 /**
                  * Reduce results of related jobs.
