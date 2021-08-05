@@ -672,7 +672,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         List<List<?>> res = executeSql("SELECT * FROM test order by val0");
         assertEquals(2, res.size());
 
-        for(int i = 0; i < res.size(); i++) {
+        for (int i = 0; i < res.size(); i++) {
             List<?> row = res.get(i);
 
             assertEquals(2, row.size());

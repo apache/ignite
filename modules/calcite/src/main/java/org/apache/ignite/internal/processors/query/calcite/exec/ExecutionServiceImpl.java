@@ -40,8 +40,6 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
@@ -384,7 +382,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String qry,
         Object[] params
     ) {
-        SqlNodeList qryList = parse(qry);
+        SqlNodeList qryList = Commons.parse(qry, FRAMEWORK_CONFIG.getParserConfig());
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
 
         for (final SqlNode qry0: qryList) {
@@ -462,18 +460,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     protected AffinityTopologyVersion topologyVersion() {
         return exchangeManager().readyAffinityVersion();
-    }
-
-    /** */
-    private static SqlNodeList parse(String qry) {
-        SqlParser parser = SqlParser.create(qry, FRAMEWORK_CONFIG.getParserConfig());
-
-        try {
-            return parser.parseStmtList();
-        }
-        catch (SqlParseException e) {
-            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
-        }
     }
 
     /** */

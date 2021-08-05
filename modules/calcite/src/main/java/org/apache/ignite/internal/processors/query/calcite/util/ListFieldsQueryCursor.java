@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
