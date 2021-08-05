@@ -150,16 +150,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * and in case consistency violation found:
      * <ul>
      *  <li>for transactional caches:
-     *  <p>values across the topology will be replaced by latest versioned value:
+     *  <p>Values across the topology will be replaced by latest versioned value:
      *  <ul>
      *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
      *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
      *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
-     *  <p>consistency violation event will be recorded in case it's configured as recordable</li>
+     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
      *  <li>for atomic caches: consistency violation exception will be thrown.
-     *  Be aware that consistency violation event will not be recorded in this case.</li>
+     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
      * </ul>
      * <p>
      * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
