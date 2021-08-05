@@ -660,7 +660,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Tests that multiline statements with DDL and DML works as expected.
      */
     @Test
-    public void testMulitlineWithCreateTable() throws Exception {
+    public void testMulitlineWithCreateTable() {
         String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
             "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
             "ALTER TABLE test ADD COLUMN val2 int;" +
