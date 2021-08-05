@@ -819,6 +819,7 @@ public class SnapshotRestoreProcess {
         // the cluster during the cache startup, the whole procedure will be rolled back.
         GridCompoundFuture<Boolean, Boolean> awaitBoth = new GridCompoundFuture<>();
 
+        // TODO WAL must be disabled also at startup.
         awaitBoth.add(ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, true,
             IgniteUuid.fromUuid(reqId)));
         awaitBoth.add(opCtx0.cacheStartLoadFut);
