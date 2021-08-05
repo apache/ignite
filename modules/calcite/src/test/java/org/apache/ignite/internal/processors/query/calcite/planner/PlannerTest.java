@@ -22,11 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
@@ -67,9 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
@@ -1417,90 +1413,19 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("EMP", emp);
         publicSchema.addTable("DEPT", dept);
 
-        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name >= d.name order by e.name, d.deptno";
+        String sql = "select d.deptno, d.name, e.id, e.name from dept d join emp e " +
+            "on d.deptno = e.deptno and e.name >= d.name order by e.name, d.deptno";
 
         RelNode phys = physicalPlan(sql, publicSchema, "CorrelatedNestedLoopJoin");
 
         assertNotNull(phys);
         assertEquals("" +
                 "IgniteSort(sort0=[$3], sort1=[$0], dir0=[ASC], dir1=[ASC])\n" +
-                "  IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1], DEPTNO0=[$2])\n" +
+                "  IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1])\n" +
                 "    IgniteNestedLoopJoin(condition=[AND(=($3, $2), >=($1, $4))], joinType=[inner])\n" +
                 "      IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
                 "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n",
             RelOptUtil.toString(phys));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLimit() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable testTbl = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("TEST", testTbl);
-
-        String sql = "SELECT * FROM TEST OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
-
-        {
-            IgniteRel phys = physicalPlan(sql, publicSchema);
-
-            assertNotNull(phys);
-
-            AtomicInteger limit = new AtomicInteger();
-            AtomicBoolean sort = new AtomicBoolean();
-
-            relTreeVisit(phys, (node, ordinal, parent) -> {
-                    if (node instanceof IgniteLimit)
-                        limit.incrementAndGet();
-
-                    if (node instanceof IgniteSort)
-                        sort.set(true);
-                }
-            );
-
-            assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
-            assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
-
-            checkSplitAndSerialization(phys, publicSchema);
-        }
-
-        sql = "SELECT * FROM TEST ORDER BY ID OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
-
-        {
-            IgniteRel phys = physicalPlan(sql, publicSchema);
-
-            assertNotNull(phys);
-
-            AtomicInteger limit = new AtomicInteger();
-            AtomicBoolean sort = new AtomicBoolean();
-
-            relTreeVisit(phys, (node, ordinal, parent) -> {
-                    if (node instanceof IgniteLimit)
-                        limit.incrementAndGet();
-
-                    if (node instanceof IgniteSort)
-                        sort.set(true);
-                }
-            );
-
-            assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
-            assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
-
-            checkSplitAndSerialization(phys, publicSchema);
-        }
     }
 
     /** */

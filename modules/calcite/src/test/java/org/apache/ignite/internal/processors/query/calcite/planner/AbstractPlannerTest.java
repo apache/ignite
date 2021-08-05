@@ -235,9 +235,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
             RewindabilityTraitDef.INSTANCE,
             CorrelationTraitDef.INSTANCE
         };
@@ -304,9 +304,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
             RewindabilityTraitDef.INSTANCE,
             CorrelationTraitDef.INSTANCE
         };
@@ -368,9 +368,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         assertNotNull(serialized);
 
         RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
             RewindabilityTraitDef.INSTANCE,
             CorrelationTraitDef.INSTANCE
         };
@@ -578,6 +578,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             return predicate.test((T)node.getInput(idx));
         };
+    }
+
+    /**
+     * Predicate builder for "First input satisfies predicate" condition.
+     */
+    protected <T extends RelNode> Predicate<RelNode> input(Predicate<T> predicate) {
+        return input(0, predicate);
     }
 
     /**
