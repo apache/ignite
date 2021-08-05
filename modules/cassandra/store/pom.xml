@@ -38,7 +38,6 @@
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <cassandra-driver.version>3.2.0</cassandra-driver.version>
         <cassandra-all.version>3.11.3</cassandra-all.version>
-        <netty.version>4.1.27.Final</netty.version>
         <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
 
@@ -87,37 +86,37 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>${netty.version}</version>
+            <version>${azure.netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>${netty.version}</version>
+            <version>${azure.netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
-            <version>${netty.version}</version>
+            <version>${azure.netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
-            <version>${netty.version}</version>
+            <version>${azure.netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
-            <version>${netty.version}</version>
+            <version>${azure.netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver</artifactId>
-            <version>${netty.version}</version>
+            <version>${azure.netty.version}</version>
         </dependency>
 
         <dependency>
