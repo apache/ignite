@@ -967,16 +967,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames) throws Exception {
         log.info(ignite.cluster().state() + " -> " + state);
 
-        CountDownLatch latch =  new CountDownLatch(G.allGrids().size());
-
-        for (Ignite grid : G.allGrids()) {
-            ((IgniteEx)grid).context().discovery().setCustomEventListener(ChangeGlobalStateFinishMessage.class,
-                ((topVer, snd, msg) -> latch.countDown()));
-        }
-
-        ClusterState beforeState = ignite.cluster().state();
+        CountDownLatch latch = getNewStateLatch(ignite.cluster().state(), state);
 
         assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
+
+        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(state, ignite.cluster().state());
 
@@ -986,9 +981,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             .mapToObj(this::grid)
             .collect(Collectors.toList());
 
-        if (beforeState != state)
-            latch.await();
-
         ClusterStateTestUtils.putSomeDataAndCheck(log, nodes, cacheNames);
 
         if (state == ACTIVE) {
@@ -996,6 +988,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 grid(0).cache(cacheName).clear();
         }
     }
+
+   /** */
+   private CountDownLatch getNewStateLatch(ClusterState oldState, ClusterState newState) {
+        if (oldState != newState) {
+            CountDownLatch latch = new CountDownLatch(G.allGrids().size());
+
+            for (Ignite grid : G.allGrids()) {
+                ((IgniteEx)grid).context().discovery().setCustomEventListener(ChangeGlobalStateFinishMessage.class,
+                    ((topVer, snd, msg) -> latch.countDown()));
+            }
+
+            return latch;
+        }
+        else
+            return new CountDownLatch(0);
+   }
 
     /**
      * Test baseline collect works via control.sh
