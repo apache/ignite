@@ -87,21 +87,21 @@ class ThinClientTest(IgniteTest):
                                                                               version=IgniteVersion(
                                                                                   ignite_version)),
                                                 java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                                num_nodes=10,
+                                                num_nodes=1,
                                                 startup_timeout_sec=60)
 
         ignite.start()
         ControlUtility(cluster=ignite).activate()
 
-        # ignite.freeze_node(ignite.nodes[0])
+
         for i in range(20):
+            ignite.freeze_node(ignite.nodes[0])
             thin_clients.start_async()
             thin_clients.await_started()
             thin_clients.stop()
+            ignite.unfreeze_node(ignite.nodes[0])
 
         # time.sleep(3)
-
-        # ignite.unfreeze_node(ignite.nodes[0])
 
         # thin_clients.await_started()
 
