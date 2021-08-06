@@ -820,6 +820,7 @@ public class SnapshotRestoreProcess {
         GridCompoundFuture<Boolean, Boolean> awaitBoth = new GridCompoundFuture<>();
 
         // TODO WAL must be disabled also at startup.
+        // TODO Exclude resending partitions if restore is in progress.
         awaitBoth.add(ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, true,
             IgniteUuid.fromUuid(reqId)));
         awaitBoth.add(opCtx0.cacheStartLoadFut);
@@ -846,7 +847,9 @@ public class SnapshotRestoreProcess {
         if (failure == null) {
             finishProcess(reqId);
 
-            // TODO enable cache proxies.
+            // TODO Is it correct to call it here?
+            ctx.cache().restartProxies();
+
             return;
         }
 
