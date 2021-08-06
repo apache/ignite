@@ -66,6 +66,9 @@ namespace
 
     /** Echo type: object. */
     const int32_t ECHO_TYPE_OBJECT = 12;
+
+    /** Echo type: uuid. */
+    const int32_t ECHO_TYPE_UUID = 22;
 }
 
 /*
@@ -100,6 +103,17 @@ struct ComputeJavaTestSuiteFixture
     ~ComputeJavaTestSuiteFixture()
     {
         Ignition::StopAll(true);
+    }
+
+    /**
+     * Get default cache.
+     *
+     * @return Default cache.
+     */
+    template<typename T>
+    Cache<int32_t, T> GetDefaultCache()
+    {
+        return node.GetOrCreateCache<int32_t, T>("default");
     }
 };
 
@@ -187,17 +201,35 @@ BOOST_AUTO_TEST_CASE(EchoTaskObject)
 {
     Compute compute = node.GetCompute();
 
-    Cache<int32_t, int32_t> cache = node.GetOrCreateCache<int32_t, int32_t>("default");
+    Cache<int32_t, int32_t> cache = GetDefaultCache<int32_t>();
 
-    for (int32_t i = 0; i < 1000; ++i)
+    for (int32_t i = 0; i < 100; ++i)
     {
-        int32_t val = i * 42;
-        cache.Put(ECHO_TYPE_OBJECT, val);
+        int32_t value = i * 42;
+        cache.Put(ECHO_TYPE_OBJECT, value);
 
         PlatformComputeBinarizable res =
             compute.ExecuteJavaTask<PlatformComputeBinarizable>(ECHO_TASK, ECHO_TYPE_OBJECT);
 
-        BOOST_CHECK_EQUAL(val, res.field);
+        BOOST_CHECK_EQUAL(value, res.field);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(EchoTaskGuid)
+{
+    Compute compute = node.GetCompute();
+
+    Cache<int32_t, ignite::Guid> cache = GetDefaultCache<ignite::Guid>();
+
+    for (int32_t i = 0; i < 100; ++i)
+    {
+        Guid value(i * 406586897, i * 87178291199);
+
+        cache.Put(ECHO_TYPE_UUID, value);
+
+        ignite::Guid res = compute.ExecuteJavaTask<ignite::Guid>(ECHO_TASK, ECHO_TYPE_UUID);
+
+        BOOST_CHECK_EQUAL(value, res);
     }
 }
 
