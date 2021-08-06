@@ -18,34 +18,27 @@
 package org.apache.ignite.client.handler.requests.table;
 
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.client.proto.ClientMessagePacker;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.table.manager.IgniteTables;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuple;
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuples;
 
 /**
- * Client tuple get request.
+ * Client tuple upsert all request.
  */
-public class ClientTupleGetRequest {
+public class ClientTupleUpsertAllRequest {
     /**
      * Processes the request.
      *
      * @param in Unpacker.
-     * @param out Packer.
      * @param tables Ignite tables.
      * @return Future.
      */
-    public static CompletableFuture<Void> process(
-            ClientMessageUnpacker in,
-            ClientMessagePacker out,
-            IgniteTables tables
-    ) {
+    public static CompletableFuture<Void> process(ClientMessageUnpacker in, IgniteTables tables) {
         var table = readTable(in, tables);
-        var keyTuple = readTuple(in, table, true);
+        var tuples = readTuples(in, table, false);
 
-        return table.getAsync(keyTuple).thenAccept(t -> writeTuple(out, t));
+        return table.upsertAllAsync(tuples);
     }
 }

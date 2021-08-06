@@ -18,18 +18,23 @@
 package org.apache.ignite.client.proto;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.UUID;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import org.apache.ignite.lang.IgniteException;
+import org.msgpack.core.ExtensionTypeHeader;
+import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageSizeException;
 import org.msgpack.core.MessageTypeException;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.buffer.InputStreamBufferInput;
+import org.msgpack.value.ImmutableValue;
 
 import static org.apache.ignite.client.proto.ClientDataType.BITMASK;
 import static org.apache.ignite.client.proto.ClientDataType.BYTES;
@@ -51,8 +56,11 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     /** Underlying buffer. */
     private final ByteBuf buf;
 
-    /** Closed flag. */
-    private boolean closed = false;
+    /** Underlying input. */
+    private final InputStreamBufferInput in;
+
+    /** Ref count. */
+    private int refCnt = 1;
 
     /**
      * Constructor.
@@ -60,20 +68,258 @@ public class ClientMessageUnpacker extends MessageUnpacker {
      * @param buf Input.
      */
     public ClientMessageUnpacker(ByteBuf buf) {
-        super(new InputStreamBufferInput(new ByteBufInputStream(buf)), MessagePack.DEFAULT_UNPACKER_CONFIG);
+        // TODO: Remove intermediate classes and buffers IGNITE-15234.
+        this(new InputStreamBufferInput(new ByteBufInputStream(buf)), buf);
+    }
 
+    private ClientMessageUnpacker(InputStreamBufferInput in, ByteBuf buf) {
+        super(in, MessagePack.DEFAULT_UNPACKER_CONFIG);
+
+        this.in = in;
         this.buf = buf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int unpackInt() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackInt();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String unpackString() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackString();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unpackNil() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            super.unpackNil();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean unpackBoolean() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackBoolean();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte unpackByte() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackByte();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public short unpackShort() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackShort();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long unpackLong() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackLong();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BigInteger unpackBigInteger() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackBigInteger();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public float unpackFloat() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackFloat();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public double unpackDouble() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackDouble();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int unpackArrayHeader() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackArrayHeader();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int unpackMapHeader() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackMapHeader();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExtensionTypeHeader unpackExtensionTypeHeader() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackExtensionTypeHeader();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int unpackBinaryHeader() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackBinaryHeader();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean tryUnpackNil() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.tryUnpackNil();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] readPayload(int length) {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.readPayload(length);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageFormat getNextFormat() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.getNextFormat();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void skipValue(int count) {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            super.skipValue(count);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void skipValue() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            super.skipValue();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNext() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.hasNext();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ImmutableValue unpackValue() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        try {
+            return super.unpackValue();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**
      * Reads an UUID.
      *
      * @return UUID value.
-     * @throws IOException when underlying input throws IOException.
      * @throws MessageTypeException when type is not UUID.
      * @throws MessageSizeException when size is not correct.
      */
-    public UUID unpackUuid() throws IOException {
+    public UUID unpackUuid() {
+        assert refCnt > 0 : "Unpacker is closed";
+
         var hdr = unpackExtensionTypeHeader();
         var type = hdr.getType();
         var len = hdr.getLength();
@@ -95,20 +341,24 @@ public class ClientMessageUnpacker extends MessageUnpacker {
      * Reads a decimal.
      *
      * @return Decimal value.
-     * @throws IOException when underlying input throws IOException.
+     * @throws UnsupportedOperationException Not supported yet.
      */
-    public BigDecimal unpackDecimal() throws IOException {
-        throw new IOException("TODO: IGNITE-15163");
+    public BigDecimal unpackDecimal() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
     }
 
     /**
      * Reads a bit set.
      *
      * @return Bit set.
-     * @throws IOException when underlying input throws IOException.
+     * @throws UnsupportedOperationException Not supported yet.
      */
-    public BitSet unpackBitSet() throws IOException {
-        throw new IOException("TODO: IGNITE-15163");
+    public BitSet unpackBitSet() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
     }
 
     /**
@@ -117,10 +367,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
      * @param dataType Data type code.
      *
      * @return Unpacked object.
-     * @throws IOException when underlying input throws IOException.
      * @throws IgniteException when data type is not valid.
      */
-    public Object unpackObject(int dataType) throws IOException {
+    public Object unpackObject(int dataType) {
         if (tryUnpackNil())
             return null;
 
@@ -164,12 +413,41 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         throw new IgniteException("Unknown client data type: " + dataType);
     }
 
+    /**
+     * Creates a copy of this unpacker and the underlying buffer.
+     *
+     * @return Copied unpacker.
+     * @throws UncheckedIOException When buffer operation fails.
+     */
+    public ClientMessageUnpacker copy() {
+        try {
+            in.reset(new ByteBufInputStream(buf.copy()));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        return this;
+    }
+
+    /**
+     * Increases the reference count by {@code 1}.
+     *
+     * @return This instance.
+     */
+    public ClientMessageUnpacker retain() {
+        refCnt++;
+
+        buf.retain();
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
-        if (closed)
+        if (refCnt == 0)
             return;
 
-        closed = true;
+        refCnt--;
 
         if (buf.refCnt() > 0)
             buf.release();

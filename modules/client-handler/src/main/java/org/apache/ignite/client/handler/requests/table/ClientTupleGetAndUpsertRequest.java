@@ -27,9 +27,9 @@ import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuple;
 
 /**
- * Client tuple get request.
+ * Client tuple get and upsert request.
  */
-public class ClientTupleGetRequest {
+public class ClientTupleGetAndUpsertRequest {
     /**
      * Processes the request.
      *
@@ -44,8 +44,8 @@ public class ClientTupleGetRequest {
             IgniteTables tables
     ) {
         var table = readTable(in, tables);
-        var keyTuple = readTuple(in, table, true);
+        var tuple = readTuple(in, table, false);
 
-        return table.getAsync(keyTuple).thenAccept(t -> writeTuple(out, t));
+        return table.getAndUpsertAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple));
     }
 }

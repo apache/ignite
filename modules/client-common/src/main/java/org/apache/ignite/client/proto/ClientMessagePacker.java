@@ -18,16 +18,18 @@
 package org.apache.ignite.client.proto;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.UUID;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
-import org.apache.ignite.lang.IgniteException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.buffer.OutputStreamBufferOutput;
+import org.msgpack.value.Value;
 
 import static org.apache.ignite.client.proto.ClientMessageCommon.HEADER_SIZE;
 
@@ -49,6 +51,7 @@ public class ClientMessagePacker extends MessagePacker {
      * @param buf Buffer.
      */
     public ClientMessagePacker(ByteBuf buf) {
+        // TODO: Remove intermediate classes and buffers IGNITE-15234.
         // Reserve 4 bytes for the message length.
         super(new OutputStreamBufferOutput(new ByteBufOutputStream(buf.writerIndex(HEADER_SIZE))),
                 MessagePack.DEFAULT_PACKER_CONFIG);
@@ -60,14 +63,14 @@ public class ClientMessagePacker extends MessagePacker {
      * Gets the underlying buffer.
      *
      * @return Underlying buffer.
-     * @throws IgniteException When flush fails.
+     * @throws UncheckedIOException When flush fails.
      */
     public ByteBuf getBuffer() {
         try {
             flush();
         }
         catch (IOException e) {
-            throw new IgniteException(e);
+            throw new UncheckedIOException(e);
         }
 
         buf.setInt(0, buf.writerIndex() - HEADER_SIZE);
@@ -75,16 +78,238 @@ public class ClientMessagePacker extends MessagePacker {
         return buf;
     }
 
+    /** {@inheritDoc} */
+    @Override public MessagePacker packNil() {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packNil();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packBoolean(boolean b) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packBoolean(b);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packByte(byte b) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packByte(b);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packShort(short v) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packShort(v);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packInt(int r) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packInt(r);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packLong(long v) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packLong(v);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packBigInteger(BigInteger bi) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packBigInteger(bi);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packFloat(float v) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packFloat(v);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packDouble(double v) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packDouble(v);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packString(String s) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packString(s);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packArrayHeader(int arraySize) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packArrayHeader(arraySize);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packMapHeader(int mapSize) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packMapHeader(mapSize);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packValue(Value v) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packValue(v);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packExtensionTypeHeader(byte extType, int payloadLen) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packExtensionTypeHeader(extType, payloadLen);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packBinaryHeader(int len) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packBinaryHeader(len);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker packRawStringHeader(int len) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.packRawStringHeader(len);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker writePayload(byte[] src) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.writePayload(src);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker writePayload(byte[] src, int off, int len) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.writePayload(src, off, len);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker addPayload(byte[] src) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.addPayload(src);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessagePacker addPayload(byte[] src, int off, int len) {
+        assert !closed : "Packer is closed";
+
+        try {
+            return super.addPayload(src, off, len);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     /**
      * Writes an UUID.
      *
      * @param val UUID value.
      * @return This instance.
-     * @throws IOException when underlying output throws IOException.
      */
-    public ClientMessagePacker packUuid(UUID val) throws IOException {
+    public ClientMessagePacker packUuid(UUID val) {
+        assert !closed : "Packer is closed";
+
         packExtensionTypeHeader(ClientMsgPackType.UUID, 16);
 
+        // TODO: Pack directly to ByteBuf without allocating IGNITE-15234.
         var bytes = new byte[16];
         ByteBuffer bb = ByteBuffer.wrap(bytes);
 
@@ -101,10 +326,12 @@ public class ClientMessagePacker extends MessagePacker {
      *
      * @param val Decimal value.
      * @return This instance.
-     * @throws IOException when underlying output throws IOException.
+     * @throws UnsupportedOperationException Not supported.
      */
-    public ClientMessagePacker packDecimal(BigDecimal val) throws IOException {
-        throw new IOException("TODO: IGNITE-15163");
+    public ClientMessagePacker packDecimal(BigDecimal val) {
+        assert !closed : "Packer is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
     }
 
     /**
@@ -112,10 +339,12 @@ public class ClientMessagePacker extends MessagePacker {
      *
      * @param val Bit set value.
      * @return This instance.
-     * @throws IOException when underlying output throws IOException.
+     * @throws UnsupportedOperationException Not supported.
      */
-    public ClientMessagePacker packBitSet(BitSet val) throws IOException {
-        throw new IOException("TODO: IGNITE-15163");
+    public ClientMessagePacker packBitSet(BitSet val) {
+        assert !closed : "Packer is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
     }
 
     /**
@@ -123,9 +352,9 @@ public class ClientMessagePacker extends MessagePacker {
      *
      * @param val Object value.
      * @return This instance.
-     * @throws IOException when underlying output throws IOException.
+     * @throws UnsupportedOperationException When type is not supported.
      */
-    public ClientMessagePacker packObject(Object val) throws IOException {
+    public ClientMessagePacker packObject(Object val) {
         if (val == null)
             return (ClientMessagePacker) packNil();
 
@@ -156,7 +385,7 @@ public class ClientMessagePacker extends MessagePacker {
             return packBitSet((BitSet) val);
 
         // TODO: Support all basic types IGNITE-15163
-        throw new IOException("Unsupported type, can't serialize: " + val.getClass());
+        throw new UnsupportedOperationException("Unsupported type, can't serialize: " + val.getClass());
     }
 
     /** {@inheritDoc} */

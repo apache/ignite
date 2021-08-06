@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
+import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.lang.IgniteException;
@@ -135,8 +135,8 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
         return new TableImpl(new FakeInternalTable(name, tableId), getSchemaReg(tableId), null, null);
     }
 
-    @NotNull private SchemaRegistryImpl getSchemaReg(UUID tableId) {
-        return new SchemaRegistryImpl(1, v -> getSchema(v, tableId));
+    @NotNull private SchemaRegistry getSchemaReg(UUID tableId) {
+        return new FakeSchemaRegistry(v -> getSchema(v, tableId));
     }
 
     /**
@@ -146,14 +146,26 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
      * @return Schema descriptor.
      */
     private SchemaDescriptor getSchema(Integer v, UUID tableId) {
-        if (v != 1)
-            return null;
+        switch (v) {
+            case 1:
+                return new SchemaDescriptor(
+                        tableId,
+                        1,
+                        new Column[]{new Column("id", NativeTypes.INT64, false)},
+                        new Column[]{new Column("name", NativeTypes.STRING, true)});
 
-        return new SchemaDescriptor(
-                tableId,
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("name", NativeTypes.STRING, true)});
+            case 2:
+                return new SchemaDescriptor(
+                        tableId,
+                        2,
+                        new Column[]{new Column("id", NativeTypes.INT64, false)},
+                        new Column[]{
+                                new Column("name", NativeTypes.STRING, true),
+                                new Column("xyz", NativeTypes.STRING, true)
+                        });
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */

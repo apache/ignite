@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client.handler.requests.table;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.proto.ClientMessagePacker;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
@@ -39,14 +38,13 @@ public class ClientSchemasGetRequest {
      * @param out Packer.
      * @param tables Ignite tables.
      * @return Future.
-     * @throws IOException On serialization error.
      * @throws IgniteException When schema registry is no initialized.
      */
     public static CompletableFuture<Object> process(
             ClientMessageUnpacker in,
             ClientMessagePacker out,
             IgniteTables tables
-    ) throws IOException {
+    ) {
         var table = readTable(in, tables);
 
         if (in.getNextFormat() == MessageFormat.NIL) {

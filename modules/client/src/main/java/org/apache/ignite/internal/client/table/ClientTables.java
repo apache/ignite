@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.table;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.client.proto.ClientOp;
@@ -50,6 +51,9 @@ public class ClientTables implements IgniteTables {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(tableInitChange);
+
         throw new UnsupportedOperationException();
     }
 
@@ -60,6 +64,9 @@ public class ClientTables implements IgniteTables {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(tableChange);
+
         throw new UnsupportedOperationException();
     }
 
@@ -70,6 +77,9 @@ public class ClientTables implements IgniteTables {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Table> getOrCreateTableAsync(String name, Consumer<TableChange> tableInitChange) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(tableInitChange);
+
         throw new UnsupportedOperationException();
     }
 
@@ -80,6 +90,8 @@ public class ClientTables implements IgniteTables {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Void> dropTableAsync(String name) {
+        Objects.requireNonNull(name);
+
         return ch.requestAsync(ClientOp.TABLE_DROP, w -> w.out().packString(name));
     }
 
@@ -109,6 +121,8 @@ public class ClientTables implements IgniteTables {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Table> tableAsync(String name) {
+        Objects.requireNonNull(name);
+
         return ch.serviceAsync(ClientOp.TABLE_GET, w -> w.out().packString(name),
                 r -> new ClientTable(ch, r.in().unpackUuid(), name));
     }

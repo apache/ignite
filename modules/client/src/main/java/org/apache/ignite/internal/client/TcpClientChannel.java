@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,7 +105,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessage(ByteBuf buf) throws IOException {
+    @Override public void onMessage(ByteBuf buf) {
         processNextMessage(buf);
     }
 
@@ -230,7 +229,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /**
      * Process next message from the input stream and complete corresponding future.
      */
-    private void processNextMessage(ByteBuf buf) throws IgniteClientException, IOException {
+    private void processNextMessage(ByteBuf buf) throws IgniteClientException {
         var unpacker = new ClientMessageUnpacker(buf);
 
         if (protocolCtx == null) {
@@ -299,7 +298,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** Send handshake request. */
-    private void handshakeReq(ProtocolVersion proposedVer) throws IOException {
+    private void handshakeReq(ProtocolVersion proposedVer) {
         sock.send(Unpooled.wrappedBuffer(ClientMessageCommon.MAGIC_BYTES));
 
         var req = new ClientMessagePacker(sock.getBuffer());
@@ -360,8 +359,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             unpacker.skipValue(extensionsLen);
 
             protocolCtx = protocolContextFromVersion(srvVer);
-        } catch (IOException e) {
-            throw handleIOError(e);
         }
     }
 
@@ -370,21 +367,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         var buf = packer.getBuffer();
 
         return sock.send(buf);
-    }
-
-    /**
-     * @param ex IO exception (cause).
-     */
-    private IgniteClientException handleIOError(@Nullable IOException ex) {
-        return handleIOError("sock=" + sock, ex);
-    }
-
-    /**
-     * @param chInfo Additional channel info
-     * @param ex IO exception (cause).
-     */
-    private IgniteClientException handleIOError(String chInfo, @Nullable IOException ex) {
-        return new IgniteClientConnectionException("Ignite cluster is unavailable [" + chInfo + ']', ex);
     }
 
     /**

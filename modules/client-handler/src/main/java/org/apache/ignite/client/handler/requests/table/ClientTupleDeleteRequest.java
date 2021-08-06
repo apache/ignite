@@ -24,12 +24,11 @@ import org.apache.ignite.table.manager.IgniteTables;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuple;
 
 /**
- * Client tuple get request.
+ * Client tuple delete request.
  */
-public class ClientTupleGetRequest {
+public class ClientTupleDeleteRequest {
     /**
      * Processes the request.
      *
@@ -44,8 +43,8 @@ public class ClientTupleGetRequest {
             IgniteTables tables
     ) {
         var table = readTable(in, tables);
-        var keyTuple = readTuple(in, table, true);
+        var tuple = readTuple(in, table, true);
 
-        return table.getAsync(keyTuple).thenAccept(t -> writeTuple(out, t));
+        return table.deleteAsync(tuple).thenAccept(out::packBoolean);
     }
 }

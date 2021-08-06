@@ -22,14 +22,14 @@ import org.apache.ignite.client.proto.ClientMessagePacker;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.table.manager.IgniteTables;
 
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readSchema;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuple;
 
 /**
- * Client tuple get request.
+ * Client tuple replace request.
  */
-public class ClientTupleGetRequest {
+public class ClientTupleReplaceExactRequest {
     /**
      * Processes the request.
      *
@@ -44,8 +44,11 @@ public class ClientTupleGetRequest {
             IgniteTables tables
     ) {
         var table = readTable(in, tables);
-        var keyTuple = readTuple(in, table, true);
+        var schema = readSchema(in, table);
 
-        return table.getAsync(keyTuple).thenAccept(t -> writeTuple(out, t));
+        var oldTuple = readTuple(in, table, false, schema);
+        var newTuple = readTuple(in, table, false, schema);
+
+        return table.replaceAsync(oldTuple, newTuple).thenAccept(out::packBoolean);
     }
 }

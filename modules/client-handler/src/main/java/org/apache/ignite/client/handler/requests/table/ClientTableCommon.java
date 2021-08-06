@@ -17,9 +17,10 @@
 
 package org.apache.ignite.client.handler.requests.table;
 
-import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.client.proto.ClientDataType;
 import org.apache.ignite.client.proto.ClientMessagePacker;
@@ -34,6 +35,7 @@ import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.TupleBuilder;
 import org.apache.ignite.table.manager.IgniteTables;
+import org.jetbrains.annotations.NotNull;
 import org.msgpack.core.MessageFormat;
 
 /**
@@ -46,13 +48,8 @@ class ClientTableCommon {
      * @param packer Packer.
      * @param schemaVer Schema version.
      * @param schema Schema.
-     * @throws IOException When serialization fails.
      */
-    public static void writeSchema(
-            ClientMessagePacker packer,
-            int schemaVer,
-            SchemaDescriptor schema
-    ) throws IOException {
+    public static void writeSchema(ClientMessagePacker packer,int schemaVer, SchemaDescriptor schema) {
         packer.packInt(schemaVer);
 
         if (schema == null) {
@@ -80,28 +77,126 @@ class ClientTableCommon {
      *
      * @param packer Packer.
      * @param tuple Tuple.
-     * @throws IgniteException on failed serialization.
      */
     public static void writeTuple(ClientMessagePacker packer, Tuple tuple) {
-        try {
-            if (tuple == null) {
-                packer.packNil();
+        if (tuple == null) {
+            packer.packNil();
 
-                return;
-            }
+            return;
+        }
 
-            var schema = ((SchemaAware) tuple).schema();
+        var schema = ((SchemaAware) tuple).schema();
 
+        writeTuple(packer, tuple, schema);
+    }
+
+    /**
+     * Writes a tuple.
+     *
+     * @param packer Packer.
+     * @param tuple Tuple.
+     * @param schema Tuple schema.
+     * @throws IgniteException on failed serialization.
+     */
+    public static void writeTuple(
+            ClientMessagePacker packer,
+            Tuple tuple,
+            SchemaDescriptor schema
+    ) {
+        writeTuple(packer, tuple, schema, false, false);
+    }
+
+    /**
+     * Writes a tuple.
+     *
+     * @param packer Packer.
+     * @param tuple Tuple.
+     * @param schema Tuple schema.
+     * @param skipHeader Whether to skip the tuple header.
+     * @throws IgniteException on failed serialization.
+     */
+    public static void writeTuple(
+            ClientMessagePacker packer,
+            Tuple tuple,
+            SchemaDescriptor schema,
+            boolean skipHeader
+    ) {
+        writeTuple(packer, tuple, schema, skipHeader, false);
+    }
+
+    /**
+     * Writes a tuple.
+     *
+     * @param packer Packer.
+     * @param tuple Tuple.
+     * @param schema Tuple schema.
+     * @param skipHeader Whether to skip the tuple header.
+     * @param keyOnly Whether to write key fields only.
+     * @throws IgniteException on failed serialization.
+     */
+    public static void writeTuple(
+            ClientMessagePacker packer,
+            Tuple tuple,
+            SchemaDescriptor schema,
+            boolean skipHeader,
+            boolean keyOnly
+    ) {
+        if (tuple == null) {
+            packer.packNil();
+
+            return;
+        }
+
+        if (!skipHeader)
             packer.packInt(schema.version());
 
-            for (var col : schema.keyColumns().columns())
-                writeColumnValue(packer, tuple, col);
+        for (var col : schema.keyColumns().columns())
+            writeColumnValue(packer, tuple, col);
 
+        if (!keyOnly) {
             for (var col : schema.valueColumns().columns())
                 writeColumnValue(packer, tuple, col);
         }
-        catch (Throwable t) {
-            throw new IgniteException("Failed to serialize tuple", t);
+    }
+
+    /**
+     * Writes multiple tuples.
+     *
+     * @param packer Packer.
+     * @param tuples Tuples.
+     * @throws IgniteException on failed serialization.
+     */
+    public static void writeTuples(ClientMessagePacker packer, Collection<Tuple> tuples) {
+        writeTuples(packer, tuples, false);
+    }
+
+    /**
+     * Writes multiple tuples.
+     *
+     * @param packer Packer.
+     * @param tuples Tuples.
+     * @param keyOnly Whether to write key fields only.
+     * @throws IgniteException on failed serialization.
+     */
+    public static void writeTuples(ClientMessagePacker packer, Collection<Tuple> tuples, boolean keyOnly) {
+        if (tuples == null || tuples.isEmpty()) {
+            packer.packNil();
+
+            return;
+        }
+
+        SchemaDescriptor schema = null;
+
+        for (Tuple tuple : tuples) {
+            if (schema == null) {
+                schema = ((SchemaAware) tuple).schema();
+
+                packer.packInt(schema.version());
+                packer.packInt(tuples.size());
+            } else
+                assert schema.version() == ((SchemaAware) tuple).schema().version();
+
+            writeTuple(packer, tuple, schema, true, keyOnly);
         }
     }
 
@@ -112,11 +207,61 @@ class ClientTableCommon {
      * @param table Table.
      * @param keyOnly Whether only key fields are expected.
      * @return Tuple.
-     * @throws IOException When deserialization fails.
      */
-    public static Tuple readTuple(ClientMessageUnpacker unpacker, TableImpl table, boolean keyOnly) throws IOException {
+    public static Tuple readTuple(ClientMessageUnpacker unpacker, TableImpl table, boolean keyOnly) {
+        SchemaDescriptor schema = readSchema(unpacker, table);
+
+        return readTuple(unpacker, table, keyOnly, schema);
+    }
+
+    /**
+     * Reads multiple tuples.
+     *
+     * @param unpacker Unpacker.
+     * @param table Table.
+     * @param keyOnly Whether only key fields are expected.
+     * @return Tuples.
+     */
+    public static ArrayList<Tuple> readTuples(ClientMessageUnpacker unpacker, TableImpl table, boolean keyOnly) {
+        SchemaDescriptor schema = readSchema(unpacker, table);
+
+        var rowCnt = unpacker.unpackInt();
+        var res = new ArrayList<Tuple>(rowCnt);
+
+        for (int i = 0; i < rowCnt; i++)
+            res.add(readTuple(unpacker, table, keyOnly, schema));
+
+        return res;
+    }
+
+    /**
+     * Reads schema.
+     *
+     * @param unpacker Unpacker.
+     * @param table Table.
+     * @return Schema descriptor.
+     */
+    @NotNull public static SchemaDescriptor readSchema(ClientMessageUnpacker unpacker, TableImpl table) {
         var schemaId = unpacker.unpackInt();
-        var schema = table.schemaView().schema(schemaId);
+
+        return table.schemaView().schema(schemaId);
+    }
+
+    /**
+     * Reads a tuple.
+     *
+     * @param unpacker Unpacker.
+     * @param table Table.
+     * @param keyOnly Whether only key fields are expected.
+     * @param schema Tuple schema.
+     * @return Tuple.
+     */
+    public static Tuple readTuple(
+            ClientMessageUnpacker unpacker,
+            TableImpl table,
+            boolean keyOnly,
+            SchemaDescriptor schema
+    ) {
         var builder = table.tupleBuilder();
 
         var cnt = keyOnly ? schema.keyColumns().length() : schema.length();
@@ -139,19 +284,36 @@ class ClientTableCommon {
      * @param unpacker Unpacker.
      * @param table Table.
      * @return Tuple.
-     * @throws IOException When deserialization fails.
      */
-    public static Tuple readTupleSchemaless(ClientMessageUnpacker unpacker, TableImpl table) throws IOException {
+    public static Tuple readTupleSchemaless(ClientMessageUnpacker unpacker, TableImpl table) {
         var cnt = unpacker.unpackMapHeader();
         var builder = table.tupleBuilder();
 
         for (int i = 0; i < cnt; i++) {
             var colName = unpacker.unpackString();
 
+            // TODO: Unpack value as object IGNITE-15194.
             builder.set(colName, unpacker.unpackValue());
         }
 
         return builder.build();
+    }
+
+    /**
+     * Reads multiple tuples as a map, without schema.
+     *
+     * @param unpacker Unpacker.
+     * @param table Table.
+     * @return Tuples.
+     */
+    public static ArrayList<Tuple> readTuplesSchemaless(ClientMessageUnpacker unpacker, TableImpl table) {
+        var rowCnt = unpacker.unpackArrayHeader();
+        var res = new ArrayList<Tuple>(rowCnt);
+
+        for (int i = 0; i < rowCnt; i++)
+            res.add(readTupleSchemaless(unpacker, table));
+
+        return res;
     }
 
     /**
@@ -160,16 +322,14 @@ class ClientTableCommon {
      * @param unpacker Unpacker.
      * @param tables Ignite tables.
      * @return Table.
-     * @throws IOException When deserialization fails.
      */
-    public static TableImpl readTable(ClientMessageUnpacker unpacker, IgniteTables tables) throws IOException {
+    public static TableImpl readTable(ClientMessageUnpacker unpacker, IgniteTables tables) {
         var tableId = unpacker.unpackUuid();
 
         return ((IgniteTablesInternal)tables).table(tableId);
     }
 
-    private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, TupleBuilder builder, Column col)
-            throws IOException {
+    private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, TupleBuilder builder, Column col) {
         builder.set(col.name(), unpacker.unpackObject(getClientDataType(col.type().spec())));
     }
 
@@ -212,8 +372,8 @@ class ClientTableCommon {
         throw new IgniteException("Unsupported native type: " + spec);
     }
 
-    private static void writeColumnValue(ClientMessagePacker packer, Tuple tuple, Column col) throws IOException {
-        var val = tuple.value(col.name());
+    private static void writeColumnValue(ClientMessagePacker packer, Tuple tuple, Column col) {
+        var val = tuple.valueOrDefault(col.name(), null);
 
         if (val == null) {
             packer.packNil();

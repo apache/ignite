@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.client.table;
 
-import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.apache.ignite.client.IgniteClientException;
+import org.apache.ignite.client.proto.ClientMessagePacker;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.client.proto.ClientOp;
-import org.apache.ignite.internal.client.PayloadInputChannel;
-import org.apache.ignite.internal.client.PayloadOutputChannel;
 import org.apache.ignite.internal.client.ReliableChannel;
 import org.apache.ignite.internal.tostring.IgniteToStringBuilder;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -119,6 +122,7 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public Table withTransaction(Transaction tx) {
+        // TODO: Transactions IGNITE-15240
         throw new UnsupportedOperationException();
     }
 
@@ -134,33 +138,28 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Tuple> getAsync(@NotNull Tuple keyRec) {
-        return getLatestSchema().thenCompose(schema ->
-                ch.serviceAsync(ClientOp.TUPLE_GET, w -> writeTuple(keyRec, schema, w, true), r -> {
-                    if (r.in().getNextFormat() == MessageFormat.NIL)
-                        return null;
+        Objects.requireNonNull(keyRec);
 
-                    var schemaVer = r.in().unpackInt();
-
-                    return new IgniteBiTuple<>(r, schemaVer);
-                })).thenCompose(biTuple -> {
-            if (biTuple == null)
-                return CompletableFuture.completedFuture(null);
-
-            assert biTuple.getKey() != null;
-            assert biTuple.getValue() != null;
-
-            return getSchema(biTuple.getValue()).thenApply(schema -> readTuple(schema, biTuple.getKey()));
-        });
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_GET,
+                (schema, out) -> writeTuple(keyRec, schema, out, true),
+                this::readTuple);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Tuple> getAll(@NotNull Collection<Tuple> keyRecs) {
-        throw new UnsupportedOperationException();
+        return getAllAsync(keyRecs).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Collection<Tuple>> getAllAsync(@NotNull Collection<Tuple> keyRecs) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(keyRecs);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_GET_ALL,
+                (s, w) -> writeTuples(keyRecs, s, w, true),
+                this::readTuples,
+                Collections.emptyList());
     }
 
     /** {@inheritDoc} */
@@ -170,128 +169,201 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> upsertAsync(@NotNull Tuple rec) {
-        return getLatestSchema().thenCompose(schema -> ch.serviceAsync(ClientOp.TUPLE_UPSERT,
-                w -> writeTuple(rec, schema, w, false), r -> null));
+        Objects.requireNonNull(rec);
+
+        // TODO IGNITE-15194: Convert Tuple to a schema-order Array as a first step.
+        // If it does not match the latest schema, then request latest and convert again.
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_UPSERT,
+                (s, w) -> writeTuple(rec, s, w),
+                r -> null);
     }
 
     /** {@inheritDoc} */
     @Override public void upsertAll(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        upsertAllAsync(recs).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> upsertAllAsync(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(recs);
+
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_UPSERT_ALL,
+                (s, w) -> writeTuples(recs, s, w, false),
+                r -> null);
     }
 
     /** {@inheritDoc} */
     @Override public Tuple getAndUpsert(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        return getAndUpsertAsync(rec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Tuple> getAndUpsertAsync(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(rec);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_GET_AND_UPSERT,
+                (s, w) -> writeTuple(rec, s, w, false),
+                this::readTuple);
     }
 
     /** {@inheritDoc} */
     @Override public boolean insert(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        return insertAsync(rec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> insertAsync(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(rec);
+
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_INSERT,
+                (s, w) -> writeTuple(rec, s, w, false),
+                ClientMessageUnpacker::unpackBoolean);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Tuple> insertAll(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        return insertAllAsync(recs).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Collection<Tuple>> insertAllAsync(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(recs);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_INSERT_ALL,
+                (s, w) -> writeTuples(recs, s, w, false),
+                this::readTuples,
+                Collections.emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        return replaceAsync(rec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(rec);
+
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_REPLACE,
+                (s, w) -> writeTuple(rec, s, w, false),
+                ClientMessageUnpacker::unpackBoolean);
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(@NotNull Tuple oldRec, @NotNull Tuple newRec) {
-        throw new UnsupportedOperationException();
+        return replaceAsync(oldRec, newRec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple oldRec, @NotNull Tuple newRec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(oldRec);
+        Objects.requireNonNull(newRec);
+
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_REPLACE_EXACT,
+                (s, w) -> {
+                    writeTuple(oldRec, s, w, false, false);
+                    writeTuple(newRec, s, w, false, true);
+                },
+                ClientMessageUnpacker::unpackBoolean);
     }
 
     /** {@inheritDoc} */
     @Override public Tuple getAndReplace(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        return getAndReplaceAsync(rec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(rec);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_GET_AND_REPLACE,
+                (s, w) -> writeTuple(rec, s, w, false),
+                this::readTuple);
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(@NotNull Tuple keyRec) {
-        throw new UnsupportedOperationException();
+        return deleteAsync(keyRec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> deleteAsync(@NotNull Tuple keyRec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(keyRec);
+
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_DELETE,
+                (s, w) -> writeTuple(keyRec, s, w, true),
+                ClientMessageUnpacker::unpackBoolean);
     }
 
     /** {@inheritDoc} */
     @Override public boolean deleteExact(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        return deleteExactAsync(rec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> deleteExactAsync(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(rec);
+
+        return doSchemaOutOpAsync(
+                ClientOp.TUPLE_DELETE_EXACT,
+                (s, w) -> writeTuple(rec, s, w, false),
+                ClientMessageUnpacker::unpackBoolean);
     }
 
     /** {@inheritDoc} */
     @Override public Tuple getAndDelete(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        return getAndDeleteAsync(rec).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple rec) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(rec);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_GET_AND_DELETE,
+                (s, w) -> writeTuple(rec, s, w, false),
+                this::readTuple);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        return deleteAllAsync(recs).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(recs);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_DELETE_ALL,
+                (s, w) -> writeTuples(recs, s, w, true),
+                (schema, in) -> readTuples(schema, in, true),
+                Collections.emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Tuple> deleteAllExact(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        return deleteAllExactAsync(recs).join();
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Collection<Tuple>> deleteAllExactAsync(@NotNull Collection<Tuple> recs) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(recs);
+
+        return doSchemaOutInOpAsync(
+                ClientOp.TUPLE_DELETE_ALL_EXACT,
+                (s, w) -> writeTuples(recs, s, w, false),
+                this::readTuples,
+                Collections.emptyList());
     }
 
     /** {@inheritDoc} */
@@ -316,6 +388,7 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public @Nullable Transaction transaction() {
+        // TODO: Transactions IGNITE-15240
         throw new UnsupportedOperationException();
     }
 
@@ -360,7 +433,7 @@ public class ClientTable implements Table {
         });
     }
 
-    private ClientSchema readSchema(ClientMessageUnpacker in) throws IOException {
+    private ClientSchema readSchema(ClientMessageUnpacker in) {
         var schemaVer = in.unpackInt();
         var colCnt = in.unpackArrayHeader();
 
@@ -401,7 +474,31 @@ public class ClientTable implements Table {
         return IgniteToStringBuilder.toString(ClientTable.class, this);
     }
 
-    private void writeTuple(@NotNull Tuple tuple, ClientSchema schema, PayloadOutputChannel w, boolean keyOnly) throws IOException {
+    private void writeTuple(
+            @NotNull Tuple tuple,
+            ClientSchema schema,
+            ClientMessagePacker out
+    ) {
+        writeTuple(tuple, schema, out, false, false);
+    }
+
+    private void writeTuple(
+            @NotNull Tuple tuple,
+            ClientSchema schema,
+            ClientMessagePacker out,
+            boolean keyOnly
+    ) {
+        writeTuple(tuple, schema, out, keyOnly, false);
+    }
+
+    private void writeTuple(
+            @NotNull Tuple tuple,
+            ClientSchema schema,
+            ClientMessagePacker out,
+            boolean keyOnly,
+            boolean skipHeader
+    ) {
+        // TODO: Special case for ClientTupleBuilder - it has columns in order
         var vals = new Object[keyOnly ? schema.keyColumnCount() : schema.columns().length];
         var tupleSize = tuple.columnCount();
 
@@ -415,23 +512,135 @@ public class ClientTable implements Table {
             vals[col.schemaIndex()] = tuple.value(i);
         }
 
-        w.out().packUuid(id);
-        w.out().packInt(schema.version());
-
-        for (var val : vals)
-            w.out().packObject(val);
-    }
-
-    private Tuple readTuple(ClientSchema schema, PayloadInputChannel r) {
-        var builder = new ClientTupleBuilder(schema);
-
-        try {
-            for (var col : schema.columns())
-                builder.setInternal(col.schemaIndex(), r.in().unpackObject(col.type()));
-        } catch (IOException e) {
-            throw new CompletionException(e);
+        if (!skipHeader) {
+            out.packUuid(id);
+            out.packInt(schema.version());
         }
 
+        for (var val : vals)
+            out.packObject(val);
+    }
+
+    private void writeTuples(
+            @NotNull Collection<Tuple> tuples,
+            ClientSchema schema,
+            ClientMessagePacker out,
+            boolean keyOnly
+    ) {
+        out.packUuid(id);
+        out.packInt(schema.version());
+        out.packInt(tuples.size());
+
+        for (var tuple : tuples)
+            writeTuple(tuple, schema, out, keyOnly, true);
+    }
+
+    private Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in) {
+        return readTuple(schema, in, false);
+    }
+
+    private Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
+        var builder = new ClientTupleBuilder(schema);
+
+        var colCnt = keyOnly ? schema.keyColumnCount() : schema.columns().length;
+
+        for (var i = 0; i < colCnt; i++)
+            builder.setInternal(i, in.unpackObject(schema.columns()[i].type()));
+
         return builder;
+    }
+
+    private Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in) {
+        return readTuples(schema, in, false);
+    }
+
+    private Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
+        var cnt = in.unpackInt();
+        var res = new ArrayList<Tuple>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            res.add(readTuple(schema, in, keyOnly));
+
+        return res;
+    }
+
+    private <T> CompletableFuture<T> doSchemaOutInOpAsync(
+            int opCode,
+            BiConsumer<ClientSchema, ClientMessagePacker> writer,
+            BiFunction<ClientSchema, ClientMessageUnpacker, T> reader
+    ) {
+        return doSchemaOutInOpAsync(opCode, writer, reader, null);
+    }
+
+    private <T> CompletableFuture<T> doSchemaOutInOpAsync(
+            int opCode,
+            BiConsumer<ClientSchema, ClientMessagePacker> writer,
+            BiFunction<ClientSchema, ClientMessageUnpacker, T> reader,
+            T defaultValue
+    ) {
+        return getLatestSchema()
+                .thenCompose(schema ->
+                        ch.serviceAsync(opCode,
+                                w -> writer.accept(schema, w.out()),
+                                r -> readSchemaAndReadData(schema, r.in(), reader, defaultValue)))
+                .thenCompose(t -> loadSchemaAndReadData(t, reader));
+    }
+
+    private <T> CompletableFuture<T> doSchemaOutOpAsync(
+            int opCode,
+            BiConsumer<ClientSchema, ClientMessagePacker> writer,
+            Function<ClientMessageUnpacker, T> reader) {
+        return getLatestSchema()
+                .thenCompose(schema ->
+                        ch.serviceAsync(opCode,
+                                w -> writer.accept(schema, w.out()),
+                                r -> reader.apply(r.in())));
+    }
+
+    private <T> Object readSchemaAndReadData(
+            ClientSchema knownSchema,
+            ClientMessageUnpacker in,
+            BiFunction<ClientSchema, ClientMessageUnpacker, T> fn,
+            T defaultValue
+    ) {
+        if (in.getNextFormat() == MessageFormat.NIL)
+            return defaultValue;
+
+        var schemaVer = in.unpackInt();
+
+        var resSchema = schemaVer == knownSchema.version() ? knownSchema : schemas.get(schemaVer);
+
+        if (resSchema != null)
+            return fn.apply(knownSchema, in);
+
+        // Schema is not yet known - request.
+        // Retain unpacker - normally it is closed when this method exits.
+        return new IgniteBiTuple<>(in.retain(), schemaVer);
+    }
+
+    private <T> CompletionStage<T> loadSchemaAndReadData(
+            Object data,
+            BiFunction<ClientSchema, ClientMessageUnpacker, T> fn
+    ) {
+        if (!(data instanceof IgniteBiTuple))
+            return CompletableFuture.completedFuture((T) data);
+
+        var biTuple = (IgniteBiTuple<ClientMessageUnpacker, Integer>) data;
+
+        var in = biTuple.getKey();
+        var schemaId = biTuple.getValue();
+
+        assert in != null;
+        assert schemaId != null;
+
+        var resFut = getSchema(schemaId).thenApply(schema -> fn.apply(schema, in));
+
+        // Close unpacker.
+        resFut.handle((tuple, err) -> {
+            in.close();
+            return null;
+        });
+
+        return resFut;
     }
 }

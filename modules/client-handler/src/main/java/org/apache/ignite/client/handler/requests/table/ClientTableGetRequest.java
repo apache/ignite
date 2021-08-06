@@ -17,9 +17,7 @@
 
 package org.apache.ignite.client.handler.requests.table;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.proto.ClientMessagePacker;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.table.TableImpl;
@@ -36,24 +34,19 @@ public class ClientTableGetRequest {
      * @param out Packer.
      * @param tables Ignite tables.
      * @return Future.
-     * @throws IOException On serialization error.
      */
     public static CompletableFuture<Void> process(
             ClientMessageUnpacker in,
             ClientMessagePacker out,
             IgniteTables tables
-    ) throws IOException {
+    ) {
         String tableName = in.unpackString();
 
         return tables.tableAsync(tableName).thenAccept(table -> {
-            try {
-                if (table == null)
-                    out.packNil();
-                else
-                    out.packUuid(((TableImpl) table).tableId());
-            } catch (IOException e) {
-                throw new CompletionException(e);
-            }
+            if (table == null)
+                out.packNil();
+            else
+                out.packUuid(((TableImpl) table).tableId());
         });
     }
 }

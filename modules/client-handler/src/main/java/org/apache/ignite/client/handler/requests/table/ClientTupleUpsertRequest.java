@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client.handler.requests.table;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -35,9 +34,8 @@ public class ClientTupleUpsertRequest {
      * @param in Unpacker.
      * @param tables Ignite tables.
      * @return Future.
-     * @throws IOException On serialization error.
      */
-    public static CompletableFuture<Void> process(ClientMessageUnpacker in, IgniteTables tables) throws IOException {
+    public static CompletableFuture<Void> process(ClientMessageUnpacker in, IgniteTables tables) {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, false);
 
