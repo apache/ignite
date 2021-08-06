@@ -236,6 +236,33 @@ namespace ignite
                 }
 
             private:
+                struct FutureType
+                {
+                    enum Type
+                    {
+                        BYTE = 1,
+                        BOOL = 2,
+                        SHORT = 3,
+                        CHAR = 4,
+                        INT = 5,
+                        FLOAT = 6,
+                        LONG = 7,
+                        DOUBLE = 8,
+                        OBJECT = 9,
+                    };
+                };
+
+                template<typename T> struct FutureTypeForType { static const int32_t value = FutureType::OBJECT; };
+
+                template<> struct FutureTypeForType<int8_t> { static const int32_t value = FutureType::BYTE; };
+                template<> struct FutureTypeForType<bool> { static const int32_t value = FutureType::BOOL; };
+                template<> struct FutureTypeForType<int16_t> { static const int32_t value = FutureType::SHORT; };
+                template<> struct FutureTypeForType<uint16_t> { static const int32_t value = FutureType::CHAR; };
+                template<> struct FutureTypeForType<int32_t> { static const int32_t value = FutureType::INT; };
+                template<> struct FutureTypeForType<int64_t> { static const int32_t value = FutureType::LONG; };
+                template<> struct FutureTypeForType<float> { static const int32_t value = FutureType::FLOAT; };
+                template<> struct FutureTypeForType<double> { static const int32_t value = FutureType::DOUBLE; };
+
                 template<typename R, typename A>
                 Future<R> PerformJavaTaskAsync(Operation::Type operation, const std::string& taskName, const A* arg)
                 {
@@ -254,10 +281,11 @@ namespace ignite
                         writer.WriteObject<A>(*arg);
                     else
                         writer.WriteNull();
+                    // TODO: Node IDs go here
                     writer.WriteBool(false);
 
                     writer.WriteInt64(taskHandle);
-                    writer.WriteInt32(5);
+                    writer.WriteInt32(FutureTypeForType<R>::value);
 
                     out.Synchronize();
 

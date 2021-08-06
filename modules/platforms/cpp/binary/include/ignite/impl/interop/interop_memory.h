@@ -48,7 +48,19 @@ namespace ignite
 
             /** Flag: acquired. */
             const int IGNITE_MEM_FLAG_ACQUIRED = 0x4;
-                
+
+            union BinaryFloatInt32
+            {
+                float f;
+                int32_t i;
+            };
+
+            union BinaryDoubleInt64
+            {
+                double d;
+                int64_t i;
+            };
+
             /**
              * Interop memory.
              */

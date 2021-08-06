@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 
+#include <ignite/ignite_error.h>
 #include <ignite/impl/compute/compute_job_holder.h>
 
 namespace ignite
@@ -85,6 +86,13 @@ namespace ignite
                 /**
                  * Process successful result.
                  *
+                 * @param value Value.
+                 */
+                virtual void JobResultSuccess(int64_t value) = 0;
+
+                /**
+                 * Process successful result.
+                 *
                  * @param reader Reader for stream with result.
                  */
                 virtual void JobResultSuccess(binary::BinaryReaderImpl& reader) = 0;
@@ -113,6 +121,65 @@ namespace ignite
                 /** Related job handle. */
                 int64_t handle;
             };
+
+
+            /**
+             * Read future result.
+             * @tparam T Type of the result.
+             * @param value Value.
+             * @return Result.
+             */
+            template<typename T> T PrimitiveFutureResult(int64_t value)
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
+                     "Primitive value passed to non-primitive future", "value", value);
+            }
+
+            template<> inline int8_t PrimitiveFutureResult<int8_t>(int64_t value)
+            {
+                return static_cast<int8_t>(value);
+            }
+
+            template<> inline int16_t PrimitiveFutureResult<int16_t>(int64_t value)
+            {
+                return static_cast<int16_t>(value);
+            }
+
+            template<> inline int32_t PrimitiveFutureResult<int32_t>(int64_t value)
+            {
+                return static_cast<int32_t>(value);
+            }
+
+            template<> inline int64_t PrimitiveFutureResult<int64_t>(int64_t value)
+            {
+                return static_cast<int64_t>(value);
+            }
+
+            template<> inline bool PrimitiveFutureResult<bool>(int64_t value)
+            {
+                return value != 0;
+            }
+
+            template<> inline uint16_t PrimitiveFutureResult<uint16_t>(int64_t value)
+            {
+                return static_cast<uint16_t>(value);
+            }
+
+            template<> inline float PrimitiveFutureResult<float>(int64_t value)
+            {
+                impl::interop::BinaryFloatInt32 u;
+
+                u.i = static_cast<int32_t>(value);
+                return u.f;
+            }
+
+            template<> inline double PrimitiveFutureResult<double>(int64_t value)
+            {
+                impl::interop::BinaryDoubleInt64 u;
+
+                u.i = value;
+                return u.d;
+            }
         }
     }
 }

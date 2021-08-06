@@ -141,9 +141,17 @@ namespace ignite
              * Callback on future result received.
              *
              * @param handle Task handle.
+             * @param value Value.
+             */
+            int64_t OnFuturePrimitiveResult(int64_t handle, int64_t value);
+
+            /**
+             * Callback on future result received.
+             *
+             * @param handle Task handle.
              * @param mem Memory with data.
              */
-            int64_t OnFutureResult(int64_t handle, common::concurrent::SharedPointer<interop::InteropMemory> &mem);
+            int64_t OnFutureObjectResult(int64_t handle, common::concurrent::SharedPointer<interop::InteropMemory> &mem);
 
             /**
              * Callback on future null result received.

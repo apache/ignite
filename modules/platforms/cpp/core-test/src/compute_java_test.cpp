@@ -39,6 +39,33 @@ namespace
 
     /** Echo type: null. */
     const int32_t ECHO_TYPE_NULL = 0;
+
+    /** Echo type: byte. */
+    const int32_t ECHO_TYPE_BYTE = 1;
+
+    /** Echo type: bool. */
+    const int32_t ECHO_TYPE_BOOL = 2;
+
+    /** Echo type: short. */
+    const int32_t ECHO_TYPE_SHORT = 3;
+
+    /** Echo type: char. */
+    const int32_t ECHO_TYPE_CHAR = 4;
+
+    /** Echo type: int. */
+    const int32_t ECHO_TYPE_INT = 5;
+
+    /** Echo type: long. */
+    const int32_t ECHO_TYPE_LONG = 6;
+
+    /** Echo type: float. */
+    const int32_t ECHO_TYPE_FLOAT = 7;
+
+    /** Echo type: double. */
+    const int32_t ECHO_TYPE_DOUBLE = 8;
+
+    /** Echo type: object. */
+    const int32_t ECHO_TYPE_OBJECT = 12;
 }
 
 /*
@@ -76,34 +103,60 @@ struct ComputeJavaTestSuiteFixture
     }
 };
 
-//namespace ignite
-//{
-//    namespace binary
-//    {
-//        template<>
-//        struct BinaryType<Func1> : BinaryTypeDefaultAll<Func1>
-//        {
-//            static void GetTypeName(std::string& dst)
-//            {
-//                dst = "Func1";
-//            }
-//
-//            static void Write(BinaryWriter& writer, const Func1& obj)
-//            {
-//                writer.WriteInt32("a", obj.a);
-//                writer.WriteInt32("b", obj.b);
-//                writer.WriteObject<IgniteError>("err", obj.err);
-//            }
-//
-//            static void Read(BinaryReader& reader, Func1& dst)
-//            {
-//                dst.a = reader.ReadInt32("a");
-//                dst.b = reader.ReadInt32("b");
-//                dst.err = reader.ReadObject<IgniteError>("err");
-//            }
-//        };
-//    }
-//}
+/**
+ * Binarizable object for task tests.
+ */
+class PlatformComputeBinarizable
+{
+public:
+    /**
+     * Constructor.
+     */
+    PlatformComputeBinarizable()
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor,
+     *
+     * @param field Field.
+     */
+    PlatformComputeBinarizable(int32_t field) :
+        field(field)
+    {
+        // No-op.
+    }
+
+    /** Field. */
+    int32_t field;
+};
+
+
+namespace ignite
+{
+    namespace binary
+    {
+        template<>
+        struct BinaryType<PlatformComputeBinarizable> : BinaryTypeDefaultAll<PlatformComputeBinarizable>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "PlatformComputeBinarizable";
+            }
+
+            static void Write(BinaryWriter& writer, const PlatformComputeBinarizable& obj)
+            {
+                writer.WriteInt32("field", obj.field);
+            }
+
+            static void Read(BinaryReader& reader, PlatformComputeBinarizable& dst)
+            {
+                dst.field = reader.ReadInt32("field");
+            }
+        };
+    }
+}
 
 BOOST_FIXTURE_TEST_SUITE(ComputeJavaTestSuite, ComputeJavaTestSuiteFixture)
 
@@ -114,6 +167,38 @@ BOOST_AUTO_TEST_CASE(EchoTaskNull)
     int* res = compute.ExecuteJavaTask<int*>(ECHO_TASK, ECHO_TYPE_NULL);
 
     BOOST_CHECK(res == 0);
+}
+
+BOOST_AUTO_TEST_CASE(EchoTaskPrimitives)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTask<int8_t>(ECHO_TASK, ECHO_TYPE_BYTE));
+    BOOST_CHECK_EQUAL(true, compute.ExecuteJavaTask<bool>(ECHO_TASK, ECHO_TYPE_BOOL));
+    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTask<int16_t>(ECHO_TASK, ECHO_TYPE_SHORT));
+    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTask<uint16_t>(ECHO_TASK, ECHO_TYPE_CHAR));
+    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTask<int32_t>(ECHO_TASK, ECHO_TYPE_INT));
+    BOOST_CHECK_EQUAL(1LL, compute.ExecuteJavaTask<int64_t>(ECHO_TASK, ECHO_TYPE_LONG));
+    BOOST_CHECK_EQUAL(1.0f, compute.ExecuteJavaTask<float>(ECHO_TASK, ECHO_TYPE_FLOAT));
+    BOOST_CHECK_EQUAL(1.0, compute.ExecuteJavaTask<double>(ECHO_TASK, ECHO_TYPE_DOUBLE));
+}
+
+BOOST_AUTO_TEST_CASE(EchoTaskObject)
+{
+    Compute compute = node.GetCompute();
+
+    Cache<int32_t, int32_t> cache = node.GetOrCreateCache<int32_t, int32_t>("default");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        int32_t val = i * 42;
+        cache.Put(ECHO_TYPE_OBJECT, val);
+
+        PlatformComputeBinarizable res =
+            compute.ExecuteJavaTask<PlatformComputeBinarizable>(ECHO_TASK, ECHO_TYPE_OBJECT);
+
+        BOOST_CHECK_EQUAL(val, res.field);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

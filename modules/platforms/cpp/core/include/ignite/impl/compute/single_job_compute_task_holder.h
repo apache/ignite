@@ -107,6 +107,16 @@ namespace ignite
                 /**
                  * Process successful result.
                  *
+                 * @param value Value.
+                 */
+                virtual void JobResultSuccess(int64_t value)
+                {
+                    res.SetResult(PrimitiveFutureResult<ResultType>(value));
+                }
+
+                /**
+                 * Process successful result.
+                 *
                  * @param reader Reader for stream with result.
                  */
                 virtual void JobResultSuccess(binary::BinaryReaderImpl& reader)
@@ -214,6 +224,16 @@ namespace ignite
                 virtual void JobResultError(const IgniteError& err)
                 {
                     res.SetError(err);
+                }
+
+                /**
+                 * Process successful result.
+                 *
+                 * @param value Value.
+                 */
+                virtual void JobResultSuccess(int64_t)
+                {
+                    res.SetResult();
                 }
 
                 /**
