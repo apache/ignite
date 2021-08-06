@@ -70,8 +70,6 @@ class RebalancePersistentTest(IgniteTest):
 
         await_and_check_rebalance(new_node)
 
-        control_utility.deactivate()
-
         nodes = ignites.nodes.copy()
 
         nodes.append(new_node.nodes[0])
@@ -117,8 +115,6 @@ class RebalancePersistentTest(IgniteTest):
         control_utility.remove_from_baseline([node])
 
         await_and_check_rebalance(ignites)
-
-        control_utility.deactivate()
 
         self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
@@ -185,8 +181,6 @@ class RebalancePersistentTest(IgniteTest):
         rebalance_nodes = [node]
 
         await_and_check_rebalance(ignites, rebalance_nodes, False)
-
-        control_utility.deactivate()
 
         self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
