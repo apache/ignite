@@ -113,6 +113,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -1247,7 +1248,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.getSubjectId(),
                             req.executorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
@@ -1498,11 +1498,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
                         "thread pool): " + jobWorker.executorName());
 
-                    ctx.getExecutorService().execute(jobWorker);
+                    ctx.pools().getExecutorService().execute(jobWorker);
                 }
             }
             else
-                ctx.getExecutorService().execute(jobWorker);
+                ctx.pools().getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();
@@ -1559,7 +1559,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
-                evt.taskSubjectId(req.getSubjectId());
+                evt.taskSubjectId(securitySubjectId(ctx));
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1637,7 +1637,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
-                evt.taskSubjectId(req.getSubjectId());
+                evt.taskSubjectId(securitySubjectId(ctx));
 
                 // Record job reply failure.
                 ctx.event().record(evt);

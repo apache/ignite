@@ -96,6 +96,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
@@ -646,14 +648,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             long min = memCfg.getMinWalArchiveSize();
 
-            if (min != HALF_MAX_WAL_ARCHIVE_SIZE && min > max) {
-                throw new IgniteCheckedException(String.format(
-                    "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
-                        "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
-                        "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
-                        "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
-                        "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
-                    HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+            double percentage = getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, -1);
+
+            if (min != HALF_MAX_WAL_ARCHIVE_SIZE) {
+                if (min > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
+                            "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
+                            "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
+                            "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
+                            "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
+                        HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+                }
+            }
+            else if (percentage != -1) {
+                log.warning(String.format(
+                    "%s is deprecated, use DataRegionConfiguration.minWalArchiveSize instead",
+                    IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                ));
+
+                if ((long)(max * percentage) > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "%s must be less than or equal to 1.0",
+                        IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                    ));
+                }
             }
         }
     }

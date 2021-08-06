@@ -69,6 +69,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -153,6 +156,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
         assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
         assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
 
     /** @throws Exception If failed. */
@@ -253,6 +258,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
         ensureCacheAbsent(dfltCacheCfg);
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }
 
     /**
@@ -330,6 +337,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(
             log, () -> fut.get(TIMEOUT), IgniteException.class, "The cluster should be active");
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }
 
     /** @throws Exception If failed. */
@@ -347,6 +356,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteIllegalStateException.class, null);
 
         ensureCacheAbsent(dfltCacheCfg);
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }
 
     /** @throws Exception If failed. */
@@ -368,6 +379,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         awaitPartitionMapExchange();
 
+        locEvts.clear();
+
         IgniteSnapshot snp = ignite.snapshot();
 
         GridTestUtils.assertThrowsAnyCause(
@@ -377,6 +390,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             "Cache group(s) was not found in the snapshot"
         );
 
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
+        assertEquals(2, locEvts.size());
+
+        locEvts.clear();
+
         ignite.cache(CACHE2).destroy();
 
         awaitPartitionMapExchange();
@@ -385,6 +403,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
         assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
+        assertEquals(2, locEvts.size());
     }
 
     /** @throws Exception If failed. */
@@ -537,6 +558,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         ensureCacheAbsent(dfltCacheCfg);
 
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
+
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> startGrid(3),
@@ -601,6 +624,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         files = node2dbDir.listFiles(file -> file.getName().startsWith(TMP_CACHE_DIR_PREFIX));
         assertEquals("A temp directory should be removed at node startup", 0, files.length);
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }
 
     /** @throws Exception If failed. */
@@ -683,6 +708,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(nodesCnt - 1));
 
+        locEvts.clear();
+
         IgniteFuture<Void> fut = waitForBlockOnRestore(spi, procType, DEFAULT_CACHE_NAME);
 
         ignite.cluster().state(state);
@@ -696,10 +723,16 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
             assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
 
+            waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
+
             return;
         }
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), exCls, expMsg);
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
+
+        assertEquals(2, locEvts.size());
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
