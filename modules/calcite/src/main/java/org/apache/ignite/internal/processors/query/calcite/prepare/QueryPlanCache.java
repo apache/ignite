@@ -32,6 +32,12 @@ public interface QueryPlanCache extends Service {
     QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
 
     /**
+     * @param key Cache key.
+     * @return Query plan.
+     */
+    QueryPlan queryPlan(CacheKey key);
+
+    /**
      * Clear cache.
      */
     void clear();

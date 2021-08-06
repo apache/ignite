@@ -78,6 +78,13 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
+    @Override public QueryPlan queryPlan(CacheKey key) {
+        Map<CacheKey, QueryPlan> cache = this.cache;
+        QueryPlan plan = cache.get(key);
+        return plan != null ? plan.copy() : null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() {
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
     }

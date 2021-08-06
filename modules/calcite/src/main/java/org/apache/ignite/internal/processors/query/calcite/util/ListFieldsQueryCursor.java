@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -58,19 +56,6 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
         isQry = plan.type() == QueryPlan.Type.QUERY;
 
         this.it = new ConvertingClosableIterator<>(it, ectx);
-    }
-
-    /**
-     * Construct cursor from fetched data from another cursor.
-     *
-     * @param data Underlying data.
-     * @param fieldsMeta Fields meta.
-     * @param isQry isQry flag.
-     */
-    public ListFieldsQueryCursor(Collection<List<?>> data, List<GridQueryFieldMetadata> fieldsMeta, boolean isQry) {
-        this.fieldsMeta = ImmutableList.copyOf(fieldsMeta);
-        this.isQry = isQry;
-        it = data.iterator();
     }
 
     /** {@inheritDoc} */

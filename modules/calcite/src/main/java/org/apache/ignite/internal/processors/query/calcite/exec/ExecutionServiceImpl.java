@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -382,16 +384,19 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String qry,
         Object[] params
     ) {
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(getDefaultSchema(schema).getName(), qry));
+        if (plan != null) {
+            PlanningContext pctx = createContext(ctx, schema, qry, params);
+
+            return Collections.singletonList(executePlan(UUID.randomUUID(), pctx, plan));
+        }
+
         SqlNodeList qryList = Commons.parse(qry, FRAMEWORK_CONFIG.getParserConfig());
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
 
         for (final SqlNode qry0: qryList) {
-            PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(),
-                schema, qry0.toString(), params);
+            PlanningContext pctx = createContext(ctx, schema, qry0.toString(), params);
 
-            UUID qryId = UUID.randomUUID();
-
-            QueryPlan plan;
             if (qryList.size() == 1) {
                 plan = queryPlanCache().queryPlan(
                     pctx, new CacheKey(pctx.schemaName(), pctx.query()),
@@ -400,7 +405,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             else
                 plan = prepareSingle(qry0, pctx);
 
-            cursors.add(executePlan(qryId, pctx, plan));
+            cursors.add(executePlan(UUID.randomUUID(), pctx, plan));
         }
 
         return cursors;
@@ -463,6 +468,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
+    private PlanningContext createContext(QueryContext ctx, @Nullable String schema, String qry, Object[] params) {
+        return createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params);
+    }
+
+    /** */
     private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
         @Nullable String schema, String qry, Object[] params) {
         RelTraitDef<?>[] traitDefs = {
@@ -478,9 +488,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .originatingNodeId(originator)
             .parentContext(parent)
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema != null
-                    ? schemaHolder().schema().getSubSchema(schema)
-                    : schemaHolder().schema())
+                .defaultSchema(getDefaultSchema(schema))
                 .traitDefs(traitDefs)
                 .build())
             .query(qry)
@@ -488,6 +496,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .topologyVersion(topVer)
             .logger(log)
             .build();
+    }
+
+    private SchemaPlus getDefaultSchema(String schema) {
+        return schema != null ? schemaHolder().schema().getSubSchema(schema) : schemaHolder().schema();
     }
 
     /** */
@@ -615,7 +627,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         switch (plan.type()) {
             case DML:
                 ListFieldsQueryCursor<?> cur = executeQuery(qryId, (MultiStepPlan)plan, pctx);
-                return new ListFieldsQueryCursor<>(cur.getAll(), cur.fieldsMeta(), cur.isQuery());
+                cur.iterator().hasNext();
+                return cur;
             case QUERY:
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
             case EXPLAIN:
