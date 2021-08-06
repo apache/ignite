@@ -69,6 +69,7 @@ import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -96,6 +97,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
@@ -105,6 +107,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -639,7 +642,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    abstract static class TestTable implements IgniteTable {
+    protected static class TestTable implements IgniteTable {
         /** */
         private final String name;
 
@@ -653,10 +656,16 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final RewindabilityTrait rewindable;
 
         /** */
-        private final double rowCnt;
+        private IgniteStatisticsImpl statistics;
 
         /** */
         private final TableDescriptor desc;
+
+        /** */
+        private ColocationGroup colocationGroup;
+
+        /** */
+        private IgniteDistribution distribution;
 
         /** */
         TestTable(RelDataType type) {
@@ -677,10 +686,46 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         TestTable(String name, RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
             protoType = RelDataTypeImpl.proto(type);
             this.rewindable = rewindable;
-            this.rowCnt = rowCnt;
+            this.statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
             this.name = name;
 
             desc = new TestTableDescriptor(this::distribution, type);
+        }
+
+        /**
+         * Set table statistics;
+         *
+         * @param statistics Statistics to set.
+         * @return TestTable for chaining.
+         */
+        public TestTable setStatistics(IgniteStatisticsImpl statistics) {
+            this.statistics = statistics;
+
+            return this;
+        }
+
+        /**
+         * Set tables colocation group.
+         *
+         * @param colocationGroup Colocation group to set.
+         * @return TestTable for chaining.
+         */
+        public TestTable setColocationGroup(ColocationGroup colocationGroup) {
+            this.colocationGroup = colocationGroup;
+
+            return this;
+        }
+
+        /**
+         * Set table distribution.
+         *
+         * @param distribution Table distribution to set.
+         * @return TestTable for chaining.
+         */
+        public TestTable setDistribution(IgniteDistribution distribution) {
+            this.distribution = distribution;
+
+            return this;
         }
 
         /** {@inheritDoc} */
@@ -718,37 +763,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Statistic getStatistic() {
-            return new Statistic() {
-                /** {@inheritDoc */
-                @Override public Double getRowCount() {
-                    return rowCnt;
-                }
-
-                /** {@inheritDoc */
-                @Override public boolean isKey(ImmutableBitSet cols) {
-                    return false;
-                }
-
-                /** {@inheritDoc */
-                @Override public List<ImmutableBitSet> getKeys() {
-                    throw new AssertionError();
-                }
-
-                /** {@inheritDoc */
-                @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-                    throw new AssertionError();
-                }
-
-                /** {@inheritDoc */
-                @Override public List<RelCollation> getCollations() {
-                    return Collections.emptyList();
-                }
-
-                /** {@inheritDoc */
-                @Override public RelDistribution getDistribution() {
-                    throw new AssertionError();
-                }
-            };
+            return statistics;
         }
 
         /** {@inheritDoc} */
@@ -783,11 +798,17 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            if (colocationGroup != null)
+                return colocationGroup;
+
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public IgniteDistribution distribution() {
+            if (distribution != null)
+                return distribution;
+
             throw new AssertionError();
         }
 
@@ -826,6 +847,22 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** */
         public String name() {
             return name;
+        }
+    }
+
+    public static class TestIndex extends IgniteIndex {
+
+        /**
+         *
+         *
+         * @param collation
+         * @param name
+         * @param idx
+         * @param tbl
+         */
+        public TestIndex(RelCollation collation, String name, Index idx,
+            IgniteTable tbl) {
+            super(collation, name, idx, tbl);
         }
     }
 

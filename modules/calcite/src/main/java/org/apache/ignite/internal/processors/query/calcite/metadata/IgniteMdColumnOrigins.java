@@ -67,7 +67,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         return BuiltInMetadata.ColumnOrigin.DEF;
     }
 
-    /** {@inheritDoc} */
+    /** */
     public @Nullable Set<RelColumnOrigin> getColumnOrigins(Aggregate rel, RelMetadataQuery mq, int iOutputColumn) {
         if (iOutputColumn < rel.getGroupCount()) {
             // get actual index of Group columns.

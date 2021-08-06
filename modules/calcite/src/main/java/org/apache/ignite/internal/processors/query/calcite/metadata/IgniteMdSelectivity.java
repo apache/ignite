@@ -74,6 +74,21 @@ import org.h2.value.Value;
 
 /** */
 public class IgniteMdSelectivity extends RelMdSelectivity {
+    /** Default selectivity for is null conditions. */
+    private static final double IS_NULL_SELECTIVITY = 0.1;
+
+    /** Default selectivity for is not null confitions. */
+    private static final double NOT_NULL_SELECTIVITY = 0.9;
+
+    /** Default selectivity for equals conditions. */
+    private static final double EQUALS_SELECTIVITY = 0.15;
+
+    /** Default selectivity for comparison conitions. */
+    private static final double COMPARISON_SELECTIVITY = 0.5;
+
+    /** Default selectivity for other conditions. */
+    private static final double OTHER_SELECTIVITY = 0.25;
+
     /**
      * Math context to use in estimations calculations.
      */
@@ -149,6 +164,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 
+    /** */
     public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
         RelNode best = rel.getBest();
         if (best == null)
@@ -157,10 +173,12 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return getSelectivity(best, mq, predicate);
     }
 
+    /** */
     public Double getSelectivity(IgniteIndexScan rel, RelMetadataQuery mq, RexNode predicate) {
         return getTablePredicateBasedSelectivity(rel, rel.getTable().unwrap(IgniteTable.class), mq, predicate);
     }
 
+    /** */
     public Double getSelectivity(IgniteTableScan rel, RelMetadataQuery mq, RexNode predicate) {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
 
@@ -175,6 +193,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      */
     private BigDecimal toComparableValue(RexLiteral val) {
         RelDataType type = val.getType();
+
         if (type instanceof BasicSqlType) {
             BasicSqlType bType = (BasicSqlType)type;
 
@@ -197,6 +216,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 case BOOLEAN:
                     return (val.getValueAs(Boolean.class)) ? BigDecimal.ONE : BigDecimal.ZERO;
 
+                default:
+                    return null;
             }
         }
 
@@ -286,47 +307,115 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         double sel = 1.0;
 
-        Map<ColumnStatistics, Boolean> addNotNull = new HashMap<>();
+        Map<RexSlot, Boolean> addNotNull = new HashMap<>();
 
         for (RexNode pred : RelOptUtil.conjunctions(predicate)) {
-            ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
+            SqlKind predKind = pred.getKind();
+            RexLocalRef op = getOperand(pred, RexLocalRef.class);
 
-            if (pred.getKind() == SqlKind.IS_NULL)
+            if (predKind == SqlKind.OR) {
+                double orSelTotal = 0;
+
+                for (RexNode orPred : RelOptUtil.disjunctions(pred)) {
+                    orSelTotal += getTablePredicateBasedSelectivity(rel, tbl, mq, orPred);
+
+                    if (orSelTotal > 1)
+                        return 1;
+                }
+                sel *= orSelTotal;
+            }
+            else if (predKind == SqlKind.NOT) {
+                if (op == null)
+                    sel *= guessSelectivity(pred);
+                else {
+                    tryAddNotNull(addNotNull, tbl, op);
+
+                    sel *= 1 - getTablePredicateBasedSelectivity(rel, tbl, mq, op);
+                }
+            }
+            else if (predKind == SqlKind.LOCAL_REF) {
+                if (op != null)
+                    addNotNull.put(op, Boolean.TRUE);
+
+                sel *= estimateRefSelectivity(rel, mq, tbl, (RexLocalRef)pred);
+            } else if (predKind == SqlKind.IS_NULL) {
+                if (op != null)
+                    addNotNull.put(op, Boolean.FALSE);
+
                 sel *= estimateIsNullSelectivity(rel, mq, tbl, pred);
-            else if (pred.getKind() == SqlKind.IS_NOT_NULL) {
-                if (colStat != null)
-                    addNotNull.put(colStat, Boolean.FALSE);
+
+            } else if (predKind == SqlKind.IS_NOT_NULL) {
+                if (op != null)
+                    addNotNull.put(op, Boolean.FALSE);
 
                 sel *= estimateIsNotNullSelectivity(rel, mq, tbl, pred);
-            }
-            else if (pred.isA(SqlKind.EQUALS)) {
-                if (colStat != null) {
-                    Boolean colNotNull = addNotNull.get(colStat);
-
-                    addNotNull.put(colStat, (colNotNull == null) || colNotNull);
-                }
+            } else if (predKind == SqlKind.EQUALS) {
+                if (op != null)
+                    addNotNull.put(op, Boolean.TRUE);
 
                 sel *= estimateEqualsSelectivity(rel, mq, tbl, pred);
-            }
-            else if (pred.isA(SqlKind.COMPARISON)) {
-                if (colStat != null) {
-                    Boolean colNotNull = addNotNull.get(colStat);
-
-                    addNotNull.put(colStat, (colNotNull == null) || colNotNull);
-                }
+            } else if (predKind.belongsTo(SqlKind.COMPARISON)) {
+                if (op != null)
+                    addNotNull.put(op, Boolean.TRUE);
 
                 sel *= estimateComparisonSelectivity(rel, mq, tbl, pred);
-            }
-            else
+            } else
                 sel *= .25;
         }
 
         // Estimate not null selectivity in addition to comparison.
-        for (Map.Entry<ColumnStatistics, Boolean> colAddNotNull : addNotNull.entrySet())
-            if (colAddNotNull.getValue())
-                sel *= estimateNotNullSelectivity(colAddNotNull.getKey());
+        for (Map.Entry<RexSlot, Boolean> colAddNotNull : addNotNull.entrySet()) {
+            if (colAddNotNull.getValue()) {
+                ColumnStatistics colStat = getColStatBySlot(rel, mq, tbl, colAddNotNull.getKey());
+
+                sel *= (colStat == null) ? NOT_NULL_SELECTIVITY : estimateNotNullSelectivity(colStat);
+            }
+        }
 
         return sel;
+    }
+
+    /**
+     * Try to add operand "not null" flag if there are no false flag for it.
+     *
+     * @param addNotNull Map with "add not null" flags for operands.
+     * @param tbl IgniteTable.
+     * @param op RexSlot to add operand by.
+     */
+    private void tryAddNotNull(Map<RexSlot, Boolean> addNotNull, IgniteTable tbl, RexSlot op) {
+        Boolean colNotNull = addNotNull.get(op);
+
+        addNotNull.put(op, (colNotNull == null) || colNotNull);
+    }
+
+    /**
+     * Estimate local ref selectivity (means is true confition).
+     *
+     * @param rel RelNode.
+     * @param mq RelMetadataQuery.
+     * @param tbl IgniteTable.
+     * @param ref RexLocalRef.
+     * @return Selectivity estimation.
+     */
+    private double estimateRefSelectivity(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexLocalRef ref) {
+        ColumnStatistics colStat = getColStatBySlot(rel, mq, tbl, ref);
+        double res = 0.33;
+        if (colStat == null)
+            // true, false and null with equivalent probability
+            return res;
+
+        if (colStat.max() == null || colStat.max().getType() != Value.BOOLEAN)
+            return res;
+
+        Boolean min = colStat.min().getBoolean();
+        Boolean max = colStat.max().getBoolean();
+
+        if (!max)
+            return 0;
+
+        double notNullSel = estimateNotNullSelectivity(colStat);
+
+        return (max && min) ? notNullSel : notNullSel / 2;
     }
 
     /**
@@ -345,24 +434,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return guessSelectivity(pred);
 
         return estimateNullSelectivity(colStat);
-    }
-
-    /**
-     * Compute selectivity for "is not null" condition.
-     *
-     * @param rel RelNode.
-     * @param mq  RelMetadataQuery.
-     * @param tbl IgniteTable.
-     * @param pred RexNode.
-     * @return Selectivity estimation.
-     */
-    private double estimateIsNotNullSelectivity(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
-        ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
-
-        if (colStat == null)
-            return guessSelectivity(pred);
-
-        return estimateNotNullSelectivity(colStat);
     }
 
     /**
@@ -399,6 +470,24 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     }
 
     /**
+     * Compute selectivity for "is not null" condition.
+     *
+     * @param rel RelNode.
+     * @param mq  RelMetadataQuery.
+     * @param tbl IgniteTable.
+     * @param pred RexNode.
+     * @return Selectivity estimation.
+     */
+    private double estimateIsNotNullSelectivity(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
+        ColumnStatistics colStat = getColStat(rel, mq, tbl, pred);
+
+        if (colStat == null)
+            return guessSelectivity(pred);
+
+        return estimateNotNullSelectivity(colStat);
+    }
+
+    /**
      * Estimate selectivity for comparison predicate.
      *
      * @param rel RelNode.
@@ -426,17 +515,31 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @return ColumnStatistics or {@code null}.
      */
     private ColumnStatistics getColStat(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexNode pred) {
-        Statistic stat = tbl.getStatistic();
+        SqlKind predKind = pred.getKind();
 
-        if (stat == null)
+        if (predKind != SqlKind.IS_NULL && predKind != SqlKind.IS_NOT_NULL && predKind != SqlKind.LOCAL_REF &&
+            predKind != SqlKind.NOT && !predKind.belongsTo(SqlKind.COMPARISON))
             return null;
 
-        RexNode operand = getOperand(pred, RexLocalRef.class);
+        RexLocalRef operand = getOperand(pred, RexLocalRef.class);
 
         if (operand == null)
             return null;
 
-        Set<RelColumnOrigin> origins = mq.getColumnOrigins(rel, ((RexSlot)operand).getIndex());
+        return getColStatBySlot(rel, mq, tbl, operand);
+    }
+
+    /**
+     * Get column statistics.
+     *
+     * @param rel RelNode.
+     * @param mq RelMetadataQuery.
+     * @param tbl IgniteTable to get statistics from.
+     * @param pred RelSlot to get statistics by related column.
+     * @return ColumnStatistics or {@code null}.
+     */
+    private ColumnStatistics getColStatBySlot(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexSlot pred) {
+        Set<RelColumnOrigin> origins = mq.getColumnOrigins(rel, pred.getIndex());
 
         if (origins == null || origins.isEmpty())
             return null;
@@ -452,6 +555,12 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         if (QueryUtils.KEY_FIELD_NAME.equals(colName))
             colName = tbl.descriptor().typeDescription().keyFieldName();
 
+
+        Statistic stat = tbl.getStatistic();
+
+        if (stat == null)
+            return null;
+
         return ((IgniteStatisticsImpl)stat).getColumnsStatistics().get(colName);
     }
 
@@ -465,6 +574,10 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     private double estimateRangeSelectivity(ColumnStatistics colStat, RexNode pred) {
         if (pred instanceof RexCall) {
             RexLiteral literal = getOperand(pred, RexLiteral.class);
+
+            if (literal == null)
+                return guessSelectivity(pred);
+
             BigDecimal val = toComparableValue(literal);
 
             return estimateSelectivity(colStat, val, pred);
@@ -642,15 +755,15 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      */
     private double guessSelectivity(RexNode pred) {
         if (pred.getKind() == SqlKind.IS_NULL)
-            return .1;
+            return IS_NULL_SELECTIVITY;
         else if (pred.getKind() == SqlKind.IS_NOT_NULL)
-            return .9;
+            return NOT_NULL_SELECTIVITY;
         else if (pred.isA(SqlKind.EQUALS))
-            return .15;
+            return EQUALS_SELECTIVITY;
         else if (pred.isA(SqlKind.COMPARISON))
-            return .5;
+            return COMPARISON_SELECTIVITY;
         else
-            return .25;
+            return OTHER_SELECTIVITY;
     }
 
     /**
@@ -746,6 +859,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
                 sel *= childSelectivity;
             }
+
             sel *= RelMdUtil.guessSelectivity(RexUtil.composeConjunction(rexBuilder, joinFilters, true));
         }
 

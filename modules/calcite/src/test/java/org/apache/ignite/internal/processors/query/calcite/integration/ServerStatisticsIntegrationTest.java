@@ -136,10 +136,10 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     }
 
     /**
-     * Check is null conditions.
+     * Check is null/is not null conditions for nullable and non nullable fields.
      */
     @Test
-    public void testNullableFields() throws IgniteCheckedException {
+    public void testNullConditions() throws IgniteCheckedException {
         StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
         srv = ignite(0);
 
@@ -155,18 +155,19 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
                 .matches(QueryChecker.containsRowCount(75.)).check();
         }
 
-        for (String nullableField : NULLABLE_FIELDS) {
-            assertQuerySrv(sql + "where " + nullableField + " is null")
-                .matches(QueryChecker.containsRowCount(25.)).check();
+        for (String nonNullableField : NON_NULLABLE_FIELDS) {
+            assertQuerySrv(sql + "where " + nonNullableField + " is null")
+                .matches(QueryChecker.containsRowCount(1.)).check();
 
-            assertQuerySrv(sql + "where " + nullableField + " is not null")
-                .matches(QueryChecker.containsRowCount(75.)).check();
+            assertQuerySrv(sql + "where " + nonNullableField + " is not null")
+                .matches(QueryChecker.containsRowCount(ROW_COUNT)).check();
         }
     }
 
     /**
      * Test multiple condition for the same query.
-     * @throws IgniteCheckedException
+     *
+     * @throws IgniteCheckedException In case of errors.
      */
     @Test
     public void testMultipleConditionQuery() throws IgniteCheckedException {
@@ -248,7 +249,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
                 numericField, numericField);
 
             assertQuerySrv(fieldSql).matches(QueryChecker.containsRowCount(allRowCnt)).check();
-
         }
     }
 
@@ -257,6 +257,8 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
      *
      * 1) Condition on the one of fields in select list.
      * 2) Confition on the field not from select list.
+     *
+     * @throws IgniteCheckedException In case of errors.
      */
     @Test
     public void testProjections() throws IgniteCheckedException {
@@ -296,6 +298,74 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
                 assertQuerySrv(qry).matches(QueryChecker.containsRowCount(firstAllRowCnt)).check();
             }
+        }
+    }
+
+    /**
+     * Test not null counting with two range conjuncted condition on one and two columns.
+     *
+     * @throws IgniteCheckedException In case of errors.
+     */
+    @Test
+    public void testNotNullCountingSelectivity() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
+
+        collectStatistics(srv, key);
+
+        Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
+
+        for (String numericField : NUMERIC_FIELDS) {
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
+
+            assertQuerySrv(String.format("select * from all_types where " +
+                "%s > %d and %s < %d", numericField, -1, numericField, 101))
+                .matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+            assertQuerySrv(String.format("select * from all_types where " +
+                "(%s > %d and %s < %d) or (string_field > 'string_field_value' and string_field < 'string_field_value999')",
+                numericField, -1, numericField, 101))
+                .matches(QueryChecker.containsRowCount(allRowCnt)).check();
+        }
+    }
+
+    /**
+     * Test disjunctions selectivity for each column:
+     * 1) with select all conditions
+     * 2) with select none conditions
+     * 3) with is null or select all conditions
+     * 4) with is null or select none conditions
+     *
+     * @throws IgniteCheckedException In case of errors.
+     */
+    @Test
+    public void testDisjunctionSelectivity() throws IgniteCheckedException {
+        StatisticsKey key = new StatisticsKey("PUBLIC", "ALL_TYPES");
+        srv = ignite(0);
+
+        collectStatistics(srv, key);
+
+        Set<String> nonNullableFields = new HashSet(Arrays.asList(NON_NULLABLE_FIELDS));
+        for (String numericField : NUMERIC_FIELDS) {
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
+
+            assertQuerySrv(String.format("select * from all_types where " +
+                "%s > %d or %s < %d", numericField, -1, numericField, 101))
+                .matches(QueryChecker.containsRowCount(allRowCnt)).check();
+
+            assertQuerySrv(String.format("select * from all_types where " +
+                "%s > %d or %s < %d", numericField, 101, numericField, -1))
+                .matches(QueryChecker.containsRowCount(1.)).check();
+
+            assertQuerySrv(String.format("select * from all_types where " +
+                "%s > %d or %s is null", numericField, -1, numericField))
+                .matches(QueryChecker.containsRowCount(ROW_COUNT)).check();
+
+
+            assertQuerySrv(String.format("select * from all_types where " +
+                "%s > %d or %s is null", numericField, 101, numericField))
+                .matches(QueryChecker.containsRowCount(
+                    nonNullableFields.contains(numericField) ? 1. : (double)ROW_COUNT * 0.25)).check();
         }
     }
 

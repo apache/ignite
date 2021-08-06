@@ -89,11 +89,14 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> 
 
         int firstCol = F.first(collation.getKeys());
 
-        if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) != null)
+        Object lowerBound = (lower == null) ? null : ectx.rowHandler().get(firstCol, lower);
+        Object upperBound = (upper == null) ? null : ectx.rowHandler().get(firstCol, upper);
+
+        if (lowerBound != null && upperBound != null)
             return new Cursor(rows.subMap(lower, true, upper, true));
-        else if (ectx.rowHandler().get(firstCol, lower) == null && ectx.rowHandler().get(firstCol, upper) != null)
+        else if (lowerBound == null && upperBound != null)
             return new Cursor(rows.headMap(upper, true));
-        else if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) == null)
+        else if (lowerBound != null && upperBound == null)
             return new Cursor(rows.tailMap(lower, true));
         else
             return new Cursor(rows);
