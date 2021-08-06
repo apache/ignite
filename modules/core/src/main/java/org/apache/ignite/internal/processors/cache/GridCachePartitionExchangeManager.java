@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -3960,10 +3959,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Represents a cache rebalance order that takes into account both values: rebalance order itself and rebalance mode.
      * It is assumed SYNC caches should be rebalanced in the first place.
      */
-    private static class CacheRebalanceOrderComparator implements Comparator<CacheGroupContext>, Serializable {
-        /** Serial version UID. */
-        private static final long serialVersionUID = 0L;
-
+    private static class CacheRebalanceOrderComparator implements Comparator<CacheGroupContext> {
         /** {@inheritDoc} */
         @Override public int compare(CacheGroupContext ctx1, CacheGroupContext ctx2) {
             CacheConfiguration<?, ?> cfg1 = ctx1.config();
