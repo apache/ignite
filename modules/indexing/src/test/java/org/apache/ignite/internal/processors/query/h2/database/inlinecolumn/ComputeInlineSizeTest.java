@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.inlinecolumn;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
 
     /** */
     @Test
-    public void testAnnotaitionPrecision() throws Exception {
+    public void testAnnotationPrecision() throws Exception {
         IgniteEx ignite = startGrid();
 
         CacheConfiguration ccfg = new CacheConfiguration<>()
@@ -72,20 +73,13 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
             ")with \"cache_name=TEST_CACHE_TABLE\";");
         cache.query(qry);
 
-        qry = new SqlFieldsQuery("create index PERSON_STR_IDX on TABLE (str);");
-        cache.query(qry);
+        StringBuilder bld = new StringBuilder();
 
-        qry = new SqlFieldsQuery("create index PERSON_STRPREC_IDX on TABLE (strprec);");
-        cache.query(qry);
+        for (String s: Arrays.asList("str", "strprec", "bytes", "bytesprec", "strprecbig"))
+            bld.append(String.format("create index PERSON_%s_IDX on TABLE (%s); ", s.toUpperCase(), s));
 
-        qry = new SqlFieldsQuery("create index PERSON_BYTES_IDX on TABLE (bytes);");
-        cache.query(qry);
-
-        qry = new SqlFieldsQuery("create index PERSON_BYTESPREC_IDX on TABLE (bytesprec);");
-        cache.query(qry);
-
-        qry = new SqlFieldsQuery("create index PERSON_STRPRECBIG_IDX on TABLE (strprecbig);");
-        cache.query(qry);
+        ignite.context().query().querySqlFields(
+            new SqlFieldsQuery(bld.toString()), false, false);
 
         checkIdxsInlineSizes(ignite, ((GatewayProtectedCacheProxy) ignite.cache("TEST_CACHE_TABLE")).context());
     }
@@ -110,7 +104,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
         }};
 
         for (Index i: idx) {
-            InlineIndexImpl impl = (InlineIndexImpl) i;
+            InlineIndexImpl impl = (InlineIndexImpl)i;
 
             if (expInlineSize.containsKey(impl.name())) {
                 int inlineSize = expInlineSize.remove(impl.name());
