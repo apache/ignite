@@ -35,7 +35,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -73,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -886,6 +886,7 @@ public class SnapshotRestoreProcess {
         List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
 
         Map<Integer, Set<Integer>> notScheduled = new HashMap<>();
+        GridCompoundFuture<Void, Void> total = new GridCompoundFuture<>();
 
         // Register partitions to be processed.
         for (CacheGroupContext grp : filtered) {
@@ -900,10 +901,36 @@ public class SnapshotRestoreProcess {
 
             Set<Integer> left = notScheduled.get(grp.groupId());
 
-            if (left.isEmpty())
+            if (F.isEmpty(left)) {
                 opCtx0.cacheStartLoadFut.onDone();
 
-            Set<PartitionLoadFuture> loadFuts = opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>());
+                continue;
+            }
+
+            for (Integer partId : left)
+                opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(new PartitionLoadFuture(partId));
+
+            Set<PartitionLoadFuture> loadFuts = opCtx0.locProgress.get(grp.groupId());
+
+            // After partitions has been loaded we can process the groups.
+            GridCompoundFuture<Void, Void> resetPartsFut = new GridCompoundFuture<>();
+            total.add(resetPartsFut);
+
+            loadFuts.forEach(resetPartsFut::add);
+
+            resetPartsFut.markInitialized().listen(f -> {
+                if (f.error() == null) {
+                    try {
+                        grp.offheap().restorePartitionStates(Collections.emptyMap());
+
+                        if (log.isInfoEnabled())
+                            log.info("Partition states restored after loading partitions [grpName=" + grp.cacheOrGroupName() + ']');
+                    }
+                    catch (Throwable t) {
+                        opCtx0.errHnd.accept(t);
+                    }
+                }
+            });
 
             // TODO partitions may not be even created in a snapshot.
             // Check if partitions might be copied right with index.
@@ -913,34 +940,40 @@ public class SnapshotRestoreProcess {
                 .findFirst()
                 .ifPresent(meta ->
                     left.removeIf(partId ->
-                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, loadFuts::add)));
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId,
+                            F.find(loadFuts, null, (IgnitePredicate<? super PartitionLoadFuture>)f -> f.partId == partId))));
 
             for (SnapshotMetadata meta : locMetas) {
                 if (left.isEmpty())
                     break;
 
-                left.removeIf(partId -> {
-                    if (partId == INDEX_PARTITION)
-                        return loadFuts.add(new PartitionLoadFuture(INDEX_PARTITION));
-                    else
-                        return meta.partitions().get(grp.groupId()).contains(partId) &&
-                            runLocalAsync(grp, opCtx0, meta.folderName(), partId, loadFuts::add);
-                });
+                left.removeIf(partId ->
+                    partId != INDEX_PARTITION &&
+                        meta.partitions().get(grp.groupId()).contains(partId) &&
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId,
+                            F.find(loadFuts, null, (IgnitePredicate<? super PartitionLoadFuture>)f -> f.partId == partId)));
             }
         }
 
         // TODO Second preload partitions from remote nodes.
 
-        GridCompoundFuture<Boolean, Boolean> futs = new GridCompoundFuture<>();
+//        GridCompoundFuture<Boolean, Boolean> futs = new GridCompoundFuture<>();
+//
+//        for (Set<PartitionLoadFuture> partFuts : opCtx0.locProgress.values()) {
+//            for (PartitionLoadFuture fut : partFuts)
+//                futs.add(fut.chain(f -> f.error() == null));
+//        }
+//
+//        futs.markInitialized().listen(f -> {
+//            if (f.error() == null)
+//                opCtx0.cacheStartLoadFut.onDone(f.result());
+//            else
+//                opCtx0.cacheStartLoadFut.onDone(f.error());
+//        });
 
-        for (Set<PartitionLoadFuture> partFuts : opCtx0.locProgress.values()) {
-            for (PartitionLoadFuture fut : partFuts)
-                futs.add(fut.chain(f -> f.error() == null));
-        }
-
-        futs.markInitialized().listen(f -> {
+        total.markInitialized().listen(f -> {
             if (f.error() == null)
-                opCtx0.cacheStartLoadFut.onDone(f.result());
+                opCtx0.cacheStartLoadFut.onDone(true);
             else
                 opCtx0.cacheStartLoadFut.onDone(f.error());
         });
@@ -951,22 +984,22 @@ public class SnapshotRestoreProcess {
      * @param opCtx Snapshot restore context.
      * @param folderName Directory name to find partitions at.
      * @param partId Partition id.
-     * @param appender Consume created future.
-     * @return {@code true} if future added.
+     * @param fut Created partition future.
      */
     public boolean runLocalAsync(CacheGroupContext grp,
         SnapshotRestoreContext opCtx,
         String folderName,
         Integer partId,
-        Function<PartitionLoadFuture, Boolean> appender
+        @Nullable PartitionLoadFuture fut
     ) {
+        if (fut == null)
+            return false;
+
         File cacheDir = ((FilePageStoreManager)grp.shared().pageStore()).cacheWorkDir(grp.sharedGroup(), grp.cacheOrGroupName());
         File snpCacheDir = new File(grp.shared().snapshotMgr().snapshotLocalDir(opCtx.snpName),
             Paths.get(databaseRelativePath(folderName), cacheDir.getName()).toString());
 
         assert snpCacheDir.exists() : "node=" + grp.shared().localNodeId() + ", dir=" + snpCacheDir;
-
-        PartitionLoadFuture pcf = new PartitionLoadFuture(partId);
 
         CompletableFuture.runAsync(() -> {
             if (opCtx.stopChecker.getAsBoolean())
@@ -994,14 +1027,14 @@ public class SnapshotRestoreProcess {
         }, grp.shared().snapshotMgr().snapshotExecutorService())
             .whenComplete((res, t) -> {
                 if (t == null)
-                    pcf.onDone(res);
+                    fut.onDone(res);
                 else {
                     opCtx.errHnd.accept(t);
-                    pcf.onDone(t);
+                    fut.onDone(t);
                 }
             });
 
-        return appender.apply(pcf);
+        return true;
     }
 
     /**

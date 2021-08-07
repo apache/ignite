@@ -1420,6 +1420,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (cacheGroup.isLocal())
                         return null;
 
+                    if (cctx.snapshotMgr().isRestoring(cacheGroup.config()))
+                        return null;
+
                     cctx.database().checkpointReadLock();
 
                     try {
