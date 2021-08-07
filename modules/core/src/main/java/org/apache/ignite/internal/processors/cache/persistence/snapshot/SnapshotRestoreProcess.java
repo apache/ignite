@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,11 +29,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -58,6 +65,10 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -74,14 +85,17 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.toCompletableFuture;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -91,7 +105,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  */
 public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
-    public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+    public static final String TMP_PREFIX = "_tmp_snp_restore_";
 
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
@@ -117,6 +131,9 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Operation handler by checkpoint thread. */
+    private final CheckpointActionHandler cpHnd;
+
     /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile ClusterSnapshotFuture fut;
 
@@ -139,6 +156,8 @@ public class SnapshotRestoreProcess {
 
         rollbackRestoreProc = new DistributedProcess<>(
             ctx, RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK, this::rollback, this::finishRollback);
+
+        cpHnd = new CheckpointActionHandler(ctx.cache().context());
     }
 
     /**
@@ -151,7 +170,7 @@ public class SnapshotRestoreProcess {
 
         File dbDir = pageStore.workDir();
 
-        for (File dir : dbDir.listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_CACHE_DIR_PREFIX))) {
+        for (File dir : dbDir.listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_PREFIX))) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -662,7 +681,7 @@ public class SnapshotRestoreProcess {
      * @return Temporary directory.
      */
     private File formatTmpDirName(File cacheDir) {
-        return new File(cacheDir.getParent(), TMP_CACHE_DIR_PREFIX + cacheDir.getName());
+        return new File(cacheDir.getParent(), TMP_PREFIX + cacheDir.getName());
     }
 
     /**
@@ -886,7 +905,6 @@ public class SnapshotRestoreProcess {
         List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
 
         Map<Integer, Set<Integer>> notScheduled = new HashMap<>();
-        GridCompoundFuture<Void, Void> total = new GridCompoundFuture<>();
 
         // Register partitions to be processed.
         for (CacheGroupContext grp : filtered) {
@@ -899,84 +917,113 @@ public class SnapshotRestoreProcess {
             if (grp.queriesEnabled())
                 notScheduled.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(INDEX_PARTITION);
 
-            Set<Integer> left = notScheduled.get(grp.groupId());
+            Set<Integer> leftParts = notScheduled.get(grp.groupId());
 
-            if (F.isEmpty(left)) {
+            if (F.isEmpty(leftParts)) {
                 opCtx0.cacheStartLoadFut.onDone();
 
                 continue;
             }
 
-            for (Integer partId : left)
-                opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(new PartitionLoadFuture(partId));
+            for (Integer partId : leftParts) {
+                GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-            Set<PartitionLoadFuture> loadFuts = opCtx0.locProgress.get(grp.groupId());
+                PartitionRestoreLifecycleContext lf =
+                    new PartitionRestoreLifecycleContext(partId,
+                        (path) -> {
+                            // Execute partition initialization action under checkpoint thread.
+                            assert part == null || part.state() == GridDhtPartitionState.EVICTED;
+
+                            // When the partition eviction completes and the new partition file loaded
+                            // we can start a new data storage initialization.
+                            // TODO be sure that evicted partition not scheduled to destroy queue on checkpoint.
+                            // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
+                            ctx.cache().context().pageStore().restore(grp.groupId(), part.id(), path.toFile());
+
+                            boolean initialized = part.dataStore().init();
+
+                            assert initialized;
+                        },
+                        cpHnd,
+                        grp.shared().snapshotMgr().snapshotExecutorService());
+
+                // Start partition eviction first.
+                if (part == null)
+                    lf.evicted.complete(null);
+                else {
+                    part.clearAsync().listen(f -> {
+                        // Eviction completes earlier than partition actually be physically destroyed from the FilePageStore.
+                        if (fut.error() == null)
+                            lf.evicted.complete(f.result());
+                        else
+                            lf.evicted.completeExceptionally(f.error());
+                    });
+                }
+
+                // All partition restore context must be available for the main restore completion future.
+                opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(lf);
+            }
+
+            Set<PartitionRestoreLifecycleContext> partCtxs = opCtx0.locProgress.get(grp.groupId());
 
             // After partitions has been loaded we can process the groups.
-            GridCompoundFuture<Void, Void> resetPartsFut = new GridCompoundFuture<>();
-            total.add(resetPartsFut);
+//            GridCompoundFuture<Void, Void> resetPartsFut = new GridCompoundFuture<>();
+//            total.add(resetPartsFut);
 
-            loadFuts.forEach(resetPartsFut::add);
+//            loadFuts.forEach(resetPartsFut::add);
 
-            resetPartsFut.markInitialized().listen(f -> {
-                if (f.error() == null) {
-                    try {
-                        grp.offheap().restorePartitionStates(Collections.emptyMap());
-
-                        if (log.isInfoEnabled())
-                            log.info("Partition states restored after loading partitions [grpName=" + grp.cacheOrGroupName() + ']');
-                    }
-                    catch (Throwable t) {
-                        opCtx0.errHnd.accept(t);
-                    }
-                }
-            });
+//            resetPartsFut.markInitialized().listen(f -> {
+//                if (f.error() == null) {
+//                    try {
+//                        grp.offheap().restorePartitionStates(Collections.emptyMap());
+//
+//                        if (log.isInfoEnabled())
+//                            log.info("Partition states restored after loading partitions [grpName=" + grp.cacheOrGroupName() + ']');
+//                    }
+//                    catch (Throwable t) {
+//                        opCtx0.errHnd.accept(t);
+//                    }
+//                }
+//            });
 
             // TODO partitions may not be even created in a snapshot.
-            // Check if partitions might be copied right with index.
+            // Check if partitions might be copied right with index,
+            // this can be check only after fully context initialization.
+            // TODO index partition may contains reuse-list and index-metas root pages.
             locMetas.stream()
                 .filter(m -> Objects.nonNull(m.partitions().get(grp.groupId())))
-                .filter(m -> m.partitions().get(grp.groupId()).containsAll(left))
+                .filter(m -> m.partitions().get(grp.groupId()).equals(leftParts))
                 .findFirst()
                 .ifPresent(meta ->
-                    left.removeIf(partId ->
-                        runLocalAsync(grp, opCtx0, meta.folderName(), partId,
-                            F.find(loadFuts, null, (IgnitePredicate<? super PartitionLoadFuture>)f -> f.partId == partId))));
+                    leftParts.removeIf(partId ->
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, findLoadFuture(partCtxs, partId))));
 
             for (SnapshotMetadata meta : locMetas) {
-                if (left.isEmpty())
+                if (leftParts.isEmpty())
                     break;
 
-                left.removeIf(partId ->
+                leftParts.removeIf(partId ->
                     partId != INDEX_PARTITION &&
                         meta.partitions().get(grp.groupId()).contains(partId) &&
-                        runLocalAsync(grp, opCtx0, meta.folderName(), partId,
-                            F.find(loadFuts, null, (IgnitePredicate<? super PartitionLoadFuture>)f -> f.partId == partId)));
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, findLoadFuture(partCtxs, partId)));
             }
         }
 
         // TODO Second preload partitions from remote nodes.
 
-//        GridCompoundFuture<Boolean, Boolean> futs = new GridCompoundFuture<>();
-//
-//        for (Set<PartitionLoadFuture> partFuts : opCtx0.locProgress.values()) {
-//            for (PartitionLoadFuture fut : partFuts)
-//                futs.add(fut.chain(f -> f.error() == null));
-//        }
-//
-//        futs.markInitialized().listen(f -> {
-//            if (f.error() == null)
-//                opCtx0.cacheStartLoadFut.onDone(f.result());
-//            else
-//                opCtx0.cacheStartLoadFut.onDone(f.error());
-//        });
+        List<CompletionStage<Void>> futs0 = new ArrayList<>();
 
-        total.markInitialized().listen(f -> {
-            if (f.error() == null)
-                opCtx0.cacheStartLoadFut.onDone(true);
-            else
-                opCtx0.cacheStartLoadFut.onDone(f.error());
-        });
+        opCtx0.locProgress.values().forEach(s -> s.forEach(e -> futs0.add(e.done())));
+
+        int futsSize = futs0.size();
+
+        CompletableFuture.allOf(futs0.toArray(new CompletableFuture[futsSize]))
+            .whenComplete((res, t) -> {
+                if (t == null)
+                    opCtx0.cacheStartLoadFut.onDone(true);
+                else
+                    opCtx0.cacheStartLoadFut.onDone(t);
+            });
     }
 
     /**
@@ -990,7 +1037,7 @@ public class SnapshotRestoreProcess {
         SnapshotRestoreContext opCtx,
         String folderName,
         Integer partId,
-        @Nullable PartitionLoadFuture fut
+        @Nullable CompletableFuture<Path> fut
     ) {
         if (fut == null)
             return false;
@@ -1001,15 +1048,15 @@ public class SnapshotRestoreProcess {
 
         assert snpCacheDir.exists() : "node=" + grp.shared().localNodeId() + ", dir=" + snpCacheDir;
 
-        CompletableFuture.runAsync(() -> {
+        CompletableFuture.supplyAsync(() -> {
             if (opCtx.stopChecker.getAsBoolean())
-                return;
+                throw new IgniteInterruptedException("The operation has been stopped.");
 
             if (Thread.interrupted())
                 throw new IgniteInterruptedException("Thread has been interrupted.");
 
             File snpFile = new File(snpCacheDir, FilePageStoreManager.getPartitionFileName(partId));
-            File target = new File(cacheDir, FilePageStoreManager.getPartitionFileName(partId));
+            Path target0 = Paths.get(cacheDir.getAbsolutePath(), TMP_PREFIX + FilePageStoreManager.getPartitionFileName(partId));
 
             if (!snpFile.exists()) {
                 throw new IgniteException("Partition snapshot file doesn't exist [snpName=" + opCtx.snpName +
@@ -1020,17 +1067,19 @@ public class SnapshotRestoreProcess {
                 log.debug("Copying file from the snapshot " +
                     "[snapshot=" + opCtx.snpName +
                     ", src=" + snpFile +
-                    ", target=" + target + "]");
+                    ", target=" + target0 + "]");
             }
 
-            IgniteSnapshotManager.copy(grp.shared().snapshotMgr().ioFactory(), snpFile, target, snpFile.length());
+            IgniteSnapshotManager.copy(grp.shared().snapshotMgr().ioFactory(), snpFile, target0.toFile(), snpFile.length());
+
+            return target0;
         }, grp.shared().snapshotMgr().snapshotExecutorService())
             .whenComplete((res, t) -> {
                 if (t == null)
-                    fut.onDone(res);
+                    fut.complete(res);
                 else {
                     opCtx.errHnd.accept(t);
-                    fut.onDone(t);
+                    fut.completeExceptionally(t);
                 }
             });
 
@@ -1162,6 +1211,17 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param ctxs Collection of partition context.
+     * @param partId Partition id to find.
+     * @return Load future.
+     */
+    private static @Nullable CompletableFuture<Path> findLoadFuture(Set<PartitionRestoreLifecycleContext> ctxs, int partId) {
+        return ofNullable(F.find(ctxs, null, (IgnitePredicate<? super PartitionRestoreLifecycleContext>)f -> f.partId == partId))
+            .map(c -> c.loaded)
+            .orElse(null);
+    }
+
+    /**
      * Cache group restore from snapshot operation context.
      */
     private static class SnapshotRestoreContext {
@@ -1193,7 +1253,7 @@ public class SnapshotRestoreProcess {
         private final BooleanSupplier stopChecker = () -> err.get() != null;
 
         /** Progress of processing cache group partitions on the local node.*/
-        private final Map<Integer, Set<PartitionLoadFuture>> locProgress = new HashMap<>();
+        private final Map<Integer, Set<PartitionRestoreLifecycleContext>> locProgress = new HashMap<>();
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
@@ -1226,7 +1286,7 @@ public class SnapshotRestoreProcess {
     }
 
     /** Snapshot operation prepare response. */
-    public static class SnapshotRestoreOperationResponse implements Serializable {
+    private static class SnapshotRestoreOperationResponse implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -1250,15 +1310,43 @@ public class SnapshotRestoreProcess {
     }
 
     /** */
-    private static class PartitionLoadFuture extends GridFutureAdapter<Void> {
+    private static class PartitionRestoreLifecycleContext {
         /** Partition id. */
         private final int partId;
 
+        /** Future will be finished when the partition eviction process ends. */
+        private final CompletableFuture<Void> evicted = new CompletableFuture<>();
+
+        /** Future will be finished when the partition preloading ends. */
+        private final CompletableFuture<Path> loaded = new CompletableFuture<>();
+
+        /** Future will be finished when the partition initialized under checkpoint thread. */
+        private final CompletableFuture<Void> inited = new CompletableFuture<>();
+
         /**
          * @param partId Partition id.
+         * @param initAct Action to do partition initialization.
+         * @param hnd Checkpoint executor.
+         * @param exec Executor service.
          */
-        public PartitionLoadFuture(int partId) {
+        public PartitionRestoreLifecycleContext(
+            int partId,
+            Consumer<Path> initAct,
+            CheckpointActionHandler hnd,
+            ExecutorService exec
+        ) {
             this.partId = partId;
+
+            loaded.thenAcceptBothAsync(evicted,
+                (path, ignore) -> hnd.doUnderCheckpoint(() -> initAct.accept(path), inited),
+                exec);
+        }
+
+        /**
+         * @return Future will be completed when partition processing ends.
+         */
+        public CompletionStage<Void> done() {
+            return CompletableFuture.allOf(evicted, loaded, inited);
         }
 
         /** {@inheritDoc} */
@@ -1269,14 +1357,96 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionLoadFuture future = (PartitionLoadFuture)o;
+            PartitionRestoreLifecycleContext context = (PartitionRestoreLifecycleContext)o;
 
-            return partId == future.partId;
+            return partId == context.partId;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(partId);
+        }
+    }
+
+    /** */
+    private static class CheckpointActionHandler implements CheckpointListener, LifecycleAware {
+        /** Cache shared context. */
+        private final GridCacheSharedContext<?, ?> cctx;
+
+        /** Lock. */
+        private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+        /** Checkpoint request queue. */
+        private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+
+        /**
+         * @param cctx Cache shared context.
+         */
+        private CheckpointActionHandler(GridCacheSharedContext<?, ?> cctx) {
+            this.cctx = cctx;
+        }
+
+        /**
+         * @param act Action to execute.
+         * @param fut Result future.
+         */
+        public void doUnderCheckpoint(Runnable act, CompletableFuture<Void> fut) {
+            queue.offer(() -> {
+                try {
+                    act.run();
+
+                    fut.complete(null);
+                }
+                catch (Throwable t) {
+                    fut.completeExceptionally(t);
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            assert queue.isEmpty();
+
+            if (CU.isPersistenceEnabled(cctx.gridConfig()))
+                ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            lock.writeLock().lock();
+
+            try {
+                if (CU.isPersistenceEnabled(cctx.gridConfig()))
+                    ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this);
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            lock.readLock().lock();
+
+            try {
+                Runnable r;
+
+                while ((r = queue.poll()) != null)
+                    r.run();
+            }
+            finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            // No-op.
         }
     }
 }
