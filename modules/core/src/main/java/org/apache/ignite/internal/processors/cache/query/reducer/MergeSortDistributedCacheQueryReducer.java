@@ -17,19 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node
@@ -39,17 +39,11 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     /** Map of Node ID to stream. Used for inserting new pages. */
     private final Map<UUID, NodePageStream<R>> streamsMap;
 
-    /** Array of streams. Used for iteration over result pages. */
-    private final NodePageStream<R>[] streams;
+    /** Queue of nodes result pages streams. Order of streams is set with {@link #streamCmp}. */
+    private final PriorityQueue<NodePageStream<R>> streams;
 
     /** If {@code true} then there wasn't call {@link #hasNext()} on this reducer. */
     private boolean first = true;
-
-    /**
-     * Offset of current stream to get next value. This offset only increments if a stream is done. The array {@link
-     * #streams} is sorted to put stream with lowest value on this offset.
-     */
-    private int streamOff;
 
     /** Compares head of streams to get lowest value at the moment. */
     private final Comparator<NodePageStream<R>> streamCmp;
@@ -68,72 +62,64 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     ) {
         super(fut, reqId, pageRequester);
 
-        streamsMap = new ConcurrentHashMap<>(nodes.size());
-        streams = (NodePageStream<R>[])Array.newInstance(NodePageStream.class, nodes.size());
-
-        int i = 0;
-
-        for (ClusterNode node : nodes) {
-            streams[i] = new NodePageStream<>(fut.query().query(), queueLock, fut.endTime(), node.id(), (ns, all) ->
-                pageRequester.requestPages(reqId, fut, ns, all)
-            );
-
-            streamsMap.put(node.id(), streams[i++]);
-        }
-
         streamCmp = (o1, o2) -> {
-            if (o1 == o2)
-                return 0;
-
-            if (o1 == null)
+            // Nulls on the top to make initial sort in hasNext().
+            if (o1.head() == null)
                 return -1;
 
-            if (o2 == null)
+            if (o2.head() == null)
                 return 1;
 
             return rowCmp.compare(o1.head(), o2.head());
         };
+
+        streamsMap = new ConcurrentHashMap<>(nodes.size());
+        streams = new PriorityQueue<>(nodes.size(), streamCmp);
+
+        for (ClusterNode node: nodes) {
+            NodePageStream<R> s = new NodePageStream<>(
+                fut.query().query(), queueLock, fut.endTime(), node.id(), this::requestPages);
+
+            streams.offer(s);
+
+            streamsMap.put(node.id(), s);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() throws IgniteCheckedException {
-        for (int i = streamOff; i < streams.length; i++) {
-            if (streams[i].hasNext())
-                return true;
+        if (first) {
+            // Initial sort.
+            for (int i = 0; i < streams.size(); i++) {
+                NodePageStream<R> s = streams.poll();
 
-            // Nullify obsolete stream, move left bound.
-            streamsMap.remove(streams[i].nodeId());
-            streams[i] = null;
-            streamOff++;
+                if (s.hasNext())
+                    streams.offer(s);
+                else
+                    streamsMap.remove(s.nodeId());
+            }
+
+            first = false;
         }
 
-        return false;
+        return !streams.isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public R next() throws IgniteCheckedException {
-        for (int i = streamOff; i < streams.length; i++) {
-            NodePageStream s = streams[i];
-
-            if (!s.hasNext()) {
-                // Nullify obsolete stream, move left bound.
-                streamsMap.remove(s.nodeId());
-                streams[i] = null;
-                streamOff++;
-            }
-        }
-
-        if (streamOff == streams.length)
+        if (streams.isEmpty())
             throw new NoSuchElementException("No next element. Please, be sure to invoke hasNext() before next().");
 
-        if (first) {
-            first = false;
+        NodePageStream<R> s = streams.poll();
 
-            Arrays.sort(streams, streamCmp);
-        } else
-            bubbleUp(streams, streamOff, streamCmp);
+        R o = s.next();
 
-        return streams[streamOff].next();
+        if (s.hasNext())
+            streams.add(s);
+        else
+            streamsMap.remove(s.nodeId());
+
+        return o;
     }
 
     /** {@inheritDoc} */
@@ -155,29 +141,22 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     }
 
     /** {@inheritDoc} */
-    @Override public void onCancel() {
-        for (NodePageStream<R> s: streamsMap.values())
-            s.cancel(ns -> pageRequester.cancelQueryRequest(reqId, ns, fut.fields()));
+    @Override public void cancel() {
+        List<UUID> nodes = new ArrayList<>();
+
+        for (NodePageStream<R> s: streamsMap.values()) {
+            Collection<UUID> n = s.cancelNodes();
+
+            nodes.addAll(n);
+        }
 
         streamsMap.clear();
+
+        cancel(nodes);
     }
 
     /** {@inheritDoc} */
     @Override public boolean mapNode(UUID nodeId) {
         return streamsMap.containsKey(nodeId);
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param cmp Comparator.
-     */
-    private static <Z> void bubbleUp(Z[] arr, int off, Comparator<Z> cmp) {
-        for (int i = off, last = arr.length - 1; i < last; i++) {
-            if (cmp.compare(arr[i], arr[i + 1]) <= 0)
-                break;
-
-            U.swap(arr, i, i + 1);
-        }
     }
 }

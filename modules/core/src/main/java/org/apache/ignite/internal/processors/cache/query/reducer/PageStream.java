@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -203,11 +202,11 @@ class PageStream<R> {
     }
 
     /**
-     * Cancel all page requests.
+     * Clear and return nodes to cancel.
      *
-     * @param cancelQry Callback to send cancel requests to nodes.
+     * @return Collection of nodes to cancel.
      */
-    void cancel(Consumer<Collection<UUID>> cancelQry) {
+    Collection<UUID> cancelNodes() {
         Collection<UUID> nodes;
 
         synchronized (queueLock) {
@@ -221,7 +220,7 @@ class PageStream<R> {
             noMorePages = true;
         }
 
-        cancelQry.accept(nodes);
+        return nodes;
     }
 
     /**

@@ -119,7 +119,7 @@ public class GridCacheFullTextQueryLimitTest extends GridCommonAbstractTest {
                 assertTrue(limit >= result.size());
 
             // hello has to be on the top.
-            assertEquals("hello", result.get(0).getValue().name);
+            assertEquals("Limit=" + limit, "hello", result.get(0).getValue().name);
         }
     }
 

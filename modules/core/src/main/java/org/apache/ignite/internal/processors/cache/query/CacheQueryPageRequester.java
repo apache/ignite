@@ -127,14 +127,14 @@ public abstract class CacheQueryPageRequester {
     }
 
     /**
-     * Cancel query request, so no new pages will be sent.
+     * Send cancel query request, so no new pages will be sent.
      *
      * @param reqId Query request ID.
      * @param nodes Collection of nodes to send the cancel request.
      * @param fieldsQry Whether query is a fields query.
      *
      */
-    public void cancelQueryRequest(long reqId, Collection<UUID> nodes, boolean fieldsQry) {
+    public void cancelQuery(long reqId, Collection<UUID> nodes, boolean fieldsQry) {
         final GridCacheQueryManager qryMgr = cctx.queries();
 
         assert qryMgr != null;
@@ -146,11 +146,14 @@ public abstract class CacheQueryPageRequester {
                 cctx.startTopologyVersion(),
                 cctx.deploymentEnabled());
 
-            // Process cancel query directly (without sending) for local node.
-            sendLocal(req);
-
             for (UUID node : nodes) {
                 try {
+                    if (cctx.localNodeId().equals(node)) {
+                        sendLocal(req);
+
+                        continue;
+                    }
+
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {

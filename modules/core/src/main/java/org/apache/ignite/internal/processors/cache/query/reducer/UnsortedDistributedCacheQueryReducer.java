@@ -43,7 +43,6 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     public UnsortedDistributedCacheQueryReducer(
         GridCacheQueryFutureAdapter fut, long reqId, CacheQueryPageRequester pageRequester,
         Object queueLock, Collection<ClusterNode> nodes) {
-
         super(fut, reqId, pageRequester);
 
         Collection<UUID> subgrid = new HashSet<>();
@@ -51,9 +50,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
         for (ClusterNode node : nodes)
             subgrid.add(node.id());
 
-        pageStream = new PageStream<>(fut.query().query(), queueLock, fut.endTime(), subgrid, (ns, all) ->
-            pageRequester.requestPages(reqId, fut, ns, all)
-        );
+        pageStream = new PageStream<>(fut.query().query(), queueLock, fut.endTime(), subgrid, this::requestPages);
     }
 
     /** {@inheritDoc} */
@@ -83,8 +80,10 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     }
 
     /** {@inheritDoc} */
-    @Override public void onCancel() {
-        pageStream.cancel((ns) -> pageRequester.cancelQueryRequest(reqId, ns, fut.fields()));
+    @Override public void cancel() {
+        Collection<UUID> nodes = pageStream.cancelNodes();
+
+        cancel(nodes);
     }
 
     /** {@inheritDoc} */

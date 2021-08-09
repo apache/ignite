@@ -732,25 +732,22 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private DistributedCacheQueryReducer createReducer(GridCacheQueryType qryType, long reqId,
         GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
 
-        if (qryType == TEXT) {
-            Comparator<CacheEntryWithPayload<K, V, Float>> cmp = (c1, c2) -> {
-                if (c1.payload() == c2.payload())
-                    return 0;
-
-                if (c1.payload() == null)
-                    return -1;
-
-                if (c2.payload() == null)
-                    return 1;
-
-                return Float.compare(c2.payload(), c1.payload());
-            };
-
-            return new MergeSortDistributedCacheQueryReducer(
-                fut, reqId, pageRequester, fut.lock, nodes, cmp);
-        } else
+        if (qryType == TEXT)
+            return new MergeSortDistributedCacheQueryReducer(fut, reqId, pageRequester, fut.lock, nodes, textResultComparator);
+        else
             return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, fut.lock, nodes);
     }
+
+    /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
+    private static final Comparator<CacheEntryWithPayload<?, ?, Float>> textResultComparator = (c1, c2) -> {
+        if (c1.payload() == null)
+            return -1;
+
+        if (c2.payload() == null)
+            return 1;
+
+        return Float.compare(c2.payload(), c1.payload());
+    };
 
     /**
      * Gets topic for ordered response messages.

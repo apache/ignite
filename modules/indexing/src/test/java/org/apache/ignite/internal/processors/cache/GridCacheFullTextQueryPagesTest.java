@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,7 +130,9 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     public void testTextQueryLimitedMultiplePages() throws Exception {
         // There are 3 remote nodes, so there are requests:
         // 3x1 init fetch pages, 3x1 load new pages (due to load condition < 2), 3 on cancel.
-        int expCacheReqCnt = 9;
+        // Also 2 additional page due to PriorityQueue algorithm of poll/add - in case of equal score for all data
+        // it iterates over 2 streams only (first and last in the queue).
+        int expCacheReqCnt = 11;
 
         CountDownLatch latch = new CountDownLatch(expCacheReqCnt);
 
@@ -145,8 +146,10 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     /** Test that rerequest some pages but then send a cancel query after limit exceeded. */
     @Test
     public void testTextQueryHighLimitedMultiplePages() throws Exception {
-        // There are 3 remote nodes, so there are requests: 6 on load pages, 3 on cancel query.
-        int expCacheReqCnt = 9;
+        // There are 3 remote nodes, so there are requests: 6 load pages, 3 on cancel query.
+        // Also 4 additional page due to PriorityQueue algorithm of poll/add - in case of equal score for all data
+        // it iterates over 2 streams only (first and last in the queue).
+        int expCacheReqCnt = 13;
 
         CountDownLatch latch = new CountDownLatch(expCacheReqCnt);
 
@@ -205,8 +208,6 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     void populateCache(IgniteEx ignite, int cnt, IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
 
-        Random rand = new Random();
-
         Affinity<Integer> aff = cache.affinity();
 
         Map<UUID, Integer> nodeToCnt = new HashMap<>();
@@ -214,22 +215,19 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
         Set<String> vals = new HashSet<>();
 
         for (int i = 0; i < cnt; i++) {
-            int val = rand.nextInt(cnt);
+            cache.put(i, new Person(String.valueOf(i)));
 
-            cache.put(val, new Person(String.valueOf(val)));
+            if (expectedEntryFilter.apply(i)) {
+                vals.add(String.valueOf(i));
 
-            if (expectedEntryFilter.apply(val)) {
-                boolean notContain = vals.add(String.valueOf(val));
-
-                UUID nodeId = aff.mapKeyToNode(val).id();
+                UUID nodeId = aff.mapKeyToNode(i).id();
 
                 if (nodeId.equals(ignite.localNode().id()))
                     continue;
 
                 nodeToCnt.putIfAbsent(nodeId, 0);
 
-                if (notContain)
-                    nodeToCnt.compute(nodeId, (k, v) -> v + 1);
+                nodeToCnt.compute(nodeId, (k, v) -> v + 1);
             }
         }
 

@@ -59,7 +59,7 @@ public interface CacheQueryReducer<T> {
     public void onFinish();
 
     /**
-     * Callback is invoked on the query cancellation.
+     * Cancel cache query and stop reduce pages.
      */
-    public void onCancel();
+    public void cancel();
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
+import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
@@ -76,6 +78,25 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
         loadAllowed = true;
 
         firstPageLatch.countDown();
+    }
+
+    /**
+     * Send cancel request to specified nodes.
+     *
+     * @param nodes Collection of nodes to cancel this query.
+     */
+    protected void cancel(Collection<UUID> nodes) {
+        pageRequester.cancelQuery(reqId, nodes, fut.fields());
+    }
+
+    /**
+     * Send request to fetch new pages.
+     *
+     * @param nodes Collection of nodes to send request.
+     * @param all Whether page will contain all data from node.
+     */
+    protected void requestPages(Collection<UUID> nodes, boolean all) {
+        pageRequester.requestPages(reqId, fut, nodes, all);
     }
 
     /** */

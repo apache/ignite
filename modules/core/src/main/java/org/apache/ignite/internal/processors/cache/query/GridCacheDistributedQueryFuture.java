@@ -57,7 +57,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void cancelQuery() {
-        reducer.onCancel();
+        reducer.cancel();
 
         cctx.queries().onQueryFutureCanceled(reqId);
 
@@ -79,7 +79,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         if (isDone() && error() != null)
             // Throw the exception if future failed.
-            get();
+            super.get();
     }
 
     /** {@inheritDoc} */
@@ -111,11 +111,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * Completion of distributed query future depends on user that iterates over query result with lazy page loading.
      * Then {@link #get()} can lock on unpredictably long period of time. So we should avoid call it.
      */
-    private Collection<R> get0() throws IgniteCheckedException {
-        if (!isDone())
-            throw new IgniteIllegalStateException("Unexpected lock on iterator over distributed cache query result.");
-
-        return super.get();
+    private Collection<R> get0() {
+        throw new IgniteIllegalStateException("Unexpected lock on iterator over distributed cache query result.");
     }
 
     /** {@inheritDoc} */
