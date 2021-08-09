@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +39,12 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
@@ -48,6 +53,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
@@ -185,6 +192,36 @@ public final class Commons {
      */
     public static PlanningContext context(Context ctx) {
         return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
+    }
+
+    /**
+     * Parses a SQL statement.
+     *
+     * @param qry Query string.
+     * @param parserCfg Parser config.
+     * @return Parsed query.
+     */
+    public static SqlNodeList parse(String qry, SqlParser.Config parserCfg) {
+        try {
+            return parse(new SourceStringReader(qry), parserCfg);
+        }
+        catch (SqlParseException e) {
+            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
+        }
+    }
+
+    /**
+     * Parses a SQL statement.
+     *
+     * @param reader Source string reader.
+     * @param parserCfg Parser config.
+     * @return Parsed query.
+     * @throws org.apache.calcite.sql.parser.SqlParseException on parse error.
+     */
+    public static SqlNodeList parse(Reader reader, SqlParser.Config parserCfg) throws SqlParseException {
+        SqlParser parser = SqlParser.create(reader, parserCfg);
+
+        return parser.parseStmtList();
     }
 
     /**
