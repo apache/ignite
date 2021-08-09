@@ -21,6 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +43,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
@@ -248,6 +252,11 @@ public class SnapshotPartitionsVerifyTask
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
+            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+            EncryptionCacheKeyProvider snpEncrKeyProvider = IgniteSnapshotManager.snapshotMasterSign(meta) != null ?
+                new SnapshotEncrKeyProvider(ignite.context(), grpDirs) : null;
+
             try {
                 GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
 
@@ -263,9 +272,7 @@ public class SnapshotPartitionsVerifyTask
                             int grpId = CU.cacheId(grpName);
                             int partId = partId(part.getName());
 
-                            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider)
                                 .createPageStore(getTypeByPartId(partId),
                                     part::toPath,
                                     val -> {
@@ -367,7 +374,7 @@ public class SnapshotPartitionsVerifyTask
      */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
         /** Kernal context */
-        private GridKernalContext kernalCtx;
+        private GridKernalContext ctx;
 
         /** Snapshot caches dirs by group id */
         private Map<Integer, File> grpDirs;
@@ -378,11 +385,11 @@ public class SnapshotPartitionsVerifyTask
         /**
          * Constructor.
          *
-         * @param kernalCtx Kernal context.
-         * @param grpDirs   Data dirictories of cache groups by id.
+         * @param ctx     Kernal context.
+         * @param grpDirs Data dirictories of cache groups by id.
          */
-        private SnapshotEncrKeyProvider(GridKernalContext kernalCtx, Map<Integer, File> grpDirs) {
-            this.kernalCtx = kernalCtx;
+        private SnapshotEncrKeyProvider(GridKernalContext ctx, Map<Integer, File> grpDirs) {
+            this.ctx = ctx;
             this.grpDirs = grpDirs;
         }
 
@@ -396,23 +403,18 @@ public class SnapshotPartitionsVerifyTask
             return decryptedKeys.computeIfAbsent(grpId, gid -> {
                 GroupKey grpKey = null;
 
-                try {
-                    for (File cfgFile : grpDirs.get(grpId).listFiles(new FilenameFilter() {
-                        @Override public boolean accept(File dir, String name) {
-                            return name.endsWith(CACHE_DATA_FILENAME);
-                        }
-                    })) {
-                        StoredCacheData cacheData = ((FilePageStoreManager)kernalCtx.cache().context().pageStore()).readCacheData(cfgFile);
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(grpDirs.get(grpId).toPath(),
+                    p -> Files.isRegularFile(p) && p.toString().endsWith(CACHE_DATA_FILENAME))) {
+                    for (Path p : ds) {
+                        StoredCacheData cacheData = ((FilePageStoreManager)ctx.cache().context().pageStore()).readCacheData(p.toFile());
 
                         GroupKeyEncrypted grpKeyEncrypted = cacheData.grpKeyEncrypted();
 
-                        if (grpKey == null) {
-                            grpKey = new GroupKey(grpKeyEncrypted.id(),
-                                kernalCtx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
-                        }
+                        if (grpKey == null)
+                            grpKey = new GroupKey(grpKeyEncrypted.id(), ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
                         else {
                             assert grpKey.equals(new GroupKey(grpKeyEncrypted.id(),
-                                kernalCtx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
+                                ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
                         }
                     }
 

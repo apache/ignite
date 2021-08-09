@@ -1442,7 +1442,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String folderName,
         String grpName,
         int partId,
-        EncryptionCacheKeyProvider encrKeyProvider
+        @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
         File snpDir = resolveSnapshotDir(snpName);
 
@@ -1478,7 +1478,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 val -> {
                 });
 
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(ctx, grpName, partId, pageStore);
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** {@inheritDoc} */
@@ -2016,7 +2016,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 StoredCacheData cacheData = storeMgr.readCacheData(targetCacheCfg);
 
-                if(cacheData.config().isEncryptionEnabled()){
+                if (cacheData.config().isEncryptionEnabled()) {
                     EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
 
                     GroupKey grpKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));

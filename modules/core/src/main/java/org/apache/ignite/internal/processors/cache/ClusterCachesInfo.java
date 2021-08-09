@@ -2169,7 +2169,7 @@ public class ClusterCachesInfo {
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
         registeredCachesById.put(desc.cacheId(), desc);
 
-        if(cacheInfo.cacheData().grpKeyEncrypted() != null) {
+        if (cacheInfo.cacheData().grpKeyEncrypted() != null) {
             int grpId = CU.cacheGroupId(cacheInfo.cacheData().config());
 
             assert cacheInfo.cacheData().config().isEncryptionEnabled();
