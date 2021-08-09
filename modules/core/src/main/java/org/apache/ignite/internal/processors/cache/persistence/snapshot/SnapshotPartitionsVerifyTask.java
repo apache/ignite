@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -249,24 +248,27 @@ public class SnapshotPartitionsVerifyTask
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
-            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
-            EncryptionCacheKeyProvider snpEncrKeyProvider = IgniteSnapshotManager.snapshotMasterSign(meta) != null ?
-                new SnapshotEncrKeyProvider(ignite.context(), grpDirs) : null;
-
             try {
-                U.doInParallel(
-                    ignite.context().getSystemExecutorService(),
-                    partFiles,
-                    part -> {
-                        String grpName = cacheGroupName(part.getParentFile());
-                        int grpId = CU.cacheId(grpName);
-                        int partId = partId(part.getName());
+                GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
 
-                        try {
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider).
-                                createPageStore(getTypeByPartId(partId),
-                                    part::toPath, val -> {
+                for (GridComponent comp : snpCtx)
+                    comp.start();
+
+                try {
+                    U.doInParallel(
+                        snpMgr.snapshotExecutorService(),
+                        partFiles,
+                        part -> {
+                            String grpName = cacheGroupName(part.getParentFile());
+                            int grpId = CU.cacheId(grpName);
+                            int partId = partId(part.getName());
+
+                            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
+                                .createPageStore(getTypeByPartId(partId),
+                                    part::toPath,
+                                    val -> {
                                     })
                             ) {
                                 if (partId == INDEX_PARTITION) {
@@ -315,20 +317,24 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId, snpEncrKeyProvider));
+                                    snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
 
                                 assert hash != null : "OWNING must have hash: " + key;
 
                                 res.put(key, hash);
                             }
-                        }
-                        catch (IOException e) {
-                            throw new IgniteCheckedException(e);
-                        }
+                            catch (IOException e) {
+                                throw new IgniteCheckedException(e);
+                            }
 
-                        return null;
-                    }
-                );
+                            return null;
+                        }
+                    );
+                }
+                finally {
+                    for (GridComponent comp : snpCtx)
+                        comp.stop(true);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

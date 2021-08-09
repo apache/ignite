@@ -935,7 +935,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void onWalSegmentRemoved(long segmentIdx) {
         if (grpKeys.isReleaseWalKeysRequired(segmentIdx))
-            ctx.getSystemExecutorService().submit(() -> releaseWalKeys(segmentIdx));
+            ctx.pools().getSystemExecutorService().submit(() -> releaseWalKeys(segmentIdx));
     }
 
     /**

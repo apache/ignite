@@ -1071,8 +1071,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
-        indexStorage.dropCacheIndex(cacheId, idxName, segment);
+    @Override public @Nullable RootPage dropRootPageForIndex(
+        int cacheId,
+        String idxName,
+        int segment
+    ) throws IgniteCheckedException {
+        return indexStorage.dropCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */

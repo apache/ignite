@@ -806,6 +806,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         ctx.encryption().onLocalJoin();
 
+                        ctx.security().onLocalJoin();
+
                         ctx.cluster().onLocalJoin();
                     }
 

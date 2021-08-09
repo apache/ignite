@@ -657,7 +657,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 .collect(Collectors.toSet());
 
             closeFut = CompletableFuture.runAsync(() -> onDone(taken, err0),
-                cctx.kernalContext().getSystemExecutorService());
+                cctx.kernalContext().pools().getSystemExecutorService());
         }
 
         return closeFut;

@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -240,9 +241,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
-
-    /** Name prefix to save cache group encryption keys in snapshot meta. */
-//    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "GrpEncrKey_";
 
     /** Name of master encryption key signature in snapshot meta. */
     private static final String SNAPSHOT_META_MASTER_KEY_SIGN = "MasterKeySign";
@@ -555,7 +553,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return new File(locSnpDir, snpName);
     }
 
-    /** TODO */
+    /**
+     * @param snpName Snapshot name.
+     * @return Local snapshot directory for snapshot with given name.
+     * @throws IgniteCheckedException If directory doesn't exists.
+     */
+    private File resolveSnapshotDir(String snpName) throws IgniteCheckedException {
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!snpDir.exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
+
+        return snpDir;
+    }
+
+    /**
+     * @param snpLocDir local snapshot directory.
+     * @return Snapshot data directory.
+     */
     File snapshotDbDir(File snpLocDir) {
         return new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
     }
@@ -1118,11 +1133,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        File[] smfs = snapshotLocalDir(snpName).listFiles((dir, name) ->
-            name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
+        List<File> smfs = new ArrayList<>();
 
-        if (smfs == null)
-            throw new IgniteException("Snapshot directory doesn't exists or an I/O error occurred during directory read.");
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snapshotLocalDir(snpName).toPath())) {
+            for (Path d : ds) {
+                if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
+                    smfs.add(d.toFile());
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+
+        if (smfs.isEmpty())
+            throw new IgniteException("Snapshot metadata files not found: " + snpName);
 
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
@@ -1371,6 +1395,43 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
+     * @return Standalone kernal context related to the snapshot.
+     * @throws IgniteCheckedException If fails.
+     */
+    public StandaloneGridKernalContext createStandaloneKernalContext(String snpName, String folderName) throws IgniteCheckedException {
+        File snpDir = resolveSnapshotDir(snpName);
+
+        return new StandaloneGridKernalContext(log,
+            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
+            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
+    }
+
+    /**
+     * @param grpName Cache group name.
+     * @param partId Partition id.
+     * @param pageStore File page store to iterate over.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If and error occurs.
+     */
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+        String grpName,
+        int partId,
+        FilePageStore pageStore
+    ) throws IgniteCheckedException {
+        CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
+            false, false, false, false);
+
+        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(ctx, null, null, null,
+            null, null, null, null, null, null,
+            null, null, null, null, null,
+            null, null, null, null, null, null);
+
+        return new DataPageIterator(sctx, coctx, pageStore, partId);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
@@ -1383,10 +1444,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int partId,
         EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
-        File snpDir = snapshotLocalDir(snpName);
-
-        if (!snpDir.exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
+        File snpDir = resolveSnapshotDir(snpName);
 
         File nodePath = new File(snpDir, databaseRelativePath(folderName));
 
@@ -1420,19 +1478,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 val -> {
                 });
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(log,
-            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
-            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(ctx, grpName, partId, pageStore);
 
-        CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
-            false, false, false, false);
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** {@inheritDoc} */
+            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+                return partIter.nextX();
+            }
 
-        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(kctx, null, null, null,
-            null, null, null, null, null, null,
-            null, null, null, null, null,
-            null, null, null, null, null, null);
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return partIter.hasNextX();
+            }
 
-        return new DataPageIterator(sctx, coctx, pageStore, partId);
+            /** {@inheritDoc} */
+            @Override protected void onClose() {
+                U.closeQuiet(pageStore);
+            }
+        };
     }
 
     /**
@@ -1578,36 +1641,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             snpMeta.cacheGroupIds().stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
                 Collectors.toMap(Function.identity(), gid -> cctx.kernalContext().encryption().getActiveKey(gid)));
 
-        if (!grpKeys.isEmpty()) {
+        if (!grpKeys.isEmpty())
             snpMeta.addMetaRecord(SNAPSHOT_META_MASTER_KEY_SIGN, cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
-
-//            grpKeys.forEach((grpId, grpKey) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + grpId,
-//                new GroupKeyEncrypted(grpKey.id(), cctx.gridConfig().getEncryptionSpi().encryptKey(grpKey.key()))));
-        }
 
         return snpMeta;
     }
-
-    /**
-     * Extracts the encryption keys.
-     *
-     * @param snpMeta Snapshot metadata.
-     * @return Cache group encription keys and their ids stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta},
-     * returns empty map.
-     */
-//    static Map<Integer, GroupKeyEncrypted> snapshotEncrKeys(SnapshotMetadata snpMeta) {
-//        if (snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN) == null)
-//            return Collections.emptyMap();
-//
-//        Map<Integer, GroupKeyEncrypted> keys = new HashMap<>();
-//
-//        snpMeta.allMetaRecords().forEach((name, val) -> {
-//            if (name.startsWith(SNAPSHOT_META_GRP_KEY_PREFIX))
-//                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (GroupKeyEncrypted)val);
-//        });
-//
-//        return keys;
-//    }
 
     /**
      * @return Signature of master encryption key stored in {@code snpMeta}. {@code Null} if no encripted cache groups stored in {@code
@@ -2029,8 +2067,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 copy(ioFactory, part, snpPart, len);
 
-                if (log.isInfoEnabled()) {
-                    log.info("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
+                if (log.isDebugEnabled()) {
+                    log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
                         ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }
@@ -2044,8 +2082,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
 
-            if (log.isInfoEnabled()) {
-                log.info("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+            if (log.isDebugEnabled()) {
+                log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                     ", delta=" + delta + ']');
             }
 
