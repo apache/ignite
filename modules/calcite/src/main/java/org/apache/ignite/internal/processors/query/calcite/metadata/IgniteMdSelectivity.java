@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import java.util.Set;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -37,7 +35,6 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
@@ -54,7 +51,6 @@ import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
@@ -576,7 +572,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             RexLiteral literal = getOperand(pred, RexLiteral.class);
 
             if (literal == null)
-                return guessSelectivity(pred);
+                return 1.;//guessSelectivity(pred);
 
             BigDecimal val = toComparableValue(literal);
 
@@ -798,72 +794,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return null;
 
         return getSelectivity(input, mq, predicate);
-    }
-
-    /**
-     * Get selectivity of join by it's input selectivity.
-     *
-     * @param join AbstractIgniteJoin.
-     * @param mq RelMetadataQuery
-     * @param predicate Predicate.
-     * @return Selectivity or {@code null} if it can't be estimated.
-     */
-    public Double getSelectivity(AbstractIgniteJoin join, RelMetadataQuery mq, RexNode predicate) {
-        double sel = 1.0;
-        JoinRelType joinType = join.getJoinType();
-        RexNode leftPred, rightPred;
-        final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
-        int[] adjustments = new int[join.getRowType().getFieldCount()];
-
-        if (predicate != null) {
-            RexNode pred;
-            List<RexNode> leftFilters = new ArrayList<>();
-            List<RexNode> rightFilters = new ArrayList<>();
-            List<RexNode> joinFilters = new ArrayList<>();
-            List<RexNode> predList = RelOptUtil.conjunctions(predicate);
-
-            RelOptUtil.classifyFilters(
-                join,
-                predList,
-                joinType,
-                joinType == JoinRelType.INNER,
-                !joinType.generatesNullsOnLeft(),
-                !joinType.generatesNullsOnRight(),
-                joinFilters,
-                leftFilters,
-                rightFilters);
-            leftPred = RexUtil.composeConjunction(rexBuilder, leftFilters, true);
-            rightPred = RexUtil.composeConjunction(rexBuilder, rightFilters, true);
-
-            for (RelNode child : join.getInputs()) {
-                RexNode modifiedPred = null;
-
-                if (child == join.getLeft())
-                    pred = leftPred;
-                else
-                    pred = rightPred;
-
-                if (pred != null) {
-                    // convert the predicate to reference the types of the children
-                    modifiedPred =
-                        pred.accept(new RelOptUtil.RexInputConverter(
-                            rexBuilder,
-                            null,
-                            child.getRowType().getFieldList(),
-                            adjustments));
-                }
-                Double childSelectivity = mq.getSelectivity(child, modifiedPred);
-
-                if (childSelectivity == null)
-                    return null;
-
-                sel *= childSelectivity;
-            }
-
-            sel *= RelMdUtil.guessSelectivity(RexUtil.composeConjunction(rexBuilder, joinFilters, true));
-        }
-
-        return sel;
     }
 
     /**

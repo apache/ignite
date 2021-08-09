@@ -24,11 +24,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -51,8 +49,6 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.apache.calcite.tools.Frameworks.createRootSchema;
 
 /**
  * Statistic related simple tests.
@@ -220,8 +216,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("TBL2", tbl2);
         publicSchema.addTable("TBL3", tbl3);
 
-        SchemaPlus schema = createRootSchema(false).add("PUBLIC", publicSchema);
-
         String sql = "select * from TBL1 where t1c7short > 5 and t1c8long > 55555";
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
@@ -239,74 +233,5 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         assertEquals("TBL1_SHORT", idxScan2.indexName());
 
         tbl1.setStatistics(tbl1stat);
-    }
-
-    /**
-     * Check statistics usage in join order selection.
-     * @throws Exception In case of errors.
-     */
-    @Test
-    public void testJoinOrderChoosing() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        tbl1.setStatistics(tbl1stat);
-        tbl2.setStatistics(tbl2stat);
-
-        publicSchema.addTable("TBL1", tbl1);
-        publicSchema.addTable("TBL2", tbl2);
-        publicSchema.addTable("TBL3", tbl3);
-
-        SchemaPlus schema = createRootSchema(false).add("PUBLIC", publicSchema);
-
-        String sql = "select * from %s join %s on TBL1.T1C1INT = TBL2.T2C1INT where t1c7short > T2C1INT";
-
-        checkJoinOrder(publicSchema, sql, "TBL2", "TBL1");
-    }
-
-    /**
-     * Run query with direct and inverted table names. Check correct table order in plan.
-     *
-     * @param schema Schema to run query on.
-     * @param qry Query with two %s to invert tables.
-     * @param leftTbl Left table name.
-     * @param rightTbl Right table name
-     */
-    private void checkJoinOrder(IgniteSchema schema, String qry, String leftTbl, String rightTbl) throws Exception {
-        String sql = String.format(qry, leftTbl, rightTbl);
-
-        IgniteRel phys = physicalPlan(sql, schema);
-
-        checkJoinOrderPlan(sql, phys, leftTbl, rightTbl);
-
-        String sqlInv = String.format(qry, rightTbl, leftTbl);
-
-        IgniteRel physInv = physicalPlan(sqlInv, schema);
-
-        checkJoinOrderPlan(sqlInv, physInv, leftTbl, rightTbl);
-    }
-
-    /**
-     * Check physical plan.
-     *
-     * @param sql Initial sql query.
-     * @param phys Plan to check.
-     * @param leftTbl Left table name.
-     * @param rightTbl Right table name.
-     */
-    private void checkJoinOrderPlan(String sql, IgniteRel phys, String leftTbl, String rightTbl) {
-        assertNotNull("Can't get plan for query " + sql, phys);
-
-        IgniteMergeJoin mergeJoin = findFirstNode(phys, byClass(IgniteMergeJoin.class));
-
-        assertNotNull("Can't get merge join for query" + sql, mergeJoin);
-
-        IgniteIndexScan left = findFirstNode(mergeJoin.getLeft(), byClass(IgniteIndexScan.class));
-        IgniteIndexScan right = findFirstNode(mergeJoin.getRight(), byClass(IgniteIndexScan.class));
-
-        assertNotNull("Can;t get left index scan for query " + sql, left);
-        assertNotNull("Can;t get right index scan for query " + sql, right);
-
-        assertEquals(left.getTable().getQualifiedName().get(1), leftTbl);
-        assertEquals(right.getTable().getQualifiedName().get(1), rightTbl);
     }
 }
