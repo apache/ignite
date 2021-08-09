@@ -90,7 +90,9 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     @Override public boolean hasNext() throws IgniteCheckedException {
         if (first) {
             // Initial sort.
-            for (int i = 0; i < streams.size(); i++) {
+            int size = streams.size();
+
+            for (int i = 0; i < size; i++) {
                 NodePageStream<R> s = streams.poll();
 
                 if (s.hasNext())
