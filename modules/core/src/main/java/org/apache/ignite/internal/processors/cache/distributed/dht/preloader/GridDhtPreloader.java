@@ -377,10 +377,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     ) {
         long delay = grp.config().getRebalanceDelay();
         boolean forceRebalance = forcedRebFut != null;
+        GridDhtPreloaderAssignments assigns = null;
 
         // Don't delay for dummy reassigns to avoid infinite recursion.
-        return (delay == 0 || forceRebalance) ? demander.addAssignments(generateAssignments(exchId, exchFut), forceRebalance,
-            rebalanceId, next, forcedRebFut, compatibleRebFut) : null;
+        if (delay == 0 || forceRebalance)
+            assigns = generateAssignments(exchId, exchFut);
+
+        return demander.addAssignments(assigns, forceRebalance, rebalanceId, next, forcedRebFut, compatibleRebFut);
     }
 
     /**
