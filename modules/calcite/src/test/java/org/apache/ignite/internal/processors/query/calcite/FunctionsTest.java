@@ -225,6 +225,13 @@ public class FunctionsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testMonthnameDayname() {
+        checkQuery("SELECT MONTHNAME(DATE '2021-01-01')").returns("January").check();
+        checkQuery("SELECT DAYNAME(DATE '2021-01-01')").returns("Friday").check();
+    }
+
+    /** */
     private QueryChecker checkQuery(String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
