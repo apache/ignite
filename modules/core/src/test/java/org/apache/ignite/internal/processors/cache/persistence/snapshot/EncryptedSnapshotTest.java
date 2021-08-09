@@ -39,14 +39,14 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
  * Snapshot test for encrypted snapshots.
  */
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
-    /** Name of additional encrypted cache. */
-    private static final String SECOND_CACHE_NAME = "encryptedCache";
-
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption is enabled.")
     public static Iterable<Boolean> enableEncryption() {
         return Collections.singletonList(true);
     }
+
+    /** Name of additional encrypted cache. */
+    private static final String SECOND_CACHE_NAME = "encryptedCache";
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {

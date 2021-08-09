@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -40,10 +41,12 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -60,7 +63,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,6 +71,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
@@ -204,15 +207,19 @@ public class SnapshotPartitionsVerifyTask
             }
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
-            Set<Integer> grps = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
+            Set<Integer> grpFilter = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
                 rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
+            Map<Integer, File> grpDirs = new HashMap<>();
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
-                int grpId = CU.cacheId(cacheGroupName(dir));
+                String grpName = cacheGroupName(dir);
+                int grpId = CU.cacheId(grpName);
 
-                if (!grps.remove(grpId))
+                if (!grpFilter.remove(grpId))
                     continue;
+
+                grpDirs.put(grpId, dir);
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
@@ -232,9 +239,9 @@ public class SnapshotPartitionsVerifyTask
                 }
             }
 
-            if (!grps.isEmpty()) {
+            if (!grpFilter.isEmpty()) {
                 throw new IgniteException("Snapshot data doesn't contain required cache groups " +
-                    "[grps=" + grps + ", snpName=" + snpName + ", consId=" + consId +
+                    "[grps=" + grpFilter + ", snpName=" + snpName + ", consId=" + consId +
                     ", meta=" + meta + ']');
             }
 
@@ -245,7 +252,7 @@ public class SnapshotPartitionsVerifyTask
             FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
             EncryptionCacheKeyProvider snpEncrKeyProvider = IgniteSnapshotManager.snapshotMasterSign(meta) != null ?
-                new SnapshotEncrKeyProvider(meta, ignite.context().config().getEncryptionSpi()) : null;
+                new SnapshotEncrKeyProvider(ignite.context(), grpDirs) : null;
 
             try {
                 U.doInParallel(
@@ -353,11 +360,11 @@ public class SnapshotPartitionsVerifyTask
      * Provides encryption keys stored within snapshot metadata.
      */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
-        /** Encrypted keys. */
-        private final Map<Integer, GroupKeyEncrypted> encryptedKeys;
+        /** Kernal context */
+        private GridKernalContext kernalCtx;
 
-        /** Encryption SPI to decrypt the keys. */
-        private final EncryptionSpi encrSpi;
+        /** Snapshot caches dirs by group id */
+        private Map<Integer, File> grpDirs;
 
         /** Dencrypted keys. */
         private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
@@ -365,12 +372,12 @@ public class SnapshotPartitionsVerifyTask
         /**
          * Constructor.
          *
-         * @param snpMeta Snapshot metadata.
-         * @param encrSpi Encryption SPI to decrypt the keys.
+         * @param kernalCtx Kernal context.
+         * @param grpDirs   Data dirictories of cache groups by id.
          */
-        private SnapshotEncrKeyProvider(SnapshotMetadata snpMeta, EncryptionSpi encrSpi) {
-            this.encryptedKeys = IgniteSnapshotManager.snapshotEncrKeys(snpMeta);
-            this.encrSpi = encrSpi;
+        private SnapshotEncrKeyProvider(GridKernalContext kernalCtx, Map<Integer, File> grpDirs) {
+            this.kernalCtx = kernalCtx;
+            this.grpDirs = grpDirs;
         }
 
         /** {@inheritDoc} */
@@ -380,7 +387,37 @@ public class SnapshotPartitionsVerifyTask
 
         /** {@inheritDoc} */
         @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
-            return decryptedKeys.computeIfAbsent(grpId, gid -> new GroupKey(keyId, encrSpi.decryptKey(encryptedKeys.get(gid).key())));
+            return decryptedKeys.computeIfAbsent(grpId, gid -> {
+                GroupKey grpKey = null;
+
+                try {
+                    for (File cfgFile : grpDirs.get(grpId).listFiles(new FilenameFilter() {
+                        @Override public boolean accept(File dir, String name) {
+                            return name.endsWith(CACHE_DATA_FILENAME);
+                        }
+                    })) {
+                        StoredCacheData cacheData = ((FilePageStoreManager)kernalCtx.cache().context().pageStore()).readCacheData(cfgFile);
+
+                        GroupKeyEncrypted grpKeyEncrypted = cacheData.grpKeyEncrypted();
+
+                        if (grpKey == null) {
+                            grpKey = new GroupKey(grpKeyEncrypted.id(),
+                                kernalCtx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
+                        }
+                        else {
+                            assert grpKey.equals(new GroupKey(grpKeyEncrypted.id(),
+                                kernalCtx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
+                        }
+                    }
+
+                    assert grpKey != null;
+
+                    return grpKey;
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Unable to extract ciphered encryption key of cache group " + gid + '.', e);
+                }
+            });
         }
     }
 }

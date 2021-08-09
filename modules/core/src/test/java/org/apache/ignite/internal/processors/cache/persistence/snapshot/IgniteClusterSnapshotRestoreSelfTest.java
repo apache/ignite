@@ -65,7 +65,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -79,12 +78,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Snapshot restore tests.
  */
 public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption enabled")
-    public static Iterable<Boolean> encryptionParams() {
-        return Arrays.asList(true);
-    }
-
     /** Type name used for binary and SQL. */
     private static final String TYPE_NAME = "CustomType";
 
@@ -134,8 +127,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
-//        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
-//            dfltCacheCfg.setBackups(0));
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 

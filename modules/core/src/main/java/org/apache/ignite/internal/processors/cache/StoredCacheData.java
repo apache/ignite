@@ -21,12 +21,14 @@ import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache data to write to and read from {@link IgnitePageStoreManager}. In a nutshell, contains (most importantly)
@@ -51,6 +53,12 @@ public class StoredCacheData implements Serializable {
 
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheConfigurationEnrichment;
+
+    /** TODO */
+    private GroupKeyEncrypted grpKeyEncrypted;
+
+    /** TODO */
+    private @Nullable byte[] masterKeyDigest;
 
     /**
      * Constructor.
@@ -116,6 +124,16 @@ public class StoredCacheData implements Serializable {
         this.sql = sql;
 
         return this;
+    }
+
+    /** TODO */
+    public GroupKeyEncrypted grpKeyEncrypted() {
+        return grpKeyEncrypted;
+    }
+
+    /** TODO */
+    public void grpKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
+        this.grpKeyEncrypted = grpKeyEncrypted;
     }
 
     /**

@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -137,6 +138,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
@@ -240,7 +242,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Name prefix to save cache group encryption keys in snapshot meta. */
-    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "GrpEncrKey_";
+//    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "GrpEncrKey_";
 
     /** Name of master encryption key signature in snapshot meta. */
     private static final String SNAPSHOT_META_MASTER_KEY_SIGN = "MasterKeySign";
@@ -551,6 +553,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert U.alphanumericUnderscore(snpName) : snpName;
 
         return new File(locSnpDir, snpName);
+    }
+
+    /** TODO */
+    File snapshotDbDir(File snpLocDir) {
+        return new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
     }
 
     /**
@@ -1574,8 +1581,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!grpKeys.isEmpty()) {
             snpMeta.addMetaRecord(SNAPSHOT_META_MASTER_KEY_SIGN, cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
 
-            grpKeys.forEach((grpId, grpKey) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + grpId,
-                new GroupKeyEncrypted(grpKey.id(), cctx.gridConfig().getEncryptionSpi().encryptKey(grpKey.key()))));
+//            grpKeys.forEach((grpId, grpKey) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + grpId,
+//                new GroupKeyEncrypted(grpKey.id(), cctx.gridConfig().getEncryptionSpi().encryptKey(grpKey.key()))));
         }
 
         return snpMeta;
@@ -1588,19 +1595,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Cache group encription keys and their ids stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta},
      * returns empty map.
      */
-    static Map<Integer, GroupKeyEncrypted> snapshotEncrKeys(SnapshotMetadata snpMeta) {
-        if (snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN) == null)
-            return Collections.emptyMap();
-
-        Map<Integer, GroupKeyEncrypted> keys = new HashMap<>();
-
-        snpMeta.allMetaRecords().forEach((name, val) -> {
-            if (name.startsWith(SNAPSHOT_META_GRP_KEY_PREFIX))
-                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (GroupKeyEncrypted)val);
-        });
-
-        return keys;
-    }
+//    static Map<Integer, GroupKeyEncrypted> snapshotEncrKeys(SnapshotMetadata snpMeta) {
+//        if (snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN) == null)
+//            return Collections.emptyMap();
+//
+//        Map<Integer, GroupKeyEncrypted> keys = new HashMap<>();
+//
+//        snpMeta.allMetaRecords().forEach((name, val) -> {
+//            if (name.startsWith(SNAPSHOT_META_GRP_KEY_PREFIX))
+//                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (GroupKeyEncrypted)val);
+//        });
+//
+//        return keys;
+//    }
 
     /**
      * @return Signature of master encryption key stored in {@code snpMeta}. {@code Null} if no encripted cache groups stored in {@code
@@ -1933,7 +1940,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            dbDir = new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
+            dbDir = snapshotDbDir(snpLocDir);
 
             if (dbDir.exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +
@@ -1965,7 +1972,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+                File targetCacheCfg = new File(cacheDir, ccfg.getName());
+
+                copy(ioFactory, ccfg, targetCacheCfg, ccfg.length());
+
+                StoredCacheData cacheData = storeMgr.readCacheData(targetCacheCfg);
+
+                if(cacheData.config().isEncryptionEnabled()){
+                    EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
+
+                    GroupKey grpKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
+
+                    cacheData.grpKeyEncrypted(new GroupKeyEncrypted(grpKey.id(), encSpi.encryptKey(grpKey.key())));
+
+                    storeMgr.writeCacheData(cacheData, targetCacheCfg);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

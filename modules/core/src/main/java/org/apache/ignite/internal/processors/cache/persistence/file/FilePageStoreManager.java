@@ -530,10 +530,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                             "(make sure Ignite process has enough rights):" + file.getName());
                 }
 
-                // Pre-existing file will be truncated upon stream open.
-                try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
-                    marshaller.marshal(cacheData, stream);
-                }
+                writeCacheData(cacheData, tmp);
 
                 if (Files.exists(filePath) && Files.size(filePath) > 0) {
                     for (BiConsumer<String, File> lsnr : lsnrs)
@@ -1127,13 +1124,28 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Cache data.
      * @throws IgniteCheckedException If failed.
      */
-    private StoredCacheData readCacheData(File conf) throws IgniteCheckedException {
+    public StoredCacheData readCacheData(File conf) throws IgniteCheckedException {
         try (InputStream stream = new BufferedInputStream(new FileInputStream(conf))) {
             return marshaller.unmarshal(stream, U.resolveClassLoader(igniteCfg));
         }
         catch (IgniteCheckedException | IOException e) {
                 throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
                     conf.getAbsolutePath() + "]", e);
+        }
+    }
+
+    /**
+     * @param conf      File to store cache data.
+     * @param cacheData Cache data file.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void writeCacheData(StoredCacheData cacheData, File conf) throws IgniteCheckedException {
+        try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(conf))) {
+            marshaller.marshal(cacheData, stream);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("An error occurred during cache configuration writting to file [file=" +
+                conf.getAbsolutePath() + "]", e);
         }
     }
 

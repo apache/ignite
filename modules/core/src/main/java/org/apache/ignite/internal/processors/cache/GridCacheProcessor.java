@@ -3747,8 +3747,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             failIfExists,
             checkThreadTx,
             disabledAfterStart,
-            null,
-            Collections.emptyMap());
+            null);
     }
 
     /**
@@ -3759,7 +3758,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param reuseEncrKeys Encryption keys to reuse. If not empty, these keys will be added instead of newly generated keys.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3767,8 +3765,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean checkThreadTx,
         boolean disabledAfterStart,
-        IgniteUuid restartId,
-        Map<Integer, GroupKeyEncrypted> reuseEncrKeys
+        IgniteUuid restartId
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3789,13 +3786,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
                 for (StoredCacheData ccfg : storedCacheDataList) {
-                    int gid = CU.cacheGroupId(ccfg.config());
-
-                    assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
+                    assert ccfg.grpKeyEncrypted() == null || ccfg.config().isEncryptionEnabled();
 
                     // Reuse encription key if passed for this group. Take next generated otherwise.
-                    GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ?
-                        (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
+                    GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ? (ccfg.grpKeyEncrypted() != null ?
+                        ccfg.grpKeyEncrypted() : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
 
                     DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                         ccfg.config(),
@@ -3855,10 +3850,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         int encGrpCnt = 0;
 
         for (StoredCacheData ccfg : storedCacheDataList) {
-            // Do not generate extra key if reuse-key is set.
-            int gid = CU.cacheGroupId(ccfg.config());
-
-            if (ccfg.config().isEncryptionEnabled() && !reuseEncrKeys.containsKey(gid))
+            if (ccfg.config().isEncryptionEnabled() && ccfg.grpKeyEncrypted() == null)
                 encGrpCnt++;
         }
 
