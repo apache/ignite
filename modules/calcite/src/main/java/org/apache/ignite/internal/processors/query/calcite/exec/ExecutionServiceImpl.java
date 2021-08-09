@@ -498,6 +498,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .build();
     }
 
+    /** */
     private SchemaPlus getDefaultSchema(String schema) {
         return schema != null ? schemaHolder().schema().getSubSchema(schema) : schemaHolder().schema();
     }
