@@ -332,7 +332,7 @@ namespace ignite
              *
              * @tparam R Type of task result.
              */
-            template<typename R, typename A>
+            template<typename R>
             R ExecuteJavaTask(const std::string& taskName)
             {
                 return impl.Get()->ExecuteJavaTaskAsync<R>(taskName).GetValue();
@@ -364,7 +364,7 @@ namespace ignite
              *
              * @tparam R Type of task result.
              */
-            template<typename R, typename A>
+            template<typename R>
             Future<R> ExecuteJavaTaskAsync(const std::string& taskName)
             {
                 return impl.Get()->ExecuteJavaTaskAsync<R>(taskName);

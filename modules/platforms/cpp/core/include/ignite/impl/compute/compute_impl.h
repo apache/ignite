@@ -25,7 +25,11 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/promise.h>
+
+#include <ignite/cluster/cluster_node.h>
+
 #include <ignite/impl/interop/interop_target.h>
+#include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/java_compute_task_holder.h>
 #include <ignite/impl/compute/single_job_compute_task_holder.h>
 #include <ignite/impl/compute/multiple_job_compute_task_holder.h>
@@ -68,9 +72,10 @@ namespace ignite
                  * Constructor.
                  *
                  * @param env Environment.
-                 * @param javaRef Java object reference.
+                 * @param clusterGroup Cluster group for the compute.
                  */
-                ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env,
+                            cluster::SP_ClusterGroupImpl clusterGroup);
 
                 /**
                  * Executes given job asynchronously on the node where data for
@@ -232,10 +237,12 @@ namespace ignite
                 template<typename R>
                 Future<R> ExecuteJavaTaskAsync(const std::string& taskName)
                 {
-                    return PerformJavaTaskAsync<R, void>(Operation::EXEC_ASYNC, taskName, 0);
+                    return PerformJavaTaskAsync<R, int>(Operation::EXEC_ASYNC, taskName, 0);
                 }
 
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
+
                 struct FutureType
                 {
                     enum Type
@@ -263,6 +270,16 @@ namespace ignite
                 template<> struct FutureTypeForType<float> { static const int32_t value = FutureType::FLOAT; };
                 template<> struct FutureTypeForType<double> { static const int32_t value = FutureType::DOUBLE; };
 
+                /**
+                 * @return True if projection for the compute contains predicate.
+                 */
+                bool ProjectionContainsPredicate() const;
+
+                /**
+                 * @return Nodes for the compute.
+                 */
+                std::vector<ignite::cluster::ClusterNode> GetNodes();
+
                 template<typename R, typename A>
                 Future<R> PerformJavaTaskAsync(Operation::Type operation, const std::string& taskName, const A* arg)
                 {
@@ -281,8 +298,19 @@ namespace ignite
                         writer.WriteObject<A>(*arg);
                     else
                         writer.WriteNull();
-                    // TODO: Node IDs go here
-                    writer.WriteBool(false);
+
+                    if (!ProjectionContainsPredicate())
+                        writer.WriteBool(false);
+                    else
+                    {
+                        typedef std::vector<ignite::cluster::ClusterNode> ClusterNodes;
+                        ClusterNodes nodes = GetNodes();
+
+                        writer.WriteBool(true);
+                        writer.WriteInt32(static_cast<int32_t>(nodes.size()));
+                        for (ClusterNodes::iterator it = nodes.begin(); it != nodes.end(); ++it)
+                            writer.WriteGuid(it->GetId());
+                    }
 
                     writer.WriteInt64(taskHandle);
                     writer.WriteInt32(FutureTypeForType<R>::value);
@@ -430,7 +458,8 @@ namespace ignite
                     return promise.GetFuture();
                 }
 
-                IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
+                /** Cluster group */
+                cluster::SP_ClusterGroupImpl clusterGroup;
             };
         }
     }

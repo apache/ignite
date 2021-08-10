@@ -37,6 +37,9 @@ namespace
     /** Echo task name. */
     const std::string ECHO_TASK("org.apache.ignite.platform.PlatformComputeEchoTask");
 
+    /** Node name task name. */
+    const std::string NODE_NAME_TASK("org.apache.ignite.platform.PlatformComputeNodeNameTask");
+
     /** Echo type: null. */
     const int32_t ECHO_TYPE_NULL = 0;
 
@@ -200,7 +203,6 @@ BOOST_AUTO_TEST_CASE(EchoTaskPrimitives)
 BOOST_AUTO_TEST_CASE(EchoTaskObject)
 {
     Compute compute = node.GetCompute();
-
     Cache<int32_t, int32_t> cache = GetDefaultCache<int32_t>();
 
     for (int32_t i = 0; i < 100; ++i)
@@ -218,7 +220,6 @@ BOOST_AUTO_TEST_CASE(EchoTaskObject)
 BOOST_AUTO_TEST_CASE(EchoTaskGuid)
 {
     Compute compute = node.GetCompute();
-
     Cache<int32_t, ignite::Guid> cache = GetDefaultCache<ignite::Guid>();
 
     for (int32_t i = 0; i < 100; ++i)
@@ -230,6 +231,20 @@ BOOST_AUTO_TEST_CASE(EchoTaskGuid)
         ignite::Guid res = compute.ExecuteJavaTask<ignite::Guid>(ECHO_TASK, ECHO_TYPE_UUID);
 
         BOOST_CHECK_EQUAL(value, res);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(Cluster)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+
+    Compute compute = node.GetCompute(node.GetCluster().ForLocal());
+
+    for (int32_t i = 0; i < 100; ++i)
+    {
+        std::string res = compute.ExecuteJavaTask<std::string>(NODE_NAME_TASK);
+
+        BOOST_CHECK_EQUAL(std::string(node.GetName()), res);
     }
 }
 
