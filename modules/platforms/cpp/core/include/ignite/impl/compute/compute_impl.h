@@ -247,28 +247,19 @@ namespace ignite
                 {
                     enum Type
                     {
-                        BYTE = 1,
-                        BOOL = 2,
-                        SHORT = 3,
-                        CHAR = 4,
-                        INT = 5,
-                        FLOAT = 6,
-                        LONG = 7,
-                        DOUBLE = 8,
-                        OBJECT = 9,
+                        F_BYTE = 1,
+                        F_BOOL = 2,
+                        F_SHORT = 3,
+                        F_CHAR = 4,
+                        F_INT = 5,
+                        F_FLOAT = 6,
+                        F_LONG = 7,
+                        F_DOUBLE = 8,
+                        F_OBJECT = 9,
                     };
                 };
 
-                template<typename T> struct FutureTypeForType { static const int32_t value = FutureType::OBJECT; };
-
-                template<> struct FutureTypeForType<int8_t> { static const int32_t value = FutureType::BYTE; };
-                template<> struct FutureTypeForType<bool> { static const int32_t value = FutureType::BOOL; };
-                template<> struct FutureTypeForType<int16_t> { static const int32_t value = FutureType::SHORT; };
-                template<> struct FutureTypeForType<uint16_t> { static const int32_t value = FutureType::CHAR; };
-                template<> struct FutureTypeForType<int32_t> { static const int32_t value = FutureType::INT; };
-                template<> struct FutureTypeForType<int64_t> { static const int32_t value = FutureType::LONG; };
-                template<> struct FutureTypeForType<float> { static const int32_t value = FutureType::FLOAT; };
-                template<> struct FutureTypeForType<double> { static const int32_t value = FutureType::DOUBLE; };
+                template<typename T> struct FutureTypeForType { static const int32_t value = FutureType::F_OBJECT; };
 
                 /**
                  * @return True if projection for the compute contains predicate.
@@ -460,6 +451,38 @@ namespace ignite
 
                 /** Cluster group */
                 cluster::SP_ClusterGroupImpl clusterGroup;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int8_t> {
+                static const int32_t value = FutureType::F_BYTE;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<bool> {
+                static const int32_t value = FutureType::F_BOOL;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int16_t> {
+                static const int32_t value = FutureType::F_SHORT;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<uint16_t> {
+                static const int32_t value = FutureType::F_CHAR;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int32_t> {
+                static const int32_t value = FutureType::F_INT;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int64_t> {
+                static const int32_t value = FutureType::F_LONG;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<float> {
+                static const int32_t value = FutureType::F_FLOAT;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<double> {
+                static const int32_t value = FutureType::F_DOUBLE;
             };
         }
     }

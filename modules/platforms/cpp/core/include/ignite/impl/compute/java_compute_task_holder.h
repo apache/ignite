@@ -67,7 +67,7 @@ namespace ignite
                  * @param job Job.
                  * @return Policy.
                  */
-                virtual int32_t JobResultLocal(ComputeJobHolder& job)
+                virtual int32_t JobResultLocal(ComputeJobHolder&)
                 {
                     return ComputeJobResultPolicy::WAIT;
                 }
@@ -78,7 +78,7 @@ namespace ignite
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl&)
                 {
                     return ComputeJobResultPolicy::WAIT;
                 }
@@ -177,7 +177,7 @@ namespace ignite
                  * @param job Job.
                  * @return Policy.
                  */
-                virtual int32_t JobResultLocal(ComputeJobHolder& job)
+                virtual int32_t JobResultLocal(ComputeJobHolder&)
                 {
                     return ComputeJobResultPolicy::WAIT;
                 }
@@ -188,7 +188,7 @@ namespace ignite
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl&)
                 {
                     return ComputeJobResultPolicy::WAIT;
                 }
