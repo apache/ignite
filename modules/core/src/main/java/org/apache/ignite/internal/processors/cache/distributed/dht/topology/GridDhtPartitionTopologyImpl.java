@@ -921,6 +921,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, loc = partFactory.create(ctx, grp, p, false));
 
+            // TODO recheck the structures of local GridDhtPartition instance which should be re-inited on re-create.
             if (recreate)
                 loc.resetUpdateCounter();
 

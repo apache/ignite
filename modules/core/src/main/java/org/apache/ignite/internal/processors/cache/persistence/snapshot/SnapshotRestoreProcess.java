@@ -936,6 +936,24 @@ public class SnapshotRestoreProcess {
                             // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
 //                            ctx.cache().context().pageStore().restore(grp.groupId(), part.id(), path.toFile());
 
+                            // Loaded:
+                            // - need to set MOVING states to loading partitions.
+
+                            // The process of re-init notes:
+                            // - clearAsync() should move the clearVer in clearAll() to the end.
+                            // - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
+                            // - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
+                            // - CacheDataStore markDestroyed() may be called prior to checkpoint?
+                            // - Does new pages on acquirePage will be read from new page store after tag has been incremented?
+                            // - invalidate() returns a new tag -> no updates will be written to page store.
+                            // - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
+                            // - getOrCreatePartition() resets also partition counters of new partitions can be updated only on cp-write-lock (GridDhtLocalPartition ?).
+                            // - update the cntrMap in the GridDhtTopology prior to partition creation
+                            // - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
+
+                            // Re-init:
+                            //
+
                             boolean initialized = part.dataStore().init();
 
                             assert initialized;
