@@ -180,7 +180,9 @@ public class DistributedSqlConfiguration {
 
     /** */
     public boolean isDisableCreateLuceneIndexForStringValueType() {
-        return disableCreateLuceneIndexForStringValueType.get();
+        Boolean ret = disableCreateLuceneIndexForStringValueType.get();
+
+        return ret != null && ret;
     }
 
     /** */
