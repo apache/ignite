@@ -21,6 +21,7 @@
 
 #include <ignite/ignition.h>
 #include <ignite/test_utils.h>
+#include <ignite/compute_types.h>
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -81,21 +82,31 @@ struct ComputeJavaTestSuiteFixture
 {
     Ignite node;
 
-    Ignite MakeNode(const char* name)
+    static Ignite MakeNode(int idx)
     {
+        std::stringstream ss_config;
+
+        ss_config << "compute-server" << idx;
 #ifdef IGNITE_TESTS_32
-        const char* config = "compute-server0-32.xml";
-#else
-        const char* config = "compute-server0.xml";
+        ss_config << "-32";
 #endif
-        return StartNode(config, name);
+        ss_config << ".xml";
+
+        std::stringstream ss_name;
+
+        ss_name << "ComputeNode" << idx;
+
+        std::string name = ss_name.str();
+        std::string config = ss_config.str();
+
+        return StartNode(config.c_str(), name.c_str());
     }
 
     /*
      * Constructor.
      */
     ComputeJavaTestSuiteFixture() :
-        node(MakeNode("ComputeNode1"))
+        node(MakeNode(0))
     {
         // No-op.
     }
@@ -234,11 +245,28 @@ BOOST_AUTO_TEST_CASE(EchoTaskGuid)
     }
 }
 
-BOOST_AUTO_TEST_CASE(Cluster)
+BOOST_AUTO_TEST_CASE(ClusterBasic)
 {
-    Ignite node2 = MakeNode("ComputeNode2");
+    Ignite node2 = MakeNode(1);
 
     Compute compute = node.GetCompute(node.GetCluster().ForLocal());
+
+    for (int32_t i = 0; i < 100; ++i)
+    {
+        std::string res = compute.ExecuteJavaTask<std::string>(NODE_NAME_TASK);
+
+        BOOST_CHECK_EQUAL(std::string(node.GetName()), res);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(ClusterPredicate)
+{
+    Ignite node2 = MakeNode(1);
+
+    ClusterGroup grp = node.GetCluster().AsClusterGroup().ForPredicate(
+            new ignite_test::HasAttrValue("TestAttribute", "Value0"));
+
+    Compute compute = node.GetCompute(grp);
 
     for (int32_t i = 0; i < 100; ++i)
     {

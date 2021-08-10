@@ -117,6 +117,9 @@
     <ClInclude Include="..\..\include\ignite\complex_type.h">
       <Filter>Code\Types</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute_types.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\test_type.h">
       <Filter>Code\Types</Filter>
     </ClInclude>
