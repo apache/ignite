@@ -615,17 +615,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public long restoreStateOfPartition(
-        int p,
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException {
+    @Override public long restoreStateOfPartition(int p, @Nullable Integer recoveryState) throws IgniteCheckedException {
         if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled()
             || partitionStatesRestored)
             return 0;
 
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-        Integer recoverState = partRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
 
         long startTime = U.currentTimeMillis();
 
@@ -670,10 +665,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     try {
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                        if (recoverState != null) {
-                            changed = io.setPartitionState(pageAddr, (byte)recoverState.intValue());
+                        if (recoveryState != null) {
+                            changed = io.setPartitionState(pageAddr, (byte)recoveryState.intValue());
 
-                            updateState(part, recoverState);
+                            updateState(part, recoveryState);
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Restored partition state (from WAL) " +
@@ -709,10 +704,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             res = U.currentTimeMillis() - startTime;
         }
-        else if (recoverState != null) { // Pre-create partition if having valid state.
+        else if (recoveryState != null) { // Pre-create partition if having valid state.
             GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
-            updateState(part, recoverState);
+            updateState(part, recoveryState);
 
             res = U.currentTimeMillis() - startTime;
 
@@ -740,24 +735,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Long> restorePartitionStates(
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException {
+    @Override public void restorePartitionStates() throws IgniteCheckedException {
         if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled()
             || partitionStatesRestored)
-            return Collections.emptyMap();
+            return;
 
-        Map<Integer, Long> processed = new HashMap<>();
-
-        for (int p = 0; p < grp.affinity().partitions(); p++) {
-            long time = restoreStateOfPartition(p, partRecoveryStates);
-
-            processed.put(p, time);
-        }
+        for (int p = 0; p < grp.affinity().partitions(); p++)
+            restoreStateOfPartition(p, null);
 
         confirmPartitionStatesRestored();
-
-        return processed;
     }
 
     /** {@inheritDoc} */

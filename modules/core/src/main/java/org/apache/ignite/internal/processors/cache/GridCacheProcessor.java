@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -5532,95 +5533,84 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             int poolSize = ctx.config().getSystemThreadPoolSize();
 
-            List<List<GroupPartitionId>> partIds = new ArrayList<>(poolSize);
+            List<Queue<GroupPartitionId>> partIds = new ArrayList<>(poolSize);
 
             for (int i = 0; i < poolSize; i++)
                 partIds.add(new LinkedList<>());
 
             int cntr = 0;
 
-            // Group id -> (group ctx, completed partitions counter)
-            Map<Integer, T2<CacheGroupContext, AtomicInteger>> grps = new HashMap<>();
+            // Group id -> completed partitions counter
+            Map<Integer, AtomicInteger> grps = new HashMap<>();
 
             for (CacheGroupContext ctx : forGroups) {
-                grps.put(ctx.groupId(), new T2<>(ctx, new AtomicInteger()));
+                grps.put(ctx.groupId(), new AtomicInteger());
 
-                for (int i = 0; i < ctx.affinity().partitions(); i++) {
-                    partIds.get(cntr % poolSize).add(new GroupPartitionId(ctx.groupId(), i));
-
-                    cntr++;
-                }
+                for (int i = 0; i < ctx.affinity().partitions(); i++)
+                    partIds.get(cntr++ % poolSize).add(new GroupPartitionId(ctx.groupId(), i));
             }
 
             CountDownLatch completionLatch = new CountDownLatch(cntr);
 
+            final int topPartRefLimit = 5;
+
             for (int i = 0; i < poolSize; i++) {
                 final int batchIdx = i;
 
-                sysPool.submit(() -> {
-                    List<GroupPartitionId> batch = partIds.get(batchIdx);
+                sysPool.execute(() -> {
+                    Queue<GroupPartitionId> batch = partIds.get(batchIdx);
 
-                    Map<GroupPartitionId, Long> processed = new HashMap<>();
+                    TreeSet<T3<Long, Long, GroupPartitionId>> top =
+                        new TreeSet<>(processedPartitionComparator());
 
-                    try {
-                        for (GroupPartitionId grpPartId : batch) {
-                            T2<CacheGroupContext, AtomicInteger> grpTuple = grps.get(grpPartId.getGroupId());
+                    while (!batch.isEmpty()) {
+                        GroupPartitionId grpPartId = batch.poll();
 
-                            CacheGroupContext grpCtx = grpTuple.get1();
+                        CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpPartId.getGroupId());
 
-                            try {
-                                long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(), partStates);
+                        try {
+                            long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(),
+                                partStates.get(grpPartId));
 
-                                processed.put(grpPartId, time);
+                            top.add(new T3<>(time, U.currentTimeMillis(), grpPartId));
 
-                                totalProcessed.incrementAndGet();
-                            }
-                            catch (IgniteCheckedException | RuntimeException | Error e) {
-                                U.error(log, "Failed to restore partition state for " +
-                                    "groupName=" + grpCtx.name() + " groupId=" + grpCtx.groupId(), e);
+                            trimToSize(top, topPartRefLimit);
 
-                                IgniteCheckedException ex = e instanceof IgniteCheckedException
-                                    ? ((IgniteCheckedException)e)
-                                    : new IgniteCheckedException(e);
-
-                                if (!restoreStateError.compareAndSet(null, ex))
-                                    restoreStateError.get().addSuppressed(ex);
-                            }
-                            finally {
-                                completionLatch.countDown();
-
-                                AtomicInteger completedCntr = grpTuple.get2();
-
-                                if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions())
-                                    grpCtx.offheap().confirmPartitionStatesRestored();
-                            }
+                            totalProcessed.incrementAndGet();
                         }
-                    }
-                    finally {
-                        if (log.isInfoEnabled()) {
-                            TreeSet<T3<Long, Long, GroupPartitionId>> top =
-                                new TreeSet<>(processedPartitionComparator());
+                        catch (IgniteCheckedException | RuntimeException | Error e) {
+                            U.error(log, "Failed to restore partition state for " +
+                                "groupName=" + grpCtx.name() + " groupId=" + grpCtx.groupId(), e);
 
-                            long ts = System.currentTimeMillis();
+                            IgniteCheckedException ex = e instanceof IgniteCheckedException
+                                ? ((IgniteCheckedException)e)
+                                : new IgniteCheckedException(e);
 
-                            for (Map.Entry<GroupPartitionId, Long> e : processed.entrySet()) {
-                                top.add(new T3<>(e.getValue(), ts, e.getKey()));
+                            if (!restoreStateError.compareAndSet(null, ex))
+                                restoreStateError.get().addSuppressed(ex);
+                        }
+                        finally {
+                            completionLatch.countDown();
 
-                                trimToSize(top, 5);
-                            }
+                            AtomicInteger completedCntr = grps.get(grpPartId.getGroupId());
 
-                            topPartRef.updateAndGet(top0 -> {
-                                if (top0 == null)
+                            if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions())
+                                grpCtx.offheap().confirmPartitionStatesRestored();
+
+                            if (log.isInfoEnabled()) {
+                                topPartRef.updateAndGet(top0 -> {
+                                    if (top0 == null)
+                                        return top;
+
+                                    for (T3<Long, Long, GroupPartitionId> t2 : top0) {
+                                        top.add(t2);
+
+                                        trimToSize(top, topPartRefLimit);
+                                    }
+
                                     return top;
-
-                                for (T3<Long, Long, GroupPartitionId> t2 : top0) {
-                                    top.add(t2);
-
-                                    trimToSize(top, 5);
-                                }
-
-                                return top;
-                            });
+                                });
+                            }
                         }
                     }
                 });

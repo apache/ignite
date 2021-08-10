@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -93,29 +92,23 @@ public interface IgniteCacheOffheapManager {
      * Pre-create single partition that resides in page memory or WAL and restores their state.
      *
      * @param p Partition id.
-     * @param partRecoveryStates Partition recovery states.
+     * @param recoveryState Partition recovery state.
      * @return Processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
-    long restoreStateOfPartition(
-        int p,
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException;
+    long restoreStateOfPartition(int p, @Nullable Integer recoveryState) throws IgniteCheckedException;
 
     /**
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
-     * @param partRecoveryStates Partition recovery states.
      * @return Processed partitions: partition id -> processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
-    Map<Integer, Long> restorePartitionStates(
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException;
+    void restorePartitionStates() throws IgniteCheckedException;
 
     /**
-     * Confirm that partition states are restored. This method should be called after restoring partitions using
-     * {@link #restoreStateOfPartition(int, Map)}.
+     * Confirm that partition states are restored. This method should be called after restoring state of all partitions
+     * in group using {@link #restoreStateOfPartition(int, Integer)}.
      */
     void confirmPartitionStatesRestored();
 
