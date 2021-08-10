@@ -347,7 +347,9 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) && assignments != null) {
+        if (delay == 0 || force) {
+            assert assignments != null;
+
             final RebalanceFuture oldFut = rebalanceFut;
 
             if (assignments.cancelled()) { // Pending exchange.
