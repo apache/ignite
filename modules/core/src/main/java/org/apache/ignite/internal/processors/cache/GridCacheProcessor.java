@@ -35,10 +35,10 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -5560,8 +5560,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysPool.execute(() -> {
                     Queue<GroupPartitionId> batch = partIds.get(batchIdx);
 
-                    TreeSet<T3<Long, Long, GroupPartitionId>> top =
-                        new TreeSet<>(processedPartitionComparator());
+                    SortedSet<T3<Long, Long, GroupPartitionId>> top =
+                        new ConcurrentSkipListSet<>(processedPartitionComparator());
 
                     while (!batch.isEmpty()) {
                         GroupPartitionId grpPartId = batch.poll();
