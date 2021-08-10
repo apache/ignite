@@ -23,31 +23,44 @@ import org.apache.ignite.internal.storage.OperationType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Invoke closure implementation for a write operation. */
-public class SimpleWriteInvokeClosure implements InvokeClosure<Void> {
-    /** Data row to write into storage. */
+/**
+ * Closure that inserts a new data row.
+ */
+public class InsertInvokeClosure implements InvokeClosure<Boolean> {
+    /** New row. */
+    @NotNull
     private final DataRow newRow;
 
+    /** {@code true} if this closure inserts a new row, {@code false} otherwise. */
+    private boolean inserts = false;
+
     /**
-     * @param newRow Data row to write into the storage.
+     * Constructor.
+     *
+     * @param newRow New row.
      */
-    public SimpleWriteInvokeClosure(DataRow newRow) {
+    public InsertInvokeClosure(@NotNull DataRow newRow) {
         this.newRow = newRow;
     }
 
     /** {@inheritDoc} */
     @Override public void call(@NotNull DataRow row) {
+        inserts = !row.hasValueBytes();
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public DataRow newRow() {
+    @Override public @Nullable DataRow newRow() {
         return newRow;
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public OperationType operationType() {
-        return OperationType.WRITE;
+    @Override public @Nullable OperationType operationType() {
+        return inserts ? OperationType.WRITE : OperationType.NOOP;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override public Boolean result() {
+        return inserts;
     }
 }

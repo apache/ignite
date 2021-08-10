@@ -133,6 +133,11 @@ public interface BinaryRow {
      byte[] readBytes(int off, int len);
 
     /**
+     * @return Byte array of the row.
+     */
+     byte[] bytes();
+
+    /**
      * Row flags.
      */
     final class RowFlags {

@@ -23,31 +23,64 @@ import org.apache.ignite.internal.storage.OperationType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Invoke closure implementation for a write operation. */
-public class SimpleWriteInvokeClosure implements InvokeClosure<Void> {
-    /** Data row to write into storage. */
+/**
+ * Closure that replaces a data row with a given key and returns it.
+ */
+public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
+    /** New row. */
+    @NotNull
     private final DataRow newRow;
 
+    /** {@code true} if this closure should insert a new row only if a previous value exists. */
+    private final boolean onlyIfExists;
+
+    /** Previous data row. */
+    private DataRow oldRow;
+
+    /** {@code true} if this closure replaces a row, {@code false} otherwise. */
+    private boolean replaces;
+
     /**
-     * @param newRow Data row to write into the storage.
+     * Constructor.
+     *
+     * @param newRow New row.
+     * @param onlyIfExists Whether to insert a new row only if a previous one exists.
      */
-    public SimpleWriteInvokeClosure(DataRow newRow) {
+    public GetAndReplaceInvokeClosure(@NotNull DataRow newRow, boolean onlyIfExists) {
         this.newRow = newRow;
+        this.onlyIfExists = onlyIfExists;
     }
 
     /** {@inheritDoc} */
     @Override public void call(@NotNull DataRow row) {
+        oldRow = row;
+
+        replaces = row.hasValueBytes() || !onlyIfExists;
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public DataRow newRow() {
+    @Override public @Nullable DataRow newRow() {
         return newRow;
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public OperationType operationType() {
-        return OperationType.WRITE;
+    @Override public @Nullable OperationType operationType() {
+        return replaces ? OperationType.WRITE : OperationType.NOOP;
+    }
+
+    /**
+     * @return Previous data row.
+     */
+    @NotNull
+    public DataRow oldRow() {
+        assert oldRow != null;
+
+        return oldRow;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override public Boolean result() {
+        return replaces;
     }
 }

@@ -33,4 +33,9 @@ public interface DataRow extends SearchRow {
      * @return Value object as a byte buffer. Allows more effective memory management in certain cases.
      */
     ByteBuffer value();
+
+    /**
+     * @return {@code true} if this row has a value.
+     */
+    boolean hasValueBytes();
 }

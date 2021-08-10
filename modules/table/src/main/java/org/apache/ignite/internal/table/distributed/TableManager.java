@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.table.distributed;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +62,7 @@ import org.apache.ignite.internal.schema.SchemaModificationException;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
+import org.apache.ignite.internal.storage.rocksdb.RocksDbStorage;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
@@ -69,6 +74,7 @@ import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.ClusterNode;
@@ -107,6 +113,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Affinity manager. */
     private final AffinityManager affMgr;
 
+    /** Partitions store directory. */
+    private final Path partitionsStoreDir;
+
     /** Tables. */
     private final Map<String, TableImpl> tables = new ConcurrentHashMap<>();
 
@@ -121,19 +130,22 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @param schemaMgr Schema manager.
      * @param affMgr Affinity manager.
      * @param raftMgr Raft manager.
+     * @param partitionsStoreDir Partitions store directory.
      */
     public TableManager(
         ConfigurationManager configurationMgr,
         MetaStorageManager metaStorageMgr,
         SchemaManager schemaMgr,
         AffinityManager affMgr,
-        Loza raftMgr
+        Loza raftMgr,
+        Path partitionsStoreDir
     ) {
         this.configurationMgr = configurationMgr;
         this.metaStorageMgr = metaStorageMgr;
         this.affMgr = affMgr;
         this.raftMgr = raftMgr;
         this.schemaMgr = schemaMgr;
+        this.partitionsStoreDir = partitionsStoreDir;
     }
 
     /** {@inheritDoc} */
@@ -167,11 +179,27 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         HashMap<Integer, RaftGroupService> partitionMap = new HashMap<>(partitions);
 
+        Path storageDir = partitionsStoreDir.resolve(name);
+
+        try {
+            Files.createDirectories(storageDir);
+        } catch (IOException e) {
+            throw new IgniteInternalException(
+                "Failed to create partitions store directory for " + name + ": " + e.getMessage(),
+                e
+            );
+        }
+
         for (int p = 0; p < partitions; p++) {
+            RocksDbStorage storage = new RocksDbStorage(
+                storageDir.resolve(String.valueOf(p)),
+                ByteBuffer::compareTo
+            );
+
             partitionMap.put(p, raftMgr.prepareRaftGroup(
                 raftGroupName(tblId, p),
                 assignment.get(p),
-                new PartitionListener()
+                new PartitionListener(storage)
             ));
         }
 

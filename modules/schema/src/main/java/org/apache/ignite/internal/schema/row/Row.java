@@ -665,4 +665,8 @@ public class Row implements BinaryRow {
     @Override public byte[] readBytes(int off, int len) {
         return row.readBytes(off, len);
     }
+
+    @Override public byte[] bytes() {
+        return row.bytes();
+    }
 }

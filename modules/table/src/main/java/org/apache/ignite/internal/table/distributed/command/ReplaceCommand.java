@@ -68,6 +68,7 @@ public class ReplaceCommand implements WriteCommand {
      *
      * @return Binary row.
      */
+    @NotNull
     public BinaryRow getRow() {
         if (row == null)
             row = new ByteBufferRow(rowBytes);
@@ -80,6 +81,7 @@ public class ReplaceCommand implements WriteCommand {
      *
      * @return Binary row.
      */
+    @NotNull
     public BinaryRow getOldRow() {
         if (oldRow == null)
             oldRow = new ByteBufferRow(oldRowBytes);

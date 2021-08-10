@@ -81,6 +81,11 @@ public class IgnitionImpl implements Ignition {
      */
     private static final Path VAULT_DB_PATH = Paths.get("vault");
 
+    /**
+     * Path for the partitions persistent storage.
+     */
+    private static final Path PARTITIONS_STORE_PATH = Paths.get("db");
+
     /** */
     private static final String[] BANNER = {
         "",
@@ -324,7 +329,8 @@ public class IgnitionImpl implements Ignition {
                     metaStorageMgr,
                     schemaMgr,
                     affinityMgr,
-                    raftMgr
+                    raftMgr,
+                    getPartitionsStorePath(workDir)
                 )
             );
 
@@ -373,6 +379,26 @@ public class IgnitionImpl implements Ignition {
 
             throw new IgniteException(errMsg, e);
         }
+    }
+
+    /**
+     * Returns a path to the partitions store directory.
+     * Creates a directory if it doesn't exist.
+     *
+     * @param workDir Ignite work directory.
+     * @return Partitions store path.
+     */
+    @NotNull
+    private static Path getPartitionsStorePath(Path workDir) {
+        Path partitionsStore = workDir.resolve(PARTITIONS_STORE_PATH);
+
+        try {
+            Files.createDirectories(partitionsStore);
+        } catch (IOException e) {
+            throw new IgniteInternalException("Failed to create directory for partitions storage: " + e.getMessage(), e);
+        }
+
+        return partitionsStore;
     }
 
     /**

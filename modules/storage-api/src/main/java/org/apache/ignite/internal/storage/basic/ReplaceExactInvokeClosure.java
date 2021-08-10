@@ -17,37 +17,58 @@
 
 package org.apache.ignite.internal.storage.basic;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
 import org.apache.ignite.internal.storage.OperationType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Invoke closure implementation for a write operation. */
-public class SimpleWriteInvokeClosure implements InvokeClosure<Void> {
-    /** Data row to write into storage. */
+/**
+ * Closure that replaces an exact row with a specified key and a specified value.
+ */
+public class ReplaceExactInvokeClosure implements InvokeClosure<Boolean> {
+    /** Expected data row. */
+    @NotNull
+    private final DataRow expectedRow;
+
+    /** New data row. */
+    @NotNull
     private final DataRow newRow;
 
+    /** {@code true} if this closure replaces a row, {@code false} otherwise. */
+    private boolean replaces;
+
     /**
-     * @param newRow Data row to write into the storage.
+     * Constructor.
+     *
+     * @param expectedRow Expected row.
+     * @param newRow New row.
      */
-    public SimpleWriteInvokeClosure(DataRow newRow) {
+    public ReplaceExactInvokeClosure(@NotNull DataRow expectedRow, @NotNull DataRow newRow) {
+        this.expectedRow = expectedRow;
         this.newRow = newRow;
     }
 
     /** {@inheritDoc} */
     @Override public void call(@NotNull DataRow row) {
+        replaces = (!row.hasValueBytes() && !expectedRow.hasValueBytes())
+            || (Arrays.equals(row.valueBytes(), expectedRow.valueBytes()));
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public DataRow newRow() {
+    @Override public @Nullable DataRow newRow() {
         return newRow;
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public OperationType operationType() {
-        return OperationType.WRITE;
+    @Override public @Nullable OperationType operationType() {
+        return replaces ? OperationType.WRITE : OperationType.NOOP;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override public Boolean result() {
+        return replaces;
     }
 }

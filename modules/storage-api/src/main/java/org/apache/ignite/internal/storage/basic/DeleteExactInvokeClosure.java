@@ -17,37 +17,51 @@
 
 package org.apache.ignite.internal.storage.basic;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
 import org.apache.ignite.internal.storage.OperationType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Invoke closure implementation for a write operation. */
-public class SimpleWriteInvokeClosure implements InvokeClosure<Void> {
-    /** Data row to write into storage. */
-    private final DataRow newRow;
+/**
+ * Closure that deletes a specific data row with a given key and a given value.
+ */
+public class DeleteExactInvokeClosure implements InvokeClosure<Boolean> {
+    /** Row to delete. */
+    @NotNull
+    private final DataRow row;
+
+    /** {@code true} if can delete, {@code false} otherwise. */
+    private boolean deletes = false;
 
     /**
-     * @param newRow Data row to write into the storage.
+     * Constructor.
+     *
+     * @param row Row to delete.
      */
-    public SimpleWriteInvokeClosure(DataRow newRow) {
-        this.newRow = newRow;
+    public DeleteExactInvokeClosure(@NotNull DataRow row) {
+        this.row = row;
     }
 
     /** {@inheritDoc} */
     @Override public void call(@NotNull DataRow row) {
+        deletes = row.hasValueBytes() && Arrays.equals(this.row.valueBytes(), row.valueBytes());
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public DataRow newRow() {
-        return newRow;
+    @Override public @Nullable DataRow newRow() {
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public OperationType operationType() {
-        return OperationType.WRITE;
+    @Override public @Nullable OperationType operationType() {
+        return deletes ? OperationType.REMOVE : OperationType.NOOP;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override public Boolean result() {
+        return deletes;
     }
 }

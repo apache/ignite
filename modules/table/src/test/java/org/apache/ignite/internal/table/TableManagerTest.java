@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.table;
 
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,6 +52,8 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
 import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
@@ -91,7 +94,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests scenarios for table manager.
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, WorkDirectoryExtension.class})
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class TableManagerTest {
     /** The logger. */
@@ -136,6 +139,9 @@ public class TableManagerTest {
     /** Raft manager. */
     @Mock(lenient = true)
     private Loza rm;
+
+    @WorkDirectory
+    private Path workDir;
 
     /** Test node. */
     private final ClusterNode node = new ClusterNode(
@@ -220,7 +226,7 @@ public class TableManagerTest {
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-14578")
     @Test
     public void testStaticTableConfigured() {
-        TableManager tableManager = new TableManager(cfrMgr, mm, sm, am, rm);
+        TableManager tableManager = new TableManager(cfrMgr, mm, sm, am, rm, workDir);
 
         assertEquals(1, tableManager.tables().size());
 
@@ -453,7 +459,7 @@ public class TableManagerTest {
             return null;
         }).when(am).listen(same(AffinityEvent.CALCULATED), any());
 
-        TableManager tableManager = new TableManager(cfrMgr, mm, sm, am, rm);
+        TableManager tableManager = new TableManager(cfrMgr, mm, sm, am, rm, workDir);
 
         TableImpl tbl2;
 

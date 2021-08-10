@@ -154,4 +154,9 @@ public class ByteBufferRow implements BinaryRow {
             buf.limit(buf.capacity());
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public byte[] bytes() {
+        return buf.array();
+    }
 }

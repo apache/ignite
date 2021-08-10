@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.storage;
 
 import java.nio.ByteBuffer;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface to be used as a key representation to search data in storage.
@@ -27,10 +27,10 @@ public interface SearchRow {
     /**
      * @return Key bytes.
      */
-    byte @Nullable [] keyBytes();
+    byte @NotNull [] keyBytes();
 
     /**
      * @return Key object as a byte buffer. Allows more effective memory management in certain cases.
      */
-    @Nullable ByteBuffer key();
+    @NotNull ByteBuffer key();
 }

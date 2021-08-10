@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.storage.basic;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
 import org.apache.ignite.internal.storage.SearchRow;
@@ -31,6 +33,7 @@ import org.apache.ignite.internal.storage.StorageException;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Storage implementation based on {@link ConcurrentHashMap}.
@@ -38,9 +41,6 @@ import org.jetbrains.annotations.NotNull;
 public class ConcurrentHashMapStorage implements Storage {
     /** Storage content. */
     private final ConcurrentMap<ByteArray, byte[]> map = new ConcurrentHashMap<>();
-
-    /** RW lock. */
-    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /** {@inheritDoc} */
     @Override public DataRow read(SearchRow key) throws StorageException {
@@ -52,60 +52,91 @@ public class ConcurrentHashMapStorage implements Storage {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(DataRow row) throws StorageException {
-        rwLock.readLock().lock();
+    @Override public Collection<DataRow> readAll(Collection<? extends SearchRow> keys) {
+        return keys.stream()
+            .map(SearchRow::keyBytes)
+            .map(key -> new SimpleDataRow(key, map.get(new ByteArray(key))))
+            .collect(Collectors.toList());
+    }
 
-        try {
-            map.put(new ByteArray(row.keyBytes()), row.valueBytes());
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+    /** {@inheritDoc} */
+    @Override public void write(DataRow row) throws StorageException {
+        map.put(new ByteArray(row.keyBytes()), row.valueBytes());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeAll(Collection<? extends DataRow> rows) throws StorageException {
+        rows.forEach(row -> map.put(new ByteArray(row.keyBytes()), row.valueBytes()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<DataRow> insertAll(Collection<? extends DataRow> rows) throws StorageException {
+        return rows.stream()
+            .map(row -> map.putIfAbsent(new ByteArray(row.keyBytes()), row.valueBytes()) == null ? null : row)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
     @Override public void remove(SearchRow key) throws StorageException {
-        rwLock.readLock().lock();
-
-        try {
-            map.remove(new ByteArray(key.keyBytes()));
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+        map.remove(new ByteArray(key.keyBytes()));
     }
 
     /** {@inheritDoc} */
-    @Override public void invoke(SearchRow key, InvokeClosure clo) throws StorageException {
+    @Override public Collection<DataRow> removeAll(Collection<? extends SearchRow> keys) {
+        return keys.stream()
+            .map(SearchRow::keyBytes)
+            .map(key -> new SimpleDataRow(key, map.remove(new ByteArray(key))))
+            .filter(SimpleDataRow::hasValueBytes)
+            .collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<DataRow> removeAllExact(Collection<? extends DataRow> keyValues) {
+        return keyValues.stream()
+            .filter(kv -> {
+                ByteArray key = new ByteArray(kv.keyBytes());
+
+                byte[] currentValue = map.get(key);
+
+                if (Arrays.equals(currentValue, kv.valueBytes())) {
+                    map.remove(key);
+
+                    return true;
+                }
+
+                return false;
+            })
+            .collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable
+    @Override public <T> T invoke(SearchRow key, InvokeClosure<T> clo) throws StorageException {
         byte[] keyBytes = key.keyBytes();
 
         ByteArray mapKey = new ByteArray(keyBytes);
 
-        rwLock.writeLock().lock();
+        byte[] existingDataBytes = map.get(mapKey);
 
-        try {
-            byte[] existingDataBytes = map.get(mapKey);
+        clo.call(new SimpleDataRow(keyBytes, existingDataBytes));
 
-            clo.call(new SimpleDataRow(keyBytes, existingDataBytes));
+        switch (clo.operationType()) {
+            case WRITE:
+                map.put(mapKey, clo.newRow().valueBytes());
 
-            switch (clo.operationType()) {
-                case WRITE:
-                    map.put(mapKey, clo.newRow().valueBytes());
+                break;
 
-                    break;
+            case REMOVE:
+                map.remove(mapKey);
 
-                case REMOVE:
-                    map.remove(mapKey);
+                break;
 
-                    break;
-
-                case NOOP:
-                    break;
-            }
+            case NOOP:
+                break;
         }
-        finally {
-            rwLock.writeLock().unlock();
-        }
+
+        return clo.result();
     }
 
     /** {@inheritDoc} */
@@ -136,5 +167,10 @@ public class ConcurrentHashMapStorage implements Storage {
                 // No-op.
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        // No-op.
     }
 }

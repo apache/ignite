@@ -18,14 +18,22 @@
 package org.apache.ignite.internal.table.distributed.raft;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Objects;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.storage.DataRow;
+import org.apache.ignite.internal.storage.SearchRow;
+import org.apache.ignite.internal.storage.Storage;
+import org.apache.ignite.internal.storage.basic.DeleteExactInvokeClosure;
+import org.apache.ignite.internal.storage.basic.GetAndRemoveInvokeClosure;
+import org.apache.ignite.internal.storage.basic.GetAndReplaceInvokeClosure;
+import org.apache.ignite.internal.storage.basic.InsertInvokeClosure;
+import org.apache.ignite.internal.storage.basic.ReplaceExactInvokeClosure;
+import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.table.distributed.command.DeleteAllCommand;
 import org.apache.ignite.internal.table.distributed.command.DeleteCommand;
 import org.apache.ignite.internal.table.distributed.command.DeleteExactAllCommand;
@@ -43,6 +51,7 @@ import org.apache.ignite.internal.table.distributed.command.UpsertAllCommand;
 import org.apache.ignite.internal.table.distributed.command.UpsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.MultiRowsResponse;
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
@@ -53,12 +62,17 @@ import org.jetbrains.annotations.NotNull;
  * Partition command handler.
  */
 public class PartitionListener implements RaftGroupListener {
+    /** Partition storage. */
+    private final Storage storage;
+
     /**
-     * Storage.
-     * This is a temporary solution, it will apply until persistence layer would not be implemented.
-     * TODO: IGNITE-14790.
+     * Constructor.
+     *
+     * @param storage Storage.
      */
-    private ConcurrentHashMap<KeyWrapper, BinaryRow> storage = new ConcurrentHashMap<>();
+    public PartitionListener(Storage storage) {
+        this.storage = storage;
+    }
 
     /** {@inheritDoc} */
     @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
@@ -66,21 +80,29 @@ public class PartitionListener implements RaftGroupListener {
             CommandClosure<ReadCommand> clo = iterator.next();
 
             if (clo.command() instanceof GetCommand) {
-                clo.result(new SingleRowResponse(storage.get(
-                    extractAndWrapKey(((GetCommand)clo.command()).getKeyRow())
-                )));
+                DataRow readValue = storage.read(extractAndWrapKey(((GetCommand) clo.command()).getKeyRow()));
+
+                ByteBufferRow responseRow = null;
+
+                if (readValue.hasValueBytes())
+                    responseRow = new ByteBufferRow(readValue.valueBytes());
+
+                clo.result(new SingleRowResponse(responseRow));
             }
             else if (clo.command() instanceof GetAllCommand) {
                 Set<BinaryRow> keyRows = ((GetAllCommand)clo.command()).getKeyRows();
 
                 assert keyRows != null && !keyRows.isEmpty();
 
-                final Set<BinaryRow> res = keyRows.stream()
-                    .map(this::extractAndWrapKey)
-                    .map(storage::get)
-                    .filter(Objects::nonNull)
-                    .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toSet());
+                List<SearchRow> keys = keyRows.stream().map(PartitionListener::extractAndWrapKey)
+                    .collect(Collectors.toList());
+
+                List<BinaryRow> res = storage
+                    .readAll(keys)
+                    .stream()
+                    .filter(DataRow::hasValueBytes)
+                    .map(read -> new ByteBufferRow(read.valueBytes()))
+                    .collect(Collectors.toList());
 
                 clo.result(new MultiRowsResponse(res));
             }
@@ -99,41 +121,41 @@ public class PartitionListener implements RaftGroupListener {
 
                 assert row.hasValue() : "Insert command should have a value.";
 
-                BinaryRow previous = storage.putIfAbsent(extractAndWrapKey(row), row);
+                DataRow newRow = extractAndWrapKeyValue(row);
 
-                clo.result(previous == null);
+                InsertInvokeClosure writeIfAbsent = new InsertInvokeClosure(newRow);
+
+                storage.invoke(newRow, writeIfAbsent);
+
+                clo.result(writeIfAbsent.result());
             }
             else if (clo.command() instanceof DeleteCommand) {
-                BinaryRow deleted = storage.remove(
-                    extractAndWrapKey(((DeleteCommand)clo.command()).getKeyRow())
-                );
+                SearchRow newRow = extractAndWrapKey(((DeleteCommand)clo.command()).getKeyRow());
 
-                clo.result(deleted != null);
+                var getAndRemoveClosure = new GetAndRemoveInvokeClosure();
+
+                storage.invoke(newRow, getAndRemoveClosure);
+
+                clo.result(getAndRemoveClosure.result());
             }
             else if (clo.command() instanceof ReplaceCommand) {
                 ReplaceCommand cmd = ((ReplaceCommand)clo.command());
 
-                BinaryRow expected = cmd.getOldRow();
+                DataRow expected = extractAndWrapKeyValue(cmd.getOldRow());
+                DataRow newRow = extractAndWrapKeyValue(cmd.getRow());
 
-                KeyWrapper key = extractAndWrapKey(expected);
+                var replaceClosure = new ReplaceExactInvokeClosure(expected, newRow);
 
-                BinaryRow current = storage.get(key);
+                storage.invoke(expected, replaceClosure);
 
-                if ((current == null && !expected.hasValue()) ||
-                    equalValues(current, expected)) {
-                    storage.put(key, cmd.getRow());
-
-                    clo.result(true);
-                }
-                else
-                    clo.result(false);
+                clo.result(replaceClosure.result());
             }
             else if (clo.command() instanceof UpsertCommand) {
                 BinaryRow row = ((UpsertCommand)clo.command()).getRow();
 
                 assert row.hasValue() : "Upsert command should have a value.";
 
-                storage.put(extractAndWrapKey(row), row);
+                storage.write(extractAndWrapKeyValue(row));
 
                 clo.result(null);
             }
@@ -142,11 +164,14 @@ public class PartitionListener implements RaftGroupListener {
 
                 assert rows != null && !rows.isEmpty();
 
-                final Set<BinaryRow> res = rows.stream()
-                    .map(k -> storage.putIfAbsent(extractAndWrapKey(k), k) == null ? null : k)
-                    .filter(Objects::nonNull)
+                List<DataRow> keyValues = rows.stream().map(PartitionListener::extractAndWrapKeyValue)
+                    .collect(Collectors.toList());
+
+                List<BinaryRow> res = storage.insertAll(keyValues).stream()
+                    .filter(DataRow::hasValueBytes)
+                    .map(inserted -> new ByteBufferRow(inserted.valueBytes()))
                     .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
 
                 clo.result(new MultiRowsResponse(res));
             }
@@ -155,7 +180,7 @@ public class PartitionListener implements RaftGroupListener {
 
                 assert rows != null && !rows.isEmpty();
 
-                rows.forEach(k -> storage.put(extractAndWrapKey(k), k));
+                storage.writeAll(rows.stream().map(PartitionListener::extractAndWrapKeyValue).collect(Collectors.toList()));
 
                 clo.result(null);
             }
@@ -164,16 +189,14 @@ public class PartitionListener implements RaftGroupListener {
 
                 assert rows != null && !rows.isEmpty();
 
-                final Set<BinaryRow> res = rows.stream()
-                    .map(k -> {
-                        if (k.hasValue())
-                            return null;
-                        else
-                            return storage.remove(extractAndWrapKey(k));
-                    })
-                    .filter(Objects::nonNull)
+                List<SearchRow> keys = rows.stream().map(PartitionListener::extractAndWrapKey)
+                    .collect(Collectors.toList());
+
+                List<BinaryRow> res = storage.removeAll(keys).stream()
+                    .filter(DataRow::hasValueBytes)
+                    .map(removed -> new ByteBufferRow(removed.valueBytes()))
                     .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
 
                 clo.result(new MultiRowsResponse(res));
             }
@@ -183,32 +206,27 @@ public class PartitionListener implements RaftGroupListener {
                 assert row != null;
                 assert row.hasValue();
 
-                final KeyWrapper key = extractAndWrapKey(row);
-                final BinaryRow old = storage.get(key);
+                DataRow keyValue = extractAndWrapKeyValue(row);
 
-                if (old == null || !old.hasValue())
-                    clo.result(false);
-                else
-                    clo.result(equalValues(row, old) && storage.remove(key) != null);
+                var deleteExact = new DeleteExactInvokeClosure(keyValue);
+
+                storage.invoke(keyValue, deleteExact);
+
+                clo.result(deleteExact.result());
             }
             else if (clo.command() instanceof DeleteExactAllCommand) {
                 Set<BinaryRow> rows = ((DeleteExactAllCommand)clo.command()).getRows();
 
                 assert rows != null && !rows.isEmpty();
 
-                final Set<BinaryRow> res = rows.stream()
-                    .map(k -> {
-                        final KeyWrapper key = extractAndWrapKey(k);
-                        final BinaryRow old = storage.get(key);
+                List<DataRow> keyValues = rows.stream().map(PartitionListener::extractAndWrapKeyValue)
+                    .collect(Collectors.toList());
 
-                        if (old == null || !old.hasValue() || !equalValues(k, old))
-                            return null;
-
-                        return storage.remove(key);
-                    })
-                    .filter(Objects::nonNull)
+                List<BinaryRow> res = storage.removeAllExact(keyValues).stream()
+                    .filter(DataRow::hasValueBytes)
+                    .map(inserted -> new ByteBufferRow(inserted.valueBytes()))
                     .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
 
                 clo.result(new MultiRowsResponse(res));
             }
@@ -217,51 +235,64 @@ public class PartitionListener implements RaftGroupListener {
 
                 assert row != null;
 
-                final KeyWrapper key = extractAndWrapKey(row);
-                final BinaryRow oldRow = storage.get(key);
+                DataRow keyValue = extractAndWrapKeyValue(row);
 
-                if (oldRow == null || !oldRow.hasValue())
-                    clo.result(false);
-                else
-                    clo.result(storage.put(key, row) == oldRow);
+                var replaceIfExists = new GetAndReplaceInvokeClosure(keyValue, true);
+
+                storage.invoke(keyValue, replaceIfExists);
+
+                clo.result(replaceIfExists.result());
             }
             else if (clo.command() instanceof GetAndDeleteCommand) {
                 BinaryRow row = ((GetAndDeleteCommand)clo.command()).getKeyRow();
 
                 assert row != null;
 
-                BinaryRow oldRow = storage.remove(extractAndWrapKey(row));
+                SearchRow keyRow = extractAndWrapKey(row);
 
-                if (oldRow == null || !oldRow.hasValue())
-                    clo.result(new SingleRowResponse(null));
+                var getAndRemoveClosure = new GetAndRemoveInvokeClosure();
+
+                storage.invoke(keyRow, getAndRemoveClosure);
+
+                if (getAndRemoveClosure.result())
+                    clo.result(new SingleRowResponse(new ByteBufferRow(getAndRemoveClosure.oldRow().valueBytes())));
                 else
-                    clo.result(new SingleRowResponse(oldRow));
+                    clo.result(new SingleRowResponse(null));
             }
             else if (clo.command() instanceof GetAndReplaceCommand) {
                 BinaryRow row = ((GetAndReplaceCommand)clo.command()).getRow();
 
                 assert row != null && row.hasValue();
 
-                BinaryRow oldRow = storage.get(extractAndWrapKey(row));
+                DataRow keyValue = extractAndWrapKeyValue(row);
 
-                storage.computeIfPresent(extractAndWrapKey(row), (key, val) -> row);
+                var getAndReplace = new GetAndReplaceInvokeClosure(keyValue, true);
 
-                if (oldRow == null || !oldRow.hasValue())
-                    clo.result(new SingleRowResponse(null));
-                else
-                    clo.result(new SingleRowResponse(oldRow));
+                storage.invoke(keyValue, getAndReplace);
+
+                DataRow oldRow = getAndReplace.oldRow();
+
+                BinaryRow res = oldRow.hasValueBytes() ? new ByteBufferRow(oldRow.valueBytes()) : null;
+
+                clo.result(new SingleRowResponse(res));
             }
             else if (clo.command() instanceof GetAndUpsertCommand) {
                 BinaryRow row = ((GetAndUpsertCommand)clo.command()).getKeyRow();
 
                 assert row != null && row.hasValue();
 
-                BinaryRow oldRow = storage.put(extractAndWrapKey(row), row);
+                DataRow keyValue = extractAndWrapKeyValue(row);
 
-                if (oldRow == null || !oldRow.hasValue())
-                    clo.result(new SingleRowResponse(null));
+                var getAndReplace = new GetAndReplaceInvokeClosure(keyValue, false);
+
+                storage.invoke(keyValue, getAndReplace);
+
+                DataRow oldRow = getAndReplace.oldRow();
+
+                if (oldRow.hasValueBytes())
+                    clo.result(new SingleRowResponse(new ByteBufferRow(oldRow.valueBytes())));
                 else
-                    clo.result(new SingleRowResponse(oldRow));
+                    clo.result(new SingleRowResponse(null));
             }
             else
                 assert false : "Command was not found [cmd=" + clo.command() + ']';
@@ -281,79 +312,37 @@ public class PartitionListener implements RaftGroupListener {
 
     /** {@inheritDoc} */
     @Override public void onShutdown() {
-        // No-op.
-    }
-
-    /**
-     * Wrapper provides correct byte[] comparison.
-     */
-    private static class KeyWrapper {
-        /** Data. */
-        private final byte[] data;
-
-        /** Hash. */
-        private final int hash;
-
-        /**
-         * Constructor.
-         *
-         * @param data Wrapped data.
-         */
-        KeyWrapper(byte[] data, int hash) {
-            assert data != null;
-
-            this.data = data;
-            this.hash = hash;
+        try {
+            storage.close();
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            KeyWrapper wrapper = (KeyWrapper)o;
-            return Arrays.equals(data, wrapper.data);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return hash;
+        catch (Exception e) {
+            throw new IgniteInternalException("Failed to close storage: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Compares two rows.
+     * Extracts a key and a value from the {@link BinaryRow} and wraps it in a {@link DataRow}.
      *
-     * @param row Row to compare.
-     * @param row2 Row to compare.
-     * @return True if these rows is equivalent, false otherwise.
+     * @param row Binary row.
+     * @return Data row.
      */
-    private boolean equalValues(BinaryRow row, BinaryRow row2) {
-        if (row == row2)
-            return true;
+    @NotNull private static DataRow extractAndWrapKeyValue(@NotNull BinaryRow row) {
+        byte[] key = new byte[row.keySlice().capacity()];
+        row.keySlice().get(key);
 
-        if (row == null || row2 == null)
-            return false;
-
-        if (row.hasValue() ^ row2.hasValue())
-            return false;
-
-        return row.valueSlice().compareTo(row2.valueSlice()) == 0;
+        return new SimpleDataRow(key, row.bytes());
     }
 
     /**
-     * Makes a wrapped key from a table row.
+     * Extracts a key from the {@link BinaryRow} and wraps it in a {@link SearchRow}.
      *
-     * @param row Row.
-     * @return Extracted key.
+     * @param row Binary row.
+     * @return Search row.
      */
-    @NotNull private KeyWrapper extractAndWrapKey(@NotNull BinaryRow row) {
-        final byte[] bytes = new byte[row.keySlice().capacity()];
-        row.keySlice().get(bytes);
+    @NotNull private static SearchRow extractAndWrapKey(@NotNull BinaryRow row) {
+        byte[] key = new byte[row.keySlice().capacity()];
+        row.keySlice().get(key);
 
-        return new KeyWrapper(bytes, row.hash());
+        return new SimpleDataRow(key, null);
     }
 }
