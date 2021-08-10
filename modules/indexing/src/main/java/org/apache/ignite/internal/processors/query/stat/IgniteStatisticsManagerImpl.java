@@ -29,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -236,6 +237,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void collectStatistics(StatisticsObjectConfiguration... targets) throws IgniteCheckedException {
+        checkStatisticsState("collect statistics");
+
         if (usageState() == OFF)
             throw new IgniteException("Can't gather statistics while statistics usage state is OFF.");
 
@@ -244,6 +247,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
+        checkStatisticsState("drop statistics");
+
         if (usageState() == OFF)
             throw new IgniteException("Can't drop statistics while statistics usage state is OFF.");
 
@@ -252,6 +257,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void refreshStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
+        checkStatisticsState("refresh statistics");
+
         if (usageState() == OFF)
             throw new IgniteException("Can't refresh statistics while statistics usage state is OFF.");
 
@@ -260,6 +267,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropAll() throws IgniteCheckedException {
+        checkStatisticsState("drop all statistics");
+
         statCfgMgr.dropAll();
     }
 
@@ -287,6 +296,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void usageState(StatisticsUsageState state) throws IgniteCheckedException {
+        checkStatisticsState("change usage state of statistics");
+
         try {
             usageState.propagate(state);
         }
@@ -405,5 +416,16 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         }
 
         return res;
+    }
+
+    /**
+     * Check that cluster statistics usage state is not OFF and cluster is active.
+     *
+     * @param op Operation name.
+     */
+    public void checkStatisticsState(String op) {
+        if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
+            throw new IgniteException(String.format(
+                "Unable to perform %s due to cluster state [state=%s]", op, ctx.state().clusterState().state()));
     }
 }
