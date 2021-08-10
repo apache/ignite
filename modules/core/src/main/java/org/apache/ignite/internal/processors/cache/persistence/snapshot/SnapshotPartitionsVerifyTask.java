@@ -222,6 +222,12 @@ public class SnapshotPartitionsVerifyTask
                 if (!grpFilter.remove(grpId))
                     continue;
 
+                if (meta.isCacheGroupEncrypted(grpId) && meta.masterKeyDigest() == null) {
+                    throw new IgniteException("Snapshot '" + snpName + "' doesn't contain master key digest while it holds encrypted " +
+                        "cache group " + grpId + ". Master key digest is required to make sure encrypted caches in the snapshot were " +
+                        "encrypted with same master key. Meta=[" + meta + "].");
+                }
+
                 grpDirs.put(grpId, dir);
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
@@ -254,8 +260,7 @@ public class SnapshotPartitionsVerifyTask
 
             FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
-            EncryptionCacheKeyProvider snpEncrKeyProvider = IgniteSnapshotManager.snapshotMasterSign(meta) != null ?
-                new SnapshotEncrKeyProvider(ignite.context(), grpDirs) : null;
+            EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncrKeyProvider(ignite.context(), grpDirs);
 
             try {
                 GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
@@ -272,11 +277,9 @@ public class SnapshotPartitionsVerifyTask
                             int grpId = CU.cacheId(grpName);
                             int partId = partId(part.getName());
 
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider)
-                                .createPageStore(getTypeByPartId(partId),
-                                    part::toPath,
-                                    val -> {
-                                    })
+                            try (FilePageStore pageStore =
+                                     (FilePageStore)storeMgr.getPageStoreFactory(grpId, meta.isCacheGroupEncrypted(grpId) ?
+                                         snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
                             ) {
                                 if (partId == INDEX_PARTITION) {
                                     checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
@@ -370,16 +373,16 @@ public class SnapshotPartitionsVerifyTask
     }
 
     /**
-     * Provides encryption keys stored within snapshot metadata.
+     * Provides encryption keys stored within snapshot.
      */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
         /** Kernal context */
         private GridKernalContext ctx;
 
-        /** Snapshot caches dirs by group id */
+        /** Data dirs of snapshot's caches by group id. */
         private Map<Integer, File> grpDirs;
 
-        /** Dencrypted keys. */
+        /** Encryption keys loaded from snapshot. */
         private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
 
         /**
@@ -395,7 +398,7 @@ public class SnapshotPartitionsVerifyTask
 
         /** {@inheritDoc} */
         @Override public @Nullable GroupKey getActiveKey(int grpId) {
-            return groupKey(grpId, 0);
+            throw new UnsupportedOperationException("Id of active group key is unknown.");
         }
 
         /** {@inheritDoc} */
@@ -409,6 +412,8 @@ public class SnapshotPartitionsVerifyTask
                         StoredCacheData cacheData = ((FilePageStoreManager)ctx.cache().context().pageStore()).readCacheData(p.toFile());
 
                         GroupKeyEncrypted grpKeyEncrypted = cacheData.grpKeyEncrypted();
+
+                        assert grpKeyEncrypted != null;
 
                         if (grpKey == null)
                             grpKey = new GroupKey(grpKeyEncrypted.id(), ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));

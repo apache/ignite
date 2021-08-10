@@ -841,7 +841,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Cache group ID.
      */
-    public void removeGroupKey(int grpId) {
+    private void removeGroupKey(int grpId) {
         synchronized (metaStorageMux) {
             ctx.cache().context().database().checkpointReadLock();
 
@@ -864,7 +864,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Sets new initial group key if key.
+     * Sets new initial group key if key is not null.
      *
      * @param grpId Cache group ID.
      * @param encKey Encryption key

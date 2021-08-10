@@ -2281,7 +2281,7 @@ public class ClusterCachesInfo {
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
      * @param encKey Encryption key.
-     * @param encKeyId Encryption key id.
+     * @param encKeyId Id of encryption key.
      * @param cacheCfgEnrichment Cache configuration enrichment.
      * @return Group descriptor.
      */

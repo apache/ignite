@@ -639,7 +639,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             assertEquals("0", view.get(1)); // queryId
             assertEquals("cache1", view.get(2)); // cacheName
             assertEquals(Integer.toString(cacheId("cache1")), view.get(3)); // cacheId
-            assertEquals(Integer.toString( cacheGroupId("cache1", "group1")), view.get(4)); // cacheGroupId
+            assertEquals(Integer.toString(cacheGroupId("cache1", "group1")), view.get(4)); // cacheGroupId
             assertEquals("group1", view.get(5)); // cacheGroupName
             assertTrue(Long.parseLong(view.get(6)) <= System.currentTimeMillis()); // startTime
             assertTrue(Long.parseLong(view.get(7)) >= 0); // duration

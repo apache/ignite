@@ -456,14 +456,15 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Ensures that cache data does not exist locally.
+     * Ensures that a cache with the specified name does not exist locally.
      *
      * @param cacheCfg Cache configuration.
      */
     private void ensureCacheDataAbsent(CacheConfiguration<?, ?> cacheCfg) {
         int id = CU.cacheGroupId(cacheCfg);
 
-        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null) {
+        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null ||
+            ctx.encryption().getActiveKey(id) != null) {
             throw new IgniteIllegalStateException("Cache \"" + cacheCfg.getName() +
                 "\" should be destroyed manually before perform restore operation.");
         }
@@ -809,7 +810,6 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-//        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId), opCtx0.encrGrpKeys);
         return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId));
     }
 
@@ -902,8 +902,6 @@ public class SnapshotRestoreProcess {
                         }
                     }
 
-//                    processEncrKeys(opCtx0, false);
-
                     if (ex != null)
                         retFut.onDone(ex);
                     else
@@ -920,40 +918,6 @@ public class SnapshotRestoreProcess {
 
         return retFut;
     }
-
-    /** TODO */
-//    private void processEncrKeys(SnapshotRestoreContext opCtx, boolean addKeys) {
-//        Set<Integer> processedGroups = new HashSet<>();
-//
-//        for (StoredCacheData cfg : opCtx.cfgs.values()) {
-//            int grpId = CU.cacheGroupId(cfg.config());
-//
-//            if (cfg.config().isEncryptionEnabled() && !processedGroups.contains(grpId)) {
-//                if (addKeys) {
-//                    assert ctx.encryption().getActiveKey(grpId) == null;
-//
-//                    if (log.isInfoEnabled())
-//                        log.info("Adding encryption key for cache " + cfg.config().getName());
-//
-//                    GroupKeyEncrypted grpKeyEncrypted = opCtx.encrGrpKeys.get(grpId);
-//
-//                    assert grpKeyEncrypted != null;
-//
-//                    ctx.encryption().setInitialGroupKey(grpId, grpKeyEncrypted.key(), grpKeyEncrypted.id());
-//                }
-//                else {
-//                    assert ctx.encryption().getActiveKey(grpId) != null;
-//
-//                    if (log.isInfoEnabled())
-//                        log.info("Removing encryption key for cache " + cfg.config().getName());
-//
-//                    ctx.encryption().removeGroupKey(grpId);
-//                }
-//
-//                processedGroups.add(grpId);
-//            }
-//        }
-//    }
 
     /**
      * @param reqId Request ID.
@@ -1007,9 +971,6 @@ public class SnapshotRestoreProcess {
 
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
-
-        /** Encryption keys by group id. */
-//        private final Map<Integer, GroupKeyEncrypted> encrGrpKeys;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.

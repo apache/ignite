@@ -242,9 +242,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
-    /** Name of master encryption key signature in snapshot meta. */
-    private static final String SNAPSHOT_META_MASTER_KEY_SIGN = "MasterKeySign";
-
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
      * It is important to have only only buffer per thread (instead of creating each buffer per
@@ -568,7 +565,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpLocDir local snapshot directory.
+     * @param snpLocDir Local snapshot directory.
      * @return Snapshot data directory.
      */
     File snapshotDbDir(File snpLocDir) {
@@ -674,9 +671,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
-                        // Store encryption keys to have ability to verify/restore snapshot without restart and without
-                        // manual data files (and metastore) replacing.
-                        addEncrKeys(new SnapshotMetadata(req.requestId(),
+                        addEncrData(new SnapshotMetadata(req.requestId(),
                             req.snapshotName(),
                             cctx.localNode().consistentId().toString(),
                             pdsSettings.folderName(),
@@ -1014,7 +1009,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
                     for (SnapshotMetadata meta : nodeMetas) {
-                        if (snapshotMasterSign(meta) != null && !Arrays.equals(snapshotMasterSign(meta),
+                        if (meta.masterKeyDigest() != null && !Arrays.equals(meta.masterKeyDigest(),
                             kctx0.config().getEncryptionSpi().masterKeyDigest())) {
 
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
@@ -1631,28 +1626,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Stores active encryption keys if {@code snpMeta} contains encrypted cache groups.
+     * Stores meta of encryption caches (if exist) in {@code snpMeta}.
      *
      * @param snpMeta Snapshot metadata.
      * @return {@code snpMeta}.
      */
-    private SnapshotMetadata addEncrKeys(SnapshotMetadata snpMeta) {
+    private SnapshotMetadata addEncrData(SnapshotMetadata snpMeta) {
         Map<Integer, GroupKey> grpKeys =
             snpMeta.cacheGroupIds().stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
                 Collectors.toMap(Function.identity(), gid -> cctx.kernalContext().encryption().getActiveKey(gid)));
 
-        if (!grpKeys.isEmpty())
-            snpMeta.addMetaRecord(SNAPSHOT_META_MASTER_KEY_SIGN, cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
+        if (!grpKeys.isEmpty()) {
+            snpMeta.masterKeyDigest(cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
+
+            snpMeta.encrGrpIds(grpKeys.keySet());
+        }
 
         return snpMeta;
-    }
-
-    /**
-     * @return Signature of master encryption key stored in {@code snpMeta}. {@code Null} if no encripted cache groups stored in {@code
-     * snpMeta}.
-     */
-    static byte[] snapshotMasterSign(SnapshotMetadata snpMeta) {
-        return (byte[])snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN);
     }
 
     /**

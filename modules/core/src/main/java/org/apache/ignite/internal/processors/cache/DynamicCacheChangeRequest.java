@@ -101,7 +101,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
-    /** Encryption key id. */
+    /** Id of encryption key. */
     @Nullable private Integer encKeyId;
 
     /** Master key digest. */

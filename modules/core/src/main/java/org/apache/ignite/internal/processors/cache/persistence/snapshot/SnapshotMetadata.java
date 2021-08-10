@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +60,9 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final List<Integer> grpIds;
 
+    /** Encrypted group ids. */
+    private Set<Integer> encrGrpIds;
+
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
     private final Set<String> bltNodes;
@@ -71,9 +74,8 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
-    /** Additional named records to store together with snapshot meta. */
-    @Nullable
-    private Map<String, Serializable> metaRecords;
+    /** Master key digest for encrypted caches. */
+    private byte[] masterKeyDigest;
 
     /**
      * @param rqId Unique snapshot request id.
@@ -105,32 +107,6 @@ public class SnapshotMetadata implements Serializable {
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
                 .add(p.getPartitionId()));
-    }
-
-    /**
-     * @param name Record name.
-     * @param val Record data.
-     * @return Current snapshot metadata.
-     */
-    public SnapshotMetadata addMetaRecord(String name, Serializable val) {
-        metaRecords0(true).put(name, val);
-
-        return this;
-    }
-
-    /**
-     * @param name Record name.
-     * @return Additional meta-record by {@code name}. {@code Null} if not found.
-     */
-    public Serializable metaRecord(String name) {
-        return metaRecords0(false).get(name);
-    }
-
-    /**
-     * @return All stored additional meta-records.
-     */
-    public Map<String, Serializable> allMetaRecords() {
-        return Collections.unmodifiableMap(metaRecords0(false));
     }
 
     /**
@@ -203,25 +179,51 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * Prevents from NullPointerException when accessing the meta records. The records do not exists in previous class version. This
-     * collection might be null after deserealization, reading snapshot of previous version.
-     *
-     * @param canCreate If {@code true} and the metas map is null, it will be created.
-     * @return Map of the additional meta records.
+     * @param grpId Cache id or cache group id.
+     * @return {@code True} if cache group is encrypted. {@code False} otherwise.
      */
-    private Map<String, Serializable> metaRecords0(boolean canCreate) {
-        if (metaRecords == null) {
-            if (canCreate) {
-                synchronized (this) {
-                    if (metaRecords == null)
-                        metaRecords = new HashMap<>();
-                }
+    public boolean isCacheGroupEncrypted(int grpId) {
+        Set<Integer> encrGrpIds = this.encrGrpIds;
+
+        return encrGrpIds != null && encrGrpIds.contains(grpId);
+    }
+
+    /**
+     * @param masterKeyDigest Master key digest for encrypted caches.
+     * @return this meta.
+     */
+    public SnapshotMetadata masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest == null ? null : masterKeyDigest.clone();
+
+        return this;
+    }
+
+    /**
+     * @return Master key digest for encrypted caches.
+     */
+    public byte[] masterKeyDigest() {
+        byte[] masterKeyDigest = this.masterKeyDigest;
+
+        return masterKeyDigest == null ? null : masterKeyDigest.clone();
+    }
+
+    /**
+     * Stores ids of encrypted cache groups.
+     *
+     * @return this meta.
+     */
+    public SnapshotMetadata encrGrpIds(Collection<Integer> encrGrpIds) {
+        // Might be null even if final due to deserialization of previous version the object;
+        if (this.encrGrpIds == null) {
+            synchronized (this) {
+                if (this.encrGrpIds == null)
+                    this.encrGrpIds = new HashSet<>();
             }
-            else
-                return Collections.emptyMap();
         }
 
-        return metaRecords;
+        this.encrGrpIds.addAll(encrGrpIds);
+
+        return this;
     }
 
     /** {@inheritDoc} */

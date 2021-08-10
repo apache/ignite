@@ -617,8 +617,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             PageStore store = pageStore.getStore(grpId, partId);
 
-            partDeltaWriters.put(pair, new PageStoreSerialWriter(store,
-                partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId),
+            partDeltaWriters.put(pair, new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId),
                 cctx.cache().isEncrypted(grpId) ? grpId : null));
 
             partFileLengths.put(pair, store.size());
@@ -826,7 +825,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         private final File deltaFile;
 
         /** Id of encrypted cache group. If {@code null}, no encrypted IO is used. */
-        private final Integer encryptedGrpId;
+        private final Integer encGrpId;
 
         /** Busy lock to protect write operations. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -852,9 +851,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
-         * @param encryptedGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
+         * @param encGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
          */
-        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
+        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encGrpId) {
             assert store != null;
             assert cctx.database().checkpointLockIsHeldByThread();
 
@@ -864,7 +863,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
             writtenPages = new AtomicBitSet(store.pages());
-            this.encryptedGrpId = encryptedGrpId;
+            this.encGrpId = encGrpId;
 
             store.addWriteListener(this);
         }
@@ -903,8 +902,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                         return;
 
                     if (deltaFileIo == null) {
-                        deltaFileIo = (encryptedGrpId == null ? ioFactory :
-                            pageStore.getEncryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+                        deltaFileIo = (encGrpId == null ? ioFactory :
+                            pageStore.getEncryptedFileIoFactory(ioFactory, encGrpId)).create(deltaFile);
                     }
                 }
                 catch (IOException e) {

@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -94,6 +96,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -131,12 +134,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Master key name. */
     protected String masterKeyName;
 
+    /** Cache value builder. */
+    protected Function<Integer, Object> valBuilder = String::valueOf;
+
     /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
     @Parameterized.Parameter
     public boolean encryption;
-
-    /** Cache value builder. */
-    protected Function<Integer, Object> valBuilder = String::valueOf;
 
     /**
      * @return Cache value builder.
@@ -238,7 +241,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException if failed.
      */
-    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException, InterruptedException {
         String cacheName = ccfg.getName();
 
         for (Ignite ignite : G.allGrids()) {
@@ -366,9 +369,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().state(ClusterState.ACTIVE);
 
-        for (int i = 0; i < keys; i++) {
-            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
-                ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
+        for (CacheConfiguration<Integer, V> ccfg : ccfgs) {
+            try (IgniteDataStreamer<Integer, V> ds = ig.dataStreamer(ccfg.getName())) {
+                for (int i = 0; i < keys; i++)
+                    ds.addData(i, factory.apply(i));
+            }
         }
 
         forceCheckpoint();
@@ -474,6 +479,32 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         return ignite;
+    }
+
+    /**
+     * @param snpName Unique snapshot name.
+     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param snpSndr Sender which used for snapshot sub-task processing.
+     * @return Future which will be completed when snapshot is done.
+     */
+    protected static SnapshotFutureTask startLocalSnapshotTask(
+        GridCacheSharedContext<?, ?> cctx,
+        String snpName,
+        Map<Integer, Set<Integer>> parts,
+        SnapshotSender snpSndr
+    ) throws IgniteCheckedException {
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, true, snpSndr);
+
+        snpFutTask.start();
+
+        // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
+        // due to checkpoint already running and we need to schedule the next one
+        // right after current will be completed.
+        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+
+        snpFutTask.started().get();
+
+        return snpFutTask;
     }
 
     /**

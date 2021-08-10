@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache data to write to and read from {@link IgnitePageStoreManager}. In a nutshell, contains (most importantly)
@@ -54,11 +53,8 @@ public class StoredCacheData implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheConfigurationEnrichment;
 
-    /** TODO */
+    /** Encryption key. {@code Null} if encryption is disabled. */
     private GroupKeyEncrypted grpKeyEncrypted;
-
-    /** TODO */
-    private @Nullable byte[] masterKeyDigest;
 
     /**
      * Constructor.
@@ -126,12 +122,16 @@ public class StoredCacheData implements Serializable {
         return this;
     }
 
-    /** TODO */
+    /**
+     * @return Chipered encryption key for this cache or cache group. {@code Null} if not encrypted.
+     */
     public GroupKeyEncrypted grpKeyEncrypted() {
         return grpKeyEncrypted;
     }
 
-    /** TODO */
+    /**
+     * @param grpKeyEncrypted Chipered encryption key for this cache or cache group.
+     */
     public void grpKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
         this.grpKeyEncrypted = grpKeyEncrypted;
     }
