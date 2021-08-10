@@ -930,7 +930,6 @@ public class SnapshotRestoreProcess {
                             // Execute partition initialization action under checkpoint thread.
                             assert part != null && part.state() == GridDhtPartitionState.MOVING :
                                 "partId=" + part.id() + ", state=" + part.state();
-
                             assert part.internalSize() == 0;
 
                             // When the partition eviction completes and the new partition file loaded
@@ -942,7 +941,12 @@ public class SnapshotRestoreProcess {
                             // - need to set MOVING states to loading partitions.
                             // - need to acquire partition counters from each part
 
-                            // The process of re-init notes:
+                            // The process of re-init options:
+                            // 1. Clear heap entries from GridDhtLocalPartition, swap datastore, re-init counters
+                            // 2. Re-create the whole GridDhtLocalPartition from scratch in GridDhtPartitionTopologyImpl
+                            // as it the eviction does
+
+                            // The re-init notes:
                             // - clearAsync() should move the clearVer in clearAll() to the end.
                             // - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
                             // - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
@@ -951,11 +955,13 @@ public class SnapshotRestoreProcess {
                             // - invalidate() returns a new tag -> no updates will be written to page store.
                             // - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
                             // - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
-                            // - getOrCreatePartition() resets also partition counters of new partitions can be updated only on cp-write-lock (GridDhtLocalPartition ?).
+                            // - getOrCreatePartition() resets also partition counters of new partitions can be updated
+                            // only on cp-write-lock (GridDhtLocalPartition ?).
                             // - update the cntrMap in the GridDhtTopology prior to partition creation
                             // - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
                             // - check there is no reservations on MOVING partition during the switch procedure
-                            // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and locParts in DhtTopology
+                            // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
+                            // locParts in GridDhtPartitionTopologyImpl
 
                             // Re-init:
                             // 1. Guarantee that these is not updates on partition being handled.
@@ -975,8 +981,8 @@ public class SnapshotRestoreProcess {
                     part.clearAsync().listen(f -> {
                         // This future must clear all heap cache entries from the partition map. It is still possible for
                         // the MOVING partitions to be a new entries added in it (e.g. the rebalance process), so must
-                        // provide guarantees by some other machinery. Currently, it's done by disabling cache proxies
-                        // on snapshot restore.
+                        // provide guarantees by some other machinery. Currently, it's guaranteed by disabling cache proxies
+                        // on snapshot restore, so they are not available for users to operate.
                         if (f.error() == null)
                             lf.cleared.complete(f.result());
                         else
