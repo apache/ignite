@@ -921,23 +921,26 @@ public class SnapshotRestoreProcess {
             }
 
             for (Integer partId : leftParts) {
+                // Affinity node partitions are inited on exchange.
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
                 PartitionRestoreLifecycle lf =
                     new PartitionRestoreLifecycle(partId,
                         (path) -> {
                             // Execute partition initialization action under checkpoint thread.
-                            assert part == null || part.state() == GridDhtPartitionState.EVICTED :
+                            assert part != null && part.state() == GridDhtPartitionState.MOVING :
                                 "partId=" + part.id() + ", state=" + part.state();
+
+                            assert part.internalSize() == 0;
 
                             // When the partition eviction completes and the new partition file loaded
                             // we can start a new data storage initialization.
-                            // TODO be sure that evicted partition not scheduled to destroy queue on checkpoint.
                             // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
 //                            ctx.cache().context().pageStore().restore(grp.groupId(), part.id(), path.toFile());
 
                             // Loaded:
                             // - need to set MOVING states to loading partitions.
+                            // - need to acquire partition counters from each part
 
                             // The process of re-init notes:
                             // - clearAsync() should move the clearVer in clearAll() to the end.
@@ -946,13 +949,18 @@ public class SnapshotRestoreProcess {
                             // - CacheDataStore markDestroyed() may be called prior to checkpoint?
                             // - Does new pages on acquirePage will be read from new page store after tag has been incremented?
                             // - invalidate() returns a new tag -> no updates will be written to page store.
+                            // - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
                             // - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
                             // - getOrCreatePartition() resets also partition counters of new partitions can be updated only on cp-write-lock (GridDhtLocalPartition ?).
                             // - update the cntrMap in the GridDhtTopology prior to partition creation
                             // - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
+                            // - check there is no reservations on MOVING partition during the switch procedure
+                            // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and locParts in DhtTopology
 
                             // Re-init:
-                            //
+                            // 1. Guarantee that these is not updates on partition being handled.
+                            // 2. invalidate PM before cp-write-lock (no new pages should read/write from store)
+                            // 3.
 
                             boolean initialized = part.dataStore().init();
 
@@ -965,7 +973,10 @@ public class SnapshotRestoreProcess {
                     lf.cleared.complete(null);
                 else {
                     part.clearAsync().listen(f -> {
-                        // Eviction completes earlier than partition actually be physically destroyed from the FilePageStore.
+                        // This future must clear all heap cache entries from the partition map. It is still possible for
+                        // the MOVING partitions to be a new entries added in it (e.g. the rebalance process), so must
+                        // provide guarantees by some other machinery. Currently, it's done by disabling cache proxies
+                        // on snapshot restore.
                         if (f.error() == null)
                             lf.cleared.complete(f.result());
                         else
