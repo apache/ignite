@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import javax.cache.Cache;
@@ -116,7 +117,55 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
 
                 return cache.query(qry).getAll();
             },
-            IgniteCheckedException.class, "No index matches index query.");
+            IgniteCheckedException.class, "No table found: " + Integer.class.getName());
+    }
+
+    /** */
+    @Test
+    public void testQueryWrongIndexName() {
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "")
+                    .setCriteria(lt("id", Integer.MAX_VALUE));
+
+                return cache.query(qry).getAll();
+            },
+            IllegalArgumentException.class, "Ouch! Argument is invalid: idxName must not be empty.");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "DUMMY")
+                    .setCriteria(lt("id", Integer.MAX_VALUE));
+
+                return cache.query(qry).getAll();
+            },
+            IgniteCheckedException.class, "No index found: DUMMY");
+    }
+
+    /** */
+    @Test
+    public void testQueryWrongQuery() {
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                    .setCriteria();
+
+                return cache.query(qry).getAll();
+            },
+            IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                    .setCriteria(Collections.emptyList());
+
+                return cache.query(qry).getAll();
+            },
+            IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                    .setCriteria(lt("dummy", Integer.MAX_VALUE));
+
+                return cache.query(qry).getAll();
+            },
+            IgniteCheckedException.class, "No index matches query");
     }
 
     /** */

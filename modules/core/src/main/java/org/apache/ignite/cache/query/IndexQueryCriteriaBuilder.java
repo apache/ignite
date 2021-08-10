@@ -24,54 +24,98 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Factory of {@link IndexQueryCriterion} for {@link IndexQuery}.
  */
 public class IndexQueryCriteriaBuilder {
-    /** Object to mark a boundary if {@code null} is explicitly specified. */
-    private static final Object NULL = new Null();
-
-    /** Equal To. */
+    /**
+     * Equal To.
+     *
+     * @param field Index field to apply criterion.
+     * @param val Strict equality value.
+     */
     public static IndexQueryCriterion eq(String field, Object val) {
         return between(field, val, val);
     }
 
-    /** Less Then. */
+    /**
+     * Less Then.
+     *
+     * @param field Index field to apply criterion.
+     * @param val Exclusive upper bound.
+     */
     public static IndexQueryCriterion lt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriterion(field, null, wrapNull(val), true, false);
+        RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, null, val);
+        c.lowerIncl(true);
+        c.upperNull(val == null);
+
+        return c;
     }
 
-    /** Less Then or Equal. */
+    /**
+     * Less Then or Equal To.
+     *
+     * @param field Index field to apply criterion.
+     * @param val Inclusive upper bound.
+     */
     public static IndexQueryCriterion lte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriterion(field, null, wrapNull(val), true, true);
+        RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, null, val);
+        c.lowerIncl(true);
+        c.upperIncl(true);
+        c.upperNull(val == null);
+
+        return c;
     }
 
-    /** Greater Then. */
+    /**
+     * Greater Then.
+     *
+     * @param field Index field to apply criterion.
+     * @param val Exclusive lower bound.
+     */
     public static IndexQueryCriterion gt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriterion(field, wrapNull(val), null, false, true);
+        RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, val, null);
+        c.upperIncl(true);
+        c.lowerNull(val == null);
+
+        return c;
     }
 
-    /** Greater Then or Equal. */
+    /**
+     * Greater Then or Equal To.
+     *
+     * @param field Index field to apply criterion.
+     * @param val Inclusive lower bound.
+     */
     public static IndexQueryCriterion gte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriterion(field, wrapNull(val), null, true, true);
+        RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, val, null);
+        c.lowerIncl(true);
+        c.upperIncl(true);
+        c.lowerNull(val == null);
+
+        return c;
     }
 
-    /** Between. Lower and upper boundaries are inclusive. */
+    /**
+     * Between.
+     *
+     * @param field Index field to apply criterion.
+     * @param lower Inclusive lower bound.
+     * @param upper Inclusive upper bound.
+     */
     public static IndexQueryCriterion between(String field, Object lower, Object upper) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexQueryCriterion(field, wrapNull(lower), wrapNull(upper), true, true);
-    }
+        RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, lower, upper);
+        c.lowerIncl(true);
+        c.upperIncl(true);
+        c.lowerNull(lower == null);
+        c.upperNull(upper == null);
 
-    /** */
-    private static Object wrapNull(Object val) {
-        return val == null ? NULL : val;
+        return c;
     }
-
-    /** Class to represent NULL value. */
-    public static final class Null {}
 }

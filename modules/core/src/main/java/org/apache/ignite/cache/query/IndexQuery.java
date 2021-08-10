@@ -65,28 +65,29 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         A.notNull(valCls, "valCls");
 
         if (idxName != null)
-            A.notNullOrEmpty(idxName, "idxName");
+            A.notEmpty(idxName, "idxName");
 
         this.valCls = valCls.getName();
         this.idxName = idxName;
     }
 
     /**
-     * Provide multiple index query criterion joint with AND.
+     * Sets conjunction (AND) criteria for index query.
+     *
+     * @param criteria Criteria to set.
+     * @return {@code this} for chaining.
      */
-    public IndexQuery<K, V> setCriteria(IndexQueryCriterion criterion, IndexQueryCriterion... criteria) {
-        List<IndexQueryCriterion> cc = new ArrayList<>();
-
-        cc.add(criterion);
-        cc.addAll(Arrays.asList(criteria));
-
-        validateAndSetCriteria(cc);
+    public IndexQuery<K, V> setCriteria(IndexQueryCriterion... criteria) {
+        validateAndSetCriteria(Arrays.asList(criteria));
 
         return this;
     }
 
     /**
-     * Provide multiple index query criterion joint with AND.
+     * Sets conjunction (AND) criteria for index query.
+     *
+     * @param criteria Criteria to set.
+     * @return {@code this} for chaining.
      */
     public IndexQuery<K, V> setCriteria(List<IndexQueryCriterion> criteria) {
         validateAndSetCriteria(new ArrayList<>(criteria));
@@ -94,17 +95,29 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return this;
     }
 
-    /** Index query criteria. */
+    /**
+     * Index query criteria.
+     *
+     * @return List of criteria for this index query.
+     */
     public List<IndexQueryCriterion> getCriteria() {
         return criteria;
     }
 
-    /** Cache value class. */
+    /**
+     * Cache value class.
+     *
+     * @return Cache value class.
+     */
     public String getValueClass() {
         return valCls;
     }
 
-    /** Index name. */
+    /**
+     * Index name.
+     *
+     * @return Index name or {@code null} if not specified.
+     */
     public @Nullable String getIndexName() {
         return idxName;
     }

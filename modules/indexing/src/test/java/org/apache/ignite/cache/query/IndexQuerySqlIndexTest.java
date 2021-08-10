@@ -119,7 +119,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
             return tableCache.query(wrongQry).getAll();
 
-        }, IgniteCheckedException.class, "No index matches index query.");
+        }, IgniteCheckedException.class, "Index DESC_ID_IDX doesn't match query.");
 
         // Wrong cache.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
@@ -128,7 +128,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
             return cache.query(wrongQry).getAll();
 
-        }, IgniteCheckedException.class, "No index matches index query.");
+        }, IgniteCheckedException.class, "No table found: " + Person.class.getName());
     }
 
     /**

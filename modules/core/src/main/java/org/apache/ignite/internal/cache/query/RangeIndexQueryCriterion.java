@@ -36,23 +36,34 @@ public final class RangeIndexQueryCriterion implements IndexQueryCriterion {
     private final Object upper;
 
     /** Should include lower value. */
-    private final boolean lowerIncl;
+    private boolean lowerIncl;
 
     /** Should include upper value. */
-    private final boolean upperIncl;
+    private boolean upperIncl;
+
+    /** Whether lower bound is explicitly set to {@code null}. */
+    private boolean lowerNull;
+
+    /** Whether upper bound is explicitly set to {@code null}. */
+    private boolean upperNull;
 
     /** */
-    public RangeIndexQueryCriterion(String field, Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
+    public RangeIndexQueryCriterion(String field, Object lower, Object upper) {
         this.field = field;
         this.lower = lower;
         this.upper = upper;
-        this.lowerIncl = lowerIncl;
-        this.upperIncl = upperIncl;
     }
 
     /** Swap boundaries. */
     public RangeIndexQueryCriterion swap() {
-        return new RangeIndexQueryCriterion(field, upper, lower, upperIncl, lowerIncl);
+        RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, upper, lower);
+
+        c.lowerIncl(upperIncl);
+        c.upperIncl(lowerIncl);
+        c.lowerNull(upperNull);
+        c.upperNull(lowerNull);
+
+        return c;
     }
 
     /** */
@@ -66,13 +77,43 @@ public final class RangeIndexQueryCriterion implements IndexQueryCriterion {
     }
 
     /** */
+    public void lowerIncl(boolean lowerIncl) {
+        this.lowerIncl = lowerIncl;
+    }
+
+    /** */
     public boolean lowerIncl() {
         return lowerIncl;
     }
 
     /** */
+    public void upperIncl(boolean upperIncl) {
+        this.upperIncl = upperIncl;
+    }
+
+    /** */
     public boolean upperIncl() {
         return upperIncl;
+    }
+
+    /** */
+    public void lowerNull(boolean lowerNull) {
+        this.lowerNull = lowerNull;
+    }
+
+    /** */
+    public boolean lowerNull() {
+        return lowerNull;
+    }
+
+    /** */
+    public void upperNull(boolean upperNull) {
+        this.upperNull = upperNull;
+    }
+
+    /** */
+    public boolean upperNull() {
+        return upperNull;
     }
 
     /** {@inheritDoc} */
