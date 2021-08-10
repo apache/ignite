@@ -78,7 +78,7 @@ public class DistributedSqlConfiguration {
      * See: 'H2TableDescriptor#luceneIdx'.
      */
     private final DistributedBooleanProperty disableCreateLuceneIndexForStringValueType =
-        DistributedBooleanProperty.detachedBooleanProperty("sql.createLuceneIndexForStringValueType");
+        DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType");
 
     /**
      * @param ctx Kernal context
