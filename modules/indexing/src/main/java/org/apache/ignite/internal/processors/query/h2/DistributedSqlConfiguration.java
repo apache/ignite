@@ -74,7 +74,7 @@ public class DistributedSqlConfiguration {
     );
 
     /**
-     * Disable createion Lucene index for String value type by default.
+     * Disable creation Lucene index for String value type by default.
      * See: 'H2TableDescriptor#luceneIdx'.
      */
     private final DistributedBooleanProperty disableCreateLuceneIndexForStringValueType =
