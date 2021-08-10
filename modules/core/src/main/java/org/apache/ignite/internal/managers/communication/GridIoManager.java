@@ -1388,7 +1388,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            pools.p2pPool().execute(c);
+            pools.getPeerClassLoadingExecutorService().execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
@@ -1441,7 +1441,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (msg0.processFromNioThread())
                 c.run();
             else
-                ctx.getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -1452,7 +1452,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             /*if (msg0.processedFromNioThread())
                 c.run();
             else*/
-                ctx.getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -1460,13 +1460,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final int part = msg.partition(); // Store partition to avoid possible recalculation.
 
         if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getStripedExecutorService().execute(part, c);
+            ctx.pools().getStripedExecutorService().execute(part, c);
 
             return;
         }
 
         if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getDataStreamerExecutorService().execute(part, c);
+            ctx.pools().getDataStreamerExecutorService().execute(part, c);
 
             return;
         }

@@ -18,7 +18,7 @@
 package org.apache.ignite.events;
 
 import java.util.Map;
-import java.util.UUID;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -62,48 +62,60 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  * @see EventType#EVT_CONSISTENCY_VIOLATION
  */
 @IgniteExperimental
-public class CacheConsistencyViolationEvent<K, V> extends EventAdapter {
+public class CacheConsistencyViolationEvent extends EventAdapter {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
-    /** Represents original values of entries that were affected by a cache operation.*/
-    final Map<UUID /*Node*/, Map<K, V>> originalEntries;
-
-    /** Collection of repaired entries. */
-    final Map<K, V> repairedEntries;
+    /** Represents original values of entries.*/
+    final Map<Object, Map<ClusterNode, EntryInfo>> entries;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
      *
      * @param node Local node.
      * @param msg Event message.
-     * @param originalEntries Collection of original entries affected by a cache operation.
-     * @param repairedEntries Collection of repaired entries.
+     * @param entries Collection of original entries.
      */
     public CacheConsistencyViolationEvent(
         ClusterNode node,
         String msg,
-        Map<UUID, Map<K, V>> originalEntries,
-        Map<K, V> repairedEntries) {
+        Map<Object, Map<ClusterNode, EntryInfo>> entries) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
-        this.originalEntries = originalEntries;
-        this.repairedEntries = repairedEntries;
+        this.entries = entries;
     }
 
     /**
-     * Returns a mapping node ids to a collection of original entries affected by a cache operation.
+     * Returns a mapping of keys to a collection of original entries.
+     *
      * @return Collection of original entries.
      */
-    public Map<UUID, Map<K, V>> getEntries() {
-        return originalEntries;
+    public Map<Object, Map<ClusterNode, EntryInfo>> getEntries() {
+        return entries;
     }
 
     /**
-     * Returns a collection of repaired entries.
-     * @return Collection of repaired entries.
+     * Inconsistent entry info.
      */
-    public Map<K, V> getRepairedEntries() {
-        return repairedEntries;
+    public interface EntryInfo {
+        /**
+         * Value.
+         */
+        public Object getValue();
+
+        /**
+         * Version.
+         */
+        public CacheEntryVersion getVersion();
+
+        /**
+         * Located at the primary node.
+         */
+        public boolean isPrimary();
+
+        /**
+         * Marked as correct during the fix.
+         */
+        public boolean isCorrect();
     }
 }
