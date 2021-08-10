@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -169,9 +167,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private CacheDataStore locCacheDataStore;
 
     /** */
-    protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
-
-    /** */
     private PendingEntriesTree pendingEntries;
 
     /** */
@@ -207,6 +202,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 ctx.database().checkpointReadUnlock();
             }
         }
+    }
+
+    /**
+     * @return Iterator over partition data stores.
+     */
+    protected Iterable<CacheDataStore> dataStores() {
+        return F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true);
     }
 
     /** {@inheritDoc} */
@@ -329,7 +331,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Data store for given entry.
      */
     public CacheDataStore dataStore(int part) {
-        return grp.isLocal() ? locCacheDataStore : partDataStores.get(part);
+        return grp.isLocal() ? locCacheDataStore : grp.topology().localPartition(part).dataStore();
     }
 
     /** {@inheritDoc} */
@@ -1280,22 +1282,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStore dataStore;
-
         partStoreLock.lock(p);
 
         try {
-            assert !partDataStores.containsKey(p);
-
-            dataStore = createCacheDataStore0(p);
-
-            partDataStores.put(p, dataStore);
+            return createCacheDataStore0(p);
         }
         finally {
             partStoreLock.unlock(p);
         }
-
-        return dataStore;
     }
 
     /**
@@ -1329,7 +1323,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (grp.isLocal())
             return Collections.singleton(locCacheDataStore);
 
-        return () -> partDataStores.values().iterator();
+        return dataStores();
     }
 
     /** {@inheritDoc} */
@@ -1339,10 +1333,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         partStoreLock.lock(p);
 
         try {
-            boolean rmv = partDataStores.remove(p, store);
-
-            if (!rmv)
-                return; // Already destroyed.
+            if (store.isDestroyed())
+                return;
 
             destroyCacheDataStore0(store);
         }
@@ -3022,6 +3014,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void markDestroyed() {
             dataTree.markDestroyed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDestroyed() {
+            return dataTree.isDestroyed();
         }
 
         /** {@inheritDoc} */

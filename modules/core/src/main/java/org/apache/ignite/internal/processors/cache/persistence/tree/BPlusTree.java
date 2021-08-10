@@ -2682,6 +2682,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @return {@code True} if marked as destroyed.
+     */
+    public boolean isDestroyed() {
+        return destroyed.get();
+    }
+
+    /**
      * @param pageAddr Meta page address.
      * @return First page IDs.
      */

@@ -354,7 +354,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (execSvc == null) {
             reuseList.saveMetadata(grp.statisticsHolderData());
 
-            for (CacheDataStore store : partDataStores.values())
+            for (CacheDataStore store : dataStores())
                 saveStoreMetadata(store, ctx, false, needSnapshot);
         }
         else {
@@ -367,7 +367,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             });
 
-            for (CacheDataStore store : partDataStores.values())
+            for (CacheDataStore store : dataStores())
                 execSvc.execute(() -> {
                     try {
                         saveStoreMetadata(store, ctx, false, needSnapshot);
@@ -1033,7 +1033,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void onPartitionCounterUpdated(int part, long cntr) {
-        CacheDataStore store = partDataStores.get(part);
+        CacheDataStore store = dataStore(part);
 
         assert store != null;
 
@@ -1045,7 +1045,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void onPartitionInitialCounterUpdated(int part, long start, long delta) {
-        CacheDataStore store = partDataStores.get(part);
+        CacheDataStore store = dataStore(part);
 
         assert store != null;
 
@@ -1054,7 +1054,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public long lastUpdatedPartitionCounter(int part) {
-        return partDataStores.get(part).updateCounter();
+        return dataStore(part).updateCounter();
     }
 
     /** {@inheritDoc} */
@@ -1312,7 +1312,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     long freeSpace() {
         long freeSpace = 0;
 
-        for (CacheDataStore store : partDataStores.values()) {
+        for (CacheDataStore store : dataStores()) {
             assert store instanceof GridCacheDataStore;
 
             AbstractFreeList freeList = ((GridCacheDataStore)store).getCacheStoreFreeList();
@@ -1334,7 +1334,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     long emptyDataPages() {
         long emptyDataPages = 0;
 
-        for (CacheDataStore store : partDataStores.values()) {
+        for (CacheDataStore store : dataStores()) {
             assert store instanceof GridCacheDataStore;
 
             AbstractFreeList freeList = ((GridCacheDataStore)store).getCacheStoreFreeList();
@@ -2950,6 +2950,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (delegate != null)
                 delegate.markDestroyed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDestroyed() throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.isDestroyed();
+
+            return true;
         }
 
         /** {@inheritDoc} */
