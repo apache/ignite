@@ -694,7 +694,8 @@ public class H2Utils {
 
         if (precision != -1 && (
                 dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString())
-                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())))
+                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())
+                        || dbType.equalsIgnoreCase(H2DatabaseType.BINARY.dBTypeAsString())))
             return dbType + '(' + precision + ')';
 
         return dbType;
