@@ -19,9 +19,9 @@ package org.apache.ignite.internal.schema.marshaller;
 
 import java.util.Objects;
 import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
-import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.util.Pair;
 import org.jetbrains.annotations.Nullable;
 

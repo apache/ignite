@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
@@ -27,9 +29,6 @@ import org.apache.ignite.schema.SchemaTable;
 import org.apache.ignite.schema.builder.SchemaTableBuilder;
 import org.apache.ignite.schema.builder.TableColumnBuilder;
 import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

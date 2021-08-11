@@ -41,8 +41,8 @@ import org.apache.ignite.internal.network.processor.serialization.MessageSeriali
 import org.apache.ignite.internal.network.processor.serialization.RegistryInitializerGenerator;
 import org.apache.ignite.internal.network.processor.serialization.SerializationFactoryGenerator;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.network.annotations.MessageGroup;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;

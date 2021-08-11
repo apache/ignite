@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.network;
 
-import org.apache.ignite.network.annotations.MessageGroup;
+import org.apache.ignite.internal.network.message.ScaleCubeMessage;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartMessage;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartResponseMessage;
-import org.apache.ignite.internal.network.message.ScaleCubeMessage;
+import org.apache.ignite.network.annotations.MessageGroup;
 
 /**
  * Message types for the network module.

@@ -26,8 +26,8 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
 import org.apache.ignite.internal.network.processor.MessageClass;
+import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
 
 /**
  * Class for generating Builder interfaces for Network Messages.

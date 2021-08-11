@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -39,9 +38,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.isBinaryComparison;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /**
  * Rule that pushes filter into the spool.

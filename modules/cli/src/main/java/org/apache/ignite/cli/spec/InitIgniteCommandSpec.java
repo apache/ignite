@@ -19,8 +19,8 @@ package org.apache.ignite.cli.spec;
 
 import java.net.URL;
 import javax.inject.Inject;
-import org.apache.ignite.cli.common.IgniteCommand;
 import org.apache.ignite.cli.builtins.init.InitIgniteCommand;
+import org.apache.ignite.cli.common.IgniteCommand;
 import picocli.CommandLine;
 
 /**

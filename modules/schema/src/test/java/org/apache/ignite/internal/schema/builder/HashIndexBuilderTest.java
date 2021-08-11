@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.schema.builder;
 
+import java.util.Collections;
 import org.apache.ignite.schema.HashIndex;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.builder.HashIndexBuilder;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

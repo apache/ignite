@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cli.builtins.module;
 
-import io.micronaut.test.annotation.MockBean;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,6 +27,8 @@ import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import javax.inject.Inject;
+import io.micronaut.test.annotation.MockBean;
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.apache.ignite.cli.AbstractCliTest;
 import org.apache.ignite.cli.IgnitePaths;
 import org.junit.jupiter.api.Test;

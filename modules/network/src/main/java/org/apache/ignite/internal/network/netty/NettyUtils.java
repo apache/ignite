@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.network.netty;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 /**
  * Netty utilities.

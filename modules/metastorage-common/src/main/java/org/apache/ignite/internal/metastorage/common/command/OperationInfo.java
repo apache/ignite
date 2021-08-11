@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import org.apache.ignite.internal.metastorage.common.OperationType;
-
 import java.io.Serializable;
+import org.apache.ignite.internal.metastorage.common.OperationType;
 
 /**
  * Defines operation.

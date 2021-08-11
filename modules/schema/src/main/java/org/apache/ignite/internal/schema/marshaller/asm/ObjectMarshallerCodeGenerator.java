@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.schema.marshaller.asm;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.EnumSet;
 import com.facebook.presto.bytecode.Access;
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.BytecodeNode;
@@ -28,15 +33,10 @@ import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.EnumSet;
 import org.apache.ignite.internal.schema.Columns;
-import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.lang.IgniteInternalException;
 
 /**

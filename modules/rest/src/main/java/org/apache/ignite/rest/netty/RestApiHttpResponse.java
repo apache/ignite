@@ -17,6 +17,7 @@
 
 package org.apache.ignite.rest.netty;
 
+import java.nio.charset.StandardCharsets;
 import com.google.gson.Gson;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
@@ -24,7 +25,6 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Simple wrapper of HTTP response with some helper methods for filling it with headers and content.

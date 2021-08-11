@@ -22,10 +22,10 @@ import java.util.UUID;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
-import static org.apache.ignite.internal.schema.NativeTypes.INT32;
 import static org.apache.ignite.internal.schema.NativeTypes.INT16;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

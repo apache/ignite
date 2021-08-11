@@ -19,11 +19,11 @@ package org.apache.ignite.internal.network.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeException;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.network.NetworkMessage;
 
 /**
  * Netty handler of the handshake operation.

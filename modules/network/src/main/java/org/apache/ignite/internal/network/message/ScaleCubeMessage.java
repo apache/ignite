@@ -19,8 +19,8 @@ package org.apache.ignite.internal.network.message;
 
 import java.util.Map;
 import io.scalecube.cluster.transport.api.Message;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**

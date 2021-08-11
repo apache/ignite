@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.schema.marshaller.asm;
 
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.processing.Generated;
 import com.facebook.presto.bytecode.Access;
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.ClassDefinition;
@@ -31,17 +36,10 @@ import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.control.TryCatch;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.processing.Generated;
 import jdk.jfr.Experimental;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.NativeType;
-import org.apache.ignite.internal.schema.row.Row;
-import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.AbstractSerializer;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
@@ -49,6 +47,8 @@ import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
 import org.apache.ignite.internal.schema.marshaller.SerializerFactory;
+import org.apache.ignite.internal.schema.row.Row;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
