@@ -29,12 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -67,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -76,6 +75,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -432,11 +432,8 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 != null && reqId.equals(opCtx0.reqId)) {
+        if (opCtx0 != null && reqId.equals(opCtx0.reqId))
             opCtx = null;
-
-            ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).removeCheckpointListener(opCtx0.cpHnd);
-        }
 
         synchronized (this) {
             ClusterSnapshotFuture fut0 = fut;
@@ -797,8 +794,6 @@ public class SnapshotRestoreProcess {
 
         opCtx0.cfgs = globalCfgs;
 
-        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(opCtx0.cpHnd);
-
         if (U.isLocalNodeCoordinator(ctx.discovery()))
             cacheStartProc.start(reqId, reqId);
     }
@@ -923,56 +918,7 @@ public class SnapshotRestoreProcess {
             for (Integer partId : leftParts) {
                 // Affinity node partitions are inited on exchange.
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-                PartitionRestoreLifecycle lf =
-                    new PartitionRestoreLifecycle(partId,
-                        (path) -> {
-                            // Execute partition initialization action under checkpoint thread.
-                            assert part != null && part.state() == GridDhtPartitionState.MOVING :
-                                "partId=" + part.id() + ", state=" + part.state();
-                            assert part.internalSize() == 0;
-
-                            // When the partition eviction completes and the new partition file loaded
-                            // we can start a new data storage initialization.
-                            // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
-//                            ctx.cache().context().pageStore().restore(grp.groupId(), part.id(), path.toFile());
-
-                            // Loaded:
-                            // - need to set MOVING states to loading partitions.
-                            // - need to acquire partition counters from each part
-
-                            // The process of re-init options:
-                            // 1. Clear heap entries from GridDhtLocalPartition, swap datastore, re-init counters
-                            // 2. Re-create the whole GridDhtLocalPartition from scratch in GridDhtPartitionTopologyImpl
-                            // as it the eviction does
-
-                            // The re-init notes:
-                            // - clearAsync() should move the clearVer in clearAll() to the end.
-                            // - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
-                            // - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
-                            // - CacheDataStore markDestroyed() may be called prior to checkpoint?
-                            // - Does new pages on acquirePage will be read from new page store after tag has been incremented?
-                            // - invalidate() returns a new tag -> no updates will be written to page store.
-                            // - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
-                            // - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
-                            // - getOrCreatePartition() resets also partition counters of new partitions can be updated
-                            // only on cp-write-lock (GridDhtLocalPartition ?).
-                            // - update the cntrMap in the GridDhtTopology prior to partition creation
-                            // - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
-                            // - check there is no reservations on MOVING partition during the switch procedure
-                            // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
-                            // locParts in GridDhtPartitionTopologyImpl
-
-                            // Re-init:
-                            // 1. Guarantee that these is not updates on partition being handled.
-                            // 2. invalidate PM before cp-write-lock (no new pages should read/write from store)
-                            // 3.
-
-                            boolean initialized = part.dataStore().init();
-
-                            assert initialized;
-                        },
-                        opCtx0.cpHnd);
+                PartitionRestoreLifecycle lf = new PartitionRestoreLifecycle(grp, partId);
 
                 // Start partition eviction first.
                 if (part == null)
@@ -1287,9 +1233,6 @@ public class SnapshotRestoreProcess {
         /** Progress of processing cache group partitions on the local node.*/
         private final Map<Integer, Set<PartitionRestoreLifecycle>> locProgress = new HashMap<>();
 
-        /** Operation handler by checkpoint thread. */
-        private final CheckpointActionHandler cpHnd = new CheckpointActionHandler();
-
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
 
@@ -1345,7 +1288,10 @@ public class SnapshotRestoreProcess {
     }
 
     /** */
-    private static class PartitionRestoreLifecycle {
+    private static class PartitionRestoreLifecycle implements CheckpointListener {
+        /** Cache group context related to the partition. */
+        private final CacheGroupContext grp;
+
         /** Partition id. */
         private final int partId;
 
@@ -1358,20 +1304,94 @@ public class SnapshotRestoreProcess {
         /** Future will be finished when the partition initialized under checkpoint thread. */
         private final CompletableFuture<Void> inited = new CompletableFuture<>();
 
-        /**
-         * @param partId Partition id.
-         * @param initAct Action to do partition initialization.
-         * @param hnd Checkpoint executor.
-         */
-        public PartitionRestoreLifecycle(
-            int partId,
-            Consumer<Path> initAct,
-            CheckpointActionHandler hnd
-        ) {
-            this.partId = partId;
+        /** PageMemory will be invalidated and PageStore will be truncated with this tag. */
+        private final AtomicReference<Integer> truncatedTag = new AtomicReference<>();
 
-            loaded.thenAcceptBothAsync(cleared,
-                (path, ignore) -> hnd.doUnderCheckpoint(() -> initAct.accept(path), inited));
+        /**
+         * @param grp Cache group context related to the partition.
+         * @param partId Partition id.
+         */
+        public PartitionRestoreLifecycle(CacheGroupContext grp, int partId) {
+            this.grp = grp;
+            this.partId = partId;
+            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
+
+            // When the partition eviction completes and the new partition file loaded
+            // we can start a new data storage initialization.
+            loaded.thenAcceptBothAsync(cleared, (path, ignore) -> db.addCheckpointListener(this));
+            inited.thenRun(() -> db.removeCheckpointListener(this));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            handleExceptions(() -> {
+                assert loaded.isDone();
+                assert cleared.isDone();
+
+                // Affinity node partitions are inited on exchange.
+                GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+                // Execute partition initialization action under checkpoint thread.
+                assert part != null : "Partition must be initialized prior to swapping cache data store: " + partId;
+                assert part.state() == GridDhtPartitionState.MOVING : "Only MOVING partitions allowed: " + part.state();
+                assert part.internalSize() == 0 : "Partition map must clear all heap entries prior to invalidation: " + partId;
+
+                PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+                int tag = pageMemory.invalidate(grp.groupId(), partId);
+
+                grp.shared().pageStore().truncate(grp.groupId(), partId, tag);
+
+                boolean success = truncatedTag.compareAndSet(null, tag);
+
+                assert success : partId;
+            }, inited::completeExceptionally);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            // TODO Should we clean the 'dirty' flag here, so pages won't be collected by the checkpoint?
+            // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
+
+            // There are still some dirty pages related to processing partition available in the PageMemory.
+
+            // ctx.cache().context().pageStore().restore(grp.groupId(), part.id(), path.toFile());
+
+            // Loaded:
+            // - need to set MOVING states to loading partitions.
+            // - need to acquire partition counters from each part
+
+            // The process of re-init options:
+            // 1. Clear heap entries from GridDhtLocalPartition, swap datastore, re-init counters
+            // 2. Re-create the whole GridDhtLocalPartition from scratch in GridDhtPartitionTopologyImpl
+            // as it the eviction does
+
+            // The re-init notes:
+            // - clearAsync() should move the clearVer in clearAll() to the end.
+            // - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
+            // - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
+            // - CacheDataStore markDestroyed() may be called prior to checkpoint?
+            // - Does new pages on acquirePage will be read from new page store after tag has been incremented?
+            // - invalidate() returns a new tag -> no updates will be written to page store.
+            // - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
+            // - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
+            // - getOrCreatePartition() resets also partition counters of new partitions can be updated
+            // only on cp-write-lock (GridDhtLocalPartition ?).
+            // - update the cntrMap in the GridDhtTopology prior to partition creation
+            // - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
+            // - check there is no reservations on MOVING partition during the switch procedure
+            // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
+            // locParts in GridDhtPartitionTopologyImpl
+
+            // Re-init:
+            // 1. Guarantee that these is not updates on partition being handled.
+            // 2. invalidate PM before cp-write-lock (no new pages should read/write from store)
+            // 3. ...
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            inited.complete(null);
         }
 
         /**
@@ -1379,6 +1399,19 @@ public class SnapshotRestoreProcess {
          */
         public CompletionStage<Void> done() {
             return CompletableFuture.allOf(cleared, loaded, inited);
+        }
+
+        /**
+         * @param action Action to execute.
+         * @param ex Consumer which accepts exceptional execution result.
+         */
+        private static void handleExceptions(IgniteThrowableRunner action, Consumer<Throwable> ex) {
+            try {
+                action.run();
+            }
+            catch (Throwable t) {
+                ex.accept(t);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1407,49 +1440,6 @@ public class SnapshotRestoreProcess {
                 ", loaded=" + loaded +
                 ", inited=" + inited +
                 '}';
-        }
-    }
-
-    /** */
-    private static class CheckpointActionHandler implements CheckpointListener {
-        /** Checkpoint request queue. */
-        private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
-
-        /**
-         * @param act Action to execute.
-         * @param fut Result future.
-         */
-        public void doUnderCheckpoint(Runnable act, CompletableFuture<Void> fut) {
-            boolean added = queue.offer(() -> {
-                try {
-                    act.run();
-
-                    fut.complete(null);
-                }
-                catch (Throwable t) {
-                    fut.completeExceptionally(t);
-                }
-            });
-
-            assert added;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMarkCheckpointBegin(Context ctx) {
-            Runnable r;
-
-            while ((r = queue.poll()) != null)
-                r.run();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCheckpointBegin(Context ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void beforeCheckpointBegin(Context ctx) {
-            // No-op.
         }
     }
 }
