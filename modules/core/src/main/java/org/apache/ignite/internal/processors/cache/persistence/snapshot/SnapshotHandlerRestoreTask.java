@@ -43,7 +43,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
     /** {@inheritDoc} */
     @Override protected ComputeJob makeJob(String snpName, String constId, Collection<String> groups) {
-        return new RestoreHandleJob(snpName, constId, groups);
+        return new SnapshotHandlerRestoreJob(snpName, constId, groups);
     }
 
     /** {@inheritDoc} */
@@ -83,7 +83,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         return new SnapshotPartitionsVerifyTaskResult(metas, null);
     }
 
-    static class RestoreHandleJob extends ComputeJobAdapter {
+    static class SnapshotHandlerRestoreJob extends ComputeJobAdapter {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -109,7 +109,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
          * @param consistentId String representation of the consistent node ID.
          * @param grps Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
          */
-        public RestoreHandleJob(String snpName, String consistentId, Collection<String> grps) {
+        public SnapshotHandlerRestoreJob(String snpName, String consistentId, Collection<String> grps) {
             this.snpName = snpName;
             this.consistentId = consistentId;
             this.grps = grps;

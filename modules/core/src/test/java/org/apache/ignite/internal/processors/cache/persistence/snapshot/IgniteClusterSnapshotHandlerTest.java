@@ -17,19 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 
 public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** */
@@ -42,6 +55,85 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         return super.getConfiguration(igniteInstanceName).setPluginProviders(testPluginProvider);
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotHandler() throws Exception {
+        String expMsg = "Inconsistent data";
+
+        AtomicReference<UUID> reqIdRef = new AtomicReference<>();
+
+        extensions.add(new SnapshotHandler<UUID>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public UUID handle(SnapshotHandlerContext ctx) {
+                return ctx.metadata().requestId();
+            }
+
+            @Override public void reduce(String name,
+                Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
+                for (SnapshotHandlerResult<UUID> res : results) {
+                    if (!reqIdRef.compareAndSet(null, res.data()) && !reqIdRef.get().equals(res.data()))
+                        throw new IgniteCheckedException("The request ID must be the same on all nodes.");
+                }
+            }
+        });
+
+        extensions.add(new SnapshotHandler<UUID>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.RESTORE;
+            }
+
+            @Override public UUID handle(SnapshotHandlerContext ctx) {
+                return ctx.metadata().requestId();
+            }
+
+            @Override public void reduce(String name,
+                Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
+                for (SnapshotHandlerResult<UUID> res : results) {
+                    if (!reqIdRef.get().equals(res.data()))
+                        throw new IgniteCheckedException(expMsg);
+                }
+            }
+        });
+
+        IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        assertNotNull(reqIdRef.get());
+
+        changeMetadataRequestIdOnDisk(UUID.randomUUID());
+
+        IgniteFuture<Void> fut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+
+        changeMetadataRequestIdOnDisk(reqIdRef.get());
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /**
+     * @param newReqId New request ID.
+     * @throws Exception If failed.
+     */
+    private void changeMetadataRequestIdOnDisk(UUID newReqId) throws Exception {
+        for (Ignite grid : G.allGrids()) {
+            IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
+            String constId = grid.cluster().localNode().consistentId().toString();
+            String metaFilename = U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT;
+            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(SNAPSHOT_NAME, constId);
+            File smf = new File(snpMgr.snapshotLocalDir(SNAPSHOT_NAME), metaFilename);
+
+            GridTestUtils.setFieldValue(meta, "rqId", newReqId);
+
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
+                U.marshal(MarshallerUtils.jdkMarshaller(grid.name()), meta, out);
+            }
+        }
+    }
 
     /** @throws Exception If fails. */
     @Test

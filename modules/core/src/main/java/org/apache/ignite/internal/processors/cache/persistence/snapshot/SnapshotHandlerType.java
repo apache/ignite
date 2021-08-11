@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 /**
- * Type of snapshot operation handlers.
+ * Type of snapshot operation handler.
  */
 public enum SnapshotHandlerType {
     /** Handler is called immediately after the snapshot is taken. */
