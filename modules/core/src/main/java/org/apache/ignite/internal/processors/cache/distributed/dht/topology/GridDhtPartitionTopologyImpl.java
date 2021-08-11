@@ -2900,8 +2900,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 long gapStart = gaps.get(j * 2);
                                 long gapStop = gaps.get(j * 2 + 1);
 
-                                if (part.group().persistenceEnabled() &&
-                                    part.group().walEnabled() &&
+                                if (part.group().walEnabled() &&
                                     !part.group().mvccEnabled()) {
                                     // Rollback record tracks applied out-of-order updates while finalizeUpdateCounters
                                     // return gaps (missing updates). The code below transforms gaps to updates.
