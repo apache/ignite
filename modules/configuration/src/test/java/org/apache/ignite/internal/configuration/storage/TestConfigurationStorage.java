@@ -86,7 +86,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
         version.incrementAndGet();
 
-        listeners.forEach(listener -> listener.onEntriesChanged(new Data(newValues, version.get())));
+        listeners.forEach(listener -> listener.onEntriesChanged(new Data(newValues, version.get())).join());
 
         return CompletableFuture.completedFuture(true);
     }
@@ -94,10 +94,6 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     /** {@inheritDoc} */
     @Override public void registerConfigurationListener(ConfigurationStorageListener listener) {
         listeners.add(listener);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void notifyApplied(long storageRevision) {
     }
 
     /** {@inheritDoc} */

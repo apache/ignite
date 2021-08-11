@@ -74,14 +74,11 @@ public class MetaStorageManager implements IgniteComponent {
     /** Meta storage raft group name. */
     private static final String METASTORAGE_RAFT_GROUP_NAME = "metastorage_raft_group";
 
-    /** Prefix added to configuration keys to distinguish them in the meta storage. Must end with a dot. */
-    public static final String DISTRIBUTED_PREFIX = "dst-cfg.";
-
     /**
      * Special key for the vault where the applied revision for {@link MetaStorageManager#storeEntries}
      * operation is stored. This mechanism is needed for committing processed watches to {@link VaultManager}.
      */
-    public static final ByteArray APPLIED_REV = ByteArray.fromString(DISTRIBUTED_PREFIX + "applied_revision");
+    public static final ByteArray APPLIED_REV = ByteArray.fromString("applied_revision");
 
     /** Vault manager in order to commit processed watches with corresponding applied revision. */
     private final VaultManager vaultMgr;

@@ -408,11 +408,13 @@ public abstract class ConfigurationChanger {
     }
 
     /**
-     * Update configuration from storage listener.
+     * Updates configuration from storage listener.
+     *
      * @param storageType Type of the storage that propagated these changes.
      * @param changedEntries Changed data.
+     * @return Future that signifies update completion.
      */
-    private void updateFromListener(
+    private CompletableFuture<Void> updateFromListener(
         ConfigurationType storageType,
         Data changedEntries
     ) {
@@ -427,20 +429,17 @@ public abstract class ConfigurationChanger {
 
         fillFromPrefixMap(newSuperRoot, dataValuesPrefixMap);
 
-        StorageRoots newStorageRoots = new StorageRoots(newSuperRoot, changedEntries.changeId());
+        long newChangeId = changedEntries.changeId();
+
+        StorageRoots newStorageRoots = new StorageRoots(newSuperRoot, newChangeId);
 
         storagesRootsMap.put(storageType, newStorageRoots);
 
-        ConfigurationStorage storage = storageInstances.get(storageType);
-
-        long storageRevision = changedEntries.changeId();
-
-        // This will also be updated during the metastorage integration.
-        notificator.notify(
+        return notificator.notify(
             oldSuperRoot,
             newSuperRoot,
-            storageRevision
-        ).whenCompleteAsync((res, throwable) -> storage.notifyApplied(storageRevision), pool);
+            newChangeId
+        );
     }
 
     /**

@@ -49,13 +49,6 @@ public interface ConfigurationStorage {
     void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr);
 
     /**
-     * Notify storage that this specific revision was successfully handled and it is not necessary to repeat the same
-     * notification on node restart.
-     * @param storageRevision Storage revision.
-     */
-    void notifyApplied(long storageRevision);
-
-    /**
      * @return Type of this configuration storage.
      */
     ConfigurationType type();

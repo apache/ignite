@@ -111,11 +111,9 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
 
         Data entries = new Data(newValues, ver.incrementAndGet());
 
-        return vaultMgr.putAll(data).thenApply(res -> {
-            lsnr.onEntriesChanged(entries);
-
-            return true;
-        });
+        return vaultMgr.putAll(data)
+            .thenCompose(v -> lsnr.onEntriesChanged(entries))
+            .thenApply(v -> true);
     }
 
     /** {@inheritDoc} */
@@ -124,13 +122,6 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
             this.lsnr = lsnr;
         else
             LOG.warn("Configuration listener has already been set.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void notifyApplied(long storageRevision) {
-        // No-op.
-        // TODO: implement this method when restart mechanism will be introduced
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-14697
     }
 
     /** {@inheritDoc} */

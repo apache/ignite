@@ -44,6 +44,7 @@ import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -132,7 +133,7 @@ public class ITDistributedConfigurationStorageTest {
             Stream.of(clusterService, raftManager, metaStorageManager).forEach(IgniteComponent::start);
 
             // this is needed to avoid assertion errors
-            cfgStorage.registerConfigurationListener(changedEntries -> {});
+            cfgStorage.registerConfigurationListener(changedEntries -> completedFuture(null));
 
             // deploy watches to propagate data from the metastore into the vault
             metaStorageManager.deployWatches();
