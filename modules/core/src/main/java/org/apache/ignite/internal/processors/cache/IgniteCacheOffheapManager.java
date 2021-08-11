@@ -101,31 +101,6 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * Partition counter update callback. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition.
-     * @param cntr Partition counter.
-     */
-    public void onPartitionCounterUpdated(int part, long cntr);
-
-    /**
-     * Initial counter will be updated on state restore only
-     *
-     * @param part Partition
-     * @param start Start.
-     * @param delta Delta.
-     */
-    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
-
-    /**
-     * Partition counter provider. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition ID.
-     * @return Last updated counter.
-     */
-    public long lastUpdatedPartitionCounter(int part);
-
-    /**
      * @param entry Cache entry.
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
@@ -153,10 +128,10 @@ public interface IgniteCacheOffheapManager {
     public Iterable<CacheDataStore> cacheDataStores();
 
     /**
-     * @param part Partition.
-     * @return Data store.
+     * @param part Local partition or {@code null} if a related cache group is <tt>LOCAL</tt>.
+     * @return Cache data store associated with given partition data store for a <tt>LOCAL</tt> cache group.
      */
-    public CacheDataStore dataStore(GridDhtLocalPartition part);
+    public CacheDataStore dataStore(@Nullable GridDhtLocalPartition part);
 
     /**
      * @param store Data store.

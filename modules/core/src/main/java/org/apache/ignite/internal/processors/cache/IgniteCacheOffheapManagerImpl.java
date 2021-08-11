@@ -666,21 +666,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onPartitionCounterUpdated(int part, long cntr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionInitialCounterUpdated(int part, long start, long delta) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public long lastUpdatedPartitionCounter(int part) {
-        return 0;
-    }
-
     /**
      * Clears offheap entries.
      *

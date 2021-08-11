@@ -1012,12 +1012,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * Invalidates page memory for given partition. Destroys partition store.
      * <b>NOTE:</b> This method can be invoked only within checkpoint lock or checkpointer thread.
      *
-     * @param grpId Group ID.
      * @param partId Partition ID.
      *
      * @throws IgniteCheckedException If destroy has failed.
      */
-    public void destroyPartitionStore(int grpId, int partId) throws IgniteCheckedException {
+    public void destroyPartitionStore(int partId) throws IgniteCheckedException {
         PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
         int tag = pageMemory.invalidate(grp.groupId(), partId);
@@ -1025,38 +1024,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.walEnabled())
             ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
 
-        ctx.pageStore().onPartitionDestroyed(grpId, partId, tag);
+        ctx.pageStore().truncate(grp.groupId(), partId, tag);
 
         if (grp.config().isEncryptionEnabled())
             ctx.kernalContext().encryption().onDestroyPartitionStore(grp, partId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionCounterUpdated(int part, long cntr) {
-        CacheDataStore store = dataStore(part);
-
-        assert store != null;
-
-        long oldCnt = store.updateCounter();
-
-        if (oldCnt < cntr)
-            store.updateCounter(cntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionInitialCounterUpdated(int part, long start, long delta) {
-        CacheDataStore store = dataStore(part);
-
-        assert store != null;
-
-        store.updateInitialCounter(start, delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long lastUpdatedPartitionCounter(int part) {
-        CacheDataStore store = dataStore(part);
-
-        return store == null ? 0 : store.updateCounter();
     }
 
     /** {@inheritDoc} */
