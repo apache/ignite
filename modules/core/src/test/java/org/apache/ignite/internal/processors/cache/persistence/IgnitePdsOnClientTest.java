@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class IgnitePdsOnClientTest extends GridCommonAbstractTest {
     @Test
     public void testStartClientWithPersistenceConfiguration() throws Exception {
         try (Ignite ignite = startGrid(0)) {
-            Ignite client = startClientGrid(1);
+            IgniteEx client = startClientGrid(1);
 
             client.cluster().state(ClusterState.ACTIVE);
 
