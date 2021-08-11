@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.network.recovery;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import io.netty.channel.Channel;
@@ -45,8 +47,10 @@ import static org.apache.ignite.internal.network.recovery.RecoveryHandshakeTest.
 import static org.apache.ignite.internal.network.recovery.RecoveryHandshakeTest.FailingRecoveryServerHandshakeManager.ServerStageFail.SERVER_CONNECTION_OPENED;
 import static org.apache.ignite.internal.network.recovery.RecoveryHandshakeTest.FailingRecoveryServerHandshakeManager.ServerStageFail.SERVER_DOESNT_FAIL;
 import static org.apache.ignite.internal.network.recovery.RecoveryHandshakeTest.FailingRecoveryServerHandshakeManager.ServerStageFail.SERVER_INIT;
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.waitForCondition;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Recovery protocol handshake tests.
@@ -136,6 +140,46 @@ public class RecoveryHandshakeTest {
         NettySender from2to1 = manager2.channel(manager1.consistentId(), manager1.getLocalAddress()).get(3, TimeUnit.SECONDS);
 
         from2to1.channel().closeFuture().get(3, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Tests that one server can handle multiple incoming connections and perform the handshake operation successfully.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHandshakeWithMultipleClients() throws Exception {
+        ConnectionManager server = startManager(4000);
+
+        List<ConnectionManager> clients = new ArrayList<>();
+
+        int clientCount = 10;
+
+        for (int i = 0; i < clientCount; i++)
+            clients.add(startManager(4001 + i));
+
+        // A key is the client's consistent id, a value is the channel between the client and the server
+        var channelsToServer = new HashMap<String, NettySender>();
+
+        for (ConnectionManager client : clients) {
+            channelsToServer.put(
+                client.consistentId(),
+                client.channel(server.consistentId(), server.getLocalAddress()).get(3, TimeUnit.SECONDS)
+            );
+        }
+
+        assertTrue(waitForCondition(() -> server.channels().size() == clientCount, TimeUnit.SECONDS.toMillis(3)));
+
+        Map<String, NettySender> channels = server.channels();
+
+        // Assert that server's channels are inbound connections opened from clients
+        channelsToServer.forEach((consistentId, toServer) -> {
+            NettySender toClient = channels.get(consistentId);
+
+            assertNotNull(toClient);
+
+            assertEquals(toServer.channel().localAddress(), toClient.channel().remoteAddress());
+        });
     }
 
     /**
@@ -310,7 +354,7 @@ public class RecoveryHandshakeTest {
     }
 
     /**
-     * Create and start a {@link ConnectionManager} adding it to the {@link #startedManagers} list.
+     * Starts a {@link ConnectionManager} adding it to the {@link #startedManagers} list.
      *
      * @param port Port for the {@link ConnectionManager#server}.
      * @param serverHandshakeFailAt At what stage to fail server handshake.
@@ -344,4 +388,32 @@ public class RecoveryHandshakeTest {
         return manager;
     }
 
+    /**
+     * Starts a {@link ConnectionManager} with a normal handshake manager adding it to the {@link #startedManagers} list.
+     *
+     * @param port Port.
+     * @return Connection manager
+     */
+    private ConnectionManager startManager(int port) {
+        var registry = new TestMessageSerializationRegistryImpl();
+
+        var messageFactory = new NetworkMessagesFactory();
+
+        UUID launchId = UUID.randomUUID();
+        String consistentId = UUID.randomUUID().toString();
+
+        var manager = new ConnectionManager(
+            port,
+            registry,
+            consistentId,
+            () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
+            () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
+        );
+
+        manager.start();
+
+        startedManagers.add(manager);
+
+        return manager;
+    }
 }

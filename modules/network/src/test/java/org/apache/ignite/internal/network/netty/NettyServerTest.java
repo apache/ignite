@@ -32,10 +32,10 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.apache.ignite.lang.IgniteInternalException;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageMappingException;
 import org.apache.ignite.network.serialization.MessageReader;
@@ -201,7 +201,7 @@ public class NettyServerTest {
                 }
             });
 
-        server = new NettyServer(4000, handshakeManager, sender -> {}, (socketAddress, message) -> {}, registry);
+        server = new NettyServer(4000, () -> handshakeManager, sender -> {}, (socketAddress, message) -> {}, registry);
 
         server.start().get(3, TimeUnit.SECONDS);
 
@@ -258,7 +258,7 @@ public class NettyServerTest {
 
         Mockito.doReturn(future).when(bootstrap).bind(Mockito.anyInt());
 
-        var server = new NettyServer(bootstrap, 0, mock(HandshakeManager.class), null, null, null);
+        var server = new NettyServer(bootstrap, 0, () -> mock(HandshakeManager.class), null, null, null);
 
         try {
             server.start().get(3, TimeUnit.SECONDS);

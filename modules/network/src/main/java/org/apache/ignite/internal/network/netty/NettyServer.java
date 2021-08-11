@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -69,7 +70,7 @@ public class NettyServer {
     private final BiConsumer<SocketAddress, NetworkMessage> messageListener;
 
     /** Handshake manager. */
-    private final HandshakeManager handshakeManager;
+    private final Supplier<HandshakeManager> handshakeManager;
 
     /** Server start future. */
     private CompletableFuture<Void> serverStartFuture;
@@ -94,14 +95,14 @@ public class NettyServer {
      * Constructor.
      *
      * @param port Server port.
-     * @param handshakeManager Handshake manager.
+     * @param handshakeManager Handshake manager supplier.
      * @param newConnectionListener New connections listener.
      * @param messageListener Message listener.
      * @param serializationRegistry Serialization registry.
      */
     public NettyServer(
         int port,
-        HandshakeManager handshakeManager,
+        Supplier<HandshakeManager> handshakeManager,
         Consumer<NettySender> newConnectionListener,
         BiConsumer<SocketAddress, NetworkMessage> messageListener,
         MessageSerializationRegistry serializationRegistry
@@ -114,7 +115,7 @@ public class NettyServer {
      *
      * @param bootstrap Server bootstrap.
      * @param port Server port.
-     * @param handshakeManager Handshake manager.
+     * @param handshakeManager Handshake manager supplier.
      * @param newConnectionListener New connections listener.
      * @param messageListener Message listener.
      * @param serializationRegistry Serialization registry.
@@ -122,7 +123,7 @@ public class NettyServer {
     public NettyServer(
         ServerBootstrap bootstrap,
         int port,
-        HandshakeManager handshakeManager,
+        Supplier<HandshakeManager> handshakeManager,
         Consumer<NettySender> newConnectionListener,
         BiConsumer<SocketAddress, NetworkMessage> messageListener,
         MessageSerializationRegistry serializationRegistry
@@ -153,6 +154,9 @@ public class NettyServer {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     /** {@inheritDoc} */
                     @Override public void initChannel(SocketChannel ch) {
+                        // Get handshake manager for the new channel.
+                        HandshakeManager manager = handshakeManager.get();
+
                         ch.pipeline().addLast(
                             /*
                              * Decoder that uses the MessageReader
@@ -160,7 +164,7 @@ public class NettyServer {
                              */
                             new InboundDecoder(serializationRegistry),
                             // Handshake handler.
-                            new HandshakeHandler(handshakeManager),
+                            new HandshakeHandler(manager),
                             // Handles decoded NetworkMessages.
                             new MessageHandler(messageListener),
                             /*
@@ -173,7 +177,7 @@ public class NettyServer {
                             new IoExceptionSuppressingHandler()
                         );
 
-                        handshakeManager.handshakeFuture().thenAccept(newConnectionListener);
+                        manager.handshakeFuture().thenAccept(newConnectionListener);
                     }
                 })
                 /*

@@ -36,10 +36,10 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -102,7 +102,7 @@ public class ConnectionManager {
         this.clientHandshakeManagerFactory = clientHandshakeManagerFactory;
         this.server = new NettyServer(
             port,
-            serverHandshakeManagerFactory.get(),
+            serverHandshakeManagerFactory,
             this::onNewIncomingChannel,
             this::onMessage,
             serializationRegistry
