@@ -208,7 +208,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Iterator over partition data stores.
      */
     protected Iterable<CacheDataStore> dataStores() {
-        return F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true);
+        return grp.isLocal() ? Collections.singletonList(locCacheDataStore) :
+            F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true);
     }
 
     /** {@inheritDoc} */
@@ -331,7 +332,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Data store for given entry.
      */
     public CacheDataStore dataStore(int part) {
-        return grp.isLocal() ? locCacheDataStore : grp.topology().localPartition(part).dataStore();
+        return grp.isLocal() ? locCacheDataStore : dataStore(grp.topology().localPartition(part));
     }
 
     /** {@inheritDoc} */
