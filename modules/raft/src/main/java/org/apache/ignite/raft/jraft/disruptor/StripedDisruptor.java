@@ -26,9 +26,8 @@ import com.lmax.disruptor.dsl.ProducerType;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.lang.LoggerMessageHelper.format;
 
@@ -40,7 +39,7 @@ import static org.apache.ignite.lang.LoggerMessageHelper.format;
  */
 public class StripedDisruptor<T extends GroupAware> {
     /** The logger. */
-    private static final Logger LOG = LoggerFactory.getLogger(StripedDisruptor.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(StripedDisruptor.class);
 
     /** Array of disruptors. Each Disruptor in the appropriate stripe. */
     private final Disruptor<T>[] disruptors;

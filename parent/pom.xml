@@ -85,6 +85,7 @@
         <metrics.version>4.0.2</metrics.version>
         <jctools.version>3.3.0</jctools.version>
         <msgpack.version>0.8.21</msgpack.version>
+        <slf4j.jdk14.version>1.7.32</slf4j.jdk14.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -628,6 +629,12 @@
                 <artifactId>jctools-core</artifactId>
                 <version>${jctools.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+                <version>${slf4j.jdk14.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -949,6 +956,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <argLine>-Djava.util.logging.config.file=../../config/java.util.logging.properties</argLine>
                     <excludes>
                         <exclude>**/IT*.java</exclude>
                     </excludes>
@@ -962,6 +970,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
+                    <argLine>-Djava.util.logging.config.file=../../config/java.util.logging.properties</argLine>
                     <useModulePath>false</useModulePath>
                 </configuration>
                 <executions>
