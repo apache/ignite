@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceTask;
@@ -100,8 +99,7 @@ public class MaintenanceFileStore {
         if (disabled)
             return;
 
-        PdsFolderSettings folderSettings = pdsFoldersResolver.resolveFolders();
-        File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+        File storeDir = pdsFoldersResolver.resolveFolders().persistentStoreNodePath();
         U.ensureDirectory(storeDir, "store directory for node persistent data", log);
 
         mntcTasksFile = new File(storeDir, MAINTENANCE_FILE_NAME);
