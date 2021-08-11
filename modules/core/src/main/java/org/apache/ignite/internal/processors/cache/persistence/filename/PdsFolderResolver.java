@@ -417,6 +417,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
+     * @param clientMode {@code True} if client node.
      * @throws IgniteCheckedException if I/O failed.
      */
     @Nullable private File resolvePersistentStoreBasePath(boolean clientMode) throws IgniteCheckedException {
