@@ -74,7 +74,7 @@ class RebalancePersistentTest(IgniteTest):
 
         nodes.append(new_node.nodes[0])
 
-        result = get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
+        result = get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
 
         control_utility.deactivate()
 
@@ -120,7 +120,7 @@ class RebalancePersistentTest(IgniteTest):
 
         await_and_check_rebalance(ignites)
 
-        result = get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
+        result = get_result(ignites.nodes[:-1], preload_time, cache_count, entry_count, entry_size)
 
         control_utility.deactivate()
 
