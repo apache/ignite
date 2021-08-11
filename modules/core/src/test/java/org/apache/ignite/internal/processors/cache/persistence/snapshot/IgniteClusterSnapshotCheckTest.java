@@ -598,7 +598,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck, false).get(TIMEOUT);
     }
 
     /**

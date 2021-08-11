@@ -42,6 +42,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -268,6 +269,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Distributed process to restore cache group from the snapshot. */
     private final SnapshotRestoreProcess restoreCacheGrpProc;
 
+    /** Snapshot operation handlers. */
+    private final Map<SnapshotHandlerType, List<SnapshotHandler<?>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
+
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
 
@@ -380,6 +384,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+
+        SnapshotPartitionsVerifyRestoreHandler integrityCheck = new SnapshotPartitionsVerifyRestoreHandler(ctx);
+
+        handlers.put(integrityCheck.type(), new ArrayList<>(Collections.singleton(integrityCheck)));
+
+        SnapshotHandler<?>[] handlers0 = ctx.plugins().extensions(SnapshotHandler.class);
+
+        if (handlers0 != null) {
+            for (SnapshotHandler<?> hnd : handlers0)
+                handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
+        }
+
+        for (SnapshotHandlerType type : SnapshotHandlerType.values()) {
+            List<SnapshotHandler<?>> hndList = handlers.putIfAbsent(type, Collections.emptyList());
+
+            if (hndList != null)
+                handlers.put(type, Collections.unmodifiableList(hndList));
+        }
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
@@ -538,6 +560,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    public Collection<SnapshotHandler<?>> handlers(SnapshotHandlerType type) {
+        return handlers.get(type);
+    }
+
     /**
      * @param snpName Snapshot name.
      * @return Local snapshot directory for snapshot with given name.
@@ -654,22 +680,37 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 smf.getParentFile().mkdirs();
 
+                SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
+                    req.snapshotName(),
+                    cctx.localNode().consistentId().toString(),
+                    pdsSettings.folderName(),
+                    cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
+                    grpIds,
+                    blts,
+                    fut.result());
+
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
-                    U.marshal(marsh,
-                        new SnapshotMetadata(req.requestId(),
-                            req.snapshotName(),
-                            cctx.localNode().consistentId().toString(),
-                            pdsSettings.folderName(),
-                            cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
-                            grpIds,
-                            blts,
-                            fut.result()),
-                        out);
+                    U.marshal(marsh, meta, out);
 
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
                 }
 
-                return new SnapshotOperationResponse();
+                Map<String, SnapshotHandlerResult<Object>> results = new HashMap<>();
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, null);
+
+                for (SnapshotHandler<?> hnd : handlers(SnapshotHandlerType.CREATE)) {
+                    SnapshotHandlerResult<Object> res;
+
+                    try {
+                        res = new SnapshotHandlerResult<>(hnd.handle(ctx), null, cctx.localNode());
+                    } catch (Exception e) {
+                        res = new SnapshotHandlerResult<>(null, e, cctx.localNode());
+                    }
+
+                    results.put(hnd.getClass().getName(), res);
+                }
+
+                return new SnapshotOperationResponse(results);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw F.wrap(e);
@@ -722,9 +763,44 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
                     "[err=" + err + ", missed=" + missed + ']'));
             }
+            else
+                snpReq.error(handleClusterSnapshotCreation(snpReq.snapshotName(), res.values()));
 
             endSnpProc.start(UUID.randomUUID(), snpReq);
         }
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @param responses Snapshot operation responses.
+     * @throws IgniteCheckedException If any of the handlers were unable to process the local results of the nodes.
+     * @return Exception If any of the handlers were unable to process the local results of the nodes.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private @Nullable Exception handleClusterSnapshotCreation(String snpName, Collection<SnapshotOperationResponse> responses) {
+        Map<String, List<SnapshotHandlerResult>> hndResults = new HashMap<>();
+
+        for (SnapshotOperationResponse response : responses) {
+            if (response.operationHandlerResults() == null)
+                continue;
+
+            for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.operationHandlerResults().entrySet())
+                hndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+        }
+
+        if (hndResults.isEmpty())
+            return null;
+
+        for (SnapshotHandler hnd : handlers(SnapshotHandlerType.CREATE)) {
+            try {
+                hnd.reduce(snpName, hndResults.get(hnd.getClass().getName()));
+            }
+            catch (Exception err) {
+                return err;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -942,7 +1018,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param name Snapshot name.
-     * @return {@code true} if snapshot is OK.
+     * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshot(String name) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
@@ -950,7 +1027,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        return checkSnapshot(name, null).chain(f -> {
+        return checkSnapshot(name, null, false).chain(f -> {
             try {
                 return f.get().idleVerifyResult();
             }
@@ -967,9 +1044,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot name.
      * @param grps Collection of cache group names to check.
-     * @return {@code true} if snapshot is OK.
+     * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
+     *                              handlers, otherwise only system consistency check will be performed.
+     * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable Collection<String> grps) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
+        String name,
+        @Nullable Collection<String> grps,
+        boolean includeCustomHandlers
+    ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
@@ -1009,7 +1093,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
                 kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
 
-                kctx0.task().execute(SnapshotPartitionsVerifyTask.class, new SnapshotPartitionsVerifyTaskArg(grps, metas))
+                Class<? extends AbstractSnapshotVerificationTask> cls =
+                    includeCustomHandlers ? SnapshotHandlerRestoreTask.class : SnapshotPartitionsVerifyTask.class;
+
+                kctx0.task().execute(cls, new SnapshotPartitionsVerifyTaskArg(grps, metas))
                     .listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
@@ -2067,6 +2154,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private static class SnapshotOperationResponse implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
+
+        private final Map<String, SnapshotHandlerResult<Object>> hndResults;
+
+        public SnapshotOperationResponse() {
+            this(null);
+        }
+
+        public SnapshotOperationResponse(Map<String, SnapshotHandlerResult<Object>> hndResults) {
+            this.hndResults = F.isEmpty(hndResults) ? null : hndResults;
+        }
+
+        public @Nullable Map<String, SnapshotHandlerResult<Object>> operationHandlerResults() {
+            return hndResults;
+        }
     }
 
     /** Snapshot operation start message. */
