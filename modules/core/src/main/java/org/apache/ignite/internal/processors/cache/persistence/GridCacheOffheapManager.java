@@ -634,7 +634,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (ctx.pageStore().pages(grp.groupId(), p) <= 1) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Skipping partition on recovery (pages less than 1) " +
+                    log.debug("Skipping partition on recovery (pages less than or equals 1) " +
                         "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
                 }
 

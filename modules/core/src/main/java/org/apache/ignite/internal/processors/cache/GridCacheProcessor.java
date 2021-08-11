@@ -5540,7 +5540,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             int cntr = 0;
 
-            // Group id -> completed partitions counter
+            // Group id -> completed partitions counter.
             Map<Integer, AtomicInteger> grps = new HashMap<>();
 
             for (CacheGroupContext ctx : forGroups) {
@@ -5563,18 +5563,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     SortedSet<T3<Long, Long, GroupPartitionId>> top =
                         new ConcurrentSkipListSet<>(processedPartitionComparator());
 
-                    while (!batch.isEmpty()) {
-                        GroupPartitionId grpPartId = batch.poll();
+                    GroupPartitionId grpPartId;
 
+                    while ((grpPartId = batch.poll()) != null) {
                         CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpPartId.getGroupId());
 
                         try {
                             long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(),
                                 partStates.get(grpPartId));
 
-                            top.add(new T3<>(time, U.currentTimeMillis(), grpPartId));
+                            if (log.isInfoEnabled()) {
+                                top.add(new T3<>(time, U.currentTimeMillis(), grpPartId));
 
-                            trimToSize(top, topPartRefLimit);
+                                trimToSize(top, topPartRefLimit);
+                            }
 
                             totalProcessed.incrementAndGet();
                         }
