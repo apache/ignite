@@ -19,8 +19,8 @@ package org.apache.ignite.tests;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.policies.RoundRobinPolicy;
@@ -617,7 +617,7 @@ public class IgnitePersistentStoreTest {
         Map<Long, ProductOrder> ordersMap = TestsHelper.generateOrdersMap(5);
         Map<Long, ProductOrder> ordersMap1;
         Product product = TestsHelper.generateRandomProduct(-1L);
-        ProductOrder order = TestsHelper.generateRandomOrder(-1L, -1L, new Date());
+        ProductOrder order = TestsHelper.generateRandomOrder(-1L, -1L, Instant.now());
 
         IgniteTransactions txs = ignite.transactions();
 
