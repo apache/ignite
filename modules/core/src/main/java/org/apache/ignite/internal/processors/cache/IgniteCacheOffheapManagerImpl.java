@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -113,11 +114,13 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -309,14 +312,27 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param part Partition.
      * @return Data store for given entry.
      */
-    @Override public CacheDataStore dataStore(GridDhtLocalPartition part) {
+    @Override public CacheDataStore dataStore(@Nullable GridDhtLocalPartition part) {
         if (grp.isLocal())
             return locCacheDataStore;
-        else {
-            assert part != null;
 
-            return part.dataStore();
-        }
+        assert part != null;
+
+        return part.dataStore();
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param renting {@code true} if renting partitions must also be shown.
+     * @return Related partition cache data store or {@code null} if partition haven't been initialized.
+     */
+    @Nullable private CacheDataStore dataStore(int partId, boolean renting) {
+        if (grp.isLocal())
+            return locCacheDataStore;
+
+        GridDhtLocalPartition part = grp.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, renting);
+
+        return part == null ? null : part.dataStore();
     }
 
     /** {@inheritDoc} */
@@ -330,22 +346,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPartition(int p) throws IgniteCheckedException {
+    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
         throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
-    }
-
-    /**
-     * @param partId Partition id.
-     * @return Related partition cache data store or {@code null} if partition haven't been initialized.
-     */
-    @Nullable public CacheDataStore dataStore(int partId) {
-        if (grp.isLocal())
-            return locCacheDataStore;
-        else {
-            GridDhtLocalPartition part = grp.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, true);
-
-            return part == null ? null : part.dataStore();
-        }
     }
 
     /** {@inheritDoc} */
@@ -374,33 +376,45 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public long cacheEntriesCount(int cacheId, int part) {
-        CacheDataStore store = dataStore(part);
+        CacheDataStore store = dataStore(part, true);
 
         return store == null ? 0 : store.cacheSize(cacheId);
     }
 
+    /** {@inheritDoc} */
+    @Override public Iterable<CacheDataStore> cacheDataStores() {
+        return cacheDataStores(grp -> new AlwaysTruePredicate<>());
+    }
+
+    /**
+     * @param factory Factory which will produce filtering predicate.
+     * @return Iterable over all existing cache data stores.
+     */
+    private Iterable<CacheDataStore> cacheDataStores(
+        Function<CacheGroupContext, IgnitePredicate<GridDhtLocalPartition>> factory
+    ) {
+        return grp.isLocal() ? Collections.singletonList(locCacheDataStore) :
+            F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true, factory.apply(grp));
+    }
+
     /**
      * @param primary Primary data flag.
-     * @param backup Primary data flag.
+     * @param backup Backup data flag.
      * @param topVer Topology version.
      * @return Data stores iterator.
      */
     private Iterator<CacheDataStore> cacheData(boolean primary, boolean backup, AffinityTopologyVersion topVer) {
         assert primary || backup;
 
-        if (grp.isLocal())
-            return singletonIterator(locCacheDataStore);
-        else {
-            Iterator<GridDhtLocalPartition> it = grp.topology().currentLocalPartitions().iterator();
-
+        return cacheDataStores(grp -> {
             if (primary && backup)
-                return F.iterator(it, GridDhtLocalPartition::dataStore, true);
+                return new AlwaysTruePredicate<>();
 
             IntSet parts = ImmutableIntSet.wrap(primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
                 grp.affinity().backupPartitions(ctx.localNodeId(), topVer));
 
-            return F.iterator(it, GridDhtLocalPartition::dataStore, true, part -> parts.contains(part.id()));
-        }
+            return part -> parts.contains(part.id());
+        }).iterator();
     }
 
     /** {@inheritDoc} */
@@ -600,7 +614,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Nullable @Override public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx, key);
+        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
 
         CacheDataRow row = dataStore != null ? dataStore.find(cctx, key) : null;
 
@@ -614,7 +628,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         throws IgniteCheckedException {
         assert mvccSnapshot != null;
 
-        CacheDataStore dataStore = dataStore(cctx, key);
+        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
 
         CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, mvccSnapshot) : null;
 
@@ -626,7 +640,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx, key);
+        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
 
         return dataStore != null ? dataStore.mvccFindAllVersions(cctx, key) :
             Collections.emptyList();
@@ -635,23 +649,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx,
         KeyCacheObject key, Object x) throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx, key);
+        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
 
         return dataStore != null ? dataStore.mvccAllVersionsCursor(cctx, key, x) : EMPTY_CURSOR;
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @return Data store.
-     */
-    @Nullable private CacheDataStore dataStore(GridCacheContext cctx, KeyCacheObject key) {
-        if (grp.isLocal())
-            return locCacheDataStore;
-
-        GridDhtLocalPartition part = grp.topology().localPartition(cctx.affinity().partition(key), null, false);
-
-        return part != null ? dataStore(part) : null;
     }
 
     /** {@inheritDoc} */
@@ -775,7 +775,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<KeyCacheObject> cacheKeysIterator(int cacheId, int part)
         throws IgniteCheckedException {
-        CacheDataStore data = dataStore(part);
+        CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
@@ -825,7 +825,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part,
         @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) {
-        CacheDataStore data = dataStore(part);
+        CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
@@ -835,7 +835,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public GridIterator<CacheDataRow> partitionIterator(int part) {
-        CacheDataStore data = dataStore(part);
+        CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
@@ -1275,12 +1275,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         );
 
         return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<CacheDataStore> cacheDataStores() {
-        return grp.isLocal() ? Collections.singletonList(locCacheDataStore) :
-            F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true);
     }
 
     /** {@inheritDoc} */

@@ -371,8 +371,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryContext();
 
         GridCacheAdapter<?, ?> cache = ignite.context().cache().internalCache(dfltCacheCfg.getName());
-        long partCtr = cache.context().offheap()
-            .dataStore(cache.context().topology().localPartition(PART_ID, NONE, false))
+        long partCtr = cache.context().topology().localPartition(PART_ID, NONE, false)
+            .dataStore()
             .updateCounter();
         AtomicBoolean done = new AtomicBoolean();
 
@@ -417,8 +417,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                     assertTrue(success);
 
-                    long newPartCtr = cache.context().offheap()
-                        .dataStore(cache.context().topology().localPartition(PART_ID, NONE, false))
+                    long newPartCtr = cache.context().topology().localPartition(PART_ID, NONE, false)
+                        .dataStore()
                         .updateCounter();
 
                     assertEquals(newPartCtr, partCtr);

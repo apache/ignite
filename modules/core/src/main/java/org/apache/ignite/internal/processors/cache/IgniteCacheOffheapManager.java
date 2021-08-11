@@ -129,7 +129,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param part Local partition or {@code null} if a related cache group is <tt>LOCAL</tt>.
-     * @return Cache data store associated with given partition data store for a <tt>LOCAL</tt> cache group.
+     * @return Cache data store associated with given partition or the cache data store for a <tt>LOCAL</tt> cache group.
      */
     public CacheDataStore dataStore(@Nullable GridDhtLocalPartition part);
 
@@ -581,10 +581,10 @@ public interface IgniteCacheOffheapManager {
     /**
      * Preload a partition. Must be called under partition reservation for DHT caches.
      *
-     * @param part Partition.
+     * @param pardId Partition id.
      * @throws IgniteCheckedException If failed.
      */
-    public void preloadPartition(int part) throws IgniteCheckedException;
+    public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
      *
