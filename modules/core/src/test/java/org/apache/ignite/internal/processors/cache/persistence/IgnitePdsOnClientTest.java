@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
@@ -32,11 +33,11 @@ public class IgnitePdsOnClientTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (IgnitionEx.isClientMode()) {
-            cfg.setDataStorageConfiguration(
-                new DataStorageConfiguration().setStoragePath("/unexisting/path/to/persistence")
-            );
-        }
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+
+        if (IgnitionEx.isClientMode())
+            cfg.getDataStorageConfiguration().setStoragePath("/unexisting/storage/path");
 
         return cfg;
     }
