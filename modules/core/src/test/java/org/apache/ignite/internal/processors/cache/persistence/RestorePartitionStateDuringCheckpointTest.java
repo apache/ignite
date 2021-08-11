@@ -106,6 +106,8 @@ public class RestorePartitionStateDuringCheckpointTest extends GridCommonAbstrac
             IgniteCacheOffheapManager.CacheDataStore partDataStore = ((IgniteCacheOffheapManagerImpl)cacheProcessor
                 .cacheGroup(grpId).offheap()).dataStore(partId);
 
+            assertNotNull(partDataStore);
+
             if (partDataStore.rowStore() != null && checkpointTriggered.compareAndSet(false, true)) {
                 info("Before write lock will be gotten on the partition meta page [pageId=" + invocation.getArgument(2) + ']');
 

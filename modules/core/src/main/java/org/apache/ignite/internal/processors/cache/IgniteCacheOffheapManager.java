@@ -513,12 +513,12 @@ public interface IgniteCacheOffheapManager {
     /**
      * Store entries.
      *
-     * @param partId Partition number.
+     * @param part Local partition.
      * @param infos Entry infos.
      * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
      * @throws IgniteCheckedException If failed.
      */
-    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+    public void storeEntries(GridDhtLocalPartition part, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
     /**
@@ -602,12 +602,6 @@ public interface IgniteCacheOffheapManager {
      * @return Number of entries.
      */
     public long cacheEntriesCount(int cacheId);
-
-    /**
-     * @param part Partition.
-     * @return Number of entries.
-     */
-    public long totalPartitionEntriesCount(int part);
 
     /**
      * Preload a partition. Must be called under partition reservation for DHT caches.

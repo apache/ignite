@@ -354,7 +354,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (execSvc == null) {
             reuseList.saveMetadata(grp.statisticsHolderData());
 
-            for (CacheDataStore store : dataStores())
+            for (CacheDataStore store : cacheDataStores())
                 saveStoreMetadata(store, ctx, false, needSnapshot);
         }
         else {
@@ -367,7 +367,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             });
 
-            for (CacheDataStore store : dataStores())
+            for (CacheDataStore store : cacheDataStores())
                 execSvc.execute(() -> {
                     try {
                         saveStoreMetadata(store, ctx, false, needSnapshot);
@@ -1054,7 +1054,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public long lastUpdatedPartitionCounter(int part) {
-        return dataStore(part).updateCounter();
+        CacheDataStore store = dataStore(part);
+
+        return store == null ? 0 : store.updateCounter();
     }
 
     /** {@inheritDoc} */
@@ -1301,7 +1303,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         assert locPart != null && locPart.reservations() > 0;
 
-        locPart.dataStore().preload();
+        dataStore(locPart).preload();
     }
 
     /**
@@ -1312,7 +1314,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     long freeSpace() {
         long freeSpace = 0;
 
-        for (CacheDataStore store : dataStores()) {
+        for (CacheDataStore store : cacheDataStores()) {
             assert store instanceof GridCacheDataStore;
 
             AbstractFreeList freeList = ((GridCacheDataStore)store).getCacheStoreFreeList();
@@ -1334,7 +1336,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     long emptyDataPages() {
         long emptyDataPages = 0;
 
-        for (CacheDataStore store : dataStores()) {
+        for (CacheDataStore store : cacheDataStores()) {
             assert store instanceof GridCacheDataStore;
 
             AbstractFreeList freeList = ((GridCacheDataStore)store).getCacheStoreFreeList();
