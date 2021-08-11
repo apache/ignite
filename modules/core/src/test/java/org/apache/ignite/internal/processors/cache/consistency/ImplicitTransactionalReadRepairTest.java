@@ -63,7 +63,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                 else
                     GET_CHECK_AND_FIX.accept(data);
 
-                ENSURE_FIXED.accept(data);
+                check(data, true, true);
             });
     }
 
@@ -76,7 +76,12 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             (ReadRepairData data) -> {
                 GET_NULL.accept(data); // first attempt.
+
+                checkEventMissed();
+
                 GET_NULL.accept(data); // second attempt (checks first attempt causes no changes/fixes/etc).
+
+                checkEventMissed();
             });
     }
 
@@ -93,7 +98,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                 else
                     CONTAINS_CHECK_AND_FIX.accept(data);
 
-                ENSURE_FIXED.accept(data);
+                check(data, true, true);
             });
     }
 }
