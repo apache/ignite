@@ -223,7 +223,7 @@ public class TableManagerTest {
     /**
      * Tests a table which was defined before start through bootstrap configuration.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14578")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15255")
     @Test
     public void testStaticTableConfigured() {
         TableManager tableManager = new TableManager(cfrMgr, mm, sm, am, rm, workDir);

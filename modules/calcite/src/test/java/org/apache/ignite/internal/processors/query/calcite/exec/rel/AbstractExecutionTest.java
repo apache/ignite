@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -50,7 +49,7 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
 
     /** */
     @BeforeEach
-    public void setup() {
+    public void beforeTest() {
         taskExecutor = new QueryTaskExecutorImpl(
             new StripedThreadPoolExecutor(
                 4,
@@ -64,7 +63,7 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
 
     /** */
     @AfterEach
-    public void tearDown() {
+    public void afterTest() {
         taskExecutor.tearDown();
 
         if (lastE != null)

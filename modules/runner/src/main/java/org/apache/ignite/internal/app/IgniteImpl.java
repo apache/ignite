@@ -19,6 +19,8 @@ package org.apache.ignite.internal.app;
 
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
+import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.tx.IgniteTransactions;
@@ -35,19 +37,31 @@ public class IgniteImpl implements Ignite {
 
     private final SqlQueryProcessor qryEngine;
 
+    /** Configuration manager that handles node (local) configuration. */
+    private final ConfigurationManager nodeConfigurationMgr;
+
+    /** Configuration manager that handles cluster (distributed) configuration. */
+    private final ConfigurationManager clusterConfigurationMgr;
+
     /**
      * @param name Ignite node name.
      * @param tblMgr Table manager.
      * @param qryEngine Query processor.
+     * @param nodeConfigurationMgr Configuration manager that handles node (local) configuration.
+     * @param clusterConfigurationMgr Configuration manager that handles cluster (distributed) configuration.
      */
     IgniteImpl(
         String name,
         IgniteTables tblMgr,
-        SqlQueryProcessor qryEngine
+        SqlQueryProcessor qryEngine,
+        ConfigurationManager nodeConfigurationMgr,
+        ConfigurationManager clusterConfigurationMgr
     ) {
         this.name = name;
         this.distributedTblMgr = tblMgr;
         this.qryEngine = qryEngine;
+        this.nodeConfigurationMgr = nodeConfigurationMgr;
+        this.clusterConfigurationMgr = clusterConfigurationMgr;
     }
 
     /** {@inheritDoc} */
@@ -72,5 +86,19 @@ public class IgniteImpl implements Ignite {
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /**
+     * @return Node configuration.
+     */
+    public ConfigurationRegistry nodeConfiguration() {
+        return nodeConfigurationMgr.configurationRegistry();
+    }
+
+    /**
+     * @return Cluster configuration.
+     */
+    public ConfigurationRegistry clusterConfiguration() {
+        return clusterConfigurationMgr.configurationRegistry();
     }
 }

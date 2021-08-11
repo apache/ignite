@@ -57,16 +57,6 @@ public class VaultManager implements IgniteComponent {
     }
 
     /**
-     * @return {@code true} if VaultService beneath given VaultManager was bootstrapped with data
-     * either from PDS or from user initial bootstrap configuration.
-     *
-     * TODO: https://issues.apache.org/jira/browse/IGNITE-14956
-     */
-    public boolean bootstrapped() {
-        return false;
-    }
-
-    /**
      * See {@link VaultService#get}
      *
      * @param key Key. Couldn't be {@code null}.
