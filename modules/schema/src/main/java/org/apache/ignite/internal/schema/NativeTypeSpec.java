@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.BitSet;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.tostring.S;
@@ -91,7 +93,7 @@ public enum NativeTypeSpec {
     },
 
     /**
-     * Native type representing an eight-bytes floating-point value.
+     * Native type representing a BigDecimal.
      */
     DECIMAL("decimal", false) {
         /** {@inheritDoc} */
@@ -137,6 +139,16 @@ public enum NativeTypeSpec {
         /** {@inheritDoc} */
         @Override public Object objectValue(Row tup, int colIdx) {
             return tup.bitmaskValue(colIdx);
+        }
+    },
+
+    /**
+     * Native type representing a BigInteger.
+     */
+    NUMBER("number", false) {
+        /** {@inheritDoc} */
+        @Override public Object objectValue(Row tup, int colIdx) {
+            return tup.numberValue(colIdx);
         }
     };
 
@@ -231,6 +243,10 @@ public enum NativeTypeSpec {
             return NativeTypeSpec.UUID;
         else if (cls == BitSet.class)
             return NativeTypeSpec.BITMASK;
+        else if (cls == BigInteger.class)
+            return NativeTypeSpec.NUMBER;
+        else if (cls == BigDecimal.class)
+            return NativeTypeSpec.DECIMAL;
 
         return null;
     }

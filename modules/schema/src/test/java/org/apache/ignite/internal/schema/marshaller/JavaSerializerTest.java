@@ -26,6 +26,8 @@ import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.EnumSet;
@@ -104,7 +106,8 @@ public class JavaSerializerTest {
      */
     @TestFactory
     public Stream<DynamicNode> testBasicTypes() {
-        NativeType[] types = new NativeType[] {INT8, INT16, INT32, INT64, FLOAT, DOUBLE, UUID, STRING, BYTES, NativeTypes.bitmaskOf(5)};
+        NativeType[] types = new NativeType[] {INT8, INT16, INT32, INT64, FLOAT, DOUBLE, UUID, STRING, BYTES,
+            NativeTypes.bitmaskOf(5), NativeTypes.numberOf(42), NativeTypes.decimalOf(12, 3)};
 
         return serializerFactoryProvider().stream().map(factory ->
             dynamicContainer(
@@ -121,7 +124,9 @@ public class JavaSerializerTest {
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, FLOAT, DOUBLE)),
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, INT32, BYTES)),
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, STRING, INT64)),
-                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, NativeTypes.bitmaskOf(9), BYTES))
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, NativeTypes.bitmaskOf(9), BYTES)),
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, NativeTypes.numberOf(12), BYTES)),
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, NativeTypes.decimalOf(12, 3), BYTES))
                     )
                 )
             ));
@@ -154,6 +159,8 @@ public class JavaSerializerTest {
             new Column("stringCol", STRING, true),
             new Column("nullBytesCol", BYTES, true),
             new Column("bytesCol", BYTES, true),
+            new Column("numberCol", NativeTypes.numberOf(12), true),
+            new Column("decimalCol", NativeTypes.decimalOf(19, 3), true),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
@@ -470,6 +477,8 @@ public class JavaSerializerTest {
             obj.bitmaskCol = TestUtils.randomBitSet(rnd, 42);
             obj.stringCol = TestUtils.randomString(rnd, rnd.nextInt(255));
             obj.bytesCol = TestUtils.randomBytes(rnd, rnd.nextInt(255));
+            obj.numberCol = (BigInteger)TestUtils.generateRandomValue(rnd, NativeTypes.numberOf(12));
+            obj.decimalCol = (BigDecimal)TestUtils.generateRandomValue(rnd, NativeTypes.decimalOf(19, 3));
 
             return obj;
         }
@@ -512,6 +521,10 @@ public class JavaSerializerTest {
 
         private byte[] nullBytesCol;
 
+        private BigInteger numberCol;
+
+        private BigDecimal decimalCol;
+
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
@@ -539,7 +552,8 @@ public class JavaSerializerTest {
                 Objects.equals(bitmaskCol, object.bitmaskCol) &&
                 Objects.equals(stringCol, object.stringCol) &&
                 Arrays.equals(bytesCol, object.bytesCol) &&
-                Arrays.equals(nullBytesCol, object.nullBytesCol);
+                Objects.equals(numberCol, object.numberCol) &&
+                Objects.equals(decimalCol, object.decimalCol);
         }
 
         /** {@inheritDoc} */

@@ -97,6 +97,8 @@ public class NativeTypeTest {
             assertEquals(NativeTypes.blobOf(i), NativeTypes.from(ColumnType.blobOf(i)));
             assertEquals(NativeTypes.stringOf(i), NativeTypes.from(ColumnType.stringOf(i)));
             assertEquals(NativeTypes.bitmaskOf(i), NativeTypes.from(ColumnType.bitmaskOf(i)));
+            assertEquals(NativeTypes.numberOf(i), NativeTypes.from(ColumnType.numberOf(i)));
+            assertEquals(NativeTypes.decimalOf(i, i), NativeTypes.from(ColumnType.decimalOf(i, i)));
         }
     }
 }

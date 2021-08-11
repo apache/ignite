@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -278,10 +280,17 @@ public class SchemaConfigurationConverter {
                     break;
 
                 case "DECIMAL":
-                    ColumnType.NumericColumnType numColType = (ColumnType.NumericColumnType)colType;
+                    ColumnType.DecimalColumnType numColType = (ColumnType.DecimalColumnType)colType;
 
                     colTypeChg.changePrecision(numColType.precision());
                     colTypeChg.changeScale(numColType.scale());
+
+                    break;
+
+                case "NUMBER":
+                    ColumnType.NumberColumnType numType = (ColumnType.NumberColumnType)colType;
+
+                    colTypeChg.changePrecision(numType.precision());
 
                     break;
 
@@ -326,7 +335,10 @@ public class SchemaConfigurationConverter {
                     int prec = colTypeView.precision();
                     int scale = colTypeView.scale();
 
-                    return ColumnType.number(prec, scale);
+                    return ColumnType.decimalOf(prec, scale);
+
+                case "NUMBER":
+                    return ColumnType.numberOf(colTypeView.precision());
 
                 default:
                     throw new IllegalArgumentException("Unknown type " + typeName);
@@ -556,6 +568,10 @@ public class SchemaConfigurationConverter {
             return ColumnType.string();
         else if (cls == UUID.class)
             return ColumnType.UUID;
+        else if (cls == BigInteger.class)
+            return ColumnType.numberOf();
+        else if (cls == BigDecimal.class)
+            return ColumnType.decimalOf();
 
         return null;
     }

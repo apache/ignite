@@ -69,7 +69,13 @@ public enum BinaryMode {
     BYTE_ARR(NativeTypeSpec.BYTES),
 
     /** BitSet.*/
-    BITSET(NativeTypeSpec.BITMASK);
+    BITSET(NativeTypeSpec.BITMASK),
+
+    /** BigInteger. */
+    NUMBER(NativeTypeSpec.NUMBER),
+
+    /** BigDecimal. */
+    DECIMAL(NativeTypeSpec.DECIMAL);
 
     /** Natove type spec. */
     private final NativeTypeSpec typeSpec;

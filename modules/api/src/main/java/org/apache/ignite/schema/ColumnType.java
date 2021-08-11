@@ -106,14 +106,61 @@ public class ColumnType {
     }
 
     /**
+     * Number type factory method.
+     *
+     * @param precision Precision of value.
+     * @return Number type.
+     * @throws IllegalArgumentException If precision is not positive.
+     */
+    public static NumberColumnType numberOf(int precision) {
+        if (precision <= 0)
+            throw new IllegalArgumentException("Precision [" + precision + "] must be positive integer value.");
+
+        return new NumberColumnType(ColumnTypeSpec.NUMBER, precision);
+    }
+
+    /**
+     * Number type factory method.
+     *
+     * @return Number type.
+     */
+    public static NumberColumnType numberOf() {
+        return new NumberColumnType(ColumnTypeSpec.NUMBER, NumberColumnType.UNLIMITED_PRECISION);
+    }
+
+    /**
      * Decimal type factory method.
      *
      * @param precision Precision.
      * @param scale Scale.
-     * @return Numeric type.
+     * @return Decimal type.
+     * @throws IllegalArgumentException If precision or scale are invalid.
      */
-    public static NumericColumnType number(int precision, int scale) {
-        return new NumericColumnType(ColumnTypeSpec.DECIMAL, precision, scale);
+    public static DecimalColumnType decimalOf(int precision, int scale) {
+        if (precision <= 0)
+            throw new IllegalArgumentException("Precision [" + precision + "] must be positive integer value.");
+
+        if (scale < 0)
+            throw new IllegalArgumentException("Scale [" + scale + "] must be non-negative integer value.");
+
+        if (precision < scale)
+            throw new IllegalArgumentException("Precision [" + precision + "] must be" +
+                " not lower than scale [ " + scale + " ].");
+
+        return new DecimalColumnType(ColumnTypeSpec.DECIMAL, precision, scale);
+    }
+
+    /**
+     * Decimal type factory method with default precision and scale values.
+     *
+     * @return Decimal type.
+     */
+    public static DecimalColumnType decimalOf() {
+        return new DecimalColumnType(
+            ColumnTypeSpec.DECIMAL,
+            DecimalColumnType.DEFAULT_PRECISION,
+            DecimalColumnType.DEFAULT_SCALE
+        );
     }
 
     /**
@@ -167,9 +214,15 @@ public class ColumnType {
     }
 
     /**
-     * Numeric column type.
+     * Decimal column type.
      */
-    public static class NumericColumnType extends ColumnType {
+    public static class DecimalColumnType extends ColumnType {
+        /** Default precision. */
+        public static final int DEFAULT_PRECISION = 19;
+
+        /** Default scale. */
+        public static final int DEFAULT_SCALE = 3;
+
         /** Precision. */
         private final int precision;
 
@@ -183,7 +236,7 @@ public class ColumnType {
          * @param precision Precision.
          * @param scale Scale.
          */
-        private NumericColumnType(ColumnTypeSpec typeSpec, int precision, int scale) {
+        private DecimalColumnType(ColumnTypeSpec typeSpec, int precision, int scale) {
             super(typeSpec);
 
             this.precision = precision;
@@ -219,7 +272,7 @@ public class ColumnType {
             if (!super.equals(o))
                 return false;
 
-            NumericColumnType type = (NumericColumnType)o;
+            DecimalColumnType type = (DecimalColumnType)o;
 
             return precision == type.precision &&
                 scale == type.scale;
@@ -228,6 +281,55 @@ public class ColumnType {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(super.hashCode(), precision, scale);
+        }
+    }
+
+    /**
+     * Number column type.
+     */
+    public static class NumberColumnType extends ColumnType {
+        /** Undefined precision. */
+        public static final int UNLIMITED_PRECISION = 0;
+
+        /** Max precision of value. If -1, column has no precision restrictions. */
+        private final int precision;
+
+        /**
+         * Constructor.
+         *
+         * @param typeSpec Type specification.
+         * @param precision Precision.
+         */
+        private NumberColumnType(ColumnTypeSpec typeSpec, int precision) {
+            super(typeSpec);
+
+            this.precision = precision;
+        }
+
+        /**
+         * Returns column precision.
+         *
+         * @return Max value precision.
+         */
+        public int precision() {
+            return precision;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            if (!super.equals(o))
+                return false;
+            NumberColumnType type = (NumberColumnType)o;
+            return precision == type.precision;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(super.hashCode(), precision);
         }
     }
 
@@ -279,6 +381,9 @@ public class ColumnType {
 
         /** Binary data. */
         BLOB,
+
+        /** Number. */
+        NUMBER,
     }
 
     /** Type spec. */

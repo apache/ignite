@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.schema.row;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
@@ -30,9 +33,11 @@ import org.apache.ignite.internal.schema.BitmaskNativeType;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
+import org.apache.ignite.internal.schema.DecimalNativeType;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
+import org.apache.ignite.internal.schema.NumberNativeType;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 
 import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.KEY_FLAGS_OFFSET;
@@ -188,9 +193,33 @@ public class RowAssembler {
 
                 break;
             }
+            case NUMBER: {
+                rowAsm.appendNumber((BigInteger)val);
+
+                break;
+            }
+            case DECIMAL: {
+                rowAsm.appendDecimal((BigDecimal)val);
+
+                break;
+            }
             default:
                 throw new IllegalStateException("Unexpected value: " + col.type());
         }
+    }
+
+    /**
+     * Calculates byte size for BigInteger value.
+     */
+    public static int sizeInBytes(BigInteger val) {
+        return val.bitLength() / 8 + 1;
+    }
+
+    /**
+     * Calculates byte size for BigDecimal value.
+     */
+    public static int sizeInBytes(BigDecimal val) {
+        return sizeInBytes(val.unscaledValue());
     }
 
     /**
@@ -385,6 +414,77 @@ public class RowAssembler {
             keyHash = 31 * keyHash + Double.hashCode(val);
 
         shiftColumn(NativeTypes.DOUBLE.sizeInBytes());
+
+        return this;
+    }
+
+    /**
+     * Appends BigInteger value for the current column to the chunk.
+     *
+     * @param val Column value.
+     * @return {@code this} for chaining.
+     */
+    public RowAssembler appendNumber(BigInteger val) {
+        checkType(NativeTypeSpec.NUMBER);
+
+        Column col = curCols.column(curCol);
+
+        NumberNativeType type = (NumberNativeType)col.type();
+
+        //0 is a magic number for "unlimited precision"
+        if (type.precision() > 0 && new BigDecimal(val).precision() > type.precision())
+            throw new IllegalArgumentException("Failed to set number value for column '" + col.name() + "' " +
+                "(max precision exceeds allocated precision) " +
+                "[number=" + val + ", max precision=" + type.precision() + "]");
+
+        byte[] bytes = val.toByteArray();
+
+        buf.putBytes(curOff, bytes);
+
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + Arrays.hashCode(bytes);
+
+        writeVarlenOffset(curVartblEntry, curOff - dataOff);
+
+        curVartblEntry++;
+
+        shiftColumn(bytes.length);
+
+        return this;
+    }
+
+    /**
+     * Appends BigDecimal value for the current column to the chunk.
+     *
+     * @param val Column value.
+     * @return {@code this} for chaining.
+     */
+    public RowAssembler appendDecimal(BigDecimal val) {
+        checkType(NativeTypeSpec.DECIMAL);
+
+        Column col = curCols.column(curCol);
+
+        DecimalNativeType type = (DecimalNativeType)col.type();
+
+        val = val.setScale(type.scale(), RoundingMode.HALF_UP);
+
+        if (val.precision() > type.precision())
+            throw new IllegalArgumentException("Failed to set decimal value for column '" + col.name() + "' " +
+                "(max precision exceeds allocated precision)" +
+                " [decimal=" + val + ", max precision=" + type.precision() + "]");
+
+        byte[] bytes = val.unscaledValue().toByteArray();
+
+        buf.putBytes(curOff, bytes);
+
+        if (isKeyChunk())
+            keyHash = 31 * keyHash + Arrays.hashCode(bytes);
+
+        writeVarlenOffset(curVartblEntry, curOff - dataOff);
+
+        curVartblEntry++;
+
+        shiftColumn(bytes.length);
 
         return this;
     }

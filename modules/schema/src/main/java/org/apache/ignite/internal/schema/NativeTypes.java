@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.BitSet;
 import org.apache.ignite.schema.ColumnType;
 
@@ -66,6 +68,16 @@ public class NativeTypes {
     }
 
     /**
+     * Creates a number type with maximal precision.
+     *
+     * @param precision The number of digits in the number value.
+     * @return Native type.
+     */
+    public static NativeType numberOf(int precision) {
+        return new NumberNativeType(precision);
+    }
+
+    /**
      * Creates a STRING type with maximal length is <code>len</code>.
      *
      * @param len Maximum length of the string.
@@ -93,7 +105,7 @@ public class NativeTypes {
      * @return Native type.
      */
     public static NativeType decimalOf(int precision, int scale) {
-        return new NumericNativeType(precision, scale);
+        return new DecimalNativeType(precision, scale);
     }
 
     /**
@@ -139,6 +151,12 @@ public class NativeTypes {
             case BITMASK:
                 return bitmaskOf(((BitSet)val).length());
 
+            case NUMBER:
+                return numberOf(new BigDecimal((BigInteger)val).precision());
+
+            case DECIMAL:
+                return decimalOf(((BigDecimal)val).precision(), ((BigDecimal)val).scale());
+
             default:
                 assert false : "Unexpected type: " + spec;
 
@@ -178,10 +196,11 @@ public class NativeTypes {
             case DOUBLE:
                 return DOUBLE;
 
-            case DECIMAL:
-                ColumnType.NumericColumnType numType = (ColumnType.NumericColumnType)type;
-                return new NumericNativeType(numType.precision(), numType.scale());
+            case DECIMAL: {
+                ColumnType.DecimalColumnType numType = (ColumnType.DecimalColumnType)type;
 
+                return new DecimalNativeType(numType.precision(), numType.scale());
+            }
             case UUID:
                 return UUID;
 
@@ -202,6 +221,11 @@ public class NativeTypes {
                         ((ColumnType.VarLenColumnType)type).length() : Integer.MAX_VALUE
                 );
 
+            case NUMBER: {
+                ColumnType.NumberColumnType numberType = (ColumnType.NumberColumnType)type;
+
+                return new NumberNativeType(numberType.precision());
+            }
             default:
                 throw new InvalidTypeException("Unexpected type " + type);
         }

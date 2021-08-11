@@ -20,12 +20,14 @@ package org.apache.ignite.internal.schema.row;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
+import org.apache.ignite.internal.schema.DecimalNativeType;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
@@ -233,8 +235,38 @@ public class Row implements BinaryRow {
      * @throws InvalidTypeException If actual column type does not match the requested column type.
      */
     public BigDecimal decimalValue(int col) throws InvalidTypeException {
-        // TODO: IGNITE-13668 decimal support
-        return null;
+        long offLen = findColumn(col, NativeTypeSpec.DECIMAL);
+
+        if (offLen < 0)
+            return offLen == -1 ? null : (BigDecimal)rowSchema().column(col).defaultValue();
+
+        int off = offset(offLen);
+        int len = length(offLen);
+
+        DecimalNativeType type = (DecimalNativeType)schema.column(col).type();
+
+        byte[] bytes = readBytes(off, len);
+
+        return new BigDecimal(new BigInteger(bytes), type.scale());
+    }
+
+    /**
+     * Reads value from specified column.
+     *
+     * @param col Column index.
+     * @return Column value.
+     * @throws InvalidTypeException If actual column type does not match the requested column type.
+     */
+    public BigInteger numberValue(int col) throws InvalidTypeException {
+        long offLen = findColumn(col, NativeTypeSpec.NUMBER);
+
+        if (offLen < 0)
+            return offLen == -1 ? null : (BigInteger)rowSchema().column(col).defaultValue();
+
+        int off = offset(offLen);
+        int len = length(offLen);
+
+        return new BigInteger(readBytes(off, len));
     }
 
     /**

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema.marshaller.asm;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
@@ -65,6 +67,10 @@ public class ColumnAccessCodeGenerator {
                 return new ColumnAccessCodeGenerator("bytesValue", "appendBytes", byte[].class, colIdx);
             case BITSET:
                 return new ColumnAccessCodeGenerator("bitmaskValue", "appendBitmask", BitSet.class, colIdx);
+            case NUMBER:
+                return new ColumnAccessCodeGenerator("numberValue", "appendNumber", BigInteger.class, colIdx);
+            case DECIMAL:
+                return new ColumnAccessCodeGenerator("decimalValue", "appendDecimal", BigDecimal.class, colIdx);
         }
 
         throw new IgniteInternalException("Unsupported binary mode: " + mode);

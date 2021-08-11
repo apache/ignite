@@ -21,9 +21,9 @@ import java.util.Objects;
 import org.apache.ignite.internal.tostring.S;
 
 /**
- * Numeric column type.
+ * Decimal column type.
  */
-public class NumericNativeType extends NativeType {
+public class DecimalNativeType extends NativeType {
     /** Precision. */
     private final int precision;
 
@@ -36,7 +36,7 @@ public class NumericNativeType extends NativeType {
      * @param precision Precision.
      * @param scale Scale.
      */
-    NumericNativeType(int precision, int scale) {
+    DecimalNativeType(int precision, int scale) {
         super(NativeTypeSpec.DECIMAL);
 
         this.precision = precision;
@@ -58,13 +58,6 @@ public class NumericNativeType extends NativeType {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mismatch(NativeType type) {
-        return super.mismatch(type)
-            || precision < ((NumericNativeType)type).precision
-            || scale < ((NumericNativeType)type).scale;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -75,7 +68,7 @@ public class NumericNativeType extends NativeType {
         if (!super.equals(o))
             return false;
 
-        NumericNativeType type = (NumericNativeType)o;
+        DecimalNativeType type = (DecimalNativeType)o;
 
         return precision == type.precision &&
             scale == type.scale;
@@ -88,6 +81,6 @@ public class NumericNativeType extends NativeType {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NumericNativeType.class.getSimpleName(), "name", spec(), "precision", precision, "scale", scale);
+        return S.toString(DecimalNativeType.class.getSimpleName(), "name", spec(), "precision", precision, "scale", scale);
     }
 }
