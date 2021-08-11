@@ -149,16 +149,13 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException if IO failed.
      */
     public PdsFolderSettings<L> resolve() throws IgniteCheckedException {
-        boolean clientMode = cfg.isClientMode() == TRUE || cfg.isDaemon();
-
         if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(resolvePersistentStoreBasePath(), consistentId);
 
-        if (clientMode)
+        if (cfg.isClientMode() == TRUE || cfg.isDaemon())
             return new PdsFolderSettings<>(null, UUID.randomUUID());
 
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
-
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
             return compatibleResolve(pstStoreBasePath, consistentId);
