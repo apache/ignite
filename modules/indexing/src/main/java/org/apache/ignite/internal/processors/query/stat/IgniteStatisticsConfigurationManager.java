@@ -602,9 +602,9 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
 
             AffinityTopologyVersion topVer0 = cctx.affinity().affinityReadyFuture(topVer).get();
 
-            final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
+            final Set<Integer> primParts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
-            if (F.isEmpty(parts)) {
+            if (F.isEmpty(primParts)) {
                 // There is no data on the node for specified cache.
                 // Remove oll data
                 dropColumnsOnLocalStatistics(cfg, cfg.columns().keySet());
@@ -616,27 +616,32 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
                 cctx.affinity().backupPartitions(cctx.localNodeId(), topVer0)
             );
 
-            partsOwn.addAll(parts);
+            partsOwn.addAll(primParts);
 
             if (log.isDebugEnabled())
-                log.debug("Check local statistics [key=" + cfg + ", parts=" + parts + ']');
+                log.debug("Check local statistics [key=" + cfg + ", parts=" + primParts + ']');
 
-            Collection<ObjectPartitionStatisticsImpl> partStats = repo.getLocalPartitionsStatistics(cfg.key());
+            Collection<ObjectPartitionStatisticsImpl> collectedPartStats = repo.getLocalPartitionsStatistics(cfg.key());
 
             Set<Integer> partsToRmv = new HashSet<>();
-            Set<Integer> partsToCollect = new HashSet<>(parts);
+            Set<Integer> partsToCollect = new HashSet<>(primParts);
+
+            /** All necessary partition already collected so each possibly column can be calculated from it. */
+            boolean allColumnsChecked = collectedPartStats.stream().map(ObjectPartitionStatisticsImpl::partId)
+                .collect(Collectors.toList()).containsAll(partsToCollect);
+
             Map<String, StatisticsColumnConfiguration> colsToCollect = new HashMap<>();
             Set<String> colsToRmv = new HashSet<>();
 
-            if (!F.isEmpty(partStats)) {
-                for (ObjectPartitionStatisticsImpl pstat : partStats) {
-                    if (!partsOwn.contains(pstat.partId()))
-                        partsToRmv.add(pstat.partId());
+            if (!F.isEmpty(collectedPartStats)) {
+                for (ObjectPartitionStatisticsImpl collPStat : collectedPartStats) {
+                    if (!partsOwn.contains(collPStat.partId()))
+                        partsToRmv.add(collPStat.partId());
 
-                    boolean partExists = true;
+                    boolean partFullyCollected = true;
 
                     for (StatisticsColumnConfiguration colCfg : cfg.columnsAll().values()) {
-                        ColumnStatistics colStat = pstat.columnStatistics(colCfg.name());
+                        ColumnStatistics colStat = collPStat.columnStatistics(colCfg.name());
 
                         if (colCfg.tombstone()) {
                             if (colStat != null)
@@ -646,15 +651,15 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
                             if (colStat == null || colStat.version() < colCfg.version()) {
                                 colsToCollect.put(colCfg.name(), colCfg);
 
-                                partsToCollect.add(pstat.partId());
+                                partsToCollect.add(collPStat.partId());
 
-                                partExists = false;
+                                partFullyCollected = false;
                             }
                         }
                     }
 
-                    if (partExists)
-                        partsToCollect.remove(pstat.partId());
+                    if (partFullyCollected)
+                        partsToCollect.remove(collPStat.partId());
                 }
             }
 
@@ -674,15 +679,23 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
             if (!F.isEmpty(colsToRmv))
                 dropColumnsOnLocalStatistics(cfg, colsToRmv);
 
-            if (!F.isEmpty(partsToCollect))
-                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect);
+            // No columns to collect statistics by.
+            if (cfg.columns().isEmpty())
+                return Collections.emptySet();
+
+            if (!F.isEmpty(partsToCollect)) {
+                if (!allColumnsChecked)
+                    colsToCollect = cfg.columns();
+
+                gatherLocalStatistics(cfg, tbl, primParts, partsToCollect, colsToCollect);
+            }
             else {
                 // All local statistics by partition are available.
                 // Only refresh aggregated local statistics.
-                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts));
+                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), primParts));
             }
 
-            return parts;
+            return primParts;
         }
         catch (Throwable ex) {
             log.error("Unexpected error on check local statistics", ex);
@@ -869,6 +882,7 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         active = false;
-        gatherer.cancelAllTasks();
+        if (gatherer != null)
+            gatherer.cancelAllTasks();
     }
 }
