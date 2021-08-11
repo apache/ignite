@@ -209,6 +209,38 @@ namespace ignite
                 }
 
                 /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                R ExecuteJavaTask(const std::string& taskName, const A& taskArg)
+                {
+                    return PerformJavaTask<R, A>(taskName, &taskArg);
+                }
+
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 */
+                template<typename R>
+                R ExecuteJavaTask(const std::string& taskName)
+                {
+                    return PerformJavaTask<R, int>(taskName, 0);
+                }
+
+                /**
                  * Asynchronously executes given Java task on the grid projection. If task for given name has not been
                  * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
                  *
@@ -222,7 +254,7 @@ namespace ignite
                 template<typename R, typename A>
                 Future<R> ExecuteJavaTaskAsync(const std::string& taskName, const A& taskArg)
                 {
-                    return PerformJavaTaskAsync<R, A>(Operation::EXEC_ASYNC, taskName, &taskArg);
+                    return PerformJavaTaskAsync<R, A>(taskName, &taskArg);
                 }
 
                 /**
@@ -237,7 +269,7 @@ namespace ignite
                 template<typename R>
                 Future<R> ExecuteJavaTaskAsync(const std::string& taskName)
                 {
-                    return PerformJavaTaskAsync<R, int>(Operation::EXEC_ASYNC, taskName, 0);
+                    return PerformJavaTaskAsync<R, int>(taskName, 0);
                 }
 
             private:
@@ -271,19 +303,22 @@ namespace ignite
                  */
                 std::vector<ignite::cluster::ClusterNode> GetNodes();
 
-                template<typename R, typename A>
-                Future<R> PerformJavaTaskAsync(Operation::Type operation, const std::string& taskName, const A* arg)
-                {
-                    typedef JavaComputeTaskHolder<R> TaskHolder;
-                    common::concurrent::SharedPointer<TaskHolder> task(new TaskHolder());
-                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
-
-                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
-                    interop::InteropOutputStream out(mem.Get());
-                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
-
+                /**
+                 * Write Java task using provided writer. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @param writer Binary writer.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename A>
+                void WriteJavaTask(const std::string& taskName, const A* arg, binary::BinaryWriterImpl& writer) {
                     writer.WriteString(taskName);
-                    // Keep binary
+                    // Keep binary flag
                     writer.WriteBool(false);
                     if (arg)
                         writer.WriteObject<A>(*arg);
@@ -302,6 +337,67 @@ namespace ignite
                         for (ClusterNodes::iterator it = nodes.begin(); it != nodes.end(); ++it)
                             writer.WriteGuid(it->GetId());
                     }
+                }
+
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                R PerformJavaTask(const std::string& taskName, const A* arg)
+                {
+                    using namespace common::concurrent;
+
+                    SharedPointer<interop::InteropMemory> memIn = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(memIn.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    WriteJavaTask(taskName, arg, writer);
+
+                    out.Synchronize();
+
+                    SharedPointer<interop::InteropMemory> memOut = GetEnvironment().AllocateMemory();
+
+                    IgniteError err;
+                    InStreamOutStream(Operation::EXEC, *memIn.Get(), *memOut.Get(), err);
+                    IgniteError::ThrowIfNeeded(err);
+
+                    interop::InteropInputStream inStream(memOut.Get());
+                    binary::BinaryReaderImpl reader(&inStream);
+
+                    return reader.ReadObject<R>();
+                }
+
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param arg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                Future<R> PerformJavaTaskAsync(const std::string& taskName, const A* arg)
+                {
+                    typedef JavaComputeTaskHolder<R> TaskHolder;
+                    common::concurrent::SharedPointer<TaskHolder> task(new TaskHolder());
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    WriteJavaTask(taskName, arg, writer);
 
                     writer.WriteInt64(taskHandle);
                     writer.WriteInt32(FutureTypeForType<R>::value);
@@ -309,7 +405,7 @@ namespace ignite
                     out.Synchronize();
 
                     IgniteError err;
-                    jobject target = InStreamOutObject(operation, *mem.Get(), err);
+                    jobject target = InStreamOutObject(Operation::EXEC_ASYNC, *mem.Get(), err);
                     IgniteError::ThrowIfNeeded(err);
 
                     std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
