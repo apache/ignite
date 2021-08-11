@@ -149,12 +149,14 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException if IO failed.
      */
     public PdsFolderSettings<L> resolve() throws IgniteCheckedException {
-        final File pstStoreBasePath = resolvePersistentStoreBasePath();
+        boolean clientMode = cfg.isClientMode() == TRUE || cfg.isDaemon();
+
+        final File pstStoreBasePath = resolvePersistentStoreBasePath(clientMode);
 
         if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
-        if (cfg.isClientMode() == TRUE || cfg.isDaemon())
+        if (clientMode)
             return new PdsFolderSettings<>(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
@@ -215,7 +217,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException In case of error.
      */
     public PdsFolderSettings<L> generateNew() throws IgniteCheckedException {
-        final File pstStoreBasePath = resolvePersistentStoreBasePath();
+        final File pstStoreBasePath = resolvePersistentStoreBasePath(false);
 
         // was not able to find free slot, allocating new
         try (final L rootDirLock = lockRootDirectory(pstStoreBasePath)) {
@@ -417,13 +419,13 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
      * @throws IgniteCheckedException if I/O failed.
      */
-    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+    @Nullable private File resolvePersistentStoreBasePath(boolean clientMode) throws IgniteCheckedException {
         final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (dsCfg == null)
             return null;
 
-        final String pstPath = dsCfg.getStoragePath();
+        final String pstPath = clientMode ? null : dsCfg.getStoragePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),

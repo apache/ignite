@@ -70,6 +70,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                 ctx.discovery().consistentId(settings.consistentId());
             }
         }
+
         return settings;
     }
 

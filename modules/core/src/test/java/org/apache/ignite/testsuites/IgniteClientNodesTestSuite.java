@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeConcurrentStart;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheManyClientsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsOnClientTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -28,7 +30,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     IgniteCacheManyClientsTest.class,
     IgniteCacheClientNodeConcurrentStart.class,
-    IgniteCacheClientReconnectTest.class
+    IgniteCacheClientReconnectTest.class,
+    IgnitePdsOnClientTest.class
 })
 public class IgniteClientNodesTestSuite {
 }
