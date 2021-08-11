@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(EchoTaskGuid)
 
     for (int32_t i = 0; i < 100; ++i)
     {
-        Guid value(i * 406586897, i * 87178291199);
+        Guid value(i * 479001599LL, i * 150209LL);
 
         cache.Put(ECHO_TYPE_UUID, value);
 
