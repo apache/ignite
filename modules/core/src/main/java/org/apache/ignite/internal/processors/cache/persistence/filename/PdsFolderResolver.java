@@ -151,13 +151,14 @@ public class PdsFolderResolver<L extends FileLockHolder> {
     public PdsFolderSettings<L> resolve() throws IgniteCheckedException {
         boolean clientMode = cfg.isClientMode() == TRUE || cfg.isDaemon();
 
-        final File pstStoreBasePath = resolvePersistentStoreBasePath(clientMode);
-
         if (!CU.isPersistenceEnabled(cfg))
-            return compatibleResolve(pstStoreBasePath, consistentId);
+            return compatibleResolve(resolvePersistentStoreBasePath(), consistentId);
 
         if (clientMode)
-            return new PdsFolderSettings<>(pstStoreBasePath, UUID.randomUUID());
+            return new PdsFolderSettings<>(null, UUID.randomUUID());
+
+        final File pstStoreBasePath = resolvePersistentStoreBasePath();
+
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
             return compatibleResolve(pstStoreBasePath, consistentId);
@@ -217,7 +218,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException In case of error.
      */
     public PdsFolderSettings<L> generateNew() throws IgniteCheckedException {
-        final File pstStoreBasePath = resolvePersistentStoreBasePath(false);
+        final File pstStoreBasePath = resolvePersistentStoreBasePath();
 
         // was not able to find free slot, allocating new
         try (final L rootDirLock = lockRootDirectory(pstStoreBasePath)) {
@@ -417,16 +418,15 @@ public class PdsFolderResolver<L extends FileLockHolder> {
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
-     * @param clientMode {@code True} if client node.
      * @throws IgniteCheckedException if I/O failed.
      */
-    @Nullable private File resolvePersistentStoreBasePath(boolean clientMode) throws IgniteCheckedException {
+    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
         final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (dsCfg == null)
             return null;
 
-        final String pstPath = clientMode ? null : dsCfg.getStoragePath();
+        final String pstPath = dsCfg.getStoragePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),
