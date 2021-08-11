@@ -117,34 +117,39 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
     /** */
     private final GridCachePartitionExchangeManager exchange;
 
+    /** Is server node flag. */
+    private final boolean isServerNode;
+
     /** */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr = new DistributedMetastorageLifecycleListener() {
         @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
             distrMetaStorage = (DistributedMetaStorage)metastorage;
 
-            distrMetaStorage.listen(
-                (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
-                (k, oldV, newV) -> {
-                    // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
-                    // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
-                    // called on exchange done.
-                    if (!started)
-                        return;
+            if (isServerNode) {
+                distrMetaStorage.listen(
+                    (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
+                    (k, oldV, newV) -> {
+                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
+                        // called on exchange done.
+                        if (!started)
+                            return;
 
-                    mgmtPool.submit(() -> {
-                        try {
-                            onChangeStatisticConfiguration(
-                                (StatisticsObjectConfiguration)oldV,
-                                (StatisticsObjectConfiguration)newV
-                            );
-                        }
-                        catch (Throwable e) {
-                            log.warning("Unexpected exception on change statistic configuration [old="
-                                + oldV + ", new=" + newV + ']', e);
-                        }
-                    });
-                }
-            );
+                        mgmtPool.submit(() -> {
+                            try {
+                                onChangeStatisticConfiguration(
+                                    (StatisticsObjectConfiguration) oldV,
+                                    (StatisticsObjectConfiguration) newV
+                                );
+                            }
+                            catch (Throwable e) {
+                                log.warning("Unexpected exception on change statistic configuration [old="
+                                    + oldV + ", new=" + newV + ']', e);
+                            }
+                        });
+                    }
+                );
+            }
         }
     };
 
@@ -223,7 +228,20 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         }
     };
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param schemaMgr Schema manager.
+     * @param subscriptionProcessor Grid internal subsctiption processor.
+     * @param sysViewMgr Grid system view manager.
+     * @param cluster Grid cluster state processor.
+     * @param exchange Grid cache partition exchange manager.
+     * @param repo Ignite statistics repository.
+     * @param gatherer Statistics gatherer (or {@code null} for client nodes).
+     * @param mgmtPool Statistics management thread pool (or {@code null} for client nodes).
+     * @param logSupplier Ignite logger supplier.
+     * @param isServerNode server node flag.
+     */
     public IgniteStatisticsConfigurationManager(
         SchemaManager schemaMgr,
         GridInternalSubscriptionProcessor subscriptionProcessor,
@@ -233,7 +251,8 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         IgniteStatisticsRepository repo,
         StatisticsGatherer gatherer,
         IgniteThreadPoolExecutor mgmtPool,
-        Function<Class<?>, IgniteLogger> logSupplier
+        Function<Class<?>, IgniteLogger> logSupplier,
+        boolean isServerNode
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
@@ -243,6 +262,7 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         this.cluster = cluster;
         this.subscriptionProcessor = subscriptionProcessor;
         this.exchange = exchange;
+        this.isServerNode = isServerNode;
 
         this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
@@ -313,15 +333,17 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager starting...");
 
-        exchange.registerExchangeAwareComponent(exchAwareLsnr);
+        if (isServerNode) {
+            exchange.registerExchangeAwareComponent(exchAwareLsnr);
 
-        schemaMgr.registerDropColumnsListener(dropColsLsnr);
-        schemaMgr.registerDropTableListener(dropTblLsnr);
+            schemaMgr.registerDropColumnsListener(dropColsLsnr);
+            schemaMgr.registerDropTableListener(dropTblLsnr);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager started.");
 
-        if (distrMetaStorage != null)
+        if (distrMetaStorage != null && isServerNode)
             scanAndCheckLocalStatistics(exchange.readyAffinityVersion());
     }
 
@@ -332,10 +354,12 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager stopping...");
 
-        exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
+        if (isServerNode) {
+            exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
 
-        schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
-        schemaMgr.unregisterDropTableListener(dropTblLsnr);
+            schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
+            schemaMgr.unregisterDropTableListener(dropTblLsnr);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager stopped.");
