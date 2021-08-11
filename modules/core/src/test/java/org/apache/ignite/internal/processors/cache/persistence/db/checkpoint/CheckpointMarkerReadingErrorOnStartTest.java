@@ -90,6 +90,7 @@ public class CheckpointMarkerReadingErrorOnStartTest extends GridCommonAbstractT
             new FileOutputStream(marker).close();
         }
 
-        assertThrows(log, () -> startGrid(0), IgniteCheckedException.class, null);
+        assertThrows(log, () -> startGrid(0), IgniteCheckedException.class,
+            "Failed to read checkpoint pointer from marker file");
     }
 }
