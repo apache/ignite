@@ -301,7 +301,9 @@ public interface MessageWriter {
         MessageCollectionItemType valType);
 
     /**
-     * @return Whether the header of the current message is already written.
+     * Returns {@code true} if the header of the current message has been written, {@code false} otherwise.
+     *
+     * @return Whether the message header has already been written.
      */
     public boolean isHeaderWritten();
 

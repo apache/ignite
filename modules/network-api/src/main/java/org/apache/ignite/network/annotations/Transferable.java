@@ -84,7 +84,9 @@ import org.apache.ignite.network.serialization.MessageSerializer;
 // TODO: Update this annotation according to https://issues.apache.org/jira/browse/IGNITE-14817
 public @interface Transferable {
     /**
-     * @return this message's type as described in {@link NetworkMessage#messageType}
+     * Returns this message's type as described in {@link NetworkMessage#messageType}.
+     *
+     * @return Message type.
      */
     short value();
 

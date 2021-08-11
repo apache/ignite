@@ -15,28 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
-
 /**
- * Exception raised during configuration of the network cluster.
+ * Package, that contains serialization-related classes.
  */
-public class NetworkConfigurationException extends RuntimeException {
-    /**
-     * Constructor.
-     *
-     * @param message Exception message.
-     */
-    public NetworkConfigurationException(String message) {
-        super(message);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param message Exception message.
-     * @param cause Cause of the exception.
-     */
-    public NetworkConfigurationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+package org.apache.ignite.network.serialization;

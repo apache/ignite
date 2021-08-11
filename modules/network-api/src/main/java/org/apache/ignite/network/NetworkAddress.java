@@ -37,6 +37,8 @@ public class NetworkAddress implements Serializable {
     private final int port;
 
     /**
+     * Constructor.
+     *
      * @param host Host.
      * @param port Port.
      */
@@ -77,12 +79,15 @@ public class NetworkAddress implements Serializable {
      * Creates a {@code NetworkAddress} from a {@link InetSocketAddress}.
      *
      * @param addr Address.
+     * @return Created network address.
      */
     public static NetworkAddress from(InetSocketAddress addr) {
         return new NetworkAddress(addr.getHostName(), addr.getPort());
     }
 
     /**
+     * Returns the host name.
+     *
      * @return Host name.
      */
     public String host() {
@@ -90,6 +95,8 @@ public class NetworkAddress implements Serializable {
     }
 
     /**
+     * Returns the network port.
+     *
      * @return Port.
      */
     public int port() {

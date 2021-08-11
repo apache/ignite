@@ -39,6 +39,8 @@ public class ClusterLocalConfiguration {
     private final MessageSerializationRegistry serializationRegistry;
 
     /**
+     * Constructor.
+     *
      * @param name Local name.
      * @param port Local port.
      * @param nodeFinder Node finder for discovering the initial cluster members.
@@ -54,6 +56,8 @@ public class ClusterLocalConfiguration {
     }
 
     /**
+     * Returns the network alias of the node.
+     *
      * @return Network alias of a node.
      */
     public String getName() {
@@ -61,6 +65,8 @@ public class ClusterLocalConfiguration {
     }
 
     /**
+     * Returns the local network port of the node.
+     *
      * @return Port.
      */
     public int getPort() {
@@ -68,13 +74,17 @@ public class ClusterLocalConfiguration {
     }
 
     /**
-     * @return Node finder for discovering the initial cluster members.
+     * Returns the Node Finder for discovering the initial cluster members.
+     *
+     * @return Node Finder.
      */
     public NodeFinder getNodeFinder() {
         return nodeFinder;
     }
 
     /**
+     * Returns the message serialization registry.
+     *
      * @return Message serialization registry.
      */
     public MessageSerializationRegistry getSerializationRegistry() {

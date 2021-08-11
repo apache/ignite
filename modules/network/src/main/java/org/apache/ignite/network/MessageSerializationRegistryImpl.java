@@ -27,7 +27,7 @@ import org.apache.ignite.network.serialization.MessageSerializer;
  * Default implementation of a {@link MessageSerializationRegistry}.
  */
 public class MessageSerializationRegistryImpl implements MessageSerializationRegistry {
-    /** group type -> message type -> MessageSerializerProvider instance */
+    /** group type → message type → MessageSerializerProvider instance. */
     private final MessageSerializationFactory<?>[][] factories =
         new MessageSerializationFactory<?>[Short.MAX_VALUE + 1][];
 
@@ -71,6 +71,8 @@ public class MessageSerializationRegistryImpl implements MessageSerializationReg
      * @param groupType Group type of a message.
      * @param messageType Message type.
      * @return Message's serialization factory.
+     * @throws NetworkConfigurationException if no serializers have been registered for the given group type
+     * and message type.
      */
     private <T extends NetworkMessage> MessageSerializationFactory<T> getFactory(short groupType, short messageType) {
         assert groupType >= 0 : "group type must not be negative";

@@ -126,6 +126,9 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
 
     /**
      * Converts the given {@link Member} to a {@link ClusterNode}.
+     *
+     * @param member ScaleCube's cluster member.
+     * @return Cluster node.
      */
     private static ClusterNode fromMember(Member member) {
         var addr = new NetworkAddress(member.address().host(), member.address().port());

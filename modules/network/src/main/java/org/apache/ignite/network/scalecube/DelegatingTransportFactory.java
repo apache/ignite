@@ -32,13 +32,15 @@ import reactor.core.publisher.Mono;
  * cases it should behave as the default ScaleCube transport factory.
  */
 class DelegatingTransportFactory implements TransportFactory {
-    /** */
+    /** Messaging service. */
     private final ScaleCubeMessagingService messagingService;
 
     /** Delegate transport factory. */
     private final TransportFactory factory;
 
     /**
+     * Constructor.
+     *
      * @param messagingService Messaging service.
      * @param factory Delegate transport factory.
      */

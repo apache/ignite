@@ -151,6 +151,9 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
 
     /**
      * Converts a {@link NetworkAddress} into ScaleCube's {@link Address}.
+     *
+     * @param address Network address.
+     * @return ScaleCube's network address.
      */
     private static Address fromNetworkAddress(NetworkAddress address) {
         return Address.create(address.host(), address.port());

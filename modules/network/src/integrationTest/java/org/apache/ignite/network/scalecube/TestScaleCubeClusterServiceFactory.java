@@ -23,18 +23,13 @@ import io.scalecube.cluster.ClusterConfig;
  */
 public class TestScaleCubeClusterServiceFactory extends ScaleCubeClusterServiceFactory {
     /** {@inheritDoc} */
-    @Override protected ClusterConfig defaultConfig() {
-        ClusterConfig cfg = ClusterConfig.defaultLocalConfig();
-
-        // Theoretical suspicious timeout for 5 node cluster: 500 * 1 * log(5) = 349ms
-        // Short sync interval is required for faster convergence on node restarts.
-        cfg = cfg.membership(opts -> opts.syncInterval(1000).suspicionMult(1));
-
-        // Theoretical upper bound for detection of faulty node by some other node: 500 * (e / (e - 1)) = 790ms
-        cfg = cfg.failureDetector(opts -> opts.pingInterval(500).pingReqMembers(1));
-
-        cfg = cfg.gossip(opts -> opts.gossipInterval(10));
-
-        return cfg;
+    @Override protected ClusterConfig clusterConfig() {
+        return ClusterConfig.defaultLocalConfig()
+            // Theoretical suspicious timeout for 5 node cluster: 500 * 1 * log(5) = 349ms
+            // Short sync interval is required for faster convergence on node restarts.
+            .membership(opts -> opts.syncInterval(1000).suspicionMult(1))
+            // Theoretical upper bound for detection of faulty node by some other node: 500 * (e / (e - 1)) = 790ms
+            .failureDetector(opts -> opts.pingInterval(500).pingReqMembers(1))
+            .gossip(opts -> opts.gossipInterval(10));
     }
 }

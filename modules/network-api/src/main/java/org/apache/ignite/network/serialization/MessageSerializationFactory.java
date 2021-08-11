@@ -28,12 +28,14 @@ import org.apache.ignite.network.NetworkMessage;
 public interface MessageSerializationFactory<M extends NetworkMessage> {
     /**
      * Creates a deserializer.
+     *
      * @return Message deserializer.
      */
     MessageDeserializer<M> createDeserializer();
 
     /**
      * Creates a serializer.
+     *
      * @return Message serializer.
      */
     MessageSerializer<M> createSerializer();

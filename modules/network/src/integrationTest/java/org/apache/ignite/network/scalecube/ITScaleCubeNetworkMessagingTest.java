@@ -57,7 +57,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** */
+/**
+ * Integration tests for messaging based on ScaleCube.
+ */
 class ITScaleCubeNetworkMessagingTest {
     /**
      * Test cluster.
@@ -69,14 +71,16 @@ class ITScaleCubeNetworkMessagingTest {
     /** Message factory. */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
-    /** */
+    /** Tear down method. */
     @AfterEach
-    public void afterEach() {
+    public void tearDown() {
         testCluster.shutdown();
     }
 
     /**
      * Tests sending and receiving messages.
+     *
+     * @throws Exception in case of errors.
      */
     @Test
     public void messageWasSentToAllMembersSuccessfully() throws Exception {
@@ -115,7 +119,7 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Tests graceful shutdown.
+     * Tests a graceful shutdown.
      *
      * @throws Exception If failed.
      */
@@ -125,7 +129,8 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Tests forceful shutdown.
+     * Tests a forceful shutdown.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -135,6 +140,8 @@ class ITScaleCubeNetworkMessagingTest {
 
     /**
      * Sends a message from a node to itself and verifies that it gets delivered successfully.
+     *
+     * @throws Exception in case of errors.
      */
     @Test
     public void testSendMessageToSelf() throws Exception {
@@ -181,6 +188,8 @@ class ITScaleCubeNetworkMessagingTest {
 
     /**
      * Sends a messages from a node to itself and awaits the response.
+     *
+     * @throws Exception in case of errors.
      */
     @Test
     public void testInvokeMessageToSelf() throws Exception {
@@ -232,6 +241,8 @@ class ITScaleCubeNetworkMessagingTest {
 
     /**
      * Tests that messages from different message groups can be delivered to different sets of handlers.
+     *
+     * @throws Exception in case of errors.
      */
     @Test
     public void testMessageGroupsHandlers() throws Exception {
@@ -349,19 +360,23 @@ class ITScaleCubeNetworkMessagingTest {
      * Wrapper for a cluster.
      */
     private static final class Cluster {
-        /** */
+        /** Network factory. */
         private final ClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
 
-        /** */
+        /** Serialization registry. */
         private final MessageSerializationRegistry serializationRegistry = new TestMessageSerializationRegistryImpl();
 
-        /** */
+        /** Members of the cluster. */
         final List<ClusterService> members;
 
-        /** */
+        /** Latch that is locked until all members are visible in the topology. */
         private final CountDownLatch startupLatch;
 
-        /** Constructor. */
+        /**
+         * Creates a test cluster with the given amount of members.
+         *
+         * @param numOfNodes Amount of cluster members.
+         */
         Cluster(int numOfNodes) {
             startupLatch = new CountDownLatch(numOfNodes - 1);
 
@@ -385,7 +400,8 @@ class ITScaleCubeNetworkMessagingTest {
          * @return Started cluster node.
          */
         private ClusterService startNode(NetworkAddress addr, NodeFinder nodeFinder, boolean initial) {
-            var context = new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, serializationRegistry);
+            var context =
+                new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, serializationRegistry);
 
             ClusterService clusterService = networkFactory.createClusterService(context);
 
@@ -405,9 +421,10 @@ class ITScaleCubeNetworkMessagingTest {
         }
 
         /**
-         * Start and wait for cluster to come up.
+         * Starts and waits for the cluster to come up.
          *
          * @throws InterruptedException If failed.
+         * @throws AssertionError If the cluster was unable to start in 3 seconds.
          */
         void startAwait() throws InterruptedException {
             members.forEach(ClusterService::start);
@@ -417,7 +434,7 @@ class ITScaleCubeNetworkMessagingTest {
         }
 
         /**
-         * Shutdown cluster.
+         * Stops the cluster.
          */
         void shutdown() {
             members.forEach(ClusterService::stop);

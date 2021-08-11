@@ -26,13 +26,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface TopologyService {
     /**
+     * Returns information of the current node.
+     *
      * @return Information about the local network member.
      */
     ClusterNode localMember();
 
     /**
-     * @return Information about all members which have discovered by the local member (including the local member
-     * itself).
+     * Returns a list of all discovered cluster members, including the local member itself.
+     *
+     * @return List of all discovered cluster members.
      */
     Collection<ClusterNode> allMembers();
 

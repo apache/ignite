@@ -34,6 +34,8 @@ public class ClusterNode implements Serializable {
     private final NetworkAddress address;
 
     /**
+     * Constructor.
+     *
      * @param id Local id that changes between restarts.
      * @param name Unique name of a member in a cluster.
      * @param address Node address.
@@ -45,6 +47,8 @@ public class ClusterNode implements Serializable {
     }
 
     /**
+     * Returns this node's local ID.
+     *
      * @return Node's local id.
      */
     public String id() {
@@ -52,13 +56,17 @@ public class ClusterNode implements Serializable {
     }
 
     /**
-     * @return Unique name of member in cluster. Doesn't change between restarts.
+     * Returns the unique name of this node in a cluster. Doesn't change between restarts.
+     *
+     * @return Unique name of the member in a cluster.
      */
     public String name() {
         return name;
     }
 
     /**
+     * Returns the network address of this node.
+     *
      * @return Network address of this node.
      */
     public NetworkAddress address() {

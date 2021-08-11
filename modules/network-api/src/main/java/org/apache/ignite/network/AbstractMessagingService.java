@@ -31,13 +31,18 @@ public abstract class AbstractMessagingService implements MessagingService {
      * Class holding a pair of a message group class and corresponding handlers.
      */
     private static class Handler {
-        /** */
+        /** Message group.  */
         final Class<?> messageGroup;
 
-        /** */
+        /** Handlers, registered for the corresponding message group. */
         final List<NetworkMessageHandler> handlers;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param messageGroup Message group.
+         * @param handlers Message handlers.
+         */
         Handler(Class<?> messageGroup, List<NetworkMessageHandler> handlers) {
             this.messageGroup = messageGroup;
             this.handlers = handlers;
@@ -72,6 +77,9 @@ public abstract class AbstractMessagingService implements MessagingService {
 
     /**
      * Extracts the message group ID from a class annotated with {@link MessageGroup}.
+     *
+     * @param messageGroup Message group.
+     * @return Message group ID.
      */
     private static short getMessageGroupType(Class<?> messageGroup) {
         MessageGroup annotation = messageGroup.getAnnotation(MessageGroup.class);
@@ -86,7 +94,10 @@ public abstract class AbstractMessagingService implements MessagingService {
     }
 
     /**
-     * @return registered message handlers.
+     * Returns registered handlers for the given group ID.
+     *
+     * @param groupType Message group ID.
+     * @return Registered message handlers.
      */
     protected final Collection<NetworkMessageHandler> getMessageHandlers(short groupType) {
         assert groupType >= 0 : "Group type must not be negative";

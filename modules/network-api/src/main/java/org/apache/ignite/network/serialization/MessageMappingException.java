@@ -23,6 +23,7 @@ package org.apache.ignite.network.serialization;
 public class MessageMappingException extends RuntimeException {
     /**
      * Constructor.
+     *
      * @param message Message mapping error message.
      */
     public MessageMappingException(String message) {
@@ -31,6 +32,7 @@ public class MessageMappingException extends RuntimeException {
 
     /**
      * Constructor.
+     *
      * @param message Message mapping error message.
      * @param cause Cause of message mapping error.
      */

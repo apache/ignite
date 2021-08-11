@@ -21,18 +21,30 @@ import org.apache.ignite.network.NetworkMessage;
 
 /**
  * Message deserializer.
+ *
  * @param <M> Message type.
  */
 public interface MessageDeserializer<M extends NetworkMessage> {
     /**
      * Read a message from the reader.
+     *
      * @param reader Message reader.
      * @return {@code true } if the message has been read completely.
      * @throws MessageMappingException If failed.
      */
     boolean readMessage(MessageReader reader) throws MessageMappingException;
 
+    /**
+     * Message type, that this deserializer creates.
+     *
+     * @return Message type.
+     */
     Class<M> klass();
 
+    /**
+     * Returns the message, deserialized by the {@link #readMessage} method.
+     *
+     * @return Deserialized message.
+     */
     M getMessage();
 }

@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Base class for {@link TopologyService} implementations.
  */
 public abstract class AbstractTopologyService implements TopologyService {
-    /** */
+    /** Registered event handlers. */
     private final Collection<TopologyEventHandler> eventHandlers = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
@@ -34,9 +34,11 @@ public abstract class AbstractTopologyService implements TopologyService {
     }
 
     /**
-     * @return registered event handlers.
+     * Returns the registered topology event handlers.
+     *
+     * @return Registered event handlers.
      */
-    public Collection<TopologyEventHandler> getEventHandlers() {
+    protected Collection<TopologyEventHandler> getEventHandlers() {
         return Collections.unmodifiableCollection(eventHandlers);
     }
 }
