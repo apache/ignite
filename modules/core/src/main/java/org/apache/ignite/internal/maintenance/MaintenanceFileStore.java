@@ -64,7 +64,7 @@ public class MaintenanceFileStore {
     private static final int MAX_MNTC_TASK_PARTS_COUNT = 3;
 
     /** */
-    private final boolean inMemoryMode;
+    private final boolean disabled;
 
     /** */
     private final PdsFoldersResolver pdsFoldersResolver;
@@ -85,11 +85,11 @@ public class MaintenanceFileStore {
     private final IgniteLogger log;
 
     /** */
-    public MaintenanceFileStore(boolean inMemoryMode,
+    public MaintenanceFileStore(boolean disabled,
                                 PdsFoldersResolver pdsFoldersResolver,
                                 FileIOFactory ioFactory,
                                 IgniteLogger log) {
-        this.inMemoryMode = inMemoryMode;
+        this.disabled = disabled;
         this.pdsFoldersResolver = pdsFoldersResolver;
         this.ioFactory = ioFactory;
         this.log = log;
@@ -97,7 +97,7 @@ public class MaintenanceFileStore {
 
     /** */
     public void init() throws IgniteCheckedException, IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         PdsFolderSettings folderSettings = pdsFoldersResolver.resolveFolders();
@@ -126,7 +126,7 @@ public class MaintenanceFileStore {
      * Stops
      */
     public void stop() throws IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         if (mntcTasksFileIO != null)
@@ -200,7 +200,7 @@ public class MaintenanceFileStore {
 
     /** */
     public Map<String, MaintenanceTask> getAllTasks() {
-        if (inMemoryMode)
+        if (disabled)
             return null;
 
         return Collections.unmodifiableMap(tasksInSync);
@@ -208,7 +208,7 @@ public class MaintenanceFileStore {
 
     /** */
     public void writeMaintenanceTask(MaintenanceTask task) throws IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         tasksInSync.put(task.name(), task);
@@ -218,7 +218,7 @@ public class MaintenanceFileStore {
 
     /** */
     public void deleteMaintenanceTask(String taskName) throws IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         tasksInSync.remove(taskName);
