@@ -35,7 +35,6 @@ import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -141,7 +140,9 @@ public class ConfigurationListenerTest {
         assertEquals(List.of("parent", "child", "str"), log);
     }
 
-    /** Tests notifications validity when a new named list element is created. */
+    /**
+     * Tests notifications validity when a new named list element is created.
+     */
     @Test
     public void namedListNodeOnCreate() throws Exception {
         List<String> log = new ArrayList<>();
@@ -171,7 +172,7 @@ public class ConfigurationListenerTest {
             return completedFuture(null);
         });
 
-        configuration.elements().listen(new ConfigurationNamedListListener<ChildView>() {
+        configuration.elements().listenElements(new ConfigurationNamedListListener<ChildView>() {
             /** {@inheritDoc} */
             @Override public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<ChildView> ctx) {
                 assertNull(ctx.oldValue());
@@ -219,7 +220,9 @@ public class ConfigurationListenerTest {
         assertEquals(List.of("parent", "elements", "create"), log);
     }
 
-    /** Tests notifications validity when a named list element is edited. */
+    /**
+     * Tests notifications validity when a named list element is edited.
+     */
     @Test
     public void namedListNodeOnUpdate() throws Exception {
         configuration.change(parent ->
@@ -257,7 +260,7 @@ public class ConfigurationListenerTest {
             return completedFuture(null);
         });
 
-        configuration.elements().listen(new ConfigurationNamedListListener<ChildView>() {
+        configuration.elements().listenElements(new ConfigurationNamedListListener<ChildView>() {
             /** {@inheritDoc} */
             @Override public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<ChildView> ctx) {
                 log.add("create");
@@ -308,8 +311,9 @@ public class ConfigurationListenerTest {
         assertEquals(List.of("parent", "elements", "update"), log);
     }
 
-
-    /** Tests notifications validity when a named list element is renamed. */
+    /**
+     * Tests notifications validity when a named list element is renamed.
+     */
     @Test
     public void namedListNodeOnRename() throws Exception {
         configuration.change(parent ->
@@ -342,9 +346,6 @@ public class ConfigurationListenerTest {
 
             ChildView newValue = ctx.newValue().get("newName");
 
-            assertNotNull(newValue, ctx.newValue().namedListKeys().toString());
-            assertEquals("default", newValue.str());
-
             assertSame(oldValue, newValue);
 
             log.add("elements");
@@ -352,7 +353,103 @@ public class ConfigurationListenerTest {
             return completedFuture(null);
         });
 
-        configuration.elements().listen(new ConfigurationNamedListListener<ChildView>() {
+        configuration.elements().listenElements(new ConfigurationNamedListListener<ChildView>() {
+            /** {@inheritDoc} */
+            @Override public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<ChildView> ctx) {
+                log.add("create");
+
+                return completedFuture(null);
+            }
+
+            /** {@inheritDoc} */
+            @Override public CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<ChildView> ctx) {
+                log.add("update");
+
+                return completedFuture(null);
+            }
+
+            /** {@inheritDoc} */
+            @Override public CompletableFuture<?> onRename(
+                String oldName,
+                String newName,
+                ConfigurationNotificationEvent<ChildView> ctx
+            ) {
+                assertEquals("name", oldName);
+                assertEquals("newName", newName);
+
+                ChildView oldValue = ctx.oldValue();
+
+                assertNotNull(oldValue);
+                assertEquals("default", oldValue.str());
+
+                ChildView newValue = ctx.newValue();
+
+                assertSame(oldValue, newValue);
+
+                log.add("rename");
+
+                return completedFuture(null);
+            }
+
+            /** {@inheritDoc} */
+            @Override public CompletableFuture<?> onDelete(ConfigurationNotificationEvent<ChildView> ctx) {
+                log.add("delete");
+
+                return completedFuture(null);
+            }
+        });
+
+        configuration.change(parent ->
+            parent.changeElements(elements -> elements.rename("name", "newName"))
+        ).get(1, SECONDS);
+
+        assertEquals(List.of("parent", "elements", "rename"), log);
+    }
+
+    /**
+     * Tests notifications validity when a named list element is renamed and updated at the same time.
+     */
+    @Test
+    public void namedListNodeOnRenameAndUpdate() throws Exception {
+        configuration.change(parent ->
+            parent.changeElements(elements -> elements.create("name", element -> {}))
+        ).get(1, SECONDS);
+
+        List<String> log = new ArrayList<>();
+
+        configuration.listen(ctx -> {
+            log.add("parent");
+
+            return completedFuture(null);
+        });
+
+        configuration.child().listen(ctx -> {
+            log.add("child");
+
+            return completedFuture(null);
+        });
+
+        configuration.elements().listen(ctx -> {
+            assertEquals(1, ctx.oldValue().size());
+
+            ChildView oldValue = ctx.oldValue().get("name");
+
+            assertNotNull(oldValue);
+            assertEquals("default", oldValue.str());
+
+            assertEquals(1, ctx.newValue().size());
+
+            ChildView newValue = ctx.newValue().get("newName");
+
+            assertNotNull(newValue, ctx.newValue().namedListKeys().toString());
+            assertEquals("foo", newValue.str());
+
+            log.add("elements");
+
+            return completedFuture(null);
+        });
+
+        configuration.elements().listenElements(new ConfigurationNamedListListener<ChildView>() {
             /** {@inheritDoc} */
             @Override public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<ChildView> ctx) {
                 log.add("create");
@@ -384,9 +481,7 @@ public class ConfigurationListenerTest {
                 ChildView newValue = ctx.newValue();
 
                 assertNotNull(newValue);
-                assertEquals("default", newValue.str());
-
-                assertSame(oldValue, newValue);
+                assertEquals("foo", newValue.str());
 
                 log.add("rename");
 
@@ -402,13 +497,18 @@ public class ConfigurationListenerTest {
         });
 
         configuration.change(parent ->
-            parent.changeElements(elements -> elements.rename("name", "newName"))
+            parent.changeElements(elements -> elements
+                .rename("name", "newName")
+                .createOrUpdate("newName", element -> element.changeStr("foo"))
+            )
         ).get(1, SECONDS);
 
         assertEquals(List.of("parent", "elements", "rename"), log);
     }
 
-    /** Tests notifications validity when a named list element is deleted. */
+    /**
+     * Tests notifications validity when a named list element is deleted.
+     */
     @Test
     public void namedListNodeOnDelete() throws Exception {
         configuration.change(parent ->
@@ -442,7 +542,7 @@ public class ConfigurationListenerTest {
             return completedFuture(null);
         });
 
-        configuration.elements().listen(new ConfigurationNamedListListener<ChildView>() {
+        configuration.elements().listenElements(new ConfigurationNamedListListener<ChildView>() {
             /** {@inheritDoc} */
             @Override public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<ChildView> ctx) {
                 log.add("create");
@@ -494,9 +594,10 @@ public class ConfigurationListenerTest {
         assertEquals(List.of("parent", "elements", "delete"), log);
     }
 
-    /** */
+    /**
+     * Tests that concurrent configuration access does not affect configuration listeners.
+     */
     @Test
-    @Disabled("Will be fixed in https://issues.apache.org/jira/browse/IGNITE-15193")
     public void dataRace() throws Exception {
         configuration.change(parent -> parent.changeElements(elements ->
             elements.create("name", e -> {}))

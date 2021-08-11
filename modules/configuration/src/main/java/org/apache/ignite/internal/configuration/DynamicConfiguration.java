@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.configuration;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
+import org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil;
 
 /**
  * This class represents configuration root or node.
@@ -38,7 +39,7 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
     implements ConfigurationTree<VIEW, CHANGE>
 {
     /** Configuration members (leaves and nodes). */
-    private final Map<String, ConfigurationProperty<?, ?>> members = new HashMap<>();
+    protected volatile Map<String, ConfigurationProperty<?, ?>> members = new LinkedHashMap<>();
 
     /**
      * Constructor.
@@ -106,6 +107,27 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
      * @return Map from childs keys to a corresponding {@link ConfigurationProperty}.
      */
     public Map<String, ConfigurationProperty<?, ?>> members() {
+        refreshValue();
+
         return Collections.unmodifiableMap(members);
+    }
+
+    /**
+     * Touches current Dynamic Configuration node. Currently this method makes sense for {@link NamedListConfiguration}
+     * class only, but this will be changed in <a href="https://issues.apache.org/jira/browse/IGNITE-14645">IGNITE-14645
+     * </a>.
+     * Method is invoked on configuration initialization and on every configuration update, even those that don't affect
+     * current node. Its goal is to have a fine control over sub-nodes of the configuration. Accessor methods on the
+     * Dynamic Configuration nodes can be called at any time and have to return up-to-date value. This means that one
+     * can read updated configuration value before notification listeners have been invoked on it. At that point, for
+     * example, deleted named list elements disappear from the object and cannot be accessed with a regular API. The
+     * only way to access them is to have a cached copy of all elements (members). This method does exactly that. It
+     * returns cached copy of members and then sets it to a new, maybe different, set of members. No one except for
+     * {@link ConfigurationNotificationsUtil} should ever call this method.
+     *
+     * @return Members map associated with "previous" node state.
+     */
+    public Map<String, ConfigurationProperty<?, ?>> touchMembers() {
+        return members();
     }
 }

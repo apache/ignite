@@ -40,6 +40,7 @@ import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
+import org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 import org.apache.ignite.internal.configuration.validation.ImmutableValidator;
@@ -133,6 +134,15 @@ public class ConfigurationRegistry implements IgniteComponent {
      */
     public void startStorageConfigurations(ConfigurationType storageType) {
         changer.initialize(storageType);
+
+        for (RootKey<?, ?> rootKey : rootKeys) {
+            if (rootKey.type() != storageType)
+                continue;
+
+            DynamicConfiguration<?, ?> dynCfg = configs.get(rootKey.key());
+
+            ConfigurationNotificationsUtil.touch(dynCfg);
+        }
     }
 
     /**

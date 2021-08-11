@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration.notifications;
+package org.apache.ignite.internal.configuration.util;
 
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.jetbrains.annotations.Nullable;
 
-public class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificationEvent<VIEW> {
+class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificationEvent<VIEW> {
     private final VIEW oldValue;
 
     private final VIEW newValue;
 
     private final long storageRevision;
 
-    public ConfigurationNotificationEventImpl(VIEW oldValue, VIEW newValue, long storageRevision) {
+    ConfigurationNotificationEventImpl(VIEW oldValue, VIEW newValue, long storageRevision) {
         this.oldValue = oldValue;
         this.newValue = newValue;
         this.storageRevision = storageRevision;

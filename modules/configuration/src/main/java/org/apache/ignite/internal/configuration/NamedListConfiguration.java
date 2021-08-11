@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.configuration;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,8 +43,8 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
     /** Creator of named configuration. */
     private final BiFunction<List<String>, String, T> creator;
 
-    /** Named configurations. */
-    private volatile Map<String, T> values = new HashMap<>();
+    /** */
+    private volatile Map<String, T> notificationCache = Collections.emptyMap();
 
     /**
      * Constructor.
@@ -69,16 +69,16 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
     @Override public T get(String name) {
         refreshValue();
 
-        return values.get(name);
+        return (T)members.get(name);
     }
 
     /** {@inheritDoc} */
     @Override protected synchronized void beforeRefreshValue(NamedListView<VIEW> newValue) {
-        Map<String, T> oldValues = this.values;
-        Map<String, T> newValues = new HashMap<>();
+        Map<String, ConfigurationProperty<?, ?>> oldValues = this.members;
+        Map<String, ConfigurationProperty<?, ?>> newValues = new LinkedHashMap<>();
 
         for (String key : newValue.namedListKeys()) {
-            T oldElement = oldValues.get(key);
+            ConfigurationProperty<?, ?> oldElement = oldValues.get(key);
 
             if (oldElement != null)
                 newValues.put(key, oldElement);
@@ -86,14 +86,18 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
                 newValues.put(key, creator.apply(keys, key));
         }
 
-        this.values = newValues;
+        this.members = newValues;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ConfigurationProperty<?, ?>> members() {
+    @Override public Map<String, ConfigurationProperty<?, ?>> touchMembers() {
+        Map<String, T> res = notificationCache;
+
         refreshValue();
 
-        return Collections.unmodifiableMap(values);
+        notificationCache = (Map<String, T>)members;
+
+        return Collections.unmodifiableMap(res);
     }
 
     /** @return List of listeners that are specific for named configurations.*/
@@ -102,7 +106,7 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
     }
 
     /** {@inheritDoc} */
-    @Override public final void listen(ConfigurationNamedListListener<VIEW> listener) {
+    @Override public final void listenElements(ConfigurationNamedListListener<VIEW> listener) {
         extendedListeners.add(listener);
     }
 }
