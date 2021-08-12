@@ -23,6 +23,7 @@ import org.apache.ignite.common.ClientSideCacheCreationDestructionWileTopologyCh
 import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
 import org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest;
 import org.apache.ignite.common.NodeSslConnectionMetricTest;
+import org.apache.ignite.common.RebalanceCacheEventSecurityContextTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
@@ -188,7 +189,8 @@ import org.junit.runners.Suite;
     NodeSslConnectionMetricTest.class,
     ComputeTaskRemoteSecurityContextTest.class,
     CacheCreateDestroyEventSecurityContextTest.class,
-    CacheEventSecurityContextTest.class
+    CacheEventSecurityContextTest.class,
+    RebalanceCacheEventSecurityContextTest.class
 })
 public class IgniteClientTestSuite {
 }

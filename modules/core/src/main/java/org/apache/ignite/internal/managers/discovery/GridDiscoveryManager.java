@@ -938,7 +938,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.awaitDisconnectEvent();
             }
 
-            /** */
+            /**
+             * Extends {@link NotificationTask} to run in a security context owned by the initiator of the
+             * discovery event.
+             */
             class SecurityAwareNotificationTask extends NotificationTask {
                 /** */
                 public SecurityAwareNotificationTask(DiscoveryNotification notification) {
@@ -970,6 +973,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
+            /** Represents task to handle discovery notification asynchronously. */
             class NotificationTask implements Runnable {
                 /** */
                 protected final DiscoveryNotification notification;

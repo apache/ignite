@@ -48,4 +48,3 @@ public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }
 }
-

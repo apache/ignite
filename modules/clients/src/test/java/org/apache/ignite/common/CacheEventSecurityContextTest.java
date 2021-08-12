@@ -20,11 +20,8 @@ package org.apache.ignite.common;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
@@ -33,7 +30,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
@@ -45,15 +41,9 @@ import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.events.CacheQueryReadEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -61,11 +51,8 @@ import org.apache.ignite.internal.client.GridClientData;
 import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -81,7 +68,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest.DFLT_REST_PORT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -106,14 +92,10 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_R
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_VALUE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE_VALUE;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests that security information specified in cache events belongs to the operation initiator. */
 @RunWith(Parameterized.class)
-public class CacheEventSecurityContextTest extends AbstractSecurityTest {
-    /** Events paired with the nodes on which they were listened to. */
-    private static final Map<ClusterNode, Collection<Event>> LISTENED_CACHE_EVTS = new HashMap<>();
-
+public class CacheEventSecurityContextTest extends AbstractEventSecurityContextTest {
     /** Counter of inserted cache keys. */
     private static final AtomicInteger KEY_COUNTER = new AtomicInteger();
 
@@ -123,16 +105,18 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
     /** Name of the cache with {@link CacheAtomicityMode#TRANSACTIONAL} mode. */
     private static final String TRANSACTIONAL_CACHE = "transactional";
 
-    /** Cache event types involved in testing. */
-    private static final int[] CACHE_EVT_TYPES = {
-        EVT_CACHE_OBJECT_PUT,
-        EVT_CACHE_OBJECT_READ,
-        EVT_CACHE_OBJECT_REMOVED,
-        EVT_CACHE_OBJECT_LOCKED,
-        EVT_CACHE_OBJECT_UNLOCKED,
-        EVT_CACHE_QUERY_EXECUTED,
-        EVT_CACHE_QUERY_OBJECT_READ
-    };
+    /** {@inheritDoc} */
+    @Override protected int[] eventTypes() {
+        return new int[] {
+            EVT_CACHE_OBJECT_PUT,
+            EVT_CACHE_OBJECT_READ,
+            EVT_CACHE_OBJECT_REMOVED,
+            EVT_CACHE_OBJECT_LOCKED,
+            EVT_CACHE_OBJECT_UNLOCKED,
+            EVT_CACHE_QUERY_EXECUTED,
+            EVT_CACHE_QUERY_OBJECT_READ
+        };
+    }
 
     /** */
     @Parameterized.Parameters(name = "cacheAtomicity={0}, txConcurrency={1}, txIsolation={2}")
@@ -166,27 +150,19 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
     private String operationInitiatorLogin;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(
-        String instanceName,
-        AbstractTestSecurityPluginProvider pluginProv
-    ) throws Exception {
-        return super.getConfiguration(instanceName, pluginProv)
-            .setLocalHost("127.0.0.1")
-            .setIncludeEventTypes(CACHE_EVT_TYPES)
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
                 new CacheConfiguration<>(ATOMIC_CACHE).setAtomicityMode(ATOMIC), 
-                new CacheConfiguration<>(TRANSACTIONAL_CACHE).setAtomicityMode(TRANSACTIONAL))
-            .setConnectorConfiguration(new ConnectorConfiguration()
-                .setJettyPath("modules/clients/src/test/resources/jetty/rest-jetty.xml"));
+                new CacheConfiguration<>(TRANSACTIONAL_CACHE).setAtomicityMode(TRANSACTIONAL));
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        LISTENED_CACHE_EVTS.put(startGridAllowAll("crd").localNode(), ConcurrentHashMap.newKeySet());
-        LISTENED_CACHE_EVTS.put(startGridAllowAll("srv").localNode(), ConcurrentHashMap.newKeySet());
-
+        startGridAllowAll("crd");
+        startGridAllowAll("srv");
         startClientAllowAll("cli");
 
         awaitPartitionMapExchange();
@@ -197,21 +173,6 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         super.beforeTest();
 
         grid("crd").cache(cacheName).clear();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        IgniteEx ignite = super.startGrid(login, prmSet, isClient);
-
-        if (!ignite.localNode().isClient()) {
-            ignite.events().localListen(evt -> {
-                LISTENED_CACHE_EVTS.get(ignite.localNode()).add(evt);
-
-                return true;
-            }, CACHE_EVT_TYPES);
-        }
-
-        return ignite;
     }
 
     /** Tests cache event security context in case operation is initiated from the {@link IgniteClient}. */
@@ -489,7 +450,7 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
             evts.add(EVT_CACHE_OBJECT_UNLOCKED);
         }
 
-        List<Integer> keys = LISTENED_CACHE_EVTS.keySet().stream().map(node ->
+        List<Integer> keys = testNodes().stream().map(node ->
             keyForNode(
                 crd.affinity(cacheName),
                 KEY_COUNTER,
@@ -507,36 +468,10 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
      * operation initiator.
      */
     private void checkEvents(RunnableX op, Collection<Integer> expEvtTypes) throws Exception {
-        LISTENED_CACHE_EVTS.values().forEach(Collection::clear);
-
-        op.run();
-
-        for (Collection<Event> nodeCacheEvents : LISTENED_CACHE_EVTS.values()) {
-            assertTrue(waitForCondition(() ->
-                nodeCacheEvents.stream()
-                    .map(Event::type)
-                    .collect(Collectors.toList())
-                    .containsAll(expEvtTypes),
-                getTestTimeout()));
-
-            assertTrue(nodeCacheEvents.stream()
-                .map(evt -> {
-                    if (evt instanceof CacheEvent)
-                        return ((CacheEvent)evt).subjectId();
-                    if (evt instanceof CacheQueryExecutedEvent)
-                        return ((CacheQueryExecutedEvent<?, ?>)evt).subjectId();
-                    else
-                        return ((CacheQueryReadEvent<?, ?>)evt).subjectId();
-                })
-                .map(subjId -> {
-                    try {
-                        return grid("crd").context().security().authenticatedSubject(subjId).login();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }).allMatch(operationInitiatorLogin::equals));
-        }
+        checkEvents(
+            op,
+            expEvtTypes,
+            operationInitiatorLogin);
     }
 
     /** */
@@ -546,23 +481,20 @@ public class CacheEventSecurityContextTest extends AbstractSecurityTest {
         String val1,
         String val2
     ) throws Exception {
-        String req = "http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-            "?ignite.login=" + operationInitiatorLogin +
-            "&ignite.password=" +
-            "&cmd=" + cmd.key() +
-            "&cacheName=" + cacheName +
-            "&keyType=" + Integer.class.getName() +
-            "&valueType=" + String.class.getName();
+        List<String> params = new ArrayList<>();
 
-        req += (cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL || cmd == CACHE_GET_ALL ? "&k1=" : "&key=") + key;
+        params.add("cacheName=" + cacheName);
+        params.add("keyType=" + Integer.class.getName());
+        params.add("valueType=" + String.class.getName());
+        params.add((cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL || cmd == CACHE_GET_ALL ? "k1=" : "key=") + key);
 
         if (val1 != null)
-            req += (cmd == CACHE_PUT_ALL ? "&v1=" : "&val=") + val1;
+            params.add((cmd == CACHE_PUT_ALL ? "v1=" : "val=") + val1);
 
         if (val2 != null)
-            req += "&val2=" + val2;
+            params.add("val2=" + val2);
 
-        ComputeTaskRemoteSecurityContextTest.sendRestRequest(req);
+        sendRestRequest(cmd, params, operationInitiatorLogin);
     }
 
     /** */

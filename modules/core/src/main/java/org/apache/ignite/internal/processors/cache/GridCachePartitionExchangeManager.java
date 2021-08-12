@@ -122,7 +122,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -2970,9 +2969,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Returns current thread security context if security is enabled, otherwise null. */
     @Nullable private SecurityContext securityContext() {
-        IgniteSecurity security = cctx.kernalContext().security();
-
-        return security.enabled() ? security.securityContext() : null;
+        return cctx.kernalContext().security().securityContext();
     }
 
     /**

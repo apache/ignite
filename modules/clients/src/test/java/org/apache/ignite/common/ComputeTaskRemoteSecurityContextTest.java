@@ -17,11 +17,6 @@
 
 package org.apache.ignite.common;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,13 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -52,12 +43,8 @@ import org.apache.ignite.compute.ComputeTaskMapAsync;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -65,15 +52,10 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.thin.ClientServerError;
-import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
-import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.NotNull;
@@ -83,7 +65,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.Ignition.allGrids;
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -99,30 +80,17 @@ import static org.apache.ignite.events.EventType.EVT_TASK_REDUCED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
 
 /** Tests that compute tasks are executed with the security context of the task initiator. */
 @RunWith(Parameterized.class)
-public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
-    /** Port for REST client connection. */
-    static final String DFLT_REST_PORT = "11080";
-
+public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityContextTest {
     /** Task timeout.*/
     private static final long TEST_TASK_TIMEOUT = 500;
 
-    /** Custom object mapper for HTTP REST API.  */
-    private static final ObjectMapper OBJECT_MAPPER = new GridJettyObjectMapper();
-
-    /** Events paired with the nodes on which they were listened to. */
-    private static final Map<ClusterNode, Collection<Event>> LISTENED_TASK_EVENTS = new HashMap<>();
-
     /** Indicates whether the test task can proceed with its execution. */
     private static CountDownLatch taskExecutionUnlockedLatch;
-
-    /** All possible task events. */
-    private static final int[] TASK_EVENTS = {
-        EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED, EVT_JOB_MAPPED, EVT_JOB_RESULTED, EVT_JOB_STARTED,
-        EVT_JOB_FINISHED, EVT_JOB_QUEUED, EVT_TASK_TIMEDOUT, EVT_TASK_FAILED, EVT_JOB_CANCELLED, EVT_JOB_FAILED};
 
     /** Events that occur on the task reducer if task execution completes successfully. */
     private static final List<Integer> REDUCER_SUCCEEDED_TASK_EVENTS = Arrays.asList(
@@ -141,6 +109,19 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     /** Events that occur on task map node if task execution fails. */
     private static final List<Integer> MAP_NODE_FAILED_TASK_EVENTS = Arrays.asList(
         EVT_JOB_QUEUED, EVT_JOB_STARTED, EVT_JOB_CANCELLED, EVT_JOB_FAILED);
+
+    /** {@inheritDoc} */
+    @Override protected int[] eventTypes() {
+        return new int[] {
+            EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED, EVT_JOB_MAPPED, EVT_JOB_RESULTED, EVT_JOB_STARTED,
+            EVT_JOB_FINISHED, EVT_JOB_QUEUED, EVT_TASK_TIMEDOUT, EVT_TASK_FAILED, EVT_JOB_CANCELLED, EVT_JOB_FAILED
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean includeClientNodes() {
+        return true;
+    }
 
     /** */
     @Parameterized.Parameters(name = "async={0} failWithTimeout={1} mapAsync={2}")
@@ -172,9 +153,9 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        LISTENED_TASK_EVENTS.put(startGridAllowAll("crd").localNode(), ConcurrentHashMap.newKeySet());
-        LISTENED_TASK_EVENTS.put(startGridAllowAll("srv").localNode(), ConcurrentHashMap.newKeySet());
-        LISTENED_TASK_EVENTS.put(startGridAllowAll("cli").localNode(), ConcurrentHashMap.newKeySet());
+        startGridAllowAll("crd");
+        startGridAllowAll("srv");
+        startGridAllowAll("cli");
     }
 
     /** {@inheritDoc} */
@@ -189,7 +170,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        LISTENED_TASK_EVENTS.values().forEach(Collection::clear);
+        LISTENED_EVTS.values().forEach(Collection::clear);
 
         taskExecutionUnlockedLatch = null;
 
@@ -198,31 +179,11 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(
-        String instanceName,
-        AbstractTestSecurityPluginProvider pluginProv
-    ) throws Exception {
-        return super.getConfiguration(instanceName, pluginProv)
-            .setLocalHost("127.0.0.1")
-            .setIncludeEventTypes(TASK_EVENTS)
-            .setConnectorConfiguration(new ConnectorConfiguration()
-                .setJettyPath("modules/clients/src/test/resources/jetty/rest-jetty.xml"))
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()
                 .setThinClientConfiguration(new ThinClientConfiguration()
                     .setMaxActiveComputeTasksPerConnection(1)));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        IgniteEx ignite = startGrid(login, prmSet, null, isClient);
-
-        ignite.events().localListen(evt -> {
-            LISTENED_TASK_EVENTS.get(ignite.localNode()).add(evt);
-
-            return true;
-        }, TASK_EVENTS);
-
-        return ignite;
     }
 
     /** Tests task execution security context in case task was initiated from the {@link GridClient}. */
@@ -305,25 +266,21 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
 
         String taskName = mapAsync ? MapAsyncTestTask.class.getName() : TestTask.class.getName();
 
-        JsonNode resp = sendRestRequest("http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-            "?ignite.login=" + login +
-            "&ignite.password=" +
-            "&cmd=" + GridRestCommand.EXE.key() +
-            "&name=" + taskName +
-            "&p1=" + login +
-            "&async=" + async +
-            "&timeout=" + (failWithTimeout ? TEST_TASK_TIMEOUT : 0));
+        JsonNode resp = sendRestRequest(
+            EXE,
+            Arrays.asList(
+                "name=" + taskName,
+                "p1=" + login,
+                "async=" + async,
+                "timeout=" + (failWithTimeout ? TEST_TASK_TIMEOUT : 0)),
+            login);
 
         if (async) {
             String taskId = resp.get("response").get("id").textValue();
 
             U.sleep(2 * TEST_TASK_TIMEOUT);
 
-            resp = sendRestRequest("http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
-                "?ignite.login=" + login +
-                "&ignite.password=" +
-                "&id=" + taskId +
-                "&cmd=" + GridRestCommand.RESULT.key());
+            resp = sendRestRequest(RESULT, singletonList("id=" + taskId), login);
         }
 
         if (failWithTimeout) {
@@ -403,46 +360,11 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractSecurityTest {
         List<Integer> expMapNodeTaskEvts
     ) throws Exception {
         for (Ignite ignite : allGrids()) {
-            checkEvents(((IgniteEx)ignite).localNode(), taskInitiatorLogin, ignite.name().equals(taskReducerNode)
-                ? expReducerTaskEvts : expMapNodeTaskEvts);
+            checkEvents(
+                ((IgniteEx)ignite).localNode(),
+                ignite.name().equals(taskReducerNode) ? expReducerTaskEvts : expMapNodeTaskEvts,
+                taskInitiatorLogin);
         }
-    }
-
-    /** */
-    private void checkEvents(ClusterNode node, String expLogin, List<Integer> expEvtTypes) throws Exception {
-        Collection<Event> nodeTaskEvents = LISTENED_TASK_EVENTS.get(node);
-
-        assertTrue(waitForCondition(() ->
-            nodeTaskEvents.stream()
-                .map(Event::type)
-                .collect(Collectors.toList())
-                .containsAll(expEvtTypes), getTestTimeout()));
-
-        assertTrue(nodeTaskEvents.stream()
-            .map(evt -> evt instanceof TaskEvent ? ((TaskEvent)evt).subjectId() : ((JobEvent)evt).taskSubjectId())
-            .map(subjId -> {
-                try {
-                    return grid("crd").context().security().authenticatedSubject(subjId).login();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new SecurityException(e);
-                }
-            })
-            .allMatch(expLogin::equals));
-    }
-
-    /** */
-    static JsonNode sendRestRequest(String url) throws IOException {
-        URLConnection conn = new URL(url).openConnection();
-
-        StringBuilder buf = new StringBuilder(256);
-
-        try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(conn.getInputStream(), UTF_8))) {
-            for (String line = rdr.readLine(); line != null; line = rdr.readLine())
-                buf.append(line);
-        }
-
-        return OBJECT_MAPPER.readTree(buf.toString());
     }
 
     /** */
