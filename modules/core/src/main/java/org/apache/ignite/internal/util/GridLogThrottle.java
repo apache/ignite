@@ -150,6 +150,19 @@ public class GridLogThrottle {
     }
 
     /**
+     * Logs warning if needed.
+     *
+     * @param log Logger.
+     * @param msg Message.
+     * @param e Error..
+     */
+    public static void warn(@Nullable IgniteLogger log, String msg, Throwable e) {
+        assert !F.isEmpty(msg);
+
+        log(log, e, msg, LogLevel.WARN, false, false);
+    }
+
+    /**
      * Logs info if needed.
      *
      * @param log Logger.
