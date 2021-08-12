@@ -27,13 +27,13 @@
 namespace ignite_test
 {
     /*
-     * Check if cluster node contain the attribute with name provided.
+     * Check if cluster node contains an attribute with name provided.
      */
     class HasAttrName : public ignite::IgnitePredicate<ignite::cluster::ClusterNode>
     {
     public:
         HasAttrName(std::string name) :
-        name(name)
+            name(name)
         {
             // No-op.
         }
@@ -50,7 +50,7 @@ namespace ignite_test
     };
 
     /*
-     * Check if cluster node contain the attribute with value provided.
+     * Check if cluster node contains an attribute with value provided.
      */
     class HasAttrValue : public ignite::IgnitePredicate<ignite::cluster::ClusterNode>
     {

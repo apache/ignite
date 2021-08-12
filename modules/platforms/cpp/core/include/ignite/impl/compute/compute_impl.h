@@ -318,6 +318,7 @@ namespace ignite
                 template<typename A>
                 void WriteJavaTask(const std::string& taskName, const A* arg, binary::BinaryWriterImpl& writer) {
                     writer.WriteString(taskName);
+
                     // Keep binary flag
                     writer.WriteBool(false);
                     if (arg)
