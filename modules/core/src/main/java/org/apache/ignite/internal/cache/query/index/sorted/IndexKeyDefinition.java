@@ -35,7 +35,7 @@ public class IndexKeyDefinition {
     private final Order order;
 
     /** Precision for variable length key types. */
-    private final long precision;
+    private final int precision;
 
     /** */
     public IndexKeyDefinition(String name, int idxType, Order order, long precision) {
@@ -44,10 +44,10 @@ public class IndexKeyDefinition {
         this.name = name;
 
         // Workaround due to wrong type conversion (int -> long).
-        if (precision == Integer.MAX_VALUE)
+        if (precision >= Integer.MAX_VALUE)
             this.precision = -1;
         else
-            this.precision = precision;
+            this.precision = (int) precision;
     }
 
     /** */
@@ -66,7 +66,7 @@ public class IndexKeyDefinition {
     }
 
     /** */
-    public long precision() {
+    public int precision() {
         return precision;
     }
 

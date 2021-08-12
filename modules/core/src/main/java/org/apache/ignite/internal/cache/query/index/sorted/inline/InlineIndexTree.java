@@ -468,11 +468,11 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             int sizeInc = keyType.inlineSize();
 
             if (sizeInc < 0) {
-                long precision = keyDefs.get(i).precision();
+                int precision = keyDefs.get(i).precision();
 
                 if (precision > 0)
                     // 3 is required to store (type, length) of value.
-                    sizeInc = 3 + (int) precision;
+                    sizeInc = 3 + precision;
                 else
                     sizeInc = IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE;
             }
