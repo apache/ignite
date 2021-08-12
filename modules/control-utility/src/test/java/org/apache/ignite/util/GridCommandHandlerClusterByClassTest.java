@@ -914,7 +914,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             U.log(log, dumpWithConflicts);
 
             // Non-persistent caches do not have counter conflicts
-            assertContains(log, dumpWithConflicts, "found 3 conflict partitions: [counterConflicts=1, " +
+            assertContains(log, dumpWithConflicts, "found 4 conflict partitions: [counterConflicts=2, " +
                 "hashConflicts=2]");
         }
         else
