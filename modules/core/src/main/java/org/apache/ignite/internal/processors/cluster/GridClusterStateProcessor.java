@@ -254,7 +254,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private DistributePropertyListener<Object> makeEventListener(int evtType) {
         //noinspection CodeBlock2Expr
         return (name, oldVal, newVal) -> {
-            ctx.getStripedExecutorService().execute(() -> {
+            ctx.pools().getStripedExecutorService().execute(() -> {
                 if (ctx.event().isRecordable(evtType)) {
                     ctx.event().record(new BaselineConfigurationChangedEvent(
                         ctx.discovery().localNode(),
@@ -787,7 +787,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 if (newState.state() != state.state()) {
                     if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
-                        ctx.getStripedExecutorService().execute(
+                        ctx.pools().getStripedExecutorService().execute(
                             () -> ctx.event().record(new ClusterStateChangeStartedEvent(
                                 state.state(),
                                 newState.state(),
@@ -1578,7 +1578,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 fut.initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
                         // initFut is completed from discovery thread, process response from other thread.
-                        ctx.getSystemExecutorService().execute(new Runnable() {
+                        ctx.pools().getSystemExecutorService().execute(new Runnable() {
                             @Override public void run() {
                                 fut.onResponse(nodeId, msg);
                             }

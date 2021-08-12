@@ -19,8 +19,8 @@ package org.apache.ignite.internal.visor.diagnostic;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -119,7 +119,7 @@ public class VisorPageLocksTask
                     lockTrackerMgr.dumpLocksToLog();
 
                     result = "Page locks dump was printed to console " +
-                        ToStringDumpHelper.DATE_FMT.format(new Date(System.currentTimeMillis()));
+                        ToStringDumpHelper.DATE_FMT.format(Instant.now());
 
                     break;
                 case DUMP_FILE:

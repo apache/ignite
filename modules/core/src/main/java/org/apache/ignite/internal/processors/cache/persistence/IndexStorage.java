@@ -62,20 +62,20 @@ public interface IndexStorage {
      *
      * @param cacheId Cache ID.
      * @param idxName Index name.
-     * @param segment Segment.
-     * @return Root ID or -1 if no page was removed.
+     * @param segment Segment number.
+     * @return Root ID or {@code null} if no page was removed.
      * @throws IgniteCheckedException  If failed.
      */
-    public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment) throws IgniteCheckedException;
+    @Nullable RootPage dropCacheIndex(Integer cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * Deallocate index page and remove from tree.
      *
      * @param idxName Index name.
-     * @return Root ID or -1 if no page was removed.
+     * @return Root ID or {@code null} if no page was removed.
      * @throws IgniteCheckedException  If failed.
      */
-    public RootPage dropIndex(String idxName) throws IgniteCheckedException;
+    @Nullable RootPage dropIndex(String idxName) throws IgniteCheckedException;
 
     /**
      * Renaming the root page of the index tree.
