@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +40,17 @@ public class SnapshotHandlerResult<T> implements Serializable {
     /** Processing node. */
     private final ClusterNode node;
 
+    /**
+     * @param data Result of local processing.
+     * @param err Processing error.
+     * @param node Processing node.
+     */
+    public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err, ClusterNode node) {
+        this.data = data;
+        this.err = err;
+        this.node = node;
+    }
+
     /** @return Result of local processing. */
     public @Nullable T data() {
         return data;
@@ -54,31 +64,5 @@ public class SnapshotHandlerResult<T> implements Serializable {
     /** @return Processing node. */
     public ClusterNode node() {
         return node;
-    }
-
-    /**
-     * @param data Result of local processing.
-     * @param err Processing error.
-     * @param node Processing node.
-     */
-    private SnapshotHandlerResult(@Nullable T data, @Nullable Exception err, ClusterNode node) {
-        this.data = data;
-        this.err = err;
-        this.node = node;
-    }
-
-    /**
-     * Creates the result of the handler execution.
-     *
-     * @param hnd Snapshot handler.
-     * @param ctx Snapshot handler context.
-     */
-    protected static <S> SnapshotHandlerResult<S> create(SnapshotHandler<S> hnd, SnapshotHandlerContext ctx) {
-        try {
-            return new SnapshotHandlerResult<>(hnd.handle(ctx), null, ctx.localNode());
-        }
-        catch (Exception e) {
-            return new SnapshotHandlerResult<>(null, e, ctx.localNode());
-        }
     }
 }

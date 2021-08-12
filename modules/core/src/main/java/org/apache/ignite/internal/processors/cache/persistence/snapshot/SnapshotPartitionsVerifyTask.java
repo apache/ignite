@@ -19,13 +19,22 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2.reduce0;
@@ -40,13 +49,9 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * @param ignite Ignite instance.
-     */
+    /** Ignite instance. */
     @IgniteInstanceResource
-    public void ignite(IgniteEx ignite) {
-        this.ignite = ignite;
-    }
+    private IgniteEx ignite;
 
     /** {@inheritDoc} */
     @Override protected ComputeJob makeJob(String name, String constId, Collection<String> groups) {
@@ -56,5 +61,77 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     /** {@inheritDoc} */
     @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
         return new SnapshotPartitionsVerifyTaskResult(metas, reduce0(results));
+    }
+
+    /** Job that collects update counters of snapshot partitions on the node it executes. */
+    private static class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /** Injected logger. */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** Snapshot name to validate. */
+        private final String snpName;
+
+        /** Consistent snapshot metadata file name. */
+        private final String consId;
+
+        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
+        private final Collection<String> rqGrps;
+
+        /**
+         * @param snpName Snapshot name to validate.
+         * @param consId Consistent snapshot metadata file name.
+         * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
+         */
+        public VisorVerifySnapshotPartitionsJob(String snpName, String consId, Collection<String> rqGrps) {
+            this.snpName = snpName;
+            this.consId = consId;
+            this.rqGrps = rqGrps;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
+            GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
+
+            if (log.isInfoEnabled()) {
+                log.info("Verify snapshot partitions procedure has been initiated " +
+                    "[snpName=" + snpName + ", consId=" + consId + ']');
+            }
+
+            try {
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpName, consId);
+
+                return new SnapshotPartitionsVerifyHandler(cctx)
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode()));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
+
+            return snpName.equals(job.snpName) && consId.equals(job.consId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(snpName, consId);
+        }
     }
 }

@@ -21,20 +21,21 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -42,14 +43,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -63,68 +64,38 @@ import static org.apache.ignite.internal.processors.cache.persistence.partstate.
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
-/** Job that collects update counters of snapshot partitions on the node it executes. */
-class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+/**
+ * Default snapshot restore handler for checking snapshot partitions consistency.
+ */
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
+    /** Shared context. */
+    private final GridCacheSharedContext<?, ?> cctx;
 
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private IgniteEx ignite;
+    /** Logger. */
+    private final IgniteLogger log;
 
-    /** Injected logger. */
-    @LoggerResource
-    private IgniteLogger log;
+    /** @param cctx Shared context. */
+    public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
+        this.cctx = cctx;
 
-    /** Snapshot name to validate. */
-    private final String snpName;
-
-    /** Consistent snapshot metadata file name. */
-    private final String consId;
-
-    /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-    private final Collection<String> rqGrps;
-
-    /**
-     * @param snpName Snapshot name to validate.
-     * @param consId Consistent snapshot metadata file name.
-     * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
-     */
-    public VisorVerifySnapshotPartitionsJob(String snpName, String consId, Collection<String> rqGrps) {
-        this.snpName = snpName;
-        this.consId = consId;
-        this.rqGrps = rqGrps;
+        log = cctx.logger(getClass());
     }
 
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
-        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
-
-        if (log.isInfoEnabled()) {
-            log.info("Verify snapshot partitions procedure has been initiated " +
-                "[snpName=" + snpName + ", consId=" + consId + ']');
-        }
-
-        SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpName, consId);
-
-        try {
-            return checkPartitions(meta, rqGrps, cctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public SnapshotHandlerType type() {
+        return SnapshotHandlerType.RESTORE;
     }
 
-    static Map<PartitionKeyV2, PartitionHashRecordV2> checkPartitions(
-        SnapshotMetadata meta,
-        Collection<String> groups,
-        GridCacheSharedContext<?, ?> cctx
-    ) throws IgniteCheckedException {
-        IgniteLogger log = cctx.logger(VisorVerifySnapshotPartitionsJob.class);
-        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
+    /** {@inheritDoc} */
+    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+        SnapshotMetadata meta = opCtx.metadata();
 
-        Set<Integer> grps = F.isEmpty(groups) ? new HashSet<>(meta.partitions().keySet()) :
-            groups.stream().map(CU::cacheId).collect(Collectors.toSet());
+        Set<Integer> grps = F.isEmpty(opCtx.groups()) ? new HashSet<>(meta.partitions().keySet()) :
+            opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+
         Set<File> partFiles = new HashSet<>();
+
+        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
         for (File dir : snpMgr.snapshotCacheDirectories(meta.snapshotName(), meta.folderName())) {
             int grpId = CU.cacheId(cacheGroupName(dir));
@@ -251,20 +222,31 @@ class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
+    @Override public void complete(String name,
+        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+        Map<ClusterNode, Exception> errs = new HashMap<>();
 
-        if (o == null || getClass() != o.getClass())
-            return false;
+        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> res : results) {
+            if (res.error() != null) {
+                errs.put(res.node(), res.error());
 
-        VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
+                continue;
+            }
 
-        return snpName.equals(job.snpName) && consId.equals(job.consId);
-    }
+            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.data().entrySet())
+                clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+        }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(snpName, consId);
+        IdleVerifyResultV2 verifyResult = new IdleVerifyResultV2(clusterHashes, errs);
+
+        if (errs.isEmpty() && !verifyResult.hasConflicts())
+            return;
+
+        GridStringBuilder buf = new GridStringBuilder();
+
+        verifyResult.print(buf::a, true);
+
+        throw new IgniteCheckedException(buf.toString());
     }
 }

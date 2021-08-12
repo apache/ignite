@@ -48,7 +48,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
     /** {@inheritDoc} */
     @SuppressWarnings("rawtypes")
-    @Nullable @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
 
         for (ComputeJobResult res : results) {
@@ -68,11 +68,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         }
 
         try {
-            ignite.context().cache().context().snapshotMgr().handleClusterOperation(
-                SnapshotHandlerType.RESTORE,
-                F.first(F.first(metas.values())).snapshotName(),
-                clusterResults
-            );
+            ignite.context().cache().context().snapshotMgr().handlers().completeAll(
+                SnapshotHandlerType.RESTORE, F.first(F.first(metas.values())).snapshotName(), clusterResults);
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
@@ -80,7 +77,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         return new SnapshotPartitionsVerifyTaskResult(metas, null);
     }
 
-    static class SnapshotHandlerRestoreJob extends ComputeJobAdapter {
+    /** Invokes all {@link SnapshotHandlerType#RESTORE} handlers locally. */
+    private static class SnapshotHandlerRestoreJob extends ComputeJobAdapter {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -98,13 +96,13 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /** String representation of the consistent node ID. */
         private final String consistentId;
 
-        /** Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored. */
-        Collection<String> grps;
+        /** Cache group names. */
+        private final Collection<String> grps;
 
         /**
          * @param snpName Snapshot name.
          * @param consistentId String representation of the consistent node ID.
-         * @param grps Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
+         * @param grps Cache group names.
          */
         public SnapshotHandlerRestoreJob(String snpName, String consistentId, Collection<String> grps) {
             this.snpName = snpName;
@@ -114,11 +112,16 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
         /** {@inheritDoc} */
         @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consistentId);
-            SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode());
+            try {
+                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consistentId);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode());
 
-            return snpMgr.handleLocalOperation(SnapshotHandlerType.RESTORE, ctx);
+                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE, ctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

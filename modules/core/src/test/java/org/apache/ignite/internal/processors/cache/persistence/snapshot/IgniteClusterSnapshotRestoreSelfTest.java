@@ -116,7 +116,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         return valBuilder;
     }
 
-    /** @throws Exception If fails. */
+    /**
+     * Ensures that system partition verification task is invoked before restoring the snapshot.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testRestoreWithMissedPart() throws Exception {
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
@@ -128,12 +132,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertTrue(part0.toString(), part0.toFile().exists());
         assertTrue(part0.toFile().delete());
 
-        assertThrowsAnyCause(
-            log,
-            () -> ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(),
-            IgniteException.class,
-            "Snapshot data doesn't contain required cache group partition"
-        );
+        IgniteFuture<Void> fut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteException.class,
+            "Snapshot data doesn't contain required cache group partition");
 
         ensureCacheAbsent(dfltCacheCfg);
     }

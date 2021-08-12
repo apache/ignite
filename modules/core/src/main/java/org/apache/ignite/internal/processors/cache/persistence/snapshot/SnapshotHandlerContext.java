@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Snapshot handler context.
+ * Snapshot operation handler context.
  */
 public class SnapshotHandlerContext {
     /** Snapshot metadata. */

@@ -38,7 +38,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -52,16 +54,34 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     private final List<SnapshotHandler<?>> handlers = new ArrayList<>();
 
     /** Extensions plugin provider. */
-    private final SnapshotHandlerTestPluginProvider pluginProvider = new SnapshotHandlerTestPluginProvider(handlers);
+    private final PluginProvider<PluginConfiguration> pluginProvider = new AbstractTestPluginProvider() {
+        @Override public String name() {
+            return "SnapshotVerifier";
+        }
+
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            for (SnapshotHandler<?> hnd : handlers)
+                registry.registerExtension(SnapshotHandler.class, hnd);
+        }
+    };
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setPluginProviders(pluginProvider);
     }
 
-    /** @throws Exception If fails. */
+    /** {@inheritDoc} */
+    @Override protected Function<Integer, Object> valueBuilder() {
+        return Integer::new;
+    }
+
+    /**
+     * Test the basic snapshot metadata consistency using handlers.
+     *
+     * @throws Exception If fails.
+     */
     @Test
-    public void testClusterSnapshotHandler() throws Exception {
+    public void testClusterSnapshotHandlers() throws Exception {
         String expMsg = "Inconsistent data";
 
         AtomicReference<UUID> reqIdRef = new AtomicReference<>();
@@ -71,7 +91,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public UUID handle(SnapshotHandlerContext ctx) {
+            @Override public UUID invoke(SnapshotHandlerContext ctx) {
                 return ctx.metadata().requestId();
             }
 
@@ -89,7 +109,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return SnapshotHandlerType.RESTORE;
             }
 
-            @Override public UUID handle(SnapshotHandlerContext ctx) {
+            @Override public UUID invoke(SnapshotHandlerContext ctx) {
                 return ctx.metadata().requestId();
             }
 
@@ -120,26 +140,30 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     }
 
     /**
-     * @param newReqId New request ID.
+     * @param newReqId Request ID that will be stored on all nodes.
      * @throws Exception If failed.
      */
     private void changeMetadataRequestIdOnDisk(UUID newReqId) throws Exception {
         for (Ignite grid : G.allGrids()) {
             IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
             String constId = grid.cluster().localNode().consistentId().toString();
-            String metaFilename = U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT;
-            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(SNAPSHOT_NAME, constId);
-            File smf = new File(snpMgr.snapshotLocalDir(SNAPSHOT_NAME), metaFilename);
 
-            GridTestUtils.setFieldValue(meta, "rqId", newReqId);
+            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(SNAPSHOT_NAME, constId);
+            File smf = new File(snpMgr.snapshotLocalDir(SNAPSHOT_NAME), U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT);
 
             try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
-                U.marshal(MarshallerUtils.jdkMarshaller(grid.name()), meta, out);
+                GridTestUtils.setFieldValue(metadata, "rqId", newReqId);
+
+                U.marshal(MarshallerUtils.jdkMarshaller(grid.name()), metadata, out);
             }
         }
     }
 
-    /** @throws Exception If fails. */
+    /**
+     * Test for failures of different types of handlers.
+     *
+     * @throws Exception If fails.
+     */
     @Test
     public void testClusterSnapshotHandlerFailure() throws Exception {
         String expMsg = "Test verification exception message.";
@@ -152,7 +176,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public Void handle(SnapshotHandlerContext ctx) throws IgniteCheckedException {
+            @Override public Void invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException {
                 if (failCreateFlag.get())
                     throw new IgniteCheckedException(expMsg);
 
@@ -165,7 +189,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return SnapshotHandlerType.RESTORE;
             }
 
-            @Override public Void handle(SnapshotHandlerContext ctx) throws IgniteCheckedException {
+            @Override public Void invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException {
                 if (failRestoreFlag.get())
                     throw new IgniteCheckedException(expMsg);
 
@@ -196,32 +220,5 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-    }
-
-    /** Test plugin provider. */
-    private static class SnapshotHandlerTestPluginProvider extends AbstractTestPluginProvider {
-        /** Custom snapshot handlers. */
-        private final List<SnapshotHandler<?>> handlers;
-
-        /** @param handlers Snapshot handlers. */
-        public SnapshotHandlerTestPluginProvider(List<SnapshotHandler<?>> handlers) {
-            this.handlers = handlers;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "SnapshotVerifier";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            for (SnapshotHandler<?> hnd : handlers)
-                registry.registerExtension(SnapshotHandler.class, hnd);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Function<Integer, Object> valueBuilder() {
-        return Integer::new;
     }
 }

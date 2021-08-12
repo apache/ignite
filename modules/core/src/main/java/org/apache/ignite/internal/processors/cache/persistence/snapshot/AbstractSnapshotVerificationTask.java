@@ -28,17 +28,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The task for checking the consistency of snapshots in the cluster.
- *
- * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
 public abstract class AbstractSnapshotVerificationTask extends
     ComputeTaskAdapter<SnapshotPartitionsVerifyTaskArg, SnapshotPartitionsVerifyTaskResult> {
@@ -52,12 +48,11 @@ public abstract class AbstractSnapshotVerificationTask extends
     @IgniteInstanceResource
     protected IgniteEx ignite;
 
-    /** Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored. */
+    /** Cache group names. */
     protected Collection<String> grps;
 
     /** {@inheritDoc} */
-    @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        SnapshotPartitionsVerifyTaskArg arg) throws IgniteException {
+    @Override public Map<ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, SnapshotPartitionsVerifyTaskArg arg) {
         grps = arg.cacheGroupNames();
 
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = arg.clusterMetadata();

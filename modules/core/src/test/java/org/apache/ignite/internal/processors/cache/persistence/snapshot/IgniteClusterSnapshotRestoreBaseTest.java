@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -40,13 +39,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnapshotSelfTest {
     /** Cache value builder. */
     protected abstract Function<Integer, Object> valueBuilder();
-
-    protected final int PARTS_NUMBER = GridTestUtils.SF.apply(512);
-
-    /** {@inheritDoc} */
-    @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
-        return super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, PARTS_NUMBER));
-    }
 
     /**
      * @param nodesCnt Nodes count.

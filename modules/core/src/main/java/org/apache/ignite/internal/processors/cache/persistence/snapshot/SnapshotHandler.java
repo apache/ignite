@@ -39,7 +39,7 @@ public interface SnapshotHandler<T> extends Extension {
      * @return Result of local processing.
      * @throws IgniteCheckedException If failed.
      */
-    public @Nullable T handle(SnapshotHandlerContext ctx) throws IgniteCheckedException;
+    public @Nullable T invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException;
 
     /**
      * Processing of results from all nodes.
