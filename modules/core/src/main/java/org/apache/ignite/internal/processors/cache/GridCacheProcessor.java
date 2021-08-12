@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -5538,41 +5539,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (int i = 0; i < poolSize; i++)
                 partIds.add(new LinkedList<>());
 
-            int cntr = 0;
+            int cntr = forGroups.stream().mapToInt(grpCtx -> grpCtx.affinity().partitions()).sum();;
 
             // Group id -> completed partitions counter.
             Map<Integer, AtomicInteger> grps = new HashMap<>();
 
-            for (CacheGroupContext ctx : forGroups) {
-                grps.put(ctx.groupId(), new AtomicInteger());
-
-                for (int i = 0; i < ctx.affinity().partitions(); i++)
-                    partIds.get(cntr++ % poolSize).add(new GroupPartitionId(ctx.groupId(), i));
-            }
-
             CountDownLatch completionLatch = new CountDownLatch(cntr);
+
+            ThreadLocal<SortedSet<T3<Long, Long, GroupPartitionId>>> localSets =
+                ThreadLocal.withInitial(() -> new ConcurrentSkipListSet<>(processedPartitionComparator()));
 
             final int topPartRefLimit = 5;
 
-            for (int i = 0; i < poolSize; i++) {
-                final int batchIdx = i;
+            for (CacheGroupContext grpCtx : forGroups) {
+                grps.put(grpCtx.groupId(), new AtomicInteger());
 
-                sysPool.execute(() -> {
-                    Queue<GroupPartitionId> batch = partIds.get(batchIdx);
+                for (int i = 0; i < grpCtx.affinity().partitions(); i++) {
+                    final int partId = i;
 
-                    SortedSet<T3<Long, Long, GroupPartitionId>> top =
-                        new ConcurrentSkipListSet<>(processedPartitionComparator());
-
-                    GroupPartitionId grpPartId;
-
-                    while ((grpPartId = batch.poll()) != null) {
-                        CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpPartId.getGroupId());
+                    sysPool.execute(() -> {
+                        GroupPartitionId grpPartId = new GroupPartitionId(grpCtx.groupId(), partId);
 
                         try {
                             long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(),
                                 partStates.get(grpPartId));
 
                             if (log.isInfoEnabled()) {
+                                SortedSet<T3<Long, Long, GroupPartitionId>> top = localSets.get();
+
                                 top.add(new T3<>(time, U.currentTimeMillis(), grpPartId));
 
                                 trimToSize(top, topPartRefLimit);
@@ -5599,7 +5593,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (completedCntr.incrementAndGet() == grpCtx.affinity().partitions())
                                 grpCtx.offheap().confirmPartitionStatesRestored();
 
-                            if (log.isInfoEnabled()) {
+                            /*if (log.isInfoEnabled()) {
                                 topPartRef.updateAndGet(top0 -> {
                                     if (top0 == null)
                                         return top;
@@ -5612,10 +5606,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                     return top;
                                 });
-                            }
+                            }*/
                         }
-                    }
-                });
+                    });
+                }
             }
 
             boolean printTop = false;
