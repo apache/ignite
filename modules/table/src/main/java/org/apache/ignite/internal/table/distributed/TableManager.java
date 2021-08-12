@@ -487,12 +487,12 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 .exceptionally(e -> {
                     LOG.error("Failed to upgrade schema for a table [name=" + tblName + ", id=" + tblId + ']', e);
 
-                    onEvent(TableEvent.ALTER, new TableEventParameters(tblId, tblName, tbl), e);
+                    onEvent(TableEvent.ALTER, new TableEventParameters(tblId, tblName), e);
 
                     return null;
                 })
                 .thenRun(() ->
-                    onEvent(TableEvent.ALTER, new TableEventParameters(tblId, tblName, tbl), null)
+                    onEvent(TableEvent.ALTER, new TableEventParameters(tblId, tblName), null)
                 );
 
             schemaMgr.listen(SchemaEvent.CHANGED, new EventListener<>() {

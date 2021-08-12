@@ -27,6 +27,7 @@ import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Ignition interface tests.
  */
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-14581")
 class SchemaChangeTableViewTest extends AbstractSchemaChangeTest {
     /**
      * Check add a new column to table schema.
