@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -51,6 +52,9 @@ public class StoredCacheData implements Serializable {
 
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheConfigurationEnrichment;
+
+    /** Encryption key. {@code Null} if encryption is disabled. */
+    private GroupKeyEncrypted grpKeyEncrypted;
 
     /**
      * Constructor.
@@ -116,6 +120,20 @@ public class StoredCacheData implements Serializable {
         this.sql = sql;
 
         return this;
+    }
+
+    /**
+     * @return Chipered encryption key for this cache or cache group. {@code Null} if not encrypted.
+     */
+    public GroupKeyEncrypted grpKeyEncrypted() {
+        return grpKeyEncrypted;
+    }
+
+    /**
+     * @param grpKeyEncrypted Chipered encryption key for this cache or cache group.
+     */
+    public void grpKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
+        this.grpKeyEncrypted = grpKeyEncrypted;
     }
 
     /**

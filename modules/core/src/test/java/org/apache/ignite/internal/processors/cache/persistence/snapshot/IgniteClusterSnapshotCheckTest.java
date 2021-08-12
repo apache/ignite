@@ -118,7 +118,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         startClientGrid();
-        
+
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
 
@@ -242,8 +242,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
+        int grpId = CU.cacheId(dfltCacheCfg.getName());
+
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
+            .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
             .createPageStore(getTypeByPartId(PART_ID),
                 () -> part0,
                 val -> {
@@ -616,8 +618,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
 
+        int grpId = CU.cacheId(ccfg.getName());
+
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(CU.cacheId(ccfg.getName()), false)
+            .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
             .createPageStore(getTypeByPartId(partId),
                 () -> part0,
                 val -> {

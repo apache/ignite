@@ -46,12 +46,10 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -60,8 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -93,9 +89,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Default shared cache group name. */
     private static final String SHARED_GRP = "shared";
 
-    /** Cache value builder. */
-    private Function<Integer, Object> valBuilder = String::valueOf;
-
     /** Reset consistent ID flag. */
     private boolean resetConsistentId;
 
@@ -107,11 +100,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             cfg.setConsistentId(null);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Function<Integer, Object> valueBuilder() {
-        return valBuilder;
     }
 
     /** @throws Exception If failed. */
@@ -136,7 +124,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         CacheConfiguration<Integer, Object> cacheCfg2 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder,
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
@@ -319,7 +307,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -358,7 +346,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         CacheConfiguration<Integer, Object> cacheCfg2 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, cacheCfg1, cacheCfg2);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), cacheCfg1, cacheCfg2);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -710,36 +698,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         grid(nodesCnt - 1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName)).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(cacheName), CACHE_KEYS_RANGE);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        String cacheName = ccfg.getName();
-
-        for (Ignite ignite : G.allGrids()) {
-            GridKernalContext kctx = ((IgniteEx)ignite).context();
-
-            if (kctx.clientNode())
-                continue;
-
-            CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
-
-            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
-
-            GridTestUtils.waitForCondition(
-                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
-                TIMEOUT);
-
-            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
-
-            String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
-                ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
-
-            assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
-        }
     }
 
     /**

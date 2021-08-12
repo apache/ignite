@@ -21,6 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +46,10 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -67,6 +74,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
@@ -202,15 +210,25 @@ public class SnapshotPartitionsVerifyTask
             }
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
-            Set<Integer> grps = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
+            Set<Integer> grpFilter = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
                 rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
+            Map<Integer, File> grpDirs = new HashMap<>();
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
-                int grpId = CU.cacheId(cacheGroupName(dir));
+                String grpName = cacheGroupName(dir);
+                int grpId = CU.cacheId(grpName);
 
-                if (!grps.remove(grpId))
+                if (!grpFilter.remove(grpId))
                     continue;
+
+                if (meta.isCacheGroupEncrypted(grpId) && meta.masterKeyDigest() == null) {
+                    throw new IgniteException("Snapshot '" + snpName + "' doesn't contain master key digest while it holds encrypted " +
+                        "cache group " + grpId + ". Master key digest is required to make sure encrypted caches in the snapshot were " +
+                        "encrypted with same master key. Meta=[" + meta + "].");
+                }
+
+                grpDirs.put(grpId, dir);
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
@@ -230,15 +248,19 @@ public class SnapshotPartitionsVerifyTask
                 }
             }
 
-            if (!grps.isEmpty()) {
+            if (!grpFilter.isEmpty()) {
                 throw new IgniteException("Snapshot data doesn't contain required cache groups " +
-                    "[grps=" + grps + ", snpName=" + snpName + ", consId=" + consId +
+                    "[grps=" + grpFilter + ", snpName=" + snpName + ", consId=" + consId +
                     ", meta=" + meta + ']');
             }
 
             Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
+
+            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+            EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncrKeyProvider(ignite.context(), grpDirs);
 
             try {
                 GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
@@ -255,13 +277,9 @@ public class SnapshotPartitionsVerifyTask
                             int grpId = CU.cacheId(grpName);
                             int partId = partId(part.getName());
 
-                            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
-                                .createPageStore(getTypeByPartId(partId),
-                                    part::toPath,
-                                    val -> {
-                                    })
+                            try (FilePageStore pageStore =
+                                     (FilePageStore)storeMgr.getPageStoreFactory(grpId, meta.isCacheGroupEncrypted(grpId) ?
+                                         snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
                             ) {
                                 if (partId == INDEX_PARTITION) {
                                     checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
@@ -351,6 +369,68 @@ public class SnapshotPartitionsVerifyTask
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(snpName, consId);
+        }
+    }
+
+    /**
+     * Provides encryption keys stored within snapshot.
+     */
+    private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
+        /** Kernal context */
+        private GridKernalContext ctx;
+
+        /** Data dirs of snapshot's caches by group id. */
+        private Map<Integer, File> grpDirs;
+
+        /** Encryption keys loaded from snapshot. */
+        private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
+
+        /**
+         * Constructor.
+         *
+         * @param ctx     Kernal context.
+         * @param grpDirs Data dirictories of cache groups by id.
+         */
+        private SnapshotEncrKeyProvider(GridKernalContext ctx, Map<Integer, File> grpDirs) {
+            this.ctx = ctx;
+            this.grpDirs = grpDirs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable GroupKey getActiveKey(int grpId) {
+            throw new UnsupportedOperationException("Id of active group key is unknown.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
+            return decryptedKeys.computeIfAbsent(grpId, gid -> {
+                GroupKey grpKey = null;
+
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(grpDirs.get(grpId).toPath(),
+                    p -> Files.isRegularFile(p) && p.toString().endsWith(CACHE_DATA_FILENAME))) {
+                    for (Path p : ds) {
+                        StoredCacheData cacheData = ((FilePageStoreManager)ctx.cache().context().pageStore()).readCacheData(p.toFile());
+
+                        GroupKeyEncrypted grpKeyEncrypted = cacheData.grpKeyEncrypted();
+
+                        assert grpKeyEncrypted != null;
+
+                        if (grpKey == null)
+                            grpKey = new GroupKey(grpKeyEncrypted.id(), ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
+                        else {
+                            assert grpKey.equals(new GroupKey(grpKeyEncrypted.id(),
+                                ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
+                        }
+                    }
+
+                    assert grpKey != null;
+
+                    return grpKey;
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Unable to extract ciphered encryption key of cache group " + gid + '.', e);
+                }
+            });
         }
     }
 }

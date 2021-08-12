@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -457,13 +458,14 @@ public class SnapshotRestoreProcess {
     /**
      * Ensures that a cache with the specified name does not exist locally.
      *
-     * @param name Cache name.
+     * @param cacheCfg Cache configuration.
      */
-    private void ensureCacheAbsent(String name) {
-        int id = CU.cacheId(name);
+    private void ensureCacheDataAbsent(CacheConfiguration<?, ?> cacheCfg) {
+        int id = CU.cacheGroupId(cacheCfg);
 
-        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null) {
-            throw new IgniteIllegalStateException("Cache \"" + name +
+        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null ||
+            ctx.encryption().getActiveKey(id) != null) {
+            throw new IgniteIllegalStateException("Cache \"" + cacheCfg.getName() +
                 "\" should be destroyed manually before perform restore operation.");
         }
     }
@@ -484,6 +486,11 @@ public class SnapshotRestoreProcess {
 
             if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
+
+            if (ctx.encryption().isMasterKeyChangeInProgress() || ctx.encryption().reencryptionInProgress()) {
+                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing or " +
+                    "caches re-encryption process is not finished yet."));
+            }
 
             for (UUID nodeId : req.nodes()) {
                 ClusterNode node = ctx.discovery().node(nodeId);
@@ -508,13 +515,7 @@ public class SnapshotRestoreProcess {
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();
 
-            // Ensure that shared cache groups has no conflicts.
-            for (StoredCacheData cfg : opCtx0.cfgs.values()) {
-                ensureCacheAbsent(cfg.config().getName());
-
-                if (!F.isEmpty(cfg.config().getGroupName()))
-                    ensureCacheAbsent(cfg.config().getGroupName());
-            }
+            boolean onLocNode = ctx.localNodeId().equals(req.operationalNodeId());
 
             if (log.isInfoEnabled()) {
                 log.info("Starting local snapshot restore operation" +
@@ -523,16 +524,20 @@ public class SnapshotRestoreProcess {
                     ", cache(s)=" + F.viewReadOnly(opCtx0.cfgs.values(), data -> data.config().getName()) + ']');
             }
 
+            if (ctx.isStopping())
+                throw new NodeStoppingException("Node is stopping.");
+
+            // Ensure that shared cache groups has no conflicts.
+            for (StoredCacheData cfg : opCtx0.cfgs.values())
+                ensureCacheDataAbsent(cfg.config());
+
             Consumer<Throwable> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
             BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
-            if (ctx.isStopping())
-                throw new NodeStoppingException("Node is stopping.");
-
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
+            restoreAsync(opCtx0, onLocNode, stopChecker, errHnd)
                 .thenAccept(res -> {
                     try {
                         Throwable err = opCtx.err.get();
@@ -576,16 +581,14 @@ public class SnapshotRestoreProcess {
     /**
      * Copy partition files and update binary metadata.
      *
-     * @param snpName Snapshot name.
-     * @param dirs Cache directories to restore from the snapshot.
+     * @param snpCtx Snapshot restore context.
      * @param updateMeta Update binary metadata flag.
      * @param stopChecker Process interrupt checker.
      * @param errHnd Error handler.
      * @throws IgniteCheckedException If failed.
      */
     private CompletableFuture<Void> restoreAsync(
-        String snpName,
-        Collection<File> dirs,
+        SnapshotRestoreContext snpCtx,
         boolean updateMeta,
         BooleanSupplier stopChecker,
         Consumer<Throwable> errHnd
@@ -596,7 +599,7 @@ public class SnapshotRestoreProcess {
         List<CompletableFuture<Void>> futs = new ArrayList<>();
 
         if (updateMeta) {
-            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(), pdsFolderName);
+            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpCtx.snpName).getAbsolutePath(), pdsFolderName);
 
             futs.add(CompletableFuture.runAsync(() -> {
                 try {
@@ -608,9 +611,9 @@ public class SnapshotRestoreProcess {
             }, snapshotMgr.snapshotExecutorService()));
         }
 
-        for (File cacheDir : dirs) {
+        for (File cacheDir : snpCtx.dirs) {
             File tmpCacheDir = formatTmpDirName(cacheDir);
-            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpName),
+            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpCtx.snpName),
                 Paths.get(databaseRelativePath(pdsFolderName), cacheDir.getName()).toString());
 
             assert snpCacheDir.exists() : "node=" + ctx.localNodeId() + ", dir=" + snpCacheDir;
@@ -628,7 +631,7 @@ public class SnapshotRestoreProcess {
 
                         if (log.isDebugEnabled()) {
                             log.debug("Copying file from the snapshot " +
-                                "[snapshot=" + snpName +
+                                "[snapshot=" + snpCtx.snpName +
                                 ", src=" + snpFile +
                                 ", target=" + target + "]");
                         }

@@ -83,6 +83,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
@@ -121,6 +122,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -3778,43 +3780,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
             (grpKeys, masterKeyDigest) -> {
-            List<DynamicCacheChangeRequest> srvReqs = null;
-            Map<String, DynamicCacheChangeRequest> clientReqs = null;
+                List<DynamicCacheChangeRequest> srvReqs = null;
+                Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
-            Iterator<byte[]> grpKeysIter = grpKeys.iterator();
+                Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
-            for (StoredCacheData ccfg : storedCacheDataList) {
-                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext();
+                for (StoredCacheData ccfg : storedCacheDataList) {
+                    assert ccfg.grpKeyEncrypted() == null || ccfg.config().isEncryptionEnabled();
 
-                DynamicCacheChangeRequest req = prepareCacheChangeRequest(
-                    ccfg.config(),
-                    ccfg.config().getName(),
-                    null,
-                    resolveCacheType(ccfg.config()),
-                    ccfg.sql(),
-                    failIfExists,
-                    true,
-                    restartId,
-                    disabledAfterStart,
-                    ccfg.queryEntities(),
-                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
+                    // Reuse encription key if passed for this group. Take next generated otherwise.
+                    GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ? (ccfg.grpKeyEncrypted() != null ?
+                        ccfg.grpKeyEncrypted() : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
 
-                if (req != null) {
-                    if (req.clientStartOnly()) {
-                        if (clientReqs == null)
-                            clientReqs = U.newLinkedHashMap(storedCacheDataList.size());
+                    DynamicCacheChangeRequest req = prepareCacheChangeRequest(
+                        ccfg.config(),
+                        ccfg.config().getName(),
+                        null,
+                        resolveCacheType(ccfg.config()),
+                        ccfg.sql(),
+                        failIfExists,
+                        true,
+                        restartId,
+                        disabledAfterStart,
+                        ccfg.queryEntities(),
+                        encrKey != null ? encrKey.key() : null,
+                        encrKey != null ? masterKeyDigest : null);
 
-                        clientReqs.put(req.cacheName(), req);
-                    }
-                    else {
-                        if (srvReqs == null)
-                            srvReqs = new ArrayList<>(storedCacheDataList.size());
+                    if (encrKey != null)
+                        req.encryptionKeyId(encrKey.id());
 
-                        srvReqs.add(req);
+                    if (req != null) {
+                        if (req.clientStartOnly()) {
+                            if (clientReqs == null)
+                                clientReqs = U.newLinkedHashMap(storedCacheDataList.size());
+
+                            clientReqs.put(req.cacheName(), req);
+                        }
+                        else {
+                            if (srvReqs == null)
+                                srvReqs = new ArrayList<>(storedCacheDataList.size());
+
+                            srvReqs.add(req);
+                        }
                     }
                 }
-            }
 
             if (srvReqs == null && clientReqs == null)
                 return new GridFinishedFuture<>();
@@ -3841,7 +3850,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         int encGrpCnt = 0;
 
         for (StoredCacheData ccfg : storedCacheDataList) {
-            if (ccfg.config().isEncryptionEnabled())
+            if (ccfg.config().isEncryptionEnabled() && ccfg.grpKeyEncrypted() == null)
                 encGrpCnt++;
         }
 
@@ -4033,6 +4042,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return CacheType.DATA_STRUCTURES;
         else
             return CacheType.USER;
+    }
+
+    /**
+     * @return {@code True} if cache group {@code cacheGrpId} is encrypted. {@code False} otherwise.
+     */
+    public boolean isEncrypted(int cacheGrpId) {
+        return cacheGrpId != MetaStorage.METASTORAGE_CACHE_ID && cacheGroup(cacheGrpId).config().isEncryptionEnabled();
     }
 
     /**

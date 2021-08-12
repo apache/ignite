@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot metadata file.
@@ -58,6 +60,9 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final List<Integer> grpIds;
 
+    /** Encrypted group ids. */
+    private Set<Integer> encrGrpIds;
+
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
     private final Set<String> bltNodes;
@@ -68,6 +73,9 @@ public class SnapshotMetadata implements Serializable {
      */
     @GridToStringInclude
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
+
+    /** Master key digest for encrypted caches. */
+    private byte[] masterKeyDigest;
 
     /**
      * @param rqId Unique snapshot request id.
@@ -168,6 +176,54 @@ public class SnapshotMetadata implements Serializable {
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
+    }
+
+    /**
+     * @param grpId Cache id or cache group id.
+     * @return {@code True} if cache group is encrypted. {@code False} otherwise.
+     */
+    public boolean isCacheGroupEncrypted(int grpId) {
+        Set<Integer> encrGrpIds = this.encrGrpIds;
+
+        return encrGrpIds != null && encrGrpIds.contains(grpId);
+    }
+
+    /**
+     * @param masterKeyDigest Master key digest for encrypted caches.
+     * @return this meta.
+     */
+    public SnapshotMetadata masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest == null ? null : masterKeyDigest.clone();
+
+        return this;
+    }
+
+    /**
+     * @return Master key digest for encrypted caches.
+     */
+    public byte[] masterKeyDigest() {
+        byte[] masterKeyDigest = this.masterKeyDigest;
+
+        return masterKeyDigest == null ? null : masterKeyDigest.clone();
+    }
+
+    /**
+     * Stores ids of encrypted cache groups.
+     *
+     * @return this meta.
+     */
+    public SnapshotMetadata encrGrpIds(Collection<Integer> encrGrpIds) {
+        // Might be null even if final due to deserialization of previous version the object;
+        if (this.encrGrpIds == null) {
+            synchronized (this) {
+                if (this.encrGrpIds == null)
+                    this.encrGrpIds = new HashSet<>();
+            }
+        }
+
+        this.encrGrpIds.addAll(encrGrpIds);
+
+        return this;
     }
 
     /** {@inheritDoc} */
