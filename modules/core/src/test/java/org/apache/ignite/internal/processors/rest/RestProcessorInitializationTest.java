@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -73,10 +72,10 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
 
         GridRestResponse res = rest.handleAsync0(req).get();
 
-        Map.Entry<GridRestRequest, IgniteInternalFuture<GridRestResponse>> entry = rest.getMap().entrySet().iterator().next();
+        IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> entry = rest.getTuple();
 
-        assertEquals(req, entry.getKey());
-        assertEquals(res, entry.getValue().get());
+        assertEquals(req, entry.get1());
+        assertEquals(res, entry.get2().get());
     }
 
     /**
@@ -102,7 +101,7 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
      */
     private static class TestGridRestProcessorImpl extends GridRestProcessor {
         /** */
-        private final Map<GridRestRequest, IgniteInternalFuture<GridRestResponse>> map = new ConcurrentHashMap<>();
+        private final IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> tuple = new IgniteBiTuple<>();
 
         /**
          * @param ctx Kernal context.
@@ -115,14 +114,14 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
         @Override protected IgniteInternalFuture<GridRestResponse> handleAsync0(GridRestRequest req) {
             IgniteInternalFuture<GridRestResponse> fut = super.handleAsync0(req);
 
-            fut.listen(f -> map.put(req, f));
+            fut.listen(f -> tuple.set(req, f));
 
             return fut;
         }
 
         /** */
-        public Map<GridRestRequest, IgniteInternalFuture<GridRestResponse>> getMap() {
-            return map;
+        public IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> getTuple() {
+            return tuple;
         }
     }
 }
