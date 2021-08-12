@@ -25,7 +25,12 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/promise.h>
+
+#include <ignite/cluster/cluster_node.h>
+
 #include <ignite/impl/interop/interop_target.h>
+#include <ignite/impl/cluster/cluster_group_impl.h>
+#include <ignite/impl/compute/java_compute_task_holder.h>
 #include <ignite/impl/compute/single_job_compute_task_holder.h>
 #include <ignite/impl/compute/multiple_job_compute_task_holder.h>
 #include <ignite/impl/compute/cancelable_impl.h>
@@ -51,6 +56,10 @@ namespace ignite
                     {
                         BROADCAST = 2,
 
+                        EXEC = 3,
+
+                        EXEC_ASYNC = 4,
+
                         UNICAST = 5,
 
                         AFFINITY_CALL = 13,
@@ -63,9 +72,10 @@ namespace ignite
                  * Constructor.
                  *
                  * @param env Environment.
-                 * @param javaRef Java object reference.
+                 * @param clusterGroup Cluster group for the compute.
                  */
-                ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env,
+                            cluster::SP_ClusterGroupImpl clusterGroup);
 
                 /**
                  * Executes given job asynchronously on the node where data for
@@ -117,7 +127,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously calls provided ComputeFunc on a node within
+                 * Asynchronously calls provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
                  * @tparam F Compute function type. Should implement
@@ -139,7 +149,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously runs provided ComputeFunc on a node within
+                 * Asynchronously runs provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
                  * @tparam F Compute action type. Should implement
@@ -158,7 +168,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously broadcasts provided ComputeFunc to all nodes
+                 * Asynchronously broadcasts provided ComputeFunc to all nodes
                  * in the underlying cluster group.
                  *
                  * @tparam F Compute function type. Should implement
@@ -180,7 +190,7 @@ namespace ignite
                 }
 
                 /**
-                 * Asyncronuously broadcasts provided ComputeFunc to all nodes
+                 * Asynchronously broadcasts provided ComputeFunc to all nodes
                  * in the underlying cluster group.
                  *
                  * @tparam F Compute function type. Should implement
@@ -198,7 +208,215 @@ namespace ignite
                     return PerformTask<void, F, JobType, TaskType>(Operation::BROADCAST, func);
                 }
 
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                R ExecuteJavaTask(const std::string& taskName, const A& taskArg)
+                {
+                    return PerformJavaTask<R, A>(taskName, &taskArg);
+                }
+
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 */
+                template<typename R>
+                R ExecuteJavaTask(const std::string& taskName)
+                {
+                    return PerformJavaTask<R, int>(taskName, 0);
+                }
+
+                /**
+                 * Asynchronously executes given Java task on the grid projection. If task for given name has not been
+                 * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Future containing a result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                Future<R> ExecuteJavaTaskAsync(const std::string& taskName, const A& taskArg)
+                {
+                    return PerformJavaTaskAsync<R, A>(taskName, &taskArg);
+                }
+
+                /**
+                 * Asynchronously executes given Java task on the grid projection. If task for given name has not been
+                 * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @return Future containing a result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 */
+                template<typename R>
+                Future<R> ExecuteJavaTaskAsync(const std::string& taskName)
+                {
+                    return PerformJavaTaskAsync<R, int>(taskName, 0);
+                }
+
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
+
+                struct FutureType
+                {
+                    enum Type
+                    {
+                        F_BYTE = 1,
+                        F_BOOL = 2,
+                        F_SHORT = 3,
+                        F_CHAR = 4,
+                        F_INT = 5,
+                        F_FLOAT = 6,
+                        F_LONG = 7,
+                        F_DOUBLE = 8,
+                        F_OBJECT = 9,
+                    };
+                };
+
+                template<typename T> struct FutureTypeForType { static const int32_t value = FutureType::F_OBJECT; };
+
+                /**
+                 * @return True if projection for the compute contains predicate.
+                 */
+                bool ProjectionContainsPredicate() const;
+
+                /**
+                 * @return Nodes for the compute.
+                 */
+                std::vector<ignite::cluster::ClusterNode> GetNodes();
+
+                /**
+                 * Write Java task using provided writer. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @param writer Binary writer.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename A>
+                void WriteJavaTask(const std::string& taskName, const A* arg, binary::BinaryWriterImpl& writer) {
+                    writer.WriteString(taskName);
+
+                    // Keep binary flag
+                    writer.WriteBool(false);
+                    if (arg)
+                        writer.WriteObject<A>(*arg);
+                    else
+                        writer.WriteNull();
+
+                    if (!ProjectionContainsPredicate())
+                        writer.WriteBool(false);
+                    else
+                    {
+                        typedef std::vector<ignite::cluster::ClusterNode> ClusterNodes;
+                        ClusterNodes nodes = GetNodes();
+
+                        writer.WriteBool(true);
+                        writer.WriteInt32(static_cast<int32_t>(nodes.size()));
+                        for (ClusterNodes::iterator it = nodes.begin(); it != nodes.end(); ++it)
+                            writer.WriteGuid(it->GetId());
+                    }
+                }
+
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                R PerformJavaTask(const std::string& taskName, const A* arg)
+                {
+                    using namespace common::concurrent;
+
+                    SharedPointer<interop::InteropMemory> memIn = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(memIn.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    WriteJavaTask(taskName, arg, writer);
+
+                    out.Synchronize();
+
+                    SharedPointer<interop::InteropMemory> memOut = GetEnvironment().AllocateMemory();
+
+                    IgniteError err;
+                    InStreamOutStream(Operation::EXEC, *memIn.Get(), *memOut.Get(), err);
+                    IgniteError::ThrowIfNeeded(err);
+
+                    interop::InteropInputStream inStream(memOut.Get());
+                    binary::BinaryReaderImpl reader(&inStream);
+
+                    return reader.ReadObject<R>();
+                }
+
+                /**
+                 * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+                 * then 'taskName' will be used as task class name to auto-deploy the task.
+                 *
+                 * @param taskName Java task name.
+                 * @param arg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                Future<R> PerformJavaTaskAsync(const std::string& taskName, const A* arg)
+                {
+                    typedef JavaComputeTaskHolder<R> TaskHolder;
+                    common::concurrent::SharedPointer<TaskHolder> task(new TaskHolder());
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    WriteJavaTask(taskName, arg, writer);
+
+                    writer.WriteInt64(taskHandle);
+                    writer.WriteInt32(FutureTypeForType<R>::value);
+
+                    out.Synchronize();
+
+                    IgniteError err;
+                    jobject target = InStreamOutObject(Operation::EXEC_ASYNC, *mem.Get(), err);
+                    IgniteError::ThrowIfNeeded(err);
+
+                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+
+                    common::Promise<R>& promise = task.Get()->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
+                }
+
                 /**
                  * Perform job.
                  *
@@ -328,7 +546,40 @@ namespace ignite
                     return promise.GetFuture();
                 }
 
-                IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
+                /** Cluster group */
+                cluster::SP_ClusterGroupImpl clusterGroup;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int8_t> {
+                static const int32_t value = FutureType::F_BYTE;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<bool> {
+                static const int32_t value = FutureType::F_BOOL;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int16_t> {
+                static const int32_t value = FutureType::F_SHORT;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<uint16_t> {
+                static const int32_t value = FutureType::F_CHAR;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int32_t> {
+                static const int32_t value = FutureType::F_INT;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<int64_t> {
+                static const int32_t value = FutureType::F_LONG;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<float> {
+                static const int32_t value = FutureType::F_FLOAT;
+            };
+
+            template<> struct IGNITE_IMPORT_EXPORT ComputeImpl::FutureTypeForType<double> {
+                static const int32_t value = FutureType::F_DOUBLE;
             };
         }
     }
