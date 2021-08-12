@@ -25,12 +25,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.transport.api.Transport;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -53,8 +55,10 @@ import reactor.core.publisher.Mono;
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -217,6 +221,44 @@ class ITScaleCubeNetworkMessagingTest {
             .get(3, TimeUnit.SECONDS);
 
         assertThat(actualResponseMessage.msg(), is(responseMessage.msg()));
+    }
+
+    /**
+     * Tests that if the network component is stopped while waiting for a response to an "invoke" call,
+     * the corresponding future completes exceptionally.
+     */
+    @Test
+    public void testInvokeDuringStop() throws InterruptedException {
+        testCluster = new Cluster(2);
+        testCluster.startAwait();
+
+        ClusterService member0 = testCluster.members.get(0);
+        ClusterService member1 = testCluster.members.get(1);
+
+        // we don't register a message listener on the receiving side, so all "invoke"s should timeout
+
+        // perform two invokes to test that multiple requests can get cancelled
+        CompletableFuture<NetworkMessage> invoke0 = member0.messagingService().invoke(
+            member1.topologyService().localMember(),
+            messageFactory.testMessage().build(),
+            1000
+        );
+
+        CompletableFuture<NetworkMessage> invoke1 = member0.messagingService().invoke(
+            member1.topologyService().localMember(),
+            messageFactory.testMessage().build(),
+            1000
+        );
+
+        member0.stop();
+
+        ExecutionException e = assertThrows(ExecutionException.class, () -> invoke0.get(1, TimeUnit.SECONDS));
+
+        assertThat(e.getCause(), instanceOf(NodeStoppingException.class));
+
+        e = assertThrows(ExecutionException.class, () -> invoke1.get(1, TimeUnit.SECONDS));
+
+        assertThat(e.getCause(), instanceOf(NodeStoppingException.class));
     }
 
     /**

@@ -20,7 +20,6 @@ package org.apache.ignite.network.scalecube;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import io.scalecube.cluster.Cluster;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
@@ -77,12 +76,8 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
     @Override public CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg) {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
-        if (cluster.isShutdown()) {
-            CompletableFuture nodeStoppingRes = new CompletableFuture<NetworkMessage>();
-            nodeStoppingRes.completeExceptionally(new NodeStoppingException());
-
-            return nodeStoppingRes;
-        }
+        if (cluster.isShutdown())
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         return cluster
             .send(fromNetworkAddress(recipient.address()), Message.fromData(msg))
@@ -98,12 +93,8 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
     @Override public CompletableFuture<Void> send(NetworkAddress addr, NetworkMessage msg, String correlationId) {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
-        if (cluster.isShutdown()) {
-            CompletableFuture nodeStoppingRes = new CompletableFuture<NetworkMessage>();
-            nodeStoppingRes.completeExceptionally(new NodeStoppingException());
-
-            return nodeStoppingRes;
-        }
+        if (cluster.isShutdown())
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         var message = Message
             .withData(msg)
@@ -124,29 +115,19 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
     @Override public CompletableFuture<NetworkMessage> invoke(NetworkAddress addr, NetworkMessage msg, long timeout) {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
-        if (cluster.isShutdown()) {
-            CompletableFuture nodeStoppingRes = new CompletableFuture<NetworkMessage>();
-            nodeStoppingRes.completeExceptionally(new NodeStoppingException());
-
-            return nodeStoppingRes;
-        }
+        if (cluster.isShutdown())
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         var message = Message
             .withData(msg)
             .correlationId(UUID.randomUUID().toString())
             .build();
 
-        // TODO: IGNITE-15196 Null seems to be an unexpected result on node stopping.
         return cluster
             .requestResponse(fromNetworkAddress(addr), message)
             .timeout(Duration.ofMillis(timeout))
             .toFuture()
-            .thenApply(m -> {
-                if (m == null)
-                    throw new CompletionException(new NodeStoppingException());
-                else
-                    return m.data();
-            }); // The result can be null on node stopping.
+            .thenApply(Message::data);
     }
 
     /**
