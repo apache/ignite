@@ -69,6 +69,7 @@ public class IgnitePdsOnClientTest extends GridCommonAbstractTest {
 
             PdsFolderSettings<?> settings = client.context().pdsFolderResolver().resolveFolders();
 
+            // Checking there are no files created on client node start.
             assertFalse(settings.persistentStoreNodePath().exists());
         }
     }
