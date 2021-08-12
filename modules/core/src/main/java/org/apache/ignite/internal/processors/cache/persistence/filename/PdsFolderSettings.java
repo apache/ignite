@@ -140,9 +140,8 @@ public class PdsFolderSettings<L extends FileLockHolder> {
     /**
      * @return Storage directory for node.
      */
-    @Nullable public File persistentStoreNodePath() {
-        if (persistentStoreRootPath == null)
-            return null;
+    public File persistentStoreNodePath() {
+        assert persistentStoreRootPath != null;
 
         return new File(persistentStoreRootPath, folderName);
     }
