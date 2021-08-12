@@ -1461,7 +1461,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertNotNull(GridTestUtils.getFieldValue(tblDesc0, "luceneIdx"));
 
-        idx.distributedConfiguration().createLuceneIndexForStringValueType(true).get();
+        idx.distributedConfiguration().disableCreateLuceneIndexForStringValueType(true).get();
 
         sql("create table test1(id1 int primary key, val varchar) " +
             "WITH \"WRAP_VALUE=false\"");

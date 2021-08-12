@@ -186,7 +186,8 @@ public class DistributedSqlConfiguration {
     }
 
     /** */
-    public GridFutureAdapter<?> createLuceneIndexForStringValueType(boolean create) throws IgniteCheckedException {
-        return disableCreateLuceneIndexForStringValueType.propagateAsync(create);
+    public GridFutureAdapter<?> disableCreateLuceneIndexForStringValueType(boolean disableCreateIdx)
+        throws IgniteCheckedException {
+        return disableCreateLuceneIndexForStringValueType.propagateAsync(disableCreateIdx);
     }
 }
