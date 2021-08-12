@@ -47,16 +47,18 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("rawtypes")
     @Nullable @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
-        Map<String, List<SnapshotHandlerResult>> clusterResults = new HashMap<>();
+        Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
 
         for (ComputeJobResult res : results) {
-            // Unhandled exception.
             if (res.getException() != null)
                 throw res.getException();
 
             Map<String, SnapshotHandlerResult> nodeDataMap = res.getData();
+
+            if (nodeDataMap == null)
+                continue;
 
             for (Map.Entry<String, SnapshotHandlerResult> entry : nodeDataMap.entrySet()) {
                 String lsnrName = entry.getKey();
@@ -65,19 +67,14 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
             }
         }
 
-        String snpName = F.first(F.first(metas.values())).snapshotName();
-
-        for (SnapshotHandler hnd : ignite.context().cache().context().snapshotMgr().handlers(SnapshotHandlerType.RESTORE)) {
-            List<SnapshotHandlerResult> res = clusterResults.get(hnd.getClass().getName());
-
-            if (res == null)
-                continue;
-
-            try {
-                hnd.reduce(snpName, res);
-            } catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+        try {
+            ignite.context().cache().context().snapshotMgr().handleClusterOperation(
+                SnapshotHandlerType.RESTORE,
+                F.first(F.first(metas.values())).snapshotName(),
+                clusterResults
+            );
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
         return new SnapshotPartitionsVerifyTaskResult(metas, null);
@@ -117,25 +114,11 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
         /** {@inheritDoc} */
         @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
-            Map<String, SnapshotHandlerResult<Object>> resMap = new HashMap<>();
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consistentId);
-            SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps);
+            SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode());
 
-            for (SnapshotHandler<?> hnd : snpMgr.handlers(SnapshotHandlerType.RESTORE)) {
-                SnapshotHandlerResult<Object> res;
-
-                try {
-                    res = new SnapshotHandlerResult<>(hnd.handle(ctx), null, ignite.localNode());
-                }
-                catch (Exception e) {
-                    res = new SnapshotHandlerResult<>(null, e, ignite.localNode());
-                }
-
-                resMap.put(hnd.getClass().getName(), res);
-            }
-
-            return resMap;
+            return snpMgr.handleLocalOperation(SnapshotHandlerType.RESTORE, ctx);
         }
     }
 }

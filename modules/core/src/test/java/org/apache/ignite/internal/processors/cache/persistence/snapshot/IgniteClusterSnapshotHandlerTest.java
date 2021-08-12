@@ -44,15 +44,19 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 
+/**
+ * Snapshot custom handlers test.
+ */
 public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotRestoreBaseTest {
-    /** */
-    private List<SnapshotHandler<?>> extensions = new ArrayList<>();
+    /** Custom snapshot handlers. */
+    private final List<SnapshotHandler<?>> handlers = new ArrayList<>();
 
-    private SnapshotLifecyclePluginProvider testPluginProvider = new SnapshotLifecyclePluginProvider(extensions);
+    /** Extensions plugin provider. */
+    private final SnapshotHandlerTestPluginProvider pluginProvider = new SnapshotHandlerTestPluginProvider(handlers);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setPluginProviders(testPluginProvider);
+        return super.getConfiguration(igniteInstanceName).setPluginProviders(pluginProvider);
     }
 
     /** @throws Exception If fails. */
@@ -62,7 +66,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         AtomicReference<UUID> reqIdRef = new AtomicReference<>();
 
-        extensions.add(new SnapshotHandler<UUID>() {
+        handlers.add(new SnapshotHandler<UUID>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
@@ -71,7 +75,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return ctx.metadata().requestId();
             }
 
-            @Override public void reduce(String name,
+            @Override public void complete(String name,
                 Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
                 for (SnapshotHandlerResult<UUID> res : results) {
                     if (!reqIdRef.compareAndSet(null, res.data()) && !reqIdRef.get().equals(res.data()))
@@ -80,7 +84,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
         });
 
-        extensions.add(new SnapshotHandler<UUID>() {
+        handlers.add(new SnapshotHandler<UUID>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.RESTORE;
             }
@@ -89,7 +93,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return ctx.metadata().requestId();
             }
 
-            @Override public void reduce(String name,
+            @Override public void complete(String name,
                 Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
                 for (SnapshotHandlerResult<UUID> res : results) {
                     if (!reqIdRef.get().equals(res.data()))
@@ -143,7 +147,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         AtomicBoolean failCreateFlag = new AtomicBoolean(true);
         AtomicBoolean failRestoreFlag = new AtomicBoolean(true);
 
-        extensions.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<Void>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
@@ -156,7 +160,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
         });
 
-        extensions.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<Void>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.RESTORE;
             }
@@ -194,20 +198,24 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
-    private static class SnapshotLifecyclePluginProvider extends AbstractTestPluginProvider {
-        private final List<SnapshotHandler<?>> extensions;
+    /** Test plugin provider. */
+    private static class SnapshotHandlerTestPluginProvider extends AbstractTestPluginProvider {
+        /** Custom snapshot handlers. */
+        private final List<SnapshotHandler<?>> handlers;
 
-        public SnapshotLifecyclePluginProvider(List<SnapshotHandler<?>> extensions) {
-            this.extensions = extensions;
+        /** @param handlers Snapshot handlers. */
+        public SnapshotHandlerTestPluginProvider(List<SnapshotHandler<?>> handlers) {
+            this.handlers = handlers;
         }
 
+        /** {@inheritDoc} */
         @Override public String name() {
             return "SnapshotVerifier";
         }
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            for (SnapshotHandler<?> hnd : extensions)
+            for (SnapshotHandler<?> hnd : handlers)
                 registry.registerExtension(SnapshotHandler.class, hnd);
         }
     }

@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
@@ -33,15 +33,15 @@ import org.apache.ignite.internal.util.typedef.F;
 
 public class SnapshotPartitionsVerifyRestoreHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
     /** */
-    private final GridKernalContext ctx;
+    private final GridCacheSharedContext<?, ?> cctx;
 
     /** */
     private final IgniteLogger log;
 
-    public SnapshotPartitionsVerifyRestoreHandler(GridKernalContext ctx) {
-        this.ctx = ctx;
+    public SnapshotPartitionsVerifyRestoreHandler(GridCacheSharedContext<?, ?> cctx) {
+        this.cctx = cctx;
 
-        log = ctx.log(getClass());
+        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -53,11 +53,11 @@ public class SnapshotPartitionsVerifyRestoreHandler implements SnapshotHandler<M
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> handle(
         SnapshotHandlerContext opCtx
     ) throws IgniteCheckedException {
-        return VisorVerifySnapshotPartitionsJob.checkPartitions(opCtx.metadata(), opCtx.groups(), ctx.cache().context(), log);
+        return VisorVerifySnapshotPartitionsJob.checkPartitions(opCtx.metadata(), opCtx.groups(), cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void reduce(
+    @Override public void complete(
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {

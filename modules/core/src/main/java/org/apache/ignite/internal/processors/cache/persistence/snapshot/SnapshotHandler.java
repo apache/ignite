@@ -20,21 +20,36 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.Extension;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation handler.
  *
- * @param <T> type of the local handling result.
+ * @param <T> Type of the local processing result.
  */
 public interface SnapshotHandler<T> extends Extension {
     /** Snapshot handler type. */
     public SnapshotHandlerType type();
 
-    /** */
-    public T handle(SnapshotHandlerContext ctx) throws IgniteCheckedException;
+    /**
+     * Local processing of a snapshot operation.
+     * Called on every node that contains snapshot data.
+     *
+     * @param ctx Snapshot handler context.
+     * @return Result of local processing.
+     * @throws IgniteCheckedException If failed.
+     */
+    public @Nullable T handle(SnapshotHandlerContext ctx) throws IgniteCheckedException;
 
-    /** */
-    public default void reduce(String name, Collection<SnapshotHandlerResult<T>> results) throws IgniteCheckedException {
+    /**
+     * Processing of results from all nodes.
+     * Called on one of the nodes containnig the snapshot data.
+     *
+     * @param name Snapshot name.
+     * @param results Results from all nodes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws IgniteCheckedException {
         for (SnapshotHandlerResult<T> res : results) {
             if (res.error() == null)
                 continue;;

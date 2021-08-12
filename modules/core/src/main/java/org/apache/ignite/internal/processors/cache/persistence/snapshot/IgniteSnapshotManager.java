@@ -269,9 +269,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Distributed process to restore cache group from the snapshot. */
     private final SnapshotRestoreProcess restoreCacheGrpProc;
 
-    /** Snapshot operation handlers. */
-    private final Map<SnapshotHandlerType, List<SnapshotHandler<?>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
-
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
 
@@ -313,6 +310,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Last seen cluster snapshot operation. */
     private volatile ClusterSnapshotFuture lastSeenSnpFut = new ClusterSnapshotFuture();
+
+    /** Snapshot operation handlers. */
+    private final SnapshotHandlers handlers = new SnapshotHandlers();
 
     /**
      * @param ctx Kernal context.
@@ -385,23 +385,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
 
-        SnapshotPartitionsVerifyRestoreHandler integrityCheck = new SnapshotPartitionsVerifyRestoreHandler(ctx);
-
-        handlers.put(integrityCheck.type(), new ArrayList<>(Collections.singleton(integrityCheck)));
-
-        SnapshotHandler<?>[] handlers0 = ctx.plugins().extensions(SnapshotHandler.class);
-
-        if (handlers0 != null) {
-            for (SnapshotHandler<?> hnd : handlers0)
-                handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
-        }
-
-        for (SnapshotHandlerType type : SnapshotHandlerType.values()) {
-            List<SnapshotHandler<?>> hndList = handlers.putIfAbsent(type, Collections.emptyList());
-
-            if (hndList != null)
-                handlers.put(type, Collections.unmodifiableList(hndList));
-        }
+        handlers.initialize(ctx);
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
@@ -560,10 +544,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    public Collection<SnapshotHandler<?>> handlers(SnapshotHandlerType type) {
-        return handlers.get(type);
-    }
-
     /**
      * @param snpName Snapshot name.
      * @return Local snapshot directory for snapshot with given name.
@@ -695,22 +675,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
                 }
 
-                Map<String, SnapshotHandlerResult<Object>> results = new HashMap<>();
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, null);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, null, cctx.localNode());
 
-                for (SnapshotHandler<?> hnd : handlers(SnapshotHandlerType.CREATE)) {
-                    SnapshotHandlerResult<Object> res;
-
-                    try {
-                        res = new SnapshotHandlerResult<>(hnd.handle(ctx), null, cctx.localNode());
-                    } catch (Exception e) {
-                        res = new SnapshotHandlerResult<>(null, e, cctx.localNode());
-                    }
-
-                    results.put(hnd.getClass().getName(), res);
-                }
-
-                return new SnapshotOperationResponse(results);
+                return new SnapshotOperationResponse(handleLocalOperation(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IOException | IgniteCheckedException e) {
                 throw F.wrap(e);
@@ -763,44 +730,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
                     "[err=" + err + ", missed=" + missed + ']'));
             }
-            else
-                snpReq.error(handleClusterSnapshotCreation(snpReq.snapshotName(), res.values()));
+            else {
+                Map<String, List<SnapshotHandlerResult<?>>> hndResults = new HashMap<>();
+
+                for (SnapshotOperationResponse response : res.values()) {
+                    if (response.operationHandlerResults() == null)
+                        continue;
+
+                    for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.operationHandlerResults().entrySet())
+                        hndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                }
+
+                try {
+                    handleClusterOperation(SnapshotHandlerType.CREATE, snpReq.snapshotName(), hndResults);
+                }
+                catch (Exception e) {
+                    snpReq.error(e);
+                }
+            }
 
             endSnpProc.start(UUID.randomUUID(), snpReq);
         }
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param responses Snapshot operation responses.
-     * @throws IgniteCheckedException If any of the handlers were unable to process the local results of the nodes.
-     * @return Exception If any of the handlers were unable to process the local results of the nodes.
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private @Nullable Exception handleClusterSnapshotCreation(String snpName, Collection<SnapshotOperationResponse> responses) {
-        Map<String, List<SnapshotHandlerResult>> hndResults = new HashMap<>();
-
-        for (SnapshotOperationResponse response : responses) {
-            if (response.operationHandlerResults() == null)
-                continue;
-
-            for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.operationHandlerResults().entrySet())
-                hndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
-        }
-
-        if (hndResults.isEmpty())
-            return null;
-
-        for (SnapshotHandler hnd : handlers(SnapshotHandlerType.CREATE)) {
-            try {
-                hnd.reduce(snpName, hndResults.get(hnd.getClass().getName()));
-            }
-            catch (Exception err) {
-                return err;
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -1742,6 +1692,32 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param type Handler type.
+     * @param ctx Handler context.
+     * @return Results from all handlers with the specified type.
+     */
+    protected @Nullable Map<String, SnapshotHandlerResult<Object>> handleLocalOperation(
+        SnapshotHandlerType type,
+        SnapshotHandlerContext ctx
+    ) {
+        return handlers.invokeAll(type, ctx);
+    }
+
+    /**
+     * @param type Handler type.
+     * @param snpName Snapshot name.
+     * @param res Results from all nodes and handlers with the specified type.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void handleClusterOperation(
+        SnapshotHandlerType type,
+        String snpName,
+        Map<String, List<SnapshotHandlerResult<?>>> res
+    ) throws IgniteCheckedException {
+        handlers.completeAll(type, snpName, res);
+    }
+
+    /**
      * Ves pokrit assertami absolutely ves,
      * PageScan iterator in the ignite core est.
      */
@@ -2162,7 +2138,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         public SnapshotOperationResponse(Map<String, SnapshotHandlerResult<Object>> hndResults) {
-            this.hndResults = F.isEmpty(hndResults) ? null : hndResults;
+            this.hndResults = hndResults;
         }
 
         public @Nullable Map<String, SnapshotHandlerResult<Object>> operationHandlerResults() {
@@ -2331,6 +2307,91 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteException("Client disconnected. Snapshot result is unknown", U.convertException(e));
             else
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
+        }
+    }
+
+    /** Snapshot operation handlers. */
+    private static class SnapshotHandlers {
+        /** Snapshot operation handlers. */
+        private final Map<SnapshotHandlerType, List<SnapshotHandler<Object>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
+
+        /** Executor service used to invoke handlers in parallel. */
+        private ExecutorService execSvc;
+
+        /**
+         * @param ctx Kernal context.
+         */
+        private void initialize(GridKernalContext ctx) {
+            execSvc = ctx.pools().getSystemExecutorService();
+
+            SnapshotHandler<?> integrityCheck = new SnapshotPartitionsVerifyRestoreHandler(ctx.cache().context());
+
+            handlers.put(integrityCheck.type(), new ArrayList<>(Collections.singleton((SnapshotHandler<Object>)integrityCheck)));
+
+            SnapshotHandler<Object>[] handlers0 = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
+
+            if (handlers0 != null) {
+                for (SnapshotHandler<Object> hnd : handlers0)
+                    handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
+            }
+
+            for (SnapshotHandlerType type : SnapshotHandlerType.values()) {
+                List<SnapshotHandler<Object>> hndList = handlers.putIfAbsent(type, Collections.emptyList());
+
+                if (hndList != null)
+                    handlers.put(type, Collections.unmodifiableList(hndList));
+            }
+        }
+
+        /**
+         * @param type Handler type.
+         * @param ctx Handler context.
+         * @return Results from all handlers with the specified type.
+         */
+        private @Nullable Map<String, SnapshotHandlerResult<Object>> invokeAll(
+            SnapshotHandlerType type,
+            SnapshotHandlerContext ctx
+        ) {
+            Collection<SnapshotHandler<Object>> handlers = this.handlers.get(type);
+
+            if (handlers.isEmpty())
+                return null;
+
+            if (handlers.size() == 1) {
+                SnapshotHandler<Object> hnd = F.first(handlers);
+
+                return F.asMap(hnd.getClass().getName(), SnapshotHandlerResult.create(hnd, ctx));
+            }
+
+            Map<String, SnapshotHandlerResult<Object>> resMap = new ConcurrentHashMap<>(handlers.size());
+
+            try {
+                U.doInParallel(execSvc, handlers, hnd -> resMap.put(hnd.getClass().getName(), SnapshotHandlerResult.create(hnd, ctx)));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
+            return new HashMap<>(resMap);
+        }
+
+        /***
+         * @param type Handler type.
+         * @param snpName Snapshot name.
+         * @param res Results from all nodes and handlers with the specified type.
+         * @throws IgniteCheckedException If failed.
+         */
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private void completeAll(
+            SnapshotHandlerType type,
+            String snpName,
+            Map<String, List<SnapshotHandlerResult<?>>> res
+        ) throws IgniteCheckedException {
+            if (res.isEmpty())
+                return;
+
+            for (SnapshotHandler hnd : handlers.get(type))
+                hnd.complete(snpName, res.get(hnd.getClass().getName()));
         }
     }
 }

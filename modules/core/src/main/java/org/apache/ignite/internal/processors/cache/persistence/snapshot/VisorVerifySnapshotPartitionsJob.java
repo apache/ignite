@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -84,7 +83,7 @@ class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
     private final String consId;
 
     /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-    private final Set<String> rqGrps;
+    private final Collection<String> rqGrps;
 
     /**
      * @param snpName Snapshot name to validate.
@@ -94,34 +93,33 @@ class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
     public VisorVerifySnapshotPartitionsJob(String snpName, String consId, Collection<String> rqGrps) {
         this.snpName = snpName;
         this.consId = consId;
-
-        this.rqGrps = rqGrps == null ? Collections.emptySet() : new HashSet<>(rqGrps);
+        this.rqGrps = rqGrps;
     }
 
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
-        IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
 
         if (log.isInfoEnabled()) {
             log.info("Verify snapshot partitions procedure has been initiated " +
                 "[snpName=" + snpName + ", consId=" + consId + ']');
         }
 
-        SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
+        SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpName, consId);
 
         try {
-            return checkPartitions(meta, rqGrps, ignite.context().cache().context(), log);
+            return checkPartitions(meta, rqGrps, cctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
 
-    public static Map<PartitionKeyV2, PartitionHashRecordV2> checkPartitions(
+    static Map<PartitionKeyV2, PartitionHashRecordV2> checkPartitions(
         SnapshotMetadata meta,
         Collection<String> groups,
-        GridCacheSharedContext<?, ?> cctx,
-        IgniteLogger log
+        GridCacheSharedContext<?, ?> cctx
     ) throws IgniteCheckedException {
+        IgniteLogger log = cctx.logger(VisorVerifySnapshotPartitionsJob.class);
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
         Set<Integer> grps = F.isEmpty(groups) ? new HashSet<>(meta.partitions().keySet()) :
