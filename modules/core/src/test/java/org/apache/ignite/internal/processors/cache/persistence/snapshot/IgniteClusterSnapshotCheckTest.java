@@ -569,9 +569,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Checks bytes, signature of partion files. Compares before and after snapshot. Assumes the files are equal.  */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
-        // Note: this test is valid only for not-encrypted snapshots. Writting snapshots deltas causes several page writes into file.
-        // Every page write calls encrypt(). Every repatable encrypt() produces different record (different bytes) even for same original
-        // data. Re-writting pages from delta to partition file in the shanpshot leads to additional encryption before writting to the
+        // Note: this test is valid only for not-encrypted snapshots. Writing snapshots deltas causes several page writes into file.
+        // Every page write calls encrypt(). Every repeatable encrypt() produces different record (different bytes) even for same original
+        // data. Re-writting pages from delta to partition file in the shanpshot leads to additional encryption before writing to the
         // snapshot partition file. Thus, page in original partition and in snapshot partiton has different encrypted CRC and same
         // de-crypted CRC. Different encrypted CRC looks like different data in point of view of third-party observer.
 

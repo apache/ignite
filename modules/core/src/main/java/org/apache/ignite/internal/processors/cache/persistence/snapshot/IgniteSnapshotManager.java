@@ -1441,12 +1441,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         int grpId = CU.cacheId(grpName);
 
-        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
-            cctx.kernalContext().encryption().getActiveKey(grpId) != null).
-            createPageStore(getTypeByPartId(partId),
-                snpPart::toPath,
-                val -> {
-                });
+        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, cctx.cache().isEncrypted(grpId)).
+            createPageStore(getTypeByPartId(partId), snpPart::toPath, val -> {});
 
         GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(ctx, grpName, partId, pageStore);
 
@@ -1508,10 +1504,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (prev != null)
                 return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-            for (Integer grpId : parts.keySet()) {
-                if (!withMetaStorage && cctx.cache().isEncrypted(grpId)) {
+            if (!withMetaStorage) {
+                for (Integer grpId : parts.keySet()) {
+                    if (!cctx.cache().isEncrypted(grpId))
+                        continue;
+
                     snpFutTask.onDone(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId + " but doesn't " +
-                        "include metastore. Metastore is requird because it contains encryption keys required to start with encrypted " +
+                        "include metastore. Metastore is required because it contains encryption keys required to start with encrypted " +
                         "caches contained in the snapshot."));
 
                     return snpFutTask;
