@@ -59,6 +59,18 @@ mvn clean compile pmd:check
 PMD check result (only if there are any violations) is generated at `target/pmd.xml`.
 ***
 
+### Maven
+Project is supplied with number of custom scripts for Maven sanity check.
+To run checks, execute:
+```
+bash check-rules/maven-check-scripts/run.sh
+```
+from root of the project.
+
+Linux, MacOS, WSL (Windows Subsystem on Linux) or alike environment is required.
+`xpath` should be present in PATH
+***
+
 
 ## Running tests
 Run unit tests only:
