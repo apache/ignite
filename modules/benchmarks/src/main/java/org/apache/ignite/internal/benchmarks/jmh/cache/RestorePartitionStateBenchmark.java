@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -48,14 +48,6 @@ public class RestorePartitionStateBenchmark {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setIgniteInstanceName(igniteInstanceName);
-
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-                .setIpFinder(
-                    new TcpDiscoveryVmIpFinder()
-                        .setAddresses(Collections.singleton("127.0.0.1:47500..47502"))
-                )
-        );
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -72,6 +64,8 @@ public class RestorePartitionStateBenchmark {
     public void benchmark() throws Exception {
         cleanPersistenceDir();
 
+        System.setProperty(IGNITE_QUIET, "false");
+
         Ignite ignite = Ignition.start(getConfiguration("ignite"));
 
         ignite.cluster().state(ClusterState.ACTIVE);
@@ -85,6 +79,8 @@ public class RestorePartitionStateBenchmark {
                 parts = 10;
             else if (i < 40)
                 parts = 100;
+            else if (i < 45)
+                parts = 200;
             else if (i < 49)
                 parts = 500;
             else
@@ -112,20 +108,15 @@ public class RestorePartitionStateBenchmark {
 
         Ignition.stop(ignite.name(), false);
 
-        long start = System.currentTimeMillis();
-
+        // See 'Finished restoring partition state for local groups ...' log message to know how much time
+        // has restore taken.
         ignite = Ignition.start(getConfiguration("ignite"));
 
-        long startDuration = System.currentTimeMillis() - start;
-
-        System.out.println("Time to start: " + startDuration + " ms.");
+        System.clearProperty(IGNITE_QUIET);
 
         Ignition.stop(ignite.name(), false);
-    }
 
-    /** */
-    public static void main(String[] args) throws Exception {
-        new RestorePartitionStateBenchmark().benchmark();
+        cleanPersistenceDir();
     }
 
     /**
@@ -141,5 +132,10 @@ public class RestorePartitionStateBenchmark {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+    }
+
+    /** */
+    public static void main(String[] args) throws Exception {
+        new RestorePartitionStateBenchmark().benchmark();
     }
 }
