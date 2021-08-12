@@ -168,6 +168,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /**
      * @param req Request.
      * @return Future.
+     *
+     * This method made {@code protected} intentionally so any plugin provided implementation
+     * can extend it to enhance request handling.
      */
     protected IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
