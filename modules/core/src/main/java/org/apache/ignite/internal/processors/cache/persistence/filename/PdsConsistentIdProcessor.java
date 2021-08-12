@@ -157,14 +157,16 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @throws IgniteCheckedException if IO failed.
      */
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
-        final File pstStoreBasePath = resolvePersistentStoreBasePath();
+        boolean clientMode = ctx.clientNode();
+
+        final File pstStoreBasePath = resolvePersistentStoreBasePath(clientMode);
         //here deprecated method is used to get compatible version of consistentId
         final Serializable consistentId = ctx.discovery().consistentId();
 
         if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
-        if (ctx.clientNode())
+        if (clientMode)
             return new PdsFolderSettings(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
@@ -440,15 +442,16 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
+     * @param clientMode {@code True} if client node.
      * @throws IgniteCheckedException if I/O failed.
      */
-    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+    @Nullable private File resolvePersistentStoreBasePath(boolean clientMode) throws IgniteCheckedException {
         final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (dsCfg == null)
             return null;
 
-        final String pstPath = dsCfg.getStoragePath();
+        final String pstPath = clientMode ? null : dsCfg.getStoragePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),
