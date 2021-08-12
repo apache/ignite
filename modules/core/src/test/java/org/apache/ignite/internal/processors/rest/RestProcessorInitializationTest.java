@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -32,6 +37,9 @@ import org.junit.Test;
  * Tests REST processor configuration via Ignite plugins functionality.
  */
 public class RestProcessorInitializationTest extends GridCommonAbstractTest {
+    /** */
+    private static final Map<GridRestRequest, IgniteInternalFuture<GridRestResponse>> map = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
@@ -62,6 +70,34 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testExtendsGridRestProcessorInitialization() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setConnectorConfiguration(new ConnectorConfiguration());
+
+        cfg.setPluginProviders(new TestExtendsGridRestProcessorProvider());
+
+        IgniteEx ignite = startGrid(cfg);
+
+        assertEquals(ignite.context().rest().getClass(), TestExtendsGridRestProcessor.class);
+
+        TestExtendsGridRestProcessor rest = (TestExtendsGridRestProcessor)ignite.context().rest();
+
+        GridRestRequest req = new GridRestRequest();
+
+        req.command(GridRestCommand.VERSION);
+
+        GridRestResponse res = rest.handleAsync0(req).get();
+
+        Map.Entry<GridRestRequest, IgniteInternalFuture<GridRestResponse>> entry = map.entrySet().iterator().next();
+
+        assertEquals(req, entry.getKey());
+        assertEquals(res, entry.getValue().get());
+    }
+
+    /**
      * Test implementation of {@link PluginProvider} for obtaining {@link TestGridRestProcessorImpl}.
      */
     private static class TestRestProcessorProvider extends AbstractTestPluginProvider {
@@ -88,6 +124,45 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
          */
         protected TestGridRestProcessorImpl(GridKernalContext ctx) {
             super(ctx);
+        }
+    }
+
+    /**
+     * Test implementation of {@link PluginProvider} for obtaining {@link TestExtendsGridRestProcessor}.
+     */
+    private static class TestExtendsGridRestProcessorProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_REST_PROCESSOR";
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+            if (cls.equals(IgniteRestProcessor.class))
+                return new TestExtendsGridRestProcessor(((IgniteEx)ctx.grid()).context());
+
+            return null;
+        }
+    }
+
+    /**
+     * Test override {@link GridRestProcessor#handleAsync0}.
+     */
+    private static class TestExtendsGridRestProcessor extends GridRestProcessor {
+        /**
+         * @param ctx Context.
+         */
+        public TestExtendsGridRestProcessor(GridKernalContext ctx) {
+            super(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteInternalFuture<GridRestResponse> handleAsync0(GridRestRequest req) {
+            IgniteInternalFuture<GridRestResponse> fut = super.handleAsync0(req);
+
+            fut.listen(f -> map.put(req, f));
+
+            return fut;
         }
     }
 }
