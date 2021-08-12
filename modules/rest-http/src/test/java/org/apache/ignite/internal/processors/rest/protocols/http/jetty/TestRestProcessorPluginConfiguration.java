@@ -14,18 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.function.BiConsumer;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.plugin.PluginConfiguration;
 
 /**
- * Integration tests for Grid REST functionality; Jetty is under the hood.
+ *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    RestSetupSimpleTest.class,
-    ExtendsRestProcessorListenersTest.class
-})
-public class GridRestSuite {
+public class TestRestProcessorPluginConfiguration implements PluginConfiguration {
+    /** */
+    private BiConsumer<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lsnr;
+
+    /** */
+    public BiConsumer<GridRestRequest, IgniteInternalFuture<GridRestResponse>> getListener() {
+        return lsnr;
+    }
+
+    /** */
+    public TestRestProcessorPluginConfiguration setListener(
+        BiConsumer<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lsnr
+    ) {
+        this.lsnr = lsnr;
+
+        return this;
+    }
 }
