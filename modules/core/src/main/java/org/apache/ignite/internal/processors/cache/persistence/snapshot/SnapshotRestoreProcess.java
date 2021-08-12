@@ -562,8 +562,6 @@ public class SnapshotRestoreProcess {
                     ensureCacheAbsent(cfg.config());
             }
 
-            boolean onLocNode = ctx.localNodeId().equals(req.operationalNodeId());
-
             if (log.isInfoEnabled()) {
                 log.info("Starting local snapshot restore operation" +
                     " [reqId=" + req.requestId() +
@@ -571,20 +569,16 @@ public class SnapshotRestoreProcess {
                     ", cache(s)=" + F.viewReadOnly(opCtx0.cfgs.values(), data -> data.config().getName()) + ']');
             }
 
-            if (ctx.isStopping())
-                throw new NodeStoppingException("Node is stopping.");
-
-            // Ensure that shared cache groups has no conflicts.
-            for (StoredCacheData cfg : opCtx0.cfgs.values())
-                ensureCacheAbsent(cfg.config());
-
             Consumer<Throwable> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
             BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
+            if (ctx.isStopping())
+                throw new NodeStoppingException("Node is stopping.");
+
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0, onLocNode, stopChecker, errHnd)
+            restoreAsync(opCtx0, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
                 .thenAccept(res -> {
                     try {
                         Throwable err = opCtx.err.get();
