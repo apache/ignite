@@ -42,6 +42,8 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -497,7 +499,7 @@ public class SnapshotRestoreProcess {
      *
      * @param cacheCfg Cache configuration.
      */
-    private void ensureCacheDataAbsent(CacheConfiguration<?, ?> cacheCfg) {
+    private void ensureCacheAbsent(CacheConfiguration<?, ?> cacheCfg) {
         int id = CU.cacheGroupId(cacheCfg);
 
         if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null ||
@@ -574,7 +576,7 @@ public class SnapshotRestoreProcess {
 
             // Ensure that shared cache groups has no conflicts.
             for (StoredCacheData cfg : opCtx0.cfgs.values())
-                ensureCacheDataAbsent(cfg.config());
+                ensureCacheAbsent(cfg.config());
 
             Consumer<Throwable> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
             BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
