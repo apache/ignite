@@ -141,6 +141,6 @@ public class JavaLoggerFormatter extends Formatter {
         // for level > SEVERE, return SEVERE and exclude OFF
         int i = Arrays.binarySearch(LEVEL_VALUES, 0, LEVEL_VALUES.length - 2, severity);
 
-        return toLevel(i);
+        return toLevel(LEVEL_VALUES[i >= 0 ? i : (-i - 1)]);
     }
 }
