@@ -647,8 +647,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 continue;
 
             if (String.class == propVal.getClass() || byte[].class == propVal.getClass()) {
-                int propValLen = propVal.getClass() == String.class ? ((String) propVal).length()
-                    : ((byte[]) propVal).length;
+                int propValLen = String.class == propVal.getClass() ? ((String)propVal).length()
+                    : ((byte[])propVal).length;
 
                 if (propValLen > prop.precision()) {
                     throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " +
