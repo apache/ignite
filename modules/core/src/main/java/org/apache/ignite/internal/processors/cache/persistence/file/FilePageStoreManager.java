@@ -628,6 +628,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 getPartitionFilePath(cacheWorkDir(desc.config()), partId),
                 StandardCopyOption.ATOMIC_MOVE);
 
+            // Previous page stores may be used by other processes. The link to the instance of a PageStore available
+            // for may internal components, so the best way to share the 'recreation' status is to close the previous
+            // page store instance and to create a new one.
             return holder.set(partId,
                 factory.createPageStore(getTypeByPartId(partId),
                     () -> getPartitionFilePath(desc.config(), partId),

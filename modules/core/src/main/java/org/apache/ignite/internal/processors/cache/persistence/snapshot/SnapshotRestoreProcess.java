@@ -106,6 +106,42 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  4. Load partitions from remote nodes.
  *  5. Set partition to MOVING state during copy from snapshot and read partition Metas.
  *  6. Replace index if topology match partitions.
+ *
+ *
+ *  Snapshot recovery with transfer partitions
+ *
+ *
+ * 1. Load partitions from snapshot, then start cache groups
+ * - registered cache groups calculated from discovery thread, no affinity cache data can be calculated without it
+ * - index rebuild may be started only after cache group start, will it require cache availability using disabled proxies?
+ * - Can affinity be calculated on each node? Node attributes may cause some issues.
+ *
+ *
+ * 2. Start cache groups disabled, then load partitoins from snapshot
+ * - What whould happen with partition counters on primaries and backups? (probably not required)
+ * - Should the partition map be updated on client nodes?
+ * - When partition is loaded from snaphost, should we update parititon counters under checkpoint?
+ *
+ * 3. Start cache disabled and load data from each partition using partiton iterator (deframentation out of the box + index rebuild)
+ * 3a. Transfer snapshot parittion files from remove node and read them as local data.
+ * 3b. Read partitions on remote node and transfer data via Suppy cache message.
+ * - cacheId is not stored in the partition file, so it's required to obtain it from the cache data tree
+ * - datastreamer load job is not sutable for caches running with disabled cache proxies
+ * - too many dirty pages can lead to data eviction to ssd
+ *
+ * 5. Start cache and load partitions as it rebalancing do (transfer files)
+ * - There is no lazy init for index partition
+ * - node2part must be updated on forceRecreatePartition method call
+ * - do not own partitions after cache start
+ * - update node2part map after partitions loaded from source and start refreshPartitions/affinityChange
+ *
+ *
+ * GG snapshot
+ *
+ * - начался снапшот и появилась нагрузка - откидывается гряные страницы 20ую пейджу испачкали она будет нулевой
+ *
+ * - есть воркер, который копирует из офхип все страницы (поднимает все старинцы из файлов партиции, если нужно)
+ * - если какой-то тред меняет старницу, то он её откладывает в конец файла
  */
 public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
@@ -934,10 +970,11 @@ public class SnapshotRestoreProcess {
                     lf.cleared.complete(null);
                 else {
                     part.clearAsync().listen(f -> {
-                        // This future must clear all heap cache entries from the partition map. It is still possible for
-                        // the MOVING partitions to be a new entries added in it (e.g. the rebalance process), so must
-                        // provide guarantees by some other machinery. Currently, it's guaranteed by disabling cache proxies
-                        // on snapshot restore, so they are not available for users to operate.
+                        // This future must clear all heap cache entries from the GridDhtLocalPartition map. The EVICTED status of
+                        // partitions guarantee us that there are no updates on it. As opposed to the MOVING partitions they still
+                        // have new entries to be added (e.g. the rebalance process), so must we must provide additional guarantees
+                        // by some other machinery. Currently, it's guaranteed by disabling cache proxies on snapshot restore,
+                        // so they are not available for users to operate.
                         if (f.error() == null)
                             lf.cleared.complete(f.result());
                         else
@@ -1348,7 +1385,6 @@ public class SnapshotRestoreProcess {
                 PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                 int tag = pageMemory.invalidate(grp.groupId(), partId);
-
                 grp.shared().pageStore().truncate(grp.groupId(), partId, tag);
 
                 boolean success = truncatedTag.compareAndSet(null, tag);
@@ -1368,7 +1404,13 @@ public class SnapshotRestoreProcess {
             if (inited.isCompletedExceptionally())
                 return;
 
+            // We are swapping cache data stores for partition. Some of them may be processed in another listeners of
+            // the checkpoint thread.
             handleExceptions(() -> {
+                GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+                part.dataStore().markDestroyed();
+
                 // Dirty pages will be collected further under checkpoint write-lock and won't be flushed to the disk
                 // due to the tag is used.
                 PageStore prev = grp.shared().pageStore().recreate(grp.groupId(), partId, truncatedTag.get(), loaded.get());
@@ -1377,7 +1419,7 @@ public class SnapshotRestoreProcess {
 
                 assert !exists : prev;
 
-                // CacheDataStore.
+                // Create CacheDataStore ---- ISSUE here
 
                 return null;
             }, inited::completeExceptionally);
@@ -1415,6 +1457,9 @@ public class SnapshotRestoreProcess {
         @Override public void onCheckpointBegin(Context ctx) {
             if (inited.isCompletedExceptionally())
                 return;
+
+            GridDhtLocalPartition part = grp.topology().localPartition(partId);
+            part.dataStore().init();
 
             inited.complete(null);
         }
