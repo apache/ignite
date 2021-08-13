@@ -17,7 +17,15 @@
 
 package org.apache.ignite.rest.presentation;
 
-/** */
+import org.apache.ignite.configuration.validation.ConfigurationValidationException;
+import org.apache.ignite.lang.IgniteException;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Representing a configuration to/from representation form.
+ *
+ * @param <R> Representation form.
+ */
 public interface ConfigurationPresentation<R> {
     /**
      * Converts to presentation whole system configuration (all system modules are included).
@@ -32,15 +40,18 @@ public interface ConfigurationPresentation<R> {
      * If null path is passed method should fall back to returning whole system configuration.
      *
      * @param path Path to requested configuration in configuration tree or {@code null}.
-     *
      * @return Requested configuration fraction or whole configuration if {@code null} was passed.
+     * @throws IllegalArgumentException If {@code path} is not found in current configuration.
      */
-    R representByPath(String path);
+    R representByPath(@Nullable String path);
 
     /**
      * Converts and applies configuration update request to system configuration.
      *
-     * @param configUpdate Configuration update request in representation form.
+     * @param cfgUpdate Configuration update request in representation form.
+     * @throws IllegalArgumentException If the configuration format is invalid.
+     * @throws ConfigurationValidationException If configuration validation failed.
+     * @throws IgniteException If an error happens.
      */
-    void update(R configUpdate);
+    void update(R cfgUpdate);
 }

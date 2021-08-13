@@ -85,12 +85,17 @@ public class ConfigCommandTest extends AbstractCliTest {
             "set",
             "--node-endpoint",
             "localhost:" + restPort,
-            "node.metastorageNodes=[\"localhost1\"]");
+            "node.metastorageNodes=[\"localhost1\"]"
+        );
+
+        String nl = System.lineSeparator();
 
         assertEquals(0, exitCode);
-        assertEquals("Configuration was updated successfully.\n" +
-            "\n" +
-            "Use the ignite config get command to view the updated configuration.\n", out.toString());
+        assertEquals(
+            "Configuration was updated successfully." + nl + nl +
+                "Use the ignite config get command to view the updated configuration." + nl,
+            out.toString()
+        );
 
         resetStreams();
 
@@ -98,14 +103,16 @@ public class ConfigCommandTest extends AbstractCliTest {
             "config",
             "get",
             "--node-endpoint",
-            "localhost:" + restPort);
+            "localhost:" + restPort
+        );
 
         assertEquals(0, exitCode);
         assertEquals(
-            "\"{\"network\":{\"port\":" + networkPort + ",\"netClusterNodes\":[]}," +
+            "\"{\"network\":{\"netClusterNodes\":[],\"port\":" + networkPort + "}," +
                 "\"node\":{\"metastorageNodes\":[\"localhost1\"]}," +
-                "\"rest\":{\"port\":" + restPort + ",\"portRange\":0}}\"\n",
-            unescapeQuotes(out.toString()));
+                "\"rest\":{\"port\":" + restPort + ",\"portRange\":0}}\"" + nl,
+            unescapeQuotes(out.toString())
+        );
     }
 
     @Test
@@ -116,10 +123,14 @@ public class ConfigCommandTest extends AbstractCliTest {
             "--node-endpoint",
             "localhost:" + restPort,
             "--selector",
-            "network");
+            "network"
+        );
+
         assertEquals(0, exitCode);
-        assertEquals("\"{\"port\":"+ networkPort + ",\"netClusterNodes\":[]}\"\n",
-            unescapeQuotes(out.toString()));
+        assertEquals(
+            "\"{\"netClusterNodes\":[],\"port\":" + networkPort + "}\"" + System.lineSeparator(),
+            unescapeQuotes(out.toString())
+        );
     }
 
     /**

@@ -20,7 +20,6 @@ package org.apache.ignite.rest;
 import java.net.BindException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import com.google.gson.JsonSyntaxException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -38,10 +37,11 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.manager.IgniteComponent;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.rest.netty.RestApiInitializer;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
-import org.apache.ignite.rest.presentation.json.JsonPresentation;
+import org.apache.ignite.rest.presentation.hocon.HoconPresentation;
 import org.apache.ignite.rest.routes.Router;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
@@ -82,7 +82,7 @@ public class RestModule implements IgniteComponent {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        presentation = new JsonPresentation(sysConf);
+        presentation = new HoconPresentation(sysConf);
 
         var router = new Router();
 
@@ -111,28 +111,20 @@ public class RestModule implements IgniteComponent {
                             .readCharSequence(req.request().content().readableBytes(), StandardCharsets.UTF_8)
                             .toString());
                 }
-                catch (IllegalArgumentException argE) {
-                    ErrorResult eRes = new ErrorResult("CONFIG_PATH_UNRECOGNIZED", argE.getMessage());
+                catch (IllegalArgumentException e) {
+                    ErrorResult eRes = new ErrorResult("INVALID_CONFIG_FORMAT", e.getMessage());
 
                     resp.status(BAD_REQUEST);
                     resp.json(Map.of("error", eRes));
                 }
-                catch (ConfigurationValidationException validationE) {
-                    ErrorResult eRes = new ErrorResult("APPLICATION_EXCEPTION", validationE.getMessage());
-
-                    resp.status(BAD_REQUEST);
-                    resp.json(Map.of("error", eRes));
-                    resp.json(eRes);
-                }
-                catch (JsonSyntaxException e) {
-                    String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-
-                    ErrorResult eRes = new ErrorResult("VALIDATION_EXCEPTION", msg);
-                    resp.status(BAD_REQUEST);
-                    resp.json(Map.of("error", eRes));
-                }
-                catch (Exception e) {
+                catch (ConfigurationValidationException e) {
                     ErrorResult eRes = new ErrorResult("VALIDATION_EXCEPTION", e.getMessage());
+
+                    resp.status(BAD_REQUEST);
+                    resp.json(Map.of("error", eRes));
+                }
+                catch (IgniteException e) {
+                    ErrorResult eRes = new ErrorResult("APPLICATION_EXCEPTION", e.getMessage());
 
                     resp.status(BAD_REQUEST);
                     resp.json(Map.of("error", eRes));

@@ -21,13 +21,15 @@ package org.apache.ignite.rest;
  * Error result represent a tuple of error type and user-friendly error message.
  */
 public class ErrorResult {
-    /** */
+    /** Error type describing the class of the error occurred. */
     private final String type;
 
-    /** */
+    /** User-friendly error message. */
     private final String message;
 
     /**
+     * Constructor.
+     *
      * @param type Error type describing the class of the error occurred.
      * @param message User-friendly error message.
      */
