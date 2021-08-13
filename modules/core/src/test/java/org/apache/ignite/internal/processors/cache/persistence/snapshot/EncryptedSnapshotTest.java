@@ -350,7 +350,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      *
      * @return CacheConfiguration of the new cache.
      */
-    private CacheConfiguration<Integer, Object> addNotEncryptedCache(IgniteEx ig) throws InterruptedException {
+    private CacheConfiguration<Integer, Object> addNotEncryptedCache(IgniteEx ig) {
         CacheConfiguration<Integer, Object> ccfg =
             new CacheConfiguration<>(dfltCacheCfg).setName(SECOND_CACHE_NAME).setEncryptionEnabled(false);
 
@@ -361,8 +361,6 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         try (IgniteDataStreamer<Integer, Object> ds = ig.dataStreamer(SECOND_CACHE_NAME)) {
             for (int i = 0; i < CACHE_KEYS_RANGE; ++i)
                 ds.addData(i, valBuilder.apply(i));
-
-            ds.flush();
         }
 
         return ccfg;

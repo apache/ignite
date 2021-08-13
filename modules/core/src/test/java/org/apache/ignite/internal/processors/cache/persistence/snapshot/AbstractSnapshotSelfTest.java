@@ -373,8 +373,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer<Integer, V> ds = ig.dataStreamer(ccfg.getName())) {
                 for (int i = 0; i < keys; i++)
                     ds.addData(i, factory.apply(i));
-
-                ds.flush();
             }
         }
 
