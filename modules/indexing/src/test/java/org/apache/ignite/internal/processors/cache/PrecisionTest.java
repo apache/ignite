@@ -141,8 +141,11 @@ public class PrecisionTest extends GridCommonAbstractTest {
 
     /** */
     private QueryEntity personQueryEntity() {
-        return new QueryEntity(Integer.class, Person.class)
-            .setKeyType(Integer.class.getName());
+        QueryEntity entity = new QueryEntity(Integer.class, Person.class);
+        entity.setKeyFieldName("id");
+        entity.addQueryField("id", Integer.class.getName(), "ID");
+
+        return entity;
     }
 
     /** */
