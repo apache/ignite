@@ -31,6 +31,9 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
+
 /**
  * Implementation of {@link MessagingService} based on ScaleCube.
  */
@@ -77,7 +80,7 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
         if (cluster.isShutdown())
-            return CompletableFuture.failedFuture(new NodeStoppingException());
+            return failedFuture(new NodeStoppingException());
 
         return cluster
             .send(fromNetworkAddress(recipient.address()), Message.fromData(msg))
@@ -94,7 +97,7 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
         if (cluster.isShutdown())
-            return CompletableFuture.failedFuture(new NodeStoppingException());
+            return failedFuture(new NodeStoppingException());
 
         var message = Message
             .withData(msg)
@@ -116,7 +119,7 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
         if (cluster.isShutdown())
-            return CompletableFuture.failedFuture(new NodeStoppingException());
+            return failedFuture(new NodeStoppingException());
 
         var message = Message
             .withData(msg)
@@ -127,6 +130,7 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
             .requestResponse(fromNetworkAddress(addr), message)
             .timeout(Duration.ofMillis(timeout))
             .toFuture()
+            .thenCompose(m -> m == null ? failedFuture(new NodeStoppingException()) : completedFuture(m))
             .thenApply(Message::data);
     }
 

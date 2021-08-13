@@ -35,7 +35,6 @@ import org.apache.ignite.internal.network.message.ScaleCubeMessage;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
@@ -133,8 +132,7 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
         return Mono.defer(() -> {
             LOG.info("Stopping {}", address);
 
-            // Fail all incoming message listeners on stop
-            sink.error(new NodeStoppingException());
+            sink.complete();
 
             LOG.info("Stopped {}", address);
             return Mono.empty();
@@ -155,7 +153,10 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
 
     /** {@inheritDoc} */
     @Override public Mono<Void> stop() {
-        return doStop();
+        return Mono.defer(() -> {
+            stop.onComplete();
+            return onStop;
+        });
     }
 
     /** {@inheritDoc} */
