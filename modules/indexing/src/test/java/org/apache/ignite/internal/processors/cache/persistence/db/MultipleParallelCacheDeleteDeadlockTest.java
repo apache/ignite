@@ -30,39 +30,42 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  *
  */
 public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractTest {
     /** Latch that blocks test completion. */
-    private CountDownLatch testCompletionBlockingLatch = new CountDownLatch(1);
+    private final CountDownLatch testCompletionBlockingLatch = new CountDownLatch(1);
 
     /** Latch that blocks checkpoint. */
-    private CountDownLatch checkpointBlockingLatch = new CountDownLatch(1);
+    private final CountDownLatch checkpointBlockingLatch = new CountDownLatch(1);
 
     /** We imitate long index destroy in these tests, so this is delay for each page to destroy. */
     private static final long TIME_FOR_EACH_INDEX_PAGE_TO_DESTROY = 300;
@@ -79,8 +82,8 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
     /** */
     private static final String CACHE_GRP_2 = "cache_grp_2";
 
-    /** */
-    private InlineIndexFactory regularH2TreeFactory;
+    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
+    private InlineIndexTreeFactory originalFactory;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -98,10 +101,10 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
             .setCacheConfiguration(
                 new CacheConfiguration(CACHE_1)
                     .setGroupName(CACHE_GRP_1)
-                    .setSqlSchema("PUBLIC"),
+                    .setSqlSchema(DFLT_SCHEMA),
                 new CacheConfiguration(CACHE_2)
                     .setGroupName(CACHE_GRP_2)
-                    .setSqlSchema("PUBLIC")
+                    .setSqlSchema(DFLT_SCHEMA)
             );
     }
 
@@ -111,18 +114,18 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        regularH2TreeFactory = IgniteH2Indexing.idxFactory;
-
-        IgniteH2Indexing.idxFactory = new InlineIndexFactoryTest();
+        originalFactory = idxTreeFactory;
+        idxTreeFactory = new InlineIndexTreeFactoryEx();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteH2Indexing.idxFactory = regularH2TreeFactory;
-
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        idxTreeFactory = originalFactory;
+        originalFactory = null;
 
         super.afterTest();
     }
@@ -132,7 +135,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
     public void testMultipleCacheDelete() throws Exception {
         IgniteEx ignite = startGrids(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         IgniteCache cache1 = ignite.getOrCreateCache(CACHE_1);
         IgniteCache cache2 = ignite.getOrCreateCache(CACHE_2);
@@ -207,30 +210,6 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         return cache.query(new SqlFieldsQuery(qry).setArgs(args)).getAll();
     }
 
-    /** */
-    private class InlineIndexFactoryTest extends InlineIndexFactory {
-        /** */
-        @Override protected InlineIndexTree createIndexSegment(GridCacheContext<?, ?> cctx, SortedIndexDefinition def,
-            RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender, int segmentNum) throws Exception {
-            return new InlineIndexTreeTest(
-                def,
-                cctx,
-                def.treeName(),
-                cctx.offheap(),
-                cctx.offheap().reuseListForIndex(def.treeName()),
-                cctx.dataRegion().pageMemory(),
-                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                rootPage.pageId().pageId(),
-                rootPage.isAllocated(),
-                def.inlineSize(),
-                def.keyTypeSettings(),
-                def.idxRowCache(),
-                stats,
-                def.rowHandlerFactory(),
-                recommender);
-        }
-    }
-
     /**
      * Test Inline index tree.
      */
@@ -238,7 +217,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         /** */
         public InlineIndexTreeTest(
             SortedIndexDefinition def,
-            GridCacheContext<?, ?> cctx,
+            CacheGroupContext grpCtx,
             String treeName,
             IgniteCacheOffheapManager offheap,
             ReuseList reuseList,
@@ -247,6 +226,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
             long metaPageId,
             boolean initNew,
             int configuredInlineSize,
+            int maxInlineSize,
             IndexKeyTypeSettings keyTypeSettings,
             IndexRowCache rowCache,
             IoStatisticsHolder stats,
@@ -255,7 +235,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         ) throws IgniteCheckedException {
             super(
                 def,
-                cctx,
+                grpCtx,
                 treeName,
                 offheap,
                 reuseList,
@@ -264,6 +244,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 metaPageId,
                 initNew,
                 configuredInlineSize,
+                maxInlineSize,
                 keyTypeSettings,
                 rowCache,
                 stats,
@@ -297,6 +278,37 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected long maxLockHoldTime() {
             return 10;
+        }
+    }
+
+    /**
+     * Extension {@link InlineIndexTreeFactory} for test.
+     */
+    private class InlineIndexTreeFactoryEx extends InlineIndexTreeFactory {
+        /** {@inheritDoc} */
+        @Override protected InlineIndexTree create(
+            CacheGroupContext grpCtx,
+            RootPage rootPage,
+            String treeName
+        ) throws IgniteCheckedException {
+            return new InlineIndexTreeTest(
+                null,
+                grpCtx,
+                treeName,
+                grpCtx.offheap(),
+                grpCtx.offheap().reuseListForIndex(treeName),
+                grpCtx.dataRegion().pageMemory(),
+                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+                rootPage.pageId().pageId(),
+                false,
+                0,
+                0,
+                new IndexKeyTypeSettings(),
+                null,
+                null,
+                new DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory(),
+                null
+            );
         }
     }
 }

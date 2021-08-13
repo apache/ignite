@@ -145,6 +145,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** */
     private final Thread sesTimeoutCheckerThread;
 
+    /** */
+    private final boolean securityEnabled;
+
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws IgniteCheckedException {
@@ -210,7 +213,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             fut.setWorker(w);
 
             try {
-                ctx.getRestExecutorService().execute(w);
+                ctx.pools().getRestExecutorService().execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
@@ -249,8 +252,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        boolean securityEnabled = ctx.security().enabled();
-
         if (securityEnabled) {
             Session ses;
 
@@ -281,9 +282,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
                     authorize(req);
-                }
 
-                req.securityContext(secCtx0);
+                    return handleRequest0(req);
+                }
             }
             catch (SecurityException e) {
                 assert secCtx0 != null;
@@ -294,7 +295,17 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
             }
         }
+        else
+            return handleRequest0(req);
+    }
 
+    /**
+     * Performs request handling.
+     *
+     * @param req Request to handle.
+     * @return Future of request execution.
+     */
+    private IgniteInternalFuture<GridRestResponse> handleRequest0(GridRestRequest req) {
         interceptRequest(req);
 
         GridRestCommandHandler hnd = handlers.get(req.command());
@@ -390,7 +401,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
                 // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
-                if (ctx.security().enabled() && req.command() != AUTHENTICATE && req.credentials() == null)
+                if (securityEnabled && req.command() != AUTHENTICATE && req.credentials() == null)
                     throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
 
                 Session ses = Session.random();
@@ -479,6 +490,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         sesTtl = IgniteSystemProperties.getLong(IGNITE_REST_SESSION_TIMEOUT, DFLT_SES_TIMEOUT) * 1000;
         sesTokTtl = IgniteSystemProperties.getLong(IGNITE_REST_SECURITY_TOKEN_TIMEOUT, DFLT_SES_TOKEN_INVALIDATE_INTERVAL) * 1000;
 
+        securityEnabled = ctx.security().enabled();
+
         sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
             new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
                 @Override protected void body() throws InterruptedException {
@@ -492,7 +505,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                                 clientId2SesId.remove(ses.clientId, ses.sesId);
                                 sesId2Ses.remove(ses.sesId, ses);
 
-                                if (ctx.security().enabled() && ses.secCtx != null && ses.secCtx.subject() != null)
+                                if (securityEnabled && ses.secCtx != null && ses.secCtx.subject() != null)
                                     ctx.security().onSessionExpired(ses.secCtx.subject().id());
                             }
                         }

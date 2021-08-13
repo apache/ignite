@@ -1414,7 +1414,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (fut.localJoinExchange() || fut.activateCluster()
             || (fut.exchangeActions() != null && !F.isEmpty(fut.exchangeActions().cacheGroupsToStart()))) {
             U.doInParallel(
-                cctx.kernalContext().getSystemExecutorService(),
+                cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
                     if (cacheGroup.isLocal())
@@ -1966,6 +1966,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.tm().clearUncommitedStates();
 
+            cctx.wal().startAutoReleaseSegments();
+
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after LOGICAL RECOVERY phase:");
 
@@ -2150,7 +2152,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         AtomicReference<Throwable> applyError = new AtomicReference<>();
 
-        StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
+        StripedExecutor exec = cctx.kernalContext().pools().getStripedExecutorService();
 
         Semaphore semaphore = new Semaphore(semaphorePertmits(exec));
 
@@ -2642,7 +2644,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
 
-        StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
+        StripedExecutor exec = cctx.kernalContext().pools().getStripedExecutorService();
 
         Semaphore semaphore = new Semaphore(semaphorePertmits(exec));
 

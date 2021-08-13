@@ -218,7 +218,7 @@ public class CdcMain implements Runnable {
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
         if (lock == null) {
-            File consIdDir = new File(settings.persistentStoreRootPath(), settings.folderName());
+            File consIdDir = settings.persistentStoreNodePath();
 
             lock = tryLock(consIdDir);
 
