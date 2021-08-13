@@ -385,13 +385,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /**
      * @param factory Factory which will produce filtering predicate.
-     * @return Iterable over all existing cache data stores.
+     * @return Iterable over all existing cache data stores except which one is marked as <tt>destroyed</tt>.
      */
     private Iterable<CacheDataStore> cacheDataStores(
         Function<CacheGroupContext, IgnitePredicate<GridDhtLocalPartition>> factory
     ) {
         return grp.isLocal() ? Collections.singletonList(locCacheDataStore) :
-            F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true, factory.apply(grp));
+            F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true,
+                factory.apply(grp), p -> !p.dataStore().destroyed());
     }
 
     /**
@@ -1281,7 +1282,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         partStoreLock.lock(p);
 
         try {
-            if (store.isDestroyed())
+            if (store.destroyed())
                 return;
 
             destroyCacheDataStore0(store);
@@ -2965,7 +2966,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isDestroyed() {
+        @Override public boolean destroyed() {
             return dataTree.isDestroyed();
         }
 
