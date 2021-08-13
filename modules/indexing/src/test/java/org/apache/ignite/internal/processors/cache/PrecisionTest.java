@@ -43,6 +43,9 @@ public class PrecisionTest extends GridCommonAbstractTest {
     private static final int KEY = 0;
 
     /** */
+    private static final String VALID_STR = "01234";
+
+    /** */
     private static final String INVALID_STR = "012345";
 
     /** {@inheritDoc} */
@@ -71,6 +74,18 @@ public class PrecisionTest extends GridCommonAbstractTest {
 
     /** */
     private void checkCachePutInsert(IgniteCache<Integer, Person> cache) {
+        cache.put(KEY + 1, new Person(VALID_STR));
+        assertNotNull(cache.get(KEY + 1));
+
+        cache.put(KEY + 2, new Person(VALID_STR));
+        assertNotNull(cache.get(KEY + 2));
+
+        cache.query(sqlInsertQuery(KEY + 3, "str", VALID_STR));
+        assertNotNull(cache.get(KEY + 3));
+
+        cache.query(sqlInsertQuery(KEY + 4, "bin", VALID_STR.getBytes(StandardCharsets.UTF_8)));
+        assertNotNull(cache.get(KEY + 4));
+
         assertPrecision(cache, () -> {
             cache.put(KEY, new Person(INVALID_STR));
 
@@ -84,13 +99,13 @@ public class PrecisionTest extends GridCommonAbstractTest {
         }, "BIN");
 
         assertPrecision(cache, () -> {
-            cache.query(sqlInsertQuery("str"));
+            cache.query(sqlInsertQuery(KEY, "str", INVALID_STR));
 
             return null;
         }, "STR");
 
         assertPrecision(cache, () -> {
-            cache.query(sqlInsertQuery("bin"));
+            cache.query(sqlInsertQuery(KEY, "bin", INVALID_STR.getBytes(StandardCharsets.UTF_8)));
 
             return null;
         }, "BIN");
@@ -124,6 +139,19 @@ public class PrecisionTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private SqlFieldsQuery sqlInsertQuery(int key, String field, Object val) {
+        return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, " + field + ") values (?, ?)")
+            .setArgs(key, val);
+    }
+
+    /** */
+    private QueryEntity personQueryEntity() {
+        return new QueryEntity(Integer.class, Person.class)
+            .setKeyType(Integer.class.getName())
+            .setKeyFieldName("id");
+    }
+
+    /** */
     static class Person {
         /** */
         @QuerySqlField
@@ -148,20 +176,5 @@ public class PrecisionTest extends GridCommonAbstractTest {
             this.str = null;
             this.bin = arr;
         }
-    }
-
-    /** */
-    private SqlFieldsQuery sqlInsertQuery(String field) {
-        Object arg = "bin".equalsIgnoreCase(field) ? INVALID_STR.getBytes(StandardCharsets.UTF_8) : INVALID_STR;
-
-        return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, " + field + ") values (?, ?)")
-            .setArgs(KEY, arg);
-    }
-
-    /** */
-    private QueryEntity personQueryEntity() {
-        return new QueryEntity(Integer.class, Person.class)
-            .setKeyType(Integer.class.getName())
-            .setKeyFieldName("id");
     }
 }
