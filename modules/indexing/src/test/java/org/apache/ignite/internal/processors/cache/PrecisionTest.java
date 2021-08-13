@@ -22,17 +22,10 @@ import java.util.Collections;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,171 +60,48 @@ public class PrecisionTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsertTableVarColumns() {
-        IgniteCache tblCache = startSqlPersonCache();
-
-        assertPrecision(tblCache, () -> {
-                tblCache.query(sqlInsertQuery("str"));
-
-                return null;
-            }, "STR");
-
-        assertPrecision(tblCache, () -> {
-                tblCache.query(sqlInsertQuery("bin"));
-
-                return null;
-            }, "BIN");
-
-        assertPrecision(tblCache, () -> {
-                tblCache.put(KEY, personBinaryObject("str"));
-
-                return null;
-            }, "STR");
-
-        assertPrecision(tblCache, () -> {
-                tblCache.put(KEY, personBinaryObject("bin"));
-
-                return null;
-        }, "BIN");
+        checkCachePutInsert(startSqlPersonCache());
     }
 
     /** */
     @Test
     public void testInsertValueVarColumns() {
-        IgniteCache<Integer, Person> cache = startPersonCache();
-
-        assertPrecision(cache, () -> {
-                cache.put(KEY, new Person(INVALID_STR));
-
-                return null;
-            }, "STR");
-
-        assertPrecision(cache, () -> {
-                cache.put(KEY, new Person(INVALID_STR.getBytes(StandardCharsets.UTF_8)));
-
-                return null;
-            }, "BIN");
-
-        assertPrecision(cache, () -> {
-                cache.query(sqlInsertQuery("str"));
-
-                return null;
-            }, "STR");
-
-        assertPrecision(cache, () -> {
-                cache.query(sqlInsertQuery("bin"));
-
-                return null;
-            }, "BIN");
+        checkCachePutInsert(startPersonCache());
     }
 
     /** */
-    @Test
-    public void testClientInsertTableVarColumns() throws Exception {
-        IgniteCache tblCache = startSqlPersonCache();
-
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1"))) {
-            ClientCache<Integer, Object> cc = client.cache(PERSON_CACHE);
-
-            assertClientPrecision(tblCache, () -> {
-                    cc.query(sqlInsertQuery("str")).getAll();
-
-                    return null;
-                }, "STR");
-
-            assertClientPrecision(tblCache, () -> {
-                    cc.query(sqlInsertQuery("bin")).getAll();
-
-                    return null;
-                }, "BIN");
-
-            assertClientPrecision(tblCache, () -> {
-                    cc.put(0, personBinaryObject("str"));
-
-                    return null;
-                }, "STR");
-
-            assertClientPrecision(tblCache, () -> {
-                    cc.put(0, personBinaryObject("bin"));
-
-                    return null;
-                }, "BIN");
-        }
-    }
-
-    /** */
-    @Test
-    public void testClientInsertValueVarColumns() throws Exception {
-        IgniteCache<Integer, Person> cache = startPersonCache();
-
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1"))) {
-            ClientCache<Integer, Person> cc = client.cache(PERSON_CACHE);
-
-            checkFromClient(cache, cc);
-        }
-    }
-
-    /** */
-    @Test
-    public void testClientCreatedCache() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1"))) {
-            ClientCache cc = startClientPersonCache(client);
-
-            IgniteCache cache = ignite.cache(PERSON_CACHE);
-
-            checkFromClient(cache, cc);
-        }
-    }
-
-    /** */
-    private void checkFromClient(IgniteCache cache, ClientCache cc) {
-        assertClientPrecision(cache, () -> {
-            cc.put(KEY, new Person(INVALID_STR));
+    private void checkCachePutInsert(IgniteCache<Integer, Person> cache) {
+        assertPrecision(cache, () -> {
+            cache.put(KEY, new Person(INVALID_STR));
 
             return null;
         }, "STR");
 
-        assertClientPrecision(cache, () -> {
-            cc.put(KEY, new Person(INVALID_STR.getBytes(StandardCharsets.UTF_8)));
+        assertPrecision(cache, () -> {
+            cache.put(KEY, new Person(INVALID_STR.getBytes(StandardCharsets.UTF_8)));
 
             return null;
         }, "BIN");
 
-        assertClientPrecision(cache, () -> {
-            cc.query(sqlInsertQuery("str")).getAll();
+        assertPrecision(cache, () -> {
+            cache.query(sqlInsertQuery("str"));
 
             return null;
         }, "STR");
 
-        assertClientPrecision(cache, () -> {
-            cc.query(sqlInsertQuery("bin")).getAll();
+        assertPrecision(cache, () -> {
+            cache.query(sqlInsertQuery("bin"));
 
             return null;
         }, "BIN");
-    }
-
-    /** */
-    private void assertPrecision(IgniteCache cache, Callable<Object> clo, Class<? extends Throwable> exCls, String colName) {
-        GridTestUtils.assertThrows(null, clo, exCls,
-            "Value for a column '" + colName + "' is too long. Maximum length: 5, actual length: 6");
-
-        assertNull(cache.get(KEY));
     }
 
     /** */
     private void assertPrecision(IgniteCache cache, Callable<Object> clo, String colName) {
-        assertPrecision(cache, clo, CacheException.class, colName);
-    }
+        GridTestUtils.assertThrows(null, clo, CacheException.class,
+            "Value for a column '" + colName + "' is too long. Maximum length: 5, actual length: 6");
 
-    /** */
-    private void assertClientPrecision(IgniteCache cache, Callable<Object> clo, String colName) {
-        assertPrecision(cache, clo, ClientException.class, colName);
-    }
-
-    /** */
-    private ClientCache startClientPersonCache(IgniteClient client) {
-        return client.createCache(new ClientCacheConfiguration()
-            .setName(PERSON_CACHE)
-            .setQueryEntities(personQueryEntity()));
+        assertNull(cache.get(KEY));
     }
 
     /** */
@@ -286,16 +156,6 @@ public class PrecisionTest extends GridCommonAbstractTest {
 
         return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, " + field + ") values (?, ?)")
             .setArgs(KEY, arg);
-    }
-
-    /** */
-    private BinaryObject personBinaryObject(String field) {
-        Object o = "bin".equalsIgnoreCase(field) ? INVALID_STR.getBytes(StandardCharsets.UTF_8) : INVALID_STR;
-
-        return ignite.binary().builder(Person.class.getName())
-            .setField("id", KEY)
-            .setField(field, o)
-            .build();
     }
 
     /** */
