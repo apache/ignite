@@ -1058,9 +1058,8 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @return {@code true} If marked as destroyed.
-         * @throws IgniteCheckedException If failed.
          */
-        public boolean isDestroyed() throws IgniteCheckedException;
+        public boolean destroyed();
 
         /**
          * Clears all the records associated with logical cache with given ID.

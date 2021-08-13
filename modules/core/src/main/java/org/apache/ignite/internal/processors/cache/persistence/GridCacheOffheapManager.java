@@ -33,7 +33,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -271,6 +273,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        List<CacheDataStore> destroyedStores = StreamSupport.stream(cacheDataStores().spliterator(), false)
+            .filter(CacheDataStore::destroyed)
+            .collect(Collectors.toList());
+
+        assert destroyedStores.isEmpty() : destroyedStores;
+
         // Optimization: reducing the holding time of checkpoint write lock.
         syncMetadata(ctx, ctx.executor(), false);
     }
@@ -2926,13 +2934,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isDestroyed() throws IgniteCheckedException {
-            CacheDataStore delegate = init0(true);
+        @Override public boolean destroyed() {
+            try {
+                CacheDataStore delegate = init0(true);
 
-            if (delegate != null)
-                return delegate.isDestroyed();
+                if (delegate != null)
+                    return delegate.destroyed();
 
-            return true;
+                return true;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
