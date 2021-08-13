@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
@@ -230,16 +229,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Log partition creation for further crash recovery purposes.
             if (grp.walEnabled() && !recovery)
                 ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
-
-            // Inject row cache cleaner on store creation
-            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
-            if (ctx.kernalContext().query().moduleEnabled()) {
-                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().indexProcessor()
-                    .rowCacheCleaner(grp.groupId());
-
-                if (store != null && cleaner != null)
-                    store.setRowCacheCleaner(cleaner);
-            }
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db

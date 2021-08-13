@@ -1242,7 +1242,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         partStoreLock.lock(p);
 
         try {
-            return createCacheDataStore0(p);
+            CacheDataStore store = createCacheDataStore0(p);
+
+            // Inject row cache cleaner on store creation.
+            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group.
+            if (ctx.kernalContext().query().moduleEnabled() && !grp.isLocal())
+                store.setRowCacheCleaner(ctx.kernalContext().indexProcessor().rowCacheCleaner(grp.groupId()));
+
+            return store;
         }
         finally {
             partStoreLock.unlock(p);
@@ -1272,7 +1279,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             FLAG_IDX
         );
 
-        return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log);
+        return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log, null);
     }
 
     /** {@inheritDoc} */
@@ -1453,6 +1460,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final int updateValSizeThreshold;
 
+        /** */
+        private volatile GridQueryRowCacheCleaner rowCacheCleaner;
+
         /**
          * @param partId Partition number.
          * @param rowStore Row store.
@@ -1465,7 +1475,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             Supplier<PendingEntriesTree> pendingEntries,
             CacheGroupContext grp,
             GridSpinBusyLock busyLock,
-            IgniteLogger log
+            IgniteLogger log,
+            @Nullable Supplier<GridQueryRowCacheCleaner> cleaner
         ) {
             this.partId = partId;
             this.rowStore = rowStore;
@@ -1487,6 +1498,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccUpdateMarker = new MvccMarkUpdatedHandler(grp);
             mvccUpdateTxStateHint = new MvccUpdateTxStateHintHandler(grp);
             mvccApplyChanges = new MvccApplyChangesHandler(grp);
+
+            if (cleaner == null)
+                rowStore.setRowCacheCleaner(() -> rowCacheCleaner);
+            else
+                rowStore.setRowCacheCleaner(cleaner);
         }
 
         /** {@inheritDoc} */
@@ -2967,7 +2983,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean destroyed() {
-            return dataTree.isDestroyed();
+            return dataTree.destroyed();
         }
 
         /** {@inheritDoc} */
@@ -3032,7 +3048,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
-            rowStore().setRowCacheCleaner(rowCacheCleaner);
+            this.rowCacheCleaner = rowCacheCleaner;
         }
 
         /**
