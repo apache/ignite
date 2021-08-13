@@ -142,16 +142,11 @@ public class PrecisionTest extends GridCommonAbstractTest {
     /** */
     private QueryEntity personQueryEntity() {
         return new QueryEntity(Integer.class, Person.class)
-            .setKeyType(Integer.class.getName())
-            .setKeyFieldName("id");
+            .setKeyType(Integer.class.getName());
     }
 
     /** */
     static class Person {
-        /** */
-        @QuerySqlField
-        private int id;
-
         /** */
         @QuerySqlField(precision = 5)
         private final String str;
@@ -189,12 +184,12 @@ public class PrecisionTest extends GridCommonAbstractTest {
 
             Person person = (Person)o;
 
-            return id == person.id && Objects.equals(str, person.str) && Arrays.equals(bin, person.bin);
+            return Objects.equals(str, person.str) && Arrays.equals(bin, person.bin);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(id, str);
+            int result = Objects.hash(str);
             result = 31 * result + Arrays.hashCode(bin);
             return result;
         }
