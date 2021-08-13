@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -76,13 +78,15 @@ public class PrecisionTest extends GridCommonAbstractTest {
     /** */
     private void checkCachePutInsert(IgniteCache<Integer, Person> cache) {
         Stream.of("str", "bin").forEach(fld -> {
-            cache.put(KEY, Person.newPerson(fld, true));
-            assertNotNull(cache.get(KEY));
+            Person validPerson = Person.newPerson(fld, true);
+
+            cache.put(KEY, validPerson);
+            assertEquals(validPerson, cache.get(KEY));
 
             cache.clear();
 
             cache.query(sqlInsertQuery(fld, VALID_STR));
-            assertNotNull(cache.get(KEY));
+            assertEquals(validPerson, cache.get(KEY));
 
             cache.clear();
 
@@ -173,6 +177,26 @@ public class PrecisionTest extends GridCommonAbstractTest {
             String s = valid ? VALID_STR : INVALID_STR;
 
             return "bin".equals(fld) ? new Person(s.getBytes(StandardCharsets.UTF_8)) : new Person(s);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Person person = (Person)o;
+
+            return id == person.id && Objects.equals(str, person.str) && Arrays.equals(bin, person.bin);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = Objects.hash(id, str);
+            result = 31 * result + Arrays.hashCode(bin);
+            return result;
         }
     }
 }
