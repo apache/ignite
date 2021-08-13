@@ -140,6 +140,8 @@ public class TraversableTreeNodeTest {
         childNode.changeStrCfg("value");
 
         assertEquals("value", childNode.strCfg());
+
+        assertThrows(NullPointerException.class, () -> childNode.changeStrCfg(null));
     }
 
     /**
@@ -160,6 +162,10 @@ public class TraversableTreeNodeTest {
         parentNode.changeChild(child -> child.changeStrCfg("value"));
 
         assertNotSame(childNode, parentNode.child());
+
+        assertThrows(NullPointerException.class, () -> parentNode.changeChild(null));
+
+        assertThrows(NullPointerException.class, () -> parentNode.changeElements(null));
     }
 
     /**

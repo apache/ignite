@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -132,6 +133,9 @@ public class ConfigurationAsmGenerator {
     /** {@link DynamicConfiguration#add(ConfigurationProperty)} */
     private static final Method DYNAMIC_CONFIGURATION_ADD;
 
+    /** {@link Objects#requireNonNull(Object, String)} */
+    private static final Method REQUIRE_NON_NULL;
+
     static {
         try {
             LAMBDA_METAFACTORY = LambdaMetafactory.class.getDeclaredMethod(
@@ -169,6 +173,8 @@ public class ConfigurationAsmGenerator {
                 "add",
                 ConfigurationProperty.class
             );
+
+            REQUIRE_NON_NULL = Objects.class.getDeclaredMethod("requireNonNull", Object.class, String.class);
         }
         catch (NoSuchMethodException nsme) {
             throw new ExceptionInInitializerError(nsme);
@@ -546,10 +552,15 @@ public class ConfigurationAsmGenerator {
 
         BytecodeBlock changeBody = changeMtd.getBody();
 
-        if (isValue(schemaField)) {
-            // newValue = change;
-            BytecodeExpression newValue = changeMtd.getScope().getVariable("change");
+        // newValue = change;
+        BytecodeExpression newValue = changeMtd.getScope().getVariable("change");
 
+        if (!schemaFieldType.isPrimitive()) {
+            // Objects.requireNonNull(newValue, "change");
+            changeBody.append(invokeStatic(REQUIRE_NON_NULL, newValue, constantString("change")));
+        }
+
+        if (isValue(schemaField)) {
             // newValue = Box.valueOf(newValue); // Boxing.
             if (schemaFieldType.isPrimitive())
                 newValue = invokeStatic(fieldDef.getType(), "valueOf", fieldDef.getType(), singleton(newValue));
