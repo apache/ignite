@@ -33,7 +33,7 @@ for script in CheckDependencyAndPluginVersionsNotInParent.sh \
               CheckUnusedProperties.sh; do
     echo -n " * Executing ${script}... "
     bash ${DIR__MAVEN_CHECK_SCRIPTS}/${script} && \
-        echo "[OK]" || {
+        echo "Done" || {
             echo "[ERROR]"
             exit 1
         }

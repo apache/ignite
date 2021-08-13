@@ -19,8 +19,7 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../.."
 POMS=$(find ${ROOT} -name pom.xml | grep -v parent)
 for xpath in "project/dependencyManagement/dependencies/dependency/artifactId/text()" \
              "project/build/pluginManagement/plugins/plugin/artifactId/text()"; do
-	xpath -e "${xpath}" ${ROOT}/parent/pom.xml 2>&1 | \
-      grep -vE '(NODE|Found)' | \
+	xpath -q -e "${xpath}" ${ROOT}/parent/pom.xml | \
       while read -r declaration; do
         FOUND=false
         for pom in ${POMS}; do
@@ -31,8 +30,7 @@ for xpath in "project/dependencyManagement/dependencies/dependency/artifactId/te
         done
         for parent_xpath in "project/build/plugins" \
                             "project/dependencies"; do
-            if xpath -e "${parent_xpath}" ${ROOT}/parent/pom.xml 2>&1 | \
-              grep -E "<" | \
+            if xpath -q -e "${parent_xpath}" ${ROOT}/parent/pom.xml 2>&1 | \
               grep -E "<artifactId>${declaration}</artifactId>" 2>&1 1>/dev/null; then
               	FOUND=true
                 continue 2
