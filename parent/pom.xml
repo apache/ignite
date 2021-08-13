@@ -783,6 +783,53 @@
                 </plugins>
             </build>
         </profile>
+
+        <!--
+            Profile to add generated sources to the list of paths for the PMD plugin.
+        -->
+        <profile>
+            <activation>
+                <property>
+                    <name>pmd.check-generated-sources</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>add-generated-source-for-pmd</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>target/generated-sources/annotations</source>
+                                        <source>target/generated-sources/javacc</source>
+                                        <source>target/generated-sources/fmpp</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>add-generated-test-source-for-pmd</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>target/generated-test-sources/test-annotations</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
@@ -1113,6 +1160,11 @@
                     <rulesets>
                         <ruleset>${project.basedir}/check-rules/pmd-rules.xml</ruleset>
                     </rulesets>
+                    <printFailingErrors>true</printFailingErrors>
+                    <excludes>
+                        <exclude>**/org/apache/ignite/internal/generated/query/calcite/sql/IgniteSqlParserImplTokenManager.java</exclude>
+                        <exclude>**/org/apache/ignite/internal/generated/query/calcite/sql/IgniteSqlParserImpl.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
