@@ -1588,7 +1588,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param msg Event message.
      * @param type Snapshot event type.
      */
-    void recordSnapshotEvent(String snpName, String msg, int type) {
+    private void recordSnapshotEvent(String snpName, String msg, int type) {
         if (!cctx.gridEvents().isRecordable(type) || !cctx.gridEvents().hasListener(type))
             return;
 

@@ -969,48 +969,6 @@ public interface EventType {
     public static final int EVT_NODE_VALIDATION_FAILED = 170;
 
     /**
-     * Built-in event type: Cluster snapshot restore has been started event.
-     *
-     * <p>
-     * Fired on the initiator node when a snapshot restore operation is started.
-     * </p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
-     * @see IgniteSnapshot#cancelSnapshotRestore(String)
-     */
-    public static final int EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED = 171;
-
-    /**
-     * Built-in event type: Cluster snapshot restore has been finished event.
-     *
-     * <p>
-     * Fired on the initiator node when the snapshot restore operation has completed on all nodes.
-     * </p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
-     * @see IgniteSnapshot#cancelSnapshotRestore(String)
-     */
-    public static final int EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED = 172;
-
-    /**
-     * Built-in event type: Cluster snapshot restore has been failed event.
-     *
-     * <p>
-     * Fired on the initiator node when the snapshot restore operation failed.
-     * </p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
-     * @see IgniteSnapshot#cancelSnapshotRestore(String)
-     */
-    public static final int EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED = 173;
-
-    /**
      * All cluster snapshot events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cluster snapshot events.
@@ -1020,10 +978,7 @@ public interface EventType {
     public static final int[] EVTS_CLUSTER_SNAPSHOT = {
         EVT_CLUSTER_SNAPSHOT_STARTED,
         EVT_CLUSTER_SNAPSHOT_FINISHED,
-        EVT_CLUSTER_SNAPSHOT_FAILED,
-        EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED,
-        EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED,
-        EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
+        EVT_CLUSTER_SNAPSHOT_FAILED
     };
 
     /**

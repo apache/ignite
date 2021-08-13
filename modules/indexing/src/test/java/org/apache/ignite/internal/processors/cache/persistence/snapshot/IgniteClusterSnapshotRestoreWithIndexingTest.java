@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,18 +29,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
-import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
-import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 
 /**
  * Cluster snapshot restore tests verifying SQL and indexing.
@@ -82,8 +74,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
         assertCacheKeys(client.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-
-        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
 
     /** @throws Exception If failed. */
@@ -104,8 +94,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         for (Ignite grid : G.allGrids())
             assertNotNull(((IgniteEx)grid).context().cacheObjects().metadata(typeId));
-
-        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
 
     /** @throws Exception If failed. */
@@ -120,10 +108,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         startGrid(nodesCnt - 2);
 
         IgniteEx ignite = startGrid(nodesCnt - 1);
-
-        List<SnapshotEvent> evts = new CopyOnWriteArrayList<>();
-
-        ignite.events().localListen(e -> e instanceof SnapshotEvent && evts.add((SnapshotEvent)e), EVTS_CLUSTER_SNAPSHOT);
 
         resetBaselineTopology();
 
@@ -147,14 +131,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         awaitPartitionMapExchange();
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
-
-        GridTestUtils.waitForCondition(() -> evts.size() == 2, TIMEOUT);
-        assertEquals(2, evts.size());
-
-        SnapshotEvent startEvt = evts.get(0);
-
-        assertEquals(SNAPSHOT_NAME, startEvt.snapshotName());
-        assertTrue(startEvt.message().contains("grps=[" + DEFAULT_CACHE_NAME + ']'));
     }
 
     /** {@inheritDoc} */
