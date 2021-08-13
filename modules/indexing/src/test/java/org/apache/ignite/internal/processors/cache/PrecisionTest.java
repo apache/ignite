@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -77,7 +78,7 @@ public class PrecisionTest extends GridCommonAbstractTest {
         cache.put(KEY + 1, new Person(VALID_STR));
         assertNotNull(cache.get(KEY + 1));
 
-        cache.put(KEY + 2, new Person(VALID_STR));
+        cache.put(KEY + 2, new Person(VALID_STR.getBytes(StandardCharsets.UTF_8)));
         assertNotNull(cache.get(KEY + 2));
 
         cache.query(sqlInsertQuery(KEY + 3, "str", VALID_STR));
