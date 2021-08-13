@@ -110,11 +110,13 @@ public class RestorePartitionStateBenchmarkTest {
         // has restore taken.
         ignite = Ignition.start(getConfiguration("ignite"));
 
-        System.clearProperty(IGNITE_QUIET);
+        Thread.sleep(1000);
 
         Ignition.stop(ignite.name(), false);
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_QUIET);
     }
 
     /**
