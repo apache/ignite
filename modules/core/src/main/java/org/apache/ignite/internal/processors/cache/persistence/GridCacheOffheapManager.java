@@ -2941,7 +2941,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (delegate != null)
                     return delegate.destroyed();
 
-                return true;
+                return false;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

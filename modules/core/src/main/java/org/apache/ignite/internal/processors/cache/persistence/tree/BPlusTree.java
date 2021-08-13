@@ -2684,7 +2684,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @return {@code True} if marked as destroyed.
      */
-    public boolean isDestroyed() {
+    public boolean destroyed() {
         return destroyed.get();
     }
 

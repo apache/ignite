@@ -2967,7 +2967,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean destroyed() {
-            return dataTree.isDestroyed();
+            return dataTree.destroyed();
         }
 
         /** {@inheritDoc} */
