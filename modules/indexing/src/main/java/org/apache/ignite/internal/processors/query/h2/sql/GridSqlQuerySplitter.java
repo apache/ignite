@@ -1273,14 +1273,14 @@ public class GridSqlQuerySplitter {
 
         setupParameters(map, mapQry, paramsCnt);
 
-        QueryPartitionsChecker checker = new QueryPartitionsChecker(mapQry, distributedJoins, log);
-        checker.check();
+        SqlAstTraverser traverser = new SqlAstTraverser(mapQry, distributedJoins, log);
+        traverser.traverse();
 
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
-        map.partitioned(checker.hasPartitionedTables());
-        map.hasSubQueries(checker.hasSubQueries());
-        map.hasOuterJoinReplicatedPartitioned(checker.hasOuterJoinReplicatedPartitioned());
+        map.partitioned(traverser.hasPartitionedTables());
+        map.hasSubQueries(traverser.hasSubQueries());
+        map.hasOuterJoinReplicatedPartitioned(traverser.hasOuterJoinReplicatedPartitioned());
 
         if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));

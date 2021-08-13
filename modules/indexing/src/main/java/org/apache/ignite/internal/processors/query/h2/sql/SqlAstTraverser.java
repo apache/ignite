@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 /**
  * Traverse over query AST to find info about partitioned table usage.
  */
-class QueryPartitionsChecker {
+class SqlAstTraverser {
     /** Query AST root to check. */
     private final GridSqlAst root;
 
@@ -45,14 +45,14 @@ class QueryPartitionsChecker {
     private boolean hasOuterJoinReplicatedPartitioned;
 
     /** */
-    QueryPartitionsChecker(GridSqlAst root, boolean distributedJoins, IgniteLogger log) {
+    SqlAstTraverser(GridSqlAst root, boolean distributedJoins, IgniteLogger log) {
         this.root = root;
         this.distributedJoins = distributedJoins;
         this.log = log;
     }
 
     /** */
-    public void check() {
+    public void traverse() {
         lookForPartitionedJoin(root, null);
     }
 
@@ -291,11 +291,9 @@ class QueryPartitionsChecker {
         String leftTbl, Set<String> leftCols, boolean pkLeft,
         String rightTbl, Set<String> rightCols, boolean pkRight) {
 
-        // TODO: Alias?
         if (!(equalOp.child(0) instanceof GridSqlColumn))
             return;
 
-        // TODO: Alias?
         if (!(equalOp.child(1) instanceof GridSqlColumn))
             return;
 
