@@ -14,30 +14,17 @@ set -o nounset; set -o errexit; set -o pipefail; set -o errtrace; set -o functra
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-cleanup() {
-    rm -rf current-list \
-           sorted-list \
-           unused-properties.txt
-}
-trap cleanup EXIT SIGINT ERR
 
-command -v xpath > /dev/null || {
-    echo "xpath not found, exiting"
-}
-
-DIR__MAVEN_CHECK_SCRIPTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-for script in CheckDependencyAndPluginVersionsNotInParent.sh \
-              CheckModulesInRootPomAreSorted.sh \
-              CheckPropertiesNotInParent.sh \
-              CheckUnusedDependenciesAndPluginsInParent.sh \
-              CheckUnusedProperties.sh \
-              CheckDuplicateDependencies.sh; do
-    echo -n " * Executing ${script}... "
-    bash ${DIR__MAVEN_CHECK_SCRIPTS}/${script} && \
-        echo "Done" || {
-            echo "[ERROR]"
-            exit 1
-        }
+ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../.."
+POMS=$(find ${ROOT} -name pom.xml)
+for pom in ${POMS}; do
+    total_count="$(xpath -q -e "count(project/dependencies/dependency)" "${pom}")"
+    for i in $(seq 1 1 ${total_count}); do
+        xpath -q -e "project/dependencies/dependency[${i}]/*/text()" "${pom}" | \
+          sed ':a;N;$!ba;s/\n/:/g'
+    done | \
+      sort | \
+      uniq -d | while read -r dependency; do
+        echo "[ERROR] Found duplicate dependency in '$(sed -r "s|${ROOT}/||" <<< ${pom})': ${dependency}"
+    done
 done
-echo
-echo "All checks finished successfully"

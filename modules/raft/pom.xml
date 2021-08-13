@@ -116,13 +116,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Logging in tests -->
         <dependency>
             <groupId>org.slf4j</groupId>
