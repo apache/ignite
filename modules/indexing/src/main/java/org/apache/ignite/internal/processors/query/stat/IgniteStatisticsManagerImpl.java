@@ -72,6 +72,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Statistics repository. */
     private final IgniteStatisticsRepository statsRepos;
 
+    /** Global statistics repository. */
+    private final IgniteGlobalStatisticsManager globalStatsMgr;
+
     /** Ignite statistics helper. */
     private final IgniteStatisticsHelper helper;
 
@@ -158,6 +161,17 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx::log
         );
 
+        globalStatsMgr = new IgniteGlobalStatisticsManager(
+            statCfgMgr,
+            statsRepos,
+            mgmtPool,
+            ctx.discovery(),
+            ctx.state(),
+            ctx.cache().context().exchange(),
+            helper,
+            ctx.io(),
+            ctx::log);
+
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
                 if (log.isInfoEnabled())
@@ -209,6 +223,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         statsRepos.start();
         gatherer.start();
         statCfgMgr.start();
+        globalStatsMgr.start();
     }
 
     /**
@@ -218,6 +233,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         statCfgMgr.stop();
         gatherer.stop();
         statsRepos.stop();
+        globalStatsMgr.stop();
     }
 
     /**
@@ -229,6 +245,12 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public ObjectStatistics getLocalStatistics(StatisticsKey key) {
+        StatisticsUsageState currState = usageState();
+
+        return (currState == ON || currState == NO_UPDATE) ? statsRepos.getLocalStatistics(key) : null;
+    }
+
+    @Override public ObjectStatistics getGlobalStatistics(StatisticsKey key) {
         StatisticsUsageState currState = usageState();
 
         return (currState == ON || currState == NO_UPDATE) ? statsRepos.getLocalStatistics(key) : null;
