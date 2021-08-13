@@ -75,41 +75,29 @@ public class PrecisionTest extends GridCommonAbstractTest {
 
     /** */
     private void checkCachePutInsert(IgniteCache<Integer, Person> cache) {
-        cache.put(KEY + 1, new Person(VALID_STR));
-        assertNotNull(cache.get(KEY + 1));
+        Stream.of("str", "bin").forEach(fld -> {
+            cache.put(KEY, Person.newPerson(fld, true));
+            assertNotNull(cache.get(KEY));
 
-        cache.put(KEY + 2, new Person(VALID_STR.getBytes(StandardCharsets.UTF_8)));
-        assertNotNull(cache.get(KEY + 2));
+            cache.clear();
 
-        cache.query(sqlInsertQuery(KEY + 3, "str", VALID_STR));
-        assertNotNull(cache.get(KEY + 3));
+            cache.query(sqlInsertQuery(fld, VALID_STR));
+            assertNotNull(cache.get(KEY));
 
-        cache.query(sqlInsertQuery(KEY + 4, "bin", VALID_STR.getBytes(StandardCharsets.UTF_8)));
-        assertNotNull(cache.get(KEY + 4));
+            cache.clear();
 
-        assertPrecision(cache, () -> {
-            cache.put(KEY, new Person(INVALID_STR));
+            assertPrecision(cache, () -> {
+                cache.put(KEY, Person.newPerson(fld, false));
 
-            return null;
-        }, "STR");
+                return null;
+            }, fld.toUpperCase());
 
-        assertPrecision(cache, () -> {
-            cache.put(KEY, new Person(INVALID_STR.getBytes(StandardCharsets.UTF_8)));
+            assertPrecision(cache, () -> {
+                cache.query(sqlInsertQuery(fld, INVALID_STR));
 
-            return null;
-        }, "BIN");
-
-        assertPrecision(cache, () -> {
-            cache.query(sqlInsertQuery(KEY, "str", INVALID_STR));
-
-            return null;
-        }, "STR");
-
-        assertPrecision(cache, () -> {
-            cache.query(sqlInsertQuery(KEY, "bin", INVALID_STR.getBytes(StandardCharsets.UTF_8)));
-
-            return null;
-        }, "BIN");
+                return null;
+            }, fld.toUpperCase());
+        });
     }
 
     /** */
@@ -140,9 +128,11 @@ public class PrecisionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private SqlFieldsQuery sqlInsertQuery(int key, String field, Object val) {
+    private SqlFieldsQuery sqlInsertQuery(String field, String s) {
+        Object arg = "bin".equalsIgnoreCase(field) ? s.getBytes(StandardCharsets.UTF_8) : s;
+
         return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, " + field + ") values (?, ?)")
-            .setArgs(key, val);
+            .setArgs(KEY, arg);
     }
 
     /** */
@@ -176,6 +166,13 @@ public class PrecisionTest extends GridCommonAbstractTest {
         Person(byte[] arr) {
             this.str = null;
             this.bin = arr;
+        }
+
+        /** */
+        static Person newPerson(String fld, boolean valid) {
+            String s = valid ? VALID_STR : INVALID_STR;
+
+            return "bin".equals(fld) ? new Person(s.getBytes(StandardCharsets.UTF_8)) : new Person(s);
         }
     }
 }
