@@ -735,7 +735,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
 
                 for (SnapshotOperationResponse response : res.values()) {
-                    if (response.handlerResults() == null)
+                    if (response == null || response.handlerResults() == null)
                         continue;
 
                     for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.handlerResults().entrySet())
