@@ -41,8 +41,10 @@ public class FilePageStoreV2 extends FilePageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         int pageSize,
-        LongConsumer allocatedTracker) {
-        super(type, pathProvider, factory, pageSize, allocatedTracker);
+        LongConsumer allocatedTracker,
+        int tag
+    ) {
+        super(type, pathProvider, factory, pageSize, allocatedTracker, tag);
     }
 
     /** {@inheritDoc} */

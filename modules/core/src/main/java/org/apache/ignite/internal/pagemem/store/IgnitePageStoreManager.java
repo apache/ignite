@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
@@ -101,6 +102,16 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
     public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException;
+
+    /**
+     * @param grpId Cache group id.
+     * @param partId Partition id.
+     * @param tag New tag to the file page store generation.
+     * @param src The source of new page store.
+     * @return Previous page store associated with the given partition.
+     * @throws IgniteCheckedException If fails.
+     */
+    public PageStore recreate(int grpId, int partId, int tag, Path src) throws IgniteCheckedException;
 
     /**
      * Checks if partition store exists.

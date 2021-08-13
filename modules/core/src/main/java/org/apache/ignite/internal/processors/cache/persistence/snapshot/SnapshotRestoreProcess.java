@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -75,7 +77,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -97,6 +98,14 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 
 /**
  * Distributed process to restore cache group from the snapshot.
+ *
+ * TODO: Some notes left to do for the restore using rebalancing:
+ *  1. Disable WAL for starting caches.
+ *  2. Own partitions on exchange (like the rebalancing does).
+ *  3. Handle and fire affinity change message when waitInfo becomes empty.
+ *  4. Load partitions from remote nodes.
+ *  5. Set partition to MOVING state during copy from snapshot and read partition Metas.
+ *  6. Replace index if topology match partitions.
  */
 public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
@@ -1345,6 +1354,8 @@ public class SnapshotRestoreProcess {
                 boolean success = truncatedTag.compareAndSet(null, tag);
 
                 assert success : partId;
+
+                return null;
             }, inited::completeExceptionally);
         }
 
@@ -1352,10 +1363,26 @@ public class SnapshotRestoreProcess {
         @Override public void onMarkCheckpointBegin(Context ctx) {
             // TODO Should we clean the 'dirty' flag here, so pages won't be collected by the checkpoint?
             // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
+            // TODO prevent page store initialization on write if tag has been incremented.
+
+            if (inited.isCompletedExceptionally())
+                return;
+
+            handleExceptions(() -> {
+                // Dirty pages will be collected further under checkpoint write-lock and won't be flushed to the disk
+                // due to the tag is used.
+                PageStore prev = grp.shared().pageStore().recreate(grp.groupId(), partId, truncatedTag.get(), loaded.get());
+
+                boolean exists = prev.exists();
+
+                assert !exists : prev;
+
+                // CacheDataStore.
+
+                return null;
+            }, inited::completeExceptionally);
 
             // There are still some dirty pages related to processing partition available in the PageMemory.
-
-            // ctx.cache().context().pageStore().restore(grp.groupId(), part.id(), path.toFile());
 
             // Loaded:
             // - need to set MOVING states to loading partitions.
@@ -1382,15 +1409,13 @@ public class SnapshotRestoreProcess {
             // - check there is no reservations on MOVING partition during the switch procedure
             // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
             // locParts in GridDhtPartitionTopologyImpl
-
-            // Re-init:
-            // 1. Guarantee that these is not updates on partition being handled.
-            // 2. invalidate PM before cp-write-lock (no new pages should read/write from store)
-            // 3. ...
         }
 
         /** {@inheritDoc} */
         @Override public void onCheckpointBegin(Context ctx) {
+            if (inited.isCompletedExceptionally())
+                return;
+
             inited.complete(null);
         }
 
@@ -1405,9 +1430,9 @@ public class SnapshotRestoreProcess {
          * @param action Action to execute.
          * @param ex Consumer which accepts exceptional execution result.
          */
-        private static void handleExceptions(IgniteThrowableRunner action, Consumer<Throwable> ex) {
+        private static <T> void handleExceptions(Callable<T> action, Consumer<Throwable> ex) {
             try {
-                action.run();
+                action.call();
             }
             catch (Throwable t) {
                 ex.accept(t);
