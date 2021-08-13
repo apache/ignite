@@ -95,16 +95,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgniteReducer;
-import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -117,6 +113,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -642,7 +642,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         assert transactionTimeDumpSamplesPerSecondLimit > 0
             : "transactionTimeDumpSamplesPerSecondLimit must be integer value greater than 0.";
 
-        distributedTransactionConfiguration.updateLongTransactionTimeDumpSamplesPerSecondLimitLocal(transactionTimeDumpSamplesPerSecondLimit);
+        distributedTransactionConfiguration.updateLongTransactionTimeDumpSamplesPerSecondLimitLocal(
+                transactionTimeDumpSamplesPerSecondLimit);
     }
 
     /**

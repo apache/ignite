@@ -145,12 +145,30 @@ public class DistributedTransactionConfiguration {
 
                 @Override public void onReadyToWrite() {
                     if (ReadableDistributedMetaStorage.isSupported(ctx)) {
-                        setDefaultValue(longOperationsDumpTimeout, dfltLongOpsDumpTimeout, log);
-                        setDefaultValue(longTransactionTimeDumpThreshold, dfltLongTransactionTimeDumpThreshold, log);
-                        setDefaultValue(transactionTimeDumpSamplesCoefficient, dfltTransactionTimeDumpSamplesCoefficient, log);
-                        setDefaultValue(longTransactionTimeDumpSamplesPerSecondLimit, dfltLongTransactionTimeDumpSamplesPerSecondLimit, log);
-                        setDefaultValue(collisionsDumpInterval, dfltCollisionsDumpInterval, log);
-                        setDefaultValue(txOwnerDumpRequestsAllowed, dfltTxOwnerDumpRequestsAllowed, log);
+                        setDefaultValue(
+                                longOperationsDumpTimeout,
+                                dfltLongOpsDumpTimeout,
+                                log);
+                        setDefaultValue(
+                                longTransactionTimeDumpThreshold,
+                                dfltLongTransactionTimeDumpThreshold,
+                                log);
+                        setDefaultValue(
+                                transactionTimeDumpSamplesCoefficient,
+                                dfltTransactionTimeDumpSamplesCoefficient,
+                                log);
+                        setDefaultValue(
+                                longTransactionTimeDumpSamplesPerSecondLimit,
+                                dfltLongTransactionTimeDumpSamplesPerSecondLimit,
+                                log);
+                        setDefaultValue(
+                                collisionsDumpInterval,
+                                dfltCollisionsDumpInterval,
+                                log);
+                        setDefaultValue(
+                                txOwnerDumpRequestsAllowed,
+                                dfltTxOwnerDumpRequestsAllowed,
+                                log);
                     } else {
                         log.warning("Distributed metastorage is not supported. " +
                             "All distributed transaction configuration parameters are unavailable. " +
@@ -202,7 +220,8 @@ public class DistributedTransactionConfiguration {
      * @return Future for {@link #longTransactionTimeDumpThreshold} update operation.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
-    public GridFutureAdapter<?> updateLongTransactionTimeDumpThresholdAsync(long longTransactionTimeDumpThreshold) throws IgniteCheckedException {
+    public GridFutureAdapter<?> updateLongTransactionTimeDumpThresholdAsync(long longTransactionTimeDumpThreshold)
+        throws IgniteCheckedException {
         return this.longTransactionTimeDumpThreshold.propagateAsync(longTransactionTimeDumpThreshold);
     }
 
