@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class PrecisionTest extends GridCommonAbstractTest {
+public class FieldsPrecisionTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CACHE = "PERSON";
 
