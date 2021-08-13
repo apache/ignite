@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.benchmarks.jmh.cache;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +29,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-public class RestorePartitionStateBenchmark {
+public class RestorePartitionStateBenchmarkTest {
     /** */
     private IgniteConfiguration getConfiguration(String igniteInstanceName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -133,7 +133,8 @@ public class RestorePartitionStateBenchmark {
     }
 
     /** */
-    public static void main(String[] args) throws Exception {
-        new RestorePartitionStateBenchmark().benchmark();
+    @Test
+    public void test() throws Exception {
+        new RestorePartitionStateBenchmarkTest().benchmark();
     }
 }
