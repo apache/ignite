@@ -43,7 +43,7 @@ public interface SnapshotHandler<T> extends Extension {
 
     /**
      * Processing of results from all nodes.
-     * Called on one of the nodes containnig the snapshot data.
+     * Called on one of the nodes containing the snapshot data.
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
