@@ -972,11 +972,7 @@ public class SnapshotRestoreProcess {
                     lf.cleared.complete(null);
                 else {
                     part.clearAsync().listen(f -> {
-                        // This future must clear all heap cache entries from the GridDhtLocalPartition map. The EVICTED status of
-                        // partitions guarantee us that there are no updates on it. As opposed to the MOVING partitions they still
-                        // have new entries to be added (e.g. the rebalance process), so must we must provide additional guarantees
-                        // by some other machinery. Currently, it's guaranteed by disabling cache proxies on snapshot restore,
-                        // so they are not available for users to operate.
+                        // This future must clear all heap cache entries too from the GridDhtLocalPartition map.
                         if (f.error() == null)
                             lf.cleared.complete(f.result());
                         else
@@ -1348,8 +1344,9 @@ public class SnapshotRestoreProcess {
             this.partId = partId;
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-            // When the partition eviction completes and the new partition file loaded
-            // we can start a new data storage initialization.
+            // Only when the old partition eviction completes and the new partition file loaded
+            // we should start a new data storage initialization. This will not be fired if any of
+            // dependent futures completes with an exception.
             loaded.thenAcceptBothAsync(cleared, (path, ignore) -> db.addCheckpointListener(this));
             inited.thenRun(() -> db.removeCheckpointListener(this));
         }
@@ -1362,15 +1359,23 @@ public class SnapshotRestoreProcess {
 
                 // Affinity node partitions are inited on exchange.
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
+                PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-                // Execute partition initialization action under checkpoint thread.
+                // We must provide additional guarantees for the absence of PageMemory updates and new GridCacheMapEntry heap
+                // entries creation in partition map until current lifecycle ends. There are few options here to do this:
+                //
+                // 1. The EVICTED status of partitions guarantee us that there are no updates on it. As opposed to the MOVING
+                //    partitions they still have new entries to be added (e.g. the rebalance process).
+                // 2. For the file rebalance procedure (IEP-28) such guarantees may be achieved by creating a dedicated
+                //    temporary WAL, so new updates will not affect PageMemory.
+                // 3. The snapshot restore guarantee the absence of updates by disabling cache proxies on snapshot restore,
+                //    so these caches will not be available for users to operate.
                 assert part != null : "Partition must be initialized prior to swapping cache data store: " + partId;
                 assert part.state() == GridDhtPartitionState.MOVING : "Only MOVING partitions allowed: " + part.state();
                 assert part.internalSize() == 0 : "Partition map must clear all heap entries prior to invalidation: " + partId;
 
-                PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
-
                 int tag = pageMemory.invalidate(grp.groupId(), partId);
+
                 grp.shared().pageStore().truncate(grp.groupId(), partId, tag);
 
                 boolean success = truncatedTag.compareAndSet(null, tag);
