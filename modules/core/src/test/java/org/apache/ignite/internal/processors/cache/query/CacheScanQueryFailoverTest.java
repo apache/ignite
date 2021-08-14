@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -172,7 +173,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         // Force checkpoint to destroy evicted partitions store.
         forceCheckpoint(grid0);
 
-        GridTestUtils.assertThrowsAnyCause(log, iter1::next, IgniteException.class, "Failed to get next data row");
+        GridTestUtils.assertThrows(log, iter1::next, NoSuchElementException.class, null);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             while (iter2.hasNext())
