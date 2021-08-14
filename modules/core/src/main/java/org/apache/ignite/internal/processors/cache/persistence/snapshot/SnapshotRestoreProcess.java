@@ -982,6 +982,9 @@ public class SnapshotRestoreProcess {
 
                 // All partition restore context must be available for the main restore completion future.
                 opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(lf);
+
+                // DEBUG
+                lf.done().whenComplete((t, r) -> System.out.println(">>>>>> " + opCtx0.locProgress));
             }
 
             Set<PartitionRestoreLifecycle> partCtxs = opCtx0.locProgress.get(grp.groupId());
@@ -1367,7 +1370,7 @@ public class SnapshotRestoreProcess {
                 // 1. The EVICTED status of partitions guarantee us that there are no updates on it. As opposed to the MOVING
                 //    partitions they still have new entries to be added (e.g. the rebalance process).
                 // 2. For the file rebalance procedure (IEP-28) such guarantees may be achieved by creating a dedicated
-                //    temporary WAL, so new updates will not affect PageMemory.
+                //    temporary WAL to forward updates to, so new updates will not affect PageMemory.
                 // 3. The snapshot restore guarantee the absence of updates by disabling cache proxies on snapshot restore,
                 //    so these caches will not be available for users to operate.
                 assert part != null : "Partition must be initialized prior to swapping cache data store: " + partId;
@@ -1465,8 +1468,6 @@ public class SnapshotRestoreProcess {
             part.dataStore().init();
 
             inited.complete(null);
-
-            System.out.println(">>>>> " + this);
         }
 
         /**
@@ -1497,20 +1498,21 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionRestoreLifecycle context = (PartitionRestoreLifecycle)o;
+            PartitionRestoreLifecycle lifecycle = (PartitionRestoreLifecycle)o;
 
-            return partId == context.partId;
+            return grp.groupId() == lifecycle.grp.groupId() && partId == lifecycle.partId;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(partId);
+            return Objects.hash(grp.groupId(), partId);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return "PartitionRestoreLifecycle{" +
-                ", partId=" + partId +
+                ", grpName=" + grp.cacheOrGroupName() +
+                "\n, partId=" + partId +
                 "\n, cleared=" + cleared +
                 "\n, loaded=" + loaded +
                 "\n, inited=" + inited +
