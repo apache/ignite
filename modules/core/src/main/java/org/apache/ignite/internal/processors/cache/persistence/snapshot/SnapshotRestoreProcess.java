@@ -64,7 +64,9 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -1358,6 +1360,10 @@ public class SnapshotRestoreProcess {
          * @param partId Partition id.
          */
         public PartitionRestoreLifecycle(CacheGroupContext grp, int partId) {
+            assert !grp.isLocal();
+            assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
+            assert grp.topology() instanceof GridDhtPartitionTopologyImpl;
+
             this.grp = grp;
             this.partId = partId;
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
@@ -1407,19 +1413,31 @@ public class SnapshotRestoreProcess {
             // We are swapping cache data stores for partition. Some of them may be processed in another listeners of
             // the checkpoint thread.
             handleExceptions(() -> {
-                GridDhtLocalPartition part = grp.topology().localPartition(partId);
+                GridDhtLocalPartition prevPart = grp.topology().localPartition(partId);
 
-                part.dataStore().markDestroyed();
+                assert prevPart.internalSize() == 0 : "Partition map must clear all heap entries prior to invalidation: " + partId;
+                assert prevPart.reservations() == 0 : "Partition must have no reservations prior to data store swap: " + partId;
+
+                prevPart.dataStore().markDestroyed();
 
                 // Dirty pages will be collected further under checkpoint write-lock and won't be flushed to the disk
-                // due to the tag is used.
-                PageStore prev = grp.shared().pageStore().recreate(grp.groupId(), partId, truncatedTag.get(), loaded.get());
+                // due to the 'tag' is used.
+                PageStore prevStore = grp.shared().pageStore().recreate(grp.groupId(), partId, truncatedTag.get(), loaded.get());
 
-                boolean exists = prev.exists();
+                boolean exists = prevStore.exists();
 
-                assert !exists : prev;
+                assert !exists : prevStore;
 
-                // Create CacheDataStore ---- ISSUE here
+                GridDhtLocalPartition part = ((GridDhtPartitionTopologyImpl)grp.topology()).doForcePartitionCreate(partId,
+                    (s) -> s != GridDhtPartitionState.MOVING,
+                    (prevState, newPart) -> {
+                        assert prevState == GridDhtPartitionState.MOVING : "Previous partition must has MOVING state.";
+                        assert newPart.reservations() == 0;
+                        assert newPart.internalSize() == 0;
+                    });
+
+                assert !((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).inited() :
+                    "Swapped datastore must not be initialized under the checkpoint write lock: " + partId;
 
                 return null;
             }, inited::completeExceptionally);

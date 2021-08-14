@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -948,34 +950,47 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         return loc;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException {
+    /**
+     * @param partId Partition id to create.
+     * @param exit Condition to return partition immediately if it's already created.
+     * @param act Post-processing action for created partition if the previous partition exists.
+     * @return Created partition or the exiting partition.
+     */
+    public GridDhtLocalPartition doForcePartitionCreate(
+        int partId,
+        Predicate<GridDhtPartitionState> exit,
+        BiConsumer<GridDhtPartitionState, GridDhtLocalPartition> act
+    ) {
         lock.writeLock().lock();
 
         try {
-            GridDhtLocalPartition part = locParts.get(p);
+            GridDhtLocalPartition part0 = locParts.get(partId);
 
-            boolean recreate = false;
+            if (part0 != null && exit.test(part0.state()))
+                return part0;
 
-            if (part != null) {
-                if (part.state() != EVICTED)
-                    return part;
-                else
-                    recreate = true;
-            }
+            GridDhtLocalPartition part = partFactory.create(ctx, grp, partId, true);
 
-            part = partFactory.create(ctx, grp, p, true);
+            if (part0 != null)
+                act.accept(part0.state(), part);
 
-            if (recreate)
-                part.resetUpdateCounter();
-
-            locParts.set(p, part);
+            locParts.set(partId, part);
 
             return part;
         }
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtLocalPartition forceCreatePartition(int p) {
+        return doForcePartitionCreate(p,
+            GridDhtPartitionState::active,
+            (s, part) -> {
+                if (s == EVICTED)
+                    part.resetUpdateCounter();
+            });
     }
 
     /**

@@ -1940,6 +1940,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             this.log = log;
         }
 
+        /**
+         * @return {@code true} if persistence data store initialized.
+         */
+        public boolean inited() {
+            return init.get();
+        }
+
         /** */
         public AbstractFreeList<CacheDataRow> getCacheStoreFreeList() {
             return freeList;
