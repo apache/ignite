@@ -920,7 +920,7 @@ public class SnapshotRestoreProcess {
      * @param exchFut Exchange future.
      */
     public void onRebalanceReady(Set<CacheGroupContext> grps, @Nullable GridDhtPartitionsExchangeFuture exchFut) {
-        if (exchFut == null)
+        if (exchFut == null || exchFut.exchangeActions() == null)
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
@@ -989,26 +989,6 @@ public class SnapshotRestoreProcess {
             }
 
             Set<PartitionRestoreLifecycle> partCtxs = opCtx0.locProgress.get(grp.groupId());
-
-            // After partitions has been loaded we can process the groups.
-//            GridCompoundFuture<Void, Void> resetPartsFut = new GridCompoundFuture<>();
-//            total.add(resetPartsFut);
-
-//            loadFuts.forEach(resetPartsFut::add);
-
-//            resetPartsFut.markInitialized().listen(f -> {
-//                if (f.error() == null) {
-//                    try {
-//                        grp.offheap().restorePartitionStates(Collections.emptyMap());
-//
-//                        if (log.isInfoEnabled())
-//                            log.info("Partition states restored after loading partitions [grpName=" + grp.cacheOrGroupName() + ']');
-//                    }
-//                    catch (Throwable t) {
-//                        opCtx0.errHnd.accept(t);
-//                    }
-//                }
-//            });
 
             // TODO partitions may not be even created in a snapshot.
             // Check if partitions might be copied right with index,
@@ -1480,6 +1460,8 @@ public class SnapshotRestoreProcess {
             part.dataStore().init();
 
             inited.complete(null);
+
+            System.out.println(">>>>> " + this);
         }
 
         /**
@@ -1522,11 +1504,12 @@ public class SnapshotRestoreProcess {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "PartitionRestoreLifecycleContext{" +
-                "partId=" + partId +
-                ", evicted=" + cleared +
-                ", loaded=" + loaded +
-                ", inited=" + inited +
+            return "PartitionRestoreLifecycle{" +
+                ", partId=" + partId +
+                "\n, cleared=" + cleared +
+                "\n, loaded=" + loaded +
+                "\n, inited=" + inited +
+                "\n, truncatedTag=" + truncatedTag +
                 '}';
         }
     }

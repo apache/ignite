@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -215,6 +216,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PageStore recreate(int grpId, int partId, int tag, Path src) throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
@@ -188,7 +189,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 4));
     }
 
     /**

@@ -1475,7 +1475,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         /** {@inheritDoc} */
         @Override public PageStore get(int partId) {
-            if (partId > MAX_PARTITION_ID || partId != INDEX_PARTITION)
+            if (partId > MAX_PARTITION_ID && partId != INDEX_PARTITION)
                 throw new IllegalArgumentException("Partition with id is reserved: " + partId);
 
             return requireNonNull(partId == INDEX_PARTITION ? stores.get(stores.length() - 1) : stores.get(partId));
@@ -1483,7 +1483,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         /** {@inheritDoc} */
         @Override public PageStore set(int partId, PageStore store) {
-            if (partId > MAX_PARTITION_ID || partId != INDEX_PARTITION)
+            if (partId > MAX_PARTITION_ID && partId != INDEX_PARTITION)
                 throw new IllegalArgumentException("Partition with id is reserved: " + partId);
 
             if (store == null)
