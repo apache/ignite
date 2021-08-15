@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -101,6 +102,10 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 /**
  * Distributed process to restore cache group from the snapshot.
  *
+ *
+ *
+ * Snapshot recovery with transfer partitions
+ *
  * TODO: Some notes left to do for the restore using rebalancing:
  *  1. Disable WAL for starting caches.
  *  2. Own partitions on exchange (like the rebalancing does).
@@ -108,10 +113,9 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  4. Load partitions from remote nodes.
  *  5. Set partition to MOVING state during copy from snapshot and read partition Metas.
  *  6. Replace index if topology match partitions.
+ *  7. Rebuild index if need.
  *
- *
- *  Snapshot recovery with transfer partitions
- *
+ * Other strategies to be memento to:
  *
  * 1. Load partitions from snapshot, then start cache groups
  * - registered cache groups calculated from discovery thread, no affinity cache data can be calculated without it
@@ -119,31 +123,26 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * - Can affinity be calculated on each node? Node attributes may cause some issues.
  *
  *
- * 2. Start cache groups disabled, then load partitoins from snapshot
- * - What whould happen with partition counters on primaries and backups? (probably not required)
+ * 2. Start cache groups disabled, then load partitions from snapshot
+ * - What would happen with partition counters on primaries and backups? (probably not required)
  * - Should the partition map be updated on client nodes?
- * - When partition is loaded from snaphost, should we update parititon counters under checkpoint?
+ * - When partition is loaded from snapshot, should we update partition counters under checkpoint?
  *
- * 3. Start cache disabled and load data from each partition using partiton iterator (deframentation out of the box + index rebuild)
- * 3a. Transfer snapshot parittion files from remove node and read them as local data.
- * 3b. Read partitions on remote node and transfer data via Suppy cache message.
+ * 3. Start cache disabled and load data from each partition using partition iterator (defragmentation out of the box + index rebuild)
+ * 3a. Transfer snapshot partition files from remove node and read them as local data.
+ * 3b. Read partitions on remote node and transfer data via Supply cache message.
  * - cacheId is not stored in the partition file, so it's required to obtain it from the cache data tree
- * - datastreamer load job is not sutable for caches running with disabled cache proxies
+ * - data streamer load job is not suitable for caches running with disabled cache proxies
  * - too many dirty pages can lead to data eviction to ssd
  *
- * 5. Start cache and load partitions as it rebalancing do (transfer files)
+ * 4. Start cache and load partitions as it rebalancing do (transfer files)
  * - There is no lazy init for index partition
  * - node2part must be updated on forceRecreatePartition method call
  * - do not own partitions after cache start
- * - update node2part map after partitions loaded from source and start refreshPartitions/affinityChange
+ * - update node2part map after partitions loaded from source and start refreshPartitions/affinityChange (each node sends
+ *   a single message with its own cntrMap to the coordinator node, than coordinator resends aggregated message to the whole
+ *   cluster nodes on update incomeCntrMap).
  *
- *
- * GG snapshot
- *
- * - начался снапшот и появилась нагрузка - откидывается гряные страницы 20ую пейджу испачкали она будет нулевой
- *
- * - есть воркер, который копирует из офхип все страницы (поднимает все старинцы из файлов партиции, если нужно)
- * - если какой-то тред меняет старницу, то он её откладывает в конец файла
  */
 public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
@@ -962,6 +961,8 @@ public class SnapshotRestoreProcess {
                 continue;
             }
 
+            Set<PartitionRestoreLifecycle> partLfs = U.newHashSet(leftParts.size());
+
             for (Integer partId : leftParts) {
                 // Affinity node partitions are inited on exchange.
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
@@ -980,14 +981,8 @@ public class SnapshotRestoreProcess {
                     });
                 }
 
-                // All partition restore context must be available for the main restore completion future.
-                opCtx0.locProgress.computeIfAbsent(grp.groupId(), g -> new HashSet<>()).add(lf);
-
-                // DEBUG
-                lf.done().whenComplete((t, r) -> System.out.println(">>>>>> " + opCtx0.locProgress));
+                partLfs.add(lf);
             }
-
-            Set<PartitionRestoreLifecycle> partCtxs = opCtx0.locProgress.get(grp.groupId());
 
             // TODO partitions may not be even created in a snapshot.
             // Check if partitions might be copied right with index,
@@ -999,7 +994,7 @@ public class SnapshotRestoreProcess {
                 .findFirst()
                 .ifPresent(meta ->
                     leftParts.removeIf(partId ->
-                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, findLoadFuture(partCtxs, partId))));
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, findLoadFuture(partLfs, partId))));
 
             for (SnapshotMetadata meta : locMetas) {
                 if (leftParts.isEmpty())
@@ -1008,21 +1003,41 @@ public class SnapshotRestoreProcess {
                 leftParts.removeIf(partId ->
                     partId != INDEX_PARTITION &&
                         meta.partitions().get(grp.groupId()).contains(partId) &&
-                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, findLoadFuture(partCtxs, partId)));
+                        runLocalAsync(grp, opCtx0, meta.folderName(), partId, findLoadFuture(partLfs, partId)));
             }
 
-            assert leftParts.isEmpty();
+            assert leftParts.isEmpty() : leftParts;
+
+            // TODO Second preload partitions from remote nodes.
+
+            CompletableFuture<?>[] arr0 = partLfs.stream()
+                .map(PartitionRestoreLifecycle::done)
+                .collect(Collectors.toList())
+                .toArray(new CompletableFuture[partLfs.size()]);
+
+            CacheRestoreCompletableFuture grpFut =
+                new CacheRestoreCompletableFuture(grp.groupId(), CompletableFuture.allOf(arr0))
+                    .thenRunAsync(() -> {
+                        // Initialization action when cache group partitions fully initialized.
+                        // It is safe to own all persistence cache partitions here, since partitions state
+                        // are already located on the disk.
+                        grp.topology().ownMoving();
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Partitions have been scheduled to resend [reason=" +
+                                "Group durability restored, name=" + grp.cacheOrGroupName() + ']');
+                        }
+
+                        grp.shared().exchange().refreshPartitions(Collections.singleton(grp));
+                    }, grp.shared().snapshotMgr().snapshotExecutorService());
+
+            opCtx0.locProgress.put(grpFut, partLfs);
         }
 
-        // TODO Second preload partitions from remote nodes.
+        // Complete cache future.
+        int futsSize = opCtx0.locProgress.size();
 
-        List<CompletionStage<Void>> futs0 = new ArrayList<>();
-
-        opCtx0.locProgress.values().forEach(s -> s.forEach(e -> futs0.add(e.done())));
-
-        int futsSize = futs0.size();
-
-        CompletableFuture.allOf(futs0.toArray(new CompletableFuture[futsSize]))
+        CompletableFuture.allOf(opCtx0.locProgress.keySet().toArray(new CompletableFuture[futsSize]))
             .whenComplete((res, t) -> {
                 if (t == null)
                     opCtx0.cacheStartLoadFut.onDone(true);
@@ -1216,12 +1231,12 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param ctxs Collection of partition context.
+     * @param lcs Collection of partition context.
      * @param partId Partition id to find.
      * @return Load future.
      */
-    private static @Nullable CompletableFuture<Path> findLoadFuture(Set<PartitionRestoreLifecycle> ctxs, int partId) {
-        return ofNullable(F.find(ctxs, null, (IgnitePredicate<? super PartitionRestoreLifecycle>)f -> f.partId == partId))
+    private static @Nullable CompletableFuture<Path> findLoadFuture(Set<PartitionRestoreLifecycle> lcs, int partId) {
+        return ofNullable(F.find(lcs, null, (IgnitePredicate<? super PartitionRestoreLifecycle>)f -> f.partId == partId))
             .map(c -> c.loaded)
             .orElse(null);
     }
@@ -1258,7 +1273,7 @@ public class SnapshotRestoreProcess {
         private final BooleanSupplier stopChecker = () -> err.get() != null;
 
         /** Progress of processing cache group partitions on the local node.*/
-        private final Map<Integer, Set<PartitionRestoreLifecycle>> locProgress = new HashMap<>();
+        private final Map<CacheRestoreCompletableFuture, Set<PartitionRestoreLifecycle>> locProgress = new HashMap<>();
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
@@ -1311,6 +1326,65 @@ public class SnapshotRestoreProcess {
         ) {
             this.ccfgs = new ArrayList<>(ccfgs);
             this.metas = new ArrayList<>(metas);
+        }
+    }
+
+    /** */
+    private static class CacheRestoreCompletableFuture extends CompletableFuture<Void> {
+        /** Cache group id.*/
+        private final int grpId;
+
+        /** Original future to listen to. */
+        private final CompletionStage<Void> baseFut;
+
+        /**
+         * @param grpId Cache group id.
+         * @param baseFut Original future to listen to.
+         */
+        public CacheRestoreCompletableFuture(int grpId, CompletionStage<Void> baseFut) {
+            this.grpId = grpId;
+            this.baseFut = baseFut;
+        }
+
+        /**
+         * @param grpId Cache group id.
+         * @param f Completable future to wrap.
+         * @return Completable future wrapper.
+         */
+        private static CacheRestoreCompletableFuture wrap(int grpId, CompletionStage<Void> f) {
+            CacheRestoreCompletableFuture delegate = new CacheRestoreCompletableFuture(grpId, f);
+
+            f.whenComplete((v, t) -> {
+                if (t == null)
+                    delegate.complete(null);
+                else
+                    delegate.completeExceptionally(t);
+            });
+
+            return delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheRestoreCompletableFuture thenRunAsync(Runnable action, Executor executor) {
+            return wrap(grpId, baseFut.thenRunAsync(action, executor));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            CacheRestoreCompletableFuture future = (CacheRestoreCompletableFuture)o;
+
+            return grpId == future.grpId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(grpId);
         }
     }
 
@@ -1511,7 +1585,7 @@ public class SnapshotRestoreProcess {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "PartitionRestoreLifecycle{" +
-                ", grpName=" + grp.cacheOrGroupName() +
+                "\n, grpName=" + grp.cacheOrGroupName() +
                 "\n, partId=" + partId +
                 "\n, cleared=" + cleared +
                 "\n, loaded=" + loaded +
