@@ -37,7 +37,7 @@ public class IgniteStatisticsImpl implements Statistic {
     /**
      * Constructor.
      *
-     * @param statistics Internal object statistics or {@code null}.
+     * @param statistics Internal object statistics or {@code null} if there is no statistics collected.
      */
     public IgniteStatisticsImpl(ObjectStatisticsImpl statistics) {
         this.statistics = statistics;
@@ -73,13 +73,6 @@ public class IgniteStatisticsImpl implements Statistic {
     /** {@inheritDoc} */
     @Override public IgniteDistribution getDistribution() {
         return null;
-    }
-
-    /**
-     * @return Column statistics map.
-     */
-    public Map<String, ColumnStatistics> getColumnsStatistics() {
-        return (statistics == null) ? Collections.emptyMap() : statistics.columnsStatistics();
     }
 
     /**

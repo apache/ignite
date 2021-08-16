@@ -293,7 +293,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      *
      * @param rel Original rel node to fallback calculation by.
      * @param tbl Underlying IgniteTable.
-     * @param mq RelMetadataQuery
+     * @param mq RelMetadataQuery.
      * @param predicate Predicate to estimate selectivity by.
      * @return Selectivity.
      */
@@ -546,8 +546,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         String colName = columns.get(origins.iterator().next().getOriginColumnOrdinal());
 
-        //        String colName = getColName(pred, columns);
-
         if (QueryUtils.KEY_FIELD_NAME.equals(colName))
             colName = tbl.descriptor().typeDescription().keyFieldName();
 
@@ -557,7 +555,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         if (stat == null)
             return null;
 
-        return ((IgniteStatisticsImpl)stat).getColumnsStatistics().get(colName);
+        return ((IgniteStatisticsImpl)stat).getColumnStatistics(colName);
     }
 
     /**
@@ -766,7 +764,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * Get selectivity of exchange by it's input selectivity.
      *
      * @param exch IgniteExchange.
-     * @param mq RelMetadataQuery
+     * @param mq RelMetadataQuery.
      * @param predicate Predicate.
      * @return Selectivity or {@code null} if it can't be estimated.
      */
@@ -783,7 +781,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * Get selectivity of table spool by it's input selectivity.
      *
      * @param tspool IgniteTableSpool.
-     * @param mq RelMetadataQuery
+     * @param mq RelMetadataQuery.
      * @param predicate Predicate.
      * @return Selectivity or {@code null} if it can't be estimated.
      */
@@ -800,7 +798,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * Get selectivity of hash index spool by it's input selectivity.
      *
      * @param rel IgniteHashIndexSpool.
-     * @param mq RelMetadataQuery
+     * @param mq RelMetadataQuery.
      * @param predicate Predicate.
      * @return Selectivity or {@code null} if it can't be estimated.
      */

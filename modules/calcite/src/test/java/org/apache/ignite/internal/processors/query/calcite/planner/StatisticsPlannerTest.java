@@ -121,7 +121,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
                 .add("T1C11TIME", f.createJavaType(Time.class))
                 .add("T1C12TIMESTAMP", f.createJavaType(Timestamp.class))
                 .build())
-            .setColocationGroup(colocation)
             .setDistribution(IgniteDistributions.affinity(0, "TBL1", "hash"));
 
         tbl1.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl1));
@@ -175,7 +174,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
                 .add("T2C3LONG", f.createJavaType(Long.class))
                 .add("T2C4DBL", f.createJavaType(Double.class))
                 .build())
-            .setColocationGroup(colocation)
             .setDistribution(IgniteDistributions.affinity(0, "TBL2", "hash"));
 
         tbl2.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl2));
@@ -193,7 +191,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
                 .add("T3C2STR", f.createJavaType(String.class))
                 .add("T3C3DBL", f.createJavaType(Double.class))
                 .build())
-            .setColocationGroup(colocation)
             .setDistribution(IgniteDistributions.affinity(0, "TBL3", "hash"));
         tbl3.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl3));
     }

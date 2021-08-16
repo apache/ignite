@@ -651,16 +651,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
         /** */
+        private IgniteDistribution distribution;
+
+        /** */
         private IgniteStatisticsImpl statistics;
 
         /** */
         private final TableDescriptor desc;
-
-        /** */
-        private ColocationGroup colocationGroup;
-
-        /** */
-        private IgniteDistribution distribution;
 
         /** */
         TestTable(RelDataType type) {
@@ -675,34 +672,10 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** */
         TestTable(String name, RelDataType type, double rowCnt) {
             protoType = RelDataTypeImpl.proto(type);
-            this.statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
+            statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
             this.name = name;
 
             desc = new TestTableDescriptor(this::distribution, type);
-        }
-
-        /**
-         * Set table statistics;
-         *
-         * @param statistics Statistics to set.
-         * @return TestTable for chaining.
-         */
-        public TestTable setStatistics(IgniteStatisticsImpl statistics) {
-            this.statistics = statistics;
-
-            return this;
-        }
-
-        /**
-         * Set tables colocation group.
-         *
-         * @param colocationGroup Colocation group to set.
-         * @return TestTable for chaining.
-         */
-        public TestTable setColocationGroup(ColocationGroup colocationGroup) {
-            this.colocationGroup = colocationGroup;
-
-            return this;
         }
 
         /**
@@ -713,6 +686,18 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
          */
         public TestTable setDistribution(IgniteDistribution distribution) {
             this.distribution = distribution;
+
+            return this;
+        }
+
+        /**
+         * Set table statistics;
+         *
+         * @param statistics Statistics to set.
+         * @return TestTable for chaining.
+         */
+        public TestTable setStatistics(IgniteStatisticsImpl statistics) {
+            this.statistics = statistics;
 
             return this;
         }
@@ -791,9 +776,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-            if (colocationGroup != null)
-                return colocationGroup;
-
             throw new AssertionError();
         }
 
@@ -843,6 +825,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     public static class TestIndex extends IgniteIndex {
 
         /**

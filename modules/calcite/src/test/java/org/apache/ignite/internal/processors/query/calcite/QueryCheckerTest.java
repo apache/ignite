@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
@@ -55,8 +54,7 @@ public class QueryCheckerTest {
      */
     @Test
     public void testCostMatchesWrongCostNoMatches() {
-        ServerStatisticsIntegrationTest.TestCost wrongCost =
-            new ServerStatisticsIntegrationTest.TestCost(4., null, null, null, null);
+        TestCost wrongCost = new TestCost(4., null, null, null, null);
         Matcher<String> wrongCostMatcher = QueryChecker.containsCost(wrongCost);
 
         assertFalse(wrongCostMatcher.matches(PLAN));
@@ -67,9 +65,7 @@ public class QueryCheckerTest {
      */
     @Test
     public void testCostMatchesAnyCostMatches() {
-
-        ServerStatisticsIntegrationTest.TestCost anyCost =
-            new ServerStatisticsIntegrationTest.TestCost(null, null, null, null, null);
+        TestCost anyCost = new TestCost(null, null, null, null, null);
         Matcher<String> anyCostMatcher = QueryChecker.containsCost(anyCost);
 
         assertTrue(anyCostMatcher.matches(PLAN));
@@ -80,8 +76,7 @@ public class QueryCheckerTest {
      */
     @Test
     public void testCostMatchesFirstLineMatches() {
-        ServerStatisticsIntegrationTest.TestCost firstLineCost =
-            new ServerStatisticsIntegrationTest.TestCost(null, 9., null, null, 12.);
+        TestCost firstLineCost = new TestCost(null, 9., null, null, 12.);
         Matcher<String> firstLineCostMatcher = QueryChecker.containsCost(firstLineCost);
 
         assertTrue(firstLineCostMatcher.matches(PLAN));
@@ -92,8 +87,7 @@ public class QueryCheckerTest {
      */
     @Test
     public void testCostMatchesMiddleLineMatches() {
-        ServerStatisticsIntegrationTest.TestCost middleLineCost =
-            new ServerStatisticsIntegrationTest.TestCost(6., 6., null, 0., 12.);
+        TestCost middleLineCost = new TestCost(6., 6., null, 0., 12.);
         Matcher<String> middleLineCostMatcher = QueryChecker.containsCost(middleLineCost);
 
         assertTrue(middleLineCostMatcher.matches(PLAN));
@@ -104,8 +98,7 @@ public class QueryCheckerTest {
      */
     @Test
     public void testCostMatchesLastLineMatches() {
-        ServerStatisticsIntegrationTest.TestCost lastLineCost =
-            new ServerStatisticsIntegrationTest.TestCost(3., 3., null, 0., null);
+        TestCost lastLineCost = new TestCost(3., 3., null, 0., null);
         Matcher<String> lastLineCostMatcher = QueryChecker.containsCost(lastLineCost);
 
         assertTrue(lastLineCostMatcher.matches(PLAN));

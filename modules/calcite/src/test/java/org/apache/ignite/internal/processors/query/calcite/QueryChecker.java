@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -97,7 +96,7 @@ public abstract class QueryChecker {
      * @param cost TestCost to match.
      * @return Matcher.
      */
-    public static Matcher<String> containsCost(ServerStatisticsIntegrationTest.TestCost cost) {
+    public static Matcher<String> containsCost(TestCost cost) {
         String rowCntStr = printCostVal(cost.rowCount());
         String cpuStr = printCostVal(cost.cpu());
         String memoryStr = printCostVal(cost.memory());
