@@ -118,13 +118,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /**
-     * Estimation of row count for table scan.
-     */
-//    public double getRowCount(IgniteTableScan rel, RelMetadataQuery mq) {
-//        return rel.estimateRowCount(mq);
-//    }
-
-    /**
      * Estimation of row count for set op (MINUS, INTERSECT).
      */
     public double getRowCount(IgniteSetOp rel, RelMetadataQuery mq) {

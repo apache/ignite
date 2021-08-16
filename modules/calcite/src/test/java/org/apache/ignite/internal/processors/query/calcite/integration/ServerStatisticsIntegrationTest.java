@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.TestCost;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
@@ -467,8 +468,8 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     /**
      * Create (if not exists) and populate cache with all types.
      *
-     * @param start first key idx.
-     * @param count rows count.
+     * @param start First key idx.
+     * @param count Rows count.
      * @return Populated cache.
      */
     protected IgniteCache<Integer, AllTypes> createAndPopulateAllTypesTable(int start, int count) {
@@ -486,89 +487,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         }
 
         return all_types;
-    }
-
-    /**
-     * Test cost with nulls for unknown values.
-     */
-    public static class TestCost {
-        /** */
-        Double rowCount;
-
-        /** */
-        Double cpu;
-
-        /** */
-        Double memory;
-
-        /** */
-        Double io;
-
-        /** */
-        Double network;
-
-        /**
-         * @return Row count.
-         */
-        public Double rowCount() {
-            return rowCount;
-        }
-
-        /**
-         * @return Cpu.
-         */
-        public Double cpu() {
-            return cpu;
-        }
-
-        /**
-         * @return Memory
-         */
-        public Double memory() {
-            return memory;
-        }
-
-        /**
-         * @return Io.
-         */
-        public Double io() {
-            return io;
-        }
-
-        /**
-         * @return Network.
-         */
-        public Double network() {
-            return network;
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param rowCount Row count.
-         * @param cpu Cpu.
-         * @param memory Memory.
-         * @param io Io.
-         * @param network Network.
-         */
-        public TestCost(Double rowCount, Double cpu, Double memory, Double io, Double network) {
-            this.rowCount = rowCount;
-            this.cpu = cpu;
-            this.memory = memory;
-            this.io = io;
-            this.network = network;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "TestCost{" +
-                "rowCount=" + rowCount +
-                ", cpu=" + cpu +
-                ", memory=" + memory +
-                ", io=" + io +
-                ", network=" + network +
-                '}';
-        }
     }
 
     /**
