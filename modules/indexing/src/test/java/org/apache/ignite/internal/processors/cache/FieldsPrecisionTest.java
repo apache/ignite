@@ -105,7 +105,7 @@ public class FieldsPrecisionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void assertPrecision(IgniteCache cache, Callable<Object> clo, String colName) {
+    private void assertPrecision(IgniteCache<Integer, Person> cache, Callable<Object> clo, String colName) {
         GridTestUtils.assertThrows(null, clo, CacheException.class,
             "Value for a column '" + colName + "' is too long. Maximum length: 5, actual length: 6");
 
@@ -120,7 +120,7 @@ public class FieldsPrecisionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteCache startSqlPersonCache() {
+    private IgniteCache<Integer, Person> startSqlPersonCache() {
         ignite.context().query().querySqlFields(new SqlFieldsQuery(
             "create table " + PERSON_CACHE + "(" +
             "   id int PRIMARY KEY," +
