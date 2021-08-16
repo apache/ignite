@@ -287,7 +287,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final IgniteLogger exchLog;
 
     /** */
-    private CacheAffinityChangeMessage affChangeMsg;
+    private volatile CacheAffinityChangeMessage affChangeMsg;
 
     /**
      * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
@@ -525,6 +525,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void affinityChangeMessage(CacheAffinityChangeMessage affChangeMsg) {
         this.affChangeMsg = affChangeMsg;
+    }
+
+    /**
+     * @return Affinity change message associated with the exchange.
+     */
+    public @Nullable CacheAffinityChangeMessage affinityChangeMessage() {
+        return affChangeMsg;
     }
 
     /**

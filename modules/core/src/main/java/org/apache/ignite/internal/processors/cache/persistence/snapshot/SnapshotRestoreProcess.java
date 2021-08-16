@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -59,10 +57,13 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
@@ -963,12 +964,12 @@ public class SnapshotRestoreProcess {
                 continue;
             }
 
-            Set<PartitionRestoreLifecycle> partLfs = U.newHashSet(leftParts.size());
+            Set<PartitionRestoreLifecycleFuture> partLfs = U.newHashSet(leftParts.size());
 
             for (Integer partId : leftParts) {
                 // Affinity node partitions are inited on exchange.
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
-                PartitionRestoreLifecycle lf = new PartitionRestoreLifecycle(grp, partId);
+                PartitionRestoreLifecycleFuture lf = PartitionRestoreLifecycleFuture.create(grp, partId);
 
                 // Start partition eviction first.
                 if (part == null)
@@ -1012,14 +1013,10 @@ public class SnapshotRestoreProcess {
 
             // TODO Second preload partitions from remote nodes.
 
-            CompletableFuture<?>[] arr0 = partLfs.stream()
-                .map(PartitionRestoreLifecycle::done)
-                .collect(Collectors.toList())
-                .toArray(new CompletableFuture[partLfs.size()]);
-
-            CacheRestoreCompletableFuture grpFut =
-                new CacheRestoreCompletableFuture(grp.groupId(), CompletableFuture.allOf(arr0))
-                    .thenRunAsync(() -> {
+            opCtx0.locProgress.put(
+                CacheRestoreLifecycleFuture.create(grp,
+                    partLfs,
+                    () -> {
                         // Initialization action when cache group partitions fully initialized.
                         // It is safe to own all persistence cache partitions here, since partitions state
                         // are already located on the disk.
@@ -1031,9 +1028,8 @@ public class SnapshotRestoreProcess {
                         }
 
                         grp.shared().exchange().refreshPartitions(Collections.singleton(grp));
-                    }, grp.shared().snapshotMgr().snapshotExecutorService());
-
-            opCtx0.locProgress.put(grpFut, partLfs);
+                    }),
+                partLfs);
         }
 
         // Complete cache future.
@@ -1237,8 +1233,8 @@ public class SnapshotRestoreProcess {
      * @param partId Partition id to find.
      * @return Load future.
      */
-    private static @Nullable CompletableFuture<Path> findLoadFuture(Set<PartitionRestoreLifecycle> lcs, int partId) {
-        return ofNullable(F.find(lcs, null, (IgnitePredicate<? super PartitionRestoreLifecycle>)f -> f.partId == partId))
+    private static @Nullable CompletableFuture<Path> findLoadFuture(Set<PartitionRestoreLifecycleFuture> lcs, int partId) {
+        return ofNullable(F.find(lcs, null, (IgnitePredicate<? super PartitionRestoreLifecycleFuture>)f -> f.partId == partId))
             .map(c -> c.loaded)
             .orElse(null);
     }
@@ -1275,7 +1271,7 @@ public class SnapshotRestoreProcess {
         private final BooleanSupplier stopChecker = () -> err.get() != null;
 
         /** Progress of processing cache group partitions on the local node.*/
-        private final Map<CacheRestoreCompletableFuture, Set<PartitionRestoreLifecycle>> locProgress = new HashMap<>();
+        private final Map<CacheRestoreLifecycleFuture, Set<PartitionRestoreLifecycleFuture>> locProgress = new HashMap<>();
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
@@ -1332,43 +1328,98 @@ public class SnapshotRestoreProcess {
     }
 
     /** */
-    private static class CacheRestoreCompletableFuture extends CompletableFuture<Void> {
-        /** Cache group id.*/
-        private final int grpId;
+    private static class CacheRestoreLifecycleFuture extends CompletableFuture<Void> implements PartitionsExchangeAware {
+        /** Cache group context. */
+        private final CacheGroupContext grp;
 
-        /** Original future to listen to. */
-        private final CompletionStage<Void> baseFut;
+        /** Future which will be completed when all related to cache group partitions are inited. */
+        private final CompletableFuture<Void> parts;
+
+        /** Future which will be completed when late affinity assignment on this cache group occurs. */
+        private final CompletableFuture<Void> rebalanced;
+
+        /** The index rebuild future finishes when all indexes are rebuilt on local node for given cache group. */
+        private final CompletableFuture<Void> indexRebuild;
 
         /**
-         * @param grpId Cache group id.
-         * @param baseFut Original future to listen to.
+         * @param grp Cache group context.
+         * @param parts Original future to listen to.
          */
-        public CacheRestoreCompletableFuture(int grpId, CompletionStage<Void> baseFut) {
-            this.grpId = grpId;
-            this.baseFut = baseFut;
+        private CacheRestoreLifecycleFuture(
+            CacheGroupContext grp,
+            CompletableFuture<Void> parts,
+            CompletableFuture<Void> rebalanced,
+            CompletableFuture<Void> indexRebuild
+        ) {
+            this.grp = grp;
+            this.parts = parts;
+            this.rebalanced = rebalanced;
+            this.indexRebuild = indexRebuild;
         }
 
         /**
-         * @param grpId Cache group id.
-         * @param f Completable future to wrap.
-         * @return Completable future wrapper.
+         * @param grp Cache group context.
+         * @param parts Future which
+         * @param initAction Action to do cache group initialization.
+         * @return Future which will be completed when cache group processing ends.
          */
-        private static CacheRestoreCompletableFuture wrap(int grpId, CompletionStage<Void> f) {
-            CacheRestoreCompletableFuture delegate = new CacheRestoreCompletableFuture(grpId, f);
+        public static CacheRestoreLifecycleFuture create(
+            CacheGroupContext grp,
+            Set<PartitionRestoreLifecycleFuture> parts,
+            Runnable initAction
+        ) {
+            assert !grp.isLocal();
+            assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
+            assert grp.topology() instanceof GridDhtPartitionTopologyImpl;
 
-            f.whenComplete((v, t) -> {
-                if (t == null)
-                    delegate.complete(null);
-                else
-                    delegate.completeExceptionally(t);
-            });
+            CompletableFuture<?>[] arr0 = new ArrayList<>(parts)
+                .toArray(new CompletableFuture[parts.size()]);
 
-            return delegate;
+            CompletableFuture<Void> rebalanced = new CompletableFuture<>();
+            CompletableFuture<Void> indexRebuild = CompletableFuture.completedFuture(null);
+
+            CompletableFuture<Void> parts0 = CompletableFuture.allOf(arr0);
+            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, parts0, rebalanced, indexRebuild);
+
+            // This will not be fired if partitions loading future completes with an exception.
+            parts0.thenRun(() -> grp.shared().exchange().registerExchangeAwareComponent(cl))
+                .thenRun(initAction);
+
+            rebalanced.whenComplete((r, t) -> grp.shared().exchange().unregisterExchangeAwareComponent(cl));
+
+            CompletableFuture.allOf(parts0, rebalanced, indexRebuild)
+                .whenComplete((r, t) -> {
+                   if (t == null)
+                       cl.complete(r);
+                   else
+                       cl.completeExceptionally(t);
+                });
+
+            return cl;
         }
 
         /** {@inheritDoc} */
-        @Override public CacheRestoreCompletableFuture thenRunAsync(Runnable action, Executor executor) {
-            return wrap(grpId, baseFut.thenRunAsync(action, executor));
+        @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+            assert parts.isDone();
+
+            CacheAffinityChangeMessage msg = fut.affinityChangeMessage();
+
+            if (msg == null || F.isEmpty(msg.cacheDeploymentIds()))
+                return;
+
+            IgniteUuid deploymentId = msg.cacheDeploymentIds().get(grp.groupId());
+            CacheGroupDescriptor desc = grp.shared().affinity().cacheGroups().get(grp.groupId());
+
+            if (deploymentId == null || desc == null)
+                return;
+
+            if (deploymentId.equals(desc.deploymentId())) {
+                if (fut.rebalanced())
+                    rebalanced.complete(null);
+                else
+                    rebalanced.completeExceptionally(new IgniteException("Unable to complete late affinity assignment switch: " +
+                        grp.groupId()));
+            }
         }
 
         /** {@inheritDoc} */
@@ -1379,19 +1430,19 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            CacheRestoreCompletableFuture future = (CacheRestoreCompletableFuture)o;
+            CacheRestoreLifecycleFuture f = (CacheRestoreLifecycleFuture)o;
 
-            return grpId == future.grpId;
+            return grp.groupId() == f.grp.groupId();
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(grpId);
+            return Objects.hash(grp.groupId());
         }
     }
 
-    /** */
-    private static class PartitionRestoreLifecycle implements CheckpointListener {
+    /** Future will be completed when partition processing ends. */
+    private static class PartitionRestoreLifecycleFuture extends CompletableFuture<Void> implements CheckpointListener {
         /** Cache group context related to the partition. */
         private final CacheGroupContext grp;
 
@@ -1399,13 +1450,13 @@ public class SnapshotRestoreProcess {
         private final int partId;
 
         /** Future will be finished when the partition eviction process ends. */
-        private final CompletableFuture<Void> cleared = new CompletableFuture<>();
+        private final CompletableFuture<Void> cleared;
 
         /** Future will be finished when the partition preloading ends. */
-        private final CompletableFuture<Path> loaded = new CompletableFuture<>();
+        private final CompletableFuture<Path> loaded;
 
         /** Future will be finished when the partition initialized under checkpoint thread. */
-        private final CompletableFuture<Void> inited = new CompletableFuture<>();
+        private final CompletableFuture<Void> inited;
 
         /** PageMemory will be invalidated and PageStore will be truncated with this tag. */
         private final AtomicReference<Integer> truncatedTag = new AtomicReference<>();
@@ -1413,21 +1464,58 @@ public class SnapshotRestoreProcess {
         /**
          * @param grp Cache group context related to the partition.
          * @param partId Partition id.
+         * @param cleared Future will be finished when the partition eviction process ends.
+         * @param loaded Future will be finished when the partition preloading ends.
+         * @param inited Future will be finished when the partition initialized under checkpoint thread.
          */
-        public PartitionRestoreLifecycle(CacheGroupContext grp, int partId) {
+        private PartitionRestoreLifecycleFuture(
+            CacheGroupContext grp,
+            int partId,
+            CompletableFuture<Void> cleared,
+            CompletableFuture<Path> loaded,
+            CompletableFuture<Void> inited
+        ) {
+            this.grp = grp;
+            this.partId = partId;
+            this.cleared = cleared;
+            this.loaded = loaded;
+            this.inited = inited;
+        }
+
+        /**
+         * @param grp Cache group context related to the partition.
+         * @param partId Partition id.
+         * @return A future which will be completed when partition processing ends (partition is loaded and initialized).
+         */
+        public static PartitionRestoreLifecycleFuture create(CacheGroupContext grp, int partId) {
             assert !grp.isLocal();
             assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
             assert grp.topology() instanceof GridDhtPartitionTopologyImpl;
 
-            this.grp = grp;
-            this.partId = partId;
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
+
+            CompletableFuture<Void> cleared = new CompletableFuture<>();
+            CompletableFuture<Path> loaded = new CompletableFuture<>();
+            CompletableFuture<Void> inited = new CompletableFuture<>();
+
+            PartitionRestoreLifecycleFuture pf = new PartitionRestoreLifecycleFuture(grp, partId, cleared, loaded, inited);
 
             // Only when the old partition eviction completes and the new partition file loaded
             // we should start a new data storage initialization. This will not be fired if any of
             // dependent futures completes with an exception.
-            loaded.thenAcceptBothAsync(cleared, (path, ignore) -> db.addCheckpointListener(this));
-            inited.thenRun(() -> db.removeCheckpointListener(this));
+            loaded.thenAcceptBothAsync(cleared, (path, ignore) -> db.addCheckpointListener(pf));
+            inited.thenRun(() -> db.removeCheckpointListener(pf));
+
+            CompletableFuture
+                .allOf(cleared, loaded, inited)
+                .whenComplete((r, t) -> {
+                    if (t == null)
+                        pf.complete(r);
+                    else
+                        pf.completeExceptionally(t);
+                });
+
+            return pf;
         }
 
         /** {@inheritDoc} */
@@ -1547,13 +1635,6 @@ public class SnapshotRestoreProcess {
         }
 
         /**
-         * @return Future will be completed when partition processing ends.
-         */
-        public CompletionStage<Void> done() {
-            return CompletableFuture.allOf(cleared, loaded, inited);
-        }
-
-        /**
          * @param action Action to execute.
          * @param ex Consumer which accepts exceptional execution result.
          */
@@ -1574,7 +1655,7 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionRestoreLifecycle lifecycle = (PartitionRestoreLifecycle)o;
+            PartitionRestoreLifecycleFuture lifecycle = (PartitionRestoreLifecycleFuture)o;
 
             return grp.groupId() == lifecycle.grp.groupId() && partId == lifecycle.partId;
         }
