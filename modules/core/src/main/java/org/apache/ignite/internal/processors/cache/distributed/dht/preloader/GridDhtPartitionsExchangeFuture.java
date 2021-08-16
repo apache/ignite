@@ -3389,11 +3389,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param top Topology to assign.
      */
-    private void assignReloadPartitions(GridDhtPartitionTopology top) {
+    private void partitionStatesNotChanged(GridDhtPartitionTopology top) {
+        assert crd.isLocal();
+
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
             CachePartitionPartialCountersMap nodeCntrs = e.getValue().partitionUpdateCounters(top.groupId(),
                 top.partitions());
 
+            // No counters received from the remote nodes.
             assert nodeCntrs.isEmpty();
         }
 
@@ -3418,10 +3421,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 partsToReload.put(node.id(), top.groupId(), e.getKey());
 
                 // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
+                // Affinity manager tracks the version of the last changes affinity topology, so it's safe
+                // to add to wait groups with ZERO topology version.
                 cctx.cache().context().affinity().addToWaitGroup(
                     top.groupId(),
                     e.getKey(),
-                    top.topologyVersionFuture().initialVersion(),
+                    AffinityTopologyVersion.ZERO,
                     ideal.get(e.getKey()));
             }
         }
@@ -4303,7 +4308,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         List<SupplyPartitionInfo> list = emptyList();
 
                         if (fullReloadCacheGroups.contains(grpDesc.groupId()))
-                            assignReloadPartitions(top);
+                            partitionStatesNotChanged(top);
                         else {
                             list = assignPartitionStates(top,
                                 cacheGroupsToResetOwners == null || cacheGroupsToResetOwners.contains(grpDesc.groupId()));

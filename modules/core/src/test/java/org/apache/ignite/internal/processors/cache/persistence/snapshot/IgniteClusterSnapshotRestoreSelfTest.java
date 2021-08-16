@@ -136,6 +136,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         System.out.println(">>>> " + cache.size());
     }
 
+    // TODO add test when force affinity reassignment occurs during the restore procedure.
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
@@ -172,13 +173,13 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
+        awaitPartitionMapExchange(true, true, null, true);
+
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
         assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
         assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
-
-        GridTestUtils.waitForCondition(() -> false, 30000);
     }
 
     /** @throws Exception If failed. */

@@ -123,7 +123,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private CacheMemoryOverheadValidator validator = new CacheMemoryOverheadValidator();
 
     /** Topology version which requires affinity re-calculation (set from discovery thread). */
-    private AffinityTopologyVersion lastAffVer;
+    private volatile AffinityTopologyVersion lastAffVer;
 
     /** Registered caches (updated from exchange thread). */
     private CachesRegistry cachesRegistry;
@@ -373,8 +373,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void addToWaitGroup(int grpId, int part, AffinityTopologyVersion topVer, List<ClusterNode> assignment) {
         synchronized (mux) {
+            // This is called only on the coordinator node, so last affinity change version cannot be null.
+            assert lastAffVer != null;
+
             if (waitInfo == null)
-                waitInfo = new WaitRebalanceInfo(topVer);
+                waitInfo = new WaitRebalanceInfo(lastAffVer.compareTo(topVer) > 0 ? lastAffVer : topVer);
 
             waitInfo.add(grpId, part, assignment);
         }

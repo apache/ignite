@@ -910,6 +910,8 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, failure);
 
+        // TODO Do we need to remove cache from the wait rebalance groups prior to cache actually rollback fired?
+
         if (U.isLocalNodeCoordinator(ctx.discovery()))
             rollbackRestoreProc.start(reqId, reqId);
     }
