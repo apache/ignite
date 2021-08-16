@@ -183,7 +183,7 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
-     */п
+     */
     public SnapshotRestoreProcess(GridKernalContext ctx) {
         this.ctx = ctx;
 
