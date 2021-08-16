@@ -1695,11 +1695,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     @Test
     public void testStripedExecutors() throws Exception {
         try (IgniteEx g = startGrid(0)) {
-            checkStripeExecutorView(g.context().getStripedExecutorService(),
+            checkStripeExecutorView(g.context().pools().getStripedExecutorService(),
                 g.context().systemView().view(SYS_POOL_QUEUE_VIEW),
                 "sys");
 
-            checkStripeExecutorView(g.context().getDataStreamerExecutorService(),
+            checkStripeExecutorView(g.context().pools().getDataStreamerExecutorService(),
                 g.context().systemView().view(STREAM_POOL_QUEUE_VIEW),
                 "data-streamer");
         }

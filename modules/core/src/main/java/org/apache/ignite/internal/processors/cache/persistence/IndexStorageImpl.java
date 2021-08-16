@@ -188,15 +188,18 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
-        throws IgniteCheckedException {
+    @Override public @Nullable RootPage dropCacheIndex(
+        Integer cacheId,
+        String idxName,
+        int segment
+    ) throws IgniteCheckedException {
         String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
 
         return dropIndex(maskedIdxName);
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropIndex(String idxName) throws IgniteCheckedException {
+    @Override public @Nullable RootPage dropIndex(String idxName) throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(UTF_8);
 
         IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));

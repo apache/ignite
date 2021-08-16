@@ -31,6 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
@@ -48,6 +50,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
+import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -332,5 +335,30 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         }
 
         return null;
+    }
+
+    /**
+     * Getting index description.
+     *
+     * @param idx Index.
+     * @return Index description.
+     */
+    protected SortedIndexDefinition indexDefinition(Index idx) {
+        return getFieldValue(idx, "def");
+    }
+
+    /**
+     * Getting the cache index.
+     *
+     * @param n Node.
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index.
+     */
+    @Nullable protected Index index(IgniteEx n, IgniteCache<Integer, Person> cache, String idxName) {
+        return n.context().indexProcessor().indexes(cacheContext(cache)).stream()
+            .filter(i -> idxName.equals(i.name()))
+            .findAny()
+            .orElse(null);
     }
 }
