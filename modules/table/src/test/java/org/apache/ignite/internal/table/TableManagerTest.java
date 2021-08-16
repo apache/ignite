@@ -399,6 +399,8 @@ public class TableManagerTest {
         CompletableFuture<TableManager> tblManagerFut,
         Phaser phaser
     ) {
+        when(rm.prepareRaftGroup(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(null));
+
         when(mm.hasMetastorageLocally(any())).thenReturn(true);
 
         CompletableFuture<UUID> tblIdFut = new CompletableFuture<>();

@@ -177,7 +177,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     ) {
         int partitions = assignment.size();
 
-        HashMap<Integer, RaftGroupService> partitionMap = new HashMap<>(partitions);
+        var partitionsGroupsFutures = new ArrayList<CompletableFuture<RaftGroupService>>();
 
         Path storageDir = partitionsStoreDir.resolve(name);
 
@@ -196,21 +196,35 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 ByteBuffer::compareTo
             );
 
-            partitionMap.put(p, raftMgr.prepareRaftGroup(
+            partitionsGroupsFutures.add(raftMgr.prepareRaftGroup(
                 raftGroupName(tblId, p),
                 assignment.get(p),
                 new PartitionListener(storage)
             ));
         }
 
-        InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions);
+        CompletableFuture.allOf(partitionsGroupsFutures.toArray(CompletableFuture[]::new)).thenRun(() -> {
+            HashMap<Integer, RaftGroupService> partitionMap = new HashMap<>(partitions);
 
-        var table = new TableImpl(internalTable, schemaReg, this, null);
+            for (int p = 0; p < partitions; p++) {
+                CompletableFuture<RaftGroupService> future = partitionsGroupsFutures.get(p);
 
-        tables.put(name, table);
-        tablesById.put(table.tableId(), table);
+                assert future.isDone();
 
-        onEvent(TableEvent.CREATE, new TableEventParameters(table), null);
+                RaftGroupService service = future.join();
+
+                partitionMap.put(p, service);
+            }
+
+            InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions);
+
+            var table = new TableImpl(internalTable, schemaReg, this, null);
+
+            tables.put(name, table);
+            tablesById.put(table.tableId(), table);
+
+            onEvent(TableEvent.CREATE, new TableEventParameters(table), null);
+        });
     }
 
     /**

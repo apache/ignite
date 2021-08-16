@@ -32,6 +32,7 @@ import io.netty.handler.codec.DecoderException;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
@@ -258,6 +259,27 @@ public class ConnectionManagerTest {
         } catch (ExecutionException e) {
             assertThat(e.getCause(), isA(DecoderException.class));
         }
+    }
+
+    /**
+     * Tests that a connection manager fails to start twice.
+     */
+    @Test
+    public void testStartTwice() {
+        ConnectionManager server = startManager(4000);
+
+        assertThrows(IgniteInternalException.class, server::start);
+    }
+
+    /**
+     * Tests that a connection manager can be stopped twice.
+     */
+    @Test
+    public void testStopTwice() {
+        ConnectionManager server = startManager(4000);
+
+        server.stop();
+        server.stop();
     }
 
     /**

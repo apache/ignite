@@ -91,8 +91,7 @@ public class CounterListener implements RaftGroupListener {
         });
     }
 
-    /** {@inheritDoc}
-     * @param path*/
+    /** {@inheritDoc} */
     @Override public boolean onSnapshotLoad(Path path) {
         final CounterSnapshotFile snapshot = new CounterSnapshotFile(path + File.separator + "data");
         try {

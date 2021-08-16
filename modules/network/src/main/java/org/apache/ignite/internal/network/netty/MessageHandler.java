@@ -33,16 +33,17 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
     /**
      * Constructor.
      *
-     * @param listener Message listener.
+     * @param messageListener Message listener.
      */
-    public MessageHandler(BiConsumer<SocketAddress, NetworkMessage> listener) {
-        messageListener = listener;
+    public MessageHandler(BiConsumer<SocketAddress, NetworkMessage> messageListener) {
+        this.messageListener = messageListener;
     }
 
     /** {@inheritDoc} */
-    @Override public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    @Override public void channelRead(ChannelHandlerContext ctx, Object msg) {
         SocketAddress address = ctx.channel().remoteAddress();
         NetworkMessage message = (NetworkMessage) msg;
+
         messageListener.accept(address, message);
     }
 }

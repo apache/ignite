@@ -180,6 +180,7 @@ public class ITCliServiceTest {
         assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15244")
     @Test
     public void testLearnerServices() throws Exception {
         PeerId learner3 = new PeerId(TestUtils.getLocalAddress(), TestUtils.INIT_PORT + LEARNER_PORT_STEP + 3);

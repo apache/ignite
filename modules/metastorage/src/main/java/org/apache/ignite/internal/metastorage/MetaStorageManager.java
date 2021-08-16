@@ -20,6 +20,7 @@ package org.apache.ignite.internal.metastorage;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -153,16 +154,16 @@ public class MetaStorageManager implements IgniteComponent {
         if (metastorageNodes.length > 0) {
             metaStorageNodesOnStart = true;
 
-            this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
-                    raftMgr.prepareRaftGroup(
-                        METASTORAGE_RAFT_GROUP_NAME,
-                        clusterNetSvc.topologyService().allMembers().stream().filter(
-                            metaStorageNodesContainsLocPred).
-                            collect(Collectors.toList()),
-                        new MetaStorageListener(new SimpleInMemoryKeyValueStorage())
-                    ),
-                    clusterNetSvc.topologyService().localMember().id()
-                )
+            List<ClusterNode> metaStorageMembers = clusterNetSvc.topologyService().allMembers().stream()
+                .filter(metaStorageNodesContainsLocPred)
+                .collect(Collectors.toList());
+
+            this.metaStorageSvcFut = raftMgr.prepareRaftGroup(
+                METASTORAGE_RAFT_GROUP_NAME,
+                metaStorageMembers,
+                new MetaStorageListener(new SimpleInMemoryKeyValueStorage())
+            ).thenApply(service ->
+                new MetaStorageServiceImpl(service, clusterNetSvc.topologyService().localMember().id())
             );
 
             if (hasMetastorageLocally(locCfgMgr)) {

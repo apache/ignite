@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -133,7 +134,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
     /** */
     @AfterEach
-    void after(TestInfo testInfo) throws Exception {
+    @Override protected void after(TestInfo testInfo) throws Exception {
         LOG.info("Start client shutdown");
 
         Iterator<RaftGroupService> iterClients = clients.iterator();
@@ -157,6 +158,8 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
             server.stop();
         }
+
+        super.after(testInfo);
 
         LOG.info(">>>>>>>>>>>>>>> End test method: {}", testInfo.getTestMethod().orElseThrow().getName());
     }
@@ -194,23 +197,16 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     /**
      * @param groupId Group id.
      * @return The client.
+     * @throws Exception If failed.
      */
-    private RaftGroupService startClient(String groupId) {
+    private RaftGroupService startClient(String groupId) throws Exception {
         var addr = new NetworkAddress(getLocalAddress(), PORT);
 
         ClusterService clientNode = clusterService(
             "client_" + groupId + "_", CLIENT_PORT + clients.size(), List.of(addr), true);
 
-        RaftGroupServiceImpl client = new RaftGroupServiceImpl(groupId, clientNode, FACTORY, 10_000,
-            List.of(new Peer(addr)), false, 200) {
-            @Override public void shutdown() {
-                clients.remove(this);
-
-                super.shutdown();
-
-                clientNode.stop();
-            }
-        };
+        RaftGroupService client = RaftGroupServiceImpl.start(groupId, clientNode, FACTORY, 10_000,
+            List.of(new Peer(addr)), false, 200).get(3, TimeUnit.SECONDS);
 
         clients.add(client);
 
@@ -219,8 +215,10 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
     /**
      * Starts a cluster for the test.
+     *
+     * @throws Exception If failed.
      */
-    private void startCluster() {
+    private void startCluster() throws Exception {
         for (int i = 0; i < 3; i++) {
             startServer(i, raftServer -> {
                 raftServer.startRaftGroup(COUNTER_GROUP_0, listenerFactory.get(), INITIAL_CONF);
@@ -241,7 +239,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
             raftServer.startRaftGroup("test_raft_group", listenerFactory.get(), INITIAL_CONF);
         });
 
-        Set<Thread> threads = getAllDisruptoCurrentThreads();
+        Set<Thread> threads = getAllDisruptorCurrentThreads();
 
         int threadsBefore = threads.size();
 
@@ -254,7 +252,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
                 srv.startRaftGroup("test_raft_group_" + i, listenerFactory.get(), INITIAL_CONF);
         });
 
-        threads = getAllDisruptoCurrentThreads();
+        threads = getAllDisruptorCurrentThreads();
 
         int threadsAfter = threads.size();
 
@@ -270,7 +268,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
      *
      * @return Set of Disruptor threads.
      */
-    @NotNull private Set<Thread> getAllDisruptoCurrentThreads() {
+    @NotNull private Set<Thread> getAllDisruptorCurrentThreads() {
         return Thread.getAllStackTraces().keySet().stream().filter(t ->
             t.getName().contains("JRaft-FSMCaller-Disruptor") ||
                 t.getName().contains("JRaft-NodeImpl-Disruptor") ||

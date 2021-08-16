@@ -91,21 +91,23 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
     /**
+     * Constructor.
+     *
      * @param groupId Group id.
      * @param cluster A cluster.
      * @param factory A message factory.
      * @param timeout Request timeout.
      * @param peers Initial group configuration.
-     * @param refreshLeader {@code True} to synchronously refresh leader on service creation.
+     * @param leader Group leader.
      * @param retryDelay Retry delay.
      */
-    public RaftGroupServiceImpl(
+    private RaftGroupServiceImpl(
         String groupId,
         ClusterService cluster,
         RaftClientMessagesFactory factory,
         int timeout,
         List<Peer> peers,
-        boolean refreshLeader,
+        Peer leader,
         long retryDelay
     ) {
         this.cluster = requireNonNull(cluster);
@@ -114,15 +116,42 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         this.timeout = timeout;
         this.groupId = groupId;
         this.retryDelay = retryDelay;
+        this.leader = leader;
+    }
 
-        if (refreshLeader) {
-            try {
-                refreshLeader().get();
-            }
-            catch (Exception e) {
-                LOG.error("Failed to refresh a leader", e);
-            }
+    /**
+     * Starts raft group service.
+     *
+     * @param groupId Raft group id.
+     * @param cluster Cluster service.
+     * @param factory Message factory.
+     * @param timeout Timeout.
+     * @param peers List of all peers.
+     * @param getLeader {@code True} to get the group's leader upon service creation.
+     * @param retryDelay Retry delay.
+     * @return Future representing pending completion of the operation.
+     */
+    public static CompletableFuture<RaftGroupService> start(
+        String groupId,
+        ClusterService cluster,
+        RaftClientMessagesFactory factory,
+        int timeout,
+        List<Peer> peers,
+        boolean getLeader,
+        long retryDelay
+    ) {
+        var service = new RaftGroupServiceImpl(groupId, cluster, factory, timeout, peers, null, retryDelay);
+
+        if (!getLeader) {
+            return CompletableFuture.completedFuture(service);
         }
+
+        return service.refreshLeader().handle((unused, throwable) -> {
+            if (throwable != null)
+                LOG.error("Failed to refresh a leader", throwable);
+
+            return service;
+        });
     }
 
     /** {@inheritDoc} */
@@ -337,7 +366,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     }
 
     /**
-     * Retries request until success or timeout.
+     * Retries a request until success or timeout.
      *
      * @param peer Target peer.
      * @param req The request.

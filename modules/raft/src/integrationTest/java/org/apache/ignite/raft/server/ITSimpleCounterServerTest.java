@@ -19,6 +19,7 @@ package org.apache.ignite.raft.server;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
@@ -77,9 +78,10 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
 
     /**
      * @param testInfo Test info.
+     * @throws Exception If failed.
      */
     @BeforeEach
-    void before(TestInfo testInfo) {
+    void before(TestInfo testInfo) throws Exception {
         LOG.info(">>>> Starting test {}", testInfo.getTestMethod().orElseThrow().getName());
 
         var addr = new NetworkAddress("localhost", PORT);
@@ -103,25 +105,13 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
 
         ClusterService clientNode1 = clusterService("localhost:" + (PORT + 1), PORT + 1, List.of(addr), true);
 
-        client1 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, clientNode1, FACTORY, 1000,
-            List.of(new Peer(serverNode.address())), false, 200) {
-            @Override public void shutdown() {
-                super.shutdown();
-
-                clientNode1.stop();
-            }
-        };
+        client1 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_0, clientNode1, FACTORY, 1000,
+            List.of(new Peer(serverNode.address())), false, 200).get(3, TimeUnit.SECONDS);
 
         ClusterService clientNode2 = clusterService("localhost:" + (PORT + 2), PORT + 2, List.of(addr), true);
 
-        client2 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_1, clientNode2, FACTORY, 1000,
-            List.of(new Peer(serverNode.address())), false, 200) {
-            @Override public void shutdown() {
-                super.shutdown();
-
-                clientNode2.stop();
-            }
-        };
+        client2 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_1, clientNode2, FACTORY, 1000,
+            List.of(new Peer(serverNode.address())), false, 200).get(3, TimeUnit.SECONDS);
 
         assertTrue(waitForTopology(service, 2, 1000));
         assertTrue(waitForTopology(clientNode1, 2, 1000));
@@ -129,13 +119,15 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @AfterEach
-    void after() throws Exception {
+    @Override public void after(TestInfo testInfo) throws Exception {
         server.stop();
         client1.shutdown();
         client2.shutdown();
+
+        super.after(testInfo);
     }
 
     /**
@@ -153,7 +145,7 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Test
     public void testCounterCommandListener() throws Exception {
