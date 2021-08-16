@@ -436,7 +436,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (localNode(p, affAssignment)) {
                             // Partition is created first time, so it's safe to own it.
                             boolean shouldOwn = locParts.get(p) == null;
-                            boolean restore = exchFut.exchangeActions().cacheGroupsToStart().stream()
+                            boolean restore = exchFut.exchangeActions() != null &&
+                                exchFut.exchangeActions().cacheGroupsToStart().stream()
                                 .filter(g -> Objects.nonNull(g.restartId()))
                                 .filter(g -> g.descriptor().groupId() == groupId())
                                 .map(g -> Boolean.TRUE)

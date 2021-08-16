@@ -117,25 +117,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         return valBuilder;
     }
 
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testM() throws Exception {
-        Ignite g = startGrids(2);
-        g.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Object, Object> cache = g.getOrCreateCache(
-            new CacheConfiguration<>("forever").setGroupName("dummy").setAffinity(new RendezvousAffinityFunction(false, 8)));
-
-//        for (int i = 0; i < 1000; i++)
-//            cache.put(i, i);
-
-        forceCheckpoint();
-        awaitPartitionMapExchange();
-
-        System.out.println(">>>> " + cache.size());
-    }
-
     // TODO add test when force affinity reassignment occurs during the restore procedure.
     /** @throws Exception If failed. */
     @Test
