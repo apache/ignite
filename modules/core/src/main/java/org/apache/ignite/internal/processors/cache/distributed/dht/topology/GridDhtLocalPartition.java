@@ -976,7 +976,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     protected long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
         long order = clearVer;
 
-        assert order != 0 : this;
+        // This is a newly created partition, nothing to clear.
+        if (order == 0)
+            return 0;
 
         GridCacheVersion clearVer = ctx.versions().startVersion();
 
