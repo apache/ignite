@@ -24,6 +24,15 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation handler.
+ * <p>
+ * The execution of the handler consists of two steps:
+ * <ol>
+ * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapsot data.</li>
+ * <li>Processing the results of local invocations in the {@link #complete(String, Collection)} method on one of the
+ * nodes containing the snapshot data.</li>
+ * </ol>
+ * Note: If during the execution of a snapshot operation some node exits, then whole operation is rolled back, in which
+ *       case the {@link #complete(String, Collection)} method may not be called.
  *
  * @param <T> Type of the local processing result.
  */
@@ -32,22 +41,28 @@ public interface SnapshotHandler<T> extends Extension {
     public SnapshotHandlerType type();
 
     /**
-     * Local processing of a snapshot operation.
-     * Called on every node that contains snapshot data.
+     * Local processing of a snapshot operation. Called on every node that contains snapshot data.
      *
      * @param ctx Snapshot handler context.
-     * @return Result of local processing.
-     * @throws IgniteCheckedException If failed.
+     * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
+     *      passed into {@link #complete(String, Collection)} handler method.
+     * @throws IgniteCheckedException If invocation caused an exception. This exception will be returned in {@link
+     *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String,Collection)} handler method.
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException;
 
     /**
-     * Processing of results from all nodes.
-     * Called on one of the nodes containing the snapshot data.
+     * Processing the results of the {@link #invoke(SnapshotHandlerContext)} method received from all nodes. This method
+     * is called on coordinator node for {@link SnapshotHandlerType#CREATE} handler type and on the random node
+     * containing the snapshot data for {@link SnapshotHandlerType#RESTORE}.
+     * <p>
+     * Note: If this method fails, the entire cluster-wide snapshot operation will be aborted and the changes made by it
+     * will be rolled back.
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If the snapshot operation needs to be aborted.
+     * @see SnapshotHandlerResult
      */
     public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws IgniteCheckedException {
         for (SnapshotHandlerResult<T> res : results) {
