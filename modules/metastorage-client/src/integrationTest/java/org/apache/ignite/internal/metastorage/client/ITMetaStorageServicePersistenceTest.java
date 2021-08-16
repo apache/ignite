@@ -52,6 +52,7 @@ import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -163,6 +164,7 @@ public class ITMetaStorageServicePersistenceTest {
      */
     @ParameterizedTest
     @MethodSource("testSnapshotData")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15298")
     public void testSnapshot(TestData testData) throws Exception {
         ByteArray firstKey = ByteArray.fromString("first");
         byte[] firstValue = "firstValue".getBytes(StandardCharsets.UTF_8);
