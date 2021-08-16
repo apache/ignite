@@ -124,7 +124,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             workerFut.setWorker(worker);
             buildIdxCompoundFut.add(workerFut);
 
-            cctx.kernalContext().buildIndexExecutorService().execute(worker);
+            cctx.kernalContext().pools().buildIndexExecutorService().execute(worker);
         }
 
         buildIdxCompoundFut.listen(fut -> {

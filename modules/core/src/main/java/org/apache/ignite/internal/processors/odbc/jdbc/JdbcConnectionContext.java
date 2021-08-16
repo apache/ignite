@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 
 /**
  * JDBC Connection Context.
@@ -83,10 +84,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     private final int maxCursors;
 
     /** Message parser. */
-    private JdbcMessageParser parser = null;
+    private JdbcMessageParser parser;
 
     /** Request handler. */
-    private JdbcRequestHandler handler = null;
+    private JdbcRequestHandler handler;
 
     /** Current protocol context. */
     private JdbcProtocolContext protoCtx;
@@ -122,6 +123,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         this.maxCursors = maxCursors;
 
         log = ctx.log(getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte clientType() {
+        return JDBC_CLIENT;
     }
 
     /** {@inheritDoc} */
