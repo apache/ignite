@@ -240,6 +240,7 @@
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_result.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_task_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\java_compute_task_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\multiple_job_compute_task_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\single_job_compute_task_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\helpers.h" />
