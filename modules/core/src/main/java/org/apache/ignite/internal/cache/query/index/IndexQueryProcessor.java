@@ -264,7 +264,7 @@ public class IndexQueryProcessor {
         IndexQueryContext qryCtx) throws IgniteCheckedException {
 
         InlineIndexRowHandler hnd = idx.segment(0).rowHandler();
-        CacheObjectContext coctx = idx.segment(0).cacheContext().cacheObjectContext();
+        CacheObjectContext coctx = idx.segment(0).cacheGroupContext().cacheObjectContext();
 
         IndexKey[] lowerBounds = new IndexKey[hnd.indexKeyDefinitions().size()];
         IndexKey[] upperBounds = new IndexKey[hnd.indexKeyDefinitions().size()];
