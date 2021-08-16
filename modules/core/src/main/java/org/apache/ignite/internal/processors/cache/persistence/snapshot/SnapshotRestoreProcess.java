@@ -109,10 +109,10 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *
  * TODO: Some notes left to do for the restore using rebalancing:
  *  1. Disable WAL for starting caches.
- *  2. Own partitions on exchange (like the rebalancing does).
- *  3. Handle and fire affinity change message when waitInfo becomes empty.
+ *  (done) 2. Own partitions on exchange (like the rebalancing does).
+ *  (done) 3. Handle and fire affinity change message when waitInfo becomes empty.
  *  4. Load partitions from remote nodes.
- *  5. Set partition to MOVING state during copy from snapshot and read partition Metas.
+ *  (no need) 5. Set partition to MOVING state during copy from snapshot and read partition Metas.
  *  6. Replace index if topology match partitions.
  *  7. Rebuild index if need.
  *
@@ -911,7 +911,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, failure);
 
-        // TODO Do we need to remove cache from the wait rebalance groups prior to cache actually rollback fired?
+        // TODO Do we need to remove cache from the waitInfo rebalance groups prior to cache actually rollback fired?
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
             rollbackRestoreProc.start(reqId, reqId);
@@ -1461,6 +1461,9 @@ public class SnapshotRestoreProcess {
         /** PageMemory will be invalidated and PageStore will be truncated with this tag. */
         private final AtomicReference<Integer> truncatedTag = new AtomicReference<>();
 
+        /** Partition high water mark counter to ensure the absence of update on partition being switching. */
+        private final AtomicReference<Long> partHwm = new AtomicReference<>();
+
         /**
          * @param grp Cache group context related to the partition.
          * @param partId Partition id.
@@ -1541,12 +1544,14 @@ public class SnapshotRestoreProcess {
                 assert part.state() == GridDhtPartitionState.MOVING : "Only MOVING partitions allowed: " + part.state();
                 assert part.internalSize() == 0 : "Partition map must clear all heap entries prior to invalidation: " + partId;
 
+                boolean success0 = partHwm.compareAndSet(null, part.reservedCounter());
+                assert success0 : partId;
+
                 int tag = pageMemory.invalidate(grp.groupId(), partId);
 
                 grp.shared().pageStore().truncate(grp.groupId(), partId, tag);
 
                 boolean success = truncatedTag.compareAndSet(null, tag);
-
                 assert success : partId;
 
                 return null;
@@ -1569,6 +1574,9 @@ public class SnapshotRestoreProcess {
 
                 assert prevPart.internalSize() == 0 : "Partition map must clear all heap entries prior to invalidation: " + partId;
                 assert prevPart.reservations() == 0 : "Partition must have no reservations prior to data store swap: " + partId;
+                assert partHwm.get().equals(prevPart.reservedCounter()) :
+                    "Partition counter changed due to some of updates occurred [prev=" + partHwm.get() +
+                        ", new=" + prevPart.updateCounter() + ']';
 
                 prevPart.dataStore().markDestroyed();
 
