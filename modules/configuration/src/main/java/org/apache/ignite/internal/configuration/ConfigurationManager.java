@@ -19,97 +19,74 @@ package org.apache.ignite.internal.configuration;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.hocon.HoconConverter;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.manager.IgniteComponent;
+
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
 
 /**
  * Configuration manager is responsible for handling configuration lifecycle and provides configuration API.
  */
 public class ConfigurationManager implements IgniteComponent {
     /** Configuration registry. */
-    private final ConfigurationRegistry confRegistry;
-
-    /** Type mapped to configuration storage. */
-    private final Map<ConfigurationType, ConfigurationStorage> configurationStorages;
-
-    /**
-     * The constructor.
-     *
-     * @param rootKeys Configuration root keys.
-     * @param validators Validators.
-     * @param configurationStorages Configuration storages.
-     */
-    public ConfigurationManager(
-        Collection<RootKey<?, ?>> rootKeys,
-        Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
-        Collection<ConfigurationStorage> configurationStorages
-    ) {
-        HashMap<ConfigurationType, ConfigurationStorage> storageByType = new HashMap<>();
-
-        for (ConfigurationStorage storage : configurationStorages) {
-            assert !storageByType.containsKey(storage.type()) : "Two or more storage have the same configuration type [type=" + storage.type() + ']';
-
-            storageByType.put(storage.type(), storage);
-        }
-
-        this.configurationStorages = Map.copyOf(storageByType);
-
-        confRegistry = new ConfigurationRegistry(rootKeys, validators, configurationStorages);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() {
-        confRegistry.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() {
-        // TODO: IGNITE-15161 Implement component's stop.
-        confRegistry.stop();
-    }
+    private final ConfigurationRegistry registry;
 
     /**
      * Constructor.
      *
      * @param rootKeys Configuration root keys.
-     * @param configurationStorages Configuration storages.
+     * @param validators Validators.
+     * @param storage Configuration storage.
+     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type.
      */
     public ConfigurationManager(
         Collection<RootKey<?, ?>> rootKeys,
-        Collection<ConfigurationStorage> configurationStorages
+        Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
+        ConfigurationStorage storage
     ) {
-        this(rootKeys, Collections.emptyMap(), configurationStorages);
+        checkConfigurationType(rootKeys, storage);
+
+        registry = new ConfigurationRegistry(rootKeys, validators, storage);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        registry.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO: IGNITE-15161 Implement component's stop.
+        registry.stop();
     }
 
     /**
      * Bootstrap configuration manager with customer user cfg.
      *
      * @param hoconStr Customer configuration in hocon format.
-     * @param type Configuration type.
      * @throws InterruptedException If thread is interrupted during bootstrap.
      * @throws ExecutionException If configuration update failed for some reason.
      */
-    public void bootstrap(String hoconStr, ConfigurationType type) throws InterruptedException, ExecutionException {
+    public void bootstrap(String hoconStr) throws InterruptedException, ExecutionException {
         ConfigObject hoconCfg = ConfigFactory.parseString(hoconStr).root();
 
-        confRegistry.change(HoconConverter.hoconSource(hoconCfg), configurationStorages.get(type)).get();
+        registry.change(HoconConverter.hoconSource(hoconCfg)).get();
     }
 
     /**
+     * Get configuration registry.
+     *
      * @return Configuration registry.
      */
     public ConfigurationRegistry configurationRegistry() {
-        return confRegistry;
+        return registry;
     }
 }

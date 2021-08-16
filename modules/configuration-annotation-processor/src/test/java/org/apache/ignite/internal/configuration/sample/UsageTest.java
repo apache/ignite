@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.configuration.sample;
 
-import java.util.Arrays;
-import java.util.Collections;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -50,14 +50,14 @@ public class UsageTest {
     @Test
     public void test() throws Exception {
         registry = new ConfigurationRegistry(
-            Collections.singletonList(LocalConfiguration.KEY),
-            Collections.emptyMap(),
-            Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
+            List.of(LocalConfiguration.KEY),
+            Map.of(),
+            new TestConfigurationStorage(LOCAL)
         );
 
         registry.start();
 
-        registry.startStorageConfigurations(ConfigurationType.LOCAL);
+        registry.initializeDefaults();
 
         LocalConfiguration root = registry.getConfiguration(LocalConfiguration.KEY);
 
@@ -110,9 +110,9 @@ public class UsageTest {
         long autoAdjustTimeout = 30_000L;
 
         registry = new ConfigurationRegistry(
-            Arrays.asList(NetworkConfiguration.KEY, LocalConfiguration.KEY),
-            Collections.emptyMap(),
-            Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
+            List.of(NetworkConfiguration.KEY, LocalConfiguration.KEY),
+            Map.of(),
+            new TestConfigurationStorage(LOCAL)
         );
 
         registry.start();

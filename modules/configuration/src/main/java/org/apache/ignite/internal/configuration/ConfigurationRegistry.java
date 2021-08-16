@@ -22,6 +22,7 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
@@ -48,10 +48,9 @@ import org.apache.ignite.internal.configuration.validation.MaxValidator;
 import org.apache.ignite.internal.configuration.validation.MinValidator;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteLogger;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil.notifyListeners;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.innerNodeVisitor;
 
 /** */
@@ -65,16 +64,10 @@ public class ConfigurationRegistry implements IgniteComponent {
     /** Root keys. */
     private final Collection<RootKey<?, ?>> rootKeys;
 
-    /** Validators. */
-    private final Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators;
+    /** Configuration change handler. */
+    private final ConfigurationChanger changer;
 
-    /** Configuration storages. */
-    private final Collection<ConfigurationStorage> configurationStorages;
-
-    /** */
-    private volatile ConfigurationChanger changer;
-
-    /** */
+    /** Configuration generator. */
     private final ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
 
     /**
@@ -82,44 +75,43 @@ public class ConfigurationRegistry implements IgniteComponent {
      *
      * @param rootKeys Configuration root keys.
      * @param validators Validators.
-     * @param configurationStorages Configuration Storages.
+     * @param storage Configuration storage.
+     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type.
      */
     public ConfigurationRegistry(
         Collection<RootKey<?, ?>> rootKeys,
         Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
-        Collection<ConfigurationStorage> configurationStorages
+        ConfigurationStorage storage
     ) {
-        this.rootKeys = rootKeys;
-        this.validators = validators;
-        this.configurationStorages = configurationStorages;
-    }
+        checkConfigurationType(rootKeys, storage);
 
-    /** {@inheritDoc} */
-    @Override public void start() {
-        this.changer = new ConfigurationChanger(this::notificator) {
+        this.rootKeys = rootKeys;
+
+        Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators0 = new HashMap<>(validators);
+
+        validators0.computeIfAbsent(Min.class, a -> new HashSet<>()).add(new MinValidator());
+        validators0.computeIfAbsent(Max.class, a -> new HashSet<>()).add(new MaxValidator());
+        validators0.computeIfAbsent(Immutable.class, a -> new HashSet<>()).add(new ImmutableValidator());
+
+        changer = new ConfigurationChanger(this::notificator, rootKeys, validators0, storage) {
             /** {@inheritDoc} */
             @Override public InnerNode createRootNode(RootKey<?, ?> rootKey) {
                 return cgen.instantiateNode(rootKey.schemaClass());
             }
         };
+    }
 
-        changer.addValidator(Min.class, new MinValidator());
-        changer.addValidator(Max.class, new MaxValidator());
-        changer.addValidator(Immutable.class, new ImmutableValidator());
-
+    /** {@inheritDoc} */
+    @Override public void start() {
         rootKeys.forEach(rootKey -> {
             cgen.compileRootSchema(rootKey.schemaClass());
-
-            changer.addRootKey(rootKey);
 
             DynamicConfiguration<?, ?> cfg = cgen.instantiateCfg(rootKey, changer);
 
             configs.put(rootKey.key(), cfg);
         });
 
-        validators.forEach(changer::addValidators);
-
-        configurationStorages.forEach(changer::register);
+        changer.start();
     }
 
     /** {@inheritDoc} */
@@ -129,16 +121,12 @@ public class ConfigurationRegistry implements IgniteComponent {
     }
 
     /**
-     * Starts storage configurations.
-     * @param storageType Storage type.
+     * Initializes the configuration storage - reads data and sets default values for missing configuration properties.
      */
-    public void startStorageConfigurations(ConfigurationType storageType) {
-        changer.initialize(storageType);
+    public void initializeDefaults() {
+        changer.initializeDefaults();
 
         for (RootKey<?, ?> rootKey : rootKeys) {
-            if (rootKey.type() != storageType)
-                continue;
-
             DynamicConfiguration<?, ?> dynCfg = configs.get(rootKey.key());
 
             ConfigurationNotificationsUtil.touch(dynCfg);
@@ -147,6 +135,7 @@ public class ConfigurationRegistry implements IgniteComponent {
 
     /**
      * Gets the public configuration tree.
+     *
      * @param rootKey Root key.
      * @param <V> View type.
      * @param <C> Change type.
@@ -167,11 +156,11 @@ public class ConfigurationRegistry implements IgniteComponent {
      * @throws IllegalArgumentException If {@code path} is not found in current configuration.
      */
     public <T> T represent(List<String> path, ConfigurationVisitor<T> visitor) throws IllegalArgumentException {
-        SuperRoot mergedSuperRoot = changer.mergedSuperRoot();
+        SuperRoot superRoot = changer.superRoot();
 
         Object node;
         try {
-            node = ConfigurationUtil.find(path, mergedSuperRoot);
+            node = ConfigurationUtil.find(path, superRoot);
         }
         catch (KeyNotFoundException e) {
             throw new IllegalArgumentException(e.getMessage());
@@ -187,20 +176,27 @@ public class ConfigurationRegistry implements IgniteComponent {
 
     /**
      * Change configuration.
-     * @param changesSource Configuration source to create patch from it.
-     * @param storage Expected storage for the changes. Can be null, this will mean that derived storage will be used
-     * unconditionaly.
+     *
+     * @param changesSrc Configuration source to create patch from it.
      * @return Future that is completed on change completion.
      */
-    public CompletableFuture<Void> change(ConfigurationSource changesSource, @Nullable ConfigurationStorage storage) {
-        return changer.change(changesSource, storage);
+    public CompletableFuture<Void> change(ConfigurationSource changesSrc) {
+        return changer.change(changesSrc);
     }
 
-    /** */
-    private @NotNull CompletableFuture<Void> notificator(SuperRoot oldSuperRoot, SuperRoot newSuperRoot, long storageRevision) {
+    /**
+     * Configuration change notifier.
+     *
+     * @param oldSuperRoot Old roots values. All these roots always belong to a single storage.
+     * @param newSuperRoot New values for the same roots as in {@code oldRoot}.
+     * @param storageRevision Revision of the storage.
+     * @return Future that must signify when processing is completed.
+     */
+    private CompletableFuture<Void> notificator(SuperRoot oldSuperRoot, SuperRoot newSuperRoot, long storageRevision) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
 
         newSuperRoot.traverseChildren(new ConfigurationVisitor<Void>() {
+            /** {@inheritDoc} */
             @Override public Void visitInnerNode(String key, InnerNode newRoot) {
                 InnerNode oldRoot = oldSuperRoot.traverseChild(key, innerNodeVisitor());
 
@@ -215,15 +211,13 @@ public class ConfigurationRegistry implements IgniteComponent {
             }
         });
 
-        // Map futures into a "suppressed" future that won't throw any exceptions on completion.
-        Function<CompletableFuture<?>, CompletableFuture<?>> mapping = fut -> fut.handle((res, throwable) -> {
+        // Map futures is only for logging errors.
+        Function<CompletableFuture<?>, CompletableFuture<?>> mapping = fut -> fut.whenComplete((res, throwable) -> {
             if (throwable != null)
                 LOG.error("Failed to notify configuration listener.", throwable);
-
-            return res;
         });
 
-        CompletableFuture[] resultFutures = futures.stream().map(mapping).toArray(CompletableFuture[]::new);
+        CompletableFuture<?>[] resultFutures = futures.stream().map(mapping).toArray(CompletableFuture[]::new);
 
         return CompletableFuture.allOf(resultFutures);
     }

@@ -54,10 +54,20 @@ public class ConfigCommandSpec extends CategorySpec {
         )
         private String selector;
 
+        /** Configuration type: {@code node} or {@code cluster}. */
+        @CommandLine.Option(
+            names = "--type",
+            description = "Configuration type (\"node\" or \"cluster\")",
+            required = true
+        )
+        //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
+        private String type;
+
         /** {@inheritDoc} */
         @Override public void run() {
             spec.commandLine().getOut().println(
-                configurationClient.get(cfgHostnameOptions.host(), cfgHostnameOptions.port(), selector));
+                configurationClient.get(cfgHostnameOptions.host(), cfgHostnameOptions.port(), selector, type)
+            );
         }
     }
 
@@ -81,10 +91,25 @@ public class ConfigCommandSpec extends CategorySpec {
         @CommandLine.Mixin
         private CfgHostnameOptions cfgHostnameOptions;
 
+        /** Configuration type: {@code node} or {@code cluster}. */
+        //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
+        @CommandLine.Option(
+            names = "--type",
+            description = "Configuration type (\"node\" or \"cluster\")",
+            required = true
+        )
+        private String type;
+
         /** {@inheritDoc} */
         @Override public void run() {
-            configurationClient.set(cfgHostnameOptions.host(), cfgHostnameOptions.port(), cfg,
-                spec.commandLine().getOut(), spec.commandLine().getColorScheme());
+            configurationClient.set(
+                cfgHostnameOptions.host(),
+                cfgHostnameOptions.port(),
+                cfg,
+                spec.commandLine().getOut(),
+                spec.commandLine().getColorScheme(),
+                type
+            );
         }
     }
 

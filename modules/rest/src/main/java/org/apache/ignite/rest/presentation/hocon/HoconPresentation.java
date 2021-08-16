@@ -62,7 +62,7 @@ public class HoconPresentation implements ConfigurationPresentation<String> {
             throw new IllegalArgumentException("Empty configuration");
 
         try {
-            registry.change(HoconConverter.hoconSource(parseString(cfgUpdate).root()), null).get();
+            registry.change(HoconConverter.hoconSource(parseString(cfgUpdate).root())).get();
         }
         catch (IllegalArgumentException | ConfigurationValidationException e) {
             throw e;

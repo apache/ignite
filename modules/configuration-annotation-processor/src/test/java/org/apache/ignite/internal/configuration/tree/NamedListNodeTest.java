@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.configuration.tree;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.TestConfigurationChanger;
@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.String.format;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.anEmptyMap;
@@ -87,11 +88,10 @@ public class NamedListNodeTest {
     /** */
     @BeforeEach
     public void before() {
-        storage = new TestConfigurationStorage(ConfigurationType.LOCAL);
+        storage = new TestConfigurationStorage(LOCAL);
 
-        changer = new TestConfigurationChanger(cgen);
-        changer.addRootKey(AConfiguration.KEY);
-        changer.register(storage);
+        changer = new TestConfigurationChanger(cgen, List.of(AConfiguration.KEY), Map.of(), storage);
+        changer.start();
     }
 
     /** */

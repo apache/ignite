@@ -20,6 +20,7 @@ package org.apache.ignite.internal.configuration.util;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.NamedListView;
+import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
@@ -501,5 +504,19 @@ public class ConfigurationUtil {
                 return node;
             }
         };
+    }
+
+    /**
+     * Checks that the configuration type of root keys is equal to the storage type.
+     *
+     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type.
+     */
+    public static void checkConfigurationType(Collection<RootKey<?, ?>> rootKeys, ConfigurationStorage storage) {
+        for (RootKey<?, ?> key : rootKeys) {
+            if (key.type() != storage.type()) {
+                throw new IllegalArgumentException("Invalid root key configuration type [key=" + key +
+                    ", storage=" + storage.getClass().getName() + ", storageType=" + storage.type() + "]");
+            }
+        }
     }
 }

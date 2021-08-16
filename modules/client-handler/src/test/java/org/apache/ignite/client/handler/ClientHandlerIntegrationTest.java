@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import io.netty.channel.ChannelFuture;
 import org.apache.ignite.app.Ignite;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePack;
 import org.slf4j.helpers.NOPLogger;
 
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -179,9 +180,9 @@ public class ClientHandlerIntegrationTest {
 
     private ChannelFuture startServer() throws InterruptedException {
         configurationRegistry = new ConfigurationRegistry(
-                Collections.singletonList(ClientConnectorConfiguration.KEY),
-                Collections.emptyMap(),
-                Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
+            List.of(ClientConnectorConfiguration.KEY),
+            Map.of(),
+            new TestConfigurationStorage(LOCAL)
         );
 
         configurationRegistry.start();

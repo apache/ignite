@@ -24,10 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
-import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
@@ -94,9 +92,11 @@ public class ITDistributedConfigurationStorageTest {
 
             List<RootKey<?, ?>> rootKeys = List.of(NodeConfiguration.KEY);
 
-            List<ConfigurationStorage> localStorage = List.of(new LocalConfigurationStorage(vaultManager));
-
-            cfgManager = new ConfigurationManager(rootKeys, localStorage);
+            cfgManager = new ConfigurationManager(
+                rootKeys,
+                Map.of(),
+                new LocalConfigurationStorage(vaultManager)
+            );
 
             metaStorageManager = new MetaStorageManager(
                 vaultManager,
@@ -131,7 +131,7 @@ public class ITDistributedConfigurationStorageTest {
             // metastorage configuration
             var config = String.format("{\"node\": {\"metastorageNodes\": [ \"%s\" ]}}", addr);
 
-            cfgManager.bootstrap(config, ConfigurationType.LOCAL);
+            cfgManager.bootstrap(config);
 
             Stream.of(clusterService, raftManager, metaStorageManager).forEach(IgniteComponent::start);
 

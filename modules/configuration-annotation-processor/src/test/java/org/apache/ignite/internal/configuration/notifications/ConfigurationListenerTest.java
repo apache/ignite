@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.configuration.notifications;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /** */
 public class ConfigurationListenerTest {
     /** */
-    @ConfigurationRoot(rootName = "parent", type = ConfigurationType.LOCAL)
+    @ConfigurationRoot(rootName = "parent", type = LOCAL)
     public static class ParentConfigurationSchema {
         /** */
         @ConfigValue
@@ -76,17 +76,13 @@ public class ConfigurationListenerTest {
     /** */
     @BeforeEach
     public void before() {
-        var testConfigurationStorage = new TestConfigurationStorage(ConfigurationType.LOCAL);
+        var testConfigurationStorage = new TestConfigurationStorage(LOCAL);
 
-        registry = new ConfigurationRegistry(
-            Collections.singletonList(ParentConfiguration.KEY),
-            Collections.emptyMap(),
-            Collections.singletonList(testConfigurationStorage)
-        );
+        registry = new ConfigurationRegistry(List.of(ParentConfiguration.KEY), Map.of(), testConfigurationStorage);
 
         registry.start();
 
-        registry.startStorageConfigurations(testConfigurationStorage.type());
+        registry.initializeDefaults();
 
         configuration = registry.getConfiguration(ParentConfiguration.KEY);
     }

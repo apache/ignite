@@ -101,8 +101,11 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Meta storage service. */
     private final MetaStorageManager metaStorageMgr;
 
-    /** Configuration manager. */
-    private final ConfigurationManager configurationMgr;
+    /** Node configuration manager. */
+    private final ConfigurationManager nodeCfgMgr;
+
+    /** Cluster configuration manager. */
+    private final ConfigurationManager clusterCfgMgr;
 
     /** Raft manager. */
     private final Loza raftMgr;
@@ -125,7 +128,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Creates a new table manager.
      *
-     * @param configurationMgr Configuration manager.
+     * @param nodeCfgMgr Node configuration manager.
+     * @param clusterCfgMgr Cluster configuration manager.
      * @param metaStorageMgr Meta storage manager.
      * @param schemaMgr Schema manager.
      * @param affMgr Affinity manager.
@@ -133,14 +137,16 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @param partitionsStoreDir Partitions store directory.
      */
     public TableManager(
-        ConfigurationManager configurationMgr,
+        ConfigurationManager nodeCfgMgr,
+        ConfigurationManager clusterCfgMgr,
         MetaStorageManager metaStorageMgr,
         SchemaManager schemaMgr,
         AffinityManager affMgr,
         Loza raftMgr,
         Path partitionsStoreDir
     ) {
-        this.configurationMgr = configurationMgr;
+        this.nodeCfgMgr = nodeCfgMgr;
+        this.clusterCfgMgr = clusterCfgMgr;
         this.metaStorageMgr = metaStorageMgr;
         this.affMgr = affMgr;
         this.raftMgr = raftMgr;
@@ -151,7 +157,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** {@inheritDoc} */
     @Override public void start() {
         //TODO: IGNITE-14652 Change a metastorage update in listeners to multi-invoke
-        configurationMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY).tables().listen(ctx -> {
+        clusterCfgMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY).tables().listen(ctx -> {
             return onConfigurationChanged(ctx.storageRevision(), ctx.oldValue(), ctx.newValue());
         });
     }
@@ -342,7 +348,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return Table creation futures.
      */
     private List<CompletableFuture<Boolean>> startTables(Set<String> tbls, long rev, NamedListView<TableView> cfgs) {
-        boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(configurationMgr);
+        boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(nodeCfgMgr);
 
         List<CompletableFuture<Boolean>> futs = new ArrayList<>();
 
@@ -426,7 +432,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return Table drop futures.
      */
     private List<CompletableFuture<Boolean>> stopTables(Set<String> tbls) {
-        boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(configurationMgr);
+        boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(nodeCfgMgr);
 
         List<CompletableFuture<Boolean>> futs = new ArrayList<>();
 
@@ -481,7 +487,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         @NotNull NamedListView<TableView> oldCfg,
         @NotNull NamedListView<TableView> newCfg
     ) {
-        boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(configurationMgr);
+        boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(nodeCfgMgr);
 
         List<CompletableFuture<Boolean>> futs = new ArrayList<>();
 
@@ -594,13 +600,14 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     removeListener(TableEvent.CREATE, clo);
             } else {
                 try {
-                    configurationMgr
-                            .configurationRegistry()
-                            .getConfiguration(TablesConfiguration.KEY)
-                            .tables()
-                            .change(change -> change.create(name, tableInitChange))
-                            .get();
-                } catch (InterruptedException | ExecutionException e) {
+                    clusterCfgMgr
+                        .configurationRegistry()
+                        .getConfiguration(TablesConfiguration.KEY)
+                        .tables()
+                        .change(change -> change.create(name, tableInitChange))
+                        .get();
+                }
+                catch (InterruptedException | ExecutionException e) {
                     LOG.error("Table wasn't created [name=" + name + ']', e);
 
                     removeListener(TableEvent.CREATE, clo, new IgniteInternalCheckedException(e));
@@ -641,9 +648,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         });
 
         try {
-            configurationMgr.configurationRegistry()
-                    .getConfiguration(TablesConfiguration.KEY).tables().change(change ->
-                    change.createOrUpdate(name, tableChange)).get();
+            clusterCfgMgr.configurationRegistry()
+                .getConfiguration(TablesConfiguration.KEY).tables().change(change ->
+                change.createOrUpdate(name, tableChange)).get();
         }
         catch (InterruptedException | ExecutionException e) {
             LOG.error("Table wasn't created [name=" + name + ']', e);
@@ -698,12 +705,12 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         }
         else {
             try {
-                configurationMgr
-                        .configurationRegistry()
-                        .getConfiguration(TablesConfiguration.KEY)
-                        .tables()
-                        .change(change -> change.delete(name))
-                        .get();
+                clusterCfgMgr
+                    .configurationRegistry()
+                    .getConfiguration(TablesConfiguration.KEY)
+                    .tables()
+                    .change(change -> change.delete(name))
+                    .get();
             }
             catch (InterruptedException | ExecutionException e) {
                 LOG.error("Table wasn't dropped [name=" + name + ']', e);

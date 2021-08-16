@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.configuration.hocon;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,7 +28,6 @@ import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigValue;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
@@ -40,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.apache.ignite.internal.configuration.hocon.HoconConverter.hoconSource;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class HoconConverterTest {
     /** */
-    @ConfigurationRoot(rootName = "root", type = ConfigurationType.LOCAL)
+    @ConfigurationRoot(rootName = "root", type = LOCAL)
     public static class HoconRootConfigurationSchema {
         /** */
         @NamedConfigValue(syntheticKeyName = "a")
@@ -158,9 +158,9 @@ public class HoconConverterTest {
     @BeforeAll
     public static void beforeAll() {
         registry = new ConfigurationRegistry(
-            Collections.singletonList(HoconRootConfiguration.KEY),
-            Collections.emptyMap(),
-            Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
+            List.of(HoconRootConfiguration.KEY),
+            Map.of(),
+            new TestConfigurationStorage(LOCAL)
         );
 
         registry.start();
@@ -553,7 +553,7 @@ public class HoconConverterTest {
      */
     private void change(String hocon) throws Throwable {
         try {
-            registry.change(hoconSource(ConfigFactory.parseString(hocon).root()), null).get(1, SECONDS);
+            registry.change(hoconSource(ConfigFactory.parseString(hocon).root())).get(1, SECONDS);
         }
         catch (ExecutionException e) {
             throw e.getCause();

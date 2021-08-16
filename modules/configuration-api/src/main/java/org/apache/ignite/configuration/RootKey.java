@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
+import org.apache.ignite.internal.tostring.S;
 
 /**
  * Configuration root selector.
@@ -27,19 +28,13 @@ import org.apache.ignite.configuration.annotation.ConfigurationType;
  * @param <VIEW> Type of the immutable snapshot view associated with the tree.
  */
 public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
-    /**
-     * Name of the configuration root.
-     */
+    /** Name of the configuration root. */
     private final String rootName;
 
-    /**
-     * Configuration type of the root.
-     */
+    /** Configuration type of the root. */
     private final ConfigurationType storageType;
 
-    /**
-     * Schema class for the root.
-     */
+    /** Schema class for the root. */
     private final Class<?> schemaClass;
 
     /**
@@ -83,5 +78,10 @@ public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
      */
     public Class<?> schemaClass() {
         return schemaClass;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RootKey.class, this);
     }
 }

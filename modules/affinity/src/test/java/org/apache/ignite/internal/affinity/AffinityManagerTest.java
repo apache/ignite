@@ -21,10 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.affinity.event.AffinityEvent;
 import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
@@ -50,6 +50,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.apache.ignite.configuration.annotation.ConfigurationType.DISTRIBUTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -80,8 +81,11 @@ public class AffinityManagerTest {
     @BeforeEach
     void setUp() {
         try {
-            cfrMgr = new ConfigurationManager(rootConfigurationKeys(), Arrays.asList(
-                new TestConfigurationStorage(ConfigurationType.DISTRIBUTED)));
+            cfrMgr = new ConfigurationManager(
+                rootConfigurationKeys(),
+                Map.of(),
+                new TestConfigurationStorage(DISTRIBUTED)
+            );
 
             cfrMgr.start();
 
@@ -117,7 +121,7 @@ public class AffinityManagerTest {
                 "         }\n" +
                 "      }\n" +
                 "   }\n" +
-                "}", ConfigurationType.DISTRIBUTED);
+                "}");
         }
         catch (Exception e) {
             LOG.error("Failed to bootstrap the test configuration manager.", e);

@@ -69,21 +69,24 @@ public class ConfigurationClient {
      * @param host String representation of server node host.
      * @param port Host REST port.
      * @param rawHoconPath HOCON dot-delimited path of requested configuration.
+     * @param type Configuration type: {@code node} or {@code cluster}.
      * @return JSON string with node configuration.
      */
+    //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
     public String get(
         String host,
         int port,
-        @Nullable String rawHoconPath) {
+        @Nullable String rawHoconPath,
+        String type
+    ) {
         var req = HttpRequest
             .newBuilder()
             .header("Content-Type", "application/json");
 
         if (rawHoconPath == null)
-            req.uri(URI.create("http://" + host + ":" + port + GET_URL));
+            req.uri(URI.create("http://" + host + ":" + port + GET_URL + type + "/"));
         else
-            req.uri(URI.create("http://" + host + ":" + port + GET_URL +
-                rawHoconPath));
+            req.uri(URI.create("http://" + host + ":" + port + GET_URL + type + "/" + rawHoconPath));
 
         try {
             HttpResponse<String> res =
@@ -109,13 +112,15 @@ public class ConfigurationClient {
      * @param rawHoconData Valid HOCON represented as a string.
      * @param out PrintWriter for printing user messages.
      * @param cs ColorScheme to enrich user messages.
+     * @param type Configuration type: {@code node} or {@code cluster}.
      */
-    public void set(String host, int port, String rawHoconData, PrintWriter out, ColorScheme cs) {
+    //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
+    public void set(String host, int port, String rawHoconData, PrintWriter out, ColorScheme cs, String type) {
         var req = HttpRequest
             .newBuilder()
             .PUT(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
             .header("Content-Type", "application/json")
-            .uri(URI.create("http://" + host + ":" + port + SET_URL))
+            .uri(URI.create("http://" + host + ":" + port + SET_URL + type + "/"))
             .build();
 
         try {

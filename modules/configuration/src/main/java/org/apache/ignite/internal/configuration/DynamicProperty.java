@@ -82,7 +82,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
         };
 
         // Use resulting tree as update request for the storage.
-        return changer.change(src, null);
+        return changer.change(src);
     }
 
     /** {@inheritDoc} */

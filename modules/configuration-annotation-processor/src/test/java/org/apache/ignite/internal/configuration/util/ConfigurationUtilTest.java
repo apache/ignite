@@ -21,14 +21,15 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.SuperRoot;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
+import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
@@ -38,9 +39,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.DISTRIBUTED;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.apache.ignite.internal.configuration.tree.NamedListNode.NAME;
 import static org.apache.ignite.internal.configuration.tree.NamedListNode.ORDER_IDX;
 import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
@@ -112,7 +116,7 @@ public class ConfigurationUtilTest {
     }
 
     /** */
-    @ConfigurationRoot(rootName = "root", type = ConfigurationType.LOCAL)
+    @ConfigurationRoot(rootName = "root", type = LOCAL)
     public static class ParentConfigurationSchema {
         /** */
         @NamedConfigValue
@@ -341,6 +345,56 @@ public class ConfigurationUtilTest {
         );
     }
 
+    /** */
+    @Test
+    void testCheckConfigurationTypeMixedTypes() {
+        List<RootKey<?, ?>> rootKeys = List.of(LocalFirstConfiguration.KEY, DistributedFirstConfiguration.KEY);
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> checkConfigurationType(rootKeys, new TestConfigurationStorage(LOCAL))
+        );
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> checkConfigurationType(rootKeys, new TestConfigurationStorage(DISTRIBUTED))
+        );
+    }
+
+    /** */
+    @Test
+    void testCheckConfigurationTypeOppositeTypes() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> checkConfigurationType(
+                List.of(DistributedFirstConfiguration.KEY, DistributedSecondConfiguration.KEY),
+                new TestConfigurationStorage(LOCAL)
+            )
+        );
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> checkConfigurationType(
+                List.of(LocalFirstConfiguration.KEY, LocalSecondConfiguration.KEY),
+                new TestConfigurationStorage(DISTRIBUTED)
+            )
+        );
+    }
+
+    /** */
+    @Test
+    void testCheckConfigurationTypeNoError() {
+        checkConfigurationType(
+            List.of(LocalFirstConfiguration.KEY, LocalSecondConfiguration.KEY),
+            new TestConfigurationStorage(LOCAL)
+        );
+
+        checkConfigurationType(
+            List.of(DistributedFirstConfiguration.KEY, DistributedSecondConfiguration.KEY),
+            new TestConfigurationStorage(DISTRIBUTED)
+        );
+    }
+
     /**
      * Patches super root and returns flat representation of the changes. Passed {@code superRoot} object will contain
      * patched tree when method execution is completed.
@@ -361,5 +415,45 @@ public class ConfigurationUtilTest {
 
         // Create flat diff between two super trees.
         return createFlattenedUpdatesMap(originalSuperRoot, superRoot);
+    }
+
+    /**
+     * First local configuration.
+     */
+    @ConfigurationRoot(rootName = "localFirst", type = LOCAL)
+    public static class LocalFirstConfigurationSchema {
+        /** String field. */
+        @Value(hasDefault = true)
+        public String str = "str";
+    }
+
+    /**
+     * Second local configuration.
+     */
+    @ConfigurationRoot(rootName = "localSecond", type = LOCAL)
+    public static class LocalSecondConfigurationSchema {
+        /** String field. */
+        @Value(hasDefault = true)
+        public String str = "str";
+    }
+
+    /**
+     * First distributed configuration.
+     */
+    @ConfigurationRoot(rootName = "distributedFirst", type = DISTRIBUTED)
+    public static class DistributedFirstConfigurationSchema {
+        /** String field. */
+        @Value(hasDefault = true)
+        public String str = "str";
+    }
+
+    /**
+     * Second distributed configuration.
+     */
+    @ConfigurationRoot(rootName = "distributedSecond", type = DISTRIBUTED)
+    public static class DistributedSecondConfigurationSchema {
+        /** String field. */
+        @Value(hasDefault = true)
+        public String str = "str";
     }
 }

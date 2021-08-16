@@ -88,7 +88,7 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
         };
 
         // Use resulting tree as update request for the storage.
-        return changer.change(src, null);
+        return changer.change(src);
     }
 
     /** {@inheritDoc} */

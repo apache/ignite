@@ -18,13 +18,13 @@
 package org.apache.ignite.client;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.client.fakes.FakeIgnite;
 import org.apache.ignite.client.handler.ClientHandlerModule;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.helpers.NOPLogger;
 
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -89,9 +90,9 @@ public abstract class AbstractClientTest {
 
     public static ChannelFuture startServer(String host) throws InterruptedException {
         configurationRegistry = new ConfigurationRegistry(
-                Collections.singletonList(ClientConnectorConfiguration.KEY),
-                Collections.emptyMap(),
-                Collections.singletonList(new TestConfigurationStorage(ConfigurationType.LOCAL))
+            List.of(ClientConnectorConfiguration.KEY),
+            Map.of(),
+            new TestConfigurationStorage(LOCAL)
         );
 
         configurationRegistry.start();

@@ -52,7 +52,7 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     private ConfigurationStorageListener lsnr;
 
     /** Storage version. */
-    private AtomicLong ver = new AtomicLong(0L);
+    private final AtomicLong ver = new AtomicLong(0L);
 
     /** Start key in range for searching local configuration keys. */
     private static final ByteArray LOC_KEYS_START_RANGE = ByteArray.fromString(LOC_PREFIX);
