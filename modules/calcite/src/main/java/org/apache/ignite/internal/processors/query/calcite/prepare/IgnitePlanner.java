@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Query planer.
@@ -161,7 +162,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public SqlNode parse(Reader reader) throws SqlParseException {
-        SqlNodeList sqlNodes = SqlParser.create(reader, parserCfg).parseStmtList();
+        SqlNodeList sqlNodes = Commons.parse(reader, parserCfg);
 
         return sqlNodes.size() == 1 ? sqlNodes.get(0) : sqlNodes;
     }

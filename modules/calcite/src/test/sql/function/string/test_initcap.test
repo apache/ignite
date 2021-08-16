@@ -22,3 +22,8 @@ query T
 SELECT initcap('')
 ----
 (empty)
+
+query T
+SELECT initcap(null)
+----
+NULL

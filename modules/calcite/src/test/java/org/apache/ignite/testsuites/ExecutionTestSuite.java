@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndexTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndexTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateExecutionTest;
@@ -28,8 +28,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExe
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MinusExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortedIndexSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.TreeIndexSpoolExecutionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -43,14 +43,14 @@ import org.junit.runners.Suite;
     MergeJoinExecutionTest.class,
     NestedLoopJoinExecutionTest.class,
     TableSpoolExecutionTest.class,
-    TreeIndexSpoolExecutionTest.class,
+    SortedIndexSpoolExecutionTest.class,
     HashIndexSpoolExecutionTest.class,
     HashAggregateExecutionTest.class,
     HashAggregateSingleGroupExecutionTest.class,
     SortAggregateExecutionTest.class,
     MinusExecutionTest.class,
     IntersectExecutionTest.class,
-    RuntimeTreeIndexTest.class,
+    RuntimeSortedIndexTest.class,
 })
 public class ExecutionTestSuite {
 }

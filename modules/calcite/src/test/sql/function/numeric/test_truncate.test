@@ -37,3 +37,8 @@ query T
 SELECT TRUNCATE(-123.345, 0)
 ----
 -123
+
+query T
+SELECT TRUNCATE(null, 0)
+----
+NULL

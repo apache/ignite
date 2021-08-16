@@ -205,6 +205,9 @@ public class ConverterUtils {
         if (!Types.needTypeCast(fromType, toType))
           return operand;
 
+        if (toType == Void.class)
+            return RexImpTable.NULL_EXPR;
+
         if (toType == BigDecimal.class)
             throw new AssertionError("For conversion to decimal, ConverterUtils#convertToDecimal method should be used instead.");
 

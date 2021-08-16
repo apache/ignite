@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper;
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
  */
 public class SharedPageLockTrackerDump {
     /** */
-    public final Map<Integer, String> structureIdToStrcutureName;
+    public final Map<Integer, String> structureIdToStructureName;
 
     /** */
     public final List<ThreadPageLockState> threadPageLockStates;
@@ -37,12 +38,12 @@ public class SharedPageLockTrackerDump {
     /** */
     public SharedPageLockTrackerDump(
         long time,
-        Map<Integer, String> structureIdToStrcutureName,
+        Map<Integer, String> structureIdToStructureName,
         List<ThreadPageLockState> threadPageLockStates
     ) {
         this.time = time;
-        this.structureIdToStrcutureName = structureIdToStrcutureName;
-        this.threadPageLockStates = threadPageLockStates;
+        this.structureIdToStructureName = Collections.unmodifiableMap(structureIdToStructureName);
+        this.threadPageLockStates = Collections.unmodifiableList(threadPageLockStates);
     }
 
     /** {@inheritDoc} */

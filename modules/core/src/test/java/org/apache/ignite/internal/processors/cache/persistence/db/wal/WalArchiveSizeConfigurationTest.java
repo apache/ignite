@@ -21,15 +21,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -144,6 +147,24 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
 
         assertEquals(dsCfg.getMaxWalArchiveSize(), (long)getFieldValue(walMgr(n), "maxWalArchiveSize"));
         assertEquals(dsCfg.getMaxWalArchiveSize() / 2, (long)getFieldValue(walMgr(n), "minWalArchiveSize"));
+    }
+
+    /**
+     * Check that if the {@link IgniteSystemProperties#IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE}
+     * are set to more than 1.0, then there will be an error when starting the node.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, value = "2")
+    public void testIncorrectIgniteThresholdWalArchiveSizePercentageProperty() {
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        assertThrowsAnyCause(
+            log,
+            () -> startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dsCfg)),
+            IgniteCheckedException.class,
+            "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE must be less than or equal to 1.0"
+        );
     }
 
     /**

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors;
 
+import java.time.Instant;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.ThreadPageLockState;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -38,15 +40,16 @@ public class ToStringDumpHelperTest extends GridCommonAbstractTest {
     public void toStringSharedPageLockTrackerTest() throws Exception {
         SharedPageLockTracker pageLockTracker = new SharedPageLockTracker();
 
-        pageLockTracker.onReadLock(1, 2, 3, 4);
+        PageLockListener tracker = pageLockTracker.registerStructure("dummy");
 
-        pageLockTracker.onReadUnlock(1, 2, 3, 4);
+        tracker.onReadLock(1, 2, 3, 4);
 
-        Thread asyncLockUnlock = new Thread(() -> {
-            pageLockTracker.onReadLock(4, 32, 1, 64);
-        }, "async-lock-unlock");
+        tracker.onReadUnlock(1, 2, 3, 4);
+
+        Thread asyncLockUnlock = new Thread(() -> tracker.onReadLock(4, 32, 1, 64), "async-lock-unlock");
         asyncLockUnlock.start();
         asyncLockUnlock.join();
+
         long threadIdInLog = asyncLockUnlock.getId();
 
         SharedPageLockTrackerDump pageLockDump = pageLockTracker.dump();
@@ -64,8 +67,9 @@ public class ToStringDumpHelperTest extends GridCommonAbstractTest {
             "Thread=[name=async-lock-unlock, id=" + threadIdInLog + "], state=TERMINATED" + U.nl() +
             "Locked pages = [32[0000000000000020](r=1|w=0)]" + U.nl() +
             "Locked pages log: name=async-lock-unlock time=(1596173397167, " +
-            ToStringDumpHelper.DATE_FMT.format(new java.util.Date(TIME)) + ")" + U.nl() +
-            "L=1 -> Read lock pageId=32, structureId=null [pageIdHex=0000000000000020, partId=0, pageIdx=32, flags=00000000]" + U.nl() +
+            ToStringDumpHelper.DATE_FMT.format(Instant.ofEpochMilli(TIME)) + ")" + U.nl() +
+            "L=1 -> Read lock pageId=32, structureId=dummy [pageIdHex=0000000000000020, partId=0, pageIdx=32, flags=00000000]" +
+            U.nl() +
             U.nl() +
             U.nl() +
             U.nl();
