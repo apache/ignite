@@ -105,7 +105,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *
  *
  *
- * Snapshot recovery with transfer partitions
+ * Snapshot recovery with transfer partitions.
  *
  * TODO: Some notes left to do for the restore using rebalancing:
  *  1. Disable WAL for starting caches.
@@ -143,6 +143,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * - update node2part map after partitions loaded from source and start refreshPartitions/affinityChange (each node sends
  *   a single message with its own cntrMap to the coordinator node, than coordinator resends aggregated message to the whole
  *   cluster nodes on update incomeCntrMap).
+ * - Two strategies for the restore on the same topology with indexes: start cache group from preloaded files or start cache
+ *   and then re-init index for started cache group. The second case will require data structures re-initialization on the fly.
  *
  */
 public class SnapshotRestoreProcess {
@@ -181,7 +183,7 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
-     */
+     */п
     public SnapshotRestoreProcess(GridKernalContext ctx) {
         this.ctx = ctx;
 
