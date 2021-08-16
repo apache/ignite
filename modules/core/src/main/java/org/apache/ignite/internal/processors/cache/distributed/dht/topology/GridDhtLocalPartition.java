@@ -249,6 +249,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (log.isDebugEnabled())
             log.debug("Partition has been created [grp=" + grp.cacheOrGroupName()
                 + ", p=" + id + ", state=" + state() + "]");
+
+        clearVer = ctx.versions().localOrder();
     }
 
     /**
@@ -975,10 +977,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     protected long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
         long order = clearVer;
-
-        // This is a newly created partition, nothing to clear.
-        if (order == 0)
-            return 0;
 
         GridCacheVersion clearVer = ctx.versions().startVersion();
 
