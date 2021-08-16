@@ -1422,7 +1422,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             forceLocDep,
                             ses.isFullSupport(),
                             internal,
-                            subjId,
                             affCacheIds,
                             affPartId,
                             mapTopVer,
@@ -1589,7 +1588,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             evt.taskNode(evtNode);
             evt.jobId(jobId);
             evt.type(evtType);
-            evt.taskSubjectId(ses.subjectId());
+            evt.taskSubjectId(subjId);
             evt.resultPolicy(plc);
 
             ctx.event().record(evt);

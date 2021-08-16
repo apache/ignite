@@ -1113,7 +1113,9 @@ public final class IgniteSystemProperties {
 
     /**
      * WAL rebalance threshold.
+     * @deprecated use Distributed MetaStorage property {@code historical.rebalance.threshold}.
      */
+    @Deprecated
     @SystemProperty(value = "WAL rebalance threshold", type = Integer.class,
         defaults = "" + DFLT_PDS_WAL_REBALANCE_THRESHOLD)
     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
@@ -1353,6 +1355,17 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Percentage of archive size for checkpoint trigger",
         type = Double.class, defaults = "" + DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE)
     public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Property for setup percentage of WAL archive size to calculate
+     * threshold since which removing of old archive should be started.
+     *
+     * @deprecated Use {@link DataStorageConfiguration#setMinWalArchiveSize}.
+     */
+    @SystemProperty(value = "Property for setup percentage of WAL archive size to calculate threshold since which " +
+        "removing of old archive should be started", type = Double.class)
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
+        "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
      * Threshold time (in millis) to print warning to log if waiting for next wal segment took longer than the threshold.

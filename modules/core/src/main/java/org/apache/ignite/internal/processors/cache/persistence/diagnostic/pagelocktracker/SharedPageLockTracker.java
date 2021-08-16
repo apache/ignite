@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteInterruptedException;
@@ -45,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 /**
  *
  */
-public class SharedPageLockTracker implements PageLockListener {
+public class SharedPageLockTracker {
     /** */
     private static final long OVERHEAD_SIZE = 16 + (8 * 8) + (4 * 3);
 
@@ -65,7 +66,7 @@ public class SharedPageLockTracker implements PageLockListener {
     private final Map<Long, Thread> threadIdToThreadRef = new HashMap<>();
 
     /** */
-    private final Map<String, Integer> structureNameToId = new HashMap<>();
+    private final Map<String, Integer> structureNameToId = new ConcurrentHashMap<>();
 
     /** Thread for clean terminated threads from map. */
     private final TimeOutWorker timeOutWorker;
@@ -74,18 +75,17 @@ public class SharedPageLockTracker implements PageLockListener {
     private Map<Long, PageLockThreadState> prevThreadsState = new HashMap<>();
 
     /** */
-    private int idGen;
+    private final AtomicInteger idGen = new AtomicInteger();
 
     /** */
     private final Consumer<Set<PageLockThreadState>> hangThreadsCallBack;
 
     /** */
-    private final ThreadLocal<PageLockTracker> lockTracker = ThreadLocal.withInitial(this::createTracker);
+    private final ThreadLocal<PageLockTracker<?>> lockTracker = ThreadLocal.withInitial(this::createTracker);
 
     /** */
     public SharedPageLockTracker() {
-        this((ids) -> {
-        }, new MemoryCalculator());
+        this(ids -> {}, new MemoryCalculator());
     }
 
     /** */
@@ -106,7 +106,7 @@ public class SharedPageLockTracker implements PageLockListener {
         MemoryCalculator memCalc
     ) {
         this.threadLimits = threadLimits;
-        timeOutWorker = new TimeOutWorker(timeOutWorkerInterval);
+        this.timeOutWorker = new TimeOutWorker(timeOutWorkerInterval);
         this.hangThreadsCallBack = hangThreadsCallBack;
         this.memCalc = memCalc;
 
@@ -118,7 +118,7 @@ public class SharedPageLockTracker implements PageLockListener {
      *
      * @return PageLockTracer instance.
      */
-    private PageLockTracker createTracker() {
+    private PageLockTracker<?> createTracker() {
         Thread thread = Thread.currentThread();
 
         String name = "name=" + thread.getName();
@@ -143,50 +143,46 @@ public class SharedPageLockTracker implements PageLockListener {
     }
 
     /** */
-    public synchronized PageLockListener registrateStructure(String structureName) {
-        Integer id = structureNameToId.get(structureName);
+    public PageLockListener registerStructure(String structureName) {
+        int structureId = structureNameToId.computeIfAbsent(structureName, name -> {
+            // Size for the new (K,V) pair.
+            memCalc.onHeapAllocated((name.getBytes().length + 16) + (8 + 16 + 4));
 
-        if (id == null) {
-            structureNameToId.put(structureName, id = (++idGen));
+            return idGen.incrementAndGet();
+        });
 
-            // Size for new (K,V) pair.
-            memCalc.onHeapAllocated((structureName.getBytes().length + 16) + (8 + 16 + 4));
-        }
-
-        // Size for PageLockListenerIndexAdapter object.
+        // Size for the PageLockListener object.
         memCalc.onHeapAllocated(16 + 4 + 8);
 
-        return new PageLockListenerIndexAdapter(id, this);
-    }
+        return new PageLockListener() {
+            @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
+                lockTracker.get().onBeforeWriteLock(structureId, pageId, page);
+            }
 
-    /** {@inheritDoc} */
-    @Override public void onBeforeWriteLock(int structureId, long pageId, long page) {
-        lockTracker.get().onBeforeWriteLock(structureId, pageId, page);
-    }
+            @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
+                lockTracker.get().onWriteLock(structureId, pageId, page, pageAddr);
+            }
 
-    /** {@inheritDoc} */
-    @Override public void onWriteLock(int structureId, long pageId, long page, long pageAddr) {
-        lockTracker.get().onWriteLock(structureId, pageId, page, pageAddr);
-    }
+            @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
+                lockTracker.get().onWriteUnlock(structureId, pageId, page, pageAddr);
+            }
 
-    /** {@inheritDoc} */
-    @Override public void onWriteUnlock(int structureId, long pageId, long page, long pageAddr) {
-        lockTracker.get().onWriteUnlock(structureId, pageId, page, pageAddr);
-    }
+            @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
+                lockTracker.get().onBeforeReadLock(structureId, pageId, page);
+            }
 
-    /** {@inheritDoc} */
-    @Override public void onBeforeReadLock(int structureId, long pageId, long page) {
-        lockTracker.get().onBeforeReadLock(structureId, pageId, page);
-    }
+            @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
+                lockTracker.get().onReadLock(structureId, pageId, page, pageAddr);
+            }
 
-    /** {@inheritDoc} */
-    @Override public void onReadLock(int structureId, long pageId, long page, long pageAddr) {
-        lockTracker.get().onReadLock(structureId, pageId, page, pageAddr);
-    }
+            @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
+                lockTracker.get().onReadUnlock(structureId, pageId, page, pageAddr);
+            }
 
-    /** {@inheritDoc} */
-    @Override public void onReadUnlock(int structureId, long pageId, long page, long pageAddr) {
-        lockTracker.get().onReadUnlock(structureId, pageId, page, pageAddr);
+            @Override public void close() {
+                structureNameToId.remove(structureName);
+            }
+        };
     }
 
     /**
@@ -196,7 +192,7 @@ public class SharedPageLockTracker implements PageLockListener {
         Collection<PageLockTracker<?>> trackers = threadStacks.values();
         List<ThreadPageLockState> threadPageLockStates = new ArrayList<>(threadStacks.size());
 
-        for (PageLockTracker tracker : trackers) {
+        for (PageLockTracker<?> tracker : trackers) {
             boolean acquired = tracker.acquireSafePoint();
 
             //TODO
@@ -227,21 +223,13 @@ public class SharedPageLockTracker implements PageLockListener {
             }
         }
 
-        Map<Integer, String> idToStructureName0 =
-            Collections.unmodifiableMap(
-                structureNameToId.entrySet().stream()
-                    .collect(Collectors.toMap(
-                        Map.Entry::getValue,
-                        Map.Entry::getKey
-                    ))
-            );
-
-        List<ThreadPageLockState> threadPageLockStates0 = Collections.unmodifiableList(threadPageLockStates);
+        Map<Integer, String> idToStructureName = structureNameToId.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 
         // Get first thread dump time or current time is threadStates is empty.
         long time = !threadPageLockStates.isEmpty() ? threadPageLockStates.get(0).pageLockDump.time : System.currentTimeMillis();
 
-        return new SharedPageLockTrackerDump(time, idToStructureName0, threadPageLockStates0);
+        return new SharedPageLockTrackerDump(time, idToStructureName, threadPageLockStates);
     }
 
     /**
@@ -257,12 +245,12 @@ public class SharedPageLockTracker implements PageLockListener {
             Thread thread = entry.getValue();
 
             if (thread.getState() == Thread.State.TERMINATED) {
-                PageLockTracker tracker = threadStacks.remove(threadId);
+                PageLockTracker<?> tracker = threadStacks.remove(threadId);
 
                 if (tracker != null) {
                     memCalc.onHeapFree((8 + 16 + 8) + 8);
 
-                    tracker.free();
+                    tracker.close();
                 }
 
                 it.remove();

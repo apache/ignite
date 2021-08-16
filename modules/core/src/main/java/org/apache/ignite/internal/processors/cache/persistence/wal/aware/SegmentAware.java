@@ -384,4 +384,11 @@ public class SegmentAware {
     public long awaitAvailableTruncateArchive() throws IgniteInterruptedCheckedException {
         return truncateStorage.awaitAvailableTruncate();
     }
+
+    /**
+     * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
+     */
+    public void startAutoReleaseSegments() {
+        archiveSizeStorage.startAutoReleaseSegments();
+    }
 }

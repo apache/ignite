@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -30,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartition
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -44,7 +48,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     private final boolean needVer;
 
     /** Keep cache objects. */
-    private boolean keepCacheObjects;
+    private final boolean keepCacheObjects;
 
     /**
      * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
@@ -90,28 +94,50 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> map = new HashMap<>();
+        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>();
+
+        Map<KeyCacheObject, T2<Object, CacheEntryVersion>> prevMap = new HashMap<>();
+
+        Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
-                EntryGetResult candidate = entry.getValue();
-                EntryGetResult old = map.get(key);
+                KeyCacheObject curKey = entry.getKey();
+                EntryGetResult curRes = entry.getValue();
 
-                if (old != null && old.version().compareTo(candidate.version()) != 0) {
-                    if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT)
-                        onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
-                    else
-                        map(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
+                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), false, false, null);
 
-                    return;
+                T2<Object, CacheEntryVersion> prev = prevMap.get(curKey);
+
+                if (prev != null) {
+                    Object prevVal = prev.get1();
+                    CacheEntryVersion prevVer = prev.get2();
+
+                    if (prevVer.compareTo(curRes.version()) != 0 || !prevVal.equals(curVal))
+                        inconsistentKeys.add(curKey);
                 }
+                else {
+                    resMap.put(curKey, curRes);
 
-                map.put(key, candidate);
+                    prevMap.put(curKey, new T2<>(curVal, curRes.version()));
+                }
             }
         }
 
-        onDone(map);
+        if (!inconsistentKeys.isEmpty()) {
+            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+                if (!ctx.transactional()) // Will not be fixed, should be recorded as is.
+                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null);
+
+                onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+            }
+            else
+                remap(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
+
+            return;
+        }
+
+        onDone(resMap);
     }
 
     /**
