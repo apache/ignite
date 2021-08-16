@@ -249,8 +249,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (log.isDebugEnabled())
             log.debug("Partition has been created [grp=" + grp.cacheOrGroupName()
                 + ", p=" + id + ", state=" + state() + "]");
-
-        clearVer = ctx.versions().localOrder();
     }
 
     /**
@@ -649,11 +647,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             if (casState(state, MOVING)) {
                 // The state is switched under global topology lock, safe to record version here.
-                clearVer = ctx.versions().localOrder();
+                updateClearVersion();
 
                 return true;
             }
         }
+    }
+
+    /**
+     * Records a version for row clearing. Must be called when a partition is marked for full rebalancing.
+     * @see #clearAll(EvictionContext)
+     */
+    public void updateClearVersion() {
+        clearVer = ctx.versions().localOrder();
     }
 
     /**
@@ -969,6 +975,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     protected long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
         long order = clearVer;
+
+        assert order != 0 : this;
 
         GridCacheVersion clearVer = ctx.versions().startVersion();
 
