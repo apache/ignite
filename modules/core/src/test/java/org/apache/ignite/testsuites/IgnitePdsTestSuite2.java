@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteRebalanceSc
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest;
 import org.apache.ignite.internal.processors.cache.persistence.MaintenanceRegistrySimpleTest;
+import org.apache.ignite.internal.processors.cache.persistence.RestorePartitionStateBenchmarkTest;
 import org.apache.ignite.internal.processors.cache.persistence.WALPreloadingWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.WalPreloadingConcurrentTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
@@ -123,7 +124,7 @@ public class IgnitePdsTestSuite2 {
         List<Class<?>> suite = new ArrayList<>();
 
         // Integrity test.
-        GridTestUtils.addTestIfNeeded(suite, IgniteDataIntegrityTests.class, ignoredTests);
+        /*GridTestUtils.addTestIfNeeded(suite, IgniteDataIntegrityTests.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteStandaloneWalIteratorInvalidCrcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteReplayWalIteratorInvalidCrcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteFsyncReplayWalIteratorInvalidCrcTest.class, ignoredTests);
@@ -148,7 +149,9 @@ public class IgnitePdsTestSuite2 {
         // Maintenance tests
         GridTestUtils.addTestIfNeeded(suite, MaintenanceRegistrySimpleTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, WalArchiveSizeConfigurationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, WalArchiveSizeConfigurationTest.class, ignoredTests);*/
+
+        GridTestUtils.addTestIfNeeded(suite, RestorePartitionStateBenchmarkTest.class, ignoredTests);
 
         return suite;
     }
