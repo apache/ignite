@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyT
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeDoesNotBreakSqlSelectTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
+import org.apache.ignite.internal.processors.cache.FieldsPrecisionTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimi
 import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
-import org.apache.ignite.internal.processors.cache.FieldsPrecisionTest;
 import org.apache.ignite.internal.processors.cache.WrongIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
