@@ -1482,6 +1482,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param awaitTop Await topology change flag.
      */
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        info("Stop grid:" + igniteInstanceName);
+
         stopGrid0(igniteInstanceName, cancel, awaitTop, false);
     }
 
@@ -1492,6 +1494,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param awaitTop Await topology change flag.
      */
     protected void stopGridx(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        info("Stop grid X:" + igniteInstanceName);
+
         stopGrid0(igniteInstanceName, cancel, awaitTop, true);
     }
 
@@ -1508,7 +1512,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             UUID id = ignite instanceof IgniteProcessProxy ? ((IgniteProcessProxy)ignite).getId() : ignite.context().localNodeId();
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']' + " Stack: " + new Throwable().getStackTrace());
 
             if (!isRemoteJvm(igniteInstanceName)) {
                 IgniteUtils.setCurrentIgniteName(igniteInstanceName);
@@ -1557,6 +1561,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param wait Wait for grids to start first.
      */
     protected void stopAllGrids(boolean cancel, boolean wait) {
+        info("stopAllGrids()");
+
         try {
             Collection<Ignite> clients = new ArrayList<>();
             Collection<Ignite> srvs = new ArrayList<>();
