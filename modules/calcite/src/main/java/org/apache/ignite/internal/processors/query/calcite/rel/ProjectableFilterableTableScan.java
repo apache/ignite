@@ -134,7 +134,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        return table.getRowCount() * mq.getSelectivity(this, condition);
+        return table.getRowCount() * mq.getSelectivity(this, null);
     }
 
     /** {@inheritDoc} */

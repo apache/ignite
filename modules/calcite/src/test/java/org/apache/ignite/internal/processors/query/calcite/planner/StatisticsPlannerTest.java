@@ -221,4 +221,26 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
         tbl1.setStatistics(tbl1stat);
     }
+
+    /**
+     * Run query with expression, check index wouldn't be choosen.
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testIndexChoosingFromExpression() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        tbl1.setStatistics(tbl1stat);
+
+        publicSchema.addTable("TBL1", tbl1);
+        publicSchema.addTable("TBL2", tbl2);
+        publicSchema.addTable("TBL3", tbl3);
+
+        String sql = "select * from TBL1 where t1c7short + t1c8long > 55555";
+
+        IgniteRel phys = physicalPlan(sql, publicSchema);
+        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
+
+        assertNull(idxScan);
+    }
 }

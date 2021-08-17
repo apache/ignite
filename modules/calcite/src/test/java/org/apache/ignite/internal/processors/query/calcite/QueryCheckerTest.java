@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsResultRowCount;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsScanRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.matchesOnce;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -50,57 +52,36 @@ public class QueryCheckerTest {
     }
 
     /**
-     * Check that the wrong cost will not be found.
+     * Check that scan row query matcher match scan rows and doesn't match result row count.
      */
     @Test
-    public void testCostMatchesWrongCostNoMatches() {
-        TestCost wrongCost = new TestCost(4., null, null, null, null);
-        Matcher<String> wrongCostMatcher = QueryChecker.containsCost(wrongCost);
+    public void testContainsScanRow() {
+        String plan = "    IgniteMapHashAggregate(group=[{}], COUNT(NAME)=[COUNT($0)]): rowcount = 1.0, " +
+            "cumulative cost = IgniteCost [rowCount=2000.0, cpu=2000.0, memory=5.0, io=0.0, network=0.0], id = 43\n" +
+            "      IgniteTableScan(table=[[PUBLIC, PERSON]], requiredColumns=[{2}]): rowcount = 1000.0, " +
+            "cumulative cost = IgniteCost [rowCount=1000.0, cpu=1000.0, memory=0.0, io=0.0, network=0.0], id = 34";
 
-        assertFalse(wrongCostMatcher.matches(PLAN));
+        Matcher<String> containsScan = containsScanRowCount(2000);
+        Matcher<String> containsResult = containsScanRowCount(1);
+
+        assertTrue(containsScan.matches(plan));
+        assertFalse(containsResult.matches(plan));
     }
 
     /**
-     * Check that the any cost will be found.
+     * Check that result row query matcher match result rows and doesn't match scan row count.
      */
     @Test
-    public void testCostMatchesAnyCostMatches() {
-        TestCost anyCost = new TestCost(null, null, null, null, null);
-        Matcher<String> anyCostMatcher = QueryChecker.containsCost(anyCost);
+    public void testContainsResultRow() {
+        String plan = "    IgniteMapHashAggregate(group=[{}], COUNT(NAME)=[COUNT($0)]): rowcount = 1.0, " +
+            "cumulative cost = IgniteCost [rowCount=2000.0, cpu=2000.0, memory=5.0, io=0.0, network=0.0], id = 43\n" +
+            "      IgniteTableScan(table=[[PUBLIC, PERSON]], requiredColumns=[{2}]): rowcount = 1000.0, " +
+            "cumulative cost = IgniteCost [rowCount=1000.0, cpu=1000.0, memory=0.0, io=0.0, network=0.0], id = 34";
 
-        assertTrue(anyCostMatcher.matches(PLAN));
-    }
+        Matcher<String> containsScan = containsResultRowCount(2000);
+        Matcher<String> containsResult = containsResultRowCount(1);
 
-    /**
-     * Check that the cost from the first line of plan will be found.
-     */
-    @Test
-    public void testCostMatchesFirstLineMatches() {
-        TestCost firstLineCost = new TestCost(null, 9., null, null, 12.);
-        Matcher<String> firstLineCostMatcher = QueryChecker.containsCost(firstLineCost);
-
-        assertTrue(firstLineCostMatcher.matches(PLAN));
-    }
-
-    /**
-     * Check that the cost from the middle line of plan will be found.
-     */
-    @Test
-    public void testCostMatchesMiddleLineMatches() {
-        TestCost middleLineCost = new TestCost(6., 6., null, 0., 12.);
-        Matcher<String> middleLineCostMatcher = QueryChecker.containsCost(middleLineCost);
-
-        assertTrue(middleLineCostMatcher.matches(PLAN));
-    }
-
-    /**
-     * Check that the cost from the last line of plan will be found.
-     */
-    @Test
-    public void testCostMatchesLastLineMatches() {
-        TestCost lastLineCost = new TestCost(3., 3., null, 0., null);
-        Matcher<String> lastLineCostMatcher = QueryChecker.containsCost(lastLineCost);
-
-        assertTrue(lastLineCostMatcher.matches(PLAN));
+        assertFalse(containsScan.matches(plan));
+        assertTrue(containsResult.matches(plan));
     }
 }
