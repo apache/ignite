@@ -720,11 +720,11 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         if (pred instanceof RexCall) {
             List<RexNode> operands = ((RexCall)pred).getOperands();
 
-            if (operands.size() > 2)
+            if (operands.isEmpty() || operands.size() > 2)
                 return null;
 
             boolean assignable0 = cls.isAssignableFrom(operands.get(0).getClass());
-            boolean assignable1 = cls.isAssignableFrom(operands.get(1).getClass());
+            boolean assignable1 = operands.size() > 1 && cls.isAssignableFrom(operands.get(1).getClass());
 
             if (assignable0 && assignable1)
                 return null;
