@@ -32,7 +32,7 @@ public class StatisticsRequest implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 185;
+    public static final short TYPE_CODE = 186;
 
     /** Gathering id. */
     private UUID reqId;
