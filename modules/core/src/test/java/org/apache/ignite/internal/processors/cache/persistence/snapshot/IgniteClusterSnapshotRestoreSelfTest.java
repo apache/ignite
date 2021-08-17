@@ -127,7 +127,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         CacheConfiguration<Integer, Object> cacheCfg2 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder,
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
@@ -245,7 +245,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
-        ensureCacheAbsent(dfltCacheCfg);
+        ensureCacheAbsent(dfltCacheCfg, false);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }
@@ -314,7 +314,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -357,7 +357,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         CacheConfiguration<Integer, Object> cacheCfg2 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), cacheCfg1, cacheCfg2);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, cacheCfg1, cacheCfg2);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
