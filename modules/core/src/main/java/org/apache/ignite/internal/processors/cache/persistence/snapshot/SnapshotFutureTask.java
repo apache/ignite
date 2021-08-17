@@ -515,8 +515,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();
 
-        if (log.isInfoEnabled())
-            log.info("Submit partition processing tasks with partition allocated lengths: " + partFileLengths);
+        if (log.isDebugEnabled())
+            log.debug("Submit partition processing tasks with partition allocated lengths: " + partFileLengths);
 
         Collection<BinaryType> binTypesCopy = cctx.kernalContext()
             .cacheObjects()

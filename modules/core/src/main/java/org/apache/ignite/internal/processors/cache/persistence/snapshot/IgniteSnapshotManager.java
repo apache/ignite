@@ -1536,7 +1536,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             for (Integer grpId : parts.keySet()) {
                 if (!withMetaStorage && cctx.cache().isEncrypted(grpId)) {
                     snpFutTask.onDone(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId + " but doesn't " +
-                        "include metastore. Metastore is requird because it holds encryption keys required to start with encrypted " +
+                        "include metastore. Metastore is required because it holds encryption keys required to start with encrypted " +
                         "caches contained in the snapshot."));
 
                     return snpFutTask;

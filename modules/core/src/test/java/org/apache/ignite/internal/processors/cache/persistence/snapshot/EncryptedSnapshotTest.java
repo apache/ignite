@@ -22,6 +22,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
@@ -46,36 +47,48 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         return Collections.singletonList(true);
     }
 
-    /** Name of additional encrypted cache. */
-    private static final String SECOND_CACHE_NAME = "cache2";
+    /** Yet another cache name. */
+    private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
         return (i -> new Account(i, i));
     }
 
+    /** Checks creation of encrypted cache with same name after putting plain cache in snapshot. */
+    @Test
+    public void testEncryptedCacheCreatedAfterPlainCacheSnapshoting() throws Exception {
+        testCacheCreatedAfterSnaphoting(true);
+    }
+
+    /** Checks creation of plain cache with same name after putting encrypted cache in snapshot. */
+    @Test
+    public void testPlainCacheCreatedAfterEncryptedCacheSnapshoting() throws Exception {
+        testCacheCreatedAfterSnaphoting(false);
+    }
+
     /** Checks both encrypted and plain caches can be restored from same snapshot. */
     @Test
     public void testRestoringEncryptedAndPlainCaches() throws Exception {
-        start3GridsCreateEncrPlainSnp();
+        start2GridsCreateEncrPlainSnp();
 
         grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
-        assertCacheKeys(grid(2).cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-        assertCacheKeys(grid(2).cache(SECOND_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(grid(1).cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(grid(1).cache(CACHE2), CACHE_KEYS_RANGE);
     }
 
     /** Checks both encrypted and plain caches can be restored from same snapshot. */
     @Test
     public void testStartingWithEncryptedAndPlainCaches() throws Exception {
-        start3GridsCreateEncrPlainSnp();
+        start2GridsCreateEncrPlainSnp();
 
         stopAllGrids();
 
-        IgniteEx ig = startGridsFromSnapshot(3, SNAPSHOT_NAME);
+        IgniteEx ig = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertCacheKeys(ig.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-        assertCacheKeys(ig.cache(SECOND_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(ig.cache(CACHE2), CACHE_KEYS_RANGE);
     }
 
     /** Checks snapshot after single reencryption. */
@@ -187,7 +200,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks snapshot restoration fails if different master key is contained in the snapshot. */
     @Test
     public void testStartingFromSnapshotFailsWithOtherMasterKey() throws Exception {
-        IgniteEx ig = startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+        IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         ig.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
@@ -203,7 +216,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> startGridsFromSnapshot(3, SNAPSHOT_NAME),
+            () -> startGridsFromSnapshot(2, SNAPSHOT_NAME),
             IgniteCheckedException.class,
             "bad key is used during decryption"
         );
@@ -219,7 +232,31 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME, ig.localNode().id(), F.asMap(CU.cacheId(dfltCacheCfg.getName()), null),
                 false, snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME)).get(TIMEOUT),
             IgniteCheckedException.class,
-            "Metastore is requird because it holds encryption keys");
+            "Metastore is required because it holds encryption keys");
+    }
+
+    /**
+     * Ensures that same-name-cache is created after putting cache into snapshot and deleting.
+     *
+     * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse order if {@code
+     *                             false}.
+     */
+    private void testCacheCreatedAfterSnaphoting(boolean encryptedFirst) throws Exception {
+        startGrids(2);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        addCache(encryptedFirst);
+
+        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        awaitPartitionMapExchange();
+
+        grid(0).destroyCache(CACHE2);
+
+        awaitPartitionMapExchange();
+
+        addCache(!encryptedFirst);
     }
 
     /**
@@ -228,14 +265,12 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @param reencryptionIterations Number re-encryptions turns.
      */
     private void checkSnapshotWithReencryptedCache(int reencryptionIterations) throws Exception {
-        int gridCnt = 3;
-
-        IgniteEx ig = startGridsWithCache(gridCnt, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg.setName(SECOND_CACHE_NAME));
+        IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg.setName(CACHE2));
 
         for (int r = 0; r < reencryptionIterations; ++r) {
             chageCacheGroupKey(0).get(TIMEOUT);
 
-            for (int g = 0; g < gridCnt; ++g)
+            for (int g = 0; g < 2; ++g)
                 grid(g).context().encryption().reencryptionFuture(CU.cacheId(dfltCacheCfg.getName())).get();
         }
 
@@ -255,7 +290,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         stopAllGrids();
 
-        startGridsFromSnapshot(gridCnt, SNAPSHOT_NAME);
+        startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertCacheKeys(grid(1).cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
@@ -270,8 +305,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      */
     private void checkActionFailsDuringSnapshotOperation(boolean restore, Function<Integer, IgniteFuture<?>> action, String errPrefix,
         Class<? extends Exception> errType) throws Exception {
-        startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg,
-            new CacheConfiguration<>(dfltCacheCfg).setName(SECOND_CACHE_NAME));
+        startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg,
+            new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2));
 
         BlockingCustomMessageDiscoverySpi grid0Disco = discoSpi(grid(0));
 
@@ -280,7 +315,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         if (restore) {
             grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-            grid(2).cache(dfltCacheCfg.getName()).destroy();
+            grid(1).cache(dfltCacheCfg.getName()).destroy();
 
             awaitPartitionMapExchange();
 
@@ -298,7 +333,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         grid0Disco.waitBlocked(TIMEOUT);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> action.apply(2).get(TIMEOUT), errType,
+        GridTestUtils.assertThrowsAnyCause(log, () -> action.apply(0).get(TIMEOUT), errType,
             errPrefix + " Snapshot operation is in progress.");
 
         grid0Disco.unblock();
@@ -312,8 +347,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @param reencryption Any kind of re-encryption action.
      */
     private void checkSnapshotActionFailsDuringReencryption(Function<Integer, IgniteFuture<?>> reencryption) throws Exception {
-        startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg,
-            new CacheConfiguration<>(dfltCacheCfg).setName(SECOND_CACHE_NAME));
+        startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg,
+            new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2));
 
         snp(grid(1)).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -332,12 +367,12 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         discoSpi.waitBlocked(TIMEOUT);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
+            () -> grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
             IgniteCheckedException.class,
             "Cache group restore operation was rejected. Master key changing or caches re-encryption process is not finished yet");
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2").get(TIMEOUT), IgniteCheckedException.class,
+            () -> grid(1).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2").get(TIMEOUT), IgniteCheckedException.class,
             "Snapshot operation has been rejected. Master key changing or caches re-encryption process is not finished yet");
 
         discoSpi.unblock();
@@ -346,38 +381,44 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Adds not-encrypted cache named {@link #SECOND_CACHE_NAME} and fills it with {@link #CACHE_KEYS_RANGE} records.
+     * Adds cache to the grid. Fills it and waits for PME.
      *
-     * @return CacheConfiguration of the new cache.
+     * @param encrypted If {@code true}, created encrypted cache.
+     * @return CacheConfiguration of the created cache.
      */
-    private CacheConfiguration<Integer, Object> addNotEncryptedCache(IgniteEx ig) {
-        CacheConfiguration<Integer, Object> ccfg =
-            new CacheConfiguration<>(dfltCacheCfg).setName(SECOND_CACHE_NAME).setEncryptionEnabled(false);
+    private CacheConfiguration<?, ?> addCache(boolean encrypted) throws InterruptedException {
+        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2).
+            setEncryptionEnabled(encrypted);
 
-        ig.createCache(ccfg);
+        grid(0).createCache(cacheCfg);
 
         Function<Integer, Object> valBuilder = valueBuilder();
 
-        try (IgniteDataStreamer<Integer, Object> ds = ig.dataStreamer(SECOND_CACHE_NAME)) {
-            for (int i = 0; i < CACHE_KEYS_RANGE; ++i)
-                ds.addData(i, valBuilder.apply(i));
-        }
+        IgniteDataStreamer<Integer, Object> streamer = grid(0).dataStreamer(CACHE2);
 
-        return ccfg;
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            streamer.addData(i, valBuilder.apply(i));
+
+        streamer.flush();
+
+        awaitPartitionMapExchange();
+
+        return cacheCfg;
     }
 
-    /**
-     * Starts 3 nodes, creates encrypted and plain caches, creates snapshot, destroes the caches.
-     */
-    private void start3GridsCreateEncrPlainSnp() throws Exception {
-        startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        CacheConfiguration<Integer, Object> ccfg = addNotEncryptedCache(grid(0));
+    /**
+     * Starts 2 nodes, creates encrypted and plain caches, creates snapshot, destroes the caches.
+     */
+    private void start2GridsCreateEncrPlainSnp() throws Exception {
+        startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        CacheConfiguration<?, ?> ccfg = addCache(false);
 
         grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        grid(2).cache(DEFAULT_CACHE_NAME).destroy();
-        grid(0).cache(SECOND_CACHE_NAME).destroy();
+        grid(1).cache(DEFAULT_CACHE_NAME).destroy();
+        grid(1).cache(CACHE2).destroy();
 
         awaitPartitionMapExchange();
 
@@ -389,7 +430,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @return Cache group key change action.
      */
     private IgniteFuture<?> chageCacheGroupKey(int gridNum) {
-        return grid(gridNum).encryption().changeCacheGroupKey(Collections.singletonList(SECOND_CACHE_NAME));
+        return grid(gridNum).encryption().changeCacheGroupKey(Collections.singletonList(CACHE2));
     }
 
     /**

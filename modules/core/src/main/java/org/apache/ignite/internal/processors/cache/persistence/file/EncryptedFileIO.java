@@ -46,9 +46,9 @@ public class EncryptedFileIO implements FileIO {
     private final int pageSize;
 
     /**
-     * Size of file header in bytes.
+     * Size of file header in bytes which is never encrypted.
      */
-    private final int headerSize;
+    private final int plainHeaderSize;
 
     /**
      * Encryption keys provider.
@@ -67,15 +67,15 @@ public class EncryptedFileIO implements FileIO {
      * @param plainFileIO Underlying file.
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
-     * @param headerSize Size of file header in bytes.
+     * @param plainHeaderSize Size of file header in bytes which is never encrypted.
      * @param keyProvider Encryption keys provider.
      */
-    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize, EncryptionCacheKeyProvider keyProvider,
+    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int plainHeaderSize, EncryptionCacheKeyProvider keyProvider,
         EncryptionSpi encSpi) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;
-        this.headerSize = headerSize;
+        this.plainHeaderSize = plainHeaderSize;
         this.keyProvider = keyProvider;
         this.encSpi = encSpi;
 
@@ -109,7 +109,7 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf) throws IOException {
-        assert position() == 0 && headerSize > 0;
+        assert position() == 0 && plainHeaderSize > 0;
 
         return plainFileIO.read(destBuf);
     }
@@ -146,7 +146,7 @@ public class EncryptedFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
         assert destBuf.capacity() == pageSize;
-        assert position() >= headerSize;
+        assert position() >= plainHeaderSize;
 
         ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
@@ -179,9 +179,9 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        if (headerSize > 0) {
+        if (plainHeaderSize > 0) {
             assert position() == 0;
-            assert headerSize == srcBuf.capacity();
+            assert plainHeaderSize == srcBuf.capacity();
 
             return plainFileIO.write(srcBuf);
         }
@@ -205,27 +205,18 @@ public class EncryptedFileIO implements FileIO {
     }
 
     /**
-     * @param srcBuf Source buffer.
-     * @param res Destination buffer.
-     * @throws IOException If failed.
+     * @return Encrypted data.
      */
-    private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
-        assert position() >= headerSize;
+    private ByteBuffer encrypt(ByteBuffer srcBuf) throws IOException {
+        assert position() >= plainHeaderSize;
+
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
         GroupKey key = keyProvider.getActiveKey(groupId);
 
         assert key != null : "No active encryption key found for cache group " + groupId;
 
-        encUtil.encrypt(srcBuf, res, key);
-    }
-
-    /**
-     * @return Encrypted data.
-     */
-    private ByteBuffer encrypt(ByteBuffer srcBuf) throws IOException {
-        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
-
-        encrypt(srcBuf, encrypted);
+        encUtil.encrypt(srcBuf, encrypted, key);
 
         encrypted.rewind();
 
