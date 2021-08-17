@@ -41,7 +41,7 @@ public abstract class AbstractSnapshotVerificationTask extends
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Task argument. */
+    /** Map of snapshot metadata information found on each cluster node. */
     protected final Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
 
     /** Ignite instance. */

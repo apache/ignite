@@ -42,6 +42,7 @@ import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
@@ -220,5 +221,83 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /**
+     * Test ensures that the snapshot operation is aborted if different handlers are loaded on different nodes.
+     *
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testClusterSnapshotHandlerConfigurationMismatch() throws Exception {
+        SnapshotHandler<Void> defHnd = new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) {
+                return null;
+            }
+        };
+
+        handlers.add(defHnd);
+
+        startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        handlers.clear();
+
+        startGrid(1);
+
+        resetBaselineTopology();
+
+        // Case 1: handler is loaded on only one of the two nodes.
+        IgniteFuture<Void> fut0 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        UUID nodeId1 = grid(1).localNode().id();
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), IgniteCheckedException.class,
+            "handler is missing on the remote node(s). The current operation will be aborted [missing=[" + nodeId1 + "]]");
+
+        stopGrid(1);
+
+        // Case 2: different handlers are loaded on different nodes.
+        handlers.add(new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+                return null;
+            }
+        });
+
+        startGrid(1);
+
+        IgniteFuture<Void> fut1 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut1.get(TIMEOUT), IgniteCheckedException.class,
+            "Snapshot handlers configuration mismatch (number of local snapshot handlers differs from the remote one)");
+
+        stopGrid(1);
+
+        // Case 3: one handler is loaded on two nodes, the other only on one.
+        handlers.add(defHnd);
+
+        startGrid(1);
+
+        IgniteFuture<Void> fut2 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut2.get(TIMEOUT), IgniteCheckedException.class,
+            "Snapshot handlers configuration mismatch (number of local snapshot handlers differs from the remote one)");
+
+        stopGrid(1);
+
+        // Make sure the operation was successful with the same configuration.
+        handlers.clear();
+        handlers.add(defHnd);
+
+        startGrid(1);
+
+        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
     }
 }

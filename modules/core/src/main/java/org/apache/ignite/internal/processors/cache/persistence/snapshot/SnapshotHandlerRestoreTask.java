@@ -22,9 +22,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -61,15 +63,17 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 continue;
 
             for (Map.Entry<String, SnapshotHandlerResult> entry : nodeDataMap.entrySet()) {
-                String lsnrName = entry.getKey();
+                String hndName = entry.getKey();
 
-                clusterResults.computeIfAbsent(lsnrName, v -> new ArrayList<>()).add(entry.getValue());
+                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
             }
         }
 
         try {
+            Collection<UUID> nodeIds = F.viewReadOnly(metas.keySet(), ClusterNode::id);
+
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, F.first(F.first(metas.values())).snapshotName(), clusterResults);
+                SnapshotHandlerType.RESTORE, F.first(F.first(metas.values())).snapshotName(), clusterResults, nodeIds);
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }

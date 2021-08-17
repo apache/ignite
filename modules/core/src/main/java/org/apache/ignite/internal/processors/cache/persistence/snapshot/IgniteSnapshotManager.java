@@ -743,7 +743,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 try {
-                    handlers.completeAll(SnapshotHandlerType.CREATE, snpReq.snapshotName(), clusterResults);
+                    handlers.completeAll(SnapshotHandlerType.CREATE, snpReq.snapshotName(), clusterResults, snpReq.nodes());
                 }
                 catch (Exception e) {
                     snpReq.error(e);
@@ -1758,24 +1758,44 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param type Type of snapshot operation handler.
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
+         * @param reqNodes Node IDs on which the handlers were executed.
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
         protected void completeAll(
             SnapshotHandlerType type,
             String snpName,
-            Map<String, List<SnapshotHandlerResult<?>>> res
+            Map<String, List<SnapshotHandlerResult<?>>> res,
+            Collection<UUID> reqNodes
         ) throws IgniteCheckedException {
             if (res.isEmpty())
                 return;
 
-            List<SnapshotHandler<Object>> handlers = this.handlers.get(type);
+            List<SnapshotHandler<Object>> hnds = handlers.get(type);
 
-            assert handlers != null;
-            assert handlers.size() == res.size() : "handlers=" + handlers.size() + ", results=" + res.size();
+            if (hnds == null || hnds.size() != res.size()) {
+                throw new IgniteCheckedException("Snapshot handlers configuration mismatch (number of local snapshot " +
+                    "handlers differs from the remote one). The current operation will be aborted " +
+                    "[locHnds=" + (hnds == null ? "" : F.viewReadOnly(hnds, h -> h.getClass().getName()).toString()) +
+                    ", rmtHnds=" + res.keySet() + "].");
+            }
 
-            for (SnapshotHandler hnd : handlers)
-                hnd.complete(snpName, res.get(hnd.getClass().getName()));
+            for (SnapshotHandler hnd : hnds) {
+                List<SnapshotHandlerResult<?>> nodesRes = res.get(hnd.getClass().getName());
+
+                if (nodesRes == null || nodesRes.size() < reqNodes.size()) {
+                    Set<UUID> missing = new HashSet<>(reqNodes);
+
+                    if (nodesRes != null)
+                        missing.removeAll(F.viewReadOnly(nodesRes, r -> r.node().id()));
+
+                    throw new IgniteCheckedException("Snapshot handlers configuration mismatch, " +
+                        "\"" + hnd.getClass().getName() + "\" handler is missing on the remote node(s). " +
+                        "The current operation will be aborted [missing=" + missing + "].");
+                }
+
+                hnd.complete(snpName, nodesRes);
+            }
         }
 
         /**
