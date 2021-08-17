@@ -43,6 +43,7 @@ import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
+import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -70,8 +71,10 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -261,6 +264,26 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         DynamicMBean bean2 = metricRegistry(ignite.name(), "other", "prefix2");
 
         assertEquals(44L, bean2.getAttribute("test3"));
+    }
+
+    /** */
+    @Test
+    public void testRemoveFilteredRegistry() {
+        String regName = MetricUtils.metricName(FILTERED_PREFIX, "registry-for-remove");
+
+        GridMetricManager mmgr = ignite.context().metric();
+
+        mmgr.registry(regName);
+
+        assertTrue(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
+
+        mmgr.remove(regName);
+
+        assertFalse(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
     }
 
     /** */
