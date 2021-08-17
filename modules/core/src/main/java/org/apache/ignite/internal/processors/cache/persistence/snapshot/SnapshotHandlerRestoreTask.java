@@ -42,7 +42,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob makeJob(String snpName, String constId, Collection<String> groups) {
+    @Override protected ComputeJob createJob(String snpName, String constId, Collection<String> groups) {
         return new SnapshotHandlerRestoreJob(snpName, constId, groups);
     }
 

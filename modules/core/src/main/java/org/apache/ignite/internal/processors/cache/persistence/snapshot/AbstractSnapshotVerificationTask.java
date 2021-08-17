@@ -48,13 +48,8 @@ public abstract class AbstractSnapshotVerificationTask extends
     @IgniteInstanceResource
     protected IgniteEx ignite;
 
-    /** Cache group names. */
-    protected Collection<String> grps;
-
     /** {@inheritDoc} */
     @Override public Map<ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, SnapshotPartitionsVerifyTaskArg arg) {
-        grps = arg.cacheGroupNames();
-
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = arg.clusterMetadata();
 
         if (!subgrid.containsAll(clusterMetas.keySet())) {
@@ -94,7 +89,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                 if (meta == null)
                     continue;
 
-                jobs.put(makeJob(meta.snapshotName(), meta.consistentId(), arg.cacheGroupNames()),
+                jobs.put(createJob(meta.snapshotName(), meta.consistentId(), arg.cacheGroupNames()),
                     e.getKey());
 
                 if (allMetas.isEmpty())
@@ -117,5 +112,5 @@ public abstract class AbstractSnapshotVerificationTask extends
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
      * @return Compute job.
      */
-    protected abstract ComputeJob makeJob(String name, String constId, Collection<String> groups);
+    protected abstract ComputeJob createJob(String name, String constId, Collection<String> groups);
 }

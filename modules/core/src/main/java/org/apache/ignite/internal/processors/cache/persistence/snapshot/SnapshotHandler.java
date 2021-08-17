@@ -47,7 +47,7 @@ public interface SnapshotHandler<T> extends Extension {
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
      *      passed into {@link #complete(String, Collection)} handler method.
      * @throws IgniteCheckedException If invocation caused an exception. This exception will be returned in {@link
-     *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String,Collection)} handler method.
+     *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException;
 
@@ -67,7 +67,7 @@ public interface SnapshotHandler<T> extends Extension {
     public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws IgniteCheckedException {
         for (SnapshotHandlerResult<T> res : results) {
             if (res.error() == null)
-                continue;;
+                continue;
 
             throw new IgniteCheckedException("Snapshot handler has failed " +
                 "[snapshot=" + name +

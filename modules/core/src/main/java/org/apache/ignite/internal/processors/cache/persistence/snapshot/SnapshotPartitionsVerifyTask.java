@@ -54,7 +54,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private IgniteEx ignite;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob makeJob(String name, String constId, Collection<String> groups) {
+    @Override protected ComputeJob createJob(String name, String constId, Collection<String> groups) {
         return new VisorVerifySnapshotPartitionsJob(name, constId, groups);
     }
 
