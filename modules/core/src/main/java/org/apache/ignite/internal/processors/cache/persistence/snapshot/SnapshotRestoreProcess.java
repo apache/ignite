@@ -1524,7 +1524,10 @@ public class SnapshotRestoreProcess {
                 .toArray(new CompletableFuture[parts.size()]);
 
             CompletableFuture<Void> rebalanced = new CompletableFuture<>();
-            CompletableFuture<Void> indexRebuild = CompletableFuture.completedFuture(null);
+
+            CompletableFuture<Void> indexRebuild = grp.shared().kernalContext().query().moduleEnabled() ?
+                CompletableFuture.completedFuture(null) :
+                CompletableFuture.completedFuture(null);
 
             CompletableFuture<Void> parts0 = CompletableFuture.allOf(arr0);
             CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, parts0, rebalanced, indexRebuild);
