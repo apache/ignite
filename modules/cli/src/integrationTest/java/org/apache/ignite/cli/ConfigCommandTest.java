@@ -50,6 +50,9 @@ public class ConfigCommandTest extends AbstractCliTest {
     /** Port for REST communication */
     private int restPort;
 
+    /** Port for thin client communication */
+    private int clientPort;
+
     /** Network port. */
     private int networkPort;
 
@@ -59,10 +62,12 @@ public class ConfigCommandTest extends AbstractCliTest {
         // TODO: IGNITE-15131 Must be replaced by receiving the actual port configs from the started node.
         // This approach still can produce the port, which will be unavailable at the moment of node start.
         restPort = getAvailablePort();
+        clientPort = getAvailablePort();
         networkPort = getAvailablePort();
 
         String configStr = "network.port=" + networkPort + "\n" +
-            "rest.port=" + restPort + "\n" + "rest.portRange=0";
+            "rest.port=" + restPort + "\n" + "rest.portRange=0" + "\n" +
+            "clientConnector.port=" + clientPort + "\n" + "clientConnector.portRange=0";
 
         IgnitionManager.start("node1", configStr, workDir);
 
@@ -110,7 +115,8 @@ public class ConfigCommandTest extends AbstractCliTest {
 
         assertEquals(0, exitCode);
         assertEquals(
-            "\"{\"network\":{\"netClusterNodes\":[],\"port\":" + networkPort + "}," +
+            "\"{\"clientConnector\":{\"port\":" + clientPort + ",\"portRange\":0}," +
+                "\"network\":{\"netClusterNodes\":[],\"port\":" + networkPort + "}," +
                 "\"node\":{\"metastorageNodes\":[\"localhost1\"]}," +
                 "\"rest\":{\"port\":" + restPort + ",\"portRange\":0}}\"" + nl,
             unescapeQuotes(out.toString())

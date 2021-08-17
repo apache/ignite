@@ -32,7 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
+import org.apache.ignite.client.handler.ClientHandlerModule;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.configuration.schemas.network.NetworkView;
 import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
@@ -114,9 +116,9 @@ public class IgnitionImpl implements Ignition {
      * Mapping of a node name to a started node components list.
      * Given map helps to stop node by stopping all it's components in an appropriate order both
      * when node is already started which means that all components are ready and
-     * if node is in a middle of a startup process which means that only part of it's components are prepared.
+     * if node is in a middle of a startup process which means that only part of its components are prepared.
      */
-    private static Map<String, List<IgniteComponent>> nodesStartedComponents = new ConcurrentHashMap<>();
+    private static final Map<String, List<IgniteComponent>> nodesStartedComponents = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public Ignite start(@NotNull String nodeName, @Nullable Path cfgPath, @NotNull Path workDir) {
@@ -210,7 +212,8 @@ public class IgnitionImpl implements Ignition {
             List<RootKey<?, ?>> nodeRootKeys = List.of(
                 NetworkConfiguration.KEY,
                 NodeConfiguration.KEY,
-                RestConfiguration.KEY
+                RestConfiguration.KEY,
+                ClientConnectorConfiguration.KEY
             );
 
             // Bootstrap node configuration manager.
@@ -355,6 +358,11 @@ public class IgnitionImpl implements Ignition {
                 startedComponents,
                 new RestModule(nodeCfgMgr, clusterCfgMgr)
             );
+
+            doStartComponent(
+                nodeName,
+                startedComponents,
+                new ClientHandlerModule(distributedTblMgr, nodeCfgMgr.configurationRegistry()));
 
             // Deploy all resisted watches cause all components are ready and have registered their listeners.
             metaStorageMgr.deployWatches();

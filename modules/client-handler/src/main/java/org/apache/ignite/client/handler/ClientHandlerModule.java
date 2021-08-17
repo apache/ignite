@@ -18,6 +18,7 @@
 package org.apache.ignite.client.handler;
 
 import java.net.BindException;
+import java.net.SocketAddress;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -27,55 +28,74 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.apache.ignite.app.Ignite;
 import org.apache.ignite.client.proto.ClientMessageDecoder;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteException;
-import org.slf4j.Logger;
+import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.table.manager.IgniteTables;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client handler module maintains TCP endpoint for thin client connections.
- *
  */
-public class ClientHandlerModule {
+public class ClientHandlerModule implements IgniteComponent {
+    /** The logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ClientHandlerModule.class);
+
     /** Configuration registry. */
-    private ConfigurationRegistry registry;
+    private final ConfigurationRegistry registry;
 
-    /** Ignite API entry poiny. */
-    private final Ignite ignite;
+    /** Ignite tables API. */
+    private final IgniteTables igniteTables;
 
-    /** Logger. */
-    private final Logger log;
+    /** Netty channel. */
+    private Channel channel;
 
     /**
      * Constructor.
      *
-     * @param ignite Ignite.
-     * @param log Logger.
+     * @param igniteTables Ignite.
+     * @param registry Configuration registry.
      */
-    public ClientHandlerModule(Ignite ignite, Logger log) {
-        this.ignite = ignite;
-        this.log = log;
+    public ClientHandlerModule(IgniteTables igniteTables, ConfigurationRegistry registry) {
+        assert igniteTables != null;
+        assert registry != null;
+
+        this.igniteTables = igniteTables;
+        this.registry = registry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        if (channel != null)
+            throw new IgniteException("ClientHandlerModule is already started.");
+
+        try {
+            channel = startEndpoint().channel();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws Exception {
+        if (channel != null) {
+            channel.close().await();
+
+            channel = null;
+        }
     }
 
     /**
-     * Prepares to start the module.
+     * Returns the local address where this handler is bound to.
      *
-     * @param sysCfg Configuration registry.
+     * @return the local address of this module, or {@code null} if this module is not started.
      */
-    public void prepareStart(ConfigurationRegistry sysCfg) {
-        registry = sysCfg;
-    }
-
-    /**
-     * Starts the module.
-     *
-     * @return channel future.
-     * @throws InterruptedException If thread has been interrupted during the start.
-     */
-    public ChannelFuture start() throws InterruptedException {
-        return startEndpoint();
+    @Nullable public SocketAddress localAddress() {
+        return channel == null ? null : channel.localAddress();
     }
 
     /**
@@ -86,18 +106,16 @@ public class ClientHandlerModule {
      * @throws IgniteException When startup has failed.
      */
     private ChannelFuture startEndpoint() throws InterruptedException {
-        var configuration = registry.getConfiguration(ClientConnectorConfiguration.KEY);
+        var configuration = registry.getConfiguration(ClientConnectorConfiguration.KEY).value();
 
-        // TODO: Handle defaults IGNITE-15164.
-        int desiredPort = configuration.port().value() == null ? 10800 : configuration.port().value();
-        int portRange = configuration.portRange().value() == null ? 100 : configuration.portRange().value();
+        int desiredPort = configuration.port();
+        int portRange = configuration.portRange();
 
         int port = 0;
-
         Channel ch = null;
 
+        // TODO: Reuse Netty infrastructure from network module IGNITE-15307.
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
-
         ServerBootstrap b = new ServerBootstrap();
 
         b.group(eventLoopGroup)
@@ -107,13 +125,13 @@ public class ClientHandlerModule {
                 protected void initChannel(Channel ch) {
                     ch.pipeline().addLast(
                             new ClientMessageDecoder(),
-                            new ClientInboundMessageHandler(ignite, log));
+                            new ClientInboundMessageHandler(igniteTables));
                 }
             })
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .childOption(ChannelOption.TCP_NODELAY, true);
 
-        for (int portCandidate = desiredPort; portCandidate < desiredPort + portRange; portCandidate++) {
+        for (int portCandidate = desiredPort; portCandidate <= desiredPort + portRange; portCandidate++) {
             ChannelFuture bindRes = b.bind(portCandidate).await();
 
             if (bindRes.isSuccess()) {
@@ -133,14 +151,14 @@ public class ClientHandlerModule {
             String msg = "Cannot start thin client connector endpoint. " +
                 "All ports in range [" + desiredPort + ", " + (desiredPort + portRange) + "] are in use.";
 
-            log.error(msg);
+            LOG.error(msg);
 
             eventLoopGroup.shutdownGracefully();
 
             throw new IgniteException(msg);
         }
 
-        log.info("Thin client connector started successfully on port " + port);
+        LOG.info("Thin client protocol started successfully on port " + port);
 
         return ch.closeFuture();
     }

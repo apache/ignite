@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client.handler;
 
-import java.io.IOException;
 import java.util.BitSet;
 import java.util.concurrent.CompletableFuture;
 import io.netty.buffer.ByteBuf;
@@ -25,7 +24,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.apache.ignite.app.Ignite;
 import org.apache.ignite.client.handler.requests.table.ClientSchemasGetRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTableDropRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTableGetRequest;
@@ -61,18 +59,19 @@ import org.apache.ignite.client.proto.ClientOp;
 import org.apache.ignite.client.proto.ProtocolVersion;
 import org.apache.ignite.client.proto.ServerMessageType;
 import org.apache.ignite.lang.IgniteException;
-import org.slf4j.Logger;
+import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.table.manager.IgniteTables;
 
 /**
  * Handles messages from thin clients.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
-    /** Logger. */
-    private final Logger log;
+    /** The logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ClientInboundMessageHandler.class);
 
-    /** API entry point. */
-    private final Ignite ignite;
+    /** Ignite tables API. */
+    private final IgniteTables igniteTables;
 
     /** Context. */
     private ClientContext clientContext;
@@ -80,15 +79,12 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
     /**
      * Constructor.
      *
-     * @param ignite Ignite API entry point.
-     * @param log Logger.
+     * @param igniteTables Ignite tables API entry point.
      */
-    public ClientInboundMessageHandler(Ignite ignite, Logger log) {
-        assert ignite != null;
-        assert log != null;
+    public ClientInboundMessageHandler(IgniteTables igniteTables) {
+        assert igniteTables != null;
 
-        this.ignite = ignite;
-        this.log = log;
+        this.igniteTables = igniteTables;
     }
 
     /** {@inheritDoc} */
@@ -120,7 +116,7 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
 
             clientContext = new ClientContext(clientVer, clientCode, features);
 
-            log.debug("Handshake: " + clientContext);
+            LOG.debug("Handshake: " + clientContext);
 
             var extensionsLen = unpacker.unpackMapHeader();
             unpacker.skipValue(extensionsLen);
@@ -237,88 +233,88 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
             ClientMessageUnpacker in,
             ClientMessagePacker out,
             int opCode
-    ) throws IOException {
+    ) {
         switch (opCode) {
             case ClientOp.TABLE_DROP:
-                return ClientTableDropRequest.process(in, ignite.tables());
+                return ClientTableDropRequest.process(in, igniteTables);
 
             case ClientOp.TABLES_GET:
-                return ClientTablesGetRequest.process(out, ignite.tables());
+                return ClientTablesGetRequest.process(out, igniteTables);
 
             case ClientOp.SCHEMAS_GET:
-                return ClientSchemasGetRequest.process(in, out, ignite.tables());
+                return ClientSchemasGetRequest.process(in, out, igniteTables);
 
             case ClientOp.TABLE_GET:
-                return ClientTableGetRequest.process(in, out, ignite.tables());
+                return ClientTableGetRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_UPSERT:
-                return ClientTupleUpsertRequest.process(in, ignite.tables());
+                return ClientTupleUpsertRequest.process(in, igniteTables);
 
             case ClientOp.TUPLE_UPSERT_SCHEMALESS:
-                return ClientTupleUpsertSchemalessRequest.process(in, ignite.tables());
+                return ClientTupleUpsertSchemalessRequest.process(in, igniteTables);
 
             case ClientOp.TUPLE_GET:
-                return ClientTupleGetRequest.process(in, out, ignite.tables());
+                return ClientTupleGetRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_UPSERT_ALL:
-                return ClientTupleUpsertAllRequest.process(in, ignite.tables());
+                return ClientTupleUpsertAllRequest.process(in, igniteTables);
 
             case ClientOp.TUPLE_UPSERT_ALL_SCHEMALESS:
-                return ClientTupleUpsertAllSchemalessRequest.process(in, ignite.tables());
+                return ClientTupleUpsertAllSchemalessRequest.process(in, igniteTables);
 
             case ClientOp.TUPLE_GET_ALL:
-                return ClientTupleGetAllRequest.process(in, out, ignite.tables());
+                return ClientTupleGetAllRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_GET_AND_UPSERT:
-                return ClientTupleGetAndUpsertRequest.process(in, out, ignite.tables());
+                return ClientTupleGetAndUpsertRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_GET_AND_UPSERT_SCHEMALESS:
-                return ClientTupleGetAndUpsertSchemalessRequest.process(in, out, ignite.tables());
+                return ClientTupleGetAndUpsertSchemalessRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_INSERT:
-                return ClientTupleInsertRequest.process(in, out, ignite.tables());
+                return ClientTupleInsertRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_INSERT_SCHEMALESS:
-                return ClientTupleInsertSchemalessRequest.process(in, out, ignite.tables());
+                return ClientTupleInsertSchemalessRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_INSERT_ALL:
-                return ClientTupleInsertAllRequest.process(in, out, ignite.tables());
+                return ClientTupleInsertAllRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_INSERT_ALL_SCHEMALESS:
-                return ClientTupleInsertAllSchemalessRequest.process(in, out, ignite.tables());
+                return ClientTupleInsertAllSchemalessRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_REPLACE:
-                return ClientTupleReplaceRequest.process(in, out, ignite.tables());
+                return ClientTupleReplaceRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_REPLACE_SCHEMALESS:
-                return ClientTupleReplaceSchemalessRequest.process(in, out, ignite.tables());
+                return ClientTupleReplaceSchemalessRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_REPLACE_EXACT:
-                return ClientTupleReplaceExactRequest.process(in, out, ignite.tables());
+                return ClientTupleReplaceExactRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_REPLACE_EXACT_SCHEMALESS:
-                return ClientTupleReplaceExactSchemalessRequest.process(in, out, ignite.tables());
+                return ClientTupleReplaceExactSchemalessRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_GET_AND_REPLACE:
-                return ClientTupleGetAndReplaceRequest.process(in, out, ignite.tables());
+                return ClientTupleGetAndReplaceRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_GET_AND_REPLACE_SCHEMALESS:
-                return ClientTupleGetAndReplaceSchemalessRequest.process(in, out, ignite.tables());
+                return ClientTupleGetAndReplaceSchemalessRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_DELETE:
-                return ClientTupleDeleteRequest.process(in, out, ignite.tables());
+                return ClientTupleDeleteRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_DELETE_ALL:
-                return ClientTupleDeleteAllRequest.process(in, out, ignite.tables());
+                return ClientTupleDeleteAllRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_DELETE_EXACT:
-                return ClientTupleDeleteExactRequest.process(in, out, ignite.tables());
+                return ClientTupleDeleteExactRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_DELETE_ALL_EXACT:
-                return ClientTupleDeleteAllExactRequest.process(in, out, ignite.tables());
+                return ClientTupleDeleteAllExactRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_GET_AND_DELETE:
-                return ClientTupleGetAndDeleteRequest.process(in, out, ignite.tables());
+                return ClientTupleGetAndDeleteRequest.process(in, out, igniteTables);
 
             default:
                 throw new IgniteException("Unexpected operation code: " + opCode);
@@ -332,7 +328,7 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
 
     /** {@inheritDoc} */
     @Override public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error(cause.getMessage(), cause);
+        LOG.error(cause.getMessage(), cause);
 
         ctx.close();
     }

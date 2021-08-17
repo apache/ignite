@@ -20,7 +20,7 @@ package org.apache.ignite.client;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
-import io.netty.channel.ChannelFuture;
+import java.util.Objects;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.client.fakes.FakeIgnite;
@@ -32,7 +32,6 @@ import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.helpers.NOPLogger;
 
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +45,7 @@ public abstract class AbstractClientTest {
 
     protected static ConfigurationRegistry configurationRegistry;
 
-    protected static ChannelFuture serverFuture;
+    protected static ClientHandlerModule serverModule;
 
     protected static Ignite server;
 
@@ -55,11 +54,11 @@ public abstract class AbstractClientTest {
     protected static int serverPort;
 
     @BeforeAll
-    public static void beforeAll() throws Exception {
+    public static void beforeAll() {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
 
-        serverFuture = startServer(null);
-        serverPort = ((InetSocketAddress)serverFuture.channel().localAddress()).getPort();
+        serverModule = startServer();
+        serverPort = ((InetSocketAddress) Objects.requireNonNull(serverModule.localAddress())).getPort();
 
         client = startClient();
     }
@@ -67,9 +66,7 @@ public abstract class AbstractClientTest {
     @AfterAll
     public static void afterAll() throws Exception {
         client.close();
-        serverFuture.cancel(true);
-        serverFuture.await();
-        serverFuture.channel().closeFuture().await();
+        serverModule.stop();
         configurationRegistry.stop();
     }
 
@@ -88,7 +85,7 @@ public abstract class AbstractClientTest {
         return builder.build();
     }
 
-    public static ChannelFuture startServer(String host) throws InterruptedException {
+    public static ClientHandlerModule startServer() {
         configurationRegistry = new ConfigurationRegistry(
             List.of(ClientConnectorConfiguration.KEY),
             Map.of(),
@@ -97,13 +94,16 @@ public abstract class AbstractClientTest {
 
         configurationRegistry.start();
 
+        configurationRegistry.getConfiguration(ClientConnectorConfiguration.KEY).change(
+                local -> local.changePort(10800).changePortRange(10)
+        ).join();
+
         server = new FakeIgnite();
 
-        var module = new ClientHandlerModule(server, NOPLogger.NOP_LOGGER);
+        var module = new ClientHandlerModule(server.tables(), configurationRegistry);
+        module.start();
 
-        module.prepareStart(configurationRegistry);
-
-        return module.start();
+        return module;
     }
 
     public static void assertTupleEquals(Tuple x, Tuple y) {

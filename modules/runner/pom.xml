@@ -89,6 +89,11 @@
             <artifactId>ignite-calcite</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-client-handler</artifactId>
+        </dependency>
+
         <!-- 3rd party dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -125,6 +130,12 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-network</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-client</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
