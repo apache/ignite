@@ -396,7 +396,6 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         return cacheCfg;
     }
 
-
     /**
      * Starts 2 nodes, creates encrypted and plain caches, creates snapshot, destroes the caches.
      */
