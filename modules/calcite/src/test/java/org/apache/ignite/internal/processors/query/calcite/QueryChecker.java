@@ -91,30 +91,24 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Ignite cost mather.
+     * Ignite scanned row count mather.
      *
-     * @param cost TestCost to match.
-     * @return Matcher.
+     * @param rowCount Expected scanned row count.
+     * @return Mather.
      */
-    public static Matcher<String> containsCost(TestCost cost) {
-        String rowCntStr = printCostVal(cost.rowCount());
-        String cpuStr = printCostVal(cost.cpu());
-        String memoryStr = printCostVal(cost.memory());
-        String ioStr = printCostVal(cost.io());
-        String netStr = printCostVal(cost.network());
+    public static Matcher<String> containsScanRowCount(double rowCount) {
+        String rowCountStr = String.format(".*rowCount=%s,.*", printCostVal(rowCount));
 
-        String costStr = String.format(".*\\[rowCount=%s, cpu=%s, memory=%s, io=%s, network=%s\\].*", rowCntStr, cpuStr,
-            memoryStr, ioStr, netStr);
-
-        return new RegexpMather(costStr);
+        return new RegexpMather(rowCountStr);
     }
 
     /**
-     * Ignite row count cost mather.
-     * @param rowCount Expected row count.
+     * Ignite result row count mather.
+     *
+     * @param rowCount Expected result row count.
      * @return Mather.
      */
-    public static Matcher<String> containsRowCount(double rowCount) {
+    public static Matcher<String> containsResultRowCount(double rowCount) {
         String rowCountStr = String.format(".*rowcount = %s,.*", printCostVal(rowCount));
 
         return new RegexpMather(rowCountStr);

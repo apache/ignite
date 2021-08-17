@@ -35,6 +35,7 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
@@ -54,9 +55,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
@@ -136,15 +135,20 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
     /** */
     public Double getSelectivity(ProjectableFilterableTableScan rel, RelMetadataQuery mq, RexNode predicate) {
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+
         if (predicate == null)
-            return RelMdUtil.guessSelectivity(rel.condition());
+            return getTablePredicateBasedSelectivity(rel, tbl, mq, rel.condition());
 
         RexNode condition = rel.pushUpPredicate();
         if (condition == null)
-            return RelMdUtil.guessSelectivity(predicate);
+            return getTablePredicateBasedSelectivity(rel, tbl, mq, predicate);
 
-        RexNode diff = RelMdUtil.minusPreds(RexUtils.builder(rel), predicate, condition);
-        return RelMdUtil.guessSelectivity(diff);
+        RexBuilder rexBuilder = RexUtils.builder(rel);
+        RexNode union = RelMdUtil.unionPreds(rexBuilder, RelMdUtil.minusPreds(rexBuilder, predicate, condition),
+            condition);
+
+        return getTablePredicateBasedSelectivity(rel, tbl, mq, union);
     }
 
     /** */
@@ -167,18 +171,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return super.getSelectivity(rel, mq, predicate);
 
         return getSelectivity(best, mq, predicate);
-    }
-
-    /** */
-    public Double getSelectivity(IgniteIndexScan rel, RelMetadataQuery mq, RexNode predicate) {
-        return getTablePredicateBasedSelectivity(rel, rel.getTable().unwrap(IgniteTable.class), mq, predicate);
-    }
-
-    /** */
-    public Double getSelectivity(IgniteTableScan rel, RelMetadataQuery mq, RexNode predicate) {
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-
-        return getTablePredicateBasedSelectivity(rel, tbl, mq, predicate);
     }
 
     /**
@@ -297,9 +289,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @param predicate Predicate to estimate selectivity by.
      * @return Selectivity.
      */
-    private double getTablePredicateBasedSelectivity(RelNode rel, IgniteTable tbl, RelMetadataQuery mq, RexNode predicate) {
+    private double getTablePredicateBasedSelectivity(
+        RelNode rel,
+        IgniteTable tbl,
+        RelMetadataQuery mq,
+        RexNode predicate
+    ) {
         if (tbl == null)
-            return super.getSelectivity(rel, mq, predicate);
+            return RelMdUtil.guessSelectivity(predicate);
 
         double sel = 1.0;
 
@@ -726,10 +723,19 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             if (operands.size() > 2)
                 return null;
 
-            for (RexNode operand : operands) {
-                if (cls.isAssignableFrom(operand.getClass()))
-                    return (T)operand;
+            boolean assignable0 = cls.isAssignableFrom(operands.get(0).getClass());
+            boolean assignable1 = cls.isAssignableFrom(operands.get(1).getClass());
 
+            if (assignable0 && assignable1)
+                return null;
+
+            if (assignable0)
+                return (T)operands.get(0);
+
+            if (assignable1)
+                return (T)operands.get(1);
+
+            for (RexNode operand : operands) {
                 if (operand instanceof RexCall) {
                     T res = getOperand(operand, cls);
 
