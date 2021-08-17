@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.HashMap;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -98,14 +96,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
-        ColocationGroup colocation = ColocationGroup.forAssignments(Arrays.asList(
-            select(nodes, 0, 1),
-            select(nodes, 1, 2),
-            select(nodes, 2, 0),
-            select(nodes, 0, 1),
-            select(nodes, 1, 2)
-        ));
-
         tbl1 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("T1C1INT", f.createJavaType(Integer.class))
@@ -121,7 +111,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
                 .add("T1C11TIME", f.createJavaType(Time.class))
                 .add("T1C12TIMESTAMP", f.createJavaType(Timestamp.class))
                 .build())
-            .setColocationGroup(colocation)
             .setDistribution(IgniteDistributions.affinity(0, "TBL1", "hash"));
 
         tbl1.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl1));
@@ -175,7 +164,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
                 .add("T2C3LONG", f.createJavaType(Long.class))
                 .add("T2C4DBL", f.createJavaType(Double.class))
                 .build())
-            .setColocationGroup(colocation)
             .setDistribution(IgniteDistributions.affinity(0, "TBL2", "hash"));
 
         tbl2.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl2));
@@ -193,7 +181,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
                 .add("T3C2STR", f.createJavaType(String.class))
                 .add("T3C3DBL", f.createJavaType(Double.class))
                 .build())
-            .setColocationGroup(colocation)
             .setDistribution(IgniteDistributions.affinity(0, "TBL3", "hash"));
         tbl3.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl3));
     }

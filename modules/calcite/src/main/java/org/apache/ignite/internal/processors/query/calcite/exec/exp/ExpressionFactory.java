@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -72,6 +72,14 @@ public interface ExpressionFactory<Row> {
     Predicate<Row> predicate(RexNode filter, RelDataType rowType);
 
     /**
+     * Creates a Filter predicate.
+     * @param filter Filter expression.
+     * @param rowType Input row type.
+     * @return Filter predicate.
+     */
+    BiPredicate<Row, Row> biPredicate(RexNode filter, RelDataType rowType);
+
+    /**
      * Creates a Project function. Resulting function returns a row with different fields,
      * fields order, fields types, etc.
      * @param projects Projection expressions.
@@ -102,24 +110,4 @@ public interface ExpressionFactory<Row> {
      * Executes expression.
      */
     <T> Supplier<T> execute(RexNode node);
-
-    /**
-     * Creates {@link Scalar}, a code-generated expressions evaluator.
-     *
-     * @param node Expression.
-     * @param type Row type.
-     * @return Scalar.
-     */
-    default Scalar scalar(RexNode node, RelDataType type) {
-        return scalar(ImmutableList.of(node), type);
-    }
-
-    /**
-     * Creates {@link Scalar}, a code-generated expressions evaluator.
-     *
-     * @param nodes Expressions.
-     * @param type Row type.
-     * @return Scalar.
-     */
-    Scalar scalar(List<RexNode> nodes, RelDataType type);
 }

@@ -97,7 +97,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
         final GridFutureAdapter<Void> testResultFut = new GridFutureAdapter<>();
 
         final LogListener remNodeLogLsnr = LogListener
-            .matches(s -> s.startsWith("Failed to resolve class: " + UNKNOWN_CLASS_NAME)).build();
+            .matches(s -> s.matches("Failed to resolve class.*?" + UNKNOWN_CLASS_NAME + ".*")).build();
 
         remNodeLog.registerListener(remNodeLogLsnr);
 
@@ -115,7 +115,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
                     assertNotNull("Response should contain an error message.", errMsg);
 
                     assertTrue("Response contains unexpected error message, errorMessage=" + errMsg,
-                        errMsg.startsWith("Requested resource not found (ignoring locally): " + UNKNOWN_CLASS_NAME));
+                        errMsg.matches("Requested resource not found \\(ignoring locally\\).*?" + UNKNOWN_CLASS_NAME + ".*"));
 
                     testResultFut.onDone();
                 }

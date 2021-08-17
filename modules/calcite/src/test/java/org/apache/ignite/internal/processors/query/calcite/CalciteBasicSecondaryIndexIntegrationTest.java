@@ -376,7 +376,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyColumnLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<?")
             .withParams(3)
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -386,7 +386,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<=2")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -1008,6 +1008,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(2)
             .returns(3)
             .returns(5)
+            .check();
+    }
+
+    /**
+     * A test to verify that the planner is able to optimize such a query in
+     * a reasonable amount of time.
+     *
+     * A "reasonable" here is the time less than test's timeout. Despite
+     * timeout is too big, it's less than INF though.
+     */
+    @Test
+    public void testToPlanQueryWithAllOperator() {
+        assertQuery("SELECT name FROM Developer WHERE age > ALL ( SELECT 88 )")
+            .returns("Stravinsky")
             .check();
     }
 

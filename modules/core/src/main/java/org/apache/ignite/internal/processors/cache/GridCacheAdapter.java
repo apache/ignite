@@ -5140,7 +5140,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final GridNearTxLocal orig = checkCurrentTx();
 
-        // Pessimistic non-read-committed 'get' should be fixed inside it's own tx, the only exception is 'contains'.
+        // Pessimistic non-read-committed 'get' should be fixed inside its own tx, the only exception is 'contains'.
         assert orig == null || orig.optimistic() || orig.readCommitted() || /*contains*/ skipVals;
 
         // Async check and recover if necessary.

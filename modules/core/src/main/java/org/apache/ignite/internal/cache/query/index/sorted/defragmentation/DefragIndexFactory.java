@@ -83,7 +83,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         InlineIndexTree tree = new InlineIndexTree(
             def,
-            cctx,
+            cctx.group(),
             def.treeName(),
             offheap,
             offheap.reuseListForIndex(def.treeName()),
@@ -93,6 +93,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             oldIdx.inlineSize(),
+            cctx.config().getSqlIndexMaxInlineSize(),
             def.keyTypeSettings(),
             null,
             stats,
