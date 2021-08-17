@@ -28,65 +28,69 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.junit.Test;
 
 /** Tests for the computation inline size. */
 public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
+    /** */
+    private static final String CACHE = "CACHE";
+
+    /** */
+    private static IgniteEx ignite;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        ignite = startGrid();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        ignite.destroyCache(CACHE);
     }
 
     /** */
     @Test
-    public void testAnnotationPrecision() throws Exception {
-        IgniteEx ignite = startGrid();
-
-        CacheConfiguration ccfg = new CacheConfiguration<>()
-            .setName("TEST_CACHE")
+    public void testAnnotationPrecision() {
+        CacheConfiguration<Long, Person> ccfg = new CacheConfiguration<Long, Person>()
+            .setName(CACHE)
             .setIndexedTypes(Long.class, Person.class);
 
-        GatewayProtectedCacheProxy cache = (GatewayProtectedCacheProxy) ignite.createCache(ccfg);
+        ignite.createCache(ccfg);
 
-        checkIdxsInlineSizes(ignite, cache.context());
+        checkIdxsInlineSizes();
     }
 
     /** */
     @Test
-    public void testSQLIndexes() throws Exception {
-        IgniteEx ignite = startGrid();
+    public void testSQLIndexes() {
+        StringBuilder bld = new StringBuilder();
 
-        GatewayProtectedCacheProxy cache = (GatewayProtectedCacheProxy) ignite.createCache(
-            new CacheConfiguration<>().setName("CACHE"));
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("create table TABLE (" +
+        String createQry = "create table TABLE (" +
             "id long primary key" +
             ", str varchar" +
             ", bytes binary" +
             ", strprec varchar(" + (InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 10) + ")" +
             ", strprecbig varchar(" + (PageIO.MAX_PAYLOAD_SIZE * 2) + " )" +
             ", bytesprec binary(" + (InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 20) + " )" +
-            ")with \"cache_name=TEST_CACHE_TABLE\";");
-        cache.query(qry);
+            ")with \"cache_name=" + CACHE + "\";";
 
-        StringBuilder bld = new StringBuilder();
+        bld.append(createQry);
 
         for (String s: Arrays.asList("str", "strprec", "bytes", "bytesprec", "strprecbig"))
             bld.append(String.format("create index PERSON_%s_IDX on TABLE (%s); ", s.toUpperCase(), s));
 
-        ignite.context().query().querySqlFields(
-            new SqlFieldsQuery(bld.toString()), false, false);
+        query(new SqlFieldsQuery(bld.toString()));
 
-        checkIdxsInlineSizes(ignite, ((GatewayProtectedCacheProxy) ignite.cache("TEST_CACHE_TABLE")).context());
+        checkIdxsInlineSizes();
     }
 
     /** */
-    private void checkIdxsInlineSizes(IgniteEx ignite, GridCacheContext cctx) {
-        Collection<Index> idx = ignite.context().indexProcessor().indexes(cctx);
+    private void checkIdxsInlineSizes() {
+        Collection<Index> idx = ignite.context().indexProcessor().indexes(context());
 
         Map<String, Integer> expInlineSize = new HashMap<String, Integer>() {{
             // 9 is inline for _KEY (LongIndexKeyType).
@@ -117,6 +121,18 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    private void query(SqlFieldsQuery qry) {
+        ignite.context().query().querySqlFields(qry, false, false);
+    }
+
+    /** */
+    private GridCacheContext<Long, Person> context() {
+        IgniteInternalCache<Long, Person> c = ignite.cachex(CACHE);
+
+        return c.context();
+    }
+
+    /** */
     public static class Person {
         /** */
         @QuerySqlField(index = true)
@@ -134,7 +150,6 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
         @QuerySqlField(index = true)
         private byte[] bytes;
 
-        // TODO: precision and ordered groups.
         /** */
         @QuerySqlField(index = true, precision = InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 20)
         private byte[] bytesPrec;
