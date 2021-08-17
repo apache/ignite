@@ -796,9 +796,44 @@ public class SnapshotRestoreProcess {
         }
 
         opCtx0.cfgs = globalCfgs;
+        opCtx0.sameTop = sameTopology(opCtx0.nodes, opCtx0.metasPerNode);
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
             preloadProc.start(reqId, reqId);
+    }
+
+    /**
+     * @param nodes Nodes that have to alive to complete restore operation.
+     * @return {@code true} if the snapshot and current cluster topologies are compatible.
+     */
+    private boolean sameTopology(Set<UUID> nodes, Map<UUID, ArrayList<SnapshotMetadata>> metas) {
+        Set<String> clusterBlts = nodes.stream()
+            .map(n -> ctx.discovery().node(n).consistentId().toString())
+            .collect(Collectors.toSet());
+
+        // Snapshot baseline nodes.
+        List<SnapshotMetadata> nodeMetas = F.first(metas.values());
+
+        if (nodeMetas == null)
+            return false;
+
+        Set<String> snpBlts = F.first(nodeMetas).baselineNodes();
+
+        if (!clusterBlts.containsAll(snpBlts))
+            return false;
+
+        // Each node must have it's own local copy of a snapshot.
+        for (Map.Entry<UUID, ArrayList<SnapshotMetadata>> e : metas.entrySet()) {
+            String consId = ctx.discovery().node(e.getKey()).consistentId().toString();
+
+            // Local node metadata is always on the first place of a list.
+            SnapshotMetadata meta = F.first(e.getValue());
+
+            if (meta == null || !meta.consistentId().equals(consId))
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -881,7 +916,9 @@ public class SnapshotRestoreProcess {
                             throw new IgniteException(e);
                         }
                     }, snpMgr.snapshotExecutorService())
-                    .whenComplete((r, t) -> opCtx0.errHnd.accept(t));
+                    .whenComplete((r, t) -> opCtx0.errHnd.accept(t))
+                    // Complete the local rebalance cache future, since the data is loaded.
+                    .thenAccept(r -> opCtx0.cacheRebalanceFut.onDone(true));
             }
 
             CompletableFuture.allOf(metaFut, partFut)
