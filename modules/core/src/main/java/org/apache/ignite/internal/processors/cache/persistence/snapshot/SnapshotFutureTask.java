@@ -344,9 +344,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
-                if (gctx.config().isEncryptionEnabled())
-                    throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshot: " + grpId);
-
                 // Create cache group snapshot directory on start in a single thread.
                 U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
