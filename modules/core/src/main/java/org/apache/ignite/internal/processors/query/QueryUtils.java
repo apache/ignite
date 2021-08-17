@@ -557,6 +557,9 @@ public class QueryUtils {
                         if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField0)) {
                             affField = affField0;
 
+                            if (desc.aliases().containsKey(affField))
+                                affField = desc.aliases().get(affField);
+
                             if (!escape)
                                 affField = normalizeObjectName(affField, false);
                         }
@@ -578,6 +581,9 @@ public class QueryUtils {
                     ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                 if (affField != null) {
+                    if (desc.aliases().containsKey(affField))
+                        affField = desc.aliases().get(affField);
+
                     if (!escape)
                         affField = normalizeObjectName(affField, false);
 
