@@ -28,14 +28,27 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** */
+@RunWith(Parameterized.class)
 public class AffinityAliasKeyTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CACHE = "PERSON";
 
     /** */
     private static IgniteEx ignite;
+
+    /** */
+    @Parameterized.Parameter
+    public boolean sqlEscape;
+
+    /** */
+    @Parameterized.Parameters(name = "escape = {0}")
+    public static Object[] params() {
+        return new Object[] { false, true };
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,19 +70,18 @@ public class AffinityAliasKeyTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testAliasAffinityKeyWithNoEscape() {
-        checkAffinityColumnName(false, "CITY_ID");
+    public void testAliasAffinityKeyForIndexedTypes() {
+        IgniteCache<PersonKey, Object> cache = ignite.createCache(new CacheConfiguration<PersonKey, Object>()
+            .setName(PERSON_CACHE)
+            .setSqlEscapeAll(sqlEscape)
+            .setIndexedTypes(PersonKey.class, Object.class));
+
+        checkAffinityColumnName(cache);
     }
 
     /** */
-    @Test
-    public void testAliasAffinityKeyWithEscape() {
-        checkAffinityColumnName(true, "city_id");
-    }
-
-    /** */
-    private void checkAffinityColumnName(boolean sqlEscape, String expAffColName) {
-        IgniteCache<PersonKey, Integer> cache = ignite.createCache(cacheConfiguration(sqlEscape));
+    private void checkAffinityColumnName(IgniteCache<PersonKey, Object> cache) {
+        String expAffColName = sqlEscape ? "city_id" : "CITY_ID";
 
         try (FieldsQueryCursor<List<?>> cursor = cache.query(
             new SqlFieldsQuery("select AFFINITY_KEY_COLUMN from sys.tables where cache_name = '" + PERSON_CACHE + "'"))
@@ -83,23 +95,10 @@ public class AffinityAliasKeyTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CacheConfiguration<PersonKey, Integer> cacheConfiguration(boolean sqlEcape) {
-        return new CacheConfiguration<PersonKey, Integer>()
-            .setName(PERSON_CACHE)
-            .setSqlEscapeAll(sqlEcape)
-            .setIndexedTypes(PersonKey.class, Integer.class);
-    }
-
-    /** */
     public static class PersonKey {
         /** Field with alias set as an affinity key. */
         @QuerySqlField(name = "city_id")
         @AffinityKeyMapped
-        private final Integer cityId;
-
-        /** */
-        public PersonKey(Integer cityId) {
-            this.cityId = cityId;
-        }
+        private int cityId;
     }
 }
