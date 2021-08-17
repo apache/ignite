@@ -1043,14 +1043,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (conf.exists() && conf.length() > 0) {
                 StoredCacheData cacheData = readCacheData(conf);
 
-                String cacheName = cacheData.config().getName();
-
-                if (!ccfgs.containsKey(cacheName))
-                    ccfgs.put(cacheName, cacheData);
-                else {
-                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                        + dir.getName());
-                }
+                ccfgs.putIfAbsent(cacheData.config().getName(), readCacheData(conf));
             }
         }
         else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
@@ -1139,14 +1132,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
                 StoredCacheData cacheData = readCacheData(file);
 
-                String cacheName = cacheData.config().getName();
-
-                if (!ccfgs.containsKey(cacheName))
-                    ccfgs.put(cacheName, cacheData);
-                else {
-                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                            + file.getName() + " in group directory " + grpDir.getName());
-                }
+                ccfgs.putIfAbsent(cacheData.config().getName(), cacheData);
             }
         }
     }
