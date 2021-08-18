@@ -22,7 +22,6 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
@@ -44,8 +43,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         return Collections.singletonList(true);
     }
 
-    /** Name of the cache being created in runtime. */
-    private static final String RUNTIME_CACHE_NAME = "runtimeCache";
+    /** Second cache name. */
+    private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
@@ -54,38 +53,14 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** Checks creation of encrypted cache with same name after putting plain cache in snapshot. */
     @Test
-    public void testEncryptedCacheCreatedAfterPlainCacheSnapshoting() throws Exception {
-        testCacheCreatedAfterSnaphoting(true);
+    public void testEncryptedCacheCreatedAfterPlainCacheSnapshotting() throws Exception {
+        testCacheCreatedAfterSnaphotting(true);
     }
 
     /** Checks creation of plain cache with same name after putting encrypted cache in snapshot. */
     @Test
-    public void testPlainCacheCreatedAfterEncryptedCacheSnapshoting() throws Exception {
-        testCacheCreatedAfterSnaphoting(false);
-    }
-
-    /**
-     * Ensures that same-name-cache is created after putting cache into snapshot and deleting.
-     *
-     * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse order if {@code
-     *                             false}.
-     */
-    private void testCacheCreatedAfterSnaphoting(boolean encryptedFirst) throws Exception {
-        startGrids(3);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
-
-        addCache(encryptedFirst);
-
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        awaitPartitionMapExchange();
-
-        grid(2).destroyCache(RUNTIME_CACHE_NAME);
-
-        awaitPartitionMapExchange();
-
-        addCache(!encryptedFirst);
+    public void testPlainCacheCreatedAfterEncryptedCacheSnapshotting() throws Exception {
+        testCacheCreatedAfterSnaphotting(false);
     }
 
     /** Checks re-encryption fails during snapshot restoration. */
@@ -165,6 +140,28 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     }
 
     /**
+     * Ensures that same-name-cache is created after putting cache into snapshot and deleting.
+     *
+     * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse order if {@code false}.
+     */
+    private void testCacheCreatedAfterSnaphotting(boolean encryptedFirst) throws Exception {
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2);
+
+        if (encryptedFirst)
+            ccfg.setEncryptionEnabled(true);
+
+        startGridsWithCache(3, ccfg, CACHE_KEYS_RANGE);
+
+        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        grid(2).destroyCache(CACHE2);
+
+        awaitPartitionMapExchange();
+
+        addCache(!encryptedFirst);
+    }
+
+    /**
      * Checks {@code action} is blocked with {@code errPrefix} and {@code errEncrypType} during active snapshot.
      *
      * @param restore If {@code true}, snapshot restoration is activated during the test. Snapshot creation otherwise.
@@ -238,7 +235,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         discoSpi.waitBlocked(TIMEOUT);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(RUNTIME_CACHE_NAME)).get(TIMEOUT),
+            () -> grid(2).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(CACHE2)).get(TIMEOUT),
             IgniteCheckedException.class,
             "Cache group restore operation was rejected. Master key changing or caches re-encryption process is not finished yet");
 
@@ -258,14 +255,14 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @return CacheConfiguration of the created cache.
      */
     private CacheConfiguration<?, ?> addCache(boolean encrypted) throws InterruptedException {
-        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(dfltCacheCfg).setName(RUNTIME_CACHE_NAME).
+        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2).
             setEncryptionEnabled(encrypted);
 
         grid(0).createCache(cacheCfg);
 
         Function<Integer, Object> valBuilder = valueBuilder();
 
-        IgniteDataStreamer<Integer, Object> streamer = grid(0).dataStreamer(RUNTIME_CACHE_NAME);
+        IgniteDataStreamer<Integer, Object> streamer = grid(0).dataStreamer(CACHE2);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             streamer.addData(i, valBuilder.apply(i));
