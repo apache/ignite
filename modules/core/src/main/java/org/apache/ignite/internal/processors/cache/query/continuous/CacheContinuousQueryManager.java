@@ -587,7 +587,6 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
                     assert locTransLsnr == null;
-
                     return new CacheContinuousQueryHandler(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
