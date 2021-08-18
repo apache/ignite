@@ -88,6 +88,12 @@
     <ClCompile Include="..\..\src\compute_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\compute_java_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compute_java_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cluster_group_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -109,6 +115,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\complex_type.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute_types.h">
       <Filter>Code\Types</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\test_type.h">
