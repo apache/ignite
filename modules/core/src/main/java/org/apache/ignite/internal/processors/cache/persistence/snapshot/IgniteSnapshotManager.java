@@ -2012,8 +2012,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
 
-            if (log.isDebugEnabled()) {
-                log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+            if (log.isInfoEnabled()) {
+                log.info("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                     ", delta=" + delta + ']');
             }
 
