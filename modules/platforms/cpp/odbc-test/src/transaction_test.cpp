@@ -101,7 +101,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
-        memcpy(strField, value.c_str(), sizeof(strField));
+        CopyStringToBuffer(strField, value, sizeof(strField));
         strFieldLen = SQL_NTS;
 
         ret = SQLExecute(stmt);
@@ -161,7 +161,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
-        memcpy(strField, value.c_str(), sizeof(strField));
+        CopyStringToBuffer(strField, value, sizeof(strField));
         strFieldLen = SQL_NTS;
 
         ret = SQLExecute(stmt);
