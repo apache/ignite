@@ -54,13 +54,13 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks creation of encrypted cache with same name after putting plain cache in snapshot. */
     @Test
     public void testEncryptedCacheCreatedAfterPlainCacheSnapshotting() throws Exception {
-        testCacheCreatedAfterSnaphotting(true);
+        testCacheCreatedAfterSnapshotting(true);
     }
 
     /** Checks creation of plain cache with same name after putting encrypted cache in snapshot. */
     @Test
     public void testPlainCacheCreatedAfterEncryptedCacheSnapshotting() throws Exception {
-        testCacheCreatedAfterSnaphotting(false);
+        testCacheCreatedAfterSnapshotting(false);
     }
 
     /** Checks re-encryption fails during snapshot restoration. */
@@ -144,7 +144,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      *
      * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse order if {@code false}.
      */
-    private void testCacheCreatedAfterSnaphotting(boolean encryptedFirst) throws Exception {
+    private void testCacheCreatedAfterSnapshotting(boolean encryptedFirst) throws Exception {
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2);
 
         if (encryptedFirst)
