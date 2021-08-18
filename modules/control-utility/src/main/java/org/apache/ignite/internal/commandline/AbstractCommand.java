@@ -39,6 +39,7 @@ public abstract class AbstractCommand<T> implements Command<T> {
         this.verbose = verbose;
         return execute(clientCfg, log);
     }
+
     /**
      * Print cache command usage with default indention.
      *
