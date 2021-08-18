@@ -71,10 +71,7 @@ inline void CopyStringToBuffer(char *dst, const std::string& src, size_t n) {
 
     size_t size = std::min(src.size(), n - 1);
 
-    if (size != n) {
-        memset(dst + size, '\0', n - size);
-    }
-
+    memset(dst + size, '\0', n - size);
     memcpy(dst, src.c_str(), size);
 }
 
