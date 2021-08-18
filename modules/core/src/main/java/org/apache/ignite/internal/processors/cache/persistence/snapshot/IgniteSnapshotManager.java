@@ -360,7 +360,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         snpRunner = new IgniteThreadPoolExecutor(SNAPSHOT_RUNNER_THREAD_PREFIX,
             cctx.igniteInstanceName(),
-            SNAPSHOT_THREAD_POOL_SIZE,
+            0,
             SNAPSHOT_THREAD_POOL_SIZE,
             IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
             new LinkedBlockingQueue<>(),
