@@ -224,6 +224,9 @@ public class VisorConsistencyRepairTask extends VisorMultiNodeTask<VisorConsiste
          *
          */
         private class CacheConsistencyViolationEventListener implements IgnitePredicate<CacheConsistencyViolationEvent> {
+            /** Serial version uid. */
+            private static final long serialVersionUID = 0L;
+
             /**
              * {@inheritDoc}
              */
