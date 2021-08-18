@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -185,6 +186,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.HANDLE_CREATE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
@@ -261,6 +263,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
+    /** Post-process snapshot creation using user handlers. */
+    private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> hndSnpProc;
+
     /** Check previously performed snapshot operation and delete uncompleted files if need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -325,6 +330,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
             this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
+
+        hndSnpProc = new DistributedProcess<>(ctx, HANDLE_CREATE_SNAPSHOT, this::initLocalSnapshotHandleStage,
+            this::processLocalSnapshotHandleStageResult);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult);
@@ -732,26 +740,85 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "[err=" + err + ", missed=" + missed + ']'));
             }
             else {
-                Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
+                Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
                 for (SnapshotOperationResponse response : res.values()) {
                     if (response == null || response.handlerResults() == null)
                         continue;
 
                     for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.handlerResults().entrySet())
-                        clusterResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                        clusterHndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
                 }
 
-                try {
-                    handlers.completeAll(SnapshotHandlerType.CREATE, snpReq.snapshotName(), clusterResults, snpReq.nodes());
-                }
-                catch (Exception e) {
-                    snpReq.error(e);
+                if (!clusterHndResults.isEmpty()) {
+                    snpReq.handlerResults(clusterHndResults);
+
+                    hndSnpProc.start(snpReq.requestId(), snpReq);
+
+                    return;
                 }
             }
 
             endSnpProc.start(UUID.randomUUID(), snpReq);
         }
+    }
+
+    /**
+     * @param req Request on snapshot creation.
+     * @return Future that will be completed when the snapshot handlers finish executing.
+     */
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotHandleStage(SnapshotOperationRequest req) {
+        if (!isLocalNodeCoordinator(cctx.discovery()))
+            return new GridFinishedFuture<>();
+
+        GridFutureAdapter<SnapshotOperationResponse> resFut = new GridFutureAdapter<>();
+
+        try {
+            snapshotExecutorService().submit(() -> {
+                try {
+                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), req.handlerResults(), req.nodes());
+
+                    resFut.onDone(new SnapshotOperationResponse());
+                }
+                catch (Exception e) {
+                    log.error("Unable to complete snapshot handler execution [snapshot=" + req.snapshotName() + "].", e);
+
+                    resFut.onDone(e);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            resFut.onDone(e);
+        }
+
+        return resFut;
+    }
+
+    /**
+     * @param id Request id.
+     * @param res Results.
+     * @param errs Errors.
+     */
+    private void processLocalSnapshotHandleStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> errs) {
+        if (!isLocalNodeCoordinator(cctx.discovery()))
+            return;
+
+        SnapshotOperationRequest snpReq = clusterSnpReq;
+
+        if (!F.isEmpty(errs)) {
+            snpReq.error(new IgniteCheckedException("The snapshot operation will be aborted because one of the " +
+                "snapshot handlers produced an error. Uncompleted snapshot will be deleted.", F.first(errs.values())));
+        }
+        else if (F.first(F.viewReadOnly(res.values(), Objects::nonNull)) == null) {
+            Set<UUID> leftNodes = new HashSet<>(snpReq.nodes());
+
+            leftNodes.removeAll(res.keySet());
+
+            snpReq.error(new IgniteCheckedException("The snapshot operation will be aborted because the node " +
+                "left the cluster and was not able to complete the snapshot handlers. " +
+                "Uncompleted snapshot will be deleted. [nodeIds=" + leftNodes + ']'));
+        }
+
+        endSnpProc.start(UUID.randomUUID(), snpReq);
     }
 
     /**

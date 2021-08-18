@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -52,6 +54,9 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
+
+    /** Results of executing handlers on multiple nodes. */
+    private volatile Map<String, List<SnapshotHandlerResult<?>>> hndResults;
 
     /**
      * @param reqId Request ID.
@@ -121,6 +126,20 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void error(Throwable err) {
         this.err = err;
+    }
+
+    /**
+     * @return Results of executing handlers on multiple nodes.
+     */
+    public @Nullable Map<String, List<SnapshotHandlerResult<?>>> handlerResults() {
+        return hndResults;
+    }
+
+    /**
+     * @param hndResults Results of executing handlers on multiple nodes.
+     */
+    public void handlerResults(Map<String, List<SnapshotHandlerResult<?>>> hndResults) {
+        this.hndResults = hndResults;
     }
 
     /** {@inheritDoc} */

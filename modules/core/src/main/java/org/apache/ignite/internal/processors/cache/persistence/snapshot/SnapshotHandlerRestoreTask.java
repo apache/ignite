@@ -43,6 +43,10 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Injected ignite logger. */
+    @LoggerResource
+    private IgniteLogger log;
+
     /** {@inheritDoc} */
     @Override protected ComputeJob createJob(String snpName, String constId, Collection<String> groups) {
         return new SnapshotHandlerRestoreJob(snpName, constId, groups);
@@ -69,12 +73,15 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
             }
         }
 
-        try {
-            Collection<UUID> nodeIds = F.viewReadOnly(metas.keySet(), ClusterNode::id);
+        String snapshotName = F.first(F.first(metas.values())).snapshotName();
+        Collection<UUID> nodeIds = F.viewReadOnly(metas.keySet(), ClusterNode::id);
 
+        try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, F.first(F.first(metas.values())).snapshotName(), clusterResults, nodeIds);
+                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, nodeIds);
         } catch (IgniteCheckedException e) {
+            log.error("Unable to complete snapshot handler execution [snapshot=" + snapshotName + "].", e);
+
             throw new IgniteException(e);
         }
 
