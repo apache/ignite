@@ -65,6 +65,10 @@
  * @param n Copy at most n bytes of src.
  */
 inline void CopyStringToBuffer(char *dst, const std::string& src, size_t n) {
+    if (n == 0) {
+        return;
+    }
+
     size_t size = std::min(src.size(), n - 1);
 
     if (size != n) {
