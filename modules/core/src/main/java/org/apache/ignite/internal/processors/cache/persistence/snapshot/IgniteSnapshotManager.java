@@ -103,7 +103,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -1942,7 +1941,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
+                long t = System.currentTimeMillis();
+
                 copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+
+                log.info("TEST | copied " + new File(cacheDir, ccfg.getName()).toPath().toString() + ". Time: " + t + "ms.");
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1983,12 +1986,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
+                long t = System.currentTimeMillis();
+
                 copy(ioFactory, part, snpPart, len);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
+                t = System.currentTimeMillis() - t;
+
+                if (log.isInfoEnabled()) {
+                    log.info("TEST | Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
-                        ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
+                        ", length=" + part.length() + ", snapshot=" + snpPart.getName() + "]. Time: " + t + "ms.");
                 }
             }
             catch (IOException | IgniteCheckedException ex) {
@@ -1998,10 +2005,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+            long t = System.currentTimeMillis();
+
             File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
 
-            if (log.isDebugEnabled()) {
-                log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+            if (log.isInfoEnabled()) {
+                log.info("TEST | Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                     ", delta=" + delta + ']');
             }
 
@@ -2022,29 +2031,44 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 pageStore.beginRecover();
 
                 for (long pos = 0; pos < totalBytes; pos += pageSize) {
+                    long t1 = System.currentTimeMillis();
+
                     long read = fileIo.readFully(pageBuf, pos);
 
                     assert read == pageBuf.capacity();
 
                     pageBuf.flip();
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("Read page given delta file [path=" + delta.getName() +
+                    if (log.isInfoEnabled()) {
+                        log.info("TEST | Read page given delta file [path=" + delta.getName() +
                             ", pageId=" + PageIO.getPageId(pageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                            ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
+                            ". Time: " + (System.currentTimeMillis() - t1) + "ms.");
 
                         pageBuf.rewind();
                     }
 
-                    pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
+                    t1 = System.currentTimeMillis();
+
+                    long pageId = PageIO.getPageId(pageBuf);
+
+                    pageStore.write(pageId, pageBuf, 0, false);
 
                     pageBuf.flip();
+
+                    if (log.isInfoEnabled())
+                        log.info("TEST | Written delta file [path=" + delta.getName() + ", pageId=" + pageId + ", pos=" + pos +
+                            ". Time: " + (System.currentTimeMillis() - t1) + "ms.");
                 }
 
                 pageStore.finishRecover();
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+
+            if (log.isInfoEnabled()) {
+                log.info("TEST | Finished snapshot recovery with the given delta page file [part=" + snpPart +
+                    ", delta=" + delta + "]. Time: " + (System.currentTimeMillis() - t) + "ms.");
             }
         }
 

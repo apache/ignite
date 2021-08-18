@@ -1508,7 +1508,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             UUID id = ignite instanceof IgniteProcessProxy ? ((IgniteProcessProxy)ignite).getId() : ignite.context().localNodeId();
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
+            info("TEST | >>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']' + " Stack: " + new Throwable().getStackTrace());
 
             if (!isRemoteJvm(igniteInstanceName)) {
                 IgniteUtils.setCurrentIgniteName(igniteInstanceName);
@@ -1557,6 +1557,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param wait Wait for grids to start first.
      */
     protected void stopAllGrids(boolean cancel, boolean wait) {
+        info("TEST | stopAllGrids()");
+
         try {
             Collection<Ignite> clients = new ArrayList<>();
             Collection<Ignite> srvs = new ArrayList<>();

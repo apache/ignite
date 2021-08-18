@@ -2078,8 +2078,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (log.isInfoEnabled()) {
                 log.info("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
-                log.info("Usable dst space: " + dstFile.getUsableSpace() / (1024 * 1024));
-                log.info("Total dst space: " + dstFile.getTotalSpace() / (1024 * 1024));
+                log.info("TEST | Usable dst space: " + dstFile.getUsableSpace() / (1024 * 1024));
+                log.info("TEST | Total dst space: " + dstFile.getTotalSpace() / (1024 * 1024));
             }
 
             return new SegmentArchiveResult(absIdx, origFile, dstFile);

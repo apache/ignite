@@ -518,8 +518,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();
 
-        if (log.isDebugEnabled())
-            log.debug("Submit partition processing tasks with partition allocated lengths: " + partFileLengths);
+        if (log.isInfoEnabled())
+            log.info("TEST | Submit partition processing tasks with partition allocated lengths: " + partFileLengths);
 
         Collection<BinaryType> binTypesCopy = cctx.kernalContext()
             .cacheObjects()
@@ -784,7 +784,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
                 newCcfgFile.createNewFile();
 
+                long t = System.currentTimeMillis();
+
                 copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());
+
+                t = System.currentTimeMillis() - t;
+
+                log.info("TEST | Copied " + newCcfgFile.toPath().toString() + ". Time: " + t + "ms.");
 
                 this.ccfgFile = newCcfgFile;
                 fromTemp = true;
