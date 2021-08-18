@@ -117,7 +117,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Default number of partitions for cache. */
-    protected static final int CACHE_PARTS_COUNT = 512;
+    protected static final int CACHE_PARTS_COUNT = 1024;
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
@@ -268,10 +268,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
 
-//            if (ccfg.isEncryptionEnabled()) {
-//                assertNull("Encryption key for cache " + dfltCacheCfg.getName(),
-//                    ((IgniteEx)ignite).context().encryption().getActiveKey(CU.cacheGroupId(dfltCacheCfg)));
-//            }
+            if (ccfg.isEncryptionEnabled()) {
+                assertNull("Encryption key for cache " + dfltCacheCfg.getName(),
+                    ((IgniteEx)ignite).context().encryption().getActiveKey(CU.cacheGroupId(dfltCacheCfg)));
+            }
         }
     }
 

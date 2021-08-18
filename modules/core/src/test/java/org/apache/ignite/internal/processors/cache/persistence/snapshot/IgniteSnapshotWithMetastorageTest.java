@@ -187,6 +187,8 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
         // Load future must complete without exceptions, all metastorage keys must be written.
         updFut.get();
 
+        awaitPartitionMapExchange();
+
         Set<String> readedKeys = new TreeSet<>();
 
         ignite.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> readedKeys.add(key));
