@@ -434,7 +434,7 @@ namespace ignite
                 key = i + 1;
                 std::string val = GetTestString(i);
 
-                strncpy(strField, val.c_str(), sizeof(strField));
+                memcpy(strField, val.c_str(), sizeof(strField));
                 strFieldLen = SQL_NTS;
 
                 ret = SQLExecute(stmt);
@@ -512,7 +512,7 @@ namespace ignite
                 i32Fields[i] = GetTestI32Field(seed);
 
                 std::string val = GetTestString(seed);
-                strncpy(strFields.GetData() + 1024 * i, val.c_str(), 1023);
+                memcpy(strFields.GetData() + 1024 * i, val.c_str(), 1023);
                 strFieldsLen[i] = val.size();
 
                 floatFields[i] = GetTestFloatField(seed);

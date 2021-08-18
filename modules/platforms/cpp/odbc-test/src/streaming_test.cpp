@@ -117,7 +117,7 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
             key = i;
             std::string val = GetTestString(i);
 
-            strncpy(strField, val.c_str(), sizeof(strField));
+            memcpy(strField, val.c_str(), sizeof(strField));
             strFieldLen = SQL_NTS;
 
             ret = SQLExecute(stmt0);
