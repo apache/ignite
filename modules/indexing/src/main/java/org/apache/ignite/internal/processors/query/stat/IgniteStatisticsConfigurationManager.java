@@ -643,7 +643,7 @@ public class IgniteStatisticsConfigurationManager {
             else {
                 // All local statistics by partition are available.
                 // Only refresh aggregated local statistics.
-                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts));
+                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts, topVer0));
             }
 
             return parts;
@@ -749,13 +749,24 @@ public class IgniteStatisticsConfigurationManager {
         }
     }
 
-    /** */
-    private ObjectStatisticsImpl aggregateLocalGathering(StatisticsKey key, Set<Integer> partsToAggregate) {
+    /**
+     * Aggregate local primary partitions statistics to local one.
+     *
+     * @param key Statistics key to aggregate statistics by.
+     * @param partsToAggregate Set of partition ids to aggregate.
+     * @param
+     * @return
+     */
+    private ObjectStatisticsImpl aggregateLocalGathering(
+        StatisticsKey key,
+        Set<Integer> partsToAggregate,
+        AffinityTopologyVersion topVer
+    ) {
         synchronized (mux) {
             try {
                 StatisticsObjectConfiguration cfg = distrMetaStorage.read(key2String(key));
 
-                return repo.aggregatedLocalStatistics(partsToAggregate, cfg);
+                return repo.aggregatedLocalStatistics(partsToAggregate, cfg, topVer);
             }
             catch (Throwable e) {
                 if (!X.hasCause(e, NodeStoppingException.class)) {

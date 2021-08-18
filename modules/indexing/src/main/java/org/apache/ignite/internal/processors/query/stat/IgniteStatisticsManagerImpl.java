@@ -172,6 +172,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.io(),
             ctx::log);
 
+        statsRepos.setGlobalStatMgr(globalStatsMgr);
+
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
                 if (log.isInfoEnabled())
@@ -253,7 +255,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     @Override public ObjectStatistics getGlobalStatistics(StatisticsKey key) {
         StatisticsUsageState currState = usageState();
 
-        return (currState == ON || currState == NO_UPDATE) ? statsRepos.getLocalStatistics(key) : null;
+        return (currState == ON || currState == NO_UPDATE) ? globalStatsMgr.getGlobalStatistics(key) : null;
     }
 
     /** {@inheritDoc} */

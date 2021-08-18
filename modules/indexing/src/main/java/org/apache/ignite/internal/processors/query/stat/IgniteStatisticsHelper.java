@@ -89,19 +89,25 @@ public class IgniteStatisticsHelper {
     }
 
     /**
-     * Generate statistics collection requests.
+     * Generate local statistics requests.
      *
      * @param target Statistics target to request local statistics by.
+     * @param cfg Statistics configuration.
+     * @param topVer Affinity topology version to get statistics by.
      * @return Collection of statistics request.
      */
     public List<StatisticsAddressedRequest> generateGatheringRequests(
         StatisticsTarget target,
+        StatisticsObjectConfiguration cfg,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         StatisticsKeyMessage keyMsg = new StatisticsKeyMessage(target.schema(), target.obj(),
             Arrays.asList(target.columns()));
 
-        StatisticsRequest req = new StatisticsRequest(UUID.randomUUID(), keyMsg, StatisticsType.LOCAL);
+        Map<String, Long> versions = cfg.columns().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().version()));
+
+        StatisticsRequest req = new StatisticsRequest(UUID.randomUUID(), keyMsg, StatisticsType.LOCAL, topVer, versions);
 
         CacheGroupContext grpCtx = getGroupContext(keyMsg);
         List<List<ClusterNode>> assignments = grpCtx.affinity().assignments(topVer);

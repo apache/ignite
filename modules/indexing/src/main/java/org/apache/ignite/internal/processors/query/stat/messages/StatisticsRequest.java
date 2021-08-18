@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -43,25 +45,72 @@ public class StatisticsRequest implements Message {
     /** Type of required statistcs. */
     private StatisticsType type;
 
+    /** For local statistics request - column config versions map: name to version. */
+    private Map<String, Long> versions;
+
+    /** For local statistics request - version to gather statistics by. */
+    private AffinityTopologyVersion topVer;
+
+    /**
+     * Constructor.
+     */
     public StatisticsRequest() {
     }
 
-    public StatisticsRequest(UUID reqId, StatisticsKeyMessage key, StatisticsType type) {
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     * @param key Statistics key to get statistics by.
+     * @param type Required statistics type.
+     * @param topVer Topology version to get statistics by.
+     * @param versions Map of statistics version to column name to ensure actual statistics aquired.
+     */
+    public StatisticsRequest(
+        UUID reqId,
+        StatisticsKeyMessage key,
+        StatisticsType type,
+        AffinityTopologyVersion topVer,
+        Map<String, Long> versions
+    ) {
         this.reqId = reqId;
         this.key = key;
         this.type = type;
+        this.topVer = topVer;
+        this.versions = versions;
     }
 
+    /** Request id. */
     public UUID reqId() {
         return reqId;
     }
 
+    /**
+     * @return Key for required statitics.
+     */
     public StatisticsKeyMessage key() {
         return key;
     }
 
+    /**
+     * @return Required statistics type.
+     */
     public StatisticsType type() {
         return type;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topVer() {
+        return topVer;
+    }
+
+    /**
+     * @return Column name to version map.
+     */
+    public Map<String, Long> versions() {
+        return versions;
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {

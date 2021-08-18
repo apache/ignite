@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -168,6 +169,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         if (log.isTraceEnabled())
             log.trace("Global statistics manager starting...");
 
+        globalStatistics.clear();
         exchange.registerExchangeAwareComponent(exchAwareLsnr);
 
         if (log.isTraceEnabled())
@@ -180,6 +182,14 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             log.trace("Global statistics manager stopping...");
 
         topVer = null;
+
+        globalStatistics.clear();
+
+        inGloblaRequests.clear();
+        inLocalRequests.clear();
+        outGlobalStatisticsRequests.clear();
+        curCollections.clear();
+
         exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
 
         if (log.isTraceEnabled())
@@ -210,48 +220,45 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     private void collectGlobalStatistics(StatisticsKey key) {
         try {
             StatisticsObjectConfiguration statCfg = cfgMgr.config(key);
+
             if (statCfg != null && !statCfg.columns().isEmpty()) {
                 UUID statMaster = getStatisticsMasterNode(key);
+
                 if (discoMgr.localNode().id().equals(statMaster)) {
                     // Send local requests and do aggregation.
                     StatisticsTarget target = new StatisticsTarget(key);
 
-                    List<StatisticsAddressedRequest> localRequests = helper.generateGatheringRequests(target, topVer);
-                    UUID reqId = localRequests.get(0).req().reqId();
+                    List<StatisticsAddressedRequest> locRequests = helper
+                        .generateGatheringRequests(target, statCfg, topVer);
+                    UUID reqId = locRequests.get(0).req().reqId();
 
-                    StatisticsGatheringContext gatCtx = new StatisticsGatheringContext(localRequests.size(), reqId);
-
-                    for (StatisticsAddressedRequest addReq : localRequests)
-                        send(addReq.nodeId(), addReq.req());
+                    StatisticsGatheringContext gatCtx = new StatisticsGatheringContext(locRequests.size(), reqId);
 
                     curCollections.put(key, gatCtx);
+
+                    for (StatisticsAddressedRequest addReq : locRequests)
+                        send(addReq.nodeId(), addReq.req());
                 }
                 else {
                     // Send global request and cache the result.
                     StatisticsKeyMessage keyMsg = new StatisticsKeyMessage(key.schema(), key.obj(),
                         Collections.emptyList());
-                    StatisticsRequest globalReq = new StatisticsRequest(UUID.randomUUID(), keyMsg, StatisticsType.GLOBAL);
+
+                    StatisticsRequest globalReq = new StatisticsRequest(UUID.randomUUID(), keyMsg,
+                        StatisticsType.GLOBAL, null, null);
 
                     outGlobalStatisticsRequests.put(key, globalReq.reqId());
 
                     send(statMaster, globalReq);
                 }
-
-
-                StatisticsTarget target = new StatisticsTarget(statCfg.key(), statCfg.columns().keySet().toArray
-                    (new String[0]));
-                Collection<StatisticsAddressedRequest> reqs = helper.generateGatheringRequests(target, topVer);
-
             }
-            else
-                // Cache negative ansver
-                globalStatistics.put(key, new CacheEntry<>(null));
 
         }
         catch (IgniteCheckedException e) {
             log.debug("Unable to get statistics configuration due to " + e.getMessage());
         }
     }
+
     /** {@inheritDoc} */
     @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
         mgmtPool.submit(() -> {
@@ -315,7 +322,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     private void processLocalRequest(UUID nodeId, StatisticsRequest req) throws IgniteCheckedException {
         StatisticsKey key = new StatisticsKey(req.key().schema(), req.key().obj());
 
-        ObjectStatisticsImpl objectStatistics = repo.getLocalStatistics(key);
+        ObjectStatisticsImpl objectStatistics = repo.getLocalStatistics(key, req.topVer());
 
         if (objectStatistics != null)
             sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
@@ -324,9 +331,10 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
             if (cfg != null && !cfg.columns().isEmpty())
                 addToRequests(inLocalRequests, key, new StatisticsAddressedRequest(req, nodeId));
+                // TODO: If I need to aggregate it again for the given topology?
 
             // Double check that we have no race with collection finishing.
-            objectStatistics = repo.getLocalStatistics(key);
+            objectStatistics = repo.getLocalStatistics(key, req.topVer());
 
             if (objectStatistics != null) {
                 StatisticsAddressedRequest removedReq = removeFromRequests(inLocalRequests, key, req.reqId());
@@ -339,18 +347,54 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         }
     }
 
-    private void processGlobalRequest(UUID nodeId, StatisticsRequest req) {
+    /**
+     * Get local object statistics with specified version. Or {@code null} if there is no local object statistics or
+     * it has different version at least for one column.
+     *
+     * @param key Statistics key to get local statistics by.
+     * @param versions
+     * @return
+     */
+    private ObjectStatisticsImpl getLocalObjectStatisticsWithVersion(StatisticsKey key, Map<String, Long> versions) {
+        ObjectStatisticsImpl stat = repo.getLocalStatistics(key);
+
+        for (Map.Entry<String, Long> colVersion : versions.entrySet()) {
+            ColumnStatistics colStat = stat.columnStatistics(colVersion.getKey());
+
+            if (colStat == null || colStat.version() != colVersion.getValue())
+                return null;
+        }
+
+        return stat;
+    }
+
+    /**
+     * Process incoming request for global statistics. Either response (if it exists), or collect and response
+     * (if current node is master node for the given key) or ignore (if current node is no more master node for
+     * the given key.
+     *
+     * @param nodeId Sender node id.
+     * @param req Request.
+     */
+    private void processGlobalRequest(UUID nodeId, StatisticsRequest req) throws IgniteCheckedException {
         StatisticsKey key = new StatisticsKey(req.key().schema(), req.key().obj());
 
         CacheEntry<ObjectStatisticsImpl> objectStatisticsEntry = globalStatistics.get(key);
 
         if (objectStatisticsEntry == null || objectStatisticsEntry.object() == null) {
-            if (discoMgr.localNode().equals(getStatisticsMasterNode(key))) {
+            if (discoMgr.localNode().equals(getStatisticsMasterNode(key)))
+                addToRequests(inGloblaRequests, key, new StatisticsAddressedRequest(req, nodeId));
+            objectStatisticsEntry = globalStatistics.get(key);
 
+            if (objectStatisticsEntry != null && objectStatisticsEntry.object() != null) {
+                StatisticsAddressedRequest removed = removeFromRequests(inGloblaRequests, key, req.reqId());
+
+                if (removed != null)
+                    sendResponse(nodeId, req.reqId(), key, StatisticsType.GLOBAL, objectStatisticsEntry.object());
             }
-            // TODO put into global request
         }
-        // TODO double check and try to remove from global request.
+        else
+            sendResponse(nodeId, req.reqId(), key, StatisticsType.GLOBAL, objectStatisticsEntry.object());
     }
 
     /**
@@ -396,7 +440,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             return v;
         });
     }
-
 
     /**
      * Check if specified map contains request with specified key and id, remove and return it.
@@ -502,9 +545,15 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         }
     }
 
+    /**
+     * Process response of global statistics.
+     *
+     * @param resp Response.
+     * @throws IgniteCheckedException In case of error.
+     */
     private void processGlobalResponse(StatisticsResponse resp) throws IgniteCheckedException {
         StatisticsKeyMessage keyMsg = resp.data().key();
-        StatisticsKey key = new StatisticsKey(keyMsg.schema(), resp.data().key().obj());
+        StatisticsKey key = new StatisticsKey(keyMsg.schema(), keyMsg.obj());
         UUID reqId = outGlobalStatisticsRequests.get(key);
 
         if (reqId != null) {
@@ -518,6 +567,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             ObjectStatisticsImpl data = StatisticsUtils.toObjectStatistics(null, resp.data());
 
             globalStatistics.put(key, new CacheEntry(data));
+            outGlobalStatisticsRequests.remove(key);
         }
         else {
             if (log.isDebugEnabled())
@@ -544,13 +594,43 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      *
      * @param key Statistics key on which local statistics was aggregated.
      * @param statistics Collected statistics by key.
+     * @param topVer Topology version which aggregated statistics stands for.
      */
     public void onLocalStatisticsAggregated(
         StatisticsKey key,
-        ObjectStatisticsImpl statistics
+        ObjectStatisticsImpl statistics,
+        AffinityTopologyVersion topVer
     ) {
-        // TODO: check local requests and send response.
+        if (topVer == null)
+            return;
 
+        List<StatisticsAddressedRequest> inReqs[] = new List[1];
+
+        inLocalRequests.computeIfPresent(key, (k,v) -> {
+            List<StatisticsAddressedRequest> left = new ArrayList<>();
+            inReqs[0] = new ArrayList<>();
+
+            for (StatisticsAddressedRequest req : v) {
+                if (topVer.equals(req.req().topVer()))
+                    inReqs[0].add(req);
+                else
+                    left.add(req);
+            }
+
+            return (left.isEmpty()) ? null : left;
+        });
+
+        if (inReqs[0] == null)
+            return;
+
+        for (StatisticsAddressedRequest req : inReqs[0]) {
+            try {
+                sendResponse(req.nodeId(), req.req().reqId(), key, StatisticsType.LOCAL, statistics);
+            }
+            catch (IgniteCheckedException e) {
+                log.info("Unable to send local object statistics for key " + key + " due to " + e.getMessage());
+            }
+        }
     }
 
     /**
