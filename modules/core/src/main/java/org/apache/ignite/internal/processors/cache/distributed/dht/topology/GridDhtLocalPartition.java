@@ -649,11 +649,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             if (casState(state, MOVING)) {
                 // The state is switched under global topology lock, safe to record version here.
-                clearVer = ctx.versions().localOrder();
+                updateClearVersion();
 
                 return true;
             }
         }
+    }
+
+    /**
+     * Records a version for row clearing. Must be called when a partition is marked for full rebalancing.
+     * @see #clearAll(EvictionContext)
+     */
+    public void updateClearVersion() {
+        clearVer = ctx.versions().localOrder();
     }
 
     /**
