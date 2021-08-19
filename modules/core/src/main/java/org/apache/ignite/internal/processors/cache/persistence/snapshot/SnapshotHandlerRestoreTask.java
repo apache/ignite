@@ -80,7 +80,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
                 SnapshotHandlerType.RESTORE, snapshotName, clusterResults, nodeIds);
         } catch (Exception e) {
-            log.warning("Unable to complete snapshot handler execution [snapshot=" + snapshotName + "].", e);
+            log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
 
             throw new IgniteException(e);
         }

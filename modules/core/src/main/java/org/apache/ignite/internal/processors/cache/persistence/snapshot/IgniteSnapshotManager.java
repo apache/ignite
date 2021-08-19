@@ -781,7 +781,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     resFut.onDone(new SnapshotOperationResponse());
                 }
                 catch (Exception e) {
-                    log.warning("Unable to complete snapshot handler execution [snapshot=" + req.snapshotName() + "].", e);
+                    log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" +
+                        req.snapshotName() + "].", e);
 
                     resFut.onDone(e);
                 }
@@ -808,13 +809,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             snpReq.error(new IgniteCheckedException("The snapshot operation will be aborted because one of the " +
                 "snapshot handlers produced an error. Uncompleted snapshot will be deleted.", F.first(errs.values())));
         }
-        else if (F.first(F.viewReadOnly(res.values(), Objects::nonNull)) == null) {
+        else if (F.first(F.viewReadOnly(res.values(), v -> v, Objects::nonNull)) == null) {
             Set<UUID> leftNodes = new HashSet<>(snpReq.nodes());
 
             leftNodes.removeAll(res.keySet());
 
             snpReq.error(new IgniteCheckedException("The snapshot operation will be aborted because the node " +
-                "left the cluster and was not able to complete the snapshot handlers. " +
+                "left the cluster and was not able to complete the execution of snapshot handlers. " +
                 "Uncompleted snapshot will be deleted. [nodeIds=" + leftNodes + ']'));
         }
 

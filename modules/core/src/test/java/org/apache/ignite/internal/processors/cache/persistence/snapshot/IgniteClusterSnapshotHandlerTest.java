@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -299,5 +300,49 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         startGrid(1);
 
         grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+    }
+
+    /**
+     * Test ensures that the snapshot creation is aborted if node exits while the {@link
+     * SnapshotHandler#complete(String, Collection)} method is executed.
+     *
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testCrdChangeDuringHandlerCompleteOnSnapshotCreate() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        handlers.add(new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) {
+                return null;
+            }
+
+            @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results)
+                throws Exception {
+                if (latch.getCount() == 1) {
+                    latch.countDown();
+
+                    Thread.sleep(Long.MAX_VALUE);
+                }
+            }
+        });
+
+        startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        latch.await();
+
+        stopGrid(0, true);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class,
+            "node left the cluster and was not able to complete the execution of snapshot handlers");
+
+        startGrid(0);
+        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
     }
 }
