@@ -33,9 +33,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -121,6 +119,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -273,11 +272,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        List<CacheDataStore> destroyedStores = StreamSupport.stream(cacheDataStores().spliterator(), false)
-            .filter(CacheDataStore::destroyed)
-            .collect(Collectors.toList());
-
-        assert destroyedStores.isEmpty() : destroyedStores;
+        assert F.size(cacheDataStores().iterator(), CacheDataStore::destroyed) == 0;
 
         // Optimization: reducing the holding time of checkpoint write lock.
         syncMetadata(ctx, ctx.executor(), false);
@@ -1282,7 +1277,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         assert locPart != null && locPart.reservations() > 0;
 
-        dataStore(locPart).preload();
+        locPart.dataStore().preload();
     }
 
     /**
