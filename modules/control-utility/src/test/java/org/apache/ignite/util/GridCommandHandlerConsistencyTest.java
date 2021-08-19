@@ -117,7 +117,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
-        assertContains(log, testOut.toString(), "found " + brokenParts.get() + " conflict partitions");
+        assertContains(log, testOut.toString(),
+            "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
         readRepairTx(brokenParts, txCacheName);
 
@@ -158,7 +159,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         AtomicInteger brokenParts = new AtomicInteger(PARTITIONS);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
-        assertContains(log, testOut.toString(), "found " + brokenParts.get() + " conflict partitions");
+        assertContains(log, testOut.toString(),
+            "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
         readRepairTx(brokenParts, cacheName);
 
@@ -179,7 +181,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             brokenParts.decrementAndGet();
 
             if (brokenParts.get() > 0)
-                assertContains(log, testOut.toString(), "found " + brokenParts + " conflict partitions");
+                assertContains(log, testOut.toString(),
+                    "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts);
             else
                 assertContains(log, testOut.toString(), "no conflicts have been found");
         }
@@ -195,7 +198,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             assertContains(log, testOut.toString(), "[found=1, fixed=0]"); // Nothing fixed.
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
-            assertContains(log, testOut.toString(), "found " + brokenParts + " conflict partitions"); // Nothing fixed.
+            assertContains(log, testOut.toString(),
+                "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts); // Nothing fixed.
         }
     }
 
