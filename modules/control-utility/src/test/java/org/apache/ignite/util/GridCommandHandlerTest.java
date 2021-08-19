@@ -2295,7 +2295,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertContains(log, dumpWithConflicts, "conflict partitions has been found: [counterConflicts=0, " +
-                "hashConflicts=1]");
+                "hashConflicts=2]");
         }
         else
             fail("Should be found dump with conflicts");
