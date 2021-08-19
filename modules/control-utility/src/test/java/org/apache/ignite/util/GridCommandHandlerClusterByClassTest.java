@@ -502,7 +502,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(log, testOut.toString(), "found 2 conflict partitions");
+        assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
     }
 
     /**
@@ -853,7 +853,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             resReport = testOut.toString();
         }
 
-        assertContains(log, resReport, "found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]");
+        assertContains(log, resReport, "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
     }
 
     /**
@@ -914,8 +914,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             U.log(log, dumpWithConflicts);
 
             // Non-persistent caches do not have counter conflicts
-            assertContains(log, dumpWithConflicts, "found 3 conflict partitions: [counterConflicts=1, " +
-                "hashConflicts=2]");
+            assertContains(log, dumpWithConflicts, "conflict partitions has been found: [counterConflicts=1, " +
+                "hashConflicts=4]");
         }
         else
             fail("Should be found dump with conflicts");
