@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -34,10 +33,6 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotOperationRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Transient field updater. */
-    private static final AtomicReferenceFieldUpdater<SnapshotOperationRequest, Object> MARKER_FIELD_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(SnapshotOperationRequest.class, Object.class, "endStageMarker");
 
     /** Request ID. */
     private final UUID reqId;
@@ -59,8 +54,8 @@ public class SnapshotOperationRequest implements Serializable {
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
 
-    /** Marker whose non-null value indicates that {@link DistributedProcessType#END_SNAPSHOT} phase has been begun. */
-    private transient volatile Object endStageMarker;
+    /** Flag indicating that the {@link DistributedProcessType#END_SNAPSHOT} phase has been started. */
+    private transient volatile boolean endStageStarted;
 
     /**
      * @param reqId Request ID.
@@ -133,12 +128,17 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * Sets a marker that the {@link DistributedProcessType#END_SNAPSHOT} phase has started.
-     *
-     * @return {@code False} if {@link DistributedProcessType#END_SNAPSHOT} phase has already started.
+     * @return Flag indicating that the {@link DistributedProcessType#END_SNAPSHOT} phase has been started.
      */
-    protected boolean markEndStageStart() {
-        return MARKER_FIELD_UPDATER.compareAndSet(this, null, Boolean.TRUE);
+    protected boolean endStageStarted() {
+        return endStageStarted;
+    }
+
+    /**
+     * @param endStageStarted Flag indicating that the {@link DistributedProcessType#END_SNAPSHOT} phase has been started.
+     */
+    protected void endStageStarted(boolean endStageStarted) {
+        this.endStageStarted = endStageStarted;
     }
 
     /** {@inheritDoc} */

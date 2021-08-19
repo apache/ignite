@@ -419,22 +419,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpReq = clusterSnpReq;
+                    String err = "Snapshot operation interrupted. One of baseline nodes left the cluster: " + leftNodeId;
                     boolean snpReqTaskFound = false;
-
-                    Exception ex = new ClusterTopologyCheckedException("Snapshot operation interrupted. " +
-                            "One of baseline nodes left the cluster: " + leftNodeId);
 
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                         if ((!snpReqTaskFound && (snpReqTaskFound = (snpReq != null &&
                             snpReq.snapshotName().equals(sctx.snapshotName()) &&
                             snpReq.nodes().contains(leftNodeId)))) ||
                             sctx.sourceNodeId().equals(leftNodeId))
-                            sctx.acceptException(ex);
+                            sctx.acceptException(new ClusterTopologyCheckedException(err));
                     }
 
+                    // If the coordinator left the cluster and did not start the final
+                    // snapshot creation phase (SNAPSHOT_END), we start it from a new one.
                     if (!snpReqTaskFound && snpReq != null && isLocalNodeCoordinator(cctx.discovery()) &&
-                        snpReq.nodes().contains(leftNodeId) && snpReq.markEndStageStart()) {
-                        snpReq.error(ex);
+                        snpReq.nodes().contains(leftNodeId) && !snpReq.endStageStarted()) {
+                        snpReq.endStageStarted(true);
+                        snpReq.error(new ClusterTopologyCheckedException(err));
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -765,7 +766,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                         endSnpProc.start(UUID.randomUUID(), snpReq);
 
-                        snpReq.markEndStageStart();
+                        snpReq.endStageStarted(true);
                     });
 
                     return;
@@ -786,7 +787,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
-        snpReq.markEndStageStart();
+        snpReq.endStageStarted(true);
 
         try {
             if (req.error() != null)
