@@ -42,9 +42,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.TableModify;
@@ -68,7 +66,6 @@ import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -822,23 +819,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** */
         public String name() {
             return name;
-        }
-    }
-
-    /** */
-    public static class TestIndex extends IgniteIndex {
-
-        /**
-         *
-         *
-         * @param collation
-         * @param name
-         * @param idx
-         * @param tbl
-         */
-        public TestIndex(RelCollation collation, String name, Index idx,
-            IgniteTable tbl) {
-            super(collation, name, idx, tbl);
         }
     }
 

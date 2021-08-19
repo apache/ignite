@@ -35,7 +35,6 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
@@ -141,14 +140,13 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return getTablePredicateBasedSelectivity(rel, tbl, mq, rel.condition());
 
         RexNode condition = rel.pushUpPredicate();
+
         if (condition == null)
             return getTablePredicateBasedSelectivity(rel, tbl, mq, predicate);
 
-        RexBuilder rexBuilder = RexUtils.builder(rel);
-        RexNode union = RelMdUtil.unionPreds(rexBuilder, RelMdUtil.minusPreds(rexBuilder, predicate, condition),
-            condition);
+        RexNode diff = RelMdUtil.minusPreds(RexUtils.builder(rel), predicate, condition);
 
-        return getTablePredicateBasedSelectivity(rel, tbl, mq, union);
+        return getTablePredicateBasedSelectivity(rel, tbl, mq, diff);
     }
 
     /** */
@@ -546,7 +544,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         if (QueryUtils.KEY_FIELD_NAME.equals(colName))
             colName = tbl.descriptor().typeDescription().keyFieldName();
 
-
         Statistic stat = tbl.getStatistic();
 
         if (stat == null)
@@ -567,7 +564,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             RexLiteral literal = getOperand(pred, RexLiteral.class);
 
             if (literal == null)
-                return 1.;//guessSelectivity(pred);
+                return 1.;
 
             BigDecimal val = toComparableValue(literal);
 

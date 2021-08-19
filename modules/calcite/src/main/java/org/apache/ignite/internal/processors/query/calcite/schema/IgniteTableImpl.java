@@ -85,7 +85,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
             new StatisticsKey(schemaName, tblName));
 
-        return new IgniteStatisticsImpl(statistics);
+        return (statistics == null) ? IgniteStatisticsImpl.EMPTY : new IgniteStatisticsImpl(statistics);
     }
 
     /** {@inheritDoc} */

@@ -106,29 +106,30 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     }
 
     /**
-     * Run select and check that cost take statisitcs in account:
+     * Run select and check that result rows take statisitcs in account:
      * 1) without statistics;
      * 2) with statistics;
      * 3) after deleting statistics.
      */
     @Test
     public void testQueryCostWithStatistics() throws IgniteCheckedException {
+        String sql = "select name from person";
         createAndPopulateTable();
         StatisticsKey key = new StatisticsKey("PUBLIC", "PERSON");
         srv = ignite(0);
 
-        assertQuerySrv("select count(name) from person").matches(QueryChecker.containsScanRowCount(1000)).check();
+        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(1000)).check();
 
         clearQryCache(srv);
 
         collectStatistics(srv, key);
 
-        assertQuerySrv("select count(name) from person").matches(QueryChecker.containsScanRowCount(5)).check();
+        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(5)).check();
 
         statMgr(srv).dropStatistics(new StatisticsTarget(key));
         clearQryCache(srv);
 
-        assertQuerySrv("select count(name) from person").matches(QueryChecker.containsScanRowCount(1000)).check();
+        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(1000)).check();
     }
 
     /**
@@ -280,7 +281,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
                 double secAllRowCnt = (nonNullableFields.contains(secField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
-                String qry = String.format(sql, firstField, secField, secField);
+                String qry = String.format(sql, secField, firstField, secField);
 
                 assertQuerySrv(qry).matches(QueryChecker.containsResultRowCount(secAllRowCnt)).check();
 
@@ -371,7 +372,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s is null", numericField, -1, numericField))
                 .matches(QueryChecker.containsResultRowCount(ROW_COUNT)).check();
-
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s is null", numericField, 101, numericField))

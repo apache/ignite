@@ -256,6 +256,23 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         RelMetadataQuery mq,
         int iOutputColumn
     ) {
+        if (rel.projects() != null) {
+            if (rel.getInputs().isEmpty() || rel.getInputs().size() > 1)
+                return null;
+
+            RelNode input = rel.getInput(0);
+            RexNode rexNode = rel.projects().get(iOutputColumn);
+
+            if (rexNode instanceof RexInputRef) {
+                // Direct reference:  no derivation added.
+                RexInputRef inputRef = (RexInputRef) rexNode;
+
+                return mq.getColumnOrigins(input, inputRef.getIndex());
+            }
+
+            return null;
+        }
+
         int originColIdx = (rel.requiredColumns() == null) ? iOutputColumn :
             rel.requiredColumns().toArray()[iOutputColumn];
 

@@ -91,18 +91,6 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Ignite scanned row count mather.
-     *
-     * @param rowCount Expected scanned row count.
-     * @return Mather.
-     */
-    public static Matcher<String> containsScanRowCount(double rowCount) {
-        String rowCountStr = String.format(".*rowCount=%s,.*", printCostVal(rowCount));
-
-        return new RegexpMather(rowCountStr);
-    }
-
-    /**
      * Ignite result row count mather.
      *
      * @param rowCount Expected result row count.

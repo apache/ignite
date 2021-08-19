@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -31,16 +29,26 @@ import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
+    /** Instanse with empty statistics. */
+    public static IgniteStatisticsImpl EMPTY = new IgniteStatisticsImpl();
+
     /** Internal statistics implementation. */
     private final ObjectStatisticsImpl statistics;
 
     /**
      * Constructor.
      *
-     * @param statistics Internal object statistics or {@code null} if there is no statistics collected.
+     * @param statistics Internal object statistics.
      */
     public IgniteStatisticsImpl(ObjectStatisticsImpl statistics) {
         this.statistics = statistics;
+    }
+
+    /**
+     * Constructor.
+     */
+    private IgniteStatisticsImpl() {
+        statistics = null;
     }
 
     /** {@inheritDoc} */
