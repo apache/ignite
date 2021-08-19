@@ -83,15 +83,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException;
 
     /**
-     * Callback called when a partition is created on the local node.
-     *
-     * @param grpId Cache group ID where the partition is being created.
-     * @param partId ID of the partition being created.
-     * @throws IgniteCheckedException If failed to handle partition create callback.
-     */
-    public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException;
-
-    /**
      * Callback called when a partition for the given cache is evicted from the local node.
      * After this callback is invoked, no data associated with the partition will be stored on disk.
      *
