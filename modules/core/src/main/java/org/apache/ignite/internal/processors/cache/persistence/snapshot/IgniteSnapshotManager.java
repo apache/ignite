@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -741,39 +742,54 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
                     "[err=" + err + ", missed=" + missed + ']'));
             }
-            else {
-                Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
+            else if (completeHandlersAsyncIfNeeded(snpReq, res.values()))
+                return;
 
-                for (SnapshotOperationResponse response : res.values()) {
-                    if (response == null || response.handlerResults() == null)
-                        continue;
+            endSnpProc.start(snpReq.requestId(), snpReq);
+        }
+    }
 
-                    for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.handlerResults().entrySet())
-                        clusterHndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+    /**
+     * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
+     *
+     * @param req Request on snapshot creation.
+     * @param res Results.
+     * @return {@code True} if the handlers will be executed asynchronously.
+     */
+    private boolean completeHandlersAsyncIfNeeded(SnapshotOperationRequest req, Collection<SnapshotOperationResponse> res) {
+        Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
+
+        for (SnapshotOperationResponse response : res) {
+            if (response == null || response.handlerResults() == null)
+                continue;
+
+            for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.handlerResults().entrySet())
+                clusterHndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+        }
+
+        if (clusterHndResults.isEmpty())
+            return false;
+
+        try {
+            snapshotExecutorService().submit(() -> {
+                try {
+                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
+                }
+                catch (Exception e) {
+                    log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" +
+                        req.snapshotName() + "].", e);
+
+                    req.error(e);
                 }
 
-                if (!clusterHndResults.isEmpty()) {
-                    snapshotExecutorService().submit(() -> {
-                        try {
-                            handlers.completeAll(SnapshotHandlerType.CREATE, snpReq.snapshotName(), clusterHndResults, snpReq.nodes());
-                        }
-                        catch (Exception e) {
-                            log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" +
-                                snpReq.snapshotName() + "].", e);
+                endSnpProc.start(req.requestId(), req);
+            });
 
-                            snpReq.error(e);
-                        }
+            return true;
+        } catch (RejectedExecutionException e) {
+            req.error(e);
 
-                        endSnpProc.start(UUID.randomUUID(), snpReq);
-
-                        snpReq.endStageStarted(true);
-                    });
-
-                    return;
-                }
-            }
-
-            endSnpProc.start(UUID.randomUUID(), snpReq);
+            return false;
         }
     }
 
