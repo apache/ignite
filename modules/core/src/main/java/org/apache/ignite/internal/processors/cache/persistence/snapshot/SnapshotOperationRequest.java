@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -34,6 +34,10 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotOperationRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** Transient field updater. */
+    private static final AtomicReferenceFieldUpdater<SnapshotOperationRequest, Object> MARKER_FIELD_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(SnapshotOperationRequest.class, Object.class, "endStageMarker");
 
     /** Request ID. */
     private final UUID reqId;
@@ -55,8 +59,8 @@ public class SnapshotOperationRequest implements Serializable {
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
 
-    /** Results of executing handlers on multiple nodes. */
-    private volatile Map<String, List<SnapshotHandlerResult<?>>> hndResults;
+    /** Marker whose non-null value indicates that {@link DistributedProcessType#END_SNAPSHOT} phase has been begun. */
+    private transient volatile Object endStageMarker;
 
     /**
      * @param reqId Request ID.
@@ -129,17 +133,12 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Results of executing handlers on multiple nodes.
+     * Sets a marker that the {@link DistributedProcessType#END_SNAPSHOT} phase has started.
+     *
+     * @return {@code False} if {@link DistributedProcessType#END_SNAPSHOT} phase has already started.
      */
-    public @Nullable Map<String, List<SnapshotHandlerResult<?>>> handlerResults() {
-        return hndResults;
-    }
-
-    /**
-     * @param hndResults Results of executing handlers on multiple nodes.
-     */
-    public void handlerResults(Map<String, List<SnapshotHandlerResult<?>>> hndResults) {
-        this.hndResults = hndResults;
+    protected boolean markEndStageStart() {
+        return MARKER_FIELD_UPDATER.compareAndSet(this, null, Boolean.TRUE);
     }
 
     /** {@inheritDoc} */

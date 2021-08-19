@@ -56,7 +56,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -186,7 +185,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.HANDLE_CREATE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
@@ -263,9 +261,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
-    /** Post-process snapshot creation using user handlers. */
-    private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> hndSnpProc;
-
     /** Check previously performed snapshot operation and delete uncompleted files if need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -330,9 +325,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
             this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
-
-        hndSnpProc = new DistributedProcess<>(ctx, HANDLE_CREATE_SNAPSHOT, this::initLocalSnapshotHandleStage,
-            this::processLocalSnapshotHandleStageResult);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult);
@@ -427,15 +419,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpReq = clusterSnpReq;
+                    boolean snpReqTaskFound = false;
+
+                    Exception ex = new ClusterTopologyCheckedException("Snapshot operation interrupted. " +
+                            "One of baseline nodes left the cluster: " + leftNodeId);
 
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
-                        if (sctx.sourceNodeId().equals(leftNodeId) ||
-                            (snpReq != null &&
-                                snpReq.snapshotName().equals(sctx.snapshotName()) &&
-                                snpReq.nodes().contains(leftNodeId))) {
-                            sctx.acceptException(new ClusterTopologyCheckedException("Snapshot operation interrupted. " +
-                                "One of baseline nodes left the cluster: " + leftNodeId));
-                        }
+                        if ((!snpReqTaskFound && (snpReqTaskFound = (snpReq != null &&
+                            snpReq.snapshotName().equals(sctx.snapshotName()) &&
+                            snpReq.nodes().contains(leftNodeId)))) ||
+                            sctx.sourceNodeId().equals(leftNodeId))
+                            sctx.acceptException(ex);
+                    }
+
+                    if (!snpReqTaskFound && snpReq != null && isLocalNodeCoordinator(cctx.discovery()) &&
+                        snpReq.nodes().contains(leftNodeId) && snpReq.markEndStageStart()) {
+                        snpReq.error(ex);
+
+                        endSnpProc.start(snpReq.requestId(), snpReq);
                     }
 
                     restoreCacheGrpProc.onNodeLeft(leftNodeId);
@@ -751,9 +752,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (!clusterHndResults.isEmpty()) {
-                    snpReq.handlerResults(clusterHndResults);
+                    snapshotExecutorService().submit(() -> {
+                        try {
+                            handlers.completeAll(SnapshotHandlerType.CREATE, snpReq.snapshotName(), clusterHndResults, snpReq.nodes());
+                        }
+                        catch (Exception e) {
+                            log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" +
+                                snpReq.snapshotName() + "].", e);
 
-                    hndSnpProc.start(snpReq.requestId(), snpReq);
+                            snpReq.error(e);
+                        }
+
+                        endSnpProc.start(UUID.randomUUID(), snpReq);
+
+                        snpReq.markEndStageStart();
+                    });
 
                     return;
                 }
@@ -765,70 +778,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param req Request on snapshot creation.
-     * @return Future that will be completed when the snapshot handlers finish executing.
-     */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotHandleStage(SnapshotOperationRequest req) {
-        if (!isLocalNodeCoordinator(cctx.discovery()))
-            return new GridFinishedFuture<>();
-
-        GridFutureAdapter<SnapshotOperationResponse> resFut = new GridFutureAdapter<>();
-
-        try {
-            snapshotExecutorService().submit(() -> {
-                try {
-                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), req.handlerResults(), req.nodes());
-
-                    resFut.onDone(new SnapshotOperationResponse());
-                }
-                catch (Exception e) {
-                    log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" +
-                        req.snapshotName() + "].", e);
-
-                    resFut.onDone(e);
-                }
-            });
-        } catch (RejectedExecutionException e) {
-            resFut.onDone(e);
-        }
-
-        return resFut;
-    }
-
-    /**
-     * @param id Request id.
-     * @param res Results.
-     * @param errs Errors.
-     */
-    private void processLocalSnapshotHandleStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> errs) {
-        if (!isLocalNodeCoordinator(cctx.discovery()))
-            return;
-
-        SnapshotOperationRequest snpReq = clusterSnpReq;
-
-        if (!F.isEmpty(errs)) {
-            snpReq.error(new IgniteCheckedException("The snapshot operation will be aborted because one of the " +
-                "snapshot handlers produced an error. Uncompleted snapshot will be deleted.", F.first(errs.values())));
-        }
-        else if (F.first(F.viewReadOnly(res.values(), v -> v, Objects::nonNull)) == null) {
-            Set<UUID> leftNodes = new HashSet<>(snpReq.nodes());
-
-            leftNodes.removeAll(res.keySet());
-
-            snpReq.error(new IgniteCheckedException("The snapshot operation will be aborted because the node " +
-                "left the cluster and was not able to complete the execution of snapshot handlers. " +
-                "Uncompleted snapshot will be deleted. [nodeIds=" + leftNodes + ']'));
-        }
-
-        endSnpProc.start(UUID.randomUUID(), snpReq);
-    }
-
-    /**
-     * @param req Request on snapshot creation.
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
-        if (clusterSnpReq == null)
+        SnapshotOperationRequest snpReq = clusterSnpReq;
+
+        if (snpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
+
+        snpReq.markEndStageStart();
 
         try {
             if (req.error() != null)

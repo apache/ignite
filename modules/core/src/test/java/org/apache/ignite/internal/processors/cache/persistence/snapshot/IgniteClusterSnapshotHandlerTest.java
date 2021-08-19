@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -337,10 +338,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         latch.await();
 
+        UUID crdNodeId = grid(0).localNode().id();
+
         stopGrid(0, true);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class,
-            "node left the cluster and was not able to complete the execution of snapshot handlers");
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
+            "Snapshot operation interrupted. One of baseline nodes left the cluster: " + crdNodeId);
 
         startGrid(0);
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
