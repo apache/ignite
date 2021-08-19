@@ -404,8 +404,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
                 // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
-                if (securityEnabled && req.command() != AUTHENTICATE && req.credentials() == null)
-                    throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
+//                if (securityEnabled && req.command() != AUTHENTICATE && req.credentials() == null)
+//                    throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
 
                 Session ses = Session.random();
 

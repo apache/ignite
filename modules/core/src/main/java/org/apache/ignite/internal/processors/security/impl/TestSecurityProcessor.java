@@ -109,7 +109,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
         if (ctx.credentials() == null || ctx.credentials().getLogin() == null)
-            return null;
+            ctx.credentials(new SecurityCredentials(ctx.subjectId().toString(), ""));
 
         SecurityPermissionSet perms = PERMS.get(ctx.credentials());
 

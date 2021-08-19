@@ -29,6 +29,9 @@ import org.apache.ignite.plugin.security.SecuritySubjectType;
  * Security subject for tests.
  */
 public class TestSecuritySubject implements SecuritySubject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Id. */
     private UUID id;
 

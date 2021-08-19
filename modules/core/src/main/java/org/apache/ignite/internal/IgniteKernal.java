@@ -35,6 +35,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.Permissions;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -185,6 +186,8 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -302,6 +305,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
  * This class represents an implementation of the main Ignite API {@link Ignite} which is expanded by additional
@@ -4353,7 +4357,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return (T)new GridClusterStateProcessor(ctx);
 
         if (cls.equals(GridSecurityProcessor.class))
-            return ctx.config().isAuthenticationEnabled() ? (T)new IgniteAuthenticationProcessor(ctx) : null;
+            return ctx.config().isAuthenticationEnabled() ? (T)new IgniteAuthenticationProcessor(ctx) :
+                (T)new TestSecurityProcessor(
+                    ctx,
+                    new TestSecurityData(ctx.config().getIgniteInstanceName(), "", ALLOW_ALL, new Permissions()),
+                    Collections.emptyList(),
+                    false
+                );
 
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);

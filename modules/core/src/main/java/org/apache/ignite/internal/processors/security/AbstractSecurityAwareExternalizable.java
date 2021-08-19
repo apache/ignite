@@ -79,7 +79,12 @@ public abstract class AbstractSecurityAwareExternalizable<T> implements External
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeUuid(out, subjectId);
 
-        out.writeObject(original);
+        try {
+            out.writeObject(original);
+        }
+        catch (Throwable e) {
+            throw new RuntimeException("@___@ CQ cannot be serialized.");
+        }
     }
 
     /** {@inheritDoc} */

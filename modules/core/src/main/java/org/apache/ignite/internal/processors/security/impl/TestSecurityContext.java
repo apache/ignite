@@ -28,6 +28,9 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * Security context for tests.
  */
 public class TestSecurityContext implements SecurityContext, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Subject. */
     private final SecuritySubject subject;
 

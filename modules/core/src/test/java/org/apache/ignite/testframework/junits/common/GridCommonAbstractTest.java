@@ -144,6 +144,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -534,6 +535,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse(isMultiJvm());
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {

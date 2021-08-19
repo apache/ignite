@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2432,9 +2433,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                         testRoutine.evaluate();
                     }
                     catch (Throwable e) {
-                        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+                        if (!X.hasCause(e, "@___@", RuntimeException.class)) {
+                            IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-                        ex.set(hnd != null ? hnd.apply(e) : e);
+                            ex.set(hnd != null ? hnd.apply(e) : e);
+                        }
                     }
                 }
             });
