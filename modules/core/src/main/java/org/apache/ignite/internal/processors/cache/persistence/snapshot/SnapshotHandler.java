@@ -46,10 +46,10 @@ public interface SnapshotHandler<T> extends Extension {
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
      *      passed into {@link #complete(String, Collection)} handler method.
-     * @throws IgniteCheckedException If invocation caused an exception. This exception will be returned in {@link
+     * @throws Exception If invocation caused an exception. This exception will be returned in {@link
      *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
      */
-    public @Nullable T invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException;
+    public @Nullable T invoke(SnapshotHandlerContext ctx) throws Exception;
 
     /**
      * Processing the results of the {@link #invoke(SnapshotHandlerContext)} method received from all nodes. This method
@@ -61,15 +61,15 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
-     * @throws IgniteCheckedException If the snapshot operation needs to be aborted.
+     * @throws Exception If the snapshot operation needs to be aborted.
      * @see SnapshotHandlerResult
      */
-    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws IgniteCheckedException {
+    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws Exception {
         for (SnapshotHandlerResult<T> res : results) {
             if (res.error() == null)
                 continue;
 
-            throw new IgniteCheckedException("Snapshot handler has failed: " + res.error().getMessage() +
+            throw new IgniteCheckedException("Snapshot handler has failed. " + res.error().getMessage() +
                 "[snapshot=" + name +
                 ", handler=" + getClass().getName() +
                 ", nodeId=" + res.node().id() + "].", res.error());

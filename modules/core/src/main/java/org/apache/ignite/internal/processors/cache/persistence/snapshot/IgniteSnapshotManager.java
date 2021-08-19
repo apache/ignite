@@ -781,7 +781,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     resFut.onDone(new SnapshotOperationResponse());
                 }
                 catch (Exception e) {
-                    log.error("Unable to complete snapshot handler execution [snapshot=" + req.snapshotName() + "].", e);
+                    log.warning("Unable to complete snapshot handler execution [snapshot=" + req.snapshotName() + "].", e);
 
                     resFut.onDone(e);
                 }
@@ -1826,7 +1826,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
          * @param reqNodes Node IDs on which the handlers were executed.
-         * @throws IgniteCheckedException If failed.
+         * @throws Exception If failed.
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
         protected void completeAll(
@@ -1834,7 +1834,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
             Collection<UUID> reqNodes
-        ) throws IgniteCheckedException {
+        ) throws Exception {
             if (res.isEmpty())
                 return;
 
