@@ -118,8 +118,11 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  (done) 3. Handle and fire affinity change message when waitInfo becomes empty.
  *  4. Load partitions from remote nodes.
  *  (no need) 5. Set partition to MOVING state during copy from snapshot and read partition Metas.
- *  6. Replace index if topology match partitions.
+ *  (done) 6. Replace index if topology match partitions.
  *  7. Rebuild index if need.
+ *  8. Check the partition reservation during the restore if a next exchange occurs (see message:
+ *  Cache groups were not reserved [[[grpId=-903566235, grpName=shared], reason=Checkpoint was marked
+ *  as inapplicable for historical rebalancing]])
  *
  * Other strategies to be memento to:
  *
@@ -1131,7 +1134,7 @@ public class SnapshotRestoreProcess {
             for (Integer partId : leftParts) {
                 // Affinity node partitions are inited on exchange.
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
-                PartitionRestoreLifecycleFuture lf = PartitionRestoreLifecycleFuture.create(grp, partId);
+                PartitionRestoreLifecycleFuture lf = PartitionRestoreLifecycleFuture.create(grp, log, partId);
 
                 // Start partition eviction first.
                 if (part == null)
@@ -1667,7 +1670,7 @@ public class SnapshotRestoreProcess {
          * @param partId Partition id.
          * @return A future which will be completed when partition processing ends (partition is loaded and initialized).
          */
-        public static PartitionRestoreLifecycleFuture create(CacheGroupContext grp, int partId) {
+        public static PartitionRestoreLifecycleFuture create(CacheGroupContext grp, IgniteLogger log, int partId) {
             assert !grp.isLocal();
             assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
             assert grp.topology() instanceof GridDhtPartitionTopologyImpl;
@@ -1684,7 +1687,12 @@ public class SnapshotRestoreProcess {
             // we should start a new data storage initialization. This will not be fired if any of
             // dependent futures completes with an exception.
             loaded.thenAcceptBothAsync(cleared, (path, ignore) -> db.addCheckpointListener(pf));
-            inited.thenRun(() -> db.removeCheckpointListener(pf));
+            inited.thenRun(() -> db.removeCheckpointListener(pf))
+                .whenComplete((r, t) -> {
+                    if (t == null && log.isDebugEnabled())
+                        log.debug("Partition has been initialized successfully on cache restore [grp=" + grp.cacheOrGroupName() +
+                            ", partId=" + partId + ", hwm=" + pf.partHwm.get() + ']');
+                });
 
             CompletableFuture
                 .allOf(cleared, loaded, inited)
@@ -1815,6 +1823,8 @@ public class SnapshotRestoreProcess {
 
             GridDhtLocalPartition part = grp.topology().localPartition(partId);
             part.dataStore().init();
+
+            partHwm.set(part.reservedCounter());
 
             inited.complete(null);
         }

@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -2395,10 +2394,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, Set<Integer>> resetOwners(
+    @Override public Map<UUID, Set<Integer>> resetPartitionStates(
         Map<Integer, Set<UUID>> ownersByUpdCounters,
         Set<Integer> haveHist,
-        GridDhtPartitionsExchangeFuture exchFut) {
+        GridDhtPartitionsExchangeFuture exchFut,
+        Predicate<GridDhtPartitionState> stateToReset
+    ) {
         Map<UUID, Set<Integer>> res = new HashMap<>();
 
         Collection<DiscoveryEvent> evts = exchFut.events().events();
@@ -2413,8 +2414,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
-            Map<UUID, Set<Integer>> addToWaitGroups = new HashMap<>();
-
             lock.writeLock().lock();
 
             try {
@@ -2427,7 +2426,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     GridDhtLocalPartition locPart = localPartition(part);
 
-                    if (locPart == null || locPart.state() != OWNING)
+                    if (locPart == null || !stateToReset.test(locPart.state()))
                         continue;
 
                     // Partition state should be mutated only on joining nodes if they are exists for the exchange.
@@ -2453,7 +2452,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         GridDhtPartitionState state = partMap.get(part);
 
-                        if (state != OWNING)
+                        if (!stateToReset.test(state))
                             continue;
 
                         if (!maxCounterPartOwners.contains(remoteNodeId)) {
@@ -2469,48 +2468,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
-                for (Map.Entry<UUID, Set<Integer>> entry : res.entrySet()) {
-                    UUID nodeId = entry.getKey();
-                    Set<Integer> rebalancedParts = entry.getValue();
-
-                    addToWaitGroups.put(nodeId, new HashSet<>(rebalancedParts));
-
-                    if (!rebalancedParts.isEmpty()) {
-                        Set<Integer> historical = rebalancedParts.stream()
-                            .filter(haveHist::contains)
-                            .collect(Collectors.toSet());
-
-                        // Filter out partitions having WAL history.
-                        rebalancedParts.removeAll(historical);
-
-                        U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
-                            + "[grp=" + grp.cacheOrGroupName()
-                            + ", readyTopVer=" + readyTopVer
-                            + ", topVer=" + exchFut.initialVersion()
-                            + ", nodeId=" + nodeId
-                            + ", partsFull=" + S.compact(rebalancedParts)
-                            + ", partsHistorical=" + S.compact(historical) + "]");
-                    }
-                }
-
                 node2part = new GridDhtPartitionFullMap(node2part, updateSeq.incrementAndGet());
             }
             finally {
                 lock.writeLock().unlock();
-            }
-
-            List<List<ClusterNode>> ideal = ctx.affinity().affinity(groupId()).idealAssignmentRaw();
-
-            for (Map.Entry<UUID, Set<Integer>> entry : addToWaitGroups.entrySet()) {
-                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
-                for (Integer part : entry.getValue()) {
-                    ctx.cache().context().affinity().addToWaitGroup(
-                        groupId(),
-                        part,
-                        topologyVersionFuture().initialVersion(),
-                        ideal.get(part)
-                    );
-                }
             }
         }
         finally {

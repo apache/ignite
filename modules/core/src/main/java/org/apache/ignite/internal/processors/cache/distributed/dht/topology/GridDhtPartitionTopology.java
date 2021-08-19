@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -428,12 +429,14 @@ public interface GridDhtPartitionTopology {
      *                            (update counter is maximal) and should hold OWNING state for such partition).
      * @param haveHist Set of partitions which have WAL history to rebalance.
      * @param exchFut Exchange future for operation.
+     * @param stateToReset Predicate to filter partition states to be reset. If returns {@code true} than the state will be reset.
      * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Map<UUID, Set<Integer>> resetOwners(
+    public Map<UUID, Set<Integer>> resetPartitionStates(
         Map<Integer, Set<UUID>> ownersByUpdCounters,
         Set<Integer> haveHist,
-        GridDhtPartitionsExchangeFuture exchFut);
+        GridDhtPartitionsExchangeFuture exchFut,
+        Predicate<GridDhtPartitionState> stateToReset);
 
     /**
      * Callback on exchange done.

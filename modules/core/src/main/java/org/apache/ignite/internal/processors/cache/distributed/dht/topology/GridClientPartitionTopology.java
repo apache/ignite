@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -1258,10 +1259,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, Set<Integer>> resetOwners(
+    @Override public Map<UUID, Set<Integer>> resetPartitionStates(
         Map<Integer, Set<UUID>> ownersByUpdCounters,
         Set<Integer> haveHist,
-        GridDhtPartitionsExchangeFuture exchFut
+        GridDhtPartitionsExchangeFuture exchFut,
+        Predicate<GridDhtPartitionState> stateToReset
     ) {
         Map<UUID, Set<Integer>> res = new HashMap<>();
 
@@ -1279,7 +1281,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
                     GridDhtPartitionState state = partMap.get(part);
 
-                    if (state == null || state != OWNING)
+                    if (state == null || !stateToReset.test(state))
                         continue;
 
                     if (!newOwners.contains(remoteNodeId)) {
