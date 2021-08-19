@@ -2043,7 +2043,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      */
     private WALPointer tailPointer(RestoreLogicalState logicalState) throws IgniteCheckedException {
-        // Should flush all data in buffers before read last WAL pointer.
+        // Should flush all data in buffers before read lasr WAL pointer.
         // Iterator read records only from files.
         WALPointer lastFlushPtr = cctx.wal().flush(null, true);
 

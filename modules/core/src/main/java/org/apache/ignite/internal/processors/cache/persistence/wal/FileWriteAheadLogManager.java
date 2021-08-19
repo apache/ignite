@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -139,6 +140,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WOR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.IgniteSystemProperties.getDouble;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_METRICS_ENABLED;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE_TIME_INTERVAL_MILLIS;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
@@ -452,7 +456,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (cctx.kernalContext().clientNode())
             return;
 
-        final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+        final PdsFolderSettings<?> resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
         checkWalConfiguration();
 
@@ -482,9 +486,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+            IgniteCacheDatabaseSharedManager dbMgr = cctx.database();
 
-            metrics = dbMgr.persistentStoreMetricsImpl();
+            if (dbMgr instanceof GridCacheDatabaseSharedManager)
+                metrics = ((GridCacheDatabaseSharedManager)dbMgr).persistentStoreMetricsImpl();
+            else {
+                DataStorageConfiguration dsCfg = cctx.gridConfig().getDataStorageConfiguration();
+
+                // TODO: create only WAL metrics and exclude Checkpoint one.
+                if (dsCfg != null) {
+                    metrics = new DataStorageMetricsImpl(
+                        cctx.kernalContext().metric(),
+                        dsCfg.isMetricsEnabled(),
+                        dsCfg.getMetricsRateTimeInterval(),
+                        dsCfg.getMetricsSubIntervalCount()
+                    );
+                }
+                else {
+                    metrics = new DataStorageMetricsImpl(
+                        cctx.kernalContext().metric(),
+                        DFLT_METRICS_ENABLED,
+                        DFLT_RATE_TIME_INTERVAL_MILLIS,
+                        DFLT_SUB_INTERVALS
+                    );
+                }
+            }
 
             if (metrics != null) {
                 metrics.setWalSizeProvider(new CO<Long>() {

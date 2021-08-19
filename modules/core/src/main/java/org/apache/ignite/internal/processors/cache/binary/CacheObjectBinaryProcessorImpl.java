@@ -138,7 +138,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
     /** @see IgniteSystemProperties#IGNITE_WAIT_SCHEMA_UPDATE */
-    public static final int DFLT_WAIT_SCHEMA_UPDATE = 30_000;
+    public static final int DFLT_WAIT_SCHEMA_UPDATE = 1_000;
 
     /** @see BinaryMetadataView */
     public static final String BINARY_METADATA_VIEW = metricName("binary", "metadata");

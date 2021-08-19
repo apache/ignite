@@ -130,6 +130,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MA
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.util.IgniteUtils.isDataRecordsEnabled;
 
 /**
  * Adapter for cache entry.
@@ -1219,7 +1220,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
+            if (isDataRecordsEnabled(cctx.group())) {
                 logPtr = cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
                     cctx.cacheId(),
                     key,
@@ -1348,7 +1349,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+            if (isDataRecordsEnabled(cctx.group()))
                 logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
 
             update(null, 0, 0, newVer, true);
@@ -1568,7 +1569,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
-            if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+            if (tx != null && isDataRecordsEnabled(cctx.group()))
                 logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
@@ -1794,7 +1795,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
-            if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+            if (tx != null && isDataRecordsEnabled(cctx.group()))
                 logPtr = logTxUpdate(tx, null, 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
@@ -3364,7 +3365,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean walEnabled = !cctx.isNear() && cctx.group().persistenceEnabled() && cctx.group().walEnabled();
+            boolean walEnabled = !cctx.isNear() && isDataRecordsEnabled(cctx.group());
 
             long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
@@ -4345,7 +4346,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic();
 
         try {
-            if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+            if (isDataRecordsEnabled(cctx.group()))
                 cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
@@ -5325,7 +5326,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
-                if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+                if (isDataRecordsEnabled(cctx.group()))
                     entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
@@ -5673,7 +5674,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
-                if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+                if (isDataRecordsEnabled(cctx.group()))
                     logPtr = cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
                         cctx.cacheId(),
                         entry.key(),
@@ -6871,7 +6872,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean walEnabled = cctx.group().persistenceEnabled() && cctx.group().walEnabled();
+            boolean walEnabled = isDataRecordsEnabled(cctx.group());
 
             List<DataEntry> walEntries = walEnabled ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
 
@@ -6980,7 +6981,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.offheap().mvccApplyHistoryIfAbsent(this, entryHist)) {
                 updated = true;
 
-                if (!cctx.isNear() && cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
+                if (!cctx.isNear() && isDataRecordsEnabled(cctx.group())) {
                     MvccDataRecord rec;
 
                     if (entryHist.size() == 1) {

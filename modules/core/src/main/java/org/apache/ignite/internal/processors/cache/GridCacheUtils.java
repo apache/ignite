@@ -1898,7 +1898,7 @@ public class GridCacheUtils {
      * @param ccfg Cache configuration.
      * @param dsCfg Data storage config.
      */
-    public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
+    public static boolean isPersistentCache(CacheConfiguration<?, ?> ccfg, DataStorageConfiguration dsCfg) {
         if (dsCfg == null)
             return false;
 
@@ -1930,6 +1930,27 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     * Finds data region by name.
+     *
+     * @param dsCfg Data storage configuration.
+     * @param drName Data region name.
+     *
+     * @return Found data region.
+     */
+    @Nullable public static DataRegionConfiguration findDataRegion(DataStorageConfiguration dsCfg, String drName) {
+        if (dsCfg.getDataRegionConfigurations() == null || drName == null)
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(drName))
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        return Arrays.stream(dsCfg.getDataRegionConfigurations())
+            .filter(drCfg -> drCfg.getName().equals(drName))
+            .findFirst()
+            .orElse(null);
     }
 
     /**

@@ -3054,11 +3054,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (pageStoreMgr == null)
                 pageStoreMgr = new FilePageStoreManager(ctx);
-
-            walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
-
-            if (walMgr == null)
-                walMgr = new FileWriteAheadLogManager(ctx);
         }
         else {
             if (CU.isPersistenceEnabled(ctx.config()) && ctx.clientNode()) {
@@ -3067,6 +3062,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             dbMgr = new IgniteCacheDatabaseSharedManager();
+        }
+
+        if ((CU.isPersistenceEnabled(ctx.config()) || ctx.config().getDataStorageConfiguration().isCdcEnabled())
+            && !ctx.clientNode()) {
+            walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
+
+            if (walMgr == null)
+                walMgr = new FileWriteAheadLogManager(ctx);
         }
 
         WalStateManager walStateMgr = new WalStateManager(ctx);

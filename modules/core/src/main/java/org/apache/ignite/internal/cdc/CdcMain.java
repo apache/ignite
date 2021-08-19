@@ -201,7 +201,7 @@ public class CdcMain implements Runnable {
     public void runX() throws Exception {
         ackAsciiLogo();
 
-        if (!CU.isPersistenceEnabled(igniteCfg)) {
+        if (!CU.isPersistenceEnabled(igniteCfg) && !igniteCfg.getDataStorageConfiguration().isCdcEnabled()) {
             log.error(ERR_MSG);
 
             throw new IllegalArgumentException(ERR_MSG);
@@ -401,12 +401,6 @@ public class CdcMain implements Runnable {
      * @return Lock or null if lock failed.
      */
     private CdcFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
-        if (!dbStoreDirWithSubdirectory.exists()) {
-            log.warning("DB store directory not exists [dir=" + dbStoreDirWithSubdirectory + ']');
-
-            return null;
-        }
-
         File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
 
         if (!cdcRoot.isAbsolute()) {

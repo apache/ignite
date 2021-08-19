@@ -2289,13 +2289,17 @@ public class ClusterCachesInfo {
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
         boolean persistent = resolvePersistentFlag(exchActions, startedCacheCfg);
-        boolean walGloballyEnabled = false;
+        boolean walGloballyEnabled;
 
         // client nodes cannot read wal enabled/disabled status so they should use default one
         if (ctx.clientNode())
             walGloballyEnabled = persistent;
         else if (persistent)
             walGloballyEnabled = ctx.cache().context().database().walEnabled(grpId, false);
+        else {
+            walGloballyEnabled = !CU.isSystemCache(startedCacheCfg.getName()) &&
+                CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getName()).isCdcEnabled();
+        }
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,

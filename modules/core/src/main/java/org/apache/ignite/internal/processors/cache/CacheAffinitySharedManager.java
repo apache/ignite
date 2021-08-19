@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,7 +26,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2968,7 +2966,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (partsNum == 0)
                     return;
 
-                DataRegionConfiguration drCfg = findDataRegion(dsCfg, grpCfg.getDataRegionName());
+                DataRegionConfiguration drCfg = CU.findDataRegion(dsCfg, grpCfg.getDataRegionName());
 
                 if (drCfg == null)
                     return;
@@ -3006,28 +3004,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     U.sizeInMegabytes(partsNum * pageSize),
                     U.sizeInMegabytes(drCfg.getMaxSize())
                 );
-        }
-
-        /**
-         * Finds data region by name.
-         *
-         * @param dsCfg Data storage configuration.
-         * @param drName Data region name.
-         *
-         * @return Found data region.
-         */
-        @Nullable private DataRegionConfiguration findDataRegion(DataStorageConfiguration dsCfg, String drName) {
-            if (dsCfg.getDataRegionConfigurations() == null || drName == null)
-                return dsCfg.getDefaultDataRegionConfiguration();
-
-            if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(drName))
-                return dsCfg.getDefaultDataRegionConfiguration();
-
-            Optional<DataRegionConfiguration> cfgOpt = Arrays.stream(dsCfg.getDataRegionConfigurations())
-                .filter(drCfg -> drCfg.getName().equals(drName))
-                .findFirst();
-
-            return cfgOpt.isPresent() ? cfgOpt.get() : null;
         }
     }
 }

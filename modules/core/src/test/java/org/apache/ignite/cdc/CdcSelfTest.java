@@ -18,9 +18,9 @@
 package org.apache.ignite.cdc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +46,9 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.WALMode.BACKGROUND;
+import static org.apache.ignite.configuration.WALMode.FSYNC;
+import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -68,16 +71,24 @@ public class CdcSelfTest extends AbstractCdcTest {
     public WALMode walMode;
 
     /** */
-    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}")
+    @Parameterized.Parameter(2)
+    public boolean persistenceEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}, persistenceEnabled={2}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {true, WALMode.FSYNC},
-            {false, WALMode.FSYNC},
-            {true, WALMode.LOG_ONLY},
-            {false, WALMode.LOG_ONLY},
-            {true, WALMode.BACKGROUND},
-            {false, WALMode.BACKGROUND}
-        });
+        List<Object[]> params = new ArrayList<>();
+
+        for (boolean specificConsistentId : new boolean[] {true, false}) {
+            for (WALMode mode : EnumSet.of(FSYNC, LOG_ONLY, BACKGROUND)) {
+                for (boolean persistenceEnabled : new boolean[] {true, false})
+                    params.add(new Object[] {specificConsistentId, mode, persistenceEnabled});
+            }
+        }
+
+        params.removeIf(p -> (boolean)p[2]);
+
+        return params;
     }
 
     /** Consistent id. */
@@ -94,7 +105,9 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setCdcEnabled(true)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(persistenceEnabled)
+                .setCdcEnabled(true)));
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
