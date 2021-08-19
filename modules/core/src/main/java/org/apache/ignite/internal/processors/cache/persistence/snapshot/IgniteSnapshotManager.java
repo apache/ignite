@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -813,6 +814,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public @Nullable UUID restoringId() {
         return restoreCacheGrpProc.restoringId();
+    }
+
+    /**
+     * @return {@code true} if partition states of given cache groups must be reset
+     * to the initial {@link GridDhtPartitionState#MOVING} state.
+     */
+    public boolean resetAllPartitionStates(CacheConfiguration<?, ?> ccfg, UUID restoringId) {
+        return restoreCacheGrpProc.resetAllStates(ccfg, restoringId);
     }
 
     /**

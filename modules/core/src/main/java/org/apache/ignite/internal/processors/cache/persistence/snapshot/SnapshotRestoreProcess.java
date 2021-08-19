@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -414,6 +415,25 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @return {@code true} if partition states of given cache groups must be reset
+     * to the initial {@link GridDhtPartitionState#MOVING} state.
+     */
+    public boolean resetAllStates(CacheConfiguration<?, ?> ccfg, UUID restoringId) {
+        if (restoringId == null)
+            return false;
+
+        if (!restoringId.equals(restoringId()))
+            return false;
+
+        if (!isRestoring(ccfg))
+            return false;
+
+        // Called from the discovery thread. It's safe to call all of the methods reading
+        // the snapshot context, since the context changed only through the discovery thread also.
+        return !opCtx.sameTop;
+    }
+
+    /**
      * Check if the cache or group with the specified name is currently being restored from the snapshot.
      *
      * @param ccfg Cache configuration.
@@ -700,7 +720,7 @@ public class SnapshotRestoreProcess {
                 ", nodeId=" + cctx.localNodeId() + ']');
         }
 
-        List<File> cacheDirs = new ArrayList<>();
+        Set<File> cacheDirs = new HashSet<>();
         Map<String, StoredCacheData> cfgsByName = new HashMap<>();
         FilePageStoreManager pageStore = (FilePageStoreManager)cctx.pageStore();
 
@@ -904,7 +924,7 @@ public class SnapshotRestoreProcess {
                 int size = futs.size();
 
                 partFut = CompletableFuture.allOf(futs.toArray(new CompletableFuture[size]))
-                    .thenAcceptBothAsync(metaFut, (p, m) -> {
+                    .runAfterBothAsync(metaFut, () -> {
                         try {
                             if (opCtx0.stopChecker.getAsBoolean())
                                 throw new IgniteInterruptedException("The operation has been stopped on temporary directory switch.");
@@ -1067,7 +1087,13 @@ public class SnapshotRestoreProcess {
         if (opCtx0 == null)
             return;
 
-        Set<Integer> exchGrpIds = exchFut.exchangeActions().cacheGroupsToRestart(opCtx0.reqId);
+        Set<Integer> exchGrpIds = exchFut.exchangeActions().cacheGroupsToStart().stream()
+            .filter(d -> Objects.nonNull(d.restartId()))
+            .filter(d -> d.restartId().equals(opCtx0.reqId))
+            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
+            .map(g -> g.descriptor().groupId())
+            .collect(Collectors.toSet());
+
         Set<CacheGroupContext> filtered = grps.stream()
             .filter(Objects::nonNull)
             .filter(g -> exchGrpIds.contains(g.groupId()))

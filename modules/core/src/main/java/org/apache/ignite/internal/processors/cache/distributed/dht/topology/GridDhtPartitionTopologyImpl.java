@@ -46,6 +46,7 @@ import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -432,21 +433,23 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         log.debug("Initialize partitions (" + reason + ")" + " [grp=" + grp.cacheOrGroupName() + "]");
                     }
 
+                    boolean resetState = exchFut.exchangeActions() != null &&
+                        exchFut.exchangeActions().cacheGroupsToStart().stream()
+                            .filter(d -> Objects.nonNull(d.restartId()))
+                            .filter(d -> d.descriptor().groupId() == groupId())
+                            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
+                            .map(g -> Boolean.TRUE)
+                            .findFirst()
+                            .orElse(false);
+
                     for (int p = 0; p < partitions; p++) {
                         if (localNode(p, affAssignment)) {
                             // Partition is created first time, so it's safe to own it.
                             boolean shouldOwn = locParts.get(p) == null;
-                            boolean restore = exchFut.exchangeActions() != null &&
-                                exchFut.exchangeActions().cacheGroupsToStart().stream()
-                                .filter(g -> Objects.nonNull(g.restartId()))
-                                .filter(g -> g.descriptor().groupId() == groupId())
-                                .map(g -> Boolean.TRUE)
-                                .findFirst()
-                                .orElse(false);
 
                             GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
-                            if (shouldOwn && !restore) {
+                            if (shouldOwn && !resetState) {
                                 locPart.own();
 
                                 if (log.isDebugEnabled())
@@ -924,7 +927,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, loc = partFactory.create(ctx, grp, p, false));
 
-            // TODO recheck the structures of local GridDhtPartition instance which should be re-inited on re-create.
             if (recreate)
                 loc.resetUpdateCounter();
 

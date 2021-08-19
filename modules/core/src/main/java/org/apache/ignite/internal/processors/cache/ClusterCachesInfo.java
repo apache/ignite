@@ -708,7 +708,7 @@ public class ClusterCachesInfo {
      * @param persistedCfgs {@code True} if process start of persisted caches during cluster activation.
      * @param res Accumulator for cache change process results.
      * @param reqsToComplete Accumulator for cache change requests which should be completed after
-     * ({@link org.apache.ignite.internal.processors.cache.GridCacheProcessor#pendingFuts}
+     * {@code org.apache.ignite.internal.processors.cache.GridCacheProcessor#pendingFuts}
      */
     private void processCacheChangeRequest0(
         DynamicCacheChangeRequest req,
@@ -995,6 +995,8 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
+        assert exchangeActions != null;
+
         CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
         IgniteCheckedException err = null;
@@ -1066,9 +1068,13 @@ public class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
-            req.cacheConfigurationEnrichment(),
-            req.restartId()
-        );
+            req.cacheConfigurationEnrichment());
+
+        UUID restartId0 = req.restartId() == null ? null : req.restartId().globalId();
+
+        exchangeActions.addCacheGroupToStart(grpDesc,
+            restartId0,
+            ctx.cache().context().snapshotMgr().resetAllPartitionStates(ccfg, restartId0));
 
         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
             ccfg,
@@ -1830,7 +1836,7 @@ public class ClusterCachesInfo {
             }
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
-                exchangeActions.addCacheGroupToStart(grpDesc, null);
+                exchangeActions.addCacheGroupToStart(grpDesc, null, false);
 
             List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
 
@@ -2140,9 +2146,7 @@ public class ClusterCachesInfo {
             nodeId,
             joinData.cacheDeploymentId(),
             null,
-            cacheInfo.cacheData().cacheConfigurationEnrichment(),
-            null
-        );
+            cacheInfo.cacheData().cacheConfigurationEnrichment());
 
         ctx.discovery().setCacheFilter(
             cacheId,
@@ -2274,8 +2278,7 @@ public class ClusterCachesInfo {
         UUID rcvdFrom,
         IgniteUuid deploymentId,
         @Nullable byte[] encKey,
-        CacheConfigurationEnrichment cacheCfgEnrichment,
-        IgniteUuid restartId
+        CacheConfigurationEnrichment cacheCfgEnrichment
     ) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = cacheGroupByName(startedCacheCfg.getGroupName());
@@ -2322,9 +2325,6 @@ public class ClusterCachesInfo {
         assert old == null : old;
 
         ctx.discovery().addCacheGroup(grpDesc, grpDesc.config().getNodeFilter(), startedCacheCfg.getCacheMode());
-
-        if (exchActions != null)
-            exchActions.addCacheGroupToStart(grpDesc, restartId == null ? null : restartId.globalId());
 
         return grpDesc;
     }

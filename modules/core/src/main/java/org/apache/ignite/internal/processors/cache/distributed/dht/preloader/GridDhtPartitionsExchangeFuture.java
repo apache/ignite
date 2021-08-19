@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.expiry.EternalExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
@@ -132,7 +133,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Stream.concat;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
@@ -3394,47 +3394,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param top Topology to assign.
+     * @param top Topology to reset all states.
      */
-    private void partitionStatesNotChanged(GridDhtPartitionTopology top) {
+    private void resetAllPartitionStates(GridDhtPartitionTopology top) {
         assert crd.isLocal();
 
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            CachePartitionPartialCountersMap nodeCntrs = e.getValue().partitionUpdateCounters(top.groupId(),
-                top.partitions());
+        Map<Integer, CounterWithNodes> emptyCntrs = IntStream.range(0, top.partitions())
+            .boxed()
+            .collect(Collectors.toMap(p -> p, v -> new CounterWithNodes(0, 0L, null)));
 
-            // No counters received from the remote nodes.
-            assert nodeCntrs.isEmpty();
-        }
+        resetOwnersByCounter(top, emptyCntrs, emptySet());
 
-        for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
-
-            assert state == GridDhtPartitionState.MOVING;
-        }
-
-        top.globalPartSizes(emptyMap());
-
-        Collection<ClusterNode> affNodes = cctx.discovery().cacheGroupAffinityNodes(top.groupId(),
-            exchCtx.events().topologyVersion());
-        List<List<ClusterNode>> ideal = cctx.affinity().affinity(top.groupId()).idealAssignmentRaw();
+        Collection<ClusterNode> affNodes = cctx.discovery().cacheGroupAffinityNodes(top.groupId(), AffinityTopologyVersion.NONE);
 
         for (ClusterNode node : affNodes) {
-            GridDhtPartitionMap map = top.partitions(node.id());
+            for (Map.Entry<Integer, GridDhtPartitionState> e : top.partitions(node.id()).map().entrySet()) {
+                if (e.getValue() == GridDhtPartitionState.MOVING)
+                    continue;
 
-            for (Map.Entry<Integer, GridDhtPartitionState> e : map.entrySet()) {
-                assert e.getValue() == GridDhtPartitionState.MOVING;
-
-                partsToReload.put(node.id(), top.groupId(), e.getKey());
-
-                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
-                // Affinity manager tracks the version of the last changes affinity topology, so it's safe
-                // to add to wait groups with ZERO topology version.
-                cctx.cache().context().affinity().addToWaitGroup(
-                    top.groupId(),
-                    e.getKey(),
-                    AffinityTopologyVersion.ZERO,
-                    ideal.get(e.getKey()));
+                assert false : "Partitions must be set to MOVING state on all nodes [node=" + node.id() + ", state=" + e + ']';
             }
         }
     }
@@ -3533,11 +3511,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * If anyone of OWNING partitions have a counter less than maximum this partition changes state to MOVING forcibly.
      *
      * @param top Topology.
-     * @param maxCntrs Max counter partiton map.
+     * @param maxCntrs Max counter partition map.
      * @param haveHistory Set of partitions witch have historical supplier.
      */
-    private void resetOwnersByCounter(GridDhtPartitionTopology top,
-        Map<Integer, CounterWithNodes> maxCntrs, Set<Integer> haveHistory) {
+    private void resetOwnersByCounter(
+        GridDhtPartitionTopology top,
+        Map<Integer, CounterWithNodes> maxCntrs,
+        Set<Integer> haveHistory
+    ) {
         Map<Integer, Set<UUID>> ownersByUpdCounters = U.newHashMap(maxCntrs.size());
         Map<Integer, Long> partSizes = U.newHashMap(maxCntrs.size());
 
@@ -3966,21 +3947,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
 
                 if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
-                    if (exchActions != null) {
-                        Set<String> caches = exchActions.cachesToResetLostPartitions();
+                    assert exchActions != null;
 
-                        if (!F.isEmpty(caches))
-                            resetLostPartitions(caches);
+                    Set<String> caches = exchActions.cachesToResetLostPartitions();
 
-                        Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
-                                .map(grp -> grp.descriptor().groupId()),
-                            exchActions.cachesToResetLostPartitions().stream()
-                                .map(CU::cacheId))
-                            .collect(Collectors.toSet());
+                    if (!F.isEmpty(caches))
+                        resetLostPartitions(caches);
 
-                        assignPartitionsStates(cacheGroupsToResetOwners,
-                            exchActions.cacheGroupsToRestart(cctx.snapshotMgr().restoringId()));
-                    }
+                    Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
+                            .filter(d -> !d.resetAllStates())
+                            .map(grp -> grp.descriptor().groupId()),
+                        exchActions.cachesToResetLostPartitions().stream()
+                            .map(CU::cacheId))
+                        .collect(Collectors.toSet());
+
+                    assignPartitionsStates(cacheGroupsToResetOwners,
+                        exchActions.cacheGroupsToStart().stream()
+                            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
+                            .map(grp -> grp.descriptor().groupId())
+                            .collect(Collectors.toSet()));
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
                     && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions()) {
@@ -4293,10 +4278,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param cacheGroupsToResetOwners Set of cache groups which need to reset partitions state, null if reset partitions
      * state for all cache groups needed.
-     * @param fullReloadCacheGroups Set of cache groups which need to reset all partitions states and fully reload from
+     * @param cacheGroupsToResetAll Set of cache groups which need to reset all partitions states and fully reload from
      * external source.
      */
-    private void assignPartitionsStates(Set<Integer> cacheGroupsToResetOwners, Set<Integer> fullReloadCacheGroups) {
+    private void assignPartitionsStates(Set<Integer> cacheGroupsToResetOwners, Set<Integer> cacheGroupsToResetAll) {
         Map<String, List<SupplyPartitionInfo>> supplyInfoMap = log.isInfoEnabled() ?
             new ConcurrentHashMap<>() : null;
 
@@ -4314,8 +4299,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
                         List<SupplyPartitionInfo> list = emptyList();
 
-                        if (fullReloadCacheGroups.contains(grpDesc.groupId()))
-                            partitionStatesNotChanged(top);
+                        if (cacheGroupsToResetAll.contains(grpDesc.groupId()))
+                            resetAllPartitionStates(top);
                         else {
                             list = assignPartitionStates(top,
                                 cacheGroupsToResetOwners == null || cacheGroupsToResetOwners.contains(grpDesc.groupId()));
@@ -5677,11 +5662,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          * @param cnt Count.
          * @param firstNode Node ID.
          */
-        private CounterWithNodes(long cnt, @Nullable Long size, UUID firstNode) {
+        private CounterWithNodes(long cnt, @Nullable Long size, @Nullable UUID firstNode) {
             this.cnt = cnt;
             this.size = size != null ? size : 0;
 
-            nodes.add(firstNode);
+            if (firstNode != null)
+                nodes.add(firstNode);
         }
 
         /** {@inheritDoc} */

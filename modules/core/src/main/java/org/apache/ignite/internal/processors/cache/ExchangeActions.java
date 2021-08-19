@@ -24,10 +24,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -297,13 +295,13 @@ public class ExchangeActions {
     /**
      * @param grpDesc Group descriptor.
      */
-    void addCacheGroupToStart(CacheGroupDescriptor grpDesc, @Nullable UUID restartId) {
+    void addCacheGroupToStart(CacheGroupDescriptor grpDesc, @Nullable UUID restartId, boolean resetAllStates) {
         assert grpDesc != null;
 
         if (cacheGrpsToStart == null)
             cacheGrpsToStart = new ArrayList<>();
 
-        cacheGrpsToStart.add(new CacheGroupActionData(grpDesc, restartId));
+        cacheGrpsToStart.add(new CacheGroupActionData(grpDesc, false, restartId, resetAllStates));
     }
 
     /**
@@ -311,21 +309,6 @@ public class ExchangeActions {
      */
     public List<CacheGroupActionData> cacheGroupsToStart() {
         return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupActionData>emptyList();
-    }
-
-    /**
-     * @param restartId Unique restart id.
-     * @return List of cache groups which associated with given restart id.
-     */
-    public Set<Integer> cacheGroupsToRestart(UUID restartId) {
-        if (restartId == null || cacheGrpsToStart == null)
-            return Collections.emptySet();
-
-        return cacheGrpsToStart.stream()
-            .filter(g -> Objects.nonNull(g.restartId()))
-            .filter(g -> g.restartId().equals(restartId))
-            .map(g -> g.descriptor().groupId())
-            .collect(Collectors.toSet());
     }
 
     /**
@@ -370,7 +353,7 @@ public class ExchangeActions {
         if (cacheGrpsToStop == null)
             cacheGrpsToStop = new ArrayList<>();
 
-        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy, null));
+        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy, null, false));
     }
 
     /**
@@ -472,24 +455,21 @@ public class ExchangeActions {
         /** Restart requester id (it'll allow to start this cache only him). */
         private final UUID restartId;
 
+        /** {@code true} if starting cache must reset all partition states to MOVING. */
+        private final boolean resetAllStates;
+
         /**
          * @param desc Group descriptor
          * @param destroy Destroy flag
          * @param restartId Restart requester id (it'll allow to start this cache only him).
          */
-        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy, @Nullable UUID restartId) {
+        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy, @Nullable UUID restartId, boolean resetAllStates) {
             assert desc != null;
 
             this.desc = desc;
             this.destroy = destroy;
             this.restartId = restartId;
-        }
-
-        /**
-         * @param desc Group descriptor
-         */
-        CacheGroupActionData(CacheGroupDescriptor desc, UUID restartId) {
-            this(desc, false, restartId);
+            this.resetAllStates = resetAllStates;
         }
 
         /**
@@ -511,6 +491,13 @@ public class ExchangeActions {
          */
         public @Nullable UUID restartId() {
             return restartId;
+        }
+
+        /**
+         * @return {@code true} if starting cache must reset all partitions states to MOVING.
+         */
+        public boolean resetAllStates() {
+            return resetAllStates;
         }
     }
 
