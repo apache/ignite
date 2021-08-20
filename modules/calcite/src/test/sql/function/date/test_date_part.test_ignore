@@ -1,7 +1,6 @@
 # name: test/sql/function/date/test_date_part.test
 # description: DATE_PART test
 # group: [date]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14954
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
 
 statement ok
@@ -105,7 +104,7 @@ SELECT LAST_DAY(d::timestamp) FROM dates ORDER BY d;
 
 #  monthname
 query T
-SELECT MONTHNAME(d) FROM dates;
+SELECT MONTHNAME(d) FROM dates ORDER BY d;
 ----
 January
 March
@@ -113,7 +112,7 @@ May
 
 #  dayname
 query T
-SELECT DAYNAME(d) FROM dates;
+SELECT DAYNAME(d) FROM dates ORDER BY d;
 ----
 Wednesday
 Tuesday
