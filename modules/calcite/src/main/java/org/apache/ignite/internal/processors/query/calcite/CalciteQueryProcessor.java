@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityServ
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -93,6 +94,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     .build()
             )
         )
+        .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(
             SqlParser.config()
                 .withParserFactory(IgniteSqlParserImpl.FACTORY)
