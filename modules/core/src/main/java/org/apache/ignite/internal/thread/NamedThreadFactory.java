@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.raft.jraft.util;
+package org.apache.ignite.internal.thread;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,37 +24,82 @@ import org.apache.ignite.lang.IgniteLogger;
  * Named thread factory with prefix.
  */
 public class NamedThreadFactory implements ThreadFactory {
+    /** Logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(NamedThreadFactory.class);
 
-    private static final LogUncaughtExceptionHandler UNCAUGHT_EX_HANDLER = new LogUncaughtExceptionHandler();
+    /** LogUncaughtExceptionHandler is used as default handler for uncaught exceptions. */
+    private static final LogUncaughtExceptionHandler DFLT_LOG_UNCAUGHT_EX_HANDLER = new LogUncaughtExceptionHandler();
 
+    /** Thread prefix. */
     private final String prefix;
 
+    /** Thread counter. */
     private final AtomicInteger counter = new AtomicInteger(0);
+
+    /** Thread daemon flag. */
     private final boolean daemon;
 
+    /** Exception handler. */
+    private final Thread.UncaughtExceptionHandler eHnd;
+
+    /**
+     * Constructor
+     *
+     * @param prefix Thread name prefix.
+     */
     public NamedThreadFactory(String prefix) {
         this(prefix, false);
     }
 
+    /**
+     * Constructor
+     *
+     * @param prefix Thread name prefix.
+     * @param daemon Daemon flag.
+     */
     public NamedThreadFactory(String prefix, boolean daemon) {
+        this(prefix, daemon, DFLT_LOG_UNCAUGHT_EX_HANDLER);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param prefix Thread name prefix.
+     * @param daemon Daemon flag.
+     * @param eHnd Uncaught exception handler.
+     */
+    public NamedThreadFactory(String prefix, boolean daemon, Thread.UncaughtExceptionHandler eHnd) {
         super();
         this.prefix = prefix;
         this.daemon = daemon;
+        this.eHnd = eHnd != null ? eHnd : DFLT_LOG_UNCAUGHT_EX_HANDLER;
     }
 
-    @Override
-    public Thread newThread(Runnable r) {
+    /** {@inheritDoc} */
+    @Override public Thread newThread(Runnable r) {
         Thread t = new Thread(r);
+
         t.setDaemon(this.daemon);
-        t.setUncaughtExceptionHandler(UNCAUGHT_EX_HANDLER);
+        t.setUncaughtExceptionHandler(eHnd);
         t.setName(this.prefix + counter.getAndIncrement());
+
         return t;
     }
 
+    /**
+     * Create prefix for thread name.
+     */
+    public static String threadPrefix(String nodeName, String poolName) {
+        return "%" + nodeName + "%" + poolName + "-";
+    }
+
+    /**
+     * Print uncaught exceptions to log.
+     * Default handler of uncaught exceptions for thread pools.
+     */
     private static final class LogUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
-        @Override
-        public void uncaughtException(Thread t, Throwable e) {
+        /** {@inheritDoc} */
+        @Override public void uncaughtException(Thread t, Throwable e) {
             LOG.error("Uncaught exception in thread {}", e, t);
         }
     }

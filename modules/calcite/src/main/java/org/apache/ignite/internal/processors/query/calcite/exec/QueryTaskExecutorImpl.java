@@ -19,8 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-
-import org.apache.ignite.internal.processors.query.calcite.util.StripedThreadPoolExecutor;
+import org.apache.ignite.internal.thread.StripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 

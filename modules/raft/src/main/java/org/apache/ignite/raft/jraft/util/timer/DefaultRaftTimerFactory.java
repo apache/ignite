@@ -17,9 +17,9 @@
 package org.apache.ignite.raft.jraft.util.timer;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.core.Scheduler;
 import org.apache.ignite.raft.jraft.core.TimerManager;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 
 /**
  * RAFT timers and schedulers factory.

@@ -19,6 +19,7 @@ package org.apache.ignite.raft.jraft.util;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.util.timer.HashedWheelTimer;
 import org.apache.ignite.raft.jraft.util.timer.Timeout;

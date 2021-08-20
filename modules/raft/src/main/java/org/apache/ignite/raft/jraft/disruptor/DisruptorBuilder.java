@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.raft.jraft.disruptor;
 
+import java.util.concurrent.ThreadFactory;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import java.util.concurrent.ThreadFactory;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.Requires;
 
 /**

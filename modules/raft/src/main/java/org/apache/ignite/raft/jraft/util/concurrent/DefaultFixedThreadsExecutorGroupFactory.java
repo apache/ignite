@@ -18,7 +18,7 @@ package org.apache.ignite.raft.jraft.util.concurrent;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.Utils;
 

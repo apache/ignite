@@ -19,7 +19,7 @@ package org.apache.ignite.raft.jraft.core;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.ThreadPoolUtil;
 
 /**

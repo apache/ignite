@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.raft.jraft.disruptor;
 
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -23,11 +26,8 @@ import com.lmax.disruptor.ExceptionHandler;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 
 import static org.apache.ignite.lang.LoggerMessageHelper.format;
 

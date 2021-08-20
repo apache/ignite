@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.jraft.conf.Configuration;
 import org.apache.ignite.raft.jraft.core.FSMCallerImpl;
@@ -35,7 +36,6 @@ import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RpcOptions;
 import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.util.Endpoint;
-import org.apache.ignite.raft.jraft.util.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.ThreadPoolUtil;
 import org.apache.ignite.raft.jraft.util.Utils;
@@ -128,7 +128,10 @@ public final class JRaftUtils {
      * @return The executor.
      */
     public static ExecutorService createCommonExecutor(NodeOptions opts) {
-        return createExecutor("JRaft-Common-Executor-" + opts.getServerName() + "-", opts.getCommonThreadPollSize());
+        return createExecutor(
+            NamedThreadFactory.threadPrefix(opts.getServerName(), "JRaft-Common-Executor"),
+            opts.getCommonThreadPollSize()
+        );
     }
 
     /**
@@ -136,8 +139,10 @@ public final class JRaftUtils {
      * @return The executor.
      */
     public static FixedThreadsExecutorGroup createAppendEntriesExecutor(NodeOptions opts) {
-        return createStripedExecutor("JRaft-AppendEntries-Processor-" + opts.getServerName() + "-",
-            Utils.APPEND_ENTRIES_THREADS_POOL_SIZE, Utils.MAX_APPEND_ENTRIES_TASKS_PER_THREAD);
+        return createStripedExecutor(
+            NamedThreadFactory.threadPrefix(opts.getServerName(), "JRaft-AppendEntries-Processor"),
+            Utils.APPEND_ENTRIES_THREADS_POOL_SIZE, Utils.MAX_APPEND_ENTRIES_TASKS_PER_THREAD
+        );
     }
 
     /**
@@ -145,8 +150,10 @@ public final class JRaftUtils {
      * @return The executor.
      */
     public static ExecutorService createRequestExecutor(NodeOptions opts) {
-        return createExecutor("JRaft-Request-Processor-" + opts.getServerName() + "-",
-            opts.getRaftRpcThreadPoolSize());
+        return createExecutor(
+            NamedThreadFactory.threadPrefix(opts.getServerName(), "JRaft-Request-Processor"),
+            opts.getRaftRpcThreadPoolSize()
+        );
     }
 
     /**
@@ -155,7 +162,8 @@ public final class JRaftUtils {
      * @return The service.
      */
     public static ExecutorService createClientExecutor(RpcOptions opts, String name) {
-        String prefix = "JRaft-Response-Processor-" + name + "-";
+        String prefix = NamedThreadFactory.threadPrefix(name, "JRaft-Response-Processor");
+
         return ThreadPoolUtil.newBuilder()
             .poolName(prefix) //
             .enableMetric(true) //
@@ -172,7 +180,10 @@ public final class JRaftUtils {
      * @return The scheduler.
      */
     public static Scheduler createScheduler(NodeOptions opts) {
-        return new TimerManager(opts.getTimerPoolSize(), "JRaft-Node-Scheduler-" + opts.getServerName() + "-");
+        return new TimerManager(
+            opts.getTimerPoolSize(),
+            NamedThreadFactory.threadPrefix(opts.getServerName(), "JRaft-Node-Scheduler")
+        );
     }
 
     /**
