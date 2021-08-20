@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -43,6 +44,9 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /** Map of snapshot metadata information found on each cluster node. */
     protected final Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
+
+    /** Nodes on which the handlers were executed. */
+    protected final Set<UUID> hndNodes = new HashSet<>();
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -91,6 +95,8 @@ public abstract class AbstractSnapshotVerificationTask extends
 
                 jobs.put(createJob(meta.snapshotName(), meta.consistentId(), arg.cacheGroupNames()),
                     e.getKey());
+
+                hndNodes.add(e.getKey().id());
 
                 if (allMetas.isEmpty())
                     break;

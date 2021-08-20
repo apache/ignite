@@ -22,11 +22,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -74,11 +72,10 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         }
 
         String snapshotName = F.first(F.first(metas.values())).snapshotName();
-        Collection<UUID> nodeIds = F.viewReadOnly(metas.keySet(), ClusterNode::id);
 
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, nodeIds);
+                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, hndNodes);
         } catch (Exception e) {
             log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
 
