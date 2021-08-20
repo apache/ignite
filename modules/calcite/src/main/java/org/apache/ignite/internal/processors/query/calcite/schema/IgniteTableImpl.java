@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,6 +61,9 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
+
+    /** */
+    private volatile GridH2Table tbl;
 
     /**
      * @param ctx Kernal context.
@@ -85,7 +89,13 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
             new StatisticsKey(schemaName, tblName));
 
-        return (statistics == null) ? IgniteStatisticsImpl.EMPTY : new IgniteStatisticsImpl(statistics);
+        if (statistics != null)
+            return new IgniteStatisticsImpl(statistics);
+
+        if (tbl == null)
+            tbl = idx.schemaManager().dataTable(schemaName, tblName);
+
+        return new IgniteStatisticsImpl(tbl);
     }
 
     /** {@inheritDoc} */

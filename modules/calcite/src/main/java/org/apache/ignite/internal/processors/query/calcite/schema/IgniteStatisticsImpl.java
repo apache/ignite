@@ -24,16 +24,17 @@ import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
-    /** Instanse with empty statistics. */
-    public static IgniteStatisticsImpl EMPTY = new IgniteStatisticsImpl();
-
     /** Internal statistics implementation. */
     private final ObjectStatisticsImpl statistics;
+
+    /** Grid table. */
+    private final GridH2Table tbl;
 
     /**
      * Constructor.
@@ -42,18 +43,29 @@ public class IgniteStatisticsImpl implements Statistic {
      */
     public IgniteStatisticsImpl(ObjectStatisticsImpl statistics) {
         this.statistics = statistics;
+        tbl = null;
     }
 
     /**
      * Constructor.
+     *
+     * @param tbl Base grid table.
      */
-    private IgniteStatisticsImpl() {
+    public IgniteStatisticsImpl(GridH2Table tbl) {
         statistics = null;
+        this.tbl = tbl;
     }
 
     /** {@inheritDoc} */
     @Override public Double getRowCount() {
-        long rows = (statistics == null) ? 1000 : statistics.rowCount();
+        long rows;
+
+        if (statistics != null)
+            rows = statistics.rowCount();
+        else if (tbl != null)
+            rows = tbl.getRowCountApproximationNoCheck();
+        else
+            rows = 1000;
 
         return (double)rows;
     }
