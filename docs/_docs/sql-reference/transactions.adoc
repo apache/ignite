@@ -40,7 +40,7 @@ The `BEGIN`, `COMMIT` and `ROLLBACK` commands allow you to manage SQL Transactio
 The `ROLLBACK [TRANSACTION]` statement undoes all updates made since the last time a `COMMIT` or `ROLLBACK` command was issued.
 
 == Example
-Add a person and update the city population by 1 in a single transaction.
+Add a person and update the city population by 1 in a single transaction and commit it.
 
 [source,sql]
 ----
@@ -53,7 +53,8 @@ UPDATE City SET population = population + 1 WHERE id = 3;
 COMMIT;
 ----
 
-Roll back the changes made by the previous commands.
+
+Add a person, update the city population and then 
 
 [source,sql]
 ----
@@ -62,5 +63,7 @@ BEGIN;
 INSERT INTO Person (id, name, city_id) VALUES (1, 'John Doe', 3);
 
 UPDATE City SET population = population + 1 WHERE id = 3;
+
+ROLLBACK;
 ----
 
