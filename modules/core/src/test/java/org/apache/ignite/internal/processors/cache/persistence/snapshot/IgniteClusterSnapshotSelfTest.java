@@ -590,7 +590,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
 
-
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
