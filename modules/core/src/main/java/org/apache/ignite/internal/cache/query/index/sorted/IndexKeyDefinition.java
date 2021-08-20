@@ -47,7 +47,7 @@ public class IndexKeyDefinition {
         if (precision >= Integer.MAX_VALUE)
             this.precision = -1;
         else
-            this.precision = (int) precision;
+            this.precision = (int)precision;
     }
 
     /** */
