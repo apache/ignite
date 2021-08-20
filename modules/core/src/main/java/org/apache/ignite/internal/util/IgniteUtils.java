@@ -11032,7 +11032,7 @@ public abstract class IgniteUtils {
         if (ctx.persistenceEnabled())
             return ctx.walEnabled();
 
-        if(ctx.systemCache())
+        if (ctx.systemCache())
             return false;
 
         return ctx.dataRegion().config().isCdcEnabled() && ctx.walEnabled();
