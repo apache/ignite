@@ -295,11 +295,7 @@ public class TypeUtils {
     private static long fromLocalTs(ExecutionContext<?> ectx, long ts) {
         TimeZone tz = DataContext.Variable.TIME_ZONE.get(ectx);
 
-        if (tz.getID().startsWith("GMT") || tz.getID().startsWith("UTC"))
-            // Time-zones without DST clock shifts.
-            return ts - tz.getOffset(ts);
-        else
-            // Taking into account DST, offset can be changed after converting from UTC to time-zone.
-            return ts - tz.getOffset(ts - tz.getOffset(ts));
+        // Taking into account DST, offset can be changed after converting from UTC to time-zone.
+        return ts - tz.getOffset(ts - tz.getOffset(ts));
     }
 }
