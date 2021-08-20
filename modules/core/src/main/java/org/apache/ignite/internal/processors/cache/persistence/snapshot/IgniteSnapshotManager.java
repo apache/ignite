@@ -420,7 +420,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpReq = clusterSnpReq;
-                    String err = "Snapshot operation interrupted. One of baseline nodes left the cluster: " + leftNodeId;
+                    String err = "Snapshot operation interrupted, because baseline node left the cluster: " + leftNodeId;
 
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                         if (sctx.sourceNodeId().equals(leftNodeId) ||
@@ -737,10 +737,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpReq.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                     "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
             }
-            else if (!F.isEmpty(err) || !missed.isEmpty()) {
-                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails or them haven't been executed " +
-                    "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
-                    "[err=" + err + ", missed=" + missed + ']'));
+            else if (!F.isEmpty(err)) {
+                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
+                    "Uncompleted snapshot will be deleted [err=" + err + ']'));
+            }
+            else if (!missed.isEmpty()) {
+                snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
+                    "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
             }
             else if (completeHandlersAsyncIfNeeded(snpReq, res.values()))
                 return;
