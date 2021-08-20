@@ -38,7 +38,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- *
+ * Benchmark that intended for measuring time of partition restore on a node with non-uniform distribution of
+ * partitions count in different cache groups.
  */
 public class RestorePartitionStateBenchmark {
     /** */
