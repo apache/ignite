@@ -421,21 +421,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpReq = clusterSnpReq;
                     String err = "Snapshot operation interrupted. One of baseline nodes left the cluster: " + leftNodeId;
-                    boolean snpReqTaskFound = false;
 
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
-                        if ((!snpReqTaskFound && (snpReqTaskFound = (snpReq != null &&
-                            snpReq.snapshotName().equals(sctx.snapshotName()) &&
-                            snpReq.nodes().contains(leftNodeId)))) ||
-                            sctx.sourceNodeId().equals(leftNodeId))
+                        if (sctx.sourceNodeId().equals(leftNodeId) ||
+                            (snpReq != null &&
+                                snpReq.snapshotName().equals(sctx.snapshotName()) &&
+                                snpReq.nodes().contains(leftNodeId)))
                             sctx.acceptException(new ClusterTopologyCheckedException(err));
                     }
 
-                    // If the coordinator left the cluster and did not start the final
-                    // snapshot creation phase (SNAPSHOT_END), we start it from a new one.
-                    if (!snpReqTaskFound && snpReq != null && isLocalNodeCoordinator(cctx.discovery()) &&
-                        snpReq.nodes().contains(leftNodeId) && !snpReq.endStageStarted()) {
-                        snpReq.endStageStarted(true);
+                    // If the coordinator left the cluster and did not start
+                    // the final snapshot phase (SNAPSHOT_END), we start it from a new one.
+                    if (snpReq != null && snpReq.nodes().contains(leftNodeId) &&
+                        U.isLocalNodeCoordinator(ctx.discovery()) && snpReq.startStageEnded()) {
                         snpReq.error(new ClusterTopologyCheckedException(err));
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
@@ -728,6 +726,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
+        snpReq.startStageEnded(true);
+
         if (isLocalNodeCoordinator(cctx.discovery())) {
             Set<UUID> missed = new HashSet<>(snpReq.nodes());
             missed.removeAll(res.keySet());
@@ -802,8 +802,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
-
-        snpReq.endStageStarted(true);
 
         try {
             if (req.error() != null)

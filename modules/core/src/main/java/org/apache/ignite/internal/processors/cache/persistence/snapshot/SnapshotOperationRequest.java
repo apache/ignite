@@ -54,8 +54,8 @@ public class SnapshotOperationRequest implements Serializable {
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
 
-    /** Flag indicating that the {@link DistributedProcessType#END_SNAPSHOT} phase has been started. */
-    private transient volatile boolean endStageStarted;
+    /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
+    private transient volatile boolean startStageEnded;
 
     /**
      * @param reqId Request ID.
@@ -128,17 +128,17 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Flag indicating that the {@link DistributedProcessType#END_SNAPSHOT} phase has been started.
+     * @return Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
-    protected boolean endStageStarted() {
-        return endStageStarted;
+    protected boolean startStageEnded() {
+        return startStageEnded;
     }
 
     /**
-     * @param endStageStarted Flag indicating that the {@link DistributedProcessType#END_SNAPSHOT} phase has been started.
+     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
-    protected void endStageStarted(boolean endStageStarted) {
-        this.endStageStarted = endStageStarted;
+    protected void startStageEnded(boolean startStageEnded) {
+        this.startStageEnded = startStageEnded;
     }
 
     /** {@inheritDoc} */
