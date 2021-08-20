@@ -79,10 +79,14 @@ public class RestorePartitionStateBenchmark {
                 parts = 100;
             else if (i < 45)
                 parts = 200;
-            else if (i < 49)
+            else if (i < 50)
                 parts = 500;
-            else
+            else if (i < 55)
                 parts = 4_000;
+            else if (i < 58)
+                parts = 16_000;
+            else
+                parts = 32_000;
 
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, Integer>("cache" + i)
@@ -110,7 +114,7 @@ public class RestorePartitionStateBenchmark {
         // has restore taken.
         ignite = Ignition.start(getConfiguration("ignite"));
 
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         Ignition.stop(ignite.name(), false);
 
