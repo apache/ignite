@@ -745,10 +745,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
                     "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
             }
-            else if (completeHandlersAsyncIfNeeded(snpReq, res.values()))
-                return;
 
-            endSnpProc.start(snpReq.requestId(), snpReq);
+            completeHandlersAsyncIfNeeded(snpReq, res.values())
+                .listen(f -> {
+                        if (f.error() != null)
+                            snpReq.error(f.error());
+
+                        endSnpProc.start(snpReq.requestId(), snpReq);
+                    }
+                );
         }
     }
 
@@ -757,9 +762,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param req Request on snapshot creation.
      * @param res Results.
-     * @return {@code True} if the handlers will be executed asynchronously.
+     * @return Future that will be completed when the handlers are finished executing.
      */
-    private boolean completeHandlersAsyncIfNeeded(SnapshotOperationRequest req, Collection<SnapshotOperationResponse> res) {
+    private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperationRequest req,
+        Collection<SnapshotOperationResponse> res) {
+        if (req.error() != null)
+            return new GridFinishedFuture<>();
+
         Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
         for (SnapshotOperationResponse response : res) {
@@ -771,28 +780,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (clusterHndResults.isEmpty())
-            return false;
+            return new GridFinishedFuture<>();
 
         try {
+            GridFutureAdapter<Void> resultFut = new GridFutureAdapter<>();
+
             snapshotExecutorService().submit(() -> {
                 try {
                     handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
+
+                    resultFut.onDone();
                 }
                 catch (Exception e) {
-                    log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" +
-                        req.snapshotName() + "].", e);
+                    log.warning("The snapshot operation will be aborted due to a handler error " +
+                        "[snapshot=" + req.snapshotName() + "].", e);
 
-                    req.error(e);
+                    resultFut.onDone(e);
                 }
-
-                endSnpProc.start(req.requestId(), req);
             });
 
-            return true;
+            return resultFut;
         } catch (RejectedExecutionException e) {
-            req.error(e);
-
-            return false;
+            return new GridFinishedFuture<>(e);
         }
     }
 
