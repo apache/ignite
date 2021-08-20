@@ -88,12 +88,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     /** Base table with all types. */
     private TestTable tbl1;
 
-    /** */
-    private TestTable tbl2;
-
-    /** */
-    private TestTable tbl3;
-
     /** Equal to tbl1 with some complex indexes. */
     private TestTable tbl4;
 
@@ -102,14 +96,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
     /** */
     private IgniteStatisticsImpl tbl1stat;
-
-    /** */
-    private IgniteStatisticsImpl tbl2stat;
-
-    /** */
-    private IgniteStatisticsImpl tbl3stat;
-
-    private IgniteStatisticsImpl tbl4stat;
 
     /** {@inheritDoc} */
     @Before
@@ -172,7 +158,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
             tbl4.addIndex(new IgniteIndex(RelCollations.of(idx), name, null, tbl4));
         }
 
-        tbl4.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(6, 7)), "TBL1_SHORT_LONG", null, tbl4));
+        tbl4.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(6, 7)), "TBL4_SHORT_LONG", null, tbl4));
 
         HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
         colStat1.put("T1C1INT", new ColumnStatistics(ValueInt.get(1), ValueInt.get(1000),
@@ -213,38 +199,10 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
         tbl1stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(1000, colStat1));
 
-        tbl2 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("T2C1INT", f.createJavaType(Integer.class))
-                .add("T2C2STR", f.createJavaType(String.class))
-                .add("T2C3LONG", f.createJavaType(Long.class))
-                .add("T2C4DBL", f.createJavaType(Double.class))
-                .build())
-            .setDistribution(IgniteDistributions.affinity(0, "TBL2", "hash"));
-
-        tbl2.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl2));
-        tbl2.addIndex(new IgniteIndex(RelCollations.of(2), "TBL2_LONG", null, tbl2));
-
-        HashMap<String, ColumnStatistics> colStat2 = new HashMap<>();
-        colStat2.put("T2C1INT", new ColumnStatistics(ValueInt.get(1), ValueInt.get(1000),
-            0, 1000, 30000, 4, null, 1, 0));
-
-        tbl2stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(30000, colStat2));
-
-        tbl3 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("T3C1INT", f.createJavaType(Integer.class))
-                .add("T3C2STR", f.createJavaType(String.class))
-                .add("T3C3DBL", f.createJavaType(Double.class))
-                .build())
-            .setDistribution(IgniteDistributions.affinity(0, "TBL3", "hash"));
-        tbl3.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl3));
-
         publicSchema = new IgniteSchema("PUBLIC");
 
         publicSchema.addTable("TBL1", tbl1);
-        publicSchema.addTable("TBL2", tbl2);
-        publicSchema.addTable("TBL3", tbl3);
+        publicSchema.addTable("TBL4", tbl4);
     }
 
     /**
@@ -412,6 +370,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testIndexChoosingFromExpression() throws Exception {
+        tbl1.setStatistics(tbl1stat);
         // 1) for sum of two columns
         String sql = "select * from TBL1 where t1c7short + t1c8long > 55555";
 
@@ -428,6 +387,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testIndexChoosingFromSumConst() throws Exception {
+        tbl1.setStatistics(tbl1stat);
         String sql = "select * from TBL1 where t1c7short + 1 > 55555";
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
@@ -443,11 +403,22 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testIndexChoosingFromUnifunction() throws Exception {
+        tbl1.setStatistics(tbl1stat);
         String sql = "select * from TBL1 where abs(t1c7short) > 55555";
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
         IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
 
         assertNull(idxScan);
+    }
+
+    /**
+     * Check composite index wouldn't choosen.
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testCompositeIndexAvoid() throws Exception {
+        tbl4.setStatistics(tbl1stat);
+        checkIdxUsed("select * from TBL4 where t1c7short > 1 and t1c8long > 80000", "TBL4_T1C8LONG");
     }
 }
