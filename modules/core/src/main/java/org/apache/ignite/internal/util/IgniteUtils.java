@@ -11029,7 +11029,13 @@ public abstract class IgniteUtils {
      * @return {@code True} if {@link DataRecord} should be logged into WAL.
      */
     public static boolean isDataRecordsEnabled(CacheGroupContext ctx) {
-        return (ctx.persistenceEnabled() || ctx.dataRegion().config().isCdcEnabled()) && ctx.walEnabled();
+        if (ctx.persistenceEnabled())
+            return ctx.walEnabled();
+
+        if(ctx.systemCache())
+            return false;
+
+        return ctx.dataRegion().config().isCdcEnabled() && ctx.walEnabled();
     }
 
     /**

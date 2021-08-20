@@ -125,15 +125,9 @@ public class WalRecordsConsumer<K, V> {
             private CdcEvent transform(DataEntry e) {
                 UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
-                Object key = ue.unwrappedKey();
-                Object val = ue.unwrappedValue();
-
-                assert key != null;
-                assert val != null;
-
                 return new CdcEventImpl(
-                    key,
-                    val,
+                    ue.unwrappedKey(),
+                    ue.unwrappedValue(),
                     (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
                     e.partitionId(),
                     e.writeVersion(),
