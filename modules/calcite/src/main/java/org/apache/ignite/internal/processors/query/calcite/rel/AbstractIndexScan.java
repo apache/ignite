@@ -136,7 +136,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
                 selectivity -= 1 - selectivity0;
 
-                cost += Math.log(rows);
+                cost += Math.log(rows) * IgniteCost.ROW_COMPARISON_COST;
             }
 
             if (upperCondition() != null && lowerCondition() != null && !lowerCondition().equals(upperCondition())) {
