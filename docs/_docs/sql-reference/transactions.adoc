@@ -54,7 +54,7 @@ COMMIT;
 ----
 
 
-Add a person, update the city population and then 
+Add a person, update the city population and then roll back changes before committing them.
 
 [source,sql]
 ----
