@@ -785,7 +785,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             GridFutureAdapter<Void> resultFut = new GridFutureAdapter<>();
 
-            snapshotExecutorService().submit(() -> {
+            handlers().execSvc.submit(() -> {
                 try {
                     handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
 
