@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.ignite.cache.AutoReleaseSegmentSelfTest;
 import org.apache.ignite.cache.BreakRebalanceChainTest;
 import org.apache.ignite.cache.CircledRebalanceTest;
-import org.apache.ignite.cache.NoUnnecessaryRebalancesTest;
 import org.apache.ignite.cache.NotOptimizedRebalanceTest;
 import org.apache.ignite.cache.RebalanceAfterResettingLostPartitionTest;
 import org.apache.ignite.cache.RebalanceCancellationTest;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDu
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRestartAfterFailedToWriteMetaPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSpuriousRebalancingOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
+import org.apache.ignite.internal.processors.cache.persistence.NoUnnecessaryRebalancesTest;
 import org.apache.ignite.internal.processors.cache.persistence.PendingTreeCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;

@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -43,17 +41,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.TestStorageUtils.corruptDataEntry;
+import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
- * Tests check that unnecessary rebalances doesn't happen
+ * Tests check that unnecessary rebalances doesn't happen.
  */
 public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "testCache";
 
     /** */
-    private static final int nodeCount = 3;
+    private static final int NODE_COUNT = 3;
 
     /**
      * @return Grid test configuration.
@@ -62,11 +60,11 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCommunicationSpi(new SpecialSpi());
+        cfg.setCommunicationSpi(new RebalanceTrackingSpi());
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(200 * 1024 * 1024)
-        ));
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -77,7 +75,7 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoRebalancesOnCacheCreation() throws Exception {
-        startGrids(nodeCount);
+        startGrids(NODE_COUNT);
 
         Ignite g0 = grid(0);
 
@@ -96,13 +94,13 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
 
         GridCacheContext<Object, Object> cacheCtx0 = grid(0).cachex(CACHE_NAME + 0).context();
 
-        corruptDataEntry(cacheCtx0, 1, true, false, new GridCacheVersion(0, 0, 0), "broken");
+        corruptDataEntry(cacheCtx0, 1, true, false);
 
         g0.createCache(getCacheConfiguration(1));
 
         awaitPartitionMapExchange(true, true, null);
 
-        Assert.assertFalse(SpecialSpi.rebGrpIds.contains(CU.cacheId(CACHE_NAME + 0)));
+        Assert.assertFalse(RebalanceTrackingSpi.rebGrpIds.contains(CU.cacheId(CACHE_NAME + 0)));
     }
 
     /** */
@@ -115,28 +113,20 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
     /**
      * Wrapper of communication spi to detect on which cache groups rebalances were happened.
      */
-    public static class SpecialSpi extends TestRecordingCommunicationSpi {
+    public static class RebalanceTrackingSpi extends TestRecordingCommunicationSpi {
         /** Cache groups on which rebalances were happened */
-        public static final Set<Integer> rebGrpIds = new HashSet<>();
-
-        /** Lock object. */
-        private static final Object mux = new Object();
-
-        /** */
-        public static Set<Integer> allRebalances() {
-            synchronized (mux) {
-                return Collections.unmodifiableSet(rebGrpIds);
-            }
-        }
+        public static final Set<Integer> rebGrpIds = new ConcurrentSkipListSet<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+        @Override public void sendMessage(
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
             if (((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                GridDhtPartitionSupplyMessage supplyMsg = (GridDhtPartitionSupplyMessage) ((GridIoMessage)msg).message();
+                GridDhtPartitionSupplyMessage supplyMsg = (GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message();
 
-                synchronized (mux) {
-                    rebGrpIds.add(supplyMsg.groupId());
-                }
+                rebGrpIds.add(supplyMsg.groupId());
             }
 
             super.sendMessage(node, msg, ackC);
