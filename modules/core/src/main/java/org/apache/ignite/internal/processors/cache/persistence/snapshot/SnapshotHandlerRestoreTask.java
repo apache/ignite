@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -54,15 +55,18 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     @SuppressWarnings("rawtypes")
     @Nullable @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
+        Collection<UUID> execNodes = new ArrayList<>(results.size());
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null)
                 throw res.getException();
 
+            // Depending on the job mapping, we can get several different results from one node.
+            execNodes.add(res.getNode().id());
+
             Map<String, SnapshotHandlerResult> nodeDataMap = res.getData();
 
-            if (nodeDataMap == null)
-                continue;
+            assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
 
             for (Map.Entry<String, SnapshotHandlerResult> entry : nodeDataMap.entrySet()) {
                 String hndName = entry.getKey();
@@ -75,7 +79,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, hndNodes);
+                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes);
         } catch (Exception e) {
             log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
 
