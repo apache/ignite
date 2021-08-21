@@ -70,7 +70,7 @@ public interface SnapshotHandler<T> extends Extension {
                 continue;
 
             throw new IgniteCheckedException("Snapshot handler has failed. " + res.error().getMessage() +
-                "[snapshot=" + name +
+                " [snapshot=" + name +
                 ", handler=" + getClass().getName() +
                 ", nodeId=" + res.node().id() + "].", res.error());
         }
