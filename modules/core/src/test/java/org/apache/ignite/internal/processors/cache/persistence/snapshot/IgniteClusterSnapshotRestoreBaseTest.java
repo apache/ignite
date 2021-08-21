@@ -26,6 +26,15 @@ import org.apache.ignite.internal.IgniteEx;
  * Snapshot restore test base.
  */
 public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnapshotSelfTest {
+    /** Cache 1 name. */
+    protected static final String CACHE1 = "cache1";
+
+    /** Cache 2 name. */
+    protected static final String CACHE2 = "cache2";
+
+    /** Default shared cache group name. */
+    protected static final String SHARED_GRP = "shared";
+
     /** Cache value builder. */
     protected abstract Function<Integer, Object> valueBuilder();
 

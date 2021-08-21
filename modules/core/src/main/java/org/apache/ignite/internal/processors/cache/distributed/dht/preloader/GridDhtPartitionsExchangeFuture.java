@@ -3405,7 +3405,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         resetStateByCondition(IntStream.range(0, top.partitions()).boxed().collect(Collectors.toMap(part -> part, part -> emptySet())),
             state -> true,
-            AffinityTopologyVersion.NONE,
+            AffinityTopologyVersion.NONE, // The last major affinity version will be used (e.g. node left, node join event).
             top,
             emptySet(),
             (partId, nodeId) -> F.transform(ideal.get(partId), ClusterNode::id).contains(nodeId),

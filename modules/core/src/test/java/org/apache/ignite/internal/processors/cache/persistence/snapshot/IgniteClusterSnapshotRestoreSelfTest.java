@@ -87,15 +87,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Type name used for binary and SQL. */
     private static final String TYPE_NAME = "CustomType";
 
-    /** Cache 1 name. */
-    private static final String CACHE1 = "cache1";
-
-    /** Cache 2 name. */
-    private static final String CACHE2 = "cache2";
-
-    /** Default shared cache group name. */
-    private static final String SHARED_GRP = "shared";
-
     /** Cache value builder. */
     private Function<Integer, Object> valBuilder = String::valueOf;
 
@@ -117,7 +108,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         return valBuilder;
     }
 
-    // TODO add test when force affinity reassignment occurs during the restore procedure.
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {

@@ -37,6 +37,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -271,9 +272,32 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         Function<Integer, V> factory,
         CacheConfiguration<Integer, V>... ccfgs
     ) throws Exception {
-        for (int g = 0; g < grids; g++)
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
-                .setCacheConfiguration(ccfgs)));
+        return startGridsWithCache(grids, keys, factory, (id, cfg) -> cfg.getWorkDirectory(), ccfgs);
+    }
+
+    /**
+     * @param grids Number of ignite instances to start.
+     * @param keys Number of keys to create.
+     * @param factory Factory which produces values.
+     * @param <V> Cache value type.
+     * @return Ignite coordinator instance.
+     * @throws Exception If fails.
+     */
+    protected <V> IgniteEx startGridsWithCache(
+        int grids,
+        int keys,
+        Function<Integer, V> factory,
+        BiFunction<Integer, IgniteConfiguration, String> newWorkDir,
+        CacheConfiguration<Integer, V>... ccfgs
+    ) throws Exception {
+        for (int g = 0; g < grids; g++) {
+            IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(g))
+                .setCacheConfiguration(ccfgs));
+
+            cfg.setWorkDirectory(newWorkDir.apply(g, cfg));
+
+            startGrid(cfg);
+        }
 
         IgniteEx ig = grid(0);
 
