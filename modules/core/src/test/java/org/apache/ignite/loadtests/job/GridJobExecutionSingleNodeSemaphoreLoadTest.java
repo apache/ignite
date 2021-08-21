@@ -18,7 +18,7 @@
 package org.apache.ignite.loadtests.job;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -137,7 +138,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
                                 GridLoadTestUtils.appendLineToFile(
                                     outputFileName,
                                     "%s,%d",
-                                    GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                                    IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                                     avgTasksPerSec.get());
                             }
                             catch (IOException e) {

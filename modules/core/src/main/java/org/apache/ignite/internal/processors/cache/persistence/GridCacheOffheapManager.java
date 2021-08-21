@@ -121,6 +121,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -273,11 +274,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        List<CacheDataStore> destroyedStores = StreamSupport.stream(cacheDataStores().spliterator(), false)
-            .filter(CacheDataStore::destroyed)
-            .collect(Collectors.toList());
-
-        assert destroyedStores.isEmpty() : destroyedStores;
+        assert F.size(cacheDataStores().iterator(), CacheDataStore::destroyed) == 0;
 
         // Optimization: reducing the holding time of checkpoint write lock.
         syncMetadata(ctx, ctx.executor(), false);
