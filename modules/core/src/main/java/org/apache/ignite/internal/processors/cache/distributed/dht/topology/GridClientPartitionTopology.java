@@ -30,7 +30,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -59,8 +58,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
@@ -1260,10 +1259,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Set<Integer>> resetPartitionStates(
-        Map<Integer, Set<UUID>> ownersByUpdCounters,
+        Map<Integer, Set<UUID>> partsToReset,
+        Predicate<GridDhtPartitionState> statesToReset,
         Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut,
-        Predicate<GridDhtPartitionState> stateToReset
+        IgniteBiPredicate<Integer, UUID> rebCond
     ) {
         Map<UUID, Set<Integer>> res = new HashMap<>();
 
@@ -1271,20 +1271,17 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
         try {
             // Process remote partitions.
-            for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet()) {
-                int part = entry.getKey();
-                Set<UUID> newOwners = entry.getValue();
-
+            for (Integer part : partsToReset.keySet()) {
                 for (Map.Entry<UUID, GridDhtPartitionMap> remotes : node2part.entrySet()) {
                     UUID remoteNodeId = remotes.getKey();
                     GridDhtPartitionMap partMap = remotes.getValue();
 
                     GridDhtPartitionState state = partMap.get(part);
 
-                    if (state == null || !stateToReset.test(state))
+                    if (state == null || !statesToReset.test(state))
                         continue;
 
-                    if (!newOwners.contains(remoteNodeId)) {
+                    if (rebCond.apply(part, remoteNodeId)) {
                         partMap.put(part, MOVING);
 
                         partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
@@ -1295,27 +1292,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 }
             }
 
-            for (Map.Entry<UUID, Set<Integer>> entry : res.entrySet()) {
-                UUID nodeId = entry.getKey();
-                Set<Integer> partsToRebalance = entry.getValue();
-
-                if (!partsToRebalance.isEmpty()) {
-                    Set<Integer> historical = partsToRebalance.stream()
-                        .filter(haveHist::contains)
-                        .collect(Collectors.toSet());
-
-                    // Filter out partitions having WAL history.
-                    partsToRebalance.removeAll(historical);
-
-                    U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
-                        + "[grpId=" + grpId
-                        + ", nodeId=" + nodeId
-                        + ", partsFull=" + S.compact(partsToRebalance)
-                        + ", partsHistorical=" + S.compact(historical) + "]");
-                }
-            }
-
-            for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet())
+            for (Map.Entry<Integer, Set<UUID>> entry : partsToReset.entrySet())
                 part2node.put(entry.getKey(), entry.getValue());
 
             updateSeq.incrementAndGet();

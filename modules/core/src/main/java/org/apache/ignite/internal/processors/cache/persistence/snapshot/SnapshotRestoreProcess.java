@@ -856,7 +856,7 @@ public class SnapshotRestoreProcess {
                 return false;
         }
 
-        return false;
+        return true;
     }
 
     /**

@@ -128,6 +128,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -3400,11 +3401,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void resetAllPartitionStates(GridDhtPartitionTopology top) {
         assert crd.isLocal();
 
-        Map<Integer, CounterWithNodes> emptyCntrs = IntStream.range(0, top.partitions())
-            .boxed()
-            .collect(Collectors.toMap(p -> p, v -> new CounterWithNodes(0, 0L, null)));
+        List<List<ClusterNode>> ideal = cctx.affinity().affinity(top.groupId()).idealAssignmentRaw();
 
-        resetStateByCounter(top, AffinityTopologyVersion.NONE, emptyCntrs, emptySet(), s -> true);
+        resetStateByCondition(IntStream.range(0, top.partitions()).boxed().collect(Collectors.toMap(part -> part, part -> emptySet())),
+            state -> true,
+            AffinityTopologyVersion.NONE,
+            top,
+            emptySet(),
+            (partId, nodeId) -> F.transform(ideal.get(partId), ClusterNode::id).contains(nodeId),
+            IntStream.range(0, top.partitions()).boxed().collect(Collectors.toMap(p -> p, p -> 0L)));
 
         Collection<ClusterNode> affNodes = cctx.discovery().cacheGroupAffinityNodes(top.groupId(), AffinityTopologyVersion.NONE);
 
@@ -3502,8 +3507,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<SupplyPartitionInfo> list = assignHistoricalSuppliers(top, maxCntrs, varCntrs, haveHistory);
 
         if (resetOwners) {
-            resetStateByCounter(top, top.topologyVersionFuture().initialVersion(), maxCntrs, haveHistory,
-                s -> s == GridDhtPartitionState.OWNING);
+            resetStateByCondition(maxCntrs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().nodes)),
+                state -> state == GridDhtPartitionState.OWNING,
+                top.topologyVersionFuture().initialVersion(),
+                top,
+                haveHistory,
+                (partId, nodeId) -> !maxCntrs.get(partId).nodes.contains(nodeId),
+                maxCntrs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size)));
         }
 
         return list;
@@ -3516,29 +3526,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology.
      * @param resetVer Topology version to wait late affinity assignment to. If <tt>NONE</tt> is used then
      * the last topology version which requires affinity re-calculation is used.
-     * @param maxCntrs Max counter partition map.
      * @param haveHistory Set of partitions witch have historical supplier.
      */
-    private void resetStateByCounter(
-        GridDhtPartitionTopology top,
+    private void resetStateByCondition(
+        Map<Integer, Set<UUID>> partsToReset,
+        Predicate<GridDhtPartitionState> statesToReset,
         AffinityTopologyVersion resetVer,
-        Map<Integer, CounterWithNodes> maxCntrs,
+        GridDhtPartitionTopology top,
         Set<Integer> haveHistory,
-        Predicate<GridDhtPartitionState> stateToReset
+        IgniteBiPredicate<Integer, UUID> rebCond,
+        Map<Integer, Long> partSizes
     ) {
-        Map<Integer, Set<UUID>> ownersByUpdCounters = U.newHashMap(maxCntrs.size());
-        Map<Integer, Long> partSizes = U.newHashMap(maxCntrs.size());
-
-        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
-            ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
-
-            partSizes.put(e.getKey(), e.getValue().size);
-        }
+        Map<UUID, Set<Integer>> partsToRebalance = top.resetPartitionStates(partsToReset,
+            statesToReset,
+            haveHistory,
+            this,
+            rebCond);
 
         top.globalPartSizes(partSizes);
-
-        Map<UUID, Set<Integer>> partsToRebalance = top.resetPartitionStates(
-            ownersByUpdCounters, haveHistory, this, stateToReset);
 
         List<List<ClusterNode>> ideal = cctx.affinity().affinity(top.groupId()).idealAssignmentRaw();
 
@@ -3562,14 +3567,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", partsHistorical=" + S.compact(historical) + ']');
             }
 
-            // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
             for (Integer part : entry.getValue()) {
+                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
                 cctx.cache().context().affinity().addToWaitGroup(
                     top.groupId(),
                     part,
                     resetVer,
                     ideal.get(part));
 
+                // This map will be send to other nodes in the cluster inside the full message.
                 partsToReload.put(entry.getKey(), top.groupId(), part);
             }
         }
@@ -5695,12 +5701,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          * @param cnt Count.
          * @param firstNode Node ID.
          */
-        private CounterWithNodes(long cnt, @Nullable Long size, @Nullable UUID firstNode) {
+        private CounterWithNodes(long cnt, @Nullable Long size, UUID firstNode) {
             this.cnt = cnt;
             this.size = size != null ? size : 0;
 
-            if (firstNode != null)
-                nodes.add(firstNode);
+            nodes.add(firstNode);
         }
 
         /** {@inheritDoc} */
