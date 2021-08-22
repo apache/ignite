@@ -58,7 +58,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -123,6 +122,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  8. Check the partition reservation during the restore if a next exchange occurs (see message:
  *  Cache groups were not reserved [[[grpId=-903566235, grpName=shared], reason=Checkpoint was marked
  *  as inapplicable for historical rebalancing]])
+ *  9. Add cache destroy rollback procedure if loading was unsuccessful.
  *
  * Other strategies to be memento to:
  *
@@ -334,9 +334,6 @@ public class SnapshotRestoreProcess {
 
                 assert meta != null : entry.getKey().id();
 
-                if (!entry.getKey().consistentId().toString().equals(meta.consistentId()))
-                    continue;
-
                 if (snpBltNodes == null)
                     snpBltNodes = new HashSet<>(meta.baselineNodes());
 
@@ -355,18 +352,6 @@ public class SnapshotRestoreProcess {
             if (!reqGrpIds.isEmpty()) {
                 finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
                     "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                return;
-            }
-
-            Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-                node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
-
-            snpBltNodes.removeAll(bltNodes);
-
-            if (!snpBltNodes.isEmpty()) {
-                finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
-                    "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
 
                 return;
             }

@@ -120,6 +120,8 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
             }
         });
 
+        grid(0).cache(DEFAULT_CACHE_NAME).destroy();
+
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
@@ -200,7 +202,6 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
     private IgniteEx startDedicatedGrids(String prefix, int grids) throws Exception {
         for (int g = 0; g < grids; g++) {
             IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(g)));
-
             cfg.setWorkDirectory(CLUSTER_DIR.apply(prefix).apply(g, cfg));
 
             startGrid(cfg);
