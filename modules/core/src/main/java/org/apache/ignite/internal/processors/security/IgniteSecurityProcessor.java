@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -111,7 +110,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private IgniteSandbox sandbox;
 
     /** Node local security context ready future. */
-    private volatile IgniteInternalFuture<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
 
     /**
      * @param ctx Grid kernal context.
@@ -302,7 +301,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (!nodeSecCtxReadyFut.isDone()) {
-            ((GridFutureAdapter<SecurityContext>)nodeSecCtxReadyFut).onDone(new NodeStoppingException(
+            nodeSecCtxReadyFut.onDone(new NodeStoppingException(
                 "Failed to wait for local node security context initialization (grid is stopping)."));
         }
 
@@ -366,8 +365,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * {@inheritDoc}
      */
     @Override public @Nullable IgniteInternalFuture<?> onReconnected(
-        boolean clusterRestarted) throws IgniteCheckedException {
-        nodeSecCtxReadyFut = new GridFinishedFuture<>(localNodeContext());
+        boolean clusterRestarted
+    ) throws IgniteCheckedException {
+        nodeSecCtxReadyFut.reset();
+
+        initLocalContext();
 
         return secPrc.onReconnected(clusterRestarted);
     }
@@ -389,19 +391,22 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onLocalJoin() {
+        initLocalContext();
+    }
+
+    /** Initializes local security context. */
+    private void initLocalContext() {
         try {
-            ((GridFutureAdapter<SecurityContext>)nodeSecCtxReadyFut).onDone(localNodeContext());
+            nodeSecCtxReadyFut.onDone(nodeSecurityContext(
+                marsh,
+                U.resolveClassLoader(ctx.config()),
+                ctx.discovery().localNode()));
         }
         catch (Throwable e) {
-            ((GridFutureAdapter<SecurityContext>)nodeSecCtxReadyFut).onDone(e);
+            nodeSecCtxReadyFut.onDone(e);
 
             throw e;
         }
-    }
-
-    /** @return Local node context. */
-    private SecurityContext localNodeContext() {
-        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
     }
 
     /**
