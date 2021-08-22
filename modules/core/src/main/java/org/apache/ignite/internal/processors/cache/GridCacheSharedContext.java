@@ -293,6 +293,8 @@ public class GridCacheSharedContext<K, V> {
 
         stateAwareMgrs.add(snpMgr);
 
+        stateAwareMgrs.add(snapshotMgr);
+
         for (PluginProvider prv : kernalCtx.plugins().allProviders())
             if (prv instanceof IgniteChangeGlobalStateSupport)
                 stateAwareMgrs.add(((IgniteChangeGlobalStateSupport)prv));
@@ -391,8 +393,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size());
-            it.hasPrevious();) {
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
             GridCacheSharedManager<?, ?> mgr = it.previous();
 
             mgr.onDisconnected(reconnectFut);
@@ -759,7 +760,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Write ahead log manager.
      */
-    public IgniteWriteAheadLogManager wal() {
+    @Nullable public IgniteWriteAheadLogManager wal() {
         return walMgr;
     }
 
@@ -960,7 +961,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer, null);
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
         f.add(finishLocalTxsFuture);
         f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
@@ -982,7 +983,7 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code true} if waiting was successful.
      */
     public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node) {
-        return tm().finishLocalTxs(topVer, node);
+        return tm().recoverLocalTxs(topVer, node);
     }
 
     /**

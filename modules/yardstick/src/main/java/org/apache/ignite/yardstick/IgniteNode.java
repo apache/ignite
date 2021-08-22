@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -98,6 +99,11 @@ public class IgniteNode implements BenchmarkServer {
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
+        if (!F.isEmpty(args.systemProperties())) {
+            for (Map.Entry<String, String> entry : args.systemProperties().entrySet())
+                System.setProperty(entry.getKey(), entry.getValue());
+        }
+
         if (args.clientNodesAfterId() >= 0 && cfg.memberId() > args.clientNodesAfterId())
             clientMode = true;
 
@@ -107,7 +113,7 @@ public class IgniteNode implements BenchmarkServer {
 
         assert c != null;
 
-        if (args.cleanWorkDirectory())
+        if (args.cleanWorkDirectory() && !clientMode)
             FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
 
         ApplicationContext appCtx = tup.get2();

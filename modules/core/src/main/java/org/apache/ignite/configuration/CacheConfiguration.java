@@ -358,6 +358,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
+    @SerializeSeparately
     private CacheInterceptor<K, V> interceptor;
 
     /** */
@@ -2416,7 +2417,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      * @see #setDiskPageCompressionLevel
      */
-    public CacheConfiguration<K,V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
+    public CacheConfiguration<K, V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
         this.diskPageCompression = diskPageCompression;
 
         return this;
@@ -2439,7 +2440,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K,V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
+    public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
 
         return this;

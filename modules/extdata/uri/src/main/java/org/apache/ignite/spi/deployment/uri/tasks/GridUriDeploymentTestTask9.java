@@ -17,15 +17,14 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * URI deployment test task which loads Spring bean definitions from spring9.xml configuration file.

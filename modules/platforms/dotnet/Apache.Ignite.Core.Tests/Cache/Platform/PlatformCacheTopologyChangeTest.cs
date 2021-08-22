@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Communication.Tcp;
-    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Lifecycle;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests platform cache behavior when cluster topology changes.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class PlatformCacheTopologyChangeTest
     {
         /** */
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             Ignition.StopAll(true);
         }
-        
+
         /// <summary>
         /// Tests that platform cache is cleared for the key when primary node leaves.
         /// </summary>
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.Throws<KeyNotFoundException>(() => _cache[0].Get(Key3));
             Assert.Throws<KeyNotFoundException>(() => _cache[1].Get(Key3));
             Assert.Throws<KeyNotFoundException>(() => clientCache.Get(Key3));
-            
+
             // Check that updates for that key work on all nodes.
             _cache[0][Key3] = new Foo(1);
             Assert.AreEqual(1, _cache[0][Key3].Bar);
@@ -94,12 +94,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreSame(_cache[0][Key3], _cache[0][Key3]);
             Assert.AreSame(_cache[1][Key3], _cache[1][Key3]);
             Assert.AreSame(clientCache[Key3], clientCache[Key3]);
-            
+
             _cache[1][Key3] = new Foo(2);
             TestUtils.WaitForTrueCondition(() => _cache[0][Key3].Bar == 2, 500);
             Assert.AreEqual(2, _cache[0][Key3].Bar);
             Assert.AreEqual(2, _cache[1][Key3].Bar);
-            
+
             TestUtils.WaitForTrueCondition(() => clientCache[Key3].Bar == 2);
             Assert.AreSame(_cache[0][Key3], _cache[0][Key3]);
             Assert.AreSame(_cache[1][Key3], _cache[1][Key3]);
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestPrimaryNodeChangeClearsPlatformCacheDataOnServer()
         {
             InitNodes(2);
-            
+
             _cache[0][Key3] = new Foo(-1);
             for (var i = 0; i < 2; i++)
             {
@@ -123,33 +123,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             // New node enters and becomes primary for the key.
             InitNode(2);
-            
+
             // GridCacheNearEntry does not yet exist on old primary node, so platform cache data is removed on .NET side.
-            Foo foo;
-            Assert.IsFalse(_cache[0].TryLocalPeek(Key3, out foo, CachePeekMode.Platform));
-            Assert.IsFalse(_cache[1].TryLocalPeek(Key3, out foo, CachePeekMode.Platform));
-            
+            Foo unused;
+            Assert.IsFalse(_cache[0].TryLocalPeek(Key3, out unused, CachePeekMode.Platform));
+            Assert.IsFalse(_cache[1].TryLocalPeek(Key3, out unused, CachePeekMode.Platform));
+
             // Check value on the new node: it should be already in platform cache, because key is primary.
             Assert.AreEqual(-1, _cache[2].LocalPeek(Key3, CachePeekMode.Platform).Bar);
             Assert.AreEqual(-1, _cache[2][Key3].Bar);
             Assert.AreSame(_cache[2][Key3], _cache[2][Key3]);
-            
+
             // Check that updates are propagated to all server nodes.
             _cache[2][Key3] = new Foo(3);
-            
+
             for (var i = 0; i < 3; i++)
             {
                 TestUtils.WaitForTrueCondition(() => _cache[i][Key3].Bar == 3);
                 Assert.AreSame(_cache[i][Key3], _cache[i][Key3]);
             }
         }
-        
+
         /// <summary>
         /// Tests that platform cache works correctly on client node after primary node changes for a given key.
         /// </summary>
         [Test]
         public void TestPrimaryNodeChangeClearsPlatformCacheDataOnClient(
-            [Values(PlatformCheckMode.Entries, PlatformCheckMode.Peek, PlatformCheckMode.Size, PlatformCheckMode.TryPeek)] 
+            [Values(PlatformCheckMode.Entries, PlatformCheckMode.Peek, PlatformCheckMode.Size, PlatformCheckMode.TryPeek)]
             PlatformCheckMode checkMode)
         {
             InitNodes(2);
@@ -159,10 +159,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             var clientInstance = clientCache[Key3];
             Assert.AreEqual(-1, clientInstance.Bar);
-            
+
             // New node enters and becomes primary for the key.
             InitNode(2);
-            
+
             // Client node cache is cleared.
             // Check with different methods: important because every method calls entry validation separately
             // (covers all PlatformCache.IsValid calls).
@@ -171,27 +171,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 case PlatformCheckMode.Peek:
                     Assert.Throws<KeyNotFoundException>(() => clientCache.LocalPeek(Key3, CachePeekMode.Platform));
                     break;
-                
+
                 case PlatformCheckMode.TryPeek:
                     Foo _;
                     Assert.IsFalse(clientCache.TryLocalPeek(Key3, out _, CachePeekMode.Platform));
                     break;
-                
+
                 case PlatformCheckMode.Size:
                     Assert.AreEqual(0, clientCache.GetLocalSize(CachePeekMode.Platform));
                     break;
-                
+
                 case PlatformCheckMode.Entries:
                     Assert.AreEqual(0, clientCache.GetLocalEntries(CachePeekMode.Platform).Count());
                     break;
-                
+
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("checkMode", checkMode, "Invalid check mode");
             }
-            
+
             // Updates are propagated to client platform cache.
             _cache[2][Key3] = new Foo(3);
-            
+
             TestUtils.WaitForTrueCondition(() => clientCache[Key3].Bar == 3);
 
             Foo foo;
@@ -211,19 +211,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             InitNodes(2);
             var clientCache = InitClientAndCache();
             var serverCache = _cache[0];
-            
+
             serverCache[key] = new Foo(-1);
             Assert.AreEqual(-1, clientCache[key].Bar);
-            
+
             var clientInstance = clientCache[key];
             var serverInstance = serverCache[key];
-            
+
             // New node enters, but key stays on the same primary node.
             InitNode(2);
 
             Assert.AreSame(clientInstance, clientCache[key]);
             Assert.AreSame(serverInstance, serverCache[key]);
-            
+
             Assert.AreEqual(-1, clientInstance.Bar);
             Assert.AreEqual(-1, serverInstance.Bar);
         }
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             InitNodes(2);
             _cache[2] = InitClientAndCache();
-            
+
             TestUtils.WaitForTrueCondition(() => TestUtils.GetPrimaryKey(_ignite[1], CacheName) == 1, 3000);
 
             Action<Action<ICache<int, Foo>, int>> forEachCacheAndKey = act =>
@@ -253,8 +253,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
 
             Action<int> putData = offset => forEachCacheAndKey((cache, key) => cache[key] = new Foo(key + offset));
-            
-            Action<int> checkPlatformData = offset => forEachCacheAndKey((cache, key) => 
+
+            Action<int> checkPlatformData = offset => forEachCacheAndKey((cache, key) =>
                 Assert.AreEqual(key + offset, cache.LocalPeek(key, CachePeekMode.Platform).Bar));
 
             // Put data and verify platform cache.
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             checkPlatformData(1);
             putData(2);
             checkPlatformData(2);
-            
+
             Assert.AreEqual(3, _cache[0][1].Bar);
         }
 
@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 // Change topology randomly.
                 var idx = rnd.Next(1, 5);
                 Console.WriteLine(">>> Changing topology: " + idx);
-                
+
                 if (_ignite[idx] == null)
                 {
                     InitNode(idx, waitForPrimary: false);
@@ -313,9 +313,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 var dataLost = serverCache.GetSize(CachePeekMode.Primary | CachePeekMode.Backup) == 0;
                 var status = string.Format("Node {0}: {1}, data lost: {2}, current val: {3}",
                     _ignite[idx] == null ? "stopped" : "started", idx, dataLost, val);
-                
+
                 Console.WriteLine(">>> " + status);
-                
+
                 // Verify data.
                 if (dataLost)
                 {
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     Assert.AreEqual(val, serverCache[key].Bar, status);
                     Assert.AreEqual(val, clientCache[key].Bar, status);
                 }
-                
+
                 // Update data and verify.
                 val++;
                 (val % 2 == 0 ? serverCache : clientCache)[key] = new Foo(val);
@@ -346,45 +346,45 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             InitNodes(1);
             var clientCache = InitClientAndCache();
             var client = Ignition.GetAll().Single(c => c.GetConfiguration().ClientMode);
-            
+
             var keys = Enumerable.Range(1, 100).ToList();
             keys.ForEach(k => clientCache[k] = new Foo(k));
             Assert.AreEqual(keys.Count, clientCache.GetLocalSize(CachePeekMode.Platform));
             Assert.IsNotNull(clientCache.GetConfiguration().NearConfiguration);
-            
+
             // Stop the only server node, client goes into disconnected mode.
             var evt = new ManualResetEventSlim(false);
-            client.ClientDisconnected += (sender, args) => evt.Set(); 
-            
+            client.ClientDisconnected += (sender, args) => evt.Set();
+
             StopNode(0);
             Assert.IsTrue(evt.Wait(TimeSpan.FromSeconds(10)), "ClientDisconnected event should be fired");
-            
+
             var reconnectTask = client.GetCluster().ClientReconnectTask;
-            
+
             // Start server again, client reconnects.
             InitNodes(1);
             Assert.IsTrue(reconnectTask.Wait(TimeSpan.FromSeconds(10)));
-            
+
             // Platform cache is empty.
             Assert.AreEqual(0, clientCache.GetLocalSize(CachePeekMode.Platform));
             Assert.IsEmpty(clientCache.GetLocalEntries(CachePeekMode.Platform));
             Assert.Throws<KeyNotFoundException>(() => clientCache.LocalPeek(1, CachePeekMode.Platform));
-            
+
             // Cache still works for new entries, platform cache is being bypassed.
             var serverCache = _cache[0];
-            
+
             serverCache[1] = new Foo(11);
             Assert.AreEqual(11, clientCache[1].Bar);
-            
+
             serverCache[1] = new Foo(22);
-            
+
             var foo = clientCache[1];
             Assert.AreEqual(22, foo.Bar);
             Assert.AreNotSame(foo, clientCache[1]);
-            
-            // This is a full cluster restart, so client platform cache is stopped. 
+
+            // This is a full cluster restart, so client platform cache is stopped.
             Assert.IsNull(clientCache.GetConfiguration().NearConfiguration);
-            
+
             var ex = Assert.Throws<CacheException>(() =>
                 client.GetOrCreateNearCache<int, Foo>(clientCache.Name, new NearCacheConfiguration()));
             StringAssert.Contains("cache with the same name without near cache is already started", ex.Message);
@@ -417,12 +417,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var clientCache = client.GetOrCreateNearCache<int, Foo>(CacheName, new NearCacheConfiguration());
             clientCache[1] = new Foo(2);
             Assert.AreEqual(2, clientCache.LocalPeek(1, CachePeekMode.Platform).Bar);
-            
+
             PerformClientReconnect(client);
-            
+
             // Platform cache data is removed after disconnect.
             Assert.AreEqual(0, clientCache.GetLocalSize(CachePeekMode.Platform));
-            
+
             // Updates work as expected.
             Assert.AreEqual(2, clientCache[1].Bar);
             serverCache[1] = new Foo(33);
@@ -438,15 +438,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             InitNodes(1);
             var cache = InitClientAndCache();
-            
+
             cache[1] = new Foo(1);
-            
+
             // Change topology by starting a new cache.
             _ignite[0].CreateCache<int, int>("x");
 
             var foo = cache.Get(1);
             Assert.AreEqual(1, foo.Bar);
-            
+
             // Warmup.
             for (var i = 0; i < 100; i++)
             {
@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             const int count = 1000000;
             var sw = Stopwatch.StartNew();
-            
+
             for (var i = 0; i < count; i++)
             {
                 var res = cache.Get(1);
@@ -464,10 +464,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     Assert.Fail();
                 }
             }
-            
+
             var elapsed = sw.Elapsed;
             Assert.Less(elapsed, TimeSpan.FromSeconds(5));
-            
+
             Console.WriteLine(">>> Retrieved {0} entries in {1}.", count, elapsed);
         }
 
@@ -477,7 +477,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private void InitNodes(int count, bool serverNear = true, int backups = 0)
         {
             Debug.Assert(count < MaxNodes);
-            
+
             _ignite = new IIgnite[MaxNodes];
             _cache = new ICache<int, Foo>[MaxNodes];
 
@@ -498,17 +498,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 PlatformCacheConfiguration = serverNear ? new PlatformCacheConfiguration() : null,
                 Backups = backups
             };
-            
+
             _ignite[i] = Ignition.Start(TestUtils.GetTestConfiguration(name: "node" + i));
             _cache[i] = _ignite[i].GetOrCreateCache<int, Foo>(cacheConfiguration);
-            
+
             if (i == 2 && waitForPrimary)
             {
                 // ReSharper disable once AccessToDisposedClosure
                 TestUtils.WaitForTrueCondition(() => TestUtils.GetPrimaryKey(_ignite[2], CacheName) == Key3, 300000);
             }
         }
-        
+
         /// <summary>
         /// Inits a client node and a near cache on it.
         /// </summary>
@@ -531,7 +531,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             return Ignition.Start(cfg);
         }
-        
+
         /// <summary>
         /// Stops node.
         /// </summary>
@@ -539,12 +539,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             _ignite[idx].Dispose();
             _ignite[idx] = null;
-        }
-        
-        private static void ResumeThreads(string gridName)
-        {
-            CallStringMethod(gridName, "org/apache/ignite/platform/PlatformThreadUtils", "resume",
-                "(Ljava/lang/String;)V");
         }
 
         private static void PerformClientReconnect(IIgnite client)
@@ -562,9 +556,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
 
             var gridName = string.Format("%{0}%", client.Name);
-            SuspendThreads(gridName);
-            Thread.Sleep(7000);
-            ResumeThreads(gridName);
+            TestUtilsJni.SuspendThreads(gridName);
+            Thread.Sleep(9000);
+            TestUtilsJni.ResumeThreads(gridName);
 
             Assert.Catch(() => client.CreateCache<int, int>("_fail").Put(1, 1));
 
@@ -576,28 +570,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             Assert.IsTrue(reconnected);
             Assert.IsFalse(reconnectEventArgs.HasClusterRestarted);
-        }
-
-        private static void SuspendThreads(string gridName)
-        {
-            CallStringMethod(gridName, "org/apache/ignite/platform/PlatformThreadUtils", "suspend",
-                "(Ljava/lang/String;)V");
-        }
-
-        private static unsafe void CallStringMethod(string gridName, string className, string methodName, string methodSig)
-        {
-            var env = Jvm.Get().AttachCurrentThread();
-            using (var cls = env.FindClass(className))
-            {
-                var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
-                using (var gridNameRef = env.NewStringUtf(gridName))
-                {
-                    var args = stackalloc long[1];
-                    args[0] = gridNameRef.Target.ToInt64();
-
-                    env.CallStaticVoidMethod(cls, methodId, args);
-                }
-            }
         }
 
         /// <summary>

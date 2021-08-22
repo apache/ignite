@@ -1,0 +1,175 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Application Deployment Options
+
+== Overview
+
+Apache Ignite.NET consists of .NET assemblies and Java jar files. The .NET assemblies are referenced by your project and
+are copied to an output folder during the build automatically. The JAR files can be handled automatically or manually, depending on the approach.
+Ignite.NET discovers them via the `IgniteHome` or `JvmClasspath` settings.
+
+This page introduces several most-commonly used deployment options of Ignite.NET nodes.
+
+== NuGet Deployment
+
+`Apache.Ignite` NuGet package includes a `lib` folder with all the required jar files. This folder has
+the `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` build action, and is copied automatically to the output directory
+during the build or publish process.
+
+Make sure `IGNITE_HOME` is not set globally. Normally you don't need to set `IGNITE_HOME` with NuGet, except for
+ASP.NET deployments (see below).
+
+To disable this default build action, add the `<ExcludeAssets>build</ExcludeAssets>` https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets[property] to the corresponding `<PackageReference>` in your `.csproj` file.
+This can be useful for thin client use cases and custom deployments.
+
+[tabs]
+--
+tab:MyApp.csproj[]
+[source,xml]
+----
+<Project Sdk="Microsoft.NET.Sdk">
+    ...
+
+    <ItemGroup>
+      <PackageReference Include="Apache.Ignite" Version="2.9.1">
+          <ExcludeAssets>build</ExcludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>
+----
+--
+
+== Single File Deployment
+
+Ignite.NET supports link:https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file[single file deployment] that is available in .NET Core 3 / .NET 5+.
+
+* Use the `IncludeAllContentForSelfExtract` MSBuild property to include jar files into the single-file bundle, or ship them separately.
+* See xref:net-troubleshooting.adoc#libcoreclr-not-found[Troubleshooting: DllNotFoundException] for a workaround that is required
+on .NET 5 with some Ignite versions.
+
+Publish command example:
+
+`dotnet publish --self-contained true -r linux-x64 -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true`
+
+== Full Binary Package Deployment
+
+* Copy the https://ignite.apache.org/download.cgi#binaries[whole Ignite distribution package, window=_blank] along with your application
+* Set the `IGNITE_HOME` environment variable or `IgniteConfiguration.IgniteHome` setting to point to that folder
+
+== Custom Deployment
+
+The JAR files are located in the `libs` folder of the binary distribution and NuGet package.
+The minimum set of jars for Ignite.NET is:
+
+* `ignite-core-{VER}.jar`
+* `cache-api-1.0.0.jar`
+* `ignite-indexing` folder (if SQL queries are used)
+* `ignite-spring` folder (if a Spring XML configuration is used)
+
+=== Deploying JARs to a default location:
+
+* Copy the JAR files to the `libs` folder next to Apache.Ignite.Core.dll
+* Do not set the `IgniteConfiguration.JvmClasspath`, `IgniteConfiguration.IgniteHome` properties and `IGNITE_HOME` environment variable
+
+=== Deploying jar files to an arbitrary location:
+
+* Copy the JAR files somewhere
+* Set the `IgniteConfiguration.JvmClasspath` property to a semicolon-separated string of paths for each jar file
+* Do not set the `IGNITE_HOME` environment variable and `IgniteConfiguration.IgniteHome` property
+
+[tabs]
+--
+tab:IgniteConfiguration.JvmClasspath Example[]
+[source,shell]
+----
+c:\ignite-jars\ignite-core-1.5.0.final.jar;c:\ignite-jars\cache-api-1.0.0.jar
+----
+--
+
+== ASP.NET Deployment
+
+`JvmClasspath` or `IgniteHome` have to be explicitly set when using Ignite in a web environment (IIS and IIS Express),
+because DDL files are copied to temporary folders, and Ignite can not locate JAR files automatically.
+
+You can set `IgniteHome` like this in ASP.NET environment:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+Ignition.Start(new IgniteConfiguration
+{
+    IgniteHome = HttpContext.Current.Server.MapPath(@"~\bin\")
+});
+----
+--
+
+Alternatively, `IGNITE_HOME` can be set globally. Add this line at the top of the `Application_Start` method in `Global.asax.cs`:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+Environment.SetEnvironmentVariable("IGNITE_HOME", HttpContext.Current.Server.MapPath(@"~\bin\"));
+----
+--
+
+Finally, you can use the following method to populate `JvmClasspath`:
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+static string GetDefaultWebClasspath()
+{
+    var dir = HttpContext.Current.Server.MapPath(@"~\bin\libs");
+
+    return string.Join(";", Directory.GetFiles(dir, "*.jar"));
+}
+----
+--
+
+== IIS Application Pool Lifecycle, AppDomains, and Ignite.NET
+
+There is a known problem with IIS. When a web application is restarted due to code changes or a manual restart,
+the application pool process remains alive, while AppDomain gets recycled.
+
+Ignite.NET automatically stops when AppDomain is unloaded. However, a new domain may be started when old one is still
+unloading. So the node from the old domain can have an `IgniteConfiguration.IgniteInstanceName` conflict with a node from the new domain.
+
+To fix this issue make sure to either assign a unique `IgniteInstanceName`, or set
+`IgniteConfiguration.AutoGenerateIgniteInstanceName` property to `true`.
+
+[tabs]
+--
+tab:Use in C#[]
+[source,csharp]
+----
+var cfg = new IgniteConfiguration { AutoGenerateIgniteInstanceName = true };
+----
+tab:web.config[]
+[source,xml]
+----
+<igniteConfiguration autoGenerateIgniteInstanceName="true">
+  ...
+</igniteConfiguration>
+----
+--
+
+Refer to the http://stackoverflow.com/questions/42961879/how-do-i-retrieve-a-started-ignite-instance-when-a-website-restart-occurs-in-iis/[following StackOverflow discussion, window=_blank]
+for more details.

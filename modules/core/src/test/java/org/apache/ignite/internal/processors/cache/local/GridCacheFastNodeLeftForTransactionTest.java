@@ -17,20 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -39,9 +30,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -50,8 +42,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
@@ -60,7 +50,6 @@ import static java.util.stream.IntStream.range;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.internal.commandline.CommandHandler.initLogger;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -108,6 +97,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setMvccVacuumFrequency(1000)
             .setCacheConfiguration(createCacheConfigs())
             .setGridLogger(listeningLog)
             .setConnectorConfiguration(new ConnectorConfiguration());
@@ -193,14 +183,10 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
             int stoppedNodeId = 2;
 
-            stopGrid(stoppedNodeId);
-
-            CountDownLatch latch = new CountDownLatch(1);
+            stopGrid(grid(stoppedNodeId).name(), false, false);
 
             GridTestUtils.runAsync(() -> {
-                latch.countDown();
-
-                IgniteCache<Object, Object> clientCache = clientNode.cache(DEFAULT_CACHE_NAME);
+                IgniteCache<Object, Object> clientCache = clientNode.cache(cacheName);
 
                 txKeys.forEach(clientCache::get);
             });
@@ -208,8 +194,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
             LogListener logLsnr = newLogListener();
 
             listeningLog.registerListener(logLsnr);
-
-            latch.await();
 
             for (Transaction tx : txs)
                 tx.rollback();
@@ -244,51 +228,22 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         assertTrue(logLsnr.check());
 
-        startGrid(stoppedNodeId);
+        IgniteEx stoppedNode = startGrid(stoppedNodeId);
 
         awaitPartitionMapExchange();
 
+        // Wait for vacuum.
+        doSleep(2000);
+
         checkCacheData(cacheValues, cacheName);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IdleVerifyResultV2 idleVerifyResV2 = idleVerify(stoppedNode, null);
 
-        PrintStream sysOut = System.out;
+        SB sb = new SB();
 
-        try (PrintStream out = new PrintStream(baos)) {
-            System.setOut(out);
+        idleVerifyResV2.print(sb::a, true);
 
-            Logger cmdLog = createTestLogger(baos);
-            CommandHandler cmdHnd = new CommandHandler(cmdLog);
-
-            cmdHnd.execute(asList("--cache", "idle_verify"));
-
-            stream(cmdLog.getHandlers()).forEach(Handler::flush);
-
-            assertContains(listeningLog, baos.toString(), "no conflicts have been found");
-        }
-        finally {
-            System.setOut(sysOut);
-        }
-    }
-
-    /**
-     * Creating a logger for a CommandHandler.
-     *
-     * @param outputStream Stream for recording the result of a command.
-     * @return Logger.
-     */
-    private Logger createTestLogger(OutputStream outputStream) {
-        assert nonNull(outputStream);
-
-        Logger log = initLogger(null);
-
-        log.addHandler(new StreamHandler(outputStream, new Formatter() {
-            @Override public String format(LogRecord record) {
-                return record.getMessage() + "\n";
-            }
-        }));
-
-        return log;
+        assertContains(listeningLog, sb.toString(), "no conflicts have been found");
     }
 
     /**
@@ -329,15 +284,14 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         Collection<Transaction> txs = new ArrayList<>();
 
+        Transaction tx = node.transactions().txStart();
+
         for (Integer key : keys) {
-            Transaction tx = node.transactions().txStart();
-
             cache.put(key, key + 10);
-
-            ((TransactionProxyImpl)tx).tx().prepare(true);
-
             txs.add(tx);
         }
+
+        ((TransactionProxyImpl)tx).tx().prepare(true);
 
         return txs;
     }

@@ -25,12 +25,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cluster.ClusterState.active;
 
 /**
  * Cache change requests to execute when receive {@link DynamicCacheChangeBatch} event.
@@ -44,6 +43,12 @@ public class ExchangeActions {
 
     /** */
     private Map<String, CacheActionData> cachesToStart;
+
+    /**
+     * Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when starting
+     * the cache(s), the whole procedure is rolled back.
+     */
+    private Collection<UUID> cacheStartRequiredAliveNodes;
 
     /** */
     private Map<String, CacheActionData> cachesToStop;
@@ -95,14 +100,14 @@ public class ExchangeActions {
      * @return New caches start requests.
      */
     public Collection<CacheActionData> cacheStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.<CacheActionData>emptyList();
+        return cachesToStart != null ? cachesToStart.values() : Collections.emptyList();
     }
 
     /**
      * @return Stop cache requests.
      */
     public Collection<CacheActionData> cacheStopRequests() {
-        return cachesToStop != null ? cachesToStop.values() : Collections.<CacheActionData>emptyList();
+        return cachesToStop != null ? cachesToStop.values() : Collections.emptyList();
     }
 
     /**
@@ -204,14 +209,14 @@ public class ExchangeActions {
      * @return {@code True} if has deactivate request.
      */
     public boolean deactivate() {
-        return stateChangeReq != null && stateChangeReq.activeChanged() && !active(stateChangeReq.state());
+        return stateChangeReq != null && stateChangeReq.activeChanged() && !stateChangeReq.state().active();
     }
 
     /**
      * @return {@code True} if has activate request.
      */
     public boolean activate() {
-        return stateChangeReq != null && stateChangeReq.activeChanged() && active(stateChangeReq.state());
+        return stateChangeReq != null && stateChangeReq.activeChanged() && stateChangeReq.state().active();
     }
 
     /**
@@ -319,6 +324,23 @@ public class ExchangeActions {
         }
 
         return false;
+    }
+
+    /**
+     * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
+     *      starting the cache(s), the whole procedure is rolled back.
+     */
+    public Collection<UUID> cacheStartRequiredAliveNodes() {
+        return cacheStartRequiredAliveNodes == null ? Collections.emptyList() : cacheStartRequiredAliveNodes;
+    }
+
+    /**
+     * @param cacheStartRequiredAliveNodes Server nodes on which a successful start of the cache(s) is required, if any
+     *                                     of these nodes fails when starting the cache(s), the whole procedure is
+     *                                     rolled back.
+     */
+    public void cacheStartRequiredAliveNodes(Collection<UUID> cacheStartRequiredAliveNodes) {
+        this.cacheStartRequiredAliveNodes = new ArrayList<>(cacheStartRequiredAliveNodes);
     }
 
     /**

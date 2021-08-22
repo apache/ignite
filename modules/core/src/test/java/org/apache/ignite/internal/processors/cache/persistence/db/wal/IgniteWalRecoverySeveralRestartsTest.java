@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -116,6 +117,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoverySeveralRestarts() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         try {
             IgniteEx ignite = startGrid(1);
 
@@ -172,6 +176,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoveryWithDynamicCache() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         try {
             IgniteEx ignite = startGrid(1);
 
@@ -226,6 +233,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         try {
             IgniteEx ignite = startGrid(1);
 

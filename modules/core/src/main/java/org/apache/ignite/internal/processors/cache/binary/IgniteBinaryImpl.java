@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -174,6 +173,18 @@ public class IgniteBinaryImpl implements IgniteBinary {
 
         try {
             return proc.registerEnum(typeName, vals);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
+        guard();
+
+        try {
+            return proc.registerClass(cls);
         }
         finally {
             unguard();

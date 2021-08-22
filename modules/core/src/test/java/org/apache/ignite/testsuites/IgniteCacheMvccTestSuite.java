@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientReconnectTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientTopologyTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTes
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccStructuresOverheadTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
@@ -47,6 +49,7 @@ import org.junit.runners.Suite;
     CacheMvccProcessorTest.class,
     CacheMvccVacuumTest.class,
     CacheMvccConfigurationValidationTest.class,
+    CacheMvccClientTopologyTest.class,
 
     DataStreamProcessorMvccSelfTest.class,
     DataStreamProcessorMvccPersistenceSelfTest.class,
@@ -70,7 +73,8 @@ import org.junit.runners.Suite;
     CacheMvccPartitionedCoordinatorFailoverTest.class,
     CacheMvccReplicatedCoordinatorFailoverTest.class,
     CacheMvccProcessorLazyStartTest.class,
-    CacheMvccClientReconnectTest.class
+    CacheMvccClientReconnectTest.class,
+    MvccStructuresOverheadTest.class
 })
 public class IgniteCacheMvccTestSuite {
 }

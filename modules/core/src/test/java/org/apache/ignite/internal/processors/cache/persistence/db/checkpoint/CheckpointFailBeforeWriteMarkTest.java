@@ -171,7 +171,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
         }, 3, "LOAD-DATA");
 
         //and: Page replacement was started.
-        assertTrue(waitForCondition(() -> U.field(pageMemory, "pageReplacementWarned"), 60_000));
+        assertTrue(waitForCondition(() -> (int)U.field(pageMemory, "pageReplacementWarned") > 0, 60_000));
 
         //and: Node was failed during checkpoint after write lock was released and before checkpoint marker was stored to disk.
         interceptorIOFactory.triggerIOException((file) -> file.getName().contains("START.bin"));

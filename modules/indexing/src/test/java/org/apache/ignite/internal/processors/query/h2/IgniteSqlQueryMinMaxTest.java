@@ -169,8 +169,9 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_key), max(_key) from Integer"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("_key_pk"));
-            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
+            String res = ((String)result.get(0).get(0)).toLowerCase();
+            assertTrue(res, res.contains("_key_pk"));
+            assertTrue(res, res.contains("direct lookup"));
         }
     }
 
@@ -210,13 +211,13 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             assertEquals(count / groupSize, result.size());
 
             for (int idx = 0; idx < result.size(); ++idx) {
-                assertEquals(idx, result.get(idx).get(0));//groupVal
+                assertEquals(idx, result.get(idx).get(0)); //groupVal
                 int min = idx * groupSize;
                 int max = (idx + 1) * groupSize - 1;
-                assertEquals(min, result.get(idx).get(1));//min(idxVal)
-                assertEquals(max, result.get(idx).get(2));//max(idxVal)
-                assertEquals(min, result.get(idx).get(3));//min(nonIdxVal)
-                assertEquals(max, result.get(idx).get(4));//max(nonIdxVal)
+                assertEquals(min, result.get(idx).get(1)); //min(idxVal)
+                assertEquals(max, result.get(idx).get(2)); //max(idxVal)
+                assertEquals(min, result.get(idx).get(3)); //min(nonIdxVal)
+                assertEquals(max, result.get(idx).get(4)); //max(nonIdxVal)
             }
         }
     }
@@ -238,11 +239,11 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
 
             List<List<?>> result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals(0, result.get(0).get(0));//groupVal
-            assertEquals(0, result.get(0).get(1));//min(idxVal)
-            assertEquals(groupSize - 1, result.get(0).get(2));//max(idxVal)
-            assertEquals(0, result.get(0).get(3));//min(nonIdxVal)
-            assertEquals(groupSize - 1, result.get(0).get(4));//max(nonIdxVal)
+            assertEquals(0, result.get(0).get(0)); //groupVal
+            assertEquals(0, result.get(0).get(1)); //min(idxVal)
+            assertEquals(groupSize - 1, result.get(0).get(2)); //max(idxVal)
+            assertEquals(0, result.get(0).get(3)); //min(nonIdxVal)
+            assertEquals(groupSize - 1, result.get(0).get(4)); //max(nonIdxVal)
 
             cursor = cache.query(new SqlFieldsQuery(
                     "select groupVal, min(idxVal), max(idxVal), min(nonIdxVal), max(nonIdxVal) " +
@@ -250,11 +251,11 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
 
             result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals((count - 1) / groupSize, result.get(0).get(0));//groupVal
-            assertEquals(count - groupSize, result.get(0).get(1));//min(idxVal)
-            assertEquals(count - 1, result.get(0).get(2));//max(idxVal)
-            assertEquals(count - groupSize, result.get(0).get(3));//min(nonIdxVal)
-            assertEquals(count - 1, result.get(0).get(4));//max(nonIdxVal)
+            assertEquals((count - 1) / groupSize, result.get(0).get(0)); //groupVal
+            assertEquals(count - groupSize, result.get(0).get(1)); //min(idxVal)
+            assertEquals(count - 1, result.get(0).get(2)); //max(idxVal)
+            assertEquals(count - groupSize, result.get(0).get(3)); //min(nonIdxVal)
+            assertEquals(count - 1, result.get(0).get(4)); //max(nonIdxVal)
         }
     }
 
@@ -288,16 +289,16 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
                 int revMin = count - max - 1;
                 int revMax = count - min - 1;
 
-                assertEquals(revMin, result.get(idx).get(1));//min(a._key)
-                assertEquals(revMax, result.get(idx).get(2));//max(a._key)
-                assertEquals(revMin, result.get(idx).get(3));//min(a._val)
-                assertEquals(revMax, result.get(idx).get(4));//max(a._val)
-                assertEquals(revMin, result.get(idx).get(5));//min(b._key)
-                assertEquals(revMax, result.get(idx).get(6));//max(b_key)
-                assertEquals(min, result.get(idx).get(7));//min(b.idxVal)
-                assertEquals(max, result.get(idx).get(8));//max(b.idxVal),
-                assertEquals(min, result.get(idx).get(9));//min(b.nonIdxVal)
-                assertEquals(max, result.get(idx).get(10));//max(b.nonIdxVal)
+                assertEquals(revMin, result.get(idx).get(1)); //min(a._key)
+                assertEquals(revMax, result.get(idx).get(2)); //max(a._key)
+                assertEquals(revMin, result.get(idx).get(3)); //min(a._val)
+                assertEquals(revMax, result.get(idx).get(4)); //max(a._val)
+                assertEquals(revMin, result.get(idx).get(5)); //min(b._key)
+                assertEquals(revMax, result.get(idx).get(6)); //max(b_key)
+                assertEquals(min, result.get(idx).get(7)); //min(b.idxVal)
+                assertEquals(max, result.get(idx).get(8)); //max(b.idxVal),
+                assertEquals(min, result.get(idx).get(9)); //min(b.nonIdxVal)
+                assertEquals(max, result.get(idx).get(10)); //max(b.nonIdxVal)
             }
 
             //join a.key = b.val, non-collocated
@@ -318,16 +319,16 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
                 int revMin = count - max - 1;
                 int revMax = count - min - 1;
 
-                assertEquals(min, result.get(idx).get(1));//min(a._key)
-                assertEquals(max, result.get(idx).get(2));//max(a._key)
-                assertEquals(min, result.get(idx).get(3));//min(a._val)
-                assertEquals(max, result.get(idx).get(4));//max(a._val)
-                assertEquals(revMin, result.get(idx).get(5));//min(b._key)
-                assertEquals(revMax, result.get(idx).get(6));//max(b_key)
-                assertEquals(min, result.get(idx).get(7));//min(b.idxVal)
-                assertEquals(max, result.get(idx).get(8));//max(b.idxVal),
-                assertEquals(min, result.get(idx).get(9));//min(b.nonIdxVal)
-                assertEquals(max, result.get(idx).get(10));//max(b.nonIdxVal)
+                assertEquals(min, result.get(idx).get(1)); //min(a._key)
+                assertEquals(max, result.get(idx).get(2)); //max(a._key)
+                assertEquals(min, result.get(idx).get(3)); //min(a._val)
+                assertEquals(max, result.get(idx).get(4)); //max(a._val)
+                assertEquals(revMin, result.get(idx).get(5)); //min(b._key)
+                assertEquals(revMax, result.get(idx).get(6)); //max(b_key)
+                assertEquals(min, result.get(idx).get(7)); //min(b.idxVal)
+                assertEquals(max, result.get(idx).get(8)); //max(b.idxVal),
+                assertEquals(min, result.get(idx).get(9)); //min(b.nonIdxVal)
+                assertEquals(max, result.get(idx).get(10)); //max(b.nonIdxVal)
             }
         }
     }

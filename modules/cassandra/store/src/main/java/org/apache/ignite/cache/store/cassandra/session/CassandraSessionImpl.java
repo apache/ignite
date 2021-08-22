@@ -697,17 +697,25 @@ public class CassandraSessionImpl implements CassandraSession {
             try {
                 ses = session();
 
-                log.info("-----------------------------------------------------------------------");
-                log.info("Creating Cassandra keyspace '" + settings.getKeyspace() + "'");
-                log.info("-----------------------------------------------------------------------\n\n" +
-                    settings.getKeyspaceDDLStatement() + "\n");
-                log.info("-----------------------------------------------------------------------");
+                if (log.isInfoEnabled()) {
+                    log.info("-----------------------------------------------------------------------");
+                    log.info("Creating Cassandra keyspace '" + settings.getKeyspace() + "'");
+                    log.info("-----------------------------------------------------------------------\n\n" +
+                        settings.getKeyspaceDDLStatement() + "\n");
+                    log.info("-----------------------------------------------------------------------");
+                }
+
                 ses.execute(settings.getKeyspaceDDLStatement());
-                log.info("Cassandra keyspace '" + settings.getKeyspace() + "' was successfully created");
+
+                if (log.isInfoEnabled())
+                    log.info("Cassandra keyspace '" + settings.getKeyspace() + "' was successfully created");
+
                 return;
             }
             catch (AlreadyExistsException ignored) {
-                log.info("Cassandra keyspace '" + settings.getKeyspace() + "' already exist");
+                if (log.isInfoEnabled())
+                    log.info("Cassandra keyspace '" + settings.getKeyspace() + "' already exist");
+
                 return;
             }
             catch (Throwable e) {
@@ -742,17 +750,25 @@ public class CassandraSessionImpl implements CassandraSession {
             try {
                 ses = session();
 
-                log.info("-----------------------------------------------------------------------");
-                log.info("Creating Cassandra table '" + tableFullName + "'");
-                log.info("-----------------------------------------------------------------------\n\n" +
+                if (log.isInfoEnabled()) {
+                    log.info("-----------------------------------------------------------------------");
+                    log.info("Creating Cassandra table '" + tableFullName + "'");
+                    log.info("-----------------------------------------------------------------------\n\n" +
                         settings.getTableDDLStatement(table) + "\n");
-                log.info("-----------------------------------------------------------------------");
+                    log.info("-----------------------------------------------------------------------");
+                }
+
                 ses.execute(settings.getTableDDLStatement(table));
-                log.info("Cassandra table '" + tableFullName + "' was successfully created");
+
+                if (log.isInfoEnabled())
+                    log.info("Cassandra table '" + tableFullName + "' was successfully created");
+
                 return;
             }
             catch (AlreadyExistsException ignored) {
-                log.info("Cassandra table '" + tableFullName + "' already exist");
+                if (log.isInfoEnabled())
+                    log.info("Cassandra table '" + tableFullName + "' already exist");
+
                 return;
             }
             catch (Throwable e) {
@@ -798,14 +814,19 @@ public class CassandraSessionImpl implements CassandraSession {
             try {
                 ses = session();
 
-                log.info("-----------------------------------------------------------------------");
-                log.info("Creating indexes for Cassandra table '" + tableFullName + "'");
-                log.info("-----------------------------------------------------------------------");
+                if (log.isInfoEnabled()) {
+                    log.info("-----------------------------------------------------------------------");
+                    log.info("Creating indexes for Cassandra table '" + tableFullName + "'");
+                    log.info("-----------------------------------------------------------------------");
+                }
 
                 for (String statement : indexDDLStatements) {
                     try {
-                        log.info(statement);
-                        log.info("-----------------------------------------------------------------------");
+                        if (log.isInfoEnabled()) {
+                            log.info(statement);
+                            log.info("-----------------------------------------------------------------------");
+                        }
+
                         ses.execute(statement);
                     }
                     catch (AlreadyExistsException ignored) {
@@ -816,7 +837,8 @@ public class CassandraSessionImpl implements CassandraSession {
                     }
                 }
 
-                log.info("Indexes for Cassandra table '" + tableFullName + "' were successfully created");
+                if (log.isInfoEnabled())
+                    log.info("Indexes for Cassandra table '" + tableFullName + "' were successfully created");
 
                 return;
             }

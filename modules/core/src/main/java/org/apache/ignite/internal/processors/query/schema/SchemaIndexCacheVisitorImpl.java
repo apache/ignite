@@ -54,29 +54,24 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Row filter. */
-    private final SchemaIndexCacheFilter rowFilter;
-
     /** Cancellation token. */
-    private final SchemaIndexOperationCancellationToken cancel;
+    @Nullable private final SchemaIndexOperationCancellationToken cancel;
 
     /** Future for create/rebuild index. */
     protected final GridFutureAdapter<Void> buildIdxFut;
 
     /** Logger. */
-    protected IgniteLogger log;
+    protected final IgniteLogger log;
 
     /**
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param rowFilter Row filter.
      * @param cancel Cancellation token.
      * @param buildIdxFut Future for create/rebuild index.
      */
     public SchemaIndexCacheVisitorImpl(
         GridCacheContext cctx,
-        @Nullable SchemaIndexCacheFilter rowFilter,
         @Nullable SchemaIndexOperationCancellationToken cancel,
         GridFutureAdapter<Void> buildIdxFut
     ) {
@@ -90,7 +85,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         this.buildIdxFut = buildIdxFut;
 
         this.cancel = cancel;
-        this.rowFilter = rowFilter;
 
         log = cctx.kernalContext().log(getClass());
     }
@@ -108,6 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
 
         cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+        cctx.cache().metrics0().resetIndexRebuildKeyProcessed();
 
         beforeExecute();
 
@@ -115,19 +110,20 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> buildIdxCompoundFut =
-            new GridCompoundFuture<>();
+        // To avoid a race between clearing pageMemory (on a cache stop ex. deactivation)
+        // and rebuilding indexes, which can lead to a fail of the node.
+        SchemaIndexCacheCompoundFuture buildIdxCompoundFut = new SchemaIndexCacheCompoundFuture();
 
         for (GridDhtLocalPartition locPart : locParts) {
             GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();
 
             GridWorker worker =
-                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, rowFilter, partsCnt);
+                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, partsCnt);
 
             workerFut.setWorker(worker);
             buildIdxCompoundFut.add(workerFut);
 
-            cctx.kernalContext().buildIndexExecutorService().execute(worker);
+            cctx.kernalContext().pools().buildIndexExecutorService().execute(worker);
         }
 
         buildIdxCompoundFut.listen(fut -> {

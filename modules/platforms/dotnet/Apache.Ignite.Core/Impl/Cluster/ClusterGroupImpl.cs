@@ -721,6 +721,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
 #pragma warning restore 618
 
         /// <summary>
+        /// Clears cached node data.
+        /// </summary>
+        internal void ClearCachedNodeData()
+        {
+            _topVer = TopVerInit;
+            _nodes = null;
+        }
+
+        /// <summary>
         /// Creates new Cluster Group from given native projection.
         /// </summary>
         /// <param name="prj">Native projection.</param>

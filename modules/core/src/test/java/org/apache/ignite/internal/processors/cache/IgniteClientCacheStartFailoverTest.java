@@ -28,6 +28,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -44,12 +45,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -128,8 +131,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             }
         }, "start-cache");
 
-        U.sleep(1000);
-
         assertFalse(fut.isDone());
 
         stopGrid(0);
@@ -197,8 +198,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "start-cache");
-
-        U.sleep(1000);
 
         assertFalse(fut.isDone());
 
@@ -278,25 +277,25 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         for (String cacheName : cacheNames)
             c.cache(cacheName);
 
-        U.sleep(1000);
-
+        // Will switch to ideal topology but some partitions are not evicted yet.
         for (int i = 0; i < SRVS + 1; i++) {
-            AffinityTopologyVersion topVer = new AffinityTopologyVersion(SRVS + 2);
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(SRVS + 2, 1);
 
             IgniteKernal node = (IgniteKernal)ignite(i);
 
             for (String cacheName : cacheNames) {
-                GridDhtPartitionTopology top = node.context().cache().internalCache(cacheName).context().topology();
+                GridDhtPartitionTopology top = node.cachex(cacheName).context().topology();
 
                 waitForReadyTopology(top, topVer);
 
                 assertEquals(topVer, top.readyTopologyVersion());
-
-                assertFalse(top.rebalanceFinished(topVer));
             }
         }
 
         TestRecordingCommunicationSpi.spi(ignite(0)).stopBlock();
+
+        // Trigger eviction.
+        awaitPartitionMapExchange();
 
         for (int i = 0; i < SRVS + 1; i++) {
             final AffinityTopologyVersion topVer = new AffinityTopologyVersion(SRVS + 2, 1);
@@ -304,7 +303,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             final IgniteKernal node = (IgniteKernal)ignite(i);
 
             for (String cacheName : cacheNames) {
-                final GridDhtPartitionTopology top = node.context().cache().internalCache(cacheName).context().topology();
+                final GridDhtPartitionTopology top = node.cachex(cacheName).context().topology();
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
@@ -365,9 +364,31 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
                         Map<Object, Object> map0 = cache.getAll(keys);
 
-                        assertEquals(KEYS, map0.size());
+                        assertEquals("[cache=" + cacheName +
+                            ", expected=" + KEYS +
+                            ", actual=" + map0.size() + ']', KEYS, map0.size());
 
-                        cache.put(rnd.nextInt(KEYS), i);
+                        int key = rnd.nextInt(KEYS);
+
+                        try {
+                            cache.put(key, i);
+                        }
+                        catch (CacheException e) {
+                            log.error("It couldn't put a value [cache=" + cacheName +
+                                ", key=" + key +
+                                ", val=" + i + ']', e);
+
+                            CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+                            TransactionSerializationException txEx = X.cause(e, TransactionSerializationException.class);
+
+                            boolean notContains = !txEx.getMessage().contains(
+                                "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
+                            );
+
+                            if (txEx == null || ccfg.getAtomicityMode() != TRANSACTIONAL_SNAPSHOT || notContains)
+                                fail("Assert violated because exception was thrown [e=" + e.getMessage() + ']');
+                        }
                     }
                 }
 

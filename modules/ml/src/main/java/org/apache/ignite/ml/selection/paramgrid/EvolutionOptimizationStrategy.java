@@ -25,11 +25,11 @@ public class EvolutionOptimizationStrategy extends HyperParameterTuningStrategy 
     /** Seed. */
     private long seed = 1234L;
 
-    /** Amount of elite chromosomes. */
-    private int amountOfEliteChromosomes = 2;
+    /** Number of elite chromosomes. */
+    private int numberOfEliteChromosomes = 2;
 
-    /** Amount of generations. */
-    private int amountOfGenerations = 10;
+    /** Number of generations. */
+    private int numberOfGenerations = 10;
 
     /** Crossingover probability. */
     private double crossingoverProbability = 0.9;
@@ -53,15 +53,15 @@ public class EvolutionOptimizationStrategy extends HyperParameterTuningStrategy 
     /**
      *
      */
-    public int getAmountOfGenerations() {
-        return amountOfGenerations;
+    public int getNumberOfGenerations() {
+        return numberOfGenerations;
     }
 
     /**
      *
      */
-    public int getAmountOfEliteChromosomes() {
-        return amountOfEliteChromosomes;
+    public int getNumberOfEliteChromosomes() {
+        return numberOfEliteChromosomes;
     }
 
     /**
@@ -134,6 +134,21 @@ public class EvolutionOptimizationStrategy extends HyperParameterTuningStrategy 
         return this;
     }
 
+    /**
+     * @param numberOfEliteChromosomes Number of elite chromosomes.
+     */
+    public EvolutionOptimizationStrategy withNumberOfEliteChromosomes(int numberOfEliteChromosomes) {
+        this.numberOfEliteChromosomes = numberOfEliteChromosomes;
+        return this;
+    }
+
+    /**
+     * @param numberOfGenerations Number of generations.
+     */
+    public EvolutionOptimizationStrategy withNumberOfGenerations(int numberOfGenerations) {
+        this.numberOfGenerations = numberOfGenerations;
+        return this;
+    }
 
     /** {@inheritDoc} */
     @Override public String getName() {

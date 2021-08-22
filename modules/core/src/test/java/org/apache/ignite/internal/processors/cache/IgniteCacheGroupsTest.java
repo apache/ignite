@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,6 +99,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -4106,10 +4107,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             cacheOperation(rnd, cache);
                                     }
                                     catch (Exception e) {
-                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                        if (X.hasCause(e, CacheStoppedException.class) ||
+                                            (X.hasCause(e, CacheInvalidStateException.class) &&
+                                                X.hasCause(e, TransactionRollbackException.class))
+                                        ) {
                                             // Cache operation can be blocked on
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
-
+                                            // Cache operation can failed
+                                            // if a node was stopped during transaction.
                                             continue;
                                         }
 
@@ -4629,7 +4634,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class MapBasedStore<K,V> implements CacheStore<K,V>, Serializable {
+    static class MapBasedStore<K, V> implements CacheStore<K, V>, Serializable {
         /** */
         private final Map<K, V> src;
 

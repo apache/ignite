@@ -53,7 +53,7 @@ namespace ignite
                     SECURITY_VIOLATION = 1012,
 
                     /** Authentication failed. */
-                    AUTH_FAILED = 2000,
+                    AUTH_FAILED = 2000
                 };
             };
         }

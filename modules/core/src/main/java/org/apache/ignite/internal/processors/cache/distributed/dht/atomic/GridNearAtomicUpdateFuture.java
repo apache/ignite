@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtom
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -498,7 +499,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         mapOnTopology();
                     }
@@ -652,7 +653,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                         @Override public void run() {
                             mapOnTopology();
                         }
@@ -723,7 +724,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC)
-            completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
     }
 
     /** {@inheritDoc} */
@@ -816,7 +817,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             assert mappings0 != null;
 
             if (size == 0) {
-                completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, futId);
+                completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
 
                 return;
             }
@@ -825,7 +826,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, futId);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
 
             return;
         }

@@ -62,16 +62,19 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(ATOMIC_CACHE)
+            .setReadFromBackup(false)
             .setAtomicityMode(ATOMIC)
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);
 
         CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>(TX_CACHE)
+            .setReadFromBackup(false)
             .setAtomicityMode(TRANSACTIONAL)
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);
 
         CacheConfiguration<Object, Object> ccfg3 = new CacheConfiguration<>(MVCC_CACHE)
+            .setReadFromBackup(false)
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);

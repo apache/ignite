@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
@@ -220,6 +221,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.OnAffinityTopologyVersionChanged, OnAffinityTopologyVersionChanged);
             AddHandler(UnmanagedCallbackOp.ComputeOutFuncExecute, ComputeOutFuncExecute);
             AddHandler(UnmanagedCallbackOp.ComputeActionExecute, ComputeActionExecute);
+            AddHandler(UnmanagedCallbackOp.BinaryTypeGet, BinaryTypeGet);
         }
 
         /// <summary>
@@ -233,10 +235,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Adds the handler.
         /// </summary>
-        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func, 
+        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func,
             bool allowUninitialized = false)
         {
-            _inLongLongLongObjectOutLongHandlers[(int)op] 
+            _inLongLongLongObjectOutLongHandlers[(int)op]
                 = new InLongLongLongObjectOutLongHandler(func, allowUninitialized);
         }
 
@@ -377,6 +379,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong(), true);
 
+                Debug.Assert(t != null);
+
                 return t.Invoke(stream);
             }
         }
@@ -426,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             return holder.Process(key, val, val != null, grid);
         }
-        
+
         /// <summary>
         /// Updates platform cache entry.
         /// </summary>
@@ -443,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             return 0;
         }
-        
+
         /// <summary>
         /// Updates platform cache entry.
         /// </summary>
@@ -454,10 +458,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             _ignite.PlatformCacheManager.UpdateFromThreadLocal(
                 cacheId, partition, new AffinityTopologyVersion(verMajor, (int) verMinor));
-                
+
             return 0;
         }
-        
+
         /// <summary>
         /// Called on cache stop.
         /// </summary>
@@ -465,10 +469,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private long OnCacheStopped(long cacheId)
         {
             _ignite.PlatformCacheManager.Stop((int) cacheId);
-            
+
             return 0;
         }
-        
+
         /// <summary>
         /// Called on affinity topology version change.
         /// </summary>
@@ -476,9 +480,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             long topologyVersion, long minorTopologyVersion, long unused, void* arg)
         {
             var affinityTopologyVersion = new AffinityTopologyVersion(topologyVersion, (int) minorTopologyVersion);
-            
+
             _ignite.PlatformCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
-            
+
             return 0;
         }
 
@@ -617,7 +621,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return _handleRegistry.Get<ComputeJobHolder>(jobPtr);
         }
-        
+
         /// <summary>
         /// Executes <see cref="IComputeOutFunc"/>.
         /// </summary>
@@ -629,9 +633,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var func = stream.ReadBool()
                     ? _handleRegistry.Get<object>(stream.ReadLong(), true)
                     : _ignite.Marshaller.Unmarshal<object>(stream);
-                
+
                 stream.Reset();
-                
+
                 var invoker = DelegateTypeDescriptor.GetComputeOutFunc(func.GetType());
                 ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, func, invoker);
             }
@@ -650,9 +654,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var action = stream.ReadBool()
                     ? _handleRegistry.Get<IComputeAction>(stream.ReadLong(), true)
                     : _ignite.Marshaller.Unmarshal<IComputeAction>(stream);
-                
+
                 stream.Reset();
-                
+
                 ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, action, act =>
                 {
                     act.Invoke();
@@ -1146,6 +1150,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "proc0 is saved for later use.")]
         private long OnStart(long memPtr, long unused, long unused1, void* proc)
         {
             var proc0 = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) proc);
@@ -1224,6 +1230,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite.PluginProcessor.Stop(val != 0);
 
             return 0;
+        }
+
+        private long BinaryTypeGet(long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var marsh = _ignite.Marshaller;
+                    var typeName = marsh.StartUnmarshal(stream).ReadString();
+                    var desc = marsh.GetDescriptor(typeName, requiresType: true);
+
+                    if (desc == null || desc.Type == null)
+                        return 0;
+
+                    stream.Reset();
+                    marsh.Marshal(stream, w => BinaryProcessor.WriteBinaryType(w, new BinaryType(desc, marsh)));
+
+                    return 1;
+                }
+            });
         }
 
         #endregion
@@ -1310,7 +1337,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #endregion
 
         #region PLUGINS
-  
+
         private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
         {
             return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);
@@ -1355,7 +1382,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         #endregion
-        
+
         /// <summary>
         /// Gets the log.
         /// </summary>

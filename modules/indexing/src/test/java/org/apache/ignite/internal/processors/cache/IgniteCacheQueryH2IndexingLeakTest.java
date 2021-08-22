@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.IgniteCache;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -29,11 +34,13 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.ConcurrentStripedPool;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hamcrest.CustomMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
@@ -41,78 +48,61 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest.STMT_CACHE_TTL;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests leaks at the IgniteH2Indexing
  */
+@WithSystemProperty(key = IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, value = "200")
+@WithSystemProperty(key = IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, value = STMT_CACHE_TTL + "")
 public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /** */
-    private static final long TEST_TIMEOUT = 2 * 60 * 1000;
-
-    /** Threads to parallel execute queries */
     private static final int THREAD_COUNT = 10;
 
-    /** Timeout */
-    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 500;
-
-    /** Orig cleanup period. */
-    private static String origCacheCleanupPeriod;
-
-    /** Orig usage timeout. */
-    private static String origCacheThreadUsageTimeout;
+    /** Inactivity time after which statement cache will be cleared. */
+    public static final long STMT_CACHE_TTL = 1000;
 
     /** */
     private static final int ITERATIONS = 5;
 
+    /**
+     * We use barrier to get sure that all queries are executed simultaneously.
+     * Otherwise arbitrary connection could be reused during iteration,
+     * and check will fail.
+     */
+    static final CyclicBarrier BARRIER = new CyclicBarrier(THREAD_COUNT);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(cacheConfiguration());
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(cacheConfiguration());
     }
 
     /**
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cacheCfg.setIndexedTypes(
-            Integer.class, Integer.class
-        );
-
-        return cacheCfg;
+    @SuppressWarnings("unchecked")
+    protected CacheConfiguration<?, ?> cacheConfiguration() {
+        return defaultCacheConfiguration()
+            .setCacheMode(PARTITIONED)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setSqlFunctionClasses(IgniteCacheQueryH2IndexingLeakTest.class)
+            .setIndexedTypes(
+                Integer.class, Integer.class
+            );
     }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIMEOUT + 60_000;
+        return 60_000;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        origCacheCleanupPeriod = System.getProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD);
-        origCacheThreadUsageTimeout = System.getProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT);
-
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
-
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD,
-            origCacheCleanupPeriod != null ? origCacheCleanupPeriod : "");
-
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT,
-            origCacheThreadUsageTimeout != null ? origCacheThreadUsageTimeout : "");
     }
 
     /**
@@ -132,51 +122,49 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
+        final GridQueryProcessor qryProc = grid(0).context().query();
+
+        final String qry = "select * from \"default\".Integer where _val >= \"default\".barrier()";
 
         for (int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
 
-            final AtomicBoolean stop = new AtomicBoolean();
+            final CountDownLatch exitLatch = new CountDownLatch(1);
+            final CountDownLatch qryExec = new CountDownLatch(THREAD_COUNT);
 
-            // Open iterator on the created cursor: add entries to the cache.
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
-                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
-                        while (!stop.get()) {
-                            c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
-                            c.query(new SqlQuery(Integer.class, "_val >= 1")).getAll();
+                        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+                             Statement stmt = conn.createStatement()
+                        ) {
+                            stmt.executeQuery(qry).next();
+
+                            qryExec.countDown();
+
+                            U.await(exitLatch);
+                        }
+                        catch (Exception ex) {
+                            throw new IgniteCheckedException(ex);
                         }
                     }
                 }, THREAD_COUNT);
 
-            final GridQueryProcessor qryProc = grid(0).context().query();
-
             try {
-                // Wait for stmt cache entry is created for each thread.
-                assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        // '>' case is for lazy query flag turned on - in this case, there's more threads
-                        // than those run by test explicitly, and we can't rely on exact number.
-                        // Still the main check for this test is that all threads, no matter how many of them
-                        // is out there, are terminated and their statement caches are cleaned up.
-                        return getStatementCacheSize(qryProc) >= THREAD_COUNT;
-                    }
-                }, STMT_CACHE_CLEANUP_TIMEOUT * 4));
+                qryExec.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+                assertThat(getStatementCacheSize(qryProc), greaterOrEqualTo(THREAD_COUNT));
             }
             finally {
-                stop.set(true);
+                exitLatch.countDown();
             }
 
             fut.get();
 
-            // Wait for stmtCache is cleaned up because all user threads are terminated.
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return getStatementCacheSize(qryProc) == 0;
-                }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 10));
+            assertTrue(
+                "Unable to wait while statement cache will be cleared",
+                waitForCondition(() -> getStatementCacheSize(qryProc) == 0, STMT_CACHE_TTL * 2)
+            );
         }
     }
 
@@ -185,36 +173,74 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
+        final GridQueryProcessor qryProc = grid(0).context().query();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        final String qry = "select * from \"default\".Integer where _val >= \"default\".barrier()";
 
         for (int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
 
-            // Open iterator on the created cursor: add entries to the cache
+            final CountDownLatch exitLatch = new CountDownLatch(1);
+            final CountDownLatch qryExec = new CountDownLatch(THREAD_COUNT);
+
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
-                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
-                        c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
+                        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+                             Statement stmt = conn.createStatement()
+                        ) {
+                            stmt.executeQuery(qry).next();
 
-                        U.await(latch);
+                            qryExec.countDown();
+
+                            U.await(exitLatch);
+                        }
+                        catch (SQLException ex) {
+                            throw new IgniteCheckedException(ex);
+                        }
                     }
                 }, THREAD_COUNT);
 
-            Thread.sleep(STMT_CACHE_CLEANUP_TIMEOUT);
+            try {
+                qryExec.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-            // Wait for stmtCache is cleaned up because all user threads don't perform queries a lot of time.
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return getStatementCacheSize(grid(0).context().query()) == 0;
-                }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
+                assertThat(getStatementCacheSize(qryProc), greaterOrEqualTo(THREAD_COUNT));
 
-            latch.countDown();
+                assertTrue(
+                    "Unable to wait while statement cache will be cleared",
+                    waitForCondition(() -> getStatementCacheSize(qryProc) == 0, STMT_CACHE_TTL * 2)
+                );
+            }
+            finally {
+                exitLatch.countDown();
+            }
 
             fut.get();
         }
+    }
+
+    /** Cyclic arrier to synchronize query executions during iteration. */
+    @QuerySqlFunction
+    public static int barrier() {
+        try {
+            BARRIER.await();
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+
+        return 42;
+    }
+
+    /**
+     * @param wanted Wanted.
+     */
+    private static <T extends Comparable<? super T>> Matcher<T> greaterOrEqualTo(T wanted) {
+        return new CustomMatcher<T>("should be greater or equal to " + wanted) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            @Override public boolean matches(Object item) {
+                return wanted != null && item instanceof Comparable && ((Comparable)item).compareTo(wanted) >= 0;
+            }
+        };
     }
 }

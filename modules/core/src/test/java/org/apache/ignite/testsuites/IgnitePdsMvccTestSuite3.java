@@ -16,22 +16,32 @@
  */
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.junit.BeforeClass;
+import org.apache.ignite.internal.processors.cache.persistence.EagerTtlTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses(IgnitePdsTestSuite3.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsMvccTestSuite3 {
     /**
-     * Enforce MVCC
+     * @return IgniteCache test suite.
      */
-    @BeforeClass
-    public static void enforceMvcc() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
+
+        HashSet<Class> ignoredTests = new HashSet<>();
+
+        // Following classes will be skipped in this suite.
+        ignoredTests.add(EagerTtlTest.class);
+
+        List<Class<?>> suite = new ArrayList<>(IgnitePdsTestSuite3.suite(ignoredTests));
+
+        return suite;
     }
 }

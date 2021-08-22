@@ -41,8 +41,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteSpeedBasedThrottle;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -89,7 +89,7 @@ class ProgressWatchdog {
     private final AtomicLong prevCpSyncedPages = new AtomicLong();
 
     /** WAL pointer at previous tick reference. */
-    private final AtomicReference<FileWALPointer> prevWalPtrRef = new AtomicReference<>();
+    private final AtomicReference<WALPointer> prevWalPtrRef = new AtomicReference<>();
 
     /** Milliseconds at start of watchdog execution. */
     private long msStart;
@@ -331,8 +331,8 @@ class ProgressWatchdog {
             walWorkSegments = idx - lastArchIdx;
 
             /* // uncomment when currentWritePointer is available
-             FileWALPointer ptr = wal.currentWritePointer();
-               FileWALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
+             WALPointer ptr = wal.currentWritePointer();
+               WALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
 
                if (prevWalPtr != null) {
                    long idxDiff = ptr.index() - prevWalPtr.index();

@@ -89,12 +89,12 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        GridTestUtils.setFieldValue(null, TxDeadlockDetection.class, "DEADLOCK_TIMEOUT", (int)(getTestTimeout() * 2));
+        GridTestUtils.setFieldValue(TxDeadlockDetection.class, "deadLockTimeout", (int)(getTestTimeout() * 2));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.setFieldValue(null, TxDeadlockDetection.class, "DEADLOCK_TIMEOUT",
+        GridTestUtils.setFieldValue(TxDeadlockDetection.class, "deadLockTimeout",
             getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000));
     }
 
@@ -113,14 +113,14 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
         doTest(PESSIMISTIC);
 
         try {
-            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
+            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
 
             assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
             doTest(PESSIMISTIC);
         }
         finally {
-            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
+            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
                 IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000));
         }
     }
@@ -135,14 +135,14 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
         doTest(OPTIMISTIC);
 
         try {
-            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
+            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
 
             assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
             doTest(OPTIMISTIC);
         }
         finally {
-            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
+            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
                 IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000));
         }
     }

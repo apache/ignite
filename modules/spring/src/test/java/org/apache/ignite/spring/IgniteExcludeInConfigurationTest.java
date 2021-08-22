@@ -42,8 +42,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
     public void testExclude() throws Exception {
          IgniteSpringHelper spring = SPRING.create(false);
 
-        Collection<IgniteConfiguration> cfgs = spring.loadConfigurations(cfgLocation, "fileSystemConfiguration",
-            "queryEntities").get1();
+        Collection<IgniteConfiguration> cfgs = spring.loadConfigurations(cfgLocation, "queryEntities").get1();
 
         assertNotNull(cfgs);
         assertEquals(1, cfgs.size());
@@ -53,8 +52,6 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
         assertEquals(1, cfg.getCacheConfiguration().length);
 
         assertTrue(F.isEmpty(cfg.getCacheConfiguration()[0].getQueryEntities()));
-
-        assertNull(cfg.getFileSystemConfiguration());
 
         cfgs = spring.loadConfigurations(cfgLocation, "keyType").get1();
 

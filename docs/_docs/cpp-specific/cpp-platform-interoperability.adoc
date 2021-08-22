@@ -1,0 +1,250 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite.C++ and Platform Interoperability
+
+== Overview
+
+When using Apache Ignite C++, it is quite common to have several C++ and Java nodes running in a single cluster. To seamlessly
+interoperate between C++ and Java nodes, you need to take several aspects into consideration. Let's review them.
+
+== Binary Marshaller Configuration
+
+Ignite uses its binary marshaller for data, logic, messages serialization and deserialization. Due to architectural specificities,
+Java and C++ nodes are started with different default settings of the binary marshaller that can lead to exceptions like
+ the one below during a node startup if you try to set up a heterogeneous cluster:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+class org.apache.ignite.spi.IgniteSpiException: Local node's
+binary configuration is not equal to remote node's binary configuration
+[locNodeId=b3f0367d-3c2b-47b4-865f-a62c656b5d3f,
+rmtNodeId=556a3f41-eab1-4d9f-b67c-d94d77ddd89d,
+locBinaryCfg={globIdMapper=org.apache.ignite.binary.BinaryBasicIdMapper,
+compactFooter=false, globSerializer=null}, rmtBinaryCfg=null]
+----
+--
+
+To avoid the exception and to make sure Java and C++ nodes can co-exist in a single cluster, add the following binary
+marshaller's settings to the Java configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        ...
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                        <property name="lowerCase" value="true"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        ...
+    </bean>
+</beans>
+----
+--
+
+== Basic Types Compatibility
+
+Your C++ application can put a value into the cluster and another Java application can read it back. The table below
+shows how the types are matched between Java and C++:
+
+[opts="header"]
+|===
+|Java Type | C++ Type
+
+| `boolean`, `java.lang.Boolean`| `bool`
+| `byte`, `java.lang.Byte`| `int8_t`
+| `short`, `java.lang.Short`| `int16_t`
+| `int`, `java.lang.Integer`| `int32_t`
+| `long`, `java.lang.Long`| `int64_t`
+| `float`, `java.lang.Float`| `float`
+| `double`, `java.lang.Double`| `double`
+| `char`, `java.lang.Character`| `uint16_t`
+| `java.lang.String`| `std::string`, `char[]`
+| `java.util.Date`| `ignite::Date`
+| `java.sql.Time`| `ignite::Time`
+| `java.sql.Timestamp`| `ignite::Timestamp`
+| `java.util.UUID`| `ignite::Guid`
+|===
+
+== Custom Types Compatibility
+
+To get access to the same application-specific object on both Java and C++ nodes, you need to describe it similarly in
+both the languages. This includes the same type name, type id, fields id, hash code algorithm, as well as read/write functions
+for the type.
+
+To do this on the C++ end, you need to use the `ignite::binary::BinaryType` class template.
+
+Let's consider the following example that defines a Java class that will be later read by a C++ application:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+package org.apache.ignite.examples;
+
+public class CrossClass implements Binarylizable {
+    private long id;
+
+    private int idPart;
+
+    public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        id = reader.readLong("id");
+        idPart = reader.readInt("idPart");
+    }
+
+    public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        writer.writeLong("id", id);
+        writer.writeInt("idPart", idPart);
+    }
+}
+----
+--
+
+Next, you create a counter-part on the C++ end:
+
+[tabs]
+--
+tab:C++[]
+[source,cpp]
+----
+namespace ignite
+{
+  namespace binary
+  {
+    template<>
+    struct BinaryType<CrossClass>
+    {
+      static int32_t GetTypeId()
+      {
+        return GetBinaryStringHashCode("CrossClass");
+      }
+
+      static void GetTypeName(std::string& name)
+      {
+        name = "CrossClass";
+      }
+
+      static int32_t GetFieldId(const char* name)
+      {
+        return GetBinaryStringHashCode(name);
+      }
+
+      static bool IsNull(const CrossClass& obj)
+      {
+        return false;
+      }
+
+      static void GetNull(CrossClass& dst)
+      {
+        dst = CrossClass();
+      }
+
+      static void Read(BinaryReader& reader, CrossClass& dst)
+      {
+        dst.id = reader.ReadInt64("id");
+        dst.idPart = reader.ReadInt32("idPart");
+      }
+
+      static void Write(BinaryWriter& writer, const CrossClass& obj)
+      {
+        writer.WriteInt64("id", obj.id);
+        writer.WriteInt32("idPart", obj.idPart);
+      }
+    };
+  }
+}
+----
+--
+
+Finally, you need to use the following `BinaryConfiguration` for **both** Java and C++ nodes:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        ...
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                        <property name="lowerCase" value="true"/>
+                    </bean>
+                </property>
+
+                <property name="nameMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+                        <property name="simpleName" value="true"/>
+                    </bean>
+                </property>
+
+                <property name="classNames">
+                    <list>
+                        <value>org.apache.ignite.examples.CrossClass</value>
+                    </list>
+                </property>
+            </bean>
+        </property>
+        ...
+    </bean>
+</beans>
+----
+--
+
+[CAUTION]
+====
+[discrete]
+It is especially important to implement `GetTypeName()` and `GetTypeId()` methods in the right manner for the types that
+are used for the keys.
+====
+
+[CAUTION]
+====
+[discrete]
+C++ function `GetBinaryStringHashCode()` always calculates hash as `BinaryBasicIdMapper` when its property `lowerCase` is set
+to `true`. So make sure you have the correct configuration for the `BinaryBasicIdMapper` if you are going to use this
+function to calculate the type id in C++.
+====
+

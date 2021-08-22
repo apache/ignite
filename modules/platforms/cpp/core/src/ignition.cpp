@@ -149,6 +149,7 @@ namespace ignite
                 opts.push_back(CopyChars("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--illegal-access=permit"));
             }
         }
@@ -269,15 +270,20 @@ namespace ignite
 
         JniErrorInfo jniErr;
 
-        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment(cfg0));
-
         JvmOptions opts;
         opts.FromConfiguration(cfg, home, cp);
 
-        std::auto_ptr< SharedPointer<IgniteEnvironment> > envTarget(new SharedPointer<IgniteEnvironment>(env));
+        // This is the instance that allows us keep IgniteEnvironment alive
+        // till the end of the method call
+        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment(cfg0));
+
+        // This is the instance with manual control over lifetime which is we
+        // going to pass to Java if Java object is constructed and initialized
+        // successfully.
+        std::auto_ptr< SharedPointer<IgniteEnvironment> > envGuard(new SharedPointer<IgniteEnvironment>(env));
 
         SharedPointer<JniContext> ctx(
-            JniContext::Create(opts.GetOpts(), opts.GetSize(), env.Get()->GetJniHandlers(envTarget.get()), &jniErr));
+            JniContext::Create(opts.GetOpts(), opts.GetSize(), env.Get()->GetJniHandlers(envGuard.get()), &jniErr));
 
         if (!ctx.Get())
         {
@@ -309,10 +315,6 @@ namespace ignite
 
         ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
 
-        // Releasing control over environment as it is controlled by Java at this point.
-        // Even if the call has failed environment are going to be released by the Java.
-        envTarget.release();
-
         if (!env.Get()->GetProcessor() || jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
         {
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
@@ -326,6 +328,11 @@ namespace ignite
         started = true;
 
         guard.Reset();
+
+        // We successfully created Java Ignite instance by this point, so we
+        // give control over C++ instance to Java. Still, we keep holding env
+        // instance so it will keep living till the end of the scope.
+        envGuard.release();
 
         env.Get()->ProcessorReleaseStart();
 
@@ -375,7 +382,7 @@ namespace ignite
             if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 // 2. Get environment pointer.
-                long long ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
+                int64_t ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 

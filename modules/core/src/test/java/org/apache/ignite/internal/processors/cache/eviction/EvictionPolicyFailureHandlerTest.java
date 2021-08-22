@@ -155,7 +155,7 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
             .anyMatch(e -> new Double(2.1).equals(e.key().value(null, false)))
         );
 
-        assertTrue(node.cluster().state().active(ACTIVE));
+        assertEquals(ACTIVE, node.cluster().state());
     }
 
     /**

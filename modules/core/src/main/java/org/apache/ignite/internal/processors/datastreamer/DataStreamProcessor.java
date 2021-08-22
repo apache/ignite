@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -34,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,10 +50,6 @@ import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.UUID;
-import java.util.concurrent.DelayQueue;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -234,7 +234,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ctx.closure().runLocalSafe(new Runnable() {
+                            ctx.closure().runLocalSafe(new GridPlainRunnable() {
                                 @Override public void run() {
                                     processRequest(nodeId, req);
                                 }

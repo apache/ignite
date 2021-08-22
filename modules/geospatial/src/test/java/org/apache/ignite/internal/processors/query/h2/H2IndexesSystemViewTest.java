@@ -53,16 +53,16 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
         execSql("CREATE SPATIAL INDEX IDX_GEO_1 ON PUBLIC.AFF_CACHE(GEOM)");
 
         String idxSql = "SELECT " +
-            "  CACHE_ID," +
-            "  CACHE_NAME," +
-            "  SCHEMA_NAME," +
-            "  TABLE_NAME," +
-            "  INDEX_NAME," +
-            "  INDEX_TYPE," +
-            "  COLUMNS," +
-            "  IS_PK," +
-            "  IS_UNIQUE," +
-            "  INLINE_SIZE" +
+            " CACHE_ID," +
+            " CACHE_NAME," +
+            " SCHEMA_NAME," +
+            " TABLE_NAME," +
+            " INDEX_NAME," +
+            " INDEX_TYPE," +
+            " COLUMNS," +
+            " IS_PK," +
+            " IS_UNIQUE," +
+            " INLINE_SIZE" +
             " FROM SYS.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
 
         List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
@@ -72,23 +72,22 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
         for (List<?> idx : clientNodeNodeIndexes)
             assertTrue(srvNodeIndexes.contains(idx));
 
-        String[][] expectedResults = {
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "IDX_GEO_1", "SPATIAL", "\"GEOM\" ASC", "false", "false", "0"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC", "true", "true", "5"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC", "true", "true", "0"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_proxy", "BTREE", "\"ID1\" ASC", "false", "false", "0"}
+        Object[][] expectedResults = {
+                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "IDX_GEO_1", "SPATIAL", "\"GEOM\" ASC", false, false, null},
+                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", null, false, false, null},
+                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC", true, true, 5},
+                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC", false, true, null}
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {
             List<?> resRow = srvNodeIndexes.get(i);
 
-            String[] expRow = expectedResults[i];
+            Object[] expRow = expectedResults[i];
 
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
+                assertEquals(expRow[j], resRow.get(j));
         }
     }
 

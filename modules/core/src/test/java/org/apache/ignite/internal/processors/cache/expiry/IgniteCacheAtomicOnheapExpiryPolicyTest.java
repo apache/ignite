@@ -18,6 +18,12 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
+import org.junit.Ignore;
+
+/**
+ *
+ */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteCacheAtomicOnheapExpiryPolicyTest extends IgniteCacheAtomicExpiryPolicyTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {

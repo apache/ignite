@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.net.ssl.SSLContext;
@@ -49,12 +50,31 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
+import org.apache.ignite.configuration.ExecutorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.PlatformCacheConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
@@ -93,6 +113,7 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.util.AttributeNodeFilter;
 
 /**
  * Configuration utils.
@@ -102,6 +123,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
+    /** */
+    private static final Executor synchronousExecutor = Runnable::run;
+
     /**
      * Write .Net configuration to the stream.
      *
@@ -228,6 +252,8 @@ public class PlatformConfigurationUtils {
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
+        ccfg.setNodeFilter(readAttributeNodeFilter(in));
+
         int keyCnt = in.readInt();
 
         if (keyCnt > 0) {
@@ -329,6 +355,48 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the node filter config.
+     *
+     * @param in Stream.
+     * @return AttributeNodeFilter.
+     */
+    public static AttributeNodeFilter readAttributeNodeFilter(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        int cnt = in.readInt();
+
+        Map<String, Object> attrs = new HashMap<>(cnt);
+        for (int i = 0; i < cnt; i++)
+            attrs.put(in.readString(), in.readObject());
+
+        return new AttributeNodeFilter(attrs);
+    }
+
+    /**
+     * Writes the node filter.
+     * @param out Stream.
+     * @param nodeFilter IgnitePredicate.
+     */
+    private static void writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
+        if (!(nodeFilter instanceof AttributeNodeFilter)) {
+            out.writeBoolean(false);
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        Map<String, Object> attrs = ((AttributeNodeFilter) nodeFilter).getAttrs();
+
+        out.writeInt(attrs.size());
+
+        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+            out.writeString(entry.getKey());
+            out.writeObject(entry.getValue());
+        }
+    }
+
+    /**
      * Reads the eviction policy.
      *
      * @param in Stream.
@@ -389,6 +457,18 @@ public class PlatformConfigurationUtils {
                 f.setPartitions(partitions);
                 f.setExcludeNeighbors(exclNeighbours);
                 baseFunc = f;
+
+                int attrCnt = in.readInt();
+                if (attrCnt > 0) {
+                    String[] attrs = new String[attrCnt];
+
+                    for (int i = 0; i < attrCnt; i++) {
+                        attrs[i] = in.readString();
+                    }
+
+                    f.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(attrs));
+                }
+
                 break;
             }
             default:
@@ -399,7 +479,7 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the near config.
+     * Writes the near config.
      *
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
@@ -429,17 +509,23 @@ public class PlatformConfigurationUtils {
             out.writeBoolean(f0.isExcludeNeighbors());
             out.writeByte((byte) 0);  // override flags
             out.writeObject(null);  // user func
+
+            writeAffinityBackupFilter(out, f0.getAffinityBackupFilter());
         }
         else if (f instanceof PlatformAffinityFunction) {
             PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
             AffinityFunction baseFunc = f0.getBaseFunc();
 
             if (baseFunc instanceof RendezvousAffinityFunction) {
+                RendezvousAffinityFunction rendezvous = (RendezvousAffinityFunction) baseFunc;
+
                 out.writeByte((byte) 2);
                 out.writeInt(f0.partitions());
-                out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeBoolean(rendezvous.isExcludeNeighbors());
                 out.writeByte(f0.getOverrideFlags());
                 out.writeObject(f0.getUserFunc());
+
+                writeAffinityBackupFilter(out, rendezvous.getAffinityBackupFilter());
             }
             else {
                 out.writeByte((byte) 3);
@@ -451,6 +537,26 @@ public class PlatformConfigurationUtils {
         }
         else
             out.writeByte((byte)0);
+    }
+
+    /**
+     * Writes affinity backup filter.
+     *
+     * @param out Stream.
+     * @param filter Filter.
+     */
+    private static void writeAffinityBackupFilter(BinaryRawWriter out, Object filter) {
+        if (filter instanceof ClusterNodeAttributeAffinityBackupFilter) {
+            ClusterNodeAttributeAffinityBackupFilter backupFilter = (ClusterNodeAttributeAffinityBackupFilter) filter;
+
+            String[] attrs = backupFilter.getAttributeNames();
+            out.writeInt(attrs.length);
+
+            for (String attr : attrs)
+                out.writeString(attr);
+        }
+        else
+            out.writeInt(-1);
     }
 
     /**
@@ -656,6 +762,10 @@ public class PlatformConfigurationUtils {
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setSqlQueryHistorySize(in.readInt());
+        if (in.readBoolean())
+            cfg.setPeerClassLoadingEnabled(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setAsyncContinuationExecutor(getAsyncContinuationExecutor(in.readInt()));
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1066,6 +1176,8 @@ public class PlatformConfigurationUtils {
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
 
+        writeAttributeNodeFilter(writer, ccfg.getNodeFilter());
+
         CacheKeyConfiguration[] keys = ccfg.getKeyConfiguration();
 
         if (keys != null) {
@@ -1258,6 +1370,10 @@ public class PlatformConfigurationUtils {
         }
         w.writeBoolean(true);
         w.writeInt(cfg.getSqlQueryHistorySize());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isPeerClassLoadingEnabled());
+        w.writeBoolean(true);
+        w.writeInt(getAsyncContinuationExecutorMode(cfg.getAsyncContinuationExecutor()));
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(0);
@@ -1947,7 +2063,8 @@ public class PlatformConfigurationUtils {
                 .setSystemRegionMaxSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
-                .setWalAutoArchiveAfterInactivity(in.readLong());
+                .setWalAutoArchiveAfterInactivity(in.readLong())
+                .setWalForceArchiveTimeout(in.readLong());
 
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
@@ -2083,6 +2200,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getPageSize());
             w.writeInt(cfg.getConcurrencyLevel());
             w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
+            w.writeLong(cfg.getWalForceArchiveTimeout());
 
             if (cfg.getCheckpointReadLockTimeout() != null) {
                 w.writeBoolean(true);
@@ -2224,6 +2342,38 @@ public class PlatformConfigurationUtils {
         }
 
         cfg.setLocalEventListeners(lsnrs);
+    }
+
+    /**
+     * Gets the executor.
+     *
+     * @param mode Mode.
+     * @return Executor.
+     */
+    private static Executor getAsyncContinuationExecutor(int mode) {
+        switch (mode) {
+            case 0: return null;
+            case 1: return synchronousExecutor;
+            default: throw new IgniteException("Invalid AsyncContinuationExecutor mode: " + mode);
+        }
+    }
+
+    /**
+     * Gets the executor mode.
+     *
+     * @param executor Executor.
+     * @return Mode.
+     */
+    private static int getAsyncContinuationExecutorMode(Executor executor) {
+        if (executor == null) {
+            return 0;
+        }
+
+        if (executor.equals(synchronousExecutor)) {
+            return 1;
+        }
+
+        return 2;
     }
 
     /**

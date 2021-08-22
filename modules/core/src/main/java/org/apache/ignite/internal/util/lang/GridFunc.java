@@ -1216,6 +1216,16 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable char[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
      * Tests if the given collection is either {@code null} or empty.
      *
      * @param c Collection to test.
@@ -2796,6 +2806,20 @@ public class GridFunc {
         }
 
         return false;
+    }
+
+    /**
+     * Checks if key is contained in the map passed in. If the map
+     * is {@code null}, then {@code false} is returned.
+     *
+     * @param m Map to check.
+     * @param k Key to check for containment.
+     * @param <T> Key type.
+     * @return {@code true} if map is not {@code null} and contains given
+     *      key, {@code false} otherwise.
+     */
+    public static <T> boolean mapContainsKey(@Nullable final Map<T, ?> m, final T k) {
+        return m != null && m.containsKey(k);
     }
 
     /**

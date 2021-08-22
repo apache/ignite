@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.indexing;
 
+import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
-
-import java.util.Set;
 
 /**
  * Indexing query filter for specific cache.

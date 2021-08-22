@@ -146,9 +146,9 @@ public interface GridClient extends AutoCloseable {
     @Override public void close();
 
     /**
-     * If client was not connected topology, throw last error encountered.
+     * Check for last topology errors.
      *
-     * @throws GridClientException If client was not connected
+     * @return {@code Exception} if client was not connected.
      */
-    public void throwLastError() throws GridClientException;
+    public GridClientException checkLastError();
 }

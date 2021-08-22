@@ -16,85 +16,106 @@
  */
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintWriter;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
 
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
  */
 public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /** */
-    public static final String IDLE_VERIFY_FILE_PREFIX = IDLE_VERIFY + "-";
-
-    /** Time formatter for log file name. */
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts = new HashMap<>();
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions = new HashMap<>();
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions = new HashMap<>();
 
     /** Exceptions. */
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
 
     /**
-     * @param cntrConflicts Counter conflicts.
-     * @param hashConflicts Hash conflicts.
-     * @param movingPartitions Moving partitions.
-     * @param exceptions Occured exceptions.
+     * Default constructor for Externalizable.
      */
-    public IdleVerifyResultV2(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions,
-        Map<ClusterNode, Exception> exceptions
-    ) {
-        this.cntrConflicts = cntrConflicts;
-        this.hashConflicts = hashConflicts;
-        this.movingPartitions = movingPartitions;
-        this.lostPartitions = lostPartitions;
+    public IdleVerifyResultV2() {
+    }
+
+    /**
+     * @param exceptions Occurred exceptions.
+     */
+    public IdleVerifyResultV2(Map<ClusterNode, Exception> exceptions) {
         this.exceptions = exceptions;
     }
 
     /**
-     * Default constructor for Externalizable.
+     * @param clusterHashes Map of cluster partition hashes.
+     * @param exceptions Exceptions on each cluster node.
      */
-    public IdleVerifyResultV2() {
+    public IdleVerifyResultV2(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        Map<ClusterNode, Exception> exceptions
+    ) {
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
+            Integer partHash = null;
+            Long updateCntr = null;
+
+            for (PartitionHashRecordV2 record : e.getValue()) {
+                if (record.partitionState() == PartitionHashRecordV2.PartitionState.MOVING) {
+                    movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                        .add(record);
+
+                    continue;
+                }
+
+                if (record.partitionState() == PartitionHashRecordV2.PartitionState.LOST) {
+                    lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                        .add(record);
+
+                    continue;
+                }
+
+                if (partHash == null) {
+                    partHash = record.partitionHash();
+
+                    updateCntr = record.updateCounter();
+                }
+                else {
+                    if (record.updateCounter() != updateCntr)
+                        cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
+
+                    if (record.partitionHash() != partHash)
+                        hashConflicts.putIfAbsent(e.getKey(), e.getValue());
+                }
+            }
+        }
+
+        this.exceptions = exceptions;
     }
 
     /** {@inheritDoc} */
@@ -143,7 +164,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @return Moving partitions.
      */
     public Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions() {
-        return movingPartitions;
+        return Collections.unmodifiableMap(movingPartitions);
     }
 
     /**
@@ -154,7 +175,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /**
-     * @return <code>true</code> if any conflicts were discovered during idle_verify check.
+     * @return {@code true} if any conflicts were discovered during the check.
      */
     public boolean hasConflicts() {
         return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts());
@@ -168,49 +189,12 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /**
-     * Print formatted result to given printer. If exceptions presented exception messages will be written to log file.
+     * Print formatted result to the given printer.
      *
      * @param printer Consumer for handle formatted result.
-     * @return Path to log file if exceptions presented and {@code null} otherwise.
+     * @param printExceptionMessages {@code true} if exceptions must be included too.
      */
-    public @Nullable String print(Consumer<String> printer) {
-        print(printer, false);
-
-        if (!F.isEmpty(exceptions)) {
-            File wd = null;
-
-            try {
-                wd = U.resolveWorkDirectory(U.defaultWorkDirectory(), "", false);
-            }
-            catch (IgniteCheckedException e) {
-                printer.accept("Can't find work directory. " + e.getMessage() + "\n");
-
-                e.printStackTrace();
-            }
-
-            File f = new File(wd, IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
-
-            try (PrintWriter pw = new PrintWriter(f)) {
-                print(pw::write, true);
-
-                pw.flush();
-
-                printer.accept("See log for additional information. " + f.getAbsolutePath() + "\n");
-
-                return f.getAbsolutePath();
-            }
-            catch (FileNotFoundException e) {
-                printer.accept("Can't write exceptions to file " + f.getAbsolutePath() + " " + e.getMessage() + "\n");
-
-                e.printStackTrace();
-            }
-        }
-
-        return null;
-    }
-
-    /** */
-    private void print(Consumer<String> printer, boolean printExceptionMessages) {
+    public void print(Consumer<String> printer, boolean printExceptionMessages) {
         boolean noMatchingCaches = false;
 
         boolean succeeded = true;
@@ -228,26 +212,31 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             if (!F.isEmpty(exceptions)) {
                 int size = exceptions.size();
 
-                printer.accept("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+                printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
             }
 
             if (!hasConflicts())
-                printer.accept("idle_verify check has finished, no conflicts have been found.\n");
+                printer.accept("The check procedure has finished, no conflicts have been found.\n");
             else
                 printConflicts(printer);
 
-            printSkippedPartitions(printer, movingPartitions(), "MOVING");
+            Map<PartitionKeyV2, List<PartitionHashRecordV2>> moving = movingPartitions();
+
+            if (!moving.isEmpty())
+                printer.accept("Possible results are not full due to rebalance still in progress." + U.nl());
+
+            printSkippedPartitions(printer, moving, "MOVING");
             printSkippedPartitions(printer, lostPartitions(), "LOST");
         }
         else {
-            printer.accept("\nidle_verify failed.\n");
+            printer.accept("\nThe check procedure failed.\n");
 
             if (noMatchingCaches)
                 printer.accept("\nThere are no caches matching given filter options.\n");
         }
 
         if (!F.isEmpty(exceptions())) {
-            printer.accept("\nIdle verify failed on nodes:\n");
+            printer.accept("\nThe check procedure failed on nodes:\n");
 
             for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
                 ClusterNode n = e.getKey();
@@ -294,7 +283,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         int cntrConflictsSize = counterConflicts().size();
         int hashConflictsSize = hashConflicts().size();
 
-        printer.accept("idle_verify check has finished, found " + (cntrConflictsSize + hashConflictsSize) +
+        printer.accept("The check procedure has finished, found " + (cntrConflictsSize + hashConflictsSize) +
             " conflict partitions: [counterConflicts=" + cntrConflictsSize + ", hashConflicts=" +
             hashConflictsSize + "]\n");
 
@@ -318,9 +307,29 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 printer.accept("Partition instances: " + entry.getValue() + "\n");
             }
-
-            printer.accept("\n");
         }
+
+        printer.accept("\n");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        IdleVerifyResultV2 v2 = (IdleVerifyResultV2)o;
+
+        return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
+            Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
+            Objects.equals(exceptions, v2.exceptions);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions);
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,87 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= ANN (Approximate Nearest Neighbor)
+
+An approximate nearest neighbor search algorithm is allowed to return points, whose distance from the query is at most *c* times the distance from the query to its nearest points.
+
+The appeal of this approach is that, in many cases, an approximate nearest neighbor is almost as good as the exact one. In particular, if the distance measure accurately captures the notion of user quality, then small differences in the distance should not matter.
+
+The ANN algorithm is able to solve multi-class classification tasks. The Apache Ignite implementation is a heuristic algorithm based upon searching of small limited size *N* of candidate points (internally it uses a distributed KMeans clustering algorithm to find centroids) that can vote for class labels like a KNN algorithm.
+
+The difference between KNN and ANN is that in the prediction phase, all training points are involved in searching k-nearest neighbors in the KNN algorithm, but in ANN this search starts only on a small subset of candidates points.
+
+NOTE: if *N* is set to the size of the training set, the ANN reduces to KNN with enormous time spent in the training phase. So, instead, choose *N* comparable with *k* (e.g. 10 x k, 100 x k, and so on).
+
+== Model
+
+ANN classification output represents a class membership. An object is classified by the majority votes of its neighbors. The object is assigned to a particular class that is most common among its *k* nearest neighbors. *k* is a positive integer, typically small. There is a special case when *k* is 1, then the object is simply assigned to the class of that single nearest neighbor.
+At present, Ignite supports the following parameters for the ANN classification algorithm:
+
+  * k - the number of nearest neighbors.
+  * distanceMeasure - one of the distance metrics provided by the Machine Learning (ML) framework, such as Euclidean, Hamming or Manhattan.
+  * isWeighted - false by default, if true it enables a weighted KNN algorithm.
+
+
+[source, java]
+----
+NNClassificationModel knnMdl = trainer.fit(
+...
+).withK(5)
+ .withDistanceMeasure(new EuclideanDistance())
+ .withWeighted(true);
+
+
+// Make a prediction.
+double prediction = knnMdl.predict(observation);
+----
+
+== Trainer
+
+The trainer of the ANN model uses KMeans to calculate the candidate subset and this is the reason that it has the same parameters as the KMeans algorithm to tune its hyperparameters. It builds not only the set of candidates but also their class-label distributions to vote for the class label during the prediction phase.
+
+At present, Ignite supports the following parameters for the ANNClassificationTrainer:
+
+  * k - the number of possible clusters.
+  * maxIterations - one stop criteria (the other one is epsilon).
+  * epsilon - delta of convergence (delta between old and new centroid values).
+  * distance - one of the distance metrics provided by the ML framework, such as Euclidean, Hamming or Manhattan.
+  * seed - one of initialization parameters which helps to reproduce models (trainer has a random initialization step to get the first centroids).
+
+
+[source, java]
+----
+// Set up the trainer
+ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+  .withDistance(new ManhattanDistance())
+  .withK(50)
+  .withMaxIterations(1000)
+  .withSeed(1234L)
+  .withEpsilon(1e-2);
+
+// Build the model
+NNClassificationModel knnMdl = trainer.fit(
+  ignite,
+  dataCache,
+  vectorizer
+).withK(5)
+ .withDistanceMeasure(new EuclideanDistance())
+ .withWeighted(true);
+----
+
+== Example
+
+
+To see how ANNClassificationModel can be used in practice, try this https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/knn/ANNClassificationExample.java[example] that is available on GitHub and delivered with every Apache Ignite distribution. The training dataset is the Iris dataset that can be loaded from the https://archive.ics.uci.edu/ml/datasets/iris[UCI Machine Learning Repository].
+

@@ -56,6 +56,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.util.StringUtils;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+
 /**
  * Tests for correct distributed partitioned queries.
  */
@@ -94,6 +96,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setWriteSynchronizationMode(FULL_SYNC)
             .setBackups(1)
             .setIndexedTypes(idxTypes);
     }
@@ -384,9 +387,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      */
     private void doTestReplicatedTablesUsingPartitionedCache(int segments, boolean client, boolean replicatedOnlyFlag) {
-        IgniteCache<Integer,Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
+        IgniteCache<Integer, Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
             Integer.class, Value.class).setQueryParallelism(segments));
-        IgniteCache<Integer,Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
+        IgniteCache<Integer, Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
             Integer.class, Value.class));
 
         try {
@@ -432,9 +435,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      */
     private void doTestPartitionedTablesUsingReplicatedCache(int segments, boolean client) {
-        IgniteCache<Integer,Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
+        IgniteCache<Integer, Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
             Integer.class, Value.class).setQueryParallelism(segments));
-        IgniteCache<Integer,Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
+        IgniteCache<Integer, Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
             Integer.class, Value.class));
 
         try {
@@ -519,9 +522,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void testExists() {
-        IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
+        IgniteCache<Integer, Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
             Integer.class, Person2.class));
-        IgniteCache<Integer,Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
+        IgniteCache<Integer, Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
             Integer.class, Person2.class));
 
         try {
@@ -563,11 +566,11 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testSortedMergeIndex() throws Exception {
-        IgniteCache<Integer,Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
+        IgniteCache<Integer, Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
             Integer.class, Value.class));
 
         try {
-            GridTestUtils.setFieldValue(null, AbstractReducer.class, "PREFETCH_SIZE", 8);
+            GridTestUtils.setFieldValue(AbstractReducer.class, "prefetchSize", 8);
 
             Random rnd = new GridRandom();
 
@@ -617,7 +620,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             }
         }
         finally {
-            GridTestUtils.setFieldValue(null, AbstractReducer.class, "PREFETCH_SIZE", 1024);
+            GridTestUtils.setFieldValue(AbstractReducer.class, "prefetchSize", 1024);
 
             c.destroy();
         }
@@ -844,7 +847,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1" +
+            String select0 =
+                "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1" +
                 " union select o.name n1, p.name n2 from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key and o._key=2";
 
             String plan = (String)c1.query(new SqlFieldsQuery("explain " + select0)
@@ -867,8 +871,10 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
             assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
 
-            String select1 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1" +
-                " union select * from (select o.name n1, p.name n2 from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key and o._key=2)";
+            String select1 =
+                "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1" +
+                " union select * from (" +
+                    "select o.name n1, p.name n2 from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key and o._key=2)";
 
             plan = (String)c1.query(new SqlFieldsQuery("explain " + select1)
                 .setDistributedJoins(true)).getAll().get(0).get(0);
@@ -1086,8 +1092,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             {
                 String sql = "select * from " +
-                    "(select o1._key k1, o2._key k2 from \"orgRepl\".Organization o1, \"orgRepl2\".Organization o2 where o1._key > o2._key) o, " +
-                    "\"persPart\".Person2 p where p.orgId = o.k1";
+                    "(select o1._key k1, o2._key k2 from \"orgRepl\".Organization o1, \"orgRepl2\".Organization o2 " +
+                    "where o1._key > o2._key) o, \"persPart\".Person2 p where p.orgId = o.k1";
 
                 checkQueryPlan(persPart,
                     false,
@@ -1370,7 +1376,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+            String select0 =
+                "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
             checkQueryPlan(c1, true, 1, new SqlFieldsQuery(select0));
 
@@ -1486,7 +1493,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+            String select0 =
+                "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
             final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
@@ -1701,7 +1709,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
      * @param enforceJoinOrder Enforce join order.
      */
     private void doTestDistributedJoins(
-        IgniteCache<?,?> qryCache,
+        IgniteCache<?, ?> qryCache,
         IgniteCache<Integer, Person2> c1,
         IgniteCache<Integer, Organization> c2,
         int orgs,

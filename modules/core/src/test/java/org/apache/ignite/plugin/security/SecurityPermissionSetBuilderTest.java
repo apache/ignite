@@ -33,10 +33,10 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOKE;
-import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -99,7 +99,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                     }
                 }, IgniteException.class,
                 "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                    "JOIN_AS_SERVER], but you try TASK_EXECUTE"
+                    "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS], but you try TASK_EXECUTE"
         );
 
         assertThrows(log, new Callable<Object>() {
@@ -109,7 +109,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 }
             }, IgniteException.class,
             "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                "JOIN_AS_SERVER], but you try SERVICE_INVOKE"
+                "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS], but you try SERVICE_INVOKE"
         );
 
         permsBuilder

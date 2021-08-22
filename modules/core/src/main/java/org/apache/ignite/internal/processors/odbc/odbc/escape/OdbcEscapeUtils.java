@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc.escape;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcUtils;
-
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcUtils;
 
 /**
  * ODBC escape sequence parse.

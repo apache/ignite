@@ -30,10 +30,12 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -99,7 +101,9 @@ namespace Apache.Ignite.Core.Impl
             GetBaselineAutoAdjustTimeout = 34,
             SetBaselineAutoAdjustTimeout = 35,
             GetCacheConfig = 36,
-            GetThreadLocal = 37
+            GetThreadLocal = 37,
+            GetOrCreateLock = 38,
+            GetAffinityManager = 39,
         }
 
         /** */
@@ -127,7 +131,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly IList<LifecycleHandlerHolder> _lifecycleHandlers;
 
         /** Local node. */
-        private IClusterNode _locNode;
+        private volatile IClusterNode _locNode;
 
         /** Callbacks */
         private readonly UnmanagedCallbacks _cbs;
@@ -137,7 +141,7 @@ namespace Apache.Ignite.Core.Impl
             new ConcurrentDictionary<Guid, ClusterNodeImpl>();
 
         /** Client reconnect task completion source. */
-        private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
+        private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource =
             new TaskCompletionSource<bool>();
 
         /** Plugin processor. */
@@ -187,7 +191,7 @@ namespace Apache.Ignite.Core.Impl
             SetCompactFooter();
 
             _pluginProcessor = new PluginProcessor(this);
-            
+
             _platformCacheManager = new PlatformCacheManager(this);
         }
 
@@ -468,7 +472,7 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration,
             PlatformCacheConfiguration platformCacheConfiguration)
         {
-            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, platformCacheConfiguration, 
+            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, platformCacheConfiguration,
                 Op.GetOrCreateCacheFromConfig);
         }
 
@@ -489,7 +493,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration,
             NearCacheConfiguration nearConfiguration)
         {
             return CreateCache<TK, TV>(configuration, nearConfiguration, null);
@@ -499,14 +503,14 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration,
             PlatformCacheConfiguration platformCacheConfiguration)
         {
-            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, platformCacheConfiguration, 
+            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, platformCacheConfiguration,
                 Op.CreateCacheFromConfig);
         }
 
         /// <summary>
         /// Gets or creates the cache.
         /// </summary>
-        private ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+        private ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration,
             NearCacheConfiguration nearConfiguration, PlatformCacheConfiguration platformCacheConfiguration, Op op)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
@@ -644,8 +648,19 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
 
             var aff = DoOutOpObject((int) Op.GetAffinity, w => w.WriteString(cacheName));
-            
+
             return new CacheAffinityImpl(aff, false);
+        }
+
+        /** <inheritdoc /> */
+        public CacheAffinityManager GetAffinityManager(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            var mgr = DoOutOpObject((int) Op.GetAffinityManager,
+                (IBinaryStream s) => s.WriteInt(BinaryUtils.GetCacheId(cacheName)));
+
+            return new CacheAffinityManager(mgr);
         }
 
         /** <inheritdoc /> */
@@ -916,7 +931,7 @@ namespace Apache.Ignite.Core.Impl
         public void EnableWal(string cacheName)
         {
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
-            
+
             DoOutOp((int) Op.EnableWal, w => w.WriteString(cacheName));
         }
 
@@ -931,7 +946,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout)
         {
-            DoOutOp((int) Op.SetTxTimeoutOnPartitionMapExchange, 
+            DoOutOp((int) Op.SetTxTimeoutOnPartitionMapExchange,
                 (BinaryWriter w) => w.WriteLong((long) timeout.TotalMilliseconds));
         }
 
@@ -992,6 +1007,39 @@ namespace Apache.Ignite.Core.Impl
 
             DoOutOp((int) Op.AddCacheConfiguration,
                 s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
+        }
+
+        /** <inheritdoc /> */
+        public IIgniteLock GetOrCreateLock(string name)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var configuration = new LockConfiguration
+            {
+                Name = name
+            };
+
+            return GetOrCreateLock(configuration, true);
+        }
+
+        /** <inheritdoc /> */
+        public IIgniteLock GetOrCreateLock(LockConfiguration configuration, bool create)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, "configuration.Name");
+
+            // Create a copy to ignore modifications from outside.
+            var cfg = new LockConfiguration(configuration);
+
+            var target = DoOutOpObject((int) Op.GetOrCreateLock, w =>
+            {
+                w.WriteString(configuration.Name);
+                w.WriteBoolean(configuration.IsFailoverSafe);
+                w.WriteBoolean(configuration.IsFair);
+                w.WriteBoolean(create);
+            });
+
+            return target == null ? null : new IgniteLock(target, cfg);
         }
 
         /// <summary>
@@ -1088,13 +1136,13 @@ namespace Apache.Ignite.Core.Impl
         internal ITransactions GetTransactionsWithLabel(string label)
         {
             Debug.Assert(label != null);
-            
+
             var platformTargetInternal = DoOutOpObject((int) Op.GetTransactions, s =>
             {
                 var w = BinaryUtils.Marshaller.StartMarshal(s);
                 w.WriteString(label);
             });
-            
+
             return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id, label);
         }
 
@@ -1121,8 +1169,14 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnClientDisconnected()
         {
+            // Clear cached node data.
+            // Do not clear _nodes - it is in sync with PlatformContextImpl.sentNodes.
+            _locNode = null;
+            _prj.ClearCachedNodeData();
+
+            // Raise events.
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
-            
+
             var handler = ClientDisconnected;
             if (handler != null)
                 handler.Invoke(this, EventArgs.Empty);
@@ -1135,7 +1189,7 @@ namespace Apache.Ignite.Core.Impl
         internal void OnClientReconnected(bool clusterRestarted)
         {
             _marsh.OnClientReconnected(clusterRestarted);
-            
+
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
 
             var handler = ClientReconnected;

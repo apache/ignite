@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -57,9 +58,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         ctx = newContext();
         execSvc = Executors.newSingleThreadExecutor();
 
-        ctx.setSystemExecutorService(execSvc);
-
-        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new PoolProcessor(ctx) {
+            @Override public ExecutorService getSystemExecutorService() {
+                return execSvc;
+            }
+        });
 
         ctx.add(new GridClosureProcessor(ctx));
     }
@@ -161,7 +164,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnUpdated() throws Exception {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
         MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 
         ctx.onMarshallerProcessorStarted(this.ctx, null);

@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.Map;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.Map;
 
 /**
  * GetAll request.

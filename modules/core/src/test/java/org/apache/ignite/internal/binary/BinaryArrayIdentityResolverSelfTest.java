@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -30,10 +33,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;

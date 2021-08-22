@@ -23,22 +23,17 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Native cache wrapper implementation.
+ * Affinity wrapper for platforms.
  */
 public class PlatformAffinity extends PlatformAbstractTarget {
     /** */
@@ -86,45 +81,28 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     /** */
     public static final int OP_PARTITIONS = 15;
 
-    /** */
-    public static final int OP_IS_ASSIGNMENT_VALID = 16;
-
-    /** */
-    private static final C1<ClusterNode, UUID> TO_NODE_ID = new C1<ClusterNode, UUID>() {
-        @Nullable @Override public UUID apply(ClusterNode node) {
-            return node != null ? node.id() : null;
-        }
-    };
-
     /** Underlying cache affinity. */
     private final Affinity<Object> aff;
 
     /** Discovery manager */
     private final GridDiscoveryManager discovery;
 
-    /** Affinity manager. */
-    private final GridCacheAffinityManager affMgr;
-
     /**
      * Constructor.
      *
      * @param platformCtx Context.
-     * @param igniteCtx Ignite context.
      * @param name Cache name.
      */
-    public PlatformAffinity(PlatformContext platformCtx, GridKernalContext igniteCtx, @Nullable String name)
+    public PlatformAffinity(PlatformContext platformCtx, @Nullable String name)
         throws IgniteCheckedException {
         super(platformCtx);
 
-        this.aff = igniteCtx.grid().affinity(name);
+        aff = platformCtx.kernalContext().grid().affinity(name);
 
         if (aff == null)
             throw new IgniteCheckedException("Cache with the given name doesn't exist: " + name);
 
-        this.affMgr = this.platformCtx.kernalContext().cache().context().cacheContext(GridCacheUtils.cacheId(name))
-                .affinity();
-
-        discovery = igniteCtx.discovery();
+        discovery = platformCtx.kernalContext().discovery();
     }
 
     /** {@inheritDoc} */
@@ -170,24 +148,6 @@ public class PlatformAffinity extends PlatformAbstractTarget {
                     return FALSE;
 
                 return aff.isPrimaryOrBackup(node, key) ? TRUE : FALSE;
-            }
-
-            case OP_IS_ASSIGNMENT_VALID: {
-                AffinityTopologyVersion ver = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
-                int part = reader.readInt();
-                AffinityTopologyVersion endVer = affMgr.affinityTopologyVersion();
-
-                if (!affMgr.primaryChanged(part, ver, endVer)) {
-                    return TRUE;
-                }
-
-                if (!affMgr.partitionLocalNode(part, endVer)) {
-                    return FALSE;
-                }
-
-                // Special case: late affinity assignment when primary changes to local node due to a node join.
-                // Specified partition is local, and near cache entries are valid for primary keys.
-                return ver.topologyVersion() == endVer.topologyVersion() ? TRUE : FALSE;
             }
 
             default:

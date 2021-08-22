@@ -36,6 +36,7 @@ import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY
  * </p>
  * Count read frequency for each file and compare with ideal uniform distribution.
  */
+@Deprecated
 public class VisorIgfsProfilerUniformityCounters extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

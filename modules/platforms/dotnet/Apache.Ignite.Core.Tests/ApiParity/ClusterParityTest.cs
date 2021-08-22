@@ -23,7 +23,7 @@
     /// <summary>
     /// Tests that <see cref="ICluster"/> has all APIs from Java Ignite interface.
     /// </summary>
-    [Ignore(ParityTest.IgnoreReason)]
+    [Explicit(ParityTest.IgnoreReason)]
     public class ClusterParityTest
     {
         /** Members that are not needed on .NET side. */
@@ -45,7 +45,9 @@
         {
             "enableStatistics",  // IGNITE-7276
             "clearStatistics",  // IGNITE-9017
-            "state" // IGNITE-11863
+            "state", // IGNITE-11863
+            "id",  // IGNITE-13141
+            "tag"  // IGNITE-13141
         };
 
         /// <summary>

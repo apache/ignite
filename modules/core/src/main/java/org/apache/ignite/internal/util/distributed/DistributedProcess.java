@@ -32,6 +32,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -179,7 +180,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id,msg.result(), msg.error());
+            finish.apply(p.id, msg.result(), msg.error());
 
             processes.remove(msg.processId());
         });
@@ -281,11 +282,20 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
             (Exception)p.resFut.error());
 
-        if (F.eq(ctx.localNodeId(), p.crdId))
-            onSingleNodeMessageReceived(singleMsg, p.crdId);
+        UUID crdId = p.crdId;
+
+        if (F.eq(ctx.localNodeId(), crdId))
+            onSingleNodeMessageReceived(singleMsg, crdId);
         else {
             try {
-                ctx.io().sendToGridTopic(p.crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+                ctx.io().sendToGridTopic(crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                // The coordinator has failed. The single message will be sent when a new coordinator initialized.
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
+                        ", processId=" + p.id + ", error=" + e.getMessage() + ']');
+                }
             }
             catch (IgniteCheckedException e) {
                 log.error("Unable to send message to coordinator.", e);
@@ -391,6 +401,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /** Defines distributed processes. */
     public enum DistributedProcessType {
+        /** For test purposes only. */
+        TEST_PROCESS,
+
         /**
          * Master key change prepare process.
          *
@@ -417,6 +430,36 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see IgniteSnapshotManager
          */
-        END_SNAPSHOT
+        END_SNAPSHOT,
+
+        /**
+         * Cache group encyption key change prepare phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_PREPARE,
+
+        /**
+         * Cache group encyption key change perform phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_FINISH,
+
+        /**
+         * Rotate performance statistics.
+         */
+        PERFORMANCE_STATISTICS_ROTATE,
+
+        /**
+         * Cache group restore prepare phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+
+        /**
+         * Cache group restore cache start phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_START,
+
+        /**
+         * Cache group restore rollback phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
     }
 }

@@ -174,10 +174,49 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), false);
+    @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
+        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
-        return (T)BinaryEnumCache.get(cls, ord);
+        if (ldr != null)
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+
+        try {
+            Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
+
+            return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
+        }
+        finally {
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+        }
+
+    }
+
+    /**
+     * Get value for the given class without any caching.
+     *
+     * @param cls Class.
+     */
+    private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
+        assert cls != null;
+
+        assert !GridBinaryMarshaller.USE_CACHE.get();
+
+        if (ord >= 0) {
+            Object[] vals = cls.getEnumConstants();
+
+            if (ord < vals.length)
+                return (T)vals[ord];
+            else
+                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
+                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
+        }
+        else
+            return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T deserialize() throws BinaryObjectException {
+        return (T)deserialize(null);
     }
 
     /** {@inheritDoc} */
@@ -281,7 +320,12 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-        return deserialize();
+        return value(ctx, cpy, null);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
+        return deserialize(ldr);
     }
 
     /** {@inheritDoc} */
@@ -305,7 +349,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     @Override public int putValue(long addr) throws IgniteCheckedException {
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0);
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes);
     }
 
     /** {@inheritDoc} */
@@ -428,5 +472,19 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         }
 
         return reader.afterMessageRead(BinaryEnumObjectImpl.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        if (valBytes == null) {
+            try {
+                valBytes = U.marshal(ctx.marshaller(), this);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        return BinaryPrimitives.readInt(valBytes, ord + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 }

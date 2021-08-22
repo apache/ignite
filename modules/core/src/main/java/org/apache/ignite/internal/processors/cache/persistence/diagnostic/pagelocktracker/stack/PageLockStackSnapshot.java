@@ -17,36 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.DumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
-
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor.toStringDump;
 
 /**
  * Page lock stack snapshot.
  */
-public class PageLockStackSnapshot implements PageLockDump {
-    /** */
-    public final String name;
-
-    /** */
-    public final long time;
-
-    /** */
-    public final int headIdx;
-
+public class PageLockStackSnapshot extends PageLockDump {
     /** */
     public final PageMetaInfoStore pageIdLocksStack;
-
-    /** */
-    public final int nextOp;
-
-    /** */
-    public final int nextOpStructureId;
-
-    /** */
-    public final long nextOpPageId;
 
     /**
      *
@@ -60,27 +39,7 @@ public class PageLockStackSnapshot implements PageLockDump {
         int nextOpStructureId,
         long nextOpPageId
     ) {
-        this.name = name;
-        this.time = time;
-        this.headIdx = headIdx;
+        super(name, time, headIdx, nextOp, nextOpStructureId, nextOpPageId);
         this.pageIdLocksStack = pageIdLocksStack;
-        this.nextOp = nextOp;
-        this.nextOpStructureId = nextOpStructureId;
-        this.nextOpPageId = nextOpPageId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void apply(DumpProcessor dumpProcessor) {
-        dumpProcessor.processDump(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long time() {
-        return time;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return toStringDump(this);
     }
 }

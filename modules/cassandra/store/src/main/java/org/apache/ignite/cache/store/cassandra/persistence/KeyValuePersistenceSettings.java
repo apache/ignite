@@ -25,11 +25,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.Collections;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.ignite.IgniteException;
@@ -84,7 +84,10 @@ public class KeyValuePersistenceSettings implements Serializable {
     /** Xml element specifying Ignite cache value persistence settings. */
     private static final String VALUE_PERSISTENCE_NODE = "valuePersistence";
 
-    /** TTL (time to leave) for rows inserted into Cassandra table {@link <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Expiring data</a>}. */
+    /**
+     * TTL (time to leave) for rows inserted into Cassandra table
+     * {@link <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Expiring data</a>}.
+     */
     private Integer ttl;
 
     /** Cassandra keyspace (analog of tablespace in relational databases). */
@@ -93,10 +96,16 @@ public class KeyValuePersistenceSettings implements Serializable {
     /** Cassandra table. */
     private String tbl;
 
-    /** Cassandra table creation options {@link <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_table_r.html">CREATE TABLE</a>}. */
+    /**
+     * Cassandra table creation options
+     * {@link <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_table_r.html">CREATE TABLE</a>}.
+     */
     private String tblOptions;
 
-    /** Cassandra keyspace creation options {@link <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_keyspace_r.html">CREATE KEYSPACE</a>}. */
+    /**
+     * Cassandra keyspace creation options
+     * {@link <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_keyspace_r.html">CREATE KEYSPACE</a>}.
+     */
     private String keyspaceOptions = DFLT_KEYSPACE_OPTIONS;
 
     /** Persistence settings for Ignite cache keys. */

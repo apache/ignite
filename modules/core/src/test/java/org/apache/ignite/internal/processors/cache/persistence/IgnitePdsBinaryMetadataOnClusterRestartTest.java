@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
-
 /**
  *
  */
@@ -113,7 +111,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /**
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testUpdatedBinaryMetadataIsPreservedOnJoinToOldCoordinator() throws Exception {
@@ -167,7 +166,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /**
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNewBinaryMetadataIsWrittenOnOldCoordinator() throws Exception {
@@ -222,7 +222,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * after full cluster restart it starts second (so it doesn't take the role of coordinator)
      * but metadata update is propagated to it anyway.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNewBinaryMetadataIsPropagatedToAllOutOfDataNodes() throws Exception {
@@ -290,7 +291,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * If joining node has incompatible BinaryMetadata (e.g. when user manually copies binary_meta file),
      * coordinator detects it and fails the node providing information about conflict.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNodeWithIncompatibleMetadataIsProhibitedToJoinTheCluster() throws Exception {
@@ -336,11 +338,14 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         String expectedMsg = String.format(
             "Type '%s' with typeId %d has a different/incorrect type for field '%s'. Expected 'int' but 'long' was " +
-                "provided. Field type's modification is unsupported, clean {root_path}/marshaller and " +
-                "{root_path}/binary_meta directories if the type change is required.",
+                "provided. The type of an existing field can not be changed. Use a different field name or follow " +
+                "this procedure to reuse the current name:\n" +
+                "- Delete data records that use the old field type;\n" +
+                "- Remove metadata by the command: 'control.sh --meta remove --typeId %d'.",
             DYNAMIC_TYPE_NAME,
             createdTypeId,
-            decimalFieldName);
+            decimalFieldName,
+            createdTypeId);
 
         Throwable thrown = GridTestUtils.assertThrows(
             log,
@@ -366,8 +371,10 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        Path fromFile = Paths.get(workDir, fromWorkDir, BINARY_META_FOLDER, fromConsId, fileName);
-        Path toFile = Paths.get(workDir, toWorkDir, BINARY_META_FOLDER, toConsId, fileName);
+        Path fromFile = Paths.get(workDir, fromWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            fromConsId, fileName);
+        Path toFile = Paths.get(workDir, toWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            toConsId, fileName);
 
         Files.copy(fromFile, toFile, StandardCopyOption.REPLACE_EXISTING);
     }

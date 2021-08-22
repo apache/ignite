@@ -76,17 +76,6 @@ RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLin
 RESTART_SUCCESS_FILE="${IGNITE_HOME}/work/ignite_success_${RANDOM_NUMBER}"
 RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 
-#
-# Find available port for JMX
-#
-# You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
-#
-# This is executed when -nojmx is not specified
-#
-if [ "${NOJMX}" == "0" ] ; then
-    findAvailableJmxPort
-fi
-
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
@@ -133,15 +122,6 @@ if [ "${ENABLE_ASSERTIONS}" = "1" ]; then
 fi
 
 #
-# If this is a Hadoop edition, and HADOOP_HOME set, add the native library location:
-#
-if [ -d "${IGNITE_HOME}/libs/ignite-hadoop/" ] && [ -n "${HADOOP_HOME}" ] && [ -d "${HADOOP_HOME}/lib/native/" ]; then
-   if [[ "${JVM_OPTS}${JVM_XOPTS}" != *-Djava.library.path=* ]]; then
-      JVM_OPTS="${JVM_OPTS} -Djava.library.path=${HADOOP_HOME}/lib/native/"
-   fi
-fi
-
-#
 # Set main class to start service (grid node by default).
 #
 if [ "${MAIN_CLASS:-}" = "" ]; then
@@ -181,6 +161,7 @@ elif [ $version -ge 11 ] ; then
         --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
         --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED \
         --illegal-access=permit \
         ${JVM_OPTS}"
 fi
@@ -193,12 +174,12 @@ do
     if [ "${INTERACTIVE}" == "1" ] ; then
         case $osname in
             Darwin*)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
+                "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
+                "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
@@ -206,12 +187,12 @@ do
     else
         case $osname in
             Darwin*)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
+                "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
                  -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
+                "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
                  -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
             ;;

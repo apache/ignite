@@ -53,6 +53,8 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * TCP binary protocol implementation.
  */
@@ -62,6 +64,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
+
+    /** The name of the metric registry associated with the REST TCP connector. */
+    public static final String REST_CONNECTOR_METRIC_REGISTRY_NAME = metricName("rest", "client");
 
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
@@ -138,8 +143,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() {
-        super.onKernalStart();
+    @Override public void onProcessorStart() {
+        super.onProcessorStart();
 
         Map<Byte, GridClientMarshaller> marshMap = new HashMap<>();
 
@@ -151,7 +156,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         marshMap.put(GridClientZipOptimizedMarshaller.ID, new GridClientZipOptimizedMarshaller(optMarsh, providers));
 
         try {
-            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter(this.getClass().getClassLoader());
+            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
 
             marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller(clsFilter));
         }
@@ -210,8 +215,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
-                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
+                GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    sslCtx,
+                    cfg.isDirectBuffer(),
+                    ByteOrder.nativeOrder(),
+                    log,
+                    ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME));
 
                 sslFilter.directMode(false);
 
@@ -245,6 +254,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
                 .directMode(false)
+                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME))
                 .build();
 
             srv.idleTimeout(cfg.getIdleTimeout());

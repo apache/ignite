@@ -19,14 +19,26 @@ package org.apache.ignite.client;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +46,7 @@ import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Ignite {@link BinaryObject} API system tests.
@@ -121,6 +134,138 @@ public class IgniteBinaryTest {
     }
 
     /**
+     * Check that binary types are registered for nested types too.
+     * With enabled "CompactFooter" binary type schema also should be passed to server.
+     */
+    @Test
+    public void testCompactFooterNestedTypeRegistration() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)))
+            ) {
+                IgniteCache<Integer, Person[]> igniteCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+                ClientCache<Integer, Person[]> clientCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+                Integer key = 1;
+                Person[] val = new Person[] {new Person(1, "Joe")};
+
+                // Binary types should be registered for both "Person[]" and "Person" classes after this call.
+                clientCache.put(key, val);
+
+                // Check that we can deserialize on server using registered binary types.
+                assertArrayEquals(val, igniteCache.get(key));
+            }
+        }
+    }
+
+    /**
+     * Check that binary type schema updates are propagated from client to server and from server to client.
+     */
+    @Test
+    public void testCompactFooterModifiedSchemaRegistration() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+            ClientConfiguration cfg = new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true));
+
+            try (IgniteClient client1 = Ignition.startClient(cfg); IgniteClient client2 = Ignition.startClient(cfg)) {
+                ClientCache<Integer, Object> cache1 = client1.cache(Config.DEFAULT_CACHE_NAME).withKeepBinary();
+                ClientCache<Integer, Object> cache2 = client2.cache(Config.DEFAULT_CACHE_NAME).withKeepBinary();
+
+                String type = "Person";
+
+                // Register type and schema.
+                BinaryObjectBuilder builder = client1.binary().builder(type);
+
+                BinaryObject val1 = builder.setField("Name", "Person 1").build();
+
+                cache1.put(1, val1);
+
+                assertEquals("Person 1", ((BinaryObject)cache2.get(1)).field("Name"));
+
+                // Update schema.
+                BinaryObject val2 = builder.setField("Name", "Person 2").setField("Age", 2).build();
+
+                cache1.put(2, val2);
+
+                assertEquals("Person 2", ((BinaryObject)cache2.get(2)).field("Name"));
+                assertEquals((Integer)2, ((BinaryObject)cache2.get(2)).field("Age"));
+            }
+        }
+    }
+
+    /**
+     * Test custom binary type serializer.
+     */
+    @Test
+    public void testBinarySerializer() throws Exception {
+        BinarySerializer binSer = new BinarySerializer() {
+            @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
+                writer.writeInt("f1", ((Person)obj).getId());
+            }
+
+            @Override public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException {
+                ((Person)obj).setId(reader.readInt("f1"));
+            }
+        };
+
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(Person.class.getName()).setSerializer(binSer);
+        BinaryConfiguration binCfg = new BinaryConfiguration().setTypeConfigurations(Collections.singleton(typeCfg));
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration().setBinaryConfiguration(binCfg))) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(binCfg))) {
+                IgniteCache<Integer, Person> igniteCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+                ClientCache<Integer, Person> clientCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+                Person val = new Person(123, "Joe");
+
+                clientCache.put(1, val);
+
+                assertEquals(val.getId(), clientCache.get(1).getId());
+                assertNull(clientCache.get(1).getName());
+                assertEquals(val.getId(), igniteCache.get(1).getId());
+                assertNull(igniteCache.get(1).getName());
+            }
+        }
+    }
+
+    /**
+     * Test custom binary type ID mapper.
+     */
+    @Test
+    public void testBinaryIdMapper() throws Exception {
+        BinaryIdMapper idMapper = new BinaryIdMapper() {
+            @Override public int typeId(String typeName) {
+                return typeName.hashCode() % 1000 + 1000;
+            }
+
+            @Override public int fieldId(int typeId, String fieldName) {
+                return fieldName.hashCode();
+            }
+        };
+
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(Person.class.getName()).setIdMapper(idMapper);
+        BinaryConfiguration binCfg = new BinaryConfiguration().setTypeConfigurations(Collections.singleton(typeCfg));
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration().setBinaryConfiguration(binCfg))) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(binCfg))) {
+                IgniteCache<Integer, Person> igniteCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+                ClientCache<Integer, Person> clientCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+                Person val = new Person(123, "Joe");
+
+                clientCache.put(1, val);
+
+                assertEquals(val, clientCache.get(1));
+                assertEquals(val, igniteCache.get(1));
+            }
+        }
+    }
+
+    /**
      * Binary Object API:
      * {@link IgniteBinary#typeId(String)}
      * {@link IgniteBinary#toBinary(Object)}
@@ -181,6 +326,29 @@ public class IgniteBinaryTest {
                 enm = binary.buildEnum(Enum.class.getName(), Enum.DEFAULT.name());
 
                 assertBinaryObjectsEqual(refEnm, enm);
+            }
+        }
+    }
+
+    /**
+     * The purpose of this test is to check that message which begins with the same byte as marshaller header can
+     * be correctly unmarshalled.
+     */
+    @Test
+    public void testBinaryTypeWithIdOfMarshallerHeader() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+                int typeId = GridBinaryMarshaller.OBJ;
+
+                BinaryObjectImpl binObj = (BinaryObjectImpl)ignite.binary().builder(Character.toString((char)typeId))
+                        .setField("dummy", "dummy")
+                        .build();
+
+                assertEquals(typeId, binObj.typeId());
+
+                BinaryType type = client.binary().type(typeId);
+
+                assertEquals(binObj.type().typeName(), type.typeName());
             }
         }
     }

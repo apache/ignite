@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.UUID;
 
 /**
  * Unique key for the query context.

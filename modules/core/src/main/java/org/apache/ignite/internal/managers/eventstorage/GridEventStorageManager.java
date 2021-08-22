@@ -72,6 +72,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY_ALL;
+import static org.apache.ignite.events.EventType.EVT_BASELINE_CHANGED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -513,6 +517,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             case EVT_TASK_FINISHED:
             case EVT_TASK_FAILED:
             case EVT_JOB_MAPPED:
+            case EVT_CLUSTER_ACTIVATED:
+            case EVT_CLUSTER_DEACTIVATED:
+            case EVT_BASELINE_CHANGED:
+            case EVT_CLUSTER_STATE_CHANGED:
                 return true;
 
             default:

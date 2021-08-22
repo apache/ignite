@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.encryption;
 
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,7 +26,6 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 /**
  * The task for getting the master key name.
  *
- * @see EncryptionCommand
  * @see IgniteEncryption#getMasterKeyName()
  */
 @GridInternal

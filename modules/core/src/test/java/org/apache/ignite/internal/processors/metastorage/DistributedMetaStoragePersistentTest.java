@@ -483,7 +483,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     /**
      * @throws Exception If failed.
      */
-    @Test @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testConflictingData() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
@@ -581,7 +581,11 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         // Check that the value was actually persisted to the storage.
 
-        startGrid(0);
+        IgniteEx ignite0 = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        assertSame(ignite0.cluster().state(), ClusterState.ACTIVE);
 
         assertEquals("value", metastorage(0).read(longKey));
 

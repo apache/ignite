@@ -29,10 +29,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * This test checks that entries count metrics, calculated by method
@@ -237,6 +241,17 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(cacheInfo + " keySize", size, metrics.getKeySize());
         assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
         assertEquals(cacheInfo + " isEmpty", isEmpty, metrics.isEmpty());
+
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(),
+            cache.isNear()));
+
+        assertNotNull(mreg);
+
+        assertEquals(offHeapEntriesCount, ((LongMetric)mreg.findMetric("OffHeapEntriesCount")).value());
+        assertEquals(offHeapBackupEntriesCount, ((LongMetric)mreg.findMetric("OffHeapBackupEntriesCount")).value());
+        assertEquals(offHeapPrimaryEntriesCount, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
+        assertEquals(heapEntriesCount, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
+        assertEquals(cacheSize, ((LongMetric)mreg.findMetric("CacheSize")).value());
     }
 
     /**

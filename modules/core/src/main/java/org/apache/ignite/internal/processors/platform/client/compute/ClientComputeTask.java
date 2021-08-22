@@ -38,7 +38,6 @@ import static org.apache.ignite.internal.processors.platform.client.ClientMessag
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
 /**
@@ -50,6 +49,9 @@ class ClientComputeTask implements ClientCloseableResource {
 
     /** No result cache flag mask. */
     private static final byte NO_RESULT_CACHE_FLAG_MASK = 0x02;
+
+    /** Keep binary flag mask. */
+    public static final byte KEEP_BINARY_FLAG_MASK = 0x04;
 
     /** Context. */
     private final ClientConnectionContext ctx;
@@ -94,11 +96,10 @@ class ClientComputeTask implements ClientCloseableResource {
 
         GridTaskProcessor task = ctx.kernalContext().task();
 
-        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? F.alwaysTrue() : F.nodeForNodeIds(nodeIds);
-        UUID subjId = ctx.securityContext() == null ? null : ctx.securityContext().subject().id();
+        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
+            F.nodeForNodeIds(nodeIds);
 
         task.setThreadContext(TC_SUBGRID_PREDICATE, nodePredicate);
-        task.setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
         task.setThreadContext(TC_TIMEOUT, timeout);
         task.setThreadContext(TC_NO_FAILOVER, (flags & NO_FAILOVER_FLAG_MASK) != 0);
         task.setThreadContext(TC_NO_RESULT_CACHE, (flags & NO_RESULT_CACHE_FLAG_MASK) != 0);

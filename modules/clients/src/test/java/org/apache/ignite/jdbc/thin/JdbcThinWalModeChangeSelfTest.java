@@ -17,6 +17,10 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -24,11 +28,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAbstractSelfTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 /**
  * Tests for WAL mode change from within JDBC driver.

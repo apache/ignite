@@ -36,10 +36,12 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchange
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMultiClientsStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.OnePhaseCommitAndNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
@@ -89,18 +91,24 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(ExchangeLatchManagerTest.class);
         ignoredTests.add(PartitionsExchangeCoordinatorFailoverTest.class);
         ignoredTests.add(CacheParallelStartTest.class);
-        ignoredTests.add(IgniteCache150ClientsTest.class);
+        ignoredTests.add(IgniteCacheMultiClientsStartTest.class);
         ignoredTests.add(CacheIgniteOutOfMemoryExceptionTest.class);
+        ignoredTests.add(OnePhaseCommitAndNodeLeftTest.class);
 
         // Mixed local/dht tx test.
         ignoredTests.add(TxLocalDhtMixedCacheModesTest.class);
 
         // Skip tests that has Mvcc clones.
-        ignoredTests.add(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class); // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.
-        ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class); //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
+        // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.
+        ignoredTests.add(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+        //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
+        ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
 
         // Read-through is not allowed with MVCC and transactional cache.
         ignoredTests.add(TxOptimisticReadThroughTest.class);
+
+        // TODO https://issues.apache.org/jira/browse/IGNITE-13051
+        ignoredTests.add(CachePartitionLossWithRestartsTest.class);
 
         List<Class<?>> suite = new ArrayList<>((IgniteCacheTestSuite6.suite(ignoredTests)));
 

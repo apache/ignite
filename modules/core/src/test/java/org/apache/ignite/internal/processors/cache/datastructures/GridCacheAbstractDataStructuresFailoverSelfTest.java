@@ -534,7 +534,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     @Test
     public void testCanCloseAtomicStampedInInterruptedThread() throws Exception {
-        doCloseByInterruptedThread(grid(0).atomicStamped(STRUCTURE_NAME, 10, 10,true));
+        doCloseByInterruptedThread(grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, true));
     }
 
     /**

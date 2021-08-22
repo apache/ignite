@@ -92,11 +92,16 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Util class for joining node validation.
  */
 public class ValidationOnNodeJoinUtils {
-    /** Template of message of conflicts during configuration merge */
+    /** Template of message of conflicts of sql schema name. */
+    private static final String SQL_SCHEMA_CONFLICTS_MESSAGE =
+        "Failed to join node to the active cluster, configuration conflict for cache '%s': " +
+            "schema '%s' from joining node differs to '%s'";
+
+    /** Template of message of conflicts during configuration merge. */
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
 
-    /** Template of message of node join was fail because it requires to merge of config */
+    /** Template of message of node join was fail because it requires to merge of config. */
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";
@@ -109,8 +114,8 @@ public class ValidationOnNodeJoinUtils {
     private static final IgniteProductVersion PRECISION_SCALE_SINCE_VER = IgniteProductVersion.fromString("2.7.0");
 
     /** Invalid region configuration message. */
-    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node " +
-        "(Incompatible data region configuration [region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
+    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node (Incompatible data region configuration " +
+        "[region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
 
     /**
      * Checks a joining node to configuration consistency.
@@ -173,15 +178,29 @@ public class ValidationOnNodeJoinUtils {
                 if (locDesc == null)
                     continue;
 
-                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                String joinedSchema = cacheInfo.cacheData().config().getSqlSchema();
+                Collection<QueryEntity> joinedQryEntities = cacheInfo.cacheData().queryEntities();
+                String locSchema = locDesc.cacheConfiguration().getSqlSchema();
+
+                // Peform checks of SQL schema. If schemas' names not equal, only valid case is if local or joined
+                // QuerySchema is empty and schema name is null (when indexing enabled dynamically).
+                if (!F.eq(joinedSchema, locSchema)
+                        && (locSchema != null || !locDesc.schema().isEmpty())
+                        && (joinedSchema != null || !F.isEmpty(joinedQryEntities))) {
+                    errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
+                            locSchema));
+                }
+
+                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(joinedQryEntities);
 
                 if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
                     if (errorMsg.length() > 0)
                         errorMsg.append("\n");
 
-                    if (schemaPatch.hasConflicts())
-                        errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                            locDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                    if (schemaPatch.hasConflicts()) {
+                        errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE, locDesc.cacheName(),
+                                schemaPatch.getConflictsMessage()));
+                    }
                     else
                         errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
                 }

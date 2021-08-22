@@ -21,58 +21,44 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeJobResultPolicy;
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskName;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.mxbean.ClientProcessorMXBean;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Checks compute grid funtionality of thin client.
+ * Checks compute grid functionality of thin client.
  */
-@SuppressWarnings("ThrowableNotThrown")
-public class ComputeTaskTest extends GridCommonAbstractTest {
+public class ComputeTaskTest extends AbstractThinClientTest {
     /** Grids count. */
     private static final int GRIDS_CNT = 4;
 
@@ -83,26 +69,15 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     private static final long TIMEOUT = 1_000L;
 
     /** Test task name. */
-    private static final String TEST_TASK_NAME = "TestTask";
+    public static final String TEST_TASK_NAME = "TestTask";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
                 new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(
-                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)));
-    }
-
-    /**
-     *
-     */
-    private IgniteClient startClient(int... gridIdxs) {
-        String[] addrs = new String[gridIdxs.length];
-
-        for (int i = 0; i < gridIdxs.length; i++)
-            addrs[i] = "127.0.0.1:" + (ClientConnectorConfiguration.DFLT_PORT + gridIdxs[i]);
-
-        return Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
+                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)))
+            .setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) == 3);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +94,14 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        TestLatchTask.latch = null;
+        TestLatchTask.startLatch = null;
+
+        super.afterTest();
+    }
+
     /**
      *
      */
@@ -128,7 +111,19 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             T2<UUID, Set<UUID>> val = client.compute().execute(TestTask.class.getName(), null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     * Test that custom user type can be returned by task.
+     */
+    @Test
+    public void testExecuteWithCustomUserType() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            Person val = client.compute().execute(TestTaskCustomType.class.getName(), "person");
+
+            assertEquals("person", val.getName());
         }
     }
 
@@ -155,7 +150,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             T2<UUID, Set<UUID>> val = client.compute().execute(TEST_TASK_NAME, null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -184,7 +179,50 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             assertTrue(fut.isDone());
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     * Tests asynchronous task execution.
+     */
+    @Test
+    public void testExecuteTaskAsync2() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            TestLatchTask.latch = new CountDownLatch(1);
+
+            IgniteClientFuture<T2<UUID, Set<UUID>>> fut = client.compute()
+                    .executeAsync2(TestLatchTask.class.getName(), null);
+
+            GridTestUtils.assertThrowsAnyCause(
+                null,
+                () -> fut.get(10L, TimeUnit.MILLISECONDS),
+                TimeoutException.class,
+                null
+            );
+
+            assertFalse(fut.isDone());
+
+            TestLatchTask.latch.countDown();
+
+            T2<UUID, Set<UUID>> val = fut.get();
+
+            assertTrue(fut.isDone());
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     * Tests asynchronous task execution with an exception.
+     */
+    @Test
+    public void testExecuteTaskAsync2WithExceptionInTask() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+
+            String errMessage = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertTrue(errMessage.contains("cause=Foo"));
         }
     }
 
@@ -199,12 +237,46 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             assertFalse(fut.isCancelled());
             assertFalse(fut.isDone());
 
-            fut.cancel(true);
+            assertTrue(fut.cancel(true));
 
-            assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTasksCount() == 0, TIMEOUT));
 
             assertTrue(fut.isCancelled());
             assertTrue(fut.isDone());
+
+            fut.get();
+        }
+    }
+
+    /**
+     *
+     */
+    @Test(expected = CancellationException.class)
+    public void testTaskCancellation2() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            IgniteClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(), TIMEOUT);
+
+            assertFalse(fut.isCancelled());
+            assertFalse(fut.isDone());
+
+            AtomicReference<Throwable> handledErr = new AtomicReference<>();
+            CompletionStage<T2<UUID, List<UUID>>> handledFut = fut.handle((r, err) -> {
+                handledErr.set(err);
+                return r;
+            });
+
+            fut.cancel(true);
+
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTasksCount() == 0, TIMEOUT));
+
+            assertTrue(fut.isCancelled());
+            assertTrue(fut.isDone());
+
+            assertNotNull(handledErr.get());
+            assertTrue(handledErr.get() instanceof CancellationException);
+            assertNull(handledFut.toCompletableFuture().get());
 
             fut.get();
         }
@@ -260,9 +332,24 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             assertEquals(nodeId(0), val.get1());
             assertEquals(nodeIds(1, 2), val.get2());
+
+            // Compute on client node defined explicitly.
+            grp = client.cluster().forNodeIds(nodeIds(3));
+
+            val = client.compute(grp).execute(TestTask.class.getName(), null);
+
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(nodeIds(3), val.get2());
+
+            // Compute on all nodes (clients + servers).
+            grp = client.cluster();
+
+            val = client.compute(grp).execute(TestTask.class.getName(), null);
+
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
         }
     }
-
 
     /**
      *
@@ -321,31 +408,29 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         try (IgniteClient client = startClient(0, 1)) {
             ClientComputeImpl compute = (ClientComputeImpl)client.compute();
 
-            Future<Object> fut1 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
+            Future<Object> fut1 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
+            // Wait for the task to start, then drop connections.
+            TestLatchTask.startLatch.await();
             dropAllThinClientConnections();
 
-            Future<Object> fut2 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            TestLatchTask.startLatch = new CountDownLatch(1);
+            Future<Object> fut2 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
+            TestLatchTask.startLatch.await();
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);
 
             Future<Object> fut3 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
-            assertEquals(1, compute.activeTaskFutures().size());
-
             compute.execute(TestTask.class.getName(), null);
 
-            assertEquals(1, compute.activeTaskFutures().size());
+            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientConnectionException.class, "closed");
 
-            assertTrue(fut1.isDone());
-
-            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientException.class, "closed");
-
-            assertTrue(fut2.isDone());
-
-            GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientException.class, "closed");
+            GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientConnectionException.class, "closed");
 
             assertFalse(fut3.isDone());
 
@@ -353,7 +438,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             fut3.get(TIMEOUT, TimeUnit.MILLISECONDS);
 
-            assertTrue(compute.activeTaskFutures().isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(() -> compute.activeTasksCount() == 0, TIMEOUT));
         }
     }
 
@@ -366,13 +451,17 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             ClientCompute compute1 = client.compute(client.cluster().forNodeId(nodeId(1)));
             ClientCompute compute2 = client.compute(client.cluster().forNodeId(nodeId(2)));
 
-            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(2);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             latch2.countDown();
 
@@ -396,12 +485,16 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             ClientCompute compute2 = client2.compute(client2.cluster().forNodeId(nodeId(2)));
 
             CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             latch2.countDown();
 
@@ -430,10 +523,14 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             for (int i = 0; i < ACTIVE_TASKS_LIMIT; i++)
                 futs.add(compute.executeAsync(TestLatchTask.class.getName(), null));
 
+            assertTrue(GridTestUtils.waitForCondition(
+                    () -> ((ClientComputeImpl)client.compute()).activeTasksCount() == ACTIVE_TASKS_LIMIT,
+                    TIMEOUT));
+
             // Check that we can't start more tasks.
             GridTestUtils.assertThrowsAnyCause(
                 null,
-                () -> compute.executeAsync(TestLatchTask.class.getName(), null),
+                () -> compute.executeAsync(TestLatchTask.class.getName(), null).get(),
                 ClientException.class,
                 "limit"
             );
@@ -475,11 +572,10 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12845")
     public void testExecuteTaskConcurrentLoad() throws Exception {
         try (IgniteClient client = startClient(0)) {
             int threadsCnt = 20;
-            int iterations = 20;
+            int iterations = 100;
 
             ClientCache<Integer, Integer> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -490,7 +586,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(
                 () -> {
                     int threadIdx = threadIdxs.incrementAndGet();
-                    
+
                     Random rnd = new Random();
 
                     try {
@@ -498,16 +594,21 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
                         for (int i = 0; i < iterations; i++) {
                             int nodeIdx = rnd.nextInt(GRIDS_CNT);
-                            
+
                             cache.put(threadIdx, i);
-                            
+
                             ClientCompute compute = client.compute(client.cluster().forNodeId(nodeId(nodeIdx)));
-                            
+
                             Future<T2<UUID, Set<UUID>>> fut = compute.executeAsync(TestTask.class.getName(), null);
-                            
+
+                            boolean cancelled = (i % 3 == 0) && fut.cancel(true);
+
                             assertEquals((Integer)i, cache.get(threadIdx));
 
-                            assertEquals(nodeIds(nodeIdx), fut.get().get2());
+                            if (cancelled)
+                                assertTrue(fut.isCancelled());
+                            else
+                                assertEquals(nodeIds(nodeIdx), fut.get().get2());
                         }
                     }
                     catch (ExecutionException e) {
@@ -518,10 +619,11 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
                     catch (InterruptedException | BrokenBarrierException ignore) {
                         // No-op.
                     }
-                    
+
                 }, threadsCnt, "run-task-async");
 
-            assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTasksCount() == 0, TIMEOUT));
         }
     }
 
@@ -540,72 +642,6 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    private void dropAllThinClientConnections() {
-        for (Ignite ignite : G.allGrids()) {
-            ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-                ClientListenerProcessor.class, ClientProcessorMXBean.class);
-
-            mxBean.dropAllConnections();
-        }
-    }
-
-    /**
-     * Compute job which returns node id where it was executed.
-     */
-    private static class TestJob implements ComputeJob {
-        /** Ignite. */
-        @IgniteInstanceResource
-        Ignite ignite;
-
-        /** Sleep time. */
-        private final Long sleepTime;
-
-        /**
-         * @param sleepTime Sleep time.
-         */
-        private TestJob(Long sleepTime) {
-            this.sleepTime = sleepTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteException {
-            if (sleepTime != null)
-                doSleep(sleepTime);
-
-            return ignite.cluster().localNode().id();
-        }
-    }
-
-    /**
-     * Compute task which returns node id for routing node and list of node ids for each node was affected.
-     */
-    @ComputeTaskName(TEST_TASK_NAME)
-    private static class TestTask extends ComputeTaskAdapter<Long, T2<UUID, Set<UUID>>> {
-        /** Ignite. */
-        @IgniteInstanceResource
-        Ignite ignite;
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Long arg) throws IgniteException {
-            return subgrid.stream().collect(Collectors.toMap(node -> new TestJob(arg), node -> node));
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public T2<UUID, Set<UUID>> reduce(List<ComputeJobResult> results) throws IgniteException {
-            return new T2<>(ignite.cluster().localNode().id(),
-                results.stream().map(res -> (UUID)res.getData()).collect(Collectors.toSet()));
-        }
-    }
-
-    /**
      * Compute task with latch on routing node.
      */
     @ComputeTaskName("TestLatchTask")
@@ -613,19 +649,29 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         /** Global latch. */
         private static volatile CountDownLatch latch;
 
+        /** Global start latch. */
+        private static volatile CountDownLatch startLatch;
+
         /** Local latch. */
         private final CountDownLatch locLatch;
+
+        /** Local start latch. */
+        private final CountDownLatch locStartLatch;
 
         /**
          * Default constructor.
          */
         public TestLatchTask() {
             locLatch = latch;
+            locStartLatch = startLatch;
         }
 
         /** {@inheritDoc} */
         @Override public @Nullable T2<UUID, Set<UUID>> reduce(List<ComputeJobResult> results) throws IgniteException {
             try {
+                if (locStartLatch != null)
+                    locStartLatch.countDown();
+
                 if (locLatch != null)
                     locLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }
@@ -634,66 +680,6 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             }
 
             return super.reduce(results);
-        }
-    }
-
-    /**
-     * Task to test failover.
-     */
-    private static class TestFailoverTask implements ComputeTask<Long, Boolean> {
-        /** */
-        private final AtomicBoolean firstJobProcessed = new AtomicBoolean();
-
-        /** */
-        private volatile boolean failedOver;
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Long arg) throws IgniteException {
-            return F.asMap(new TestJob(null), subgrid.get(0));
-        }
-
-        /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-            if (firstJobProcessed.compareAndSet(false, true))
-                return ComputeJobResultPolicy.FAILOVER;
-            else {
-                failedOver = true;
-
-                return ComputeJobResultPolicy.WAIT;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
-            return failedOver;
-        }
-    }
-
-    /**
-     * Task to test "no result cache" flag.
-     */
-    private static class TestResultCacheTask implements ComputeTask<Long, Boolean> {
-        /** Is result cached. */
-        private volatile boolean cached;
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Long arg) throws IgniteException {
-            return F.asMap(new TestJob(null), subgrid.get(0));
-        }
-
-        /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-            if (!F.isEmpty(rcvd))
-                cached = true;
-
-            return ComputeJobResultPolicy.WAIT;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
-            return cached;
         }
     }
 }

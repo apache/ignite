@@ -362,7 +362,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
             for (int i = 0; i < entriesCount(); i++)
-                cache.put(i, new Person("" + i, cacheName));
+                cache.put(i, new Person(i, cacheName));
         }
     }
 
@@ -375,7 +375,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
             for (int i = 0; i < entriesCount(); i++)
-                assertEquals(new Person("" + i, cacheName), cache.get(i));
+                assertEquals(new Person(i, cacheName), cache.get(i));
 
             assertEquals(entriesCount(), cache.size());
         }
@@ -395,7 +395,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
             List<Cache.Entry<Integer, Person>> persons = cache.query(qry.setArgs(cacheName)).getAll();
 
             for (int i = 0; i < entriesCount(); i++)
-                assertEquals(new Person("" + i, cacheName), persons.get(i).getValue());
+                assertEquals(new Person(i, cacheName), persons.get(i).getValue());
 
             assertEquals(entriesCount(), persons.size());
         }
@@ -495,7 +495,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         /** */
         @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
-        String fName;
+        int fName;
 
         /** */
         @GridToStringInclude
@@ -506,7 +506,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
          * @param fName First name.
          * @param lName Last name.
          */
-        public Person(String fName, String lName) {
+        public Person(int fName, String lName) {
             this.fName = fName;
             this.lName = lName;
         }

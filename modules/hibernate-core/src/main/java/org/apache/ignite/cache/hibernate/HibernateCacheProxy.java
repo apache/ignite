@@ -179,7 +179,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Collection<CacheEntry<Object,Object>>> getEntriesAsync(
+    @Override public IgniteInternalFuture<Collection<CacheEntry<Object, Object>>> getEntriesAsync(
         @Nullable Collection keys
     ) {
         return delegate.get().getEntriesAsync(transform(keys));
@@ -597,16 +597,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return delegate.get().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return delegate.get().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
         return delegate.get().expiry();
     }
@@ -716,7 +706,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Cache.Entry<Object,Object>> scanIterator(
+    @Override public Iterator<Cache.Entry<Object, Object>> scanIterator(
         boolean keepBinary,
         @Nullable IgniteBiPredicate p
     ) throws IgniteCheckedException {

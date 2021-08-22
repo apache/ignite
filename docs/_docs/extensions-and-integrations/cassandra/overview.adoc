@@ -1,0 +1,54 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Cassandra Acceleration With Apache Ignite
+
+== Overview
+
+The Ignite Cassandra integration implements the link:persistence/external-storage#overview[CacheStore] interface allowing
+to deploy Ignite as a high-performance caching layer on top of Cassandra.
+
+Some observations in regards to the integration:
+
+. The integration uses Cassandra http://www.datastax.com/dev/blog/java-driver-async-queries[asynchronous queries, window=_blank]
+for `CacheStore` batch operations such as such as `loadAll()`, `writeAll()` and `deleteAll()` to provide extremely high performance.
+. The integration automatically creates all necessary tables (and keyspaces) in Cassandra if they are absent. Also, it
+automatically detects all the necessary fields for Ignite key-value tuples that will be stored as POJOs, and creates an
+appropriate table structure. Thus you don't need to care about the Cassandra DDL syntax for table creation and Java to
+Cassandra type mapping details.
+. You can optionally specify the settings (replication factor, replication strategy, bloom filter and etc.) for Cassandra
+tables and keyspaces which should be created.
+. Combines functionality of BLOB and POJO storage, allowing to specify how you prefer to store (as a BLOB or as a POJO)
+key-value tuples from your Ignite cache.
+. Supports standard https://docs.oracle.com/javase/tutorial/jndi/objects/serial.html[Java, window=_blank] and
+https://github.com/EsotericSoftware/kryo[Kryo, window=_blank] serialization for key-values which should be stored as BLOBs in Cassandra
+. Supports Cassandra http://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_index_r.html[secondary indexes, window=_blank] (including custom indexes)
+through persistence configuration settings for particular Ignite cache or such settings could be detected automatically
+if you configured link:SQL/indexes#configuring-indexes-using-annotations[SQL Indexes by Annotations] by using `@QuerySqlField(index = true)` annotation
+. Supports sort order for Cassandra cluster key fields through persistence configuration settings or such settings could be
+detected automatically if you are using `@QuerySqlField(descending = true)` annotation.
+. Supports link:data-modeling/affinity-collocation[affinity co-location] for the POJO key classes having one of their fields
+annotated by `@AffinityKeyMapped`. In such a way, key-values tuples which were stored on one node in an Ignite cache will
+be also stored (co-located) on one node in Cassandra.
+
+[CAUTION]
+====
+[discrete]
+=== Ignite SQL Queries and Cassandra
+Note that in order to execute SQL queries you need to have all the data loaded from Cassandra into an Ignite cluster.
+The Ignite SQL engine doesn't assumes that all the records are available in memory and won't try to query Cassandra.
+
+An alternative would be to use Ignite Native Persistence - a distributed, ACID, and SQL-compliant disk store that allows
+performing SQL queries on the data stored in-memory as well as on disk.
+====

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -44,8 +43,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -268,14 +265,6 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
-        testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testNodeRestartWith3rdPartyCacheStoreAndPersistenceEnabled() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -306,7 +295,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /**
      * @param doFindAndRemove Do find and remove.
      */
-    private void testFindAndDeleteGarbage(
+    public void testFindAndDeleteGarbage(
         BiFunction<IgniteEx, Boolean, VisorFindAndDeleteGarbageInPersistenceTaskResult> doFindAndRemove
     ) throws Exception {
         IgniteEx ignite = startGrids(3);
@@ -324,6 +313,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         IgniteEx ex1 = startGrid(2);
 
         assertNull(ignite.cachex(getCacheName(0)));
+
+        ignite.resetLostPartitions(Arrays.asList(getCacheName(0), getCacheName(1), getCacheName(2)));
 
         awaitPartitionMapExchange();
 
@@ -367,28 +358,6 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
             ignite.compute().execute(VisorFindAndDeleteGarbageInPersistenceTask.class, arg);
 
         return result;
-    }
-
-    /**
-     * @param ignite Ignite to execute task on.
-     * @param delFoundGarbage If clearing mode should be used.
-     * @return Result of task run.
-     */
-    private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTaskViaControlConsoleUtil(
-        IgniteEx ignite,
-        boolean delFoundGarbage
-    ) {
-        CommandHandler hnd = new CommandHandler();
-
-        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
-            ignite.localNode().id().toString()));
-
-        if (delFoundGarbage)
-            args.add(FindAndDeleteGarbageArg.DELETE.argName());
-
-        hnd.execute(args);
-
-        return hnd.getLastOperationResult();
     }
 
     /**

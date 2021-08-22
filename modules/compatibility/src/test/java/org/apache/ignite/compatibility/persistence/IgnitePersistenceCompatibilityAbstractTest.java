@@ -24,7 +24,6 @@ import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityA
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -32,7 +31,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** Persistence directories. */
-    private static final List<String> PERSISTENCE_DIRS = Arrays.asList(DFLT_STORE_DIR, BINARY_META_FOLDER, "cp", "marshaller");
+    private static final List<String> PERSISTENCE_DIRS = Arrays.asList(DFLT_STORE_DIR, "binary_meta", "cp", "marshaller");
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

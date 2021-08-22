@@ -73,7 +73,7 @@ public enum GridRestCommand {
     /** Remove several values from cache. */
     CACHE_REMOVE_ALL("rmvall"),
 
-    /** Clear the specified cache, or all caches if none is specified. */
+    /** Clear the specified cache. */
     CACHE_CLEAR("clear"),
 
     /** Replace cache value only if there is currently a mapping for it. */
@@ -160,11 +160,11 @@ public enum GridRestCommand {
     /** Close query. */
     CLOSE_SQL_QUERY("qrycls"),
 
-    /** @deprecated Use {@link #CLUSTER_ACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
     @Deprecated
     CLUSTER_ACTIVE("active"),
 
-    /** @deprecated Use {@link #CLUSTER_DEACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
     @Deprecated
     CLUSTER_INACTIVE("inactive"),
 
@@ -217,7 +217,16 @@ public enum GridRestCommand {
     DATA_REGION_METRICS("dataregion"),
 
     /** Data storage metrics. */
-    DATA_STORAGE_METRICS("datastorage");
+    DATA_STORAGE_METRICS("datastorage"),
+
+    /** Node state before its start. */
+    NODE_STATE_BEFORE_START("nodestatebeforestart"),
+
+    /** Warm-up. */
+    WARM_UP("warmup"),
+
+    /** probe. */
+    PROBE("probe");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

@@ -81,7 +81,8 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
                 return lb;
         };
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func = lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
+        IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func =
+            lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
 
         PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, preprocessor);
 
@@ -120,7 +121,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+        return new SVMLinearClassificationModel(weights.copyOfRange(1, weights.size()), weights.get(0));
     }
 
     /** {@inheritDoc} */

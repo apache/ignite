@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.security.AccessControlException;
 import java.util.UUID;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 
 /**
  * Security aware remote filter.
@@ -34,10 +35,6 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
     implements CacheEntryEventSerializableFilter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Ignite. */
-    @IgniteInstanceResource
-    private transient IgniteEx ignite;
 
     /**
      * Default constructor.
@@ -56,8 +53,22 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
 
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
-        try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-            return original.evaluate(evt);
+        // Even if there is no custom filter, the platform filter is always present (for proper resource release),
+        // but only the custom filter is serialized.
+        if (original == null)
+            return true;
+
+        IgniteSecurity security = ignite.context().security();
+
+        try (OperationSecurityContext c = security.withContext(subjectId)) {
+            IgniteSandbox sandbox = security.sandbox();
+
+            return sandbox.enabled() ? sandbox.execute(() -> original.evaluate(evt)) : original.evaluate(evt);
+        }
+        catch (AccessControlException e) {
+            logAccessDeniedMessage(e);
+
+            throw e;
         }
     }
 }

@@ -64,11 +64,11 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
         assertArrayEquals(
             new double[]{72.26948107, 15.95144674, 24.07403921, 66.73038781},
-            mdl.getWeights().getStorage().data(),
+            mdl.weights().getStorage().data(),
             1e-1
         );
 
-        assertEquals(2.8421709430404007e-14, mdl.getIntercept(), 1e-1);
+        assertEquals(2.8421709430404007e-14, mdl.intercept(), 1e-1);
     }
 
     /** */
@@ -112,19 +112,19 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
         );
 
         assertArrayEquals(
-            originalMdl.getWeights().getStorage().data(),
-            updatedOnSameDS.getWeights().getStorage().data(),
+            originalMdl.weights().getStorage().data(),
+            updatedOnSameDS.weights().getStorage().data(),
             1.0
         );
 
-        assertEquals(originalMdl.getIntercept(), updatedOnSameDS.getIntercept(), 1.0);
+        assertEquals(originalMdl.intercept(), updatedOnSameDS.intercept(), 1.0);
 
         assertArrayEquals(
-            originalMdl.getWeights().getStorage().data(),
-            updatedOnEmptyDS.getWeights().getStorage().data(),
+            originalMdl.weights().getStorage().data(),
+            updatedOnEmptyDS.weights().getStorage().data(),
             1e-1
         );
 
-        assertEquals(originalMdl.getIntercept(), updatedOnEmptyDS.getIntercept(), 1e-1);
+        assertEquals(originalMdl.intercept(), updatedOnEmptyDS.intercept(), 1e-1);
     }
 }

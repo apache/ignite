@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;

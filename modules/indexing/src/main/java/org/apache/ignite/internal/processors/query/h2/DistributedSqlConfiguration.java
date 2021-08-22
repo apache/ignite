@@ -25,11 +25,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
@@ -56,9 +58,27 @@ public class DistributedSqlConfiguration {
         "CANCEL_SESSION"
     }).collect(Collectors.toSet());
 
+    /** Default value of the query timeout. */
+    public static final int DFLT_QRY_TIMEOUT = 0;
+
     /** Disabled SQL functions. */
-    private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs
-        = new SimpleDistributedProperty<>("sql.disabledFunctions");
+    private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs = new SimpleDistributedProperty<>(
+        "sql.disabledFunctions",
+        SimpleDistributedProperty::parseStringSet
+    );
+
+    /** Query timeout. */
+    private final SimpleDistributedProperty<Integer> dfltQueryTimeout = new SimpleDistributedProperty<>(
+        "sql.defaultQueryTimeout",
+        SimpleDistributedProperty::parseNonNegativeInteger
+    );
+
+    /**
+     * Disable creation Lucene index for String value type by default.
+     * See: 'H2TableDescriptor#luceneIdx'.
+     */
+    private final DistributedBooleanProperty disableCreateLuceneIndexForStringValueType =
+        DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType");
 
     /**
      * @param ctx Kernal context
@@ -72,8 +92,11 @@ public class DistributedSqlConfiguration {
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
                     disabledSqlFuncs.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
+                    dfltQueryTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
 
                     dispatcher.registerProperties(disabledSqlFuncs);
+                    dispatcher.registerProperties(dfltQueryTimeout);
+                    dispatcher.registerProperties(disableCreateLuceneIndexForStringValueType);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -82,13 +105,25 @@ public class DistributedSqlConfiguration {
                             disabledSqlFuncs,
                             DFLT_DISABLED_FUNCS,
                             log);
+
+                        setDefaultValue(
+                            dfltQueryTimeout,
+                            (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
+                            log);
+
+                        setDefaultValue(
+                            disableCreateLuceneIndexForStringValueType,
+                            false,
+                            log);
                     }
                     else {
                         log.warning("Distributed metastorage is not supported. " +
                             "All distributed SQL configuration parameters are unavailable.");
 
-                        // Set disabled functions to default.
+                        // Set properties to default.
                         disabledSqlFuncs.localUpdate(null);
+                        dfltQueryTimeout.localUpdate((int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout());
+                        disableCreateLuceneIndexForStringValueType.localUpdate(false);
                     }
                 }
             }
@@ -116,5 +151,43 @@ public class DistributedSqlConfiguration {
     /** */
     public void listenDisabledFunctions(DistributePropertyListener<HashSet<String>> lsnr) {
         disabledSqlFuncs.addListener(lsnr);
+    }
+
+    /**
+     * @return Disabled SQL functions.
+     */
+    public int defaultQueryTimeout() {
+        Integer t = dfltQueryTimeout.get();
+
+        return t != null ? t : DFLT_QRY_TIMEOUT;
+    }
+
+    /**
+     * @param timeout Default query timeout.
+     * @throws IgniteCheckedException if failed.
+     */
+    public GridFutureAdapter<?> defaultQueryTimeout(int timeout) throws IgniteCheckedException {
+        A.ensure(timeout >= 0,
+            "default query timeout value must not be negative.");
+
+        return dfltQueryTimeout.propagateAsync(timeout);
+    }
+
+    /** */
+    public void listenDefaultQueryTimeout(DistributePropertyListener<Integer> lsnr) {
+        dfltQueryTimeout.addListener(lsnr);
+    }
+
+    /** */
+    public boolean isDisableCreateLuceneIndexForStringValueType() {
+        Boolean ret = disableCreateLuceneIndexForStringValueType.get();
+
+        return ret != null && ret;
+    }
+
+    /** */
+    public GridFutureAdapter<?> disableCreateLuceneIndexForStringValueType(boolean disableCreateIdx)
+        throws IgniteCheckedException {
+        return disableCreateLuceneIndexForStringValueType.propagateAsync(disableCreateIdx);
     }
 }

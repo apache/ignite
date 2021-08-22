@@ -1,0 +1,62 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Storm Streamer
+
+Apache Ignite Storm Streamer module provides streaming via http://storm.apache.org/[Storm, window=_blank] to Ignite.
+
+Starting data transfer to Ignite can be done with the following steps.
+
+. Import Ignite Storm Streamer Module In Maven Project. If you are using Maven to manage dependencies of your project,
+you can add Storm module dependency like this (replace `${ignite-storm-ext.version}` with actual Ignite Storm Extension version you are interested in):
++
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                        http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    ...
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-storm-ext</artifactId>
+            <version>${ignite-storm-ext.version}</version>
+        </dependency>
+        ...
+    </dependencies>
+    ...
+</project>
+----
+--
+
+. Create an Ignite configuration file (see `example-ignite.xml` in `modules/storm/src/test/resources/example-ignite.xml`)
+and make sure it is accessible from the streamer.
+. Make sure your key-value data input to the streamer is specified with the field named `ignite` (or a different one you
+configure with `StormStreamer.setIgniteTupleField(...)`).
+See TestStormSpout.declareOutputFields(...) for an example.
+. Create a topology with the streamer, make a jar file with all dependencies and run the following
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+storm jar ignite-storm-streaming-jar-with-dependencies.jar my.company.ignite.MyStormTopology
+----
+--

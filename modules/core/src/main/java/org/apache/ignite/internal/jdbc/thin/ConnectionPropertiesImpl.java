@@ -26,6 +26,7 @@ import java.util.StringTokenizer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
@@ -137,7 +138,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** SSL: Key algorithm name. */
     private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
-        "SSL key algorithm name", "SunX509", null, false, null);
+        "SSL key algorithm name", null, null, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
@@ -225,13 +226,37 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private IntegerProperty qryTimeout = new IntegerProperty("queryTimeout",
         "Sets the number of seconds the driver will wait for a <code>Statement</code> object to execute." +
             " Zero means there is no limits.",
-        0, false, 0, Integer.MAX_VALUE);
+        null, false, 0, Integer.MAX_VALUE);
 
     /** JDBC connection timeout. */
     private IntegerProperty connTimeout = new IntegerProperty("connectionTimeout",
         "Sets the number of milliseconds JDBC client will waits for server to response." +
             " Zero means there is no limits.",
         0, false, 0, Integer.MAX_VALUE);
+
+    /** Disabled features. */
+    private StringProperty disabledFeatures = new StringProperty("disabledFeatures",
+        "Sets enumeration of features to force disable its.", null, null, false, new PropertyValidator() {
+        @Override public void validate(String val) throws SQLException {
+            if (val == null)
+                return;
+
+            String[] features = val.split("\\W+");
+
+            for (String f : features) {
+                try {
+                    JdbcThinFeature.valueOf(f.toUpperCase());
+                }
+                catch (IllegalArgumentException e) {
+                    throw new SQLException("Unknown feature: " + f);
+                }
+            }
+        }
+    });
+
+    /** Keep binary objects in binary form. */
+    private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
+        "Whether to keep binary objects in binary form.", false, false);
 
     /** Properties array. */
     private final ConnectionProperty[] propsArray = {
@@ -249,7 +274,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             partitionAwarenessSQLCacheSize,
             partitionAwarenessPartDistributionsCacheSize,
         qryTimeout,
-        connTimeout
+        connTimeout,
+        disabledFeatures,
+        keepBinary
     };
 
     /** {@inheritDoc} */
@@ -636,6 +663,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setUserAttributesFactory(String cls) {
         userAttrsFactory.setValue(cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String disabledFeatures() {
+        return disabledFeatures.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disabledFeatures(String features) {
+        disabledFeatures.setValue(features);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isKeepBinary() {
+        return keepBinary.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKeepBinary(boolean keepBinary) {
+        this.keepBinary.setValue(keepBinary);
     }
 
     /**
@@ -1041,7 +1088,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return JDBC property info object.
          */
         DriverPropertyInfo getDriverPropertyInfo() {
-            DriverPropertyInfo dpi = new DriverPropertyInfo(name, valueObject());
+            DriverPropertyInfo dpi = new DriverPropertyInfo(PROP_PREFIX + name, valueObject());
 
             dpi.choices = choices();
             dpi.required = required;

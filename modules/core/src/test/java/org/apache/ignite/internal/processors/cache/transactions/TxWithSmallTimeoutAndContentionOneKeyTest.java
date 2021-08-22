@@ -94,6 +94,15 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * @return Random transaction type.
      */

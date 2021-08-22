@@ -52,7 +52,7 @@ public class NativeSqlInsertDeleteBenchmark extends AbstractNativeBenchmark {
              FieldsQueryCursor<List<?>> delCur = qryProc.querySqlFields(delete, false)) {
             // No-op, there is no result
         }
-        catch (Exception ign) {
+        catch (Exception ignore) {
             // collision occurred, ignoring
         }
 
