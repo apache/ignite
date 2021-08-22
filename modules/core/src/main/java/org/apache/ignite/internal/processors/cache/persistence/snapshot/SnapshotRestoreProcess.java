@@ -1172,8 +1172,6 @@ public class SnapshotRestoreProcess {
                 });
             }
 
-            assert leftParts.isEmpty() : "[grp=" + grp.cacheOrGroupName() + ", parts=" + leftParts + ']';
-
             // TODO Second preload partitions from remote nodes.
 
             opCtx0.locProgress.put(
@@ -1194,6 +1192,8 @@ public class SnapshotRestoreProcess {
                     }),
                 partLfs);
         }
+
+        assert F.size(notScheduled.values(), p -> !p.isEmpty()) == 0 : "[notScheduled=" + notScheduled + ']';
 
         // Complete cache future.
         int futsSize = opCtx0.locProgress.size();
