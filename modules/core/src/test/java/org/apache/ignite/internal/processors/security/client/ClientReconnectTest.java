@@ -65,13 +65,6 @@ public class ClientReconnectTest extends GridCommonAbstractTest {
         });
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cleanPersistenceDir();
-    }
-
     /** */
     @Test
     public void testClientNodeReconnected() throws Exception {
