@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -49,6 +50,10 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
 public class ExecutionContext<Row> implements DataContext {
     /** */
     private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+
+    /** */
+    // TODO https://issues.apache.org/jira/browse/IGNITE-15276 Support other locales.
+    private static final Locale LOCALE = Locale.ENGLISH;
 
     /** */
     private final UUID qryId;
@@ -209,6 +214,8 @@ public class ExecutionContext<Row> implements DataContext {
             return startTs;
         if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))
             return startTs;
+        if (Variable.LOCALE.camelName.equals(name))
+            return LOCALE;
         if (name.startsWith("?"))
             return TypeUtils.toInternal(this, params.get(name));
 
