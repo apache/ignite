@@ -24,17 +24,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 
 /** */
 public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotRestoreBaseTest {
@@ -44,12 +50,28 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
     /** */
     private static final String SECOND_CLUSTER_PREFIX = "two_";
 
+    /** */
+    private static final Function<String, BiFunction<Integer, IgniteConfiguration, String>> CLUSTER_DIR =
+        new Function<String, BiFunction<Integer, IgniteConfiguration, String>>() {
+            @Override public BiFunction<Integer, IgniteConfiguration, String> apply(String prefix) {
+                return (id, cfg) -> Paths.get(defaultWorkDirectory().toString(),
+                    prefix + U.maskForFileName(cfg.getIgniteInstanceName())).toString();
+            }
+        };
+
     /** Cache value builder. */
     private final Function<Integer, Object> valBuilder = String::valueOf;
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
         return valBuilder;
+    }
+
+    /** @throws Exception If fails. */
+    @Before
+    public void beforeSwitchSnapshot() throws Exception {
+        beforeTestSnapshot();
+        cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX, SECOND_CLUSTER_PREFIX);
     }
 
     /** @throws Exception If fails. */
@@ -80,6 +102,23 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
         Set<Path> snpParts = resolveSnapshotParts(FIRST_CLUSTER_PREFIX, SNAPSHOT_NAME);
 
         // TODO map resolved snapshot randomly to a newer cluster.
+
+        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+        scc.cluster().state(ClusterState.ACTIVE);
+
+        snpParts.forEach(p -> {
+            try {
+                IgniteEx loc = grid(ThreadLocalRandom.current().nextInt(2));
+                String snpName = p.getFileName().toString();
+
+                U.copy(p.toFile(),
+                    Paths.get(resolveSnapshotWorkDirectory(loc.configuration()).getAbsolutePath(), snpName).toFile(),
+                    false);
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+        });
 
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
@@ -149,9 +188,25 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
         return startGridsWithCache(grids,
             keys,
             valMapper,
-            (id, cfg) -> Paths.get(defaultWorkDirectory().toString(),
-                prefix + U.maskForFileName(cfg.getIgniteInstanceName())).toString(),
+            CLUSTER_DIR.apply(prefix),
             ccfgs);
+    }
+
+    /**
+     * @param grids Number of ignite instances to start.
+     * @return Ignite coordinator instance.
+     * @throws Exception If fails.
+     */
+    private IgniteEx startDedicatedGrids(String prefix, int grids) throws Exception {
+        for (int g = 0; g < grids; g++) {
+            IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(g)));
+
+            cfg.setWorkDirectory(CLUSTER_DIR.apply(prefix).apply(g, cfg));
+
+            startGrid(cfg);
+        }
+
+        return grid(0);
     }
 
     /**
