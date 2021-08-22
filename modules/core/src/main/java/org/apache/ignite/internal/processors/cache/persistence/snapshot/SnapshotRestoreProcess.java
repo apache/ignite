@@ -1144,33 +1144,35 @@ public class SnapshotRestoreProcess {
                     break;
 
                 leftParts.removeIf(partId -> {
-                   boolean canRestore = meta.partitions().get(grp.groupId()).contains(partId);
+                    boolean canRestore = ofNullable(meta.partitions().get(grp.groupId()))
+                        .orElse(Collections.emptySet())
+                        .contains(partId);
 
-                   if (canRestore) {
-                       File cacheDir = ((FilePageStoreManager)grp.shared().pageStore()).cacheWorkDir(grp.sharedGroup(),
-                           grp.cacheOrGroupName());
+                    if (canRestore) {
+                        File cacheDir = ((FilePageStoreManager)grp.shared().pageStore()).cacheWorkDir(grp.sharedGroup(),
+                            grp.cacheOrGroupName());
 
-                       File snpCacheDir = new File(grp.shared().snapshotMgr().snapshotLocalDir(opCtx.snpName),
-                           Paths.get(databaseRelativePath(meta.folderName()), cacheDir.getName()).toString());
+                        File snpCacheDir = new File(grp.shared().snapshotMgr().snapshotLocalDir(opCtx.snpName),
+                            Paths.get(databaseRelativePath(meta.folderName()), cacheDir.getName()).toString());
 
-                       File snpFile = new File(snpCacheDir, FilePageStoreManager.getPartitionFileName(partId));
-                       Path target0 = Paths.get(cacheDir.getAbsolutePath(),
-                           TMP_PREFIX + FilePageStoreManager.getPartitionFileName(partId));
+                        File snpFile = new File(snpCacheDir, FilePageStoreManager.getPartitionFileName(partId));
+                        Path target0 = Paths.get(cacheDir.getAbsolutePath(),
+                            TMP_PREFIX + FilePageStoreManager.getPartitionFileName(partId));
 
-                       assert snpCacheDir.exists() : "node=" + grp.shared().localNodeId() + ", dir=" + snpCacheDir;
+                        assert snpCacheDir.exists() : "node=" + grp.shared().localNodeId() + ", dir=" + snpCacheDir;
 
-                       copyFileLocal(grp.shared().snapshotMgr(),
-                           opCtx,
-                           snpFile,
-                           target0,
-                           findLoadFuture(partLfs, partId));
-                   }
+                        copyFileLocal(grp.shared().snapshotMgr(),
+                            opCtx,
+                            snpFile,
+                            target0,
+                            findLoadFuture(partLfs, partId));
+                    }
 
-                   return canRestore;
+                    return canRestore;
                 });
             }
 
-            assert leftParts.isEmpty() : leftParts;
+            assert leftParts.isEmpty() : "[grp=" + grp.cacheOrGroupName() + ", parts=" + leftParts + ']';
 
             // TODO Second preload partitions from remote nodes.
 
