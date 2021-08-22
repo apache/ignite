@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -110,7 +111,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private IgniteSandbox sandbox;
 
     /** Node local security context ready future. */
-    private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
+    private volatile IgniteInternalFuture<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
 
     /**
      * @param ctx Grid kernal context.
@@ -301,7 +302,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (!nodeSecCtxReadyFut.isDone()) {
-            nodeSecCtxReadyFut.onDone(new NodeStoppingException(
+            ((GridFutureAdapter<SecurityContext>)nodeSecCtxReadyFut).onDone(new NodeStoppingException(
                 "Failed to wait for local node security context initialization (grid is stopping)."));
         }
 
@@ -365,11 +366,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * {@inheritDoc}
      */
     @Override public @Nullable IgniteInternalFuture<?> onReconnected(
-        boolean clusterRestarted
-    ) throws IgniteCheckedException {
-        nodeSecCtxReadyFut.reset();
-
-        initLocalContext();
+        boolean clusterRestarted) throws IgniteCheckedException {
+        nodeSecCtxReadyFut = new GridFinishedFuture<>(localNodeContext());
 
         return secPrc.onReconnected(clusterRestarted);
     }
@@ -391,24 +389,19 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onLocalJoin() {
-        initLocalContext();
-    }
-
-    /** Initializes local security context. */
-    private void initLocalContext() {
         try {
-            SecurityContext secCtx = nodeSecurityContext(
-                marsh,
-                U.resolveClassLoader(ctx.config()),
-                ctx.discovery().localNode());
-
-            nodeSecCtxReadyFut.onDone(secCtx);
+            ((GridFutureAdapter<SecurityContext>)nodeSecCtxReadyFut).onDone(localNodeContext());
         }
         catch (Throwable e) {
-            nodeSecCtxReadyFut.onDone(e);
+            ((GridFutureAdapter<SecurityContext>)nodeSecCtxReadyFut).onDone(e);
 
             throw e;
         }
+    }
+
+    /** @return Local node context. */
+    private SecurityContext localNodeContext() {
+        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
     }
 
     /**
@@ -426,7 +419,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             }
         }
 
-        return new DeferredSecurityContext(nodeSecCtxReadyFut);
+        return new DeferredSecurityContext();
     }
 
     /**
@@ -458,15 +451,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * available. The main reason of such implementation is that local node security context is undefined until node
      * joins the topology.
      */
-    public static class DeferredSecurityContext implements SecurityContext {
-        /** */
-        private final GridFutureAdapter<SecurityContext> fut;
-
-        /** */
-        public DeferredSecurityContext(GridFutureAdapter<SecurityContext> fut) {
-            this.fut = fut;
-        }
-
+    public class DeferredSecurityContext implements SecurityContext {
         /** {@inheritDoc} */
         @Override public SecuritySubject subject() {
             return delegate().subject();
@@ -495,7 +480,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         /** */
         public SecurityContext delegate() {
             try {
-                return fut.get();
+                return nodeSecCtxReadyFut.get();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
