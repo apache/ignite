@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -68,17 +67,13 @@ public class ClientReconnectTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testClientNodeReconnected() throws Exception {
-        IgniteEx ignite = startGrids(2);
+        startGrids(2);
 
-        ignite.cluster().state(ClusterState.ACTIVE);
-
-        int clientIdx = 2;
-
-        IgniteEx ex = startClientGrid(clientIdx);
+        IgniteEx cli = startClientGrid(2);
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        ex.events().localListen(evt -> {
+        cli.events().localListen(evt -> {
             latch.countDown();
 
             return true;
@@ -86,7 +81,7 @@ public class ClientReconnectTest extends GridCommonAbstractTest {
 
         DiscoverySpi discoverySpi = ignite(0).configuration().getDiscoverySpi();
 
-        discoverySpi.failNode(nodeId(clientIdx), null);
+        discoverySpi.failNode(nodeId(2), null);
 
         assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
     }
