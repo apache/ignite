@@ -33,31 +33,7 @@ tab:pom.xml[]
 <dependency>
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-spring-data-2.2-ext</artifactId>
-    <version>${ignite-spring-data-ext.version}</version>
-</dependency>
-
-<dependency>
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-core</artifactId>
-    <version>${ignite.version}</version>
-</dependency>
-
-<dependency>
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-indexing</artifactId>
-    <version>${ignite.version}</version>
-</dependency>
-
-<dependency>
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring</artifactId>
-    <version>${ignite.version}</version>
-</dependency>
-
-<dependency>
-    <groupId>org.springframework.data</groupId>
-    <artifactId>spring-data-commons</artifactId>
-    <version>${spring.data.version}</version>
+    <version>1.0.0</version>
 </dependency>
 ----
 --
