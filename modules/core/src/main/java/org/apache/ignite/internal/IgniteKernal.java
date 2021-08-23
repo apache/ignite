@@ -48,12 +48,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -1576,27 +1578,47 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Print info about expiration policy by cache into log.
      */
     private void printExpirePolicyInfoIntoLog() {
-        SB sb = new SB("Expiration policy info by cache [");
-        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
-            ExpiryPolicy expPlc = cacheCtx.expiry();
-            if (expPlc == null || expPlc instanceof EternalExpiryPolicy) continue;
+//        SB sb = new SB();
+//        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
+//            ExpiryPolicy expPlc = cacheCtx.expiry();
+//            if (expPlc == null || expPlc instanceof EternalExpiryPolicy) continue;
+//
+//            Duration dur;
+//            if (expPlc.getExpiryForCreation() != null)
+//                dur = expPlc.getExpiryForCreation();
+//            else if (expPlc.getExpiryForUpdate() != null)
+//                dur = expPlc.getExpiryForUpdate();
+//            else
+//                dur = expPlc.getExpiryForAccess();
+//
+//            if (dur == null || dur.getTimeUnit() == null) continue;
+//
+//            sb.a("{cache=" + cacheCtx.name() + ", duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+//                    "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + "},");
+//        }
+//        sb.d(sb.length() - 1);
 
-            Duration dur;
-            if (expPlc.getExpiryForCreation() != null)
-                dur = expPlc.getExpiryForCreation();
-            else if (expPlc.getExpiryForUpdate() != null)
-                dur = expPlc.getExpiryForUpdate();
-            else
-                dur = expPlc.getExpiryForAccess();
+        final String r = ctx.cache().context().cacheContexts().stream()
+                .map(cacheCtx -> {
+                    ExpiryPolicy expPlc = cacheCtx.expiry();
+                    if (expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
 
-            if (dur == null || dur.getTimeUnit() == null) continue;
+                    Duration dur;
+                    if (expPlc.getExpiryForCreation() != null)
+                        dur = expPlc.getExpiryForCreation();
+                    else if (expPlc.getExpiryForUpdate() != null)
+                        dur = expPlc.getExpiryForUpdate();
+                    else
+                        dur = expPlc.getExpiryForAccess();
 
-            sb.a("{cache=" + cacheCtx.name() + ", duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-                    "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + "},");
-        }
-        sb.d(sb.length() - 1).a("]");
+                    if (dur == null || dur.getTimeUnit() == null) return null;
 
-        log.info(sb.toString());
+                    return "{cache=" + cacheCtx.name() + ", duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+                            "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + "}";
+                }).filter(s -> !Objects.isNull(s))
+                .collect(Collectors.joining(", "));
+
+        log.info(String.format("Expiration policy info by cache [%s]", r));
     }
 
     /** */
