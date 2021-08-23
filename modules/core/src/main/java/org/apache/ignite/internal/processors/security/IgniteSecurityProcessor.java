@@ -354,6 +354,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        nodeSecCtxReadyFut.reset();
+
         secPrc.onDisconnected(reconnectFut);
     }
 
@@ -401,7 +403,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        if (nodeSecCtxReadyFut.isDone()) {
+        if (nodeSecCtxReadyFut.isDone() && !ctx.clientNode()) {
             try {
                 return nodeSecCtxReadyFut.get();
             }

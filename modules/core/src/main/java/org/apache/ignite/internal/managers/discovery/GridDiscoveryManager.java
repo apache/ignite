@@ -860,6 +860,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     gridStartTime = getSpi().getGridStartTime();
 
+                    ctx.security().onLocalJoin();
+
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
 
                     ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);

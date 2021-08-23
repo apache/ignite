@@ -36,6 +36,7 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if task operation is allowed.
      */
+    @Deprecated
     public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm);
 
     /**
@@ -45,6 +46,7 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if cache operation is allowed.
      */
+    @Deprecated
     public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm);
 
     /**
@@ -54,6 +56,7 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if task operation is allowed.
      */
+    @Deprecated
     public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm);
 
     /**
@@ -62,5 +65,6 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if system operation is allowed.
      */
+    @Deprecated
     public boolean systemOperationAllowed(SecurityPermission perm);
 }
