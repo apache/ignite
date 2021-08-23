@@ -48,7 +48,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -358,19 +357,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         secPrc.onDisconnected(reconnectFut);
     }
 
-    /**
-     * Reinitializes local security context because ID of client node will be changed on reconnect.
-     * @see TcpDiscoveryNode#onClientDisconnected(UUID)
-     *
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public @Nullable IgniteInternalFuture<?> onReconnected(
-        boolean clusterRestarted
-    ) throws IgniteCheckedException {
-        nodeSecCtxReadyFut.reset();
-
-        initLocalContext();
-
+        boolean clusterRestarted) throws IgniteCheckedException {
         return secPrc.onReconnected(clusterRestarted);
     }
 
@@ -391,12 +380,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onLocalJoin() {
-        initLocalContext();
-    }
-
-    /** Initializes local security context. */
-    private void initLocalContext() {
         try {
+            // This method may be called several times on client node reconnect.
+            if (nodeSecCtxReadyFut.isDone())
+                nodeSecCtxReadyFut.reset();
+
             nodeSecCtxReadyFut.onDone(nodeSecurityContext(
                 marsh,
                 U.resolveClassLoader(ctx.config()),

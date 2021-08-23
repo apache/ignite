@@ -868,6 +868,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ctx.service().onLocalJoin(localJoinEvent(), discoCache);
 
+                    ctx.security().onLocalJoin();
+
                     DiscoCache discoCache0 = discoCache;
 
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
