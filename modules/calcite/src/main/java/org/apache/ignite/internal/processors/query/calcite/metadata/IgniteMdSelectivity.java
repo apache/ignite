@@ -305,15 +305,13 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             RexLocalRef op = getOperand(pred, RexLocalRef.class);
 
             if (predKind == SqlKind.OR) {
-                double orSelTotal = 0;
+                double orSelTotal = 1;
 
-                for (RexNode orPred : RelOptUtil.disjunctions(pred)) {
-                    orSelTotal += getTablePredicateBasedSelectivity(rel, tbl, mq, orPred);
+                for (RexNode orPred : RelOptUtil.disjunctions(pred))
+                    orSelTotal *= 1 - getTablePredicateBasedSelectivity(rel, tbl, mq, orPred);
 
-                    if (orSelTotal > 1)
-                        return 1;
-                }
-                sel *= orSelTotal;
+
+                sel *= 1 - orSelTotal;
             }
             else if (predKind == SqlKind.NOT) {
                 if (op == null)
