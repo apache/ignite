@@ -2322,7 +2322,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
-            String expPlcInfo = "";//cfg.getExpirePolicyInfo();
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
 
             for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace())
                 System.out.println(stackTraceElement.toString());
@@ -2408,7 +2408,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
-            String expPlcInfo = "";//cfg.getExpirePolicyInfo();
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
 
             for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace())
                 System.out.println(stackTraceElement.toString());

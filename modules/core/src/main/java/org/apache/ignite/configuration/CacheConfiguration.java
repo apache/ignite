@@ -124,7 +124,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** 
+    /**
       * Default lock timeout.
       * @deprecated Default lock timeout configuration property has no effect.
       */
@@ -436,7 +436,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private Integer diskPageCompressionLevel;
 
-    private String expirePolicyInfo;
+//    private String expirePolicyInfo;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -2253,33 +2253,33 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         }
     }
 
-    public String getExpirePolicyInfo() {
-        return expirePolicyInfo;
-    }
-
-    /**
-     * Build formatted string with expire policy info.
-     *
-     * @param expPlc - expiration policy.
-     * @return formatted expire policy info.
-     */
-    private String buildExpirePolicyInfo(ExpiryPolicy expPlc) {
-        if (!(expiryPolicyFactory instanceof FactoryBuilder.SingletonFactory) ||
-                expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
-
-        Duration dur = null;
-        if (expPlc.getExpiryForCreation() != null)
-            dur = expPlc.getExpiryForCreation();
-        else if (expPlc.getExpiryForUpdate() != null)
-            dur = expPlc.getExpiryForUpdate();
-        else
-            dur = expPlc.getExpiryForAccess();
-
-        if (dur == null || dur.getTimeUnit() == null) return null;
-
-        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-                "ms, isEagerTtl=" + eagerTtl + ']';
-    }
+//    public String getExpirePolicyInfo() {
+//        return expirePolicyInfo;
+//    }
+//
+//    /**
+//     * Build formatted string with expire policy info.
+//     *
+//     * @param expPlc - expiration policy.
+//     * @return formatted expire policy info.
+//     */
+//    private String buildExpirePolicyInfo(ExpiryPolicy expPlc) {
+//        if (!(expiryPolicyFactory instanceof FactoryBuilder.SingletonFactory) ||
+//                expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
+//
+//        Duration dur = null;
+//        if (expPlc.getExpiryForCreation() != null)
+//            dur = expPlc.getExpiryForCreation();
+//        else if (expPlc.getExpiryForUpdate() != null)
+//            dur = expPlc.getExpiryForUpdate();
+//        else
+//            dur = expPlc.getExpiryForAccess();
+//
+//        if (dur == null || dur.getTimeUnit() == null) return null;
+//
+//        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+//                "ms, isEagerTtl=" + eagerTtl + ']';
+//    }
 
     /**
      * Creates a copy of current configuration and removes all cache entry listeners.

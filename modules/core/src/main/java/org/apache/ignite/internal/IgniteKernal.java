@@ -1281,6 +1281,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 startTimer.finishGlobalStage("Start processors");
 
+                if (log.isInfoEnabled())
+                    printExpirePolicyInfoIntoLog();
+
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
@@ -1565,35 +1568,35 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         startTimer.finishGlobalStage("Await exchange");
 
-//        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
-//            final String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
-//            if (log.isInfoEnabled() && expPlcInfo != null)
-//                log.info("cache=" + cacheCtx.cache().name() + ", " + buildExpirePolicyInfo(cacheCtx));
-//        }
+//        if (log.isInfoEnabled())
+//            printExpirePolicyInfoIntoLog();
     }
 
     /**
-     * Build formatted string with expire policy info.
-     *
-     * @param cacheCtx - cache context.
-     * @return formatted expire policy info.
+     * Print info about expiration policy by cache into log.
      */
-    private String buildExpirePolicyInfo(GridCacheContext cacheCtx) {
-        ExpiryPolicy expPlc = cacheCtx.expiry();
-        if (expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
+    private void printExpirePolicyInfoIntoLog() {
+        SB sb = new SB("Expiration policy info by cache [");
+        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
+            ExpiryPolicy expPlc = cacheCtx.expiry();
+            if (expPlc == null || expPlc instanceof EternalExpiryPolicy) continue;
 
-        Duration dur;
-        if (expPlc.getExpiryForCreation() != null)
-            dur = expPlc.getExpiryForCreation();
-        else if (expPlc.getExpiryForUpdate() != null)
-            dur = expPlc.getExpiryForUpdate();
-        else
-            dur = expPlc.getExpiryForAccess();
+            Duration dur;
+            if (expPlc.getExpiryForCreation() != null)
+                dur = expPlc.getExpiryForCreation();
+            else if (expPlc.getExpiryForUpdate() != null)
+                dur = expPlc.getExpiryForUpdate();
+            else
+                dur = expPlc.getExpiryForAccess();
 
-        if (dur == null || dur.getTimeUnit() == null) return null;
+            if (dur == null || dur.getTimeUnit() == null) continue;
 
-        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-                "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + ']';
+            sb.a("{cache=" + cacheCtx.name() + ", duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+                    "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + "},");
+        }
+        sb.d(sb.length() - 1).a("]");
+
+        log.info(sb.toString());
     }
 
     /** */
