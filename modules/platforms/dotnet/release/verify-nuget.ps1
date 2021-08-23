@@ -44,6 +44,12 @@ param (
 echo ".NET SDKs:"
 dotnet --list-sdks
 
+$newSdks = dotnet --list-sdks | where {$_ -match "\d+\.\d+"} | where {[int]($_.Split(".")[0]) -gt 2}
+
+if ($newSdks.Length > 0) {
+    # TODO: Enable global.json
+}
+
 # Find NuGet packages (*.nupkg)
 $dir = If ([System.IO.Path]::IsPathRooted($packageDir)) { $packageDir } Else { Join-Path $PSScriptRoot $packageDir }
 if (!(Test-Path $dir)) {
