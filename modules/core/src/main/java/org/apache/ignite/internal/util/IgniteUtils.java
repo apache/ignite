@@ -12213,7 +12213,8 @@ public abstract class IgniteUtils {
                 millis -= TimeUnit.SECONDS.toMillis(seconds);
             }
 
-            sb.append(millis).append("ms");        }
+            sb.append(millis).append("ms");
+        }
 
         return sb.toString();
     }
