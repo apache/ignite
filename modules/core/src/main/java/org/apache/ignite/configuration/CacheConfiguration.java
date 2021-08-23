@@ -27,10 +27,7 @@ import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
 import javax.cache.configuration.MutableConfiguration;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
@@ -436,8 +433,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private Integer diskPageCompressionLevel;
 
-//    private String expirePolicyInfo;
-
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -536,7 +531,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
-//        expirePolicyInfo = buildExpirePolicyInfo(expiryPolicyFactory.create());
     }
 
     /**
@@ -2252,34 +2246,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             return super.removeCacheEntryListenerConfiguration(cacheEntryLsnrCfg);
         }
     }
-
-//    public String getExpirePolicyInfo() {
-//        return expirePolicyInfo;
-//    }
-//
-//    /**
-//     * Build formatted string with expire policy info.
-//     *
-//     * @param expPlc - expiration policy.
-//     * @return formatted expire policy info.
-//     */
-//    private String buildExpirePolicyInfo(ExpiryPolicy expPlc) {
-//        if (!(expiryPolicyFactory instanceof FactoryBuilder.SingletonFactory) ||
-//                expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
-//
-//        Duration dur = null;
-//        if (expPlc.getExpiryForCreation() != null)
-//            dur = expPlc.getExpiryForCreation();
-//        else if (expPlc.getExpiryForUpdate() != null)
-//            dur = expPlc.getExpiryForUpdate();
-//        else
-//            dur = expPlc.getExpiryForAccess();
-//
-//        if (dur == null || dur.getTimeUnit() == null) return null;
-//
-//        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-//                "ms, isEagerTtl=" + eagerTtl + ']';
-//    }
 
     /**
      * Creates a copy of current configuration and removes all cache entry listeners.

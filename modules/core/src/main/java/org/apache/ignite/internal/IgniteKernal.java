@@ -1283,9 +1283,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 startTimer.finishGlobalStage("Start processors");
 
-                if (log.isInfoEnabled())
-                    printExpirePolicyInfoIntoLog();
-
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
@@ -1570,34 +1567,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         startTimer.finishGlobalStage("Await exchange");
 
-//        if (log.isInfoEnabled())
-//            printExpirePolicyInfoIntoLog();
+        if (log.isInfoEnabled())
+            ackExpPlcInfoByCaches();
     }
 
     /**
-     * Print info about expiration policy by cache into log.
+     * Acks expiration policy info by caches.
      */
-    private void printExpirePolicyInfoIntoLog() {
-//        SB sb = new SB();
-//        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
-//            ExpiryPolicy expPlc = cacheCtx.expiry();
-//            if (expPlc == null || expPlc instanceof EternalExpiryPolicy) continue;
-//
-//            Duration dur;
-//            if (expPlc.getExpiryForCreation() != null)
-//                dur = expPlc.getExpiryForCreation();
-//            else if (expPlc.getExpiryForUpdate() != null)
-//                dur = expPlc.getExpiryForUpdate();
-//            else
-//                dur = expPlc.getExpiryForAccess();
-//
-//            if (dur == null || dur.getTimeUnit() == null) continue;
-//
-//            sb.a("{cache=" + cacheCtx.name() + ", duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-//                    "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + "},");
-//        }
-//        sb.d(sb.length() - 1);
-
+    private void ackExpPlcInfoByCaches() {
         final String r = ctx.cache().context().cacheContexts().stream()
                 .map(cacheCtx -> {
                     ExpiryPolicy expPlc = cacheCtx.expiry();
@@ -1618,7 +1595,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }).filter(s -> !Objects.isNull(s))
                 .collect(Collectors.joining(", "));
 
-        log.info(String.format("Expiration policy info by cache [%s]", r));
+        log.info(String.format("Expiration policy info by caches [%s]", r));
     }
 
     /** */
