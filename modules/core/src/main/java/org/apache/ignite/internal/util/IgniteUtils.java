@@ -97,13 +97,14 @@ import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -256,6 +257,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -384,10 +388,10 @@ public abstract class IgniteUtils {
     private static volatile GridTuple<String> ggHome;
 
     /** OS JDK string. */
-    private static String osJdkStr;
+    private static final String osJdkStr;
 
     /** OS string. */
-    private static String osStr;
+    private static final String osStr;
 
     /** JDK string. */
     private static String jdkStr;
@@ -444,7 +448,7 @@ public abstract class IgniteUtils {
     private static boolean mac;
 
     /** Indicates whether current OS is of RedHat family. */
-    private static boolean redHat;
+    private static final boolean redHat;
 
     /** Indicates whether current OS architecture is Sun Sparc. */
     private static boolean sparc;
@@ -489,7 +493,7 @@ public abstract class IgniteUtils {
     private static String jvmImplName;
 
     /** Will be set to {@code true} if detected a 32-bit JVM. */
-    private static boolean jvm32Bit;
+    private static final boolean jvm32Bit;
 
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
@@ -505,17 +509,24 @@ public abstract class IgniteUtils {
     private static final int MASK = 0xf;
 
     /** Long date format pattern for log messages. */
-    private static final SimpleDateFormat LONG_DATE_FMT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+    public static final DateTimeFormatter LONG_DATE_FMT =
+        DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /**
      * Short date format pattern for log messages in "quiet" mode.
      * Only time is included since we don't expect "quiet" mode to be used
      * for longer runs.
      */
-    private static final SimpleDateFormat SHORT_DATE_FMT = new SimpleDateFormat("HH:mm:ss");
+    public static final DateTimeFormatter SHORT_DATE_FMT =
+        DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /** Debug date format. */
-    private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
+    public static final DateTimeFormatter DEBUG_DATE_FMT =
+        DateTimeFormatter.ofPattern("HH:mm:ss,SSS").withZone(ZoneId.systemDefault());
+
+    /** Date format for thread dumps. */
+    private static final DateTimeFormatter THREAD_DUMP_FMT =
+        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss z").withZone(ZoneId.systemDefault());
 
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
@@ -620,7 +631,7 @@ public abstract class IgniteUtils {
     private static final Field urlClsLdrField = urlClassLoaderField();
 
     /** Dev only logging disabled. */
-    private static boolean devOnlyLogDisabled =
+    private static final boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
     /** JDK9: jdk.internal.loader.URLClassPath. */
@@ -630,7 +641,7 @@ public abstract class IgniteUtils {
     private static Method mthdURLClassPathGetUrls;
 
     /** Byte count prefixes. */
-    private static String BYTE_CNT_PREFIXES = " KMGTPE";
+    private static final String BYTE_CNT_PREFIXES = " KMGTPE";
 
     /*
      * Initializes enterprise check.
@@ -1327,7 +1338,7 @@ public abstract class IgniteUtils {
      * @return Common prefix for debug messages.
      */
     private static String debugPrefix() {
-        return '<' + DEBUG_DATE_FMT.format(new Date(System.currentTimeMillis())) + "><DEBUG><" +
+        return '<' + DEBUG_DATE_FMT.format(Instant.now()) + "><DEBUG><" +
             Thread.currentThread().getName() + '>' + ' ';
     }
 
@@ -1339,7 +1350,7 @@ public abstract class IgniteUtils {
 
         Runtime runtime = Runtime.getRuntime();
 
-        X.println('<' + DEBUG_DATE_FMT.format(new Date(System.currentTimeMillis())) + "><DEBUG><" +
+        X.println('<' + DEBUG_DATE_FMT.format(Instant.now()) + "><DEBUG><" +
             Thread.currentThread().getName() + "> Heap stats [free=" + runtime.freeMemory() / (1024 * 1024) +
             "M, total=" + runtime.totalMemory() / (1024 * 1024) + "M]");
     }
@@ -1471,7 +1482,7 @@ public abstract class IgniteUtils {
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
         GridStringBuilder sb = new GridStringBuilder(THREAD_DUMP_MSG)
-            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
+            .a(THREAD_DUMP_FMT.format(Instant.ofEpochMilli(U.currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
             printThreadInfo(info, sb, deadlockedThreadsIds);
@@ -3357,7 +3368,7 @@ public abstract class IgniteUtils {
      * @return Formatted time string.
      */
     public static String format(long sysTime) {
-        return LONG_DATE_FMT.format(new java.util.Date(sysTime));
+        return LONG_DATE_FMT.format(Instant.ofEpochMilli(sysTime));
     }
 
     /**
@@ -4480,7 +4491,7 @@ public abstract class IgniteUtils {
         if (log != null)
             log.getLogger(IgniteConfiguration.COURTESY_LOGGER_NAME).warning(compact(longMsg.toString()));
         else
-            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (courtesy) " +
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (courtesy) " +
                 compact(shortMsg.toString()));
     }
 
@@ -4576,7 +4587,7 @@ public abstract class IgniteUtils {
         if (log != null)
             log.warning(compact(msg.toString()), e);
         else {
-            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
                     compact(msg.toString()));
 
             if (e != null)
@@ -4606,7 +4617,7 @@ public abstract class IgniteUtils {
         if (log != null)
             log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
         else
-            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
                 compact(msg.toString()));
     }
 
@@ -4634,6 +4645,130 @@ public abstract class IgniteUtils {
         }
         else
             quiet(false, shortMsg);
+    }
+
+    /**
+     * Resolves work directory.
+     * @param cfg Ignite configuration.
+     */
+    public static void initWorkDir(IgniteConfiguration cfg) throws IgniteCheckedException {
+        String igniteHome = cfg.getIgniteHome();
+
+        // Set Ignite home.
+        if (igniteHome == null)
+            igniteHome = U.getIgniteHome();
+
+        String userProvidedWorkDir = cfg.getWorkDirectory();
+
+        // Correctly resolve work directory and set it back to configuration.
+        cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param app Application name.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static IgniteLogger initLogger(IgniteConfiguration cfg, String app) throws IgniteCheckedException {
+        return initLogger(
+            cfg.getGridLogger(),
+            app,
+            cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
+            cfg.getWorkDirectory()
+        );
+    }
+
+    /**
+     * @param cfgLog Configured logger.
+     * @param app Application name.
+     * @param workDir Work directory.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ErrorNotRethrown")
+    public static IgniteLogger initLogger(
+        @Nullable IgniteLogger cfgLog,
+        @Nullable String app,
+        UUID nodeId,
+        String workDir
+    ) throws IgniteCheckedException {
+        try {
+            Exception log4jInitErr = null;
+
+            if (cfgLog == null) {
+                Class<?> log4jCls;
+
+                try {
+                    log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
+                }
+                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                    log4jCls = null;
+                }
+
+                if (log4jCls != null) {
+                    try {
+                        URL url = U.resolveIgniteUrl("config/ignite-log4j.xml");
+
+                        if (url == null) {
+                            File cfgFile = new File("config/ignite-log4j.xml");
+
+                            if (!cfgFile.exists())
+                                cfgFile = new File("../config/ignite-log4j.xml");
+
+                            if (cfgFile.exists()) {
+                                try {
+                                    url = cfgFile.toURI().toURL();
+                                }
+                                catch (MalformedURLException ignore) {
+                                    // No-op.
+                                }
+                            }
+                        }
+
+                        if (url != null) {
+                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                            if (configured)
+                                url = null;
+                        }
+
+                        if (url != null) {
+                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                            cfgLog = (IgniteLogger)ctor.newInstance(url);
+                        }
+                        else
+                            cfgLog = (IgniteLogger)log4jCls.newInstance();
+                    }
+                    catch (Exception e) {
+                        log4jInitErr = e;
+                    }
+                }
+
+                if (log4jCls == null || log4jInitErr != null)
+                    cfgLog = new JavaLogger();
+            }
+
+            // Special handling for Java logger which requires work directory.
+            if (cfgLog instanceof JavaLogger)
+                ((JavaLogger)cfgLog).setWorkDirectory(workDir);
+
+            // Set node IDs for all file appenders.
+            if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
+                ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
+            else if (cfgLog instanceof LoggerNodeIdAware)
+                ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+            if (log4jInitErr != null)
+                U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
+                    + log4jInitErr.getCause());
+
+            return cfgLog;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to create logger.", e);
+        }
     }
 
     /**
@@ -4678,7 +4813,7 @@ public abstract class IgniteUtils {
                 log.error(compact(longMsg.toString()), e);
         }
         else {
-            X.printerr("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (err) " +
+            X.printerr("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (err) " +
                 compact(shortMsg.toString()));
 
             if (e != null)
@@ -4711,7 +4846,7 @@ public abstract class IgniteUtils {
     public static void quiet(boolean err, Object... objs) {
         assert objs != null;
 
-        String time = SHORT_DATE_FMT.format(new java.util.Date());
+        String time = SHORT_DATE_FMT.format(Instant.now());
 
         SB sb = new SB();
 
@@ -7714,19 +7849,6 @@ public abstract class IgniteUtils {
                 }
             }
         }
-    }
-
-    /**
-     * Formats passed date with specified pattern.
-     *
-     * @param date Date to format.
-     * @param ptrn Pattern.
-     * @return Formatted date.
-     */
-    public static String format(Date date, String ptrn) {
-        java.text.DateFormat format = new java.text.SimpleDateFormat(ptrn);
-
-        return format.format(date);
     }
 
     /**
@@ -12106,4 +12228,16 @@ public abstract class IgniteUtils {
             return size;
         }
     }
+
+    /**
+     * Maps object hash to some index between 0 and specified size via modulo operation.
+     *
+     * @param hash Object hash.
+     * @param size Size greater than 0.
+     * @return Calculated index in range [0..size).
+     */
+    public static int hashToIndex(int hash, int size) {
+        return safeAbs(hash % size);
+    }
+
 }

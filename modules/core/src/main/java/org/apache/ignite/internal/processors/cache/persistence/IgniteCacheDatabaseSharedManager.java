@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -97,8 +96,11 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
@@ -294,8 +296,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             String freeListName = memPlcCfg.getName() + "##FreeList";
 
-            PageLockListener lsnr = cctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName);
-
             CacheFreeList freeList = new CacheFreeList(
                 0,
                 freeListName,
@@ -303,7 +303,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 persistenceEnabled ? cctx.wal() : null,
                 0L,
                 true,
-                lsnr,
+                cctx.diagnostic().pageLockTracker(),
                 cctx.kernalContext(),
                 null,
                 PageIdAllocator.FLAG_IDX
@@ -595,7 +595,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration(), warmUpStrategies);
 
-        checkWalArchiveSizeConfiguration(memCfg);
+        checkWalArchiveSizeConfiguration(memCfg, log);
 
         checkExistenceWarmUpConfiguration(
             memCfg.getDefaultWarmUpConfiguration(),
@@ -605,37 +605,76 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Check WAL archive size configuration for correctness.
+     * Check WAL archive sizes configuration for correctness.
      *
-     * @param memCfg durable memory configuration for an Apache Ignite node.
-     * @throws IgniteCheckedException if maximum WAL archive size is configured incorrectly
+     * @param memCfg Memory configuration.
+     * @throws IgniteCheckedException If WAL archive sizes is configured incorrectly.
      */
-    private void checkWalArchiveSizeConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
-        long maxWalArchiveSize = memCfg.getMaxWalArchiveSize();
+    static void checkWalArchiveSizeConfiguration(
+        DataStorageConfiguration memCfg,
+        IgniteLogger log
+    ) throws IgniteCheckedException {
+        long max = memCfg.getMaxWalArchiveSize();
 
         if (!CU.isPersistenceEnabled(memCfg)) {
-            if (maxWalArchiveSize != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE) {
+            if (max != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE) {
                 LT.info(log, "Maximum WAL archive size has been configured but this node has been launched in " +
                     "non-persistent mode, so this parameter will be ignored");
             }
             return;
         }
 
-        if (memCfg.isWalHistorySizeParameterUsed())
+        if (memCfg.isWalHistorySizeParameterUsed()) {
             LT.warn(log,
                 "DataRegionConfiguration.walHistorySize property is deprecated and is no longer supported. " +
                     "It will be ignored and DataRegionConfiguration.maxWalArchiveSize property will be used " +
                     "instead to control removal of archived WAL files"
             );
+        }
 
-        if (maxWalArchiveSize != UNLIMITED_WAL_ARCHIVE && maxWalArchiveSize < memCfg.getWalSegmentSize())
-            throw new IgniteCheckedException(String.format(
-                "DataRegionConfiguration.maxWalArchiveSize must be no less than " +
-                    "DataRegionConfiguration.walSegmentSize or equal to %d (unlimited size), current settings:" + System.lineSeparator() +
-                    "DataRegionConfiguration.maxWalArchiveSize: %d bytes" + System.lineSeparator() +
-                    "DataRegionConfiguration.walSegmentSize: %d bytes",
-                UNLIMITED_WAL_ARCHIVE, memCfg.getMaxWalArchiveSize(), memCfg.getWalSegmentSize()
-            ));
+        if (max != UNLIMITED_WAL_ARCHIVE) {
+            int walSegmentSize = memCfg.getWalSegmentSize();
+
+            if (max < walSegmentSize) {
+                throw new IgniteCheckedException(String.format(
+                    "DataRegionConfiguration.maxWalArchiveSize must be no less than " +
+                        "DataRegionConfiguration.walSegmentSize or equal to %d (unlimited size), " +
+                        "current settings:" + U.nl() +
+                        "DataRegionConfiguration.maxWalArchiveSize: %d bytes" + U.nl() +
+                        "DataRegionConfiguration.walSegmentSize: %d bytes",
+                    UNLIMITED_WAL_ARCHIVE, max, walSegmentSize
+                ));
+            }
+
+            long min = memCfg.getMinWalArchiveSize();
+
+            double percentage = getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, -1);
+
+            if (min != HALF_MAX_WAL_ARCHIVE_SIZE) {
+                if (min > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
+                            "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
+                            "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
+                            "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
+                            "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
+                        HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+                }
+            }
+            else if (percentage != -1) {
+                log.warning(String.format(
+                    "%s is deprecated, use DataRegionConfiguration.minWalArchiveSize instead",
+                    IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                ));
+
+                if ((long)(max * percentage) > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "%s must be less than or equal to 1.0",
+                        IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                    ));
+                }
+            }
+        }
     }
 
     /**
@@ -1460,6 +1499,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param shutdown {@code True} to force memory regions shutdown.
      */
     private void onDeActivate(boolean shutdown) {
+        if (freeListMap != null)
+            freeListMap.values().forEach(DataStructure::close);
+
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
@@ -1473,6 +1515,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 MBEAN_GROUP_NAME,
                 region.metrics().getName()
             );
+
+            region.metrics().remove();
         }
 
         dataRegionMap.clear();

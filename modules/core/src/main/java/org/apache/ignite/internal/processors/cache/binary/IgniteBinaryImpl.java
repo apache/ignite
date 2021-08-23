@@ -179,6 +179,18 @@ public class IgniteBinaryImpl implements IgniteBinary {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
+        guard();
+
+        try {
+            return proc.registerClass(cls);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * @return Binary processor.
      */

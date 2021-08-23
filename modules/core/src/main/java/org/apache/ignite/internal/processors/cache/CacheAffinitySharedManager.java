@@ -1049,7 +1049,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         U.doInParallel(
-            cctx.kernalContext().getSystemExecutorService(),
+            cctx.kernalContext().pools().getSystemExecutorService(),
             startedGroups,
             grpDesc -> {
                 initStartedGroup(fut, grpDesc, crd);
@@ -1295,7 +1295,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
+            U.doInParallel(cctx.kernalContext().pools().getSystemExecutorService(), affinityCaches, t -> {
                 c.applyx(t);
 
                 return null;
@@ -1315,7 +1315,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
+            U.doInParallel(cctx.kernalContext().pools().getSystemExecutorService(), affinityCaches, t -> {
                 c.applyx(t);
 
                 return null;

@@ -40,7 +40,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEX_REBUILD_BATCH_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -52,8 +54,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.CacheDataR
  * Worker for creating/rebuilding indexes for cache per partition.
  */
 public class SchemaIndexCachePartitionWorker extends GridWorker {
+    /** Default count of rows, being processed within a single checkpoint lock. */
+    public static final int DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE = 1_000;
+
     /** Count of rows, being processed within a single checkpoint lock. */
-    private static final int BATCH_SIZE = 1000;
+    private final int batchSize = getInteger(IGNITE_INDEX_REBUILD_BATCH_SIZE, DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE);
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -185,7 +190,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
 
                     processKey(key);
 
-                    if (++cntr % BATCH_SIZE == 0) {
+                    if (++cntr % batchSize == 0) {
                         cctx.shared().database().checkpointReadUnlock();
 
                         locked = false;

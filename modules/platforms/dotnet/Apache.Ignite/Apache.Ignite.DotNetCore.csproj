@@ -9,10 +9,23 @@
     <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
+
+    <!-- netcoreapp2.0 is out of support -->
+    <NoWarn>NETSDK1138</NoWarn>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!--
+    NOTE: Microsoft.CodeAnalysis.NetAnalyzers is the new replacement for FxCopAnalyzers,
+    but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
+    NOTE: Don't upgrade to 3.x - it does not work on some older 2.x SDKs
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12"/>
   </ItemGroup>
 
   <ItemGroup>

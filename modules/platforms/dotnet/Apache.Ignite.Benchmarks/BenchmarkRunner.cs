@@ -84,7 +84,7 @@ namespace Apache.Ignite.Benchmarks
             {
                 var arg = args[i];
 
-                if (arg.StartsWith("-"))
+                if (arg.StartsWith("-", StringComparison.Ordinal))
                     arg = arg.Substring(1);
                 else
                     continue;

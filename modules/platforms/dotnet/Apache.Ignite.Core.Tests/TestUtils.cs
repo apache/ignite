@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -71,8 +72,8 @@ namespace Apache.Ignite.Core.Tests
             ? new List<string>
             {
                 "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms1g",
-                "-Xmx4g",
+                "-Xms2g",
+                "-Xmx6g",
                 "-ea",
                 "-DIGNITE_QUIET=true",
                 "-Duser.timezone=UTC"
@@ -341,26 +342,30 @@ namespace Apache.Ignite.Core.Tests
         public static void WaitForTrueCondition(Func<bool> cond, Func<string> messageFunc, int timeout = 1000)
         {
             var res = WaitForCondition(cond, timeout);
-            var message = string.Format("Condition not reached within {0} ms", timeout);
 
-            if (messageFunc != null)
+            if (!res)
             {
-                message += string.Format(" ({0})", messageFunc());
-            }
+                var message = string.Format("Condition not reached within {0} ms", timeout);
 
-            Assert.IsTrue(res, message);
+                if (messageFunc != null)
+                {
+                    message += string.Format(" ({0})", messageFunc());
+                }
+
+                Assert.IsTrue(res, message);
+            }
         }
 
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
-        public static TcpDiscoverySpi GetStaticDiscovery()
+        public static TcpDiscoverySpi GetStaticDiscovery(int? maxPort = null)
         {
             return new TcpDiscoverySpi
             {
                 IpFinder = new TcpDiscoveryStaticIpFinder
                 {
-                    Endpoints = new[] { "127.0.0.1:47500" }
+                    Endpoints = new[] { "127.0.0.1:47500" + (maxPort == null ? null : (".." + maxPort)) }
                 },
                 SocketTimeout = TimeSpan.FromSeconds(0.3)
             };
@@ -616,6 +621,19 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Creates the JVM if necessary.
+        /// </summary>
+        public static void EnsureJvmCreated()
+        {
+            if (Jvm.Get(true) == null)
+            {
+                var logger = new TestContextLogger();
+                JvmDll.Load(null, logger);
+                IgniteManager.CreateJvm(GetTestConfiguration(), logger);
+            }
+        }
+
+        /// <summary>
         /// Runs the test in new process.
         /// </summary>
         [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
@@ -649,17 +667,17 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
-        
+
         /// <summary>
         /// Deploys the Java service.
         /// </summary>
         public static string DeployJavaService(IIgnite ignite)
         {
             const string serviceName = "javaService";
-            
+
             ignite.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
-            
+
             var services = ignite.GetServices();
 
             WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
