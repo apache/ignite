@@ -19,7 +19,6 @@ package org.apache.ignite.client;
 
 /**
  * Ignite client configuration.
- * TODO: improve and finalize IGNITE-15164.
  */
 public interface IgniteClientConfiguration {
     /** Default port. */
@@ -28,30 +27,59 @@ public interface IgniteClientConfiguration {
     /** Default port range. */
     int DFLT_PORT_RANGE = 100;
 
-    /** Default socket send and receive buffer size. */
-    int DFLT_SOCK_BUF_SIZE = 0;
+    /** Default socket connect timeout. */
+    int DFLT_CONNECT_TIMEOUT = 5000;
 
-    /** Default value for {@code TCP_NODELAY} socket option. */
-    boolean DFLT_TCP_NO_DELAY = true;
+    /** Default operation retry limit. */
+    int DFLT_RETRY_LIMIT = 5;
+
+    /** Default reconnect throttling period. */
+    long DFLT_RECONNECT_THROTTLING_PERIOD = 30_000L;
+
+    /** Default reconnect throttling retries. */
+    int DFLT_RECONNECT_THROTTLING_RETRIES = 3;
 
     /**
      * Gets the address finder.
      *
      * @return Address finder.
      */
-    IgniteClientAddressFinder getAddressesFinder();
+    IgniteClientAddressFinder addressesFinder();
 
     /**
-     * Gets the addresses.
+     * Gets the addresses of Ignite server nodes within a cluster. An address can be an IP address or a hostname,
+     * with or without port. If port is not set then Ignite will generate multiple addresses for default port range.
+     * See {@link IgniteClientConfiguration#DFLT_PORT}, {@link IgniteClientConfiguration#DFLT_PORT_RANGE}.
      *
      * @return Addresses.
      */
-    String[] getAddresses();
+    String[] addresses();
 
     /**
      * Gets the retry limit.
      *
      * @return Retry limit.
      */
-    int getRetryLimit();
+    int retryLimit();
+
+    /**
+     * Gets the socket connect timeout, in milliseconds.
+     *
+     * @return Socket connect timeout, in milliseconds.
+     */
+    long connectTimeout();
+
+    /**
+     * Gets the reconnect throttling period, in milliseconds.
+     *
+     * @return Reconnect period for throttling, in milliseconds.
+     */
+    long reconnectThrottlingPeriod();
+
+    /**
+     * Gets the reconnect throttling retries.
+     *
+     * @return Reconnect throttling retries.
+     */
+    int reconnectThrottlingRetries();
 }

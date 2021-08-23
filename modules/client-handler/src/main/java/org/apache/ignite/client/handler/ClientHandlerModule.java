@@ -128,6 +128,7 @@ public class ClientHandlerModule implements IgniteComponent {
                             new ClientInboundMessageHandler(igniteTables));
                 }
             })
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout())
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .childOption(ChannelOption.TCP_NODELAY, true);
 

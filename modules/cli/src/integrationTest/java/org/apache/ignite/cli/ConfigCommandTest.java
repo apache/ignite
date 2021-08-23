@@ -115,7 +115,7 @@ public class ConfigCommandTest extends AbstractCliTest {
 
         assertEquals(0, exitCode);
         assertEquals(
-            "\"{\"clientConnector\":{\"port\":" + clientPort + ",\"portRange\":0}," +
+            "\"{\"clientConnector\":{\"connectTimeout\":5000,\"port\":" + clientPort + ",\"portRange\":0}," +
                 "\"network\":{\"netClusterNodes\":[],\"port\":" + networkPort + "}," +
                 "\"node\":{\"metastorageNodes\":[\"localhost1\"]}," +
                 "\"rest\":{\"port\":" + restPort + ",\"portRange\":0}}\"" + nl,

@@ -78,8 +78,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Executor for async operation listeners. */
     private final Executor asyncContinuationExecutor;
 
-    /** Send/receive timeout in milliseconds. */
-    private final int timeout;
+    /** Connect timeout in milliseconds. */
+    private final long connectTimeout;
 
     /**
      * Constructor.
@@ -92,7 +92,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         asyncContinuationExecutor = ForkJoinPool.commonPool();
 
-        timeout = cfg.getTimeout();
+        connectTimeout = cfg.clientConfiguration().connectTimeout();
 
         sock = connMgr.open(cfg.getAddress(), this, this);
 
@@ -289,7 +289,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         try {
             handshakeReq(ver);
 
-            var res = timeout > 0 ? fut.get(timeout, TimeUnit.MILLISECONDS) : fut.get();
+            var res = connectTimeout > 0 ? fut.get(connectTimeout, TimeUnit.MILLISECONDS) : fut.get();
             handshakeRes(res, ver);
         }
         catch (Throwable e) {

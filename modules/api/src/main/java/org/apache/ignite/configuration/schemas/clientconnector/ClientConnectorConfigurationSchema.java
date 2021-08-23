@@ -39,4 +39,9 @@ public class ClientConnectorConfigurationSchema {
     @Min(0)
     @Value(hasDefault = true)
     public final int portRange = 100;
+
+    /** Connect timeout. */
+    @Min(0)
+    @Value(hasDefault = true)
+    public final int connectTimeout = 5000;
 }

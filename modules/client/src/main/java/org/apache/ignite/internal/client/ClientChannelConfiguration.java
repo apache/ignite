@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client;
 
 import java.net.InetSocketAddress;
+import org.apache.ignite.client.IgniteClientConfiguration;
 
 /**
  * Configuration required to initialize {@link TcpClientChannel}.
@@ -26,23 +27,8 @@ final class ClientChannelConfiguration {
     /** Host. */
     private final InetSocketAddress addr;
 
-    /** Tcp no delay. */
-    private final boolean tcpNoDelay;
-
-    /** Timeout. */
-    private final int timeout;
-
-    /** Send buffer size. */
-    private final int sndBufSize;
-
-    /** Receive buffer size. */
-    private final int rcvBufSize;
-
-    /** Reconnect period (for throttling). */
-    private final long reconnectThrottlingPeriod;
-
-    /** Reconnect retries within period (for throttling). */
-    private final int reconnectThrottlingRetries;
+    /** Client config. */
+    private final IgniteClientConfiguration cfg;
 
     /**
      * Constructor.
@@ -50,16 +36,9 @@ final class ClientChannelConfiguration {
      * @param cfg Config.
      * @param addr Address.
      */
-    @SuppressWarnings("UnnecessaryThis")
-    ClientChannelConfiguration(Object cfg, InetSocketAddress addr) {
-        // TODO: Get from public API cfg IGNITE-15164.
-        this.tcpNoDelay = true;
-        this.timeout = 0;
-        this.sndBufSize = 0;
-        this.rcvBufSize = 0;
+    ClientChannelConfiguration(IgniteClientConfiguration cfg, InetSocketAddress addr) {
+        this.cfg = cfg;
         this.addr = addr;
-        this.reconnectThrottlingPeriod = 0;
-        this.reconnectThrottlingRetries = 0;
     }
 
     /**
@@ -70,44 +49,9 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @return Tcp no delay.
+     * @return Config.
      */
-    public boolean isTcpNoDelay() {
-        return tcpNoDelay;
-    }
-
-    /**
-     * @return Timeout.
-     */
-    public int getTimeout() {
-        return timeout;
-    }
-
-    /**
-     * @return Send buffer size.
-     */
-    public int getSendBufferSize() {
-        return sndBufSize;
-    }
-
-    /**
-     * @return Receive buffer size.
-     */
-    public int getReceiveBufferSize() {
-        return rcvBufSize;
-    }
-
-    /**
-     * @return Reconnect period (for throttling).
-     */
-    public long getReconnectThrottlingPeriod() {
-        return reconnectThrottlingPeriod;
-    }
-
-    /**
-     * @return Reconnect retries within period (for throttling).
-     */
-    public int getReconnectThrottlingRetries() {
-        return reconnectThrottlingRetries;
+    public IgniteClientConfiguration clientConfiguration() {
+        return cfg;
     }
 }

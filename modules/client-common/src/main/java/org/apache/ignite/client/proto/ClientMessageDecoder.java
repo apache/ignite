@@ -44,7 +44,6 @@ public class ClientMessageDecoder extends LengthFieldBasedFrameDecoder {
      * Constructor.
      */
     public ClientMessageDecoder() {
-        // TODO: Configurable maximum frame length IGNITE-15164.
         super(Integer.MAX_VALUE - HEADER_SIZE, 0, HEADER_SIZE, 0, HEADER_SIZE, true);
     }
 

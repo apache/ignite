@@ -19,16 +19,19 @@ package org.apache.ignite.internal.client.io;
 
 import java.net.InetSocketAddress;
 
+import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientConnectionException;
 
 /**
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
  */
- public interface ClientConnectionMultiplexer { // TODO: Async methods where possible.
+ public interface ClientConnectionMultiplexer {
     /**
      * Initializes this instance.
+     *
+     * @param clientCfg Client config.
      */
-    void start();
+    void start(IgniteClientConfiguration clientCfg);
 
     /**
      * Stops this instance.

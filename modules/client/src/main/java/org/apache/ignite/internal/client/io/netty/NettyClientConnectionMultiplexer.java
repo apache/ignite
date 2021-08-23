@@ -25,6 +25,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientConnectionException;
 import org.apache.ignite.client.proto.ClientMessageDecoder;
 import org.apache.ignite.internal.client.io.ClientConnection;
@@ -51,16 +52,14 @@ public class NettyClientConnectionMultiplexer implements ClientConnectionMultipl
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
-        // TODO: Is this method needed?
+    @Override public void start(IgniteClientConfiguration clientCfg) {
         try {
             bootstrap.group(workerGroup);
             bootstrap.channel(NioSocketChannel.class);
             bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+            bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) clientCfg.connectTimeout());
             bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                public void initChannel(SocketChannel ch)
-                        throws Exception {
+                @Override public void initChannel(SocketChannel ch) {
                     ch.pipeline().addLast(
                             new ClientMessageDecoder(),
                             new NettyClientMessageHandler());
@@ -85,7 +84,7 @@ public class NettyClientConnectionMultiplexer implements ClientConnectionMultipl
                                            ClientConnectionStateHandler stateHnd)
             throws IgniteClientConnectionException {
 
-        // TODO: Make this method async.
+        // TODO: Async startup IGNITE-15357.
         ChannelFuture f = bootstrap.connect(addr).syncUninterruptibly();
 
         return new NettyClientConnection(f.channel(), msgHnd, stateHnd);
