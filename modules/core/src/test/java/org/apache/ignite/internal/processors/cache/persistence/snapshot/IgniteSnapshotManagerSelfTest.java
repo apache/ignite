@@ -553,13 +553,14 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
-    private static SnapshotFutureTask startLocalSnapshotTask(
+    private static IgniteInternalFuture<?> startLocalSnapshotTask(
         GridCacheSharedContext<?, ?> cctx,
         String snpName,
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, false, snpSndr);
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts,
+            false, snpSndr);
 
         snpFutTask.start();
 

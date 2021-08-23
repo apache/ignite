@@ -54,9 +54,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** Number of cache keys to pre-create at node start. */
     private static final int CACHE_KEYS_RANGE = 10_000;
 
-    /** Cache value builder. */
-    private Function<Integer, Object> valBuilder = new BinaryValueBuilder(TYPE_NAME);
-
     /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return super.txCacheConfig(ccfg).setSqlIndexMaxInlineSize(255).setSqlSchema("PUBLIC")
@@ -65,11 +62,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
                 .setValueType(TYPE_NAME)
                 .setFields(new LinkedHashMap<>(F.asMap("id", Integer.class.getName(), "name", String.class.getName())))
                 .setIndexes(Collections.singletonList(new QueryIndex("id")))));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Function<Integer, Object> valueBuilder() {
-        return valBuilder;
     }
 
     /** @throws Exception If failed. */
@@ -111,9 +103,11 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreOnBiggerTopology() throws Exception {
+        valBuilder = new BinaryValueBuilder(TYPE_NAME);
+
         int nodesCnt = 4;
 
-        startGridsWithCache(nodesCnt - 2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
+        startGridsWithCache(nodesCnt - 2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 

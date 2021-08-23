@@ -36,7 +36,12 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
     protected static final String SHARED_GRP = "shared";
 
     /** Cache value builder. */
-    protected abstract Function<Integer, Object> valueBuilder();
+    protected volatile Function<Integer, Object> valBuilder = String::valueOf;
+
+    /** Cache value builder. */
+    protected Function<Integer, Object> valueBuilder() {
+        return valBuilder;
+    }
 
     /**
      * @param nodesCnt Nodes count.
