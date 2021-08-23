@@ -41,6 +41,8 @@ param (
     [string]$packageDir="..\nupkg"
 )
 
+echo ".NET SDKs:"
+dotnet list-sdks
 
 # Find NuGet packages (*.nupkg)
 $dir = If ([System.IO.Path]::IsPathRooted($packageDir)) { $packageDir } Else { Join-Path $PSScriptRoot $packageDir }
