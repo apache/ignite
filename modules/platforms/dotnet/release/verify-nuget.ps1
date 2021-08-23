@@ -58,8 +58,7 @@ echo "Verifying $($packages.Length) packages from '$dir'..."
 
 
 # Clear package cache
-# TODO REVERT ME
-# dotnet nuget locals all --clear
+dotnet nuget locals all --clear
 
 
 # Create test dir
