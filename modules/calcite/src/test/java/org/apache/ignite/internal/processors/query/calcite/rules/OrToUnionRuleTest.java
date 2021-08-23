@@ -203,7 +203,8 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE cat_id > 1 " +
-            "OR subcat_id < 10")
+            "OR subcat_id < 10 " +
+            "OR id in (5,6,7,9)")
             .matches(not(containsUnion(true)))
             .matches(containsTableScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
