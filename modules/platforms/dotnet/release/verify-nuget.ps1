@@ -47,7 +47,9 @@ dotnet --list-sdks
 $newSdks = dotnet --list-sdks | where {$_ -match "\d+\.\d+"} | where {[int]($_.Split(".")[0]) -gt 2}
 
 if ($newSdks.Length > 0) {
-    # TODO: Enable global.json
+    # Enable global.json only when .NET SDK 3+ is present.
+    # We don't need it otherwise, and "rollForward" is not supported on lower versions.
+    Copy-Item _global.json global.json
 }
 
 # Find NuGet packages (*.nupkg)
