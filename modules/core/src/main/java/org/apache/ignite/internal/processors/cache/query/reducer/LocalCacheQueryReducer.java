@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryReducer;
@@ -27,21 +26,32 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 /** Simple reducer for local queries. */
 public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
     /** Stream of local pages. */
-    private final PageStream<R> pageStream;
+    private final NodePageStream<R> pageStream;
+
+    /** */
+    private NodePage<R> page;
 
     /** */
     public LocalCacheQueryReducer(GridCacheQueryAdapter qry, Object queueLock, long timeoutTime) {
-        pageStream = new PageStream<>(qry, queueLock, timeoutTime, Collections.emptyList(), (ns, all) -> {});
+        pageStream = new NodePageStream<>(qry, queueLock, timeoutTime, null, (ns, all) -> {});
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() throws IgniteCheckedException {
-        return pageStream.hasNext();
+        if (page == null)
+            page = pageStream.nextPage();
+
+        return page != null && page.hasNext();
     }
 
     /** {@inheritDoc} */
     @Override public R next() throws IgniteCheckedException {
-        return pageStream.next();
+        R o = page.next();
+
+        if (!page.hasNext())
+            page = null;
+
+        return o;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +66,7 @@ public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        // No-op.
+        page = null;
     }
 
     /** {@inheritDoc} */

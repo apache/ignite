@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
@@ -36,33 +34,31 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAda
  * returns pre-sorted collection of data.
  */
 public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistributedCacheQueryReducer<R> {
-    /** Map of Node ID to stream. Used for inserting new pages. */
-    private final Map<UUID, NodePageStream<R>> streamsMap;
-
-    /** Queue of nodes result pages streams. Order of streams is set with {@link #streamCmp}. */
-    private final PriorityQueue<NodePageStream<R>> streams;
-
-    /** If {@code true} then there wasn't call {@link #hasNext()} on this reducer. */
-    private boolean first = true;
-
-    /** Compares head of streams to get lowest value at the moment. */
-    private final Comparator<NodePageStream<R>> streamCmp;
+    /**
+     * Queue of pages from all nodes. Order of streams is set with {@link #pageCmp}.
+     */
+    private final PriorityQueue<NodePage<R>> nodePages;
 
     /**
-     * @param fut Cache query future.
-     * @param reqId Cache query request ID.
-     * @param pageRequester Provides a functionality to request pages from remote nodes.
-     * @param queueLock Lock object that is shared between GridCacheQueryFuture and reducer.
-     * @param nodes Collection of nodes this query applies to.
+     * If {@code true} then there wasn't call {@link #hasNext()} on this reducer.
+     */
+    private boolean first = true;
+
+    /**
+     * Compares head pages from all nodes to get the lowest value at the moment.
+     */
+    private final Comparator<NodePage<R>> pageCmp;
+
+    /**
      * @param rowCmp Comparator to sort query results from different nodes.
      */
     public MergeSortDistributedCacheQueryReducer(
         GridCacheQueryFutureAdapter fut, long reqId, CacheQueryPageRequester pageRequester,
         Object queueLock, Collection<ClusterNode> nodes, Comparator<R> rowCmp
     ) {
-        super(fut, reqId, pageRequester);
+        super(fut, reqId, pageRequester, queueLock, nodes);
 
-        streamCmp = (o1, o2) -> {
+        pageCmp = (o1, o2) -> {
             // Nulls on the top to make initial sort in hasNext().
             if (o1.head() == null)
                 return -1;
@@ -73,92 +69,55 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
             return rowCmp.compare(o1.head(), o2.head());
         };
 
-        streamsMap = new ConcurrentHashMap<>(nodes.size());
-        streams = new PriorityQueue<>(nodes.size(), streamCmp);
-
-        for (ClusterNode node: nodes) {
-            NodePageStream<R> s = new NodePageStream<>(
-                fut.query().query(), queueLock, fut.endTime(), node.id(), this::requestPages);
-
-            streams.offer(s);
-
-            streamsMap.put(node.id(), s);
-        }
+        nodePages = new PriorityQueue<>(nodes.size(), pageCmp);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() throws IgniteCheckedException {
         if (first) {
             // Initial sort.
-            int size = streams.size();
+            Set<UUID> nodes = new HashSet<>(streams.keySet());
 
-            for (int i = 0; i < size; i++) {
-                NodePageStream<R> s = streams.poll();
-
-                if (s.hasNext())
-                    streams.offer(s);
-                else
-                    streamsMap.remove(s.nodeId());
-            }
+            for (UUID nodeId : nodes)
+                fillWithPage(nodeId);
 
             first = false;
         }
 
-        return !streams.isEmpty();
+        return !nodePages.isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public R next() throws IgniteCheckedException {
-        if (streams.isEmpty())
+        if (nodePages.isEmpty())
             throw new NoSuchElementException("No next element. Please, be sure to invoke hasNext() before next().");
 
-        NodePageStream<R> s = streams.poll();
+        NodePage<R> page = nodePages.poll();
 
-        R o = s.next();
+        R o = page.next();
 
-        if (s.hasNext())
-            streams.add(s);
+        if (page.hasNext())
+            nodePages.offer(page);
         else
-            streamsMap.remove(s.nodeId());
+            fillWithPage(page.nodeId());
 
         return o;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean onPage(UUID nodeId, Collection<R> data, boolean last) {
-        NodePageStream<R> stream = streamsMap.get(nodeId);
+    /** */
+    private void fillWithPage(UUID nodeId) throws IgniteCheckedException {
+        NodePage<R> page = streams.get(nodeId).nextPage();
 
-        if (stream == null)
-            return streamsMap.isEmpty();
-
-        stream.addPage(nodeId, data, last);
-
-        return last && (streamsMap.remove(nodeId) != null) && streamsMap.isEmpty();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError() {
-        for (NodePageStream<R> s: streamsMap.values())
-            s.onError();
+        if (page == null || !page.hasNext())
+            streams.remove(nodeId);
+        else
+            nodePages.offer(page);
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        List<UUID> nodes = new ArrayList<>();
+        super.cancel();
 
-        for (NodePageStream<R> s: streamsMap.values()) {
-            Collection<UUID> n = s.cancelNodes();
-
-            nodes.addAll(n);
-        }
-
-        streamsMap.clear();
-
-        cancel(nodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mapNode(UUID nodeId) {
-        return streamsMap.containsKey(nodeId);
+        nodePages.clear();
     }
 }

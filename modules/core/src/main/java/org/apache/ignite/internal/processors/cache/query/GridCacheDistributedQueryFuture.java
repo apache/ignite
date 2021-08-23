@@ -66,7 +66,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void onNodeLeft(UUID nodeId) {
-        boolean qryNode = reducer.mapNode(nodeId);
+        boolean qryNode = reducer.remoteQueryNode(nodeId);
 
         if (qryNode)
             onPage(nodeId, null,
