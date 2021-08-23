@@ -46,9 +46,12 @@ dotnet --list-sdks
 
 $newSdks = dotnet --list-sdks | where {$_ -match "\d+\.\d+"} | where {[int]($_.Split(".")[0]) -gt 2}
 
-if ($newSdks.Length > 0) {
+if ($newSdks.Length -gt 0) {
     # Enable global.json only when .NET SDK 3+ is present.
     # We don't need it otherwise, and "rollForward" is not supported on lower versions.
+    echo "Enabling global.json..."
+
+    Set-Location $PSScriptRoot
     Copy-Item _global.json global.json
 }
 
