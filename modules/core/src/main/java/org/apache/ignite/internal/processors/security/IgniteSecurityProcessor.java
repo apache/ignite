@@ -182,13 +182,12 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             SecurityContext res;
 
-            if (locNodeSecCtx != null && locNodeSecCtx.subject().id().equals(subjId))
+            if (node == null)
+                res = secPrc.securityContext(subjId);
+            else if (locNodeSecCtx.subject().id().equals(subjId))
                 res = locNodeSecCtx;
-            else {
-                res = node != null
-                    ? secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
-                    : secPrc.securityContext(subjId);
-            }
+            else
+                res = secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node));
 
             if (res == null) {
                 throw new IllegalStateException("Failed to find security context " +
