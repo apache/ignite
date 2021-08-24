@@ -40,7 +40,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSlot;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -51,7 +50,6 @@ import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -63,7 +61,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.value.Value;
 
 /** */
@@ -92,45 +89,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.SELECTIVITY.method, new IgniteMdSelectivity());
-
-    /** */
-    public Double getSelectivity(AbstractIndexScan rel, RelMetadataQuery mq, RexNode predicate) {
-        if (predicate != null)
-            return getSelectivity((ProjectableFilterableTableScan)rel, mq, predicate);
-
-        List<RexNode> lowerCond = rel.lowerCondition();
-        List<RexNode> upperCond = rel.upperCondition();
-
-        if (F.isEmpty(lowerCond) && F.isEmpty(upperCond))
-            return RelMdUtil.guessSelectivity(rel.condition());
-
-        double idxSelectivity = 1.0;
-        int len = F.isEmpty(lowerCond) ? upperCond.size() : F.isEmpty(upperCond) ? lowerCond.size() :
-            Math.max(lowerCond.size(), upperCond.size());
-
-        for (int i = 0; i < len; i++) {
-            RexCall lower = F.isEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall)lowerCond.get(i);
-            RexCall upper = F.isEmpty(upperCond) || upperCond.size() <= i ? null : (RexCall)upperCond.get(i);
-
-            assert lower != null || upper != null;
-
-            if (lower != null && upper != null)
-                idxSelectivity *= lower.op.kind == SqlKind.EQUALS ? .1 : .2;
-            else
-                idxSelectivity *= .35;
-        }
-
-        List<RexNode> conjunctions = RelOptUtil.conjunctions(rel.condition());
-
-        if (!F.isEmpty(lowerCond))
-            conjunctions.removeAll(lowerCond);
-        if (!F.isEmpty(upperCond))
-            conjunctions.removeAll(upperCond);
-
-        RexNode remaining = RexUtil.composeConjunction(RexUtils.builder(rel), conjunctions, true);
-
-        return idxSelectivity * RelMdUtil.guessSelectivity(remaining);
-    }
 
     /** */
     public Double getSelectivity(ProjectableFilterableTableScan rel, RelMetadataQuery mq, RexNode predicate) {

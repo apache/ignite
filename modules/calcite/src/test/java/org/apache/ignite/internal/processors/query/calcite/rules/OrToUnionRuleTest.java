@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -223,8 +224,8 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE name = 'Canon' " +
             "OR category = 'Video'")
-            .matches(containsUnion(true))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(not(containsUnion(true)))
+            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
