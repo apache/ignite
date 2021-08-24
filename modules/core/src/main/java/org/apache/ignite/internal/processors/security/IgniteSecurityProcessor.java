@@ -80,6 +80,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /**
      * Dummy instance to use instead of local context.
      * Local context can be changed on local node reconnect.
+     * @see #onLocalJoin()
      */
     public static final SecurityContext DUMMY = new SecurityContext() {
         @Override public SecuritySubject subject() {
