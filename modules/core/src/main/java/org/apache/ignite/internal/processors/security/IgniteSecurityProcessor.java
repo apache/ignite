@@ -111,7 +111,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** Current security context if differs from {@link #locNodeSecCtx}. */
-    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(() -> null);
+    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(() -> DUMMY);
 
     /** Grid kernal context. */
     private final GridKernalContext ctx;
@@ -134,8 +134,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Node local security context. */
     private volatile SecurityContext locNodeSecCtx;
 
-    /** Node local operation security context. */
-    private final OperationSecurityContext locNodeOpSecCtx = new OperationSecurityContext() {
+    /** Do nothing operation security context for the case when current and new contexts are local. */
+    private final OperationSecurityContext doNothingSecCtx = new OperationSecurityContext() {
         @Override public void close() {
             // Ignore.
         }
@@ -160,24 +160,24 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
         assert secCtx != null;
 
-        SecurityContext old = curSecCtx.get();
+        SecurityContext loc = locNodeSecCtx;
+        SecurityContext cur = curSecCtx.get();
 
-        boolean isNewCtxLoc = secCtx == locNodeSecCtx || secCtx == DUMMY;
-        boolean isOldCtxLoc = old == null;
+        boolean isNewCtxLoc = secCtx == loc || secCtx == DUMMY;
+        boolean isCurCtxLoc = cur == loc || cur == DUMMY;
 
-        if (isOldCtxLoc && isNewCtxLoc)
-            return locNodeOpSecCtx;
+        if (isCurCtxLoc && isNewCtxLoc)
+            return doNothingSecCtx;
 
-        curSecCtx.set(isNewCtxLoc ? null : secCtx);
+        curSecCtx.set(isNewCtxLoc ? DUMMY : secCtx);
 
-        return new OperationSecurityContext(this, isOldCtxLoc ? DUMMY : old);
+        return new OperationSecurityContext(this, isCurCtxLoc ? DUMMY : cur);
     }
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
         try {
-            ClusterNode node = Optional
-                .ofNullable(ctx.discovery().node(subjId))
+            ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
                 .orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
             SecurityContext res;
@@ -208,10 +208,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public SecurityContext securityContext() {
         SecurityContext res = curSecCtx.get();
 
-        if (res != null)
-            return res;
+        if (res == DUMMY)
+            return locNodeSecCtx;
 
-        return locNodeSecCtx;
+        return res;
     }
 
     /** {@inheritDoc} */
