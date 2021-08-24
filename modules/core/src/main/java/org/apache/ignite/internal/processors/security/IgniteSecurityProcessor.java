@@ -249,6 +249,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
         SecurityContext secCtx = securityContext();
 
+        assert secCtx != null;
+
         secPrc.authorize(name, perm, secCtx);
     }
 
