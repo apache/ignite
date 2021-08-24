@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-import org.apache.ignite.lang.IgniteFuture;
-
 /**
  * Interface for all page lock tracker entries which support dumping.
  */
@@ -33,11 +31,4 @@ public interface DumpSupported<T extends PageLockDump> {
      * Create dump.
      */
     T dump();
-
-    /**
-     * Create dump async.
-     *
-     * @return Ignite future.
-     */
-    IgniteFuture<T> dumpSync();
 }

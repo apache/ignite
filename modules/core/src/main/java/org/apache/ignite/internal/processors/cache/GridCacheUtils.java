@@ -846,6 +846,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param tx Transaction.
+     * @return {@code True} if transaction is on primary node.
+     */
+    public static boolean txOnPrimary(IgniteInternalTx tx) {
+        if (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped())
+            return true;
+
+        return tx.dht() && tx.local();
+    }
+
+    /**
      * Alias for {@link #txString(IgniteInternalTx)}.
      */
     public static String txDump(@Nullable IgniteInternalTx tx) {
@@ -1831,7 +1842,8 @@ public class GridCacheUtils {
                             true,
                             topVer,
                             GridDrType.DR_BACKUP,
-                            true);
+                            true,
+                            false);
 
                         break;
                     }

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +49,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
@@ -98,9 +98,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Default snapshot name. */
     protected static final String SNAPSHOT_NAME = "testSnapshot";
-
-    /** Default number of partitions for cache. */
-    protected static final int CACHE_PARTS_COUNT = 8;
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
@@ -178,8 +175,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param evts Events to check.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    protected void waitForEvents(List<Integer> evts) throws IgniteInterruptedCheckedException {
-        boolean caught = waitForCondition(() -> locEvts.containsAll(evts), 10_000);
+    protected void waitForEvents(Integer... evts) throws IgniteInterruptedCheckedException {
+        boolean caught = waitForCondition(() -> locEvts.containsAll(Arrays.asList(evts)), TIMEOUT);
 
         assertTrue("Events must be caught [locEvts=" + locEvts + ']', caught);
     }
@@ -191,8 +188,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**

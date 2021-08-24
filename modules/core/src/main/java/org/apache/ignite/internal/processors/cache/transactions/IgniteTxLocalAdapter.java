@@ -862,7 +862,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             writeVersion(),
                                             0,
                                             txEntry.key().partition(),
-                                            txEntry.updateCounter())));
+                                            txEntry.updateCounter(),
+                                            DataEntry.flags(CU.txOnPrimary(this)))));
                                     }
 
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

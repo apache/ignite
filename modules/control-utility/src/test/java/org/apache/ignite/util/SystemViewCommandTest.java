@@ -426,6 +426,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
@@ -764,7 +765,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
     }
@@ -772,7 +773,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testStreamerExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
     }

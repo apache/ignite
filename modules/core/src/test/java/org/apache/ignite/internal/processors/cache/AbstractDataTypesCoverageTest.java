@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -287,13 +289,13 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
      */
     private static class TestPolicy implements ExpiryPolicy, Serializable {
         /** */
-        private Long create;
+        private final Long create;
 
         /** */
-        private Long access;
+        private final Long access;
 
         /** */
-        private Long update;
+        private final Long update;
 
         /**
          * @param create TTL for creation.
@@ -567,10 +569,10 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
         private static final long serialVersionUID = 0L;
 
         /** Original value. */
-        private Object val;
+        private final Object val;
 
         /** Converted value. */
-        private String sqlStrVal;
+        private final String sqlStrVal;
 
         /**
          * Constructor.
@@ -604,13 +606,14 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
         private static final String PATTERN = "HH:mm:ss.SSS";
 
         /** */
-        private static final SimpleDateFormat TIME_DATE_FORMAT = new SimpleDateFormat(PATTERN);
+        private static final DateTimeFormatter TIME_DATE_FORMAT =
+            DateTimeFormatter.ofPattern(PATTERN).withZone(ZoneId.systemDefault());
 
         /** Original value. */
-        private Object val;
+        private final Object val;
 
         /** Converted value. */
-        private String sqlStrVal;
+        private final String sqlStrVal;
 
         /**
          * Constructor.
@@ -619,7 +622,11 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          */
         public Timed(Time time) {
             val = time;
-            sqlStrVal = "PARSEDATETIME('" + TIME_DATE_FORMAT.format(time) + "', '" + PATTERN + "')";
+            sqlStrVal = String.format(
+                "PARSEDATETIME('%s', '%s')",
+                TIME_DATE_FORMAT.format(Instant.ofEpochMilli(time.getTime())),
+                PATTERN
+            );
         }
 
         /**
@@ -629,8 +636,11 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          */
         public Timed(LocalTime time) {
             val = time;
-            sqlStrVal = "PARSEDATETIME('" + TIME_DATE_FORMAT.format(
-                java.sql.Time.valueOf(time)) + "', '" + PATTERN + "')";
+            sqlStrVal = String.format(
+                "PARSEDATETIME('%s', '%s')",
+                TIME_DATE_FORMAT.format(time),
+                PATTERN
+            );
         }
 
         /** @inheritDoc */
@@ -655,13 +665,14 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
         private static final String PATTERN = "yyyy-MM-dd HH:mm:ss.SSS";
 
         /** */
-        private static final SimpleDateFormat DATE_TIME_DATE_FORMAT = new SimpleDateFormat(PATTERN);
+        private static final DateTimeFormatter DATE_TIME_DATE_FORMAT =
+            DateTimeFormatter.ofPattern(PATTERN).withZone(ZoneId.systemDefault());
 
         /** Original value. */
-        private Object val;
+        private final Object val;
 
         /** Converted value. */
-        private String sqlStrVal;
+        private final String sqlStrVal;
 
         /**
          * Constructor.
@@ -670,7 +681,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          */
         public Dated(Date date) {
             val = date;
-            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(date) + "', '" + PATTERN + "')";
+            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(date.toInstant()) + "', '" + PATTERN + "')";
         }
 
         /**
@@ -680,8 +691,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          */
         public Dated(LocalDateTime date) {
             val = date;
-            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(
-                java.sql.Timestamp.valueOf(date)) + "', '" + PATTERN + "')";
+            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(date) + "', '" + PATTERN + "')";
         }
 
         /**
@@ -691,7 +701,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          */
         public Dated(Timestamp ts, String ptrn) {
             val = ts;
-            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(ts) + "', '" + ptrn + "')";
+            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(ts.toLocalDateTime()) + "', '" + ptrn + "')";
         }
 
         /**
@@ -701,8 +711,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          */
         public Dated(LocalDate date) {
             val = date;
-            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(
-                java.sql.Timestamp.valueOf(date.atStartOfDay())) + "', '" + PATTERN + "')";
+            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(date.atStartOfDay()) + "', '" + PATTERN + "')";
         }
 
         /** @inheritDoc */
@@ -724,10 +733,10 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
         private static final long serialVersionUID = 0L;
 
         /** Original value. */
-        private Object val;
+        private final Object val;
 
         /** Converted value. */
-        private String sqlStrVal;
+        private final String sqlStrVal;
 
         /**
          * Constructor.
