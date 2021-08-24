@@ -118,8 +118,9 @@ namespace ignite
                 R ExecuteJavaTask(const std::string& taskName)
                 {
                     R result;
+                    int* nullVal = 0;
 
-                    impl::thin::WritableImpl<int*> wrArg(0);
+                    impl::thin::WritableImpl<int*> wrArg(nullVal);
                     impl::thin::ReadableImpl<R> rdResult(result);
 
                     InternalExecuteJavaTask(taskName, wrArg, rdResult);
