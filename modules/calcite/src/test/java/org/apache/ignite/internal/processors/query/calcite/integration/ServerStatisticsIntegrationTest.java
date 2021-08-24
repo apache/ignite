@@ -317,17 +317,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         double strRow = 4.6875;
 
         for (String numericField : NUMERIC_FIELDS) {
-            double allRowCnt;
-            double allOrRowCnt;
-
-            if (nonNullableFields.contains(numericField)) {
-                allRowCnt = (double)ROW_COUNT;
-                allOrRowCnt = allRowCnt;
-            }
-            else {
-                allRowCnt = 0.75 * ROW_COUNT;
-                allOrRowCnt = allRowCnt + strRow;
-            }
+            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d and %s < %d", numericField, -1, numericField, 101))
@@ -335,9 +325,9 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "(%s > %d and %s < %d) or " +
-                "(string_field > 'string_field_value' and string_field < 'string_field_value999')",
+                "(int_field > -1 and int_field < 101)",
                 numericField, -1, numericField, 101))
-                .matches(QueryChecker.containsResultRowCount(allOrRowCnt)).check();
+                .matches(QueryChecker.containsResultRowCount(ROW_COUNT)).check();
         }
     }
 
