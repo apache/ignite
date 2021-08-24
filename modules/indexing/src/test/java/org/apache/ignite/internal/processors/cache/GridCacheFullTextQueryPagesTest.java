@@ -24,13 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -43,9 +42,6 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test pages loading for text queries tests.
@@ -66,30 +62,18 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     /** Limitation to query response size */
     private static final int QUERY_LIMIT = 100;
 
-    /** */
-    private int nodesPagesCnt;
+    /** Client node to start query. */
+    private static IgniteEx client;
 
     /** */
-    private int dataCnt;
-
-    /** */
-    private volatile Map<UUID, Integer> nodeToCancel;
+    private static TestStats testStats;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setIncludeEventTypes();
-
-        cfg.setConnectorConfiguration(null);
-
-        CacheConfiguration<Integer, Person> cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setName(PERSON_CACHE)
-            .setCacheMode(PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(FULL_SYNC)
-            .setBackups(0)
+        CacheConfiguration<Integer, Person> cacheCfg = new CacheConfiguration<Integer, Person>()
+            .setName(PERSON_CACHE)
             .setIndexedTypes(Integer.class, Person.class);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -98,85 +82,74 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrids(NODES);
 
-        populateCache(grid(0), MAX_ITEM_COUNT, (IgnitePredicate<Integer>)x -> String.valueOf(x).startsWith("1"));
+        client = startClientGrid();
 
-        nodeToCancel = new ConcurrentHashMap<>();
-    }
+        testStats = new TestStats();
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        populateCache(client, MAX_ITEM_COUNT, (IgnitePredicate<Integer>)x -> String.valueOf(x).startsWith("1"));
     }
 
     /** Test that there is no cancel queries and number of requests corresponds to count of data rows on remote nodes. */
     @Test
     public void testTextQueryMultiplePagesNoLimit() throws Exception {
-        CountDownLatch latch = new CountDownLatch(nodesPagesCnt);
+        CountDownLatch latch = new CountDownLatch(testStats.nodesPagesCnt);
 
-        AtomicInteger cnt = cacheQueryRequestsCount(latch);
+        PageStats stats = cacheQueryRequestsCount(latch);
 
         checkTextQuery("1*", 0, PAGE_SIZE);
 
         latch.await(1, TimeUnit.SECONDS);
 
-        assertEquals(nodesPagesCnt, cnt.get());
+        assertEquals(testStats.nodesPagesCnt, stats.totalReq());
     }
 
     /** Test that do not send cache page request after limit exceeded. */
     @Test
     public void testTextQueryLimitedMultiplePages() throws Exception {
-        // There are 3 remote nodes, so there are requests:
-        // 3x1 init fetch pages, 3x1 load new pages (due to load condition < 2), 3 on cancel.
-        // Also 2 additional page due to PriorityQueue algorithm of poll/add - in case of equal score for all data
+        CountDownLatch latch = new CountDownLatch(14);
+
+        PageStats stats = cacheQueryRequestsCount(latch);
+
+        checkTextQuery("1*", QUERY_LIMIT, 30);
+
+        // 2 additional load pages due to PriorityQueue algorithm of poll/add - in case of equal score for all data
         // it iterates over 2 streams only (first and last in the queue).
-        int expCacheReqCnt = 11;
-
-        CountDownLatch latch = new CountDownLatch(expCacheReqCnt);
-
-        AtomicInteger cnt = cacheQueryRequestsCount(latch);
-
-        checkTextQuery("1*", QUERY_LIMIT, 35);
-
-        checkPages(latch, cnt, expCacheReqCnt, 7);
+        checkPages(latch, stats, 4, 6, 4);
     }
 
     /** Test that rerequest some pages but then send a cancel query after limit exceeded. */
     @Test
     public void testTextQueryHighLimitedMultiplePages() throws Exception {
-        // There are 3 remote nodes, so there are requests: 6 load pages, 3 on cancel query.
-        // Also 4 additional page due to PriorityQueue algorithm of poll/add - in case of equal score for all data
-        // it iterates over 2 streams only (first and last in the queue).
-        int expCacheReqCnt = 13;
+        CountDownLatch latch = new CountDownLatch(16);
 
-        CountDownLatch latch = new CountDownLatch(expCacheReqCnt);
-
-        AtomicInteger cnt = cacheQueryRequestsCount(latch);
+        PageStats stats = cacheQueryRequestsCount(latch);
 
         checkTextQuery("1*", QUERY_LIMIT, 20);
 
-        checkPages(latch, cnt, expCacheReqCnt, 7);
+        // 4 additional load pages due to PriorityQueue algorithm of poll/add - in case of equal score for all data
+        // it iterates over 2 streams only (first and last in the queue).
+        checkPages(latch, stats, 4, 8, 4);
     }
 
     /** */
-    private void checkPages(CountDownLatch pagesLatch, AtomicInteger pagesCnt, int expPages, int expCancelPageIdx) throws Exception {
+    private void checkPages(CountDownLatch pagesLatch, PageStats stats,
+        int expInitCnt, int expLoadCnt, int expCancelCnt) throws Exception {
+
         pagesLatch.await(1, TimeUnit.SECONDS);
 
-        assertEquals(expPages, pagesCnt.get());
-
-        assertEquals(NODES - 1, nodeToCancel.size());
-
-        for (Integer cancelIdx: nodeToCancel.values())
-            assertTrue("Cancels=" + nodeToCancel, expCancelPageIdx <= cancelIdx);
+        assertEquals(expInitCnt, stats.initCnt.get());
+        assertEquals(expLoadCnt, stats.loadCnt.get());
+        assertEquals(expCancelCnt, stats.cancelCnt.get());
     }
 
     /** */
-    private AtomicInteger cacheQueryRequestsCount(CountDownLatch allReqLatch) {
-        AtomicInteger cacheQryReqCnt = new AtomicInteger();
+    private PageStats cacheQueryRequestsCount(CountDownLatch allReqLatch) {
+        PageStats stats = new PageStats();
 
-        for (int i = 1; i < NODES; i++) {
+        for (int i = 0; i < NODES; i++) {
             IgniteEx node = grid(i);
 
             GridCacheContext cctx = node.cachex(PERSON_CACHE).context();
@@ -185,10 +158,12 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
 
             cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
                 @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
-                    int cnt = cacheQryReqCnt.incrementAndGet();
-
                     if (req.cancel())
-                        nodeToCancel.put(node.localNode().id(), cnt);
+                        stats.cancelCnt.incrementAndGet();
+                    else if (req.limit() != 0)
+                        stats.initCnt.incrementAndGet();
+                    else
+                        stats.loadCnt.incrementAndGet();
 
                     allReqLatch.countDown();
 
@@ -197,7 +172,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
             });
         }
 
-        return cacheQryReqCnt;
+        return stats;
     }
 
     /**
@@ -205,7 +180,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    void populateCache(IgniteEx ignite, int cnt, IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
+    private void populateCache(IgniteEx ignite, int cnt, IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
 
         Affinity<Integer> aff = cache.affinity();
@@ -236,10 +211,10 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
 
             int pagesCnt = rowsCnt / PAGE_SIZE + (rowsCnt % PAGE_SIZE == 0 ? 0 : 1);
 
-            nodesPagesCnt += pagesCnt;
+            testStats.nodesPagesCnt += pagesCnt;
         }
 
-        dataCnt = vals.size();
+        testStats.dataCnt = vals.size();
     }
 
     /**
@@ -247,24 +222,21 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
      * @param limit limits response size.
      */
     private void checkTextQuery(String clause, int limit, int pageSize) {
-        final IgniteEx ignite = grid(0);
+        TextQuery<Integer, Person> qry = new TextQuery<Integer, Person>(Person.class, clause)
+            .setLimit(limit).setPageSize(pageSize);
 
-        TextQuery qry = new TextQuery<>(Person.class, clause).setLimit(limit).setPageSize(pageSize);
-
-        validateQueryResults(ignite, qry);
+        validateQueryResults(qry);
     }
 
     /**
      * Check query results.
-     *
-     * @throws IgniteCheckedException if failed.
      */
-    private void validateQueryResults(IgniteEx ignite, TextQuery qry) {
-        IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
+    private void validateQueryResults(TextQuery<Integer, Person> qry) {
+        IgniteCache<Integer, Person> cache = client.cache(PERSON_CACHE);
 
-        List result = cache.query(qry).getAll();
+        List<Cache.Entry<Integer, Person>> result = cache.query(qry).getAll();
 
-        int expRes = qry.getLimit() == 0 ? dataCnt : qry.getLimit();
+        int expRes = qry.getLimit() == 0 ? testStats.dataCnt : qry.getLimit();
 
         assertEquals(expRes, result.size());
     }
@@ -275,7 +247,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     public static class Person implements Serializable {
         /** */
         @QueryTextField
-        String name;
+        private final String name;
 
         /**
          * Constructor
@@ -283,5 +255,31 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
         public Person(String name) {
             this.name = name;
         }
+    }
+
+    /** */
+    private static class PageStats {
+        /** Counter of init requests. */
+        private final AtomicInteger initCnt = new AtomicInteger();
+
+        /** Counter of load page requests. */
+        private final AtomicInteger loadCnt = new AtomicInteger();
+
+        /** Counter of cancel query requests. */
+        private final AtomicInteger cancelCnt = new AtomicInteger();
+
+        /** */
+        private int totalReq() {
+            return initCnt.get() + loadCnt.get() + cancelCnt.get();
+        }
+    }
+
+    /** */
+    private static class TestStats {
+        /** */
+        private int nodesPagesCnt;
+
+        /** */
+        private int dataCnt;
     }
 }

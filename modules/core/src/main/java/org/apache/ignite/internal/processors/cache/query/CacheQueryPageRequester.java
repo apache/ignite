@@ -154,7 +154,7 @@ public abstract class CacheQueryPageRequester {
                         continue;
                     }
 
-                    cctx.io().send(node, req, cctx.ioPolicy());
+                    cctx.io().send(node, req, GridIoPolicy.QUERY_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     if (cctx.io().checkNodeLeft(node, e, false)) {

@@ -40,11 +40,6 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     private final PriorityQueue<NodePage<R>> nodePages;
 
     /**
-     * If {@code true} then there wasn't call {@link #hasNext()} on this reducer.
-     */
-    private boolean first = true;
-
-    /**
      * Compares head pages from all nodes to get the lowest value at the moment.
      */
     private final Comparator<NodePage<R>> pageCmp;
@@ -58,30 +53,19 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     ) {
         super(fut, reqId, pageRequester, queueLock, nodes);
 
-        pageCmp = (o1, o2) -> {
-            // Nulls on the top to make initial sort in hasNext().
-            if (o1.head() == null)
-                return -1;
-
-            if (o2.head() == null)
-                return 1;
-
-            return rowCmp.compare(o1.head(), o2.head());
-        };
+        pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());
 
         nodePages = new PriorityQueue<>(nodes.size(), pageCmp);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() throws IgniteCheckedException {
-        if (first) {
-            // Initial sort.
+        // Initial sort.
+        if (nodePages.isEmpty() && !streams.isEmpty()) {
             Set<UUID> nodes = new HashSet<>(streams.keySet());
 
             for (UUID nodeId : nodes)
                 fillWithPage(nodeId);
-
-            first = false;
         }
 
         return !nodePages.isEmpty();
