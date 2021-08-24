@@ -737,13 +737,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpReq.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                     "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
             }
-            else if (!F.isEmpty(err)) {
-                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
-                    "Uncompleted snapshot will be deleted [err=" + err + ']'));
-            }
             else if (!missed.isEmpty()) {
                 snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
                     "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
+            }
+            else if (!F.isEmpty(err)) {
+                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
+                    "Uncompleted snapshot will be deleted [err=" + err + ']'));
             }
 
             completeHandlersAsyncIfNeeded(snpReq, res.values())
