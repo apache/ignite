@@ -177,13 +177,6 @@ BOOST_AUTO_TEST_CASE(EchoTaskNull)
     BOOST_CHECK(res == 0);
 }
 
-BOOST_AUTO_TEST_CASE(EchoTaskNullAsync)
-{
-    int* res = compute.ExecuteJavaTaskAsync<int*>(ECHO_TASK, ECHO_TYPE_NULL).GetValue();
-
-    BOOST_CHECK(res == 0);
-}
-
 BOOST_AUTO_TEST_CASE(EchoTaskPrimitives)
 {
     BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTask<int8_t>(ECHO_TASK, ECHO_TYPE_BYTE));
@@ -194,18 +187,6 @@ BOOST_AUTO_TEST_CASE(EchoTaskPrimitives)
     BOOST_CHECK_EQUAL(1LL, compute.ExecuteJavaTask<int64_t>(ECHO_TASK, ECHO_TYPE_LONG));
     BOOST_CHECK_EQUAL(1.0f, compute.ExecuteJavaTask<float>(ECHO_TASK, ECHO_TYPE_FLOAT));
     BOOST_CHECK_EQUAL(1.0, compute.ExecuteJavaTask<double>(ECHO_TASK, ECHO_TYPE_DOUBLE));
-}
-
-BOOST_AUTO_TEST_CASE(EchoTaskPrimitivesAsync)
-{
-    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTaskAsync<int8_t>(ECHO_TASK, ECHO_TYPE_BYTE).GetValue());
-    BOOST_CHECK_EQUAL(true, compute.ExecuteJavaTaskAsync<bool>(ECHO_TASK, ECHO_TYPE_BOOL).GetValue());
-    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTaskAsync<int16_t>(ECHO_TASK, ECHO_TYPE_SHORT).GetValue());
-    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTaskAsync<uint16_t>(ECHO_TASK, ECHO_TYPE_CHAR).GetValue());
-    BOOST_CHECK_EQUAL(1, compute.ExecuteJavaTaskAsync<int32_t>(ECHO_TASK, ECHO_TYPE_INT).GetValue());
-    BOOST_CHECK_EQUAL(1LL, compute.ExecuteJavaTaskAsync<int64_t>(ECHO_TASK, ECHO_TYPE_LONG).GetValue());
-    BOOST_CHECK_EQUAL(1.0f, compute.ExecuteJavaTaskAsync<float>(ECHO_TASK, ECHO_TYPE_FLOAT).GetValue());
-    BOOST_CHECK_EQUAL(1.0, compute.ExecuteJavaTaskAsync<double>(ECHO_TASK, ECHO_TYPE_DOUBLE).GetValue());
 }
 
 BOOST_AUTO_TEST_CASE(EchoTaskObject)
@@ -224,22 +205,6 @@ BOOST_AUTO_TEST_CASE(EchoTaskObject)
     }
 }
 
-BOOST_AUTO_TEST_CASE(EchoTaskObjectAsync)
-{
-    cache::CacheClient<int32_t, int32_t> cache = GetDefaultCache<int32_t>();
-
-    for (int32_t i = 0; i < 100; ++i)
-    {
-        int32_t value = i * 42;
-        cache.Put(ECHO_TYPE_OBJECT, value);
-
-        PlatformComputeBinarizable res =
-                compute.ExecuteJavaTaskAsync<PlatformComputeBinarizable>(ECHO_TASK, ECHO_TYPE_OBJECT).GetValue();
-
-        BOOST_CHECK_EQUAL(value, res.field);
-    }
-}
-
 BOOST_AUTO_TEST_CASE(EchoTaskGuid)
 {
     cache::CacheClient<int32_t, ignite::Guid> cache = GetDefaultCache<ignite::Guid>();
@@ -251,22 +216,6 @@ BOOST_AUTO_TEST_CASE(EchoTaskGuid)
         cache.Put(ECHO_TYPE_UUID, value);
 
         ignite::Guid res = compute.ExecuteJavaTask<ignite::Guid>(ECHO_TASK, ECHO_TYPE_UUID);
-
-        BOOST_CHECK_EQUAL(value, res);
-    }
-}
-
-BOOST_AUTO_TEST_CASE(EchoTaskGuidAsync)
-{
-    cache::CacheClient<int32_t, ignite::Guid> cache = GetDefaultCache<ignite::Guid>();
-
-    for (int32_t i = 0; i < 100; ++i)
-    {
-        ignite::Guid value(i * 479001599LL, i * 150209LL);
-
-        cache.Put(ECHO_TYPE_UUID, value);
-
-        ignite::Guid res = compute.ExecuteJavaTaskAsync<ignite::Guid>(ECHO_TASK, ECHO_TYPE_UUID).GetValue();
 
         BOOST_CHECK_EQUAL(value, res);
     }

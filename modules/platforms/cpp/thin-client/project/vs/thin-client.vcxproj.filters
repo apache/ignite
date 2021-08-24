@@ -31,6 +31,9 @@
     <ClCompile Include="..\..\src\cache\query\query_fields_row.cpp">
       <Filter>Code\cache\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\compute\compute_client.cpp">
+      <Filter>Code\cache\query</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\impl\data_router.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>

@@ -18,6 +18,8 @@
 #ifndef _IGNITE_IMPL_THIN_COMPUTE_COMPUTE_CLIENT
 #define _IGNITE_IMPL_THIN_COMPUTE_COMPUTE_CLIENT
 
+#include <ignite/impl/thin/writable.h>
+#include <ignite/impl/thin/readable.h>
 #include "impl/data_router.h"
 
 namespace ignite
@@ -39,12 +41,31 @@ namespace ignite
                      *
                      * @param router Data router instance.
                      */
-                    ComputeClientImpl(const SP_DataRouter& router);
+                    ComputeClientImpl(const SP_DataRouter& router) :
+                        router(router)
+                    {
+                        // No-op.
+                    }
 
                     /**
                      * Destructor.
                      */
-                    ~ComputeClientImpl() {}
+                    ~ComputeClientImpl()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Execute java task internally.
+                     *
+                     * @param flags Flags.
+                     * @param timeout Timeout.
+                     * @param taskName Task name.
+                     * @param wrArg Argument.
+                     * @param res Result.
+                     */
+                    void ExecuteJavaTask(int8_t flags, int64_t timeout, const std::string& taskName, Writable& wrArg,
+                        Readable& res);
 
                 private:
                     /** Data router. */

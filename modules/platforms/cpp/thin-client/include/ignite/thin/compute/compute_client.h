@@ -31,6 +31,16 @@ namespace ignite
     {
         namespace compute
         {
+            struct ComputeClientFlags
+            {
+                enum Type
+                {
+                    NONE = 0,
+                    NO_FAILOVER = 1,
+                    NO_RESULT_CACHE = 2
+                }
+            };
+
             /**
              * Client Compute API.
              *
@@ -57,8 +67,9 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                ComputeClient(SP_Void impl) :
+                ComputeClient(const SP_Void& impl) :
                     impl(impl),
+                    flags(0),
                     timeout(0)
                 {
                     // No-op.
@@ -73,6 +84,50 @@ namespace ignite
                 }
 
                 /**
+                 * Executes given Java task by class name.
+                 *
+                 * @param taskName Java task name.
+                 * @param taskArg Argument of task execution of type A.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 * @tparam A Type of task argument.
+                 */
+                template<typename R, typename A>
+                R ExecuteJavaTask(const std::string& taskName, const A& taskArg)
+                {
+                    R result;
+
+                    impl::thin::WritableImpl<A> wrArg(taskArg);
+                    impl::thin::ReadableImpl<R> rdResult(result);
+
+                    InternalExecuteJavaTask(taskName, wrArg, rdResult);
+
+                    return result;
+                }
+
+                /**
+                 * Executes given Java task by class name.
+                 *
+                 * @param taskName Java task name.
+                 * @return Task result of type @c R.
+                 *
+                 * @tparam R Type of task result.
+                 */
+                template<typename R>
+                R ExecuteJavaTask(const std::string& taskName)
+                {
+                    R result;
+
+                    impl::thin::WritableImpl<int*> wrArg(0);
+                    impl::thin::ReadableImpl<R> rdResult(result);
+
+                    InternalExecuteJavaTask(taskName, wrArg, rdResult);
+
+                    return result;
+                }
+
+                /**
                  * Returns a new instance of ComputeClient with a timeout for all task executions.
                  *
                  * @param timeoutMs Timeout in milliseconds.
@@ -80,7 +135,28 @@ namespace ignite
                  */
                 ComputeClient WithTimeout(int64_t timeoutMs)
                 {
-                    return ComputeClient(impl, timemoutMs);
+                    return ComputeClient(impl, flags, timeoutMs);
+                }
+
+                /**
+                 * Returns a new instance of ComputeClient with disabled failover.
+                 * When failover is disabled, compute jobs won't be retried in case of node crashes.
+                 *
+                 * @return New Compute instance with disabled failover.
+                 */
+                ComputeClient WithNoFailover()
+                {
+                    return ComputeClient(impl, flags | ComputeClientFlags::NO_FAILOVER, timeout);
+                }
+
+                /**
+                 * Returns a new instance of ComputeClient with disabled result cache.
+                 *
+                 * @return New Compute instance with disabled result cache.
+                 */
+                ComputeClient WithNoResultCache()
+                {
+                    return ComputeClient(impl, flags | ComputeClientFlags::NO_RESULT_CACHE, timeout);
                 }
 
             private:
@@ -88,17 +164,32 @@ namespace ignite
                  * Constructor.
                  *
                  * @param impl Implementation.
+                 * @param flags Flags.
                  * @param timeout Timeout in milliseconds.
                  */
-                ComputeClient(SP_Void impl, int64_t timeout) :
+                ComputeClient(const SP_Void& impl, int8_t flags, int64_t timeout) :
                     impl(impl),
+                    flags(flags),
                     timeout(timeout)
                 {
                     // No-op.
                 }
 
+                /**
+                 * Execute java task internally.
+                 *
+                 * @param taskName Task name.
+                 * @param wrArg Argument.
+                 * @param res Result.
+                 */
+                void InternalExecuteJavaTask(const std::string& taskName, impl::thin::Writable& wrArg,
+                    impl::thin::Readable& res);
+
                 /** Implementation. */
                 SP_Void impl;
+
+                /** Flags. */
+                int8_t flags;
 
                 /** Timeout. */
                 int64_t timeout;
