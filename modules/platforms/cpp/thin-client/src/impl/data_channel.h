@@ -32,6 +32,7 @@
 
 #include "impl/protocol_version.h"
 #include "impl/ignite_node.h"
+#include "impl/response_status.h"
 
 namespace ignite
 {
@@ -177,7 +178,7 @@ namespace ignite
 
                     common::concurrent::CsLockGuard lock(ioMutex);
 
-                    InternalSyncMessage(mem, timeout);
+                    InternalSyncMessageUnguarded(mem, timeout);
 
                     interop::InteropInputStream inStream(&mem);
 
@@ -195,6 +196,9 @@ namespace ignite
                     RspT rsp;
 
                     rsp.Read(reader, currentVersion);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED, rsp.GetError().c_str());
 
                     bool success = Receive(mem, 0);
 

@@ -72,12 +72,13 @@ class ComputeClientTestSuiteFixture
 public:
     static ignite::Ignite StartNode(const char* name)
     {
-        return ignite_test::StartCrossPlatformServerNode("cache.xml", name);
+        return ignite_test::StartCrossPlatformServerNode("compute.xml", name);
     }
 
     ComputeClientTestSuiteFixture()
     {
-        serverNode = StartNode("ServerNode");
+        serverNode1 = StartNode("ServerNode1");
+        serverNode2 = StartNode("ServerNode2");
 
         IgniteClientConfiguration cfg;
         cfg.SetEndPoints("127.0.0.1:11110");
@@ -104,8 +105,11 @@ public:
     }
 
 protected:
-    /** Server node. */
-    ignite::Ignite serverNode;
+    /** Server node 1. */
+    ignite::Ignite serverNode1;
+
+    /** Server node 2. */
+    ignite::Ignite serverNode2;
 
     /** Client. */
     IgniteClient client;
