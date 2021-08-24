@@ -812,8 +812,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null)
-            return new GridFinishedFuture<>(new SnapshotOperationResponse());
+        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
+            return new GridFinishedFuture<>();
 
         try {
             if (req.error() != null)
@@ -836,7 +836,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null)
+        if (snpReq == null || !F.eq(id, snpReq.requestId()))
             return;
 
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());
