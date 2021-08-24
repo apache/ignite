@@ -245,6 +245,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -4245,7 +4246,8 @@ public abstract class IgniteUtils {
             sock.shutdownOutput();
             sock.shutdownInput();
         }
-        catch (ClosedChannelException | SocketException ignore) {
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to shutdown socket", ex);
         }
         catch (Exception e) {
             warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
@@ -4254,7 +4256,8 @@ public abstract class IgniteUtils {
         try {
             sock.close();
         }
-        catch (ClosedChannelException | SocketException ignore) {
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to close socket", ex);
         }
         catch (Exception e) {
             warn(log, "Failed to close socket: " + e.getMessage(), e);
