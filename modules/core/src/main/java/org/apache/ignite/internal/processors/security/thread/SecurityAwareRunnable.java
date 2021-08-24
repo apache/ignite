@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security.thread;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a {@link Runnable} wrapper that executes the original {@link Runnable} with the security context
@@ -34,7 +33,7 @@ public class SecurityAwareRunnable implements Runnable {
     private final IgniteSecurity security;
 
     /** */
-    private final @Nullable SecurityContext secCtx;
+    private final SecurityContext secCtx;
 
     /** */
     public SecurityAwareRunnable(IgniteSecurity security, Runnable delegate) {
