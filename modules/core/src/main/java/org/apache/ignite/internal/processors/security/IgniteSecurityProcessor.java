@@ -138,7 +138,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         SecurityContext cur = curSecCtx.get();
 
         boolean isNewCtxDflt = secCtx == dflt;
-        boolean isCurCtxDflt = cur == dflt;
+        boolean isCurCtxDflt = cur == null;
 
         if (isCurCtxDflt && isNewCtxDflt)
             return dfltOpCtx;
