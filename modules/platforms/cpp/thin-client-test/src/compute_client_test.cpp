@@ -33,6 +33,15 @@ namespace
     /** Echo task name. */
     const std::string ECHO_TASK("org.apache.ignite.platform.PlatformComputeEchoTask");
 
+    /** Test task. */
+    const std::string TEST_TASK("org.apache.ignite.internal.client.thin.TestTask");
+
+    /** Test failover task. */
+    const std::string TEST_FAILOVER_TASK("org.apache.ignite.internal.client.thin.TestFailoverTask");
+
+    /** Test result cache task. */
+    const std::string TEST_RESULT_CACHE_TASK("org.apache.ignite.internal.client.thin.TestResultCacheTask");
+
     /** Echo type: null. */
     const int32_t ECHO_TYPE_NULL = 0;
 
@@ -223,6 +232,42 @@ BOOST_AUTO_TEST_CASE(EchoTaskGuid)
 
         BOOST_CHECK_EQUAL(value, res);
     }
+}
+
+/**
+ * Checks if the error is of type IgniteError::IGNITE_ERR_FUTURE_STATE.
+ */
+bool IsTimeoutError(const ignite::IgniteError& err)
+{
+    std::string msgErr(err.GetText());
+    std::string expected("Task timed out");
+
+    return msgErr.find(expected) != std::string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(TaskWithTimeout)
+{
+    const int64_t timeout = 50;
+    compute::ComputeClient tmCompute = compute.WithTimeout(timeout);
+
+    BOOST_CHECK_EXCEPTION(tmCompute.ExecuteJavaTask<ignite::Guid>(TEST_TASK, timeout * 100),
+        ignite::IgniteError, IsTimeoutError);
+}
+
+BOOST_AUTO_TEST_CASE(TaskWithNoFailover)
+{
+    compute::ComputeClient computeWithNoFailover = compute.WithNoFailover();
+
+    BOOST_CHECK(compute.ExecuteJavaTask<bool>(TEST_FAILOVER_TASK));
+    BOOST_CHECK(!computeWithNoFailover.ExecuteJavaTask<bool>(TEST_FAILOVER_TASK));
+}
+
+BOOST_AUTO_TEST_CASE(TaskWithNoResultCache)
+{
+    compute::ComputeClient computeWithNoResultCache = compute.WithNoResultCache();
+
+    BOOST_CHECK(compute.ExecuteJavaTask<bool>(TEST_RESULT_CACHE_TASK));
+    BOOST_CHECK(!computeWithNoResultCache.ExecuteJavaTask<bool>(TEST_RESULT_CACHE_TASK));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
