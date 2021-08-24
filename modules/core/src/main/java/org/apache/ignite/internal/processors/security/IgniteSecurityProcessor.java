@@ -85,7 +85,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** Current security context if differs from {@link #dfltSecCtx}. */
-    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(() -> null);
+    private final ThreadLocal<SecurityContext> curSecCtx = new ThreadLocal<>();
 
     /** Grid kernal context. */
     private final GridKernalContext ctx;

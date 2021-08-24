@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security.client;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -51,9 +50,9 @@ public class ClientReconnectTest extends GridCommonAbstractTest {
                         if (ctx.localNodeId().equals(subjId))
                             return ctx.security().securityContext();
 
-                        throw new IgniteException(
-                            "Unexpected subjId[subjId=" + subjId + ",localNodeId=" + ctx.localNodeId() + ']'
-                        );
+                        fail("Unexpected subjId[subjId=" + subjId + ", localNodeId=" + ctx.localNodeId() + ']');
+
+                        return null;
                     }
 
                     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
