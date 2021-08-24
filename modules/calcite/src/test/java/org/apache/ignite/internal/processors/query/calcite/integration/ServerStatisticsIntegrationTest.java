@@ -107,18 +107,18 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
     /**
      * Run select and check that result rows take statisitcs in account:
-     * 1) without statistics;
-     * 2) with statistics;
-     * 3) after deleting statistics.
+     * 1) without statistics - by row count and heuristic;
+     * 2) with statistics - by statistics;
+     * 3) after deleting statistics - by row count and heuristics again.
      */
     @Test
     public void testQueryCostWithStatistics() throws IgniteCheckedException {
-        String sql = "select name from person";
+        String sql = "select name from person where salary is not null";
         createAndPopulateTable();
         StatisticsKey key = new StatisticsKey("PUBLIC", "PERSON");
         srv = ignite(0);
 
-        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(1000)).check();
+        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(4.5)).check();
 
         clearQryCache(srv);
 
@@ -129,7 +129,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         statMgr(srv).dropStatistics(new StatisticsTarget(key));
         clearQryCache(srv);
 
-        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(1000)).check();
+        assertQuerySrv(sql).matches(QueryChecker.containsResultRowCount(4.5)).check();
     }
 
     /**
@@ -314,7 +314,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
         Set<String> nonNullableFields = new HashSet<>(Arrays.asList(NON_NULLABLE_FIELDS));
 
-        double strRow = 18.75; // Cause of two 0.5 default multiplied by 0.75 non null
+        double strRow = 4.6875;
 
         for (String numericField : NUMERIC_FIELDS) {
             double allRowCnt;
@@ -358,12 +358,14 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         collectStatistics(srv, key);
 
         Set<String> nonNullableFields = new HashSet<>(Arrays.asList(NON_NULLABLE_FIELDS));
+
         for (String numericField : NUMERIC_FIELDS) {
-            double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
+            double allRowIsNullCnt = (nonNullableFields.contains(numericField)) ? (double) ROW_COUNT : 0.8125 * ROW_COUNT;
+            double allRowRangeCnt = (nonNullableFields.contains(numericField)) ? (double) ROW_COUNT : 0.75 * ROW_COUNT;
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s < %d", numericField, -1, numericField, 101))
-                .matches(QueryChecker.containsResultRowCount(allRowCnt)).check();
+                .matches(QueryChecker.containsResultRowCount(allRowRangeCnt)).check();
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s < %d", numericField, 101, numericField, -1))
@@ -371,7 +373,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s is null", numericField, -1, numericField))
-                .matches(QueryChecker.containsResultRowCount(ROW_COUNT)).check();
+                .matches(QueryChecker.containsResultRowCount(allRowIsNullCnt)).check();
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s is null", numericField, 101, numericField))

@@ -364,7 +364,7 @@ public abstract class QueryChecker {
 
         if (!F.isEmpty(planMatchers)) {
             for (Matcher<String> matcher : planMatchers)
-                assertThat("Invalid plan:\n" + actualPlan, actualPlan, matcher);
+                assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
         }
 
         if (exactPlan != null)
