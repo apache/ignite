@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a {@link Callable} wrapper that executes the original {@link Callable} with the security context
@@ -37,7 +36,7 @@ public class SecurityAwareCallable<T> implements Callable<T> {
     private final IgniteSecurity security;
 
     /** */
-    private final @Nullable SecurityContext secCtx;
+    private final SecurityContext secCtx;
 
     /** */
     public SecurityAwareCallable(IgniteSecurity security, Callable<T> delegate) {
@@ -51,6 +50,8 @@ public class SecurityAwareCallable<T> implements Callable<T> {
 
     /** {@inheritDoc} */
     @Override public T call() throws Exception {
+        // `secCtx==null` mean run in context of local node.
+        // `security.securityContext()` can return null in case it invoked before join to the cluster.
         if (secCtx == null)
             return delegate.call();
 
