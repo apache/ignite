@@ -1071,7 +1071,6 @@
                     </sourceDirectories>
                     <consoleOutput>true</consoleOutput>
                     <logViolationsToConsole>true</logViolationsToConsole>
-                    <failsOnError>true</failsOnError>
                     <failOnViolation>true</failOnViolation>
                     <outputFile>${project.build.directory}/checkstyle.xml</outputFile>
                     <configLocation>${project.basedir}/check-rules/checkstyle-rules.xml</configLocation>
