@@ -21,37 +21,36 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
- * Tests check that unnecessary rebalances doesn't happen.
+ * Tests check that unnecessary rebalance doesn't happen.
  */
-public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
-    /** */
+public class NoUnnecessaryRebalanceTest extends GridCommonAbstractTest {
+    /** Cache configuration name prefix. */
     private static final String CACHE_NAME = "testCache";
 
-    /** */
+    /** Number of cluster nodes. */
     private static final int NODE_COUNT = 3;
+
+    /** */
+    public final Set<Integer> rebRecorder = new ConcurrentSkipListSet<>();
 
     /**
      * @return Grid test configuration.
@@ -60,7 +59,7 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCommunicationSpi(new RebalanceTrackingSpi());
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -70,17 +69,14 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test check that cache creation doesn't invoke rebalance on cache in other cache group
+     * Test check that cache creation doesn't invoke rebalance on cache in other cache group.
      * @throws Exception If failed.
      */
     @Test
-    public void testNoRebalancesOnCacheCreation() throws Exception {
-        startGrids(NODE_COUNT);
-
-        Ignite g0 = grid(0);
+    public void testNoRebalanceOnCacheCreation() throws Exception {
+        Ignite g0 = startGrids(NODE_COUNT);
 
         g0.cluster().state(ClusterState.ACTIVE);
-
         g0.createCache(getCacheConfiguration(0));
 
         awaitPartitionMapExchange();
@@ -96,58 +92,41 @@ public class NoUnnecessaryRebalancesTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx0, 1, true, false);
 
+        G.allGrids().forEach(n -> TestRecordingCommunicationSpi.spi(n).record((node, msg) -> {
+            if (msg instanceof GridDhtPartitionSupplyMessage)
+                rebRecorder.add(((GridCacheGroupIdMessage)msg).groupId());
+
+            return false;
+        }));
+
         g0.createCache(getCacheConfiguration(1));
 
         awaitPartitionMapExchange(true, true, null);
 
-        Assert.assertFalse(RebalanceTrackingSpi.rebGrpIds.contains(CU.cacheId(CACHE_NAME + 0)));
-    }
-
-    /** */
-    private CacheConfiguration<Object, Object> getCacheConfiguration(int idx) {
-        return new CacheConfiguration<>(CACHE_NAME + idx)
-            .setBackups(2)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(8));
+        assertFalse(rebRecorder.contains(CU.cacheId(CACHE_NAME + 0)));
     }
 
     /**
-     * Wrapper of communication spi to detect on which cache groups rebalances were happened.
+     * @param postFix Cache name postfix.
+     * @return Cache configuration.
      */
-    public static class RebalanceTrackingSpi extends TestRecordingCommunicationSpi {
-        /** Cache groups on which rebalances were happened */
-        public static final Set<Integer> rebGrpIds = new ConcurrentSkipListSet<>();
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(
-            ClusterNode node,
-            Message msg,
-            IgniteInClosure<IgniteException> ackC
-        ) throws IgniteSpiException {
-            if (((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                GridDhtPartitionSupplyMessage supplyMsg = (GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message();
-
-                rebGrpIds.add(supplyMsg.groupId());
-            }
-
-            super.sendMessage(node, msg, ackC);
-        }
+    private CacheConfiguration<Object, Object> getCacheConfiguration(int postFix) {
+        return new CacheConfiguration<>(CACHE_NAME + postFix).setBackups(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
+    /**
+     * @throws Exception If fails.
+     */
+    @Before public void beforeRebalanceTest() throws Exception {
         stopAllGrids();
-
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
+    /**
+     * @throws Exception If fails.
+     */
+    @After public void afterRebalanceTest() throws Exception {
         stopAllGrids();
-
         cleanPersistenceDir();
     }
 }
