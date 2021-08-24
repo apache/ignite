@@ -109,7 +109,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  */
 public class CdcMain implements Runnable {
     /** */
-    public static final String ERR_MSG = "Persistence disabled. Capture Data Change can't run!";
+    public static final String ERR_MSG = "Persistence and CDC disabled. Capture Data Change can't run!";
 
     /** State dir. */
     public static final String STATE_DIR = "state";
