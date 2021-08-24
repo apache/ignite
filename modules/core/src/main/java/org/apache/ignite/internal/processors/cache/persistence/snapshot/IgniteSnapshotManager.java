@@ -421,22 +421,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpReq = clusterSnpReq;
                     String err = "Snapshot operation interrupted, because baseline node left the cluster: " + leftNodeId;
-
-                    for (SnapshotFutureTask sctx : locSnpTasks.values()) {
-                        if (sctx.sourceNodeId().equals(leftNodeId) ||
-                            (snpReq != null &&
-                                snpReq.snapshotName().equals(sctx.snapshotName()) &&
-                                snpReq.nodes().contains(leftNodeId)))
-                            sctx.acceptException(new ClusterTopologyCheckedException(err));
-                    }
+                    boolean reqNodeLeft = snpReq != null && snpReq.nodes().contains(leftNodeId);
 
                     // If the coordinator left the cluster and did not start
                     // the final snapshot phase (SNAPSHOT_END), we start it from a new one.
-                    if (snpReq != null && snpReq.nodes().contains(leftNodeId) &&
-                        U.isLocalNodeCoordinator(ctx.discovery()) && snpReq.startStageEnded()) {
+                    if (reqNodeLeft && snpReq.startStageEnded() && U.isLocalNodeCoordinator(ctx.discovery())) {
                         snpReq.error(new ClusterTopologyCheckedException(err));
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
+                    }
+
+                    for (SnapshotFutureTask sctx : locSnpTasks.values()) {
+                        if (sctx.sourceNodeId().equals(leftNodeId) ||
+                            (reqNodeLeft && snpReq.snapshotName().equals(sctx.snapshotName())))
+                            sctx.acceptException(new ClusterTopologyCheckedException(err));
                     }
 
                     restoreCacheGrpProc.onNodeLeft(leftNodeId);
