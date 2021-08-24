@@ -50,7 +50,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
@@ -541,10 +540,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             if (locPart == null)
                 continue;
 
-            IgniteCacheOffheapManager.CacheDataStore dataStore =
-                ctx.cache().cacheGroup(CU.cacheId(CACHE_NAME_ATOMIC)).offheap().dataStore(locPart);
-
-            GridCursor cur = dataStore.cursor();
+            GridCursor cur = locPart.dataStore().cursor();
 
             assertFalse(cur.next());
             assertEquals(0, locPart.fullSize());
