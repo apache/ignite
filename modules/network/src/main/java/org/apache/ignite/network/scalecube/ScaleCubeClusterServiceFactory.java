@@ -20,6 +20,7 @@ package org.apache.ignite.network.scalecube;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
@@ -32,6 +33,8 @@ import io.scalecube.cluster.ClusterMessageHandler;
 import io.scalecube.cluster.membership.MembershipEvent;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
+import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
+import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
@@ -41,6 +44,7 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
@@ -49,7 +53,11 @@ import org.apache.ignite.network.serialization.MessageSerializationRegistry;
  */
 public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
     /** {@inheritDoc} */
-    @Override public ClusterService createClusterService(ClusterLocalConfiguration context) {
+    @Override public ClusterService createClusterService(
+        ClusterLocalConfiguration context,
+        ConfigurationManager nodeConfiguration,
+        Supplier<NodeFinder> nodeFinderSupplier
+    ) {
         String consistentId = context.getName();
 
         var topologyService = new ScaleCubeTopologyService();
@@ -62,39 +70,43 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
 
         UUID launchId = UUID.randomUUID();
 
-        var connectionManager = new ConnectionManager(
-            context.getPort(),
-            registry,
-            consistentId,
-            () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
-            () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
-        );
-
-        var transport = new ScaleCubeDirectMarshallerTransport(connectionManager, topologyService, messageFactory);
-
-        var cluster = new ClusterImpl(clusterConfig())
-            .handler(cl -> new ClusterMessageHandler() {
-                /** {@inheritDoc} */
-                @Override public void onMessage(Message message) {
-                    messagingService.fireEvent(message);
-                }
-
-                /** {@inheritDoc} */
-                @Override public void onMembershipEvent(MembershipEvent event) {
-                    topologyService.onMembershipEvent(event);
-                }
-            })
-            .config(opts -> opts.memberAlias(consistentId))
-            .transport(opts -> opts.transportFactory(new DelegatingTransportFactory(messagingService, config -> transport)))
-            .membership(opts -> opts.seedMembers(parseAddresses(context.getNodeFinder().findNodes())));
-
-        // resolve cyclic dependencies
-        messagingService.setCluster(cluster);
-
         return new AbstractClusterService(context, topologyService, messagingService) {
+            private volatile ClusterImpl cluster;
+
+            private volatile ConnectionManager connectionMgr;
+
             /** {@inheritDoc} */
             @Override public void start() {
-                connectionManager.start();
+                this.connectionMgr = new ConnectionManager(
+                    nodeConfiguration.configurationRegistry().getConfiguration(NetworkConfiguration.KEY).value().port(),
+                    registry,
+                    consistentId,
+                    () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
+                    () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
+                );
+
+                var transport = new ScaleCubeDirectMarshallerTransport(connectionMgr, topologyService, messageFactory);
+
+                this.cluster = new ClusterImpl(clusterConfig())
+                    .handler(cl -> new ClusterMessageHandler() {
+                        /** {@inheritDoc} */
+                        @Override public void onMessage(Message message) {
+                            messagingService.fireEvent(message);
+                        }
+
+                        /** {@inheritDoc} */
+                        @Override public void onMembershipEvent(MembershipEvent event) {
+                            topologyService.onMembershipEvent(event);
+                        }
+                    })
+                    .config(opts -> opts.memberAlias(consistentId))
+                    .transport(opts -> opts.transportFactory(new DelegatingTransportFactory(messagingService, config -> transport)))
+                    .membership(opts -> opts.seedMembers(parseAddresses(nodeFinderSupplier.get().findNodes())));
+
+                // resolve cyclic dependencies
+                messagingService.setCluster(cluster);
+
+                connectionMgr.start();
 
                 cluster.startAwait();
 
@@ -111,7 +123,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
 
                 cluster.shutdown();
                 cluster.onShutdown().block();
-                connectionManager.stop();
+                connectionMgr.stop();
             }
 
             /** {@inheritDoc} */

@@ -39,7 +39,6 @@ import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.ByteArray;
-import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
@@ -51,6 +50,7 @@ import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
+import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -351,9 +351,13 @@ public class ITMetaStorageServicePersistenceTest {
     private ClusterService clusterService(String name, int port, NetworkAddress otherPeer) {
         var nodeFinder = new StaticNodeFinder(List.of(otherPeer));
 
-        var context = new ClusterLocalConfiguration(name, port, nodeFinder, SERIALIZATION_REGISTRY);
-
-        var network = NETWORK_FACTORY.createClusterService(context);
+        var network = ClusterServiceTestUtils.clusterService(
+            name,
+            port,
+            nodeFinder,
+            SERIALIZATION_REGISTRY,
+            NETWORK_FACTORY
+        );
 
         network.start();
 

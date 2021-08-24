@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.network;
 
+import java.util.function.Supplier;
+import org.apache.ignite.internal.configuration.ConfigurationManager;
+
 /**
  * Cluster service factory.
  */
@@ -24,7 +27,13 @@ public interface ClusterServiceFactory {
      * Creates a new {@link ClusterService} using the provided context. The created network will not be in the "started" state.
      *
      * @param context Cluster context.
+     * @param nodeConfiguration Node configuration.
+     * @param nodeFinderSupplier Supplier that provides node finder for discovering the initial cluster members.
      * @return New cluster service.
      */
-    ClusterService createClusterService(ClusterLocalConfiguration context);
+    ClusterService createClusterService(
+        ClusterLocalConfiguration context,
+        ConfigurationManager nodeConfiguration,
+        Supplier<NodeFinder> nodeFinderSupplier
+    );
 }

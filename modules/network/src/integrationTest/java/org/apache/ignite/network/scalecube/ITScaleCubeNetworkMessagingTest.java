@@ -33,7 +33,6 @@ import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.transport.api.Transport;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
 import org.apache.ignite.lang.NodeStoppingException;
-import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
@@ -48,6 +47,7 @@ import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.network.annotations.MessageGroup;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -383,10 +383,15 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception If failed to stop.
      */
     private static void stopForcefully(ClusterService cluster) throws Exception {
-        Field clusterImplField = cluster.getClass().getDeclaredField("val$cluster");
+        Field clusterSvcImplField = cluster.getClass().getDeclaredField("val$clusterSvc");
+        clusterSvcImplField.setAccessible(true);
+
+        ClusterService innerClusterSvc = (ClusterService) clusterSvcImplField.get(cluster);
+
+        Field clusterImplField = innerClusterSvc.getClass().getDeclaredField("cluster");
         clusterImplField.setAccessible(true);
 
-        ClusterImpl clusterImpl = (ClusterImpl) clusterImplField.get(cluster);
+        ClusterImpl clusterImpl = (ClusterImpl) clusterImplField.get(innerClusterSvc);
         Field transportField = clusterImpl.getClass().getDeclaredField("transport");
         transportField.setAccessible(true);
 
@@ -442,13 +447,16 @@ class ITScaleCubeNetworkMessagingTest {
          * @return Started cluster node.
          */
         private ClusterService startNode(NetworkAddress addr, NodeFinder nodeFinder, boolean initial) {
-            var context =
-                new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, serializationRegistry);
-
-            ClusterService clusterService = networkFactory.createClusterService(context);
+            ClusterService clusterSvc = ClusterServiceTestUtils.clusterService(
+                addr.toString(),
+                addr.port(),
+                nodeFinder,
+                serializationRegistry,
+                networkFactory
+            );
 
             if (initial)
-                clusterService.topologyService().addEventHandler(new TopologyEventHandler() {
+                clusterSvc.topologyService().addEventHandler(new TopologyEventHandler() {
                     /** {@inheritDoc} */
                     @Override public void onAppeared(ClusterNode member) {
                         startupLatch.countDown();
@@ -459,7 +467,7 @@ class ITScaleCubeNetworkMessagingTest {
                     }
                 });
 
-            return clusterService;
+            return clusterSvc;
         }
 
         /**

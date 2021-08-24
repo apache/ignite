@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.runner.app;
 
-import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,9 +26,7 @@ import com.google.common.collect.Lists;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.handler.ClientHandlerModule;
-import org.apache.ignite.internal.app.IgnitionImpl;
-import org.apache.ignite.internal.manager.IgniteComponent;
+import org.apache.ignite.internal.app.IgniteImpl;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -43,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -112,7 +108,9 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
                         .changePartitions(10)
         );
 
-        var addrs = new String[]{"127.0.0.1:" + getClientPort("node0"), "127.0.0.1:" + getClientPort("node1")};
+        var addrs = new String[]{"127.0.0.1:" +
+            ((InetSocketAddress) ((IgniteImpl)startedNodes.stream().filter(node -> "node0".equals(node.name())).
+                findAny().get()).clientHandlerModule().localAddress()).getPort()};
 
         for (var addr : addrs) {
             try (var client = IgniteClient.builder().addresses(addr).build()) {
@@ -131,43 +129,5 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
                 assertTrue(table.delete(keyTuple));
             }
         }
-    }
-
-    /**
-     * Gets the client listener port.
-     *
-     * @param nodeName Node name.
-     * @return Port number.
-     * @throws Exception When failed.
-     */
-    private static int getClientPort(String nodeName) throws Exception {
-        InetSocketAddress addr = (InetSocketAddress) getClientHandlerModule(nodeName).localAddress();
-        assertNotNull(addr);
-
-        return addr.getPort();
-    }
-
-    /**
-     * Gets the client handler module for the give node.
-     *
-     * @param nodeName Node name.
-     * @return Client handler module.
-     * @throws Exception When failed.
-     */
-    private static ClientHandlerModule getClientHandlerModule(String nodeName) throws Exception {
-        Field field = IgnitionImpl.class.getDeclaredField("nodesStartedComponents");
-        field.setAccessible(true);
-
-        var componentMap = (Map<String, List<IgniteComponent>>) field.get(null);
-        assertNotNull(componentMap);
-
-        var components = componentMap.get(nodeName);
-        assertNotNull(components);
-
-        return components.stream()
-                .filter(ClientHandlerModule.class::isInstance)
-                .map(ClientHandlerModule.class::cast)
-                .findFirst()
-                .orElseThrow();
     }
 }

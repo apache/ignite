@@ -17,18 +17,18 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
-import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.util.Endpoint;
+import org.apache.ignite.utils.ClusterServiceTestUtils;
 
 import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
 
@@ -41,7 +41,13 @@ public class IgniteRpcTest extends AbstractRpcTest {
 
     /** {@inheritDoc} */
     @Override public RpcServer<?> createServer(Endpoint endpoint) {
-        ClusterService service = createService(endpoint.toString(), endpoint.getPort());
+        ClusterService service = ClusterServiceTestUtils.clusterService(
+            endpoint.toString(),
+            endpoint.getPort(),
+            new StaticNodeFinder(Collections.emptyList()),
+            new MessageSerializationRegistryImpl(),
+            new TestScaleCubeClusterServiceFactory()
+        );
 
         var server = new TestIgniteRpcServer(service, new NodeManager(), new NodeOptions()) {
             @Override public void shutdown() {
@@ -60,7 +66,13 @@ public class IgniteRpcTest extends AbstractRpcTest {
     @Override public RpcClient createClient0() {
         int i = cntr.incrementAndGet();
 
-        ClusterService service = createService("client" + i, endpoint.getPort() - i, addressFromEndpoint(endpoint));
+        ClusterService service = ClusterServiceTestUtils.clusterService(
+            "client" + i,
+            endpoint.getPort() - i,
+            new StaticNodeFinder(List.of(addressFromEndpoint(endpoint))),
+            new MessageSerializationRegistryImpl(),
+            new TestScaleCubeClusterServiceFactory()
+        );
 
         IgniteRpcClient client = new IgniteRpcClient(service) {
             @Override public void shutdown() {
@@ -75,21 +87,6 @@ public class IgniteRpcTest extends AbstractRpcTest {
         waitForTopology(client, 1 + i, 5_000);
 
         return client;
-    }
-
-    /**
-     * @param name Node name.
-     * @param port Local port.
-     * @param servers Server nodes of the cluster.
-     * @return The client cluster view.
-     */
-    private static ClusterService createService(String name, int port, NetworkAddress... servers) {
-        var registry = new MessageSerializationRegistryImpl();
-        var nodeFinder = new StaticNodeFinder(List.of(servers));
-        var context = new ClusterLocalConfiguration(name, port, nodeFinder, registry);
-        var factory = new TestScaleCubeClusterServiceFactory();
-
-        return factory.createClusterService(context);
     }
 
     /** {@inheritDoc} */

@@ -50,7 +50,6 @@ import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
@@ -66,6 +65,7 @@ import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
 import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -539,9 +539,16 @@ public class ITDistributedTableTest {
      * @return The client cluster view.
      */
     private static ClusterService startClient(String name, int port, NodeFinder nodeFinder) {
-        var context = new ClusterLocalConfiguration(name, port, nodeFinder, SERIALIZATION_REGISTRY);
-        var network = NETWORK_FACTORY.createClusterService(context);
+        var network = ClusterServiceTestUtils.clusterService(
+            name,
+            port,
+            nodeFinder,
+            SERIALIZATION_REGISTRY,
+            NETWORK_FACTORY
+        );
+
         network.start();
+
         return network;
     }
 

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.LocalPortRangeNodeFinder;
@@ -28,6 +27,7 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -109,9 +109,13 @@ class ITNodeRestartsTest {
      * @return Created Cluster Service.
      */
     private ClusterService startNetwork(NetworkAddress addr, NodeFinder nodeFinder) {
-        var context = new ClusterLocalConfiguration(addr.toString(), addr.port(), nodeFinder, serializationRegistry);
-
-        ClusterService clusterService = networkFactory.createClusterService(context);
+        ClusterService clusterService = ClusterServiceTestUtils.clusterService(
+            addr.toString(),
+            addr.port(),
+            nodeFinder,
+            serializationRegistry,
+            networkFactory
+        );
 
         clusterService.start();
 
