@@ -42,13 +42,11 @@ public class SecurityAwareRunnable implements Runnable {
 
         this.delegate = delegate;
         this.security = security;
-        secCtx = security.securityContext();
+        secCtx = security.isDefaultContext() ? null : security.securityContext();
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        // `secCtx==null` mean run in context of local node.
-        // `security.securityContext()` can return null in case it invoked before join to the cluster.
         if (secCtx == null) {
             delegate.run();
 

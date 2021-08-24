@@ -61,6 +61,9 @@ public interface IgniteSecurity {
      */
     public OperationSecurityContext withContext(UUID nodeId);
 
+    /** @return {@code True} if current thread executed in default security context. */
+    public boolean isDefaultContext();
+
     /**
      * @return SecurityContext of holder {@link OperationSecurityContext}.
      */

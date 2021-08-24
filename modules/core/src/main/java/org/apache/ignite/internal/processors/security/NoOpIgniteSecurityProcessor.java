@@ -69,6 +69,11 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isDefaultContext() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
         return null;
     }

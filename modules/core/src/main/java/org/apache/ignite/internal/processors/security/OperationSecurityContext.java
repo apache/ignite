@@ -39,14 +39,11 @@ public class OperationSecurityContext implements AutoCloseable {
         this.secCtx = secCtx;
     }
 
-    /** Empty constructor. */
-    OperationSecurityContext() {
-        this.proc = null;
-        this.secCtx = null;
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
-        proc.withContext(secCtx);
+        if (secCtx == null)
+            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
+        else
+            proc.withContext(secCtx);
     }
 }
