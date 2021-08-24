@@ -33,9 +33,6 @@ namespace
     /** Echo task name. */
     const std::string ECHO_TASK("org.apache.ignite.platform.PlatformComputeEchoTask");
 
-    /** Node name task name. */
-    const std::string NODE_NAME_TASK("org.apache.ignite.platform.PlatformComputeNodeNameTask");
-
     /** Echo type: null. */
     const int32_t ECHO_TYPE_NULL = 0;
 
@@ -87,7 +84,7 @@ public:
 
         client = IgniteClient::Start(cfg);
 
-        compute::ComputeClient compute = client.GetCompute();
+        compute = client.GetCompute();
     }
 
     ~ComputeClientTestSuiteFixture()
