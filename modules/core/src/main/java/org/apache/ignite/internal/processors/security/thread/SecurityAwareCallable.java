@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a {@link Callable} wrapper that executes the original {@link Callable} with the security context
@@ -36,7 +37,7 @@ public class SecurityAwareCallable<T> implements Callable<T> {
     private final IgniteSecurity security;
 
     /** */
-    private final SecurityContext secCtx;
+    private final @Nullable SecurityContext secCtx;
 
     /** */
     public SecurityAwareCallable(IgniteSecurity security, Callable<T> delegate) {
@@ -50,6 +51,9 @@ public class SecurityAwareCallable<T> implements Callable<T> {
 
     /** {@inheritDoc} */
     @Override public T call() throws Exception {
+        if (secCtx == null)
+            return delegate.call();
+
         try (OperationSecurityContext ignored = security.withContext(secCtx)) {
             return delegate.call();
         }

@@ -25,17 +25,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -81,14 +78,40 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private static final AtomicInteger SANDBOXED_NODES_COUNTER = new AtomicInteger();
 
     /**
+     * Dummy instance to use instead of local context.
+     * Local context can be changed on local node reconnect.
+     */
+    public static final SecurityContext DUMMY = new SecurityContext() {
+        @Override public SecuritySubject subject() {
+            return null;
+        }
+
+        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+            return false;
+        }
+
+        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+            return false;
+        }
+
+        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+            return false;
+        }
+
+        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            return false;
+        }
+    };
+
+    /**
      * @return True if there are nodes with the sandbox enabled.
      */
     static boolean hasSandboxedNodes() {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Current security context. */
-    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
+    /** Current security context if differs from {@link #locNodeSecCtx}. */
+    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(() -> null);
 
     /** Grid kernal context. */
     private final GridKernalContext ctx;
@@ -108,8 +131,15 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Instance of IgniteSandbox. */
     private IgniteSandbox sandbox;
 
-    /** Node local security context ready future. */
-    private final GridFutureAdapter<SecurityContext> nodeSecCtxReadyFut = new GridFutureAdapter<>();
+    /** Node local security context. */
+    private volatile SecurityContext locNodeSecCtx;
+
+    /** Node local operation security context. */
+    private final OperationSecurityContext locNodeOpSecCtx = new OperationSecurityContext() {
+        @Override public void close() {
+            // Ignore.
+        }
+    };
 
     /**
      * @param ctx Grid kernal context.
@@ -132,45 +162,56 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
         SecurityContext old = curSecCtx.get();
 
-        curSecCtx.set(secCtx);
+        boolean isNewCtxLoc = secCtx == locNodeSecCtx || secCtx == DUMMY;
+        boolean isOldCtxLoc = old == null;
 
-        return new OperationSecurityContext(this, old);
+        if (isOldCtxLoc && isNewCtxLoc)
+            return locNodeOpSecCtx;
+
+        curSecCtx.set(isNewCtxLoc ? null : secCtx);
+
+        return new OperationSecurityContext(this, isOldCtxLoc ? DUMMY : old);
     }
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
         try {
-            ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
+            ClusterNode node = Optional
+                .ofNullable(ctx.discovery().node(subjId))
                 .orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
-            SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
-                uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
-                : secPrc.securityContext(subjId);
+            SecurityContext res;
 
-            if (res != null)
-                return withContext(res);
+            if (locNodeSecCtx != null && locNodeSecCtx.subject().id().equals(subjId))
+                res = locNodeSecCtx;
+            else {
+                res = node != null
+                    ? secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
+                    : secPrc.securityContext(subjId);
+            }
+
+            if (res == null) {
+                throw new IllegalStateException("Failed to find security context " +
+                    "for subject with given ID : " + subjId);
+            }
+
+            return withContext(res);
         }
         catch (Throwable e) {
             log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
 
             throw e;
         }
-
-        IllegalStateException error = new IllegalStateException("Failed to find security context " +
-            "for subject with given ID : " + subjId);
-
-        log.error(FAILED_OBTAIN_SEC_CTX_MSG, error);
-
-        throw error;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
         SecurityContext res = curSecCtx.get();
 
-        assert res != null;
+        if (res != null)
+            return res;
 
-        return res;
+        return locNodeSecCtx;
     }
 
     /** {@inheritDoc} */
@@ -206,9 +247,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
-        SecurityContext secCtx = curSecCtx.get();
-
-        assert secCtx != null;
+        SecurityContext secCtx = securityContext();
 
         secPrc.authorize(name, perm, secCtx);
     }
@@ -299,11 +338,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (!nodeSecCtxReadyFut.isDone()) {
-            nodeSecCtxReadyFut.onDone(new NodeStoppingException(
-                "Failed to wait for local node security context initialization (grid is stopping)."));
-        }
-
         secPrc.onKernalStop(cancel);
     }
 
@@ -380,39 +414,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onLocalJoin() {
-        try {
-            // This method may be called several times on client node reconnect.
-            if (nodeSecCtxReadyFut.isDone())
-                nodeSecCtxReadyFut.reset();
-
-            nodeSecCtxReadyFut.onDone(nodeSecurityContext(
-                marsh,
-                U.resolveClassLoader(ctx.config()),
-                ctx.discovery().localNode()));
-        }
-        catch (Throwable e) {
-            nodeSecCtxReadyFut.onDone(e);
-
-            throw e;
-        }
-    }
-
-    /**
-     * Getting local node's security context.
-     *
-     * @return Security context of local node.
-     */
-    private SecurityContext localSecurityContext() {
-        if (nodeSecCtxReadyFut.isDone()) {
-            try {
-                return nodeSecCtxReadyFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        return new DeferredSecurityContext();
+        locNodeSecCtx = nodeSecurityContext(
+            marsh,
+            U.resolveClassLoader(ctx.config()),
+            ctx.discovery().localNode());
     }
 
     /**
@@ -437,47 +442,5 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** @return Security processor implementation to which current security facade delegates operations. */
     public GridSecurityProcessor securityProcessor() {
         return secPrc;
-    }
-
-    /**
-     * Represents {@link SecurityContext} wrapper that blocks all interface methods until security context becomes
-     * available. The main reason of such implementation is that local node security context is undefined until node
-     * joins the topology.
-     */
-    public class DeferredSecurityContext implements SecurityContext {
-        /** {@inheritDoc} */
-        @Override public SecuritySubject subject() {
-            return delegate().subject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-            return delegate().taskOperationAllowed(taskClsName, perm);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-            return delegate().cacheOperationAllowed(cacheName, perm);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-            return delegate().serviceOperationAllowed(srvcName, perm);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
-            return delegate().systemOperationAllowed(perm);
-        }
-
-        /** */
-        public SecurityContext delegate() {
-            try {
-                return nodeSecCtxReadyFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
     }
 }
