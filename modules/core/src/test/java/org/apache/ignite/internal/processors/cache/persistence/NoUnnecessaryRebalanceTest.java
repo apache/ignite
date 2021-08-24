@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
@@ -33,8 +34,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
@@ -48,9 +47,6 @@ public class NoUnnecessaryRebalanceTest extends GridCommonAbstractTest {
 
     /** Number of cluster nodes. */
     private static final int NODE_COUNT = 3;
-
-    /** */
-    public final Set<Integer> rebRecorder = new ConcurrentSkipListSet<>();
 
     /**
      * @return Grid test configuration.
@@ -92,18 +88,19 @@ public class NoUnnecessaryRebalanceTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx0, 1, true, false);
 
-        G.allGrids().forEach(n -> TestRecordingCommunicationSpi.spi(n).record((node, msg) -> {
-            if (msg instanceof GridDhtPartitionSupplyMessage)
-                rebRecorder.add(((GridCacheGroupIdMessage)msg).groupId());
-
-            return false;
-        }));
+        G.allGrids().forEach(n -> TestRecordingCommunicationSpi.spi(n)
+            .record((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage));
 
         g0.createCache(getCacheConfiguration(1));
 
         awaitPartitionMapExchange(true, true, null);
 
-        assertFalse(rebRecorder.contains(CU.cacheId(CACHE_NAME + 0)));
+        List<Object> msgs = new ArrayList<>();
+
+        G.allGrids().forEach(n -> msgs.addAll(TestRecordingCommunicationSpi.spi(n).recordedMessages(true)));
+
+        assertFalse(msgs.stream().map(o -> ((GridCacheGroupIdMessage)o).groupId()).collect(Collectors.toSet())
+            .contains(CU.cacheId(CACHE_NAME + 0)));
     }
 
     /**
@@ -114,19 +111,21 @@ public class NoUnnecessaryRebalanceTest extends GridCommonAbstractTest {
         return new CacheConfiguration<>(CACHE_NAME + postFix).setBackups(2);
     }
 
-    /**
-     * @throws Exception If fails.
-     */
-    @Before public void beforeRebalanceTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
+
         cleanPersistenceDir();
     }
 
-    /**
-     * @throws Exception If fails.
-     */
-    @After public void afterRebalanceTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
+
         cleanPersistenceDir();
     }
 }
