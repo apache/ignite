@@ -117,12 +117,13 @@ class KillCommandsTests {
         // Cancel first query.
         qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
 
-        // Fetch all cached entries. It's size equal to the {@code PAGE_SZ * NODES_CNT}.
-        for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
-            assertNotNull(iter1.next());
+        // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
+        assertThrowsWithCause(() -> {
+            for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
+                assertNotNull(iter1.next());
 
-        // Fetch of the next page should throw the exception.
-        assertThrowsWithCause(iter1::next, IgniteCheckedException.class);
+            return null;
+        }, IgniteCheckedException.class);
 
         // Checking that second query works fine after canceling first.
         for (int i = 0; i < PAGE_SZ * PAGE_SZ - 1; i++)

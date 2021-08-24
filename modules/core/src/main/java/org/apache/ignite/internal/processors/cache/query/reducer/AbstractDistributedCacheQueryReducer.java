@@ -114,15 +114,6 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     }
 
     /**
-     * Send cancel request to specified nodes.
-     *
-     * @param nodes Collection of nodes to cancel this query.
-     */
-    private void cancel(Collection<UUID> nodes) {
-        pageRequester.cancelQuery(reqId, nodes, fut.fields());
-    }
-
-    /**
      * Send request to fetch new pages.
      *
      * @param nodes Collection of nodes to send request.
@@ -151,7 +142,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
         remoteStreams.clear();
         streams.clear();
 
-        cancel(nodes);
+        pageRequester.cancelQuery(reqId, nodes, fut.fields());
     }
 
     /** {@inheritDoc} */
