@@ -1580,7 +1580,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }).filter(s -> !Objects.isNull(s))
                 .collect(Collectors.joining(", "));
 
-        log.info(String.format("Expiration policy info by caches [%s]", r));
+        log.info(String.format("Expiration policy info for caches [%s]", r));
     }
 
     /** */
