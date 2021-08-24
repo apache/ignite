@@ -103,7 +103,7 @@ public:
         return client.GetOrCreateCache<int32_t, T>("default");
     }
 
-private:
+protected:
     /** Server node. */
     ignite::Ignite serverNode;
 

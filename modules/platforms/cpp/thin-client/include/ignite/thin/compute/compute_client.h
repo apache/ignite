@@ -38,7 +38,7 @@ namespace ignite
                     NONE = 0,
                     NO_FAILOVER = 1,
                     NO_RESULT_CACHE = 2
-                }
+                };
             };
 
             /**
@@ -69,7 +69,7 @@ namespace ignite
                  */
                 ComputeClient(const SP_Void& impl) :
                     impl(impl),
-                    flags(0),
+                    flags(ComputeClientFlags::NONE),
                     timeout(0)
                 {
                     // No-op.

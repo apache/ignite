@@ -33,7 +33,7 @@ namespace ignite
                 /**
                  * Thin client Compute implementation.
                  */
-                class ComputeClientImpl
+                class IGNITE_IMPORT_EXPORT ComputeClientImpl
                 {
                 public:
                     /**

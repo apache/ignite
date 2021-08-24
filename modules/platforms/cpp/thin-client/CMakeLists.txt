@@ -34,6 +34,7 @@ set(SOURCES src/impl/data_channel.cpp
         src/impl/message.cpp
         src/impl/cache/cache_client_proxy.cpp
         src/impl/cache/cache_client_impl.cpp
+		src/impl/compute/compute_client_impl.cpp
         src/impl/transactions/transaction_impl.cpp
         src/impl/transactions/transactions_impl.cpp
         src/impl/transactions/transactions_proxy.cpp

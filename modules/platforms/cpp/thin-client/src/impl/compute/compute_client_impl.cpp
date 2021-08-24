@@ -34,7 +34,7 @@ namespace ignite
                     ComputeTaskExecuteRequest req(flags, timeout, taskName, wrArg);
                     ComputeTaskFinishedNotification notification(res);
 
-                    router.Get()->SyncMessageWithNotification(req, notification, timeout);
+                    router.Get()->SyncMessageWithNotification(req, notification);
                 }
             }
         }

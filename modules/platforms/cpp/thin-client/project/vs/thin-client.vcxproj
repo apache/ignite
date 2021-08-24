@@ -162,6 +162,7 @@
     <ClCompile Include="..\..\src\impl\affinity\affinity_topology_version.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
+    <ClCompile Include="..\..\src\impl\compute\compute_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\data_channel.cpp" />
     <ClCompile Include="..\..\src\impl\data_router.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp" />

@@ -52,6 +52,9 @@
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp">
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\compute\compute_client_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\impl\data_channel.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
