@@ -18,19 +18,20 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractCachePartitionExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
     /** Security context in which current task must be executed. */
-    private final SecurityContext secCtx;
+    @Nullable private final SecurityContext secCtx;
 
     /** */
-    protected AbstractCachePartitionExchangeWorkerTask(SecurityContext secCtx) {
+    protected AbstractCachePartitionExchangeWorkerTask(@Nullable SecurityContext secCtx) {
         this.secCtx = secCtx;
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext() {
+    @Override @Nullable public SecurityContext securityContext() {
         return secCtx;
     }
 }

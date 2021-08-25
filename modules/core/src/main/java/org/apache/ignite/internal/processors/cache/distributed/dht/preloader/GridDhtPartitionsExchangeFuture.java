@@ -149,6 +149,7 @@ import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvent
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.currentSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -283,7 +284,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private ExchangeActions exchActions;
 
     /** Security context. */
-    private final SecurityContext secCtx;
+    @Nullable private final SecurityContext secCtx;
 
     /** */
     private final IgniteLogger exchLog;
@@ -436,7 +437,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
 
-        secCtx = cctx.kernalContext().security().securityContext();
+        secCtx = currentSecurityContext(cctx.kernalContext());
 
         timeBag = new TimeBag(log.isInfoEnabled());
 
@@ -488,7 +489,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext() {
+    @Override @Nullable public SecurityContext securityContext() {
         return secCtx;
     }
 

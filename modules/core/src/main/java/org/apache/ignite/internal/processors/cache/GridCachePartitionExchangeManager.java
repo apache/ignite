@@ -187,6 +187,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.currentSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 
 /**
@@ -724,8 +726,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(securityContext(), evt.eventNode()));
-            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(securityContext(), evt.eventNode()));
+            SecurityContext secCtx = currentSecurityContext(cctx.kernalContext());
+
+            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(secCtx, evt.eventNode()));
+            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(secCtx, evt.eventNode()));
         }
     }
 
@@ -2967,11 +2971,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return rebalanced;
     }
 
-    /** Returns current thread security context if security is enabled, otherwise null. */
-    @Nullable private SecurityContext securityContext() {
-        return cctx.kernalContext().security().securityContext();
-    }
-
     /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
@@ -3006,7 +3005,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         void forceReassign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture fut) {
             if (!hasPendingExchange())
-                futQ.add(new RebalanceReassignExchangeTask(securityContext(), exchId, fut));
+                futQ.add(new RebalanceReassignExchangeTask(currentSecurityContext(cctx.kernalContext()), exchId, fut));
         }
 
         /**
@@ -3016,7 +3015,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
             GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-            futQ.add(new ForceRebalanceExchangeTask(securityContext(), exchId, fut));
+            futQ.add(new ForceRebalanceExchangeTask(currentSecurityContext(cctx.kernalContext()), exchId, fut));
 
             return fut;
         }
@@ -3026,7 +3025,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
             StopCachesOnClientReconnectExchangeTask task =
-                new StopCachesOnClientReconnectExchangeTask(securityContext(), caches);
+                new StopCachesOnClientReconnectExchangeTask(currentSecurityContext(cctx.kernalContext()), caches);
 
             futQ.add(task);
 
@@ -3039,7 +3038,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param rebalanceId Rebalance id.
          */
         void finishPreloading(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
-            futQ.add(new FinishPreloadingTask(securityContext(), topVer, grpId, rebalanceId));
+            futQ.add(new FinishPreloadingTask(currentSecurityContext(cctx.kernalContext()), topVer, grpId, rebalanceId));
         }
 
         /**
@@ -3276,7 +3275,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    try (OperationSecurityContext c = cctx.kernalContext().security().withContext(task.securityContext())) {
+                    try (OperationSecurityContext c = withSecurityContext(cctx.kernalContext(), task.securityContext())) {
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
 

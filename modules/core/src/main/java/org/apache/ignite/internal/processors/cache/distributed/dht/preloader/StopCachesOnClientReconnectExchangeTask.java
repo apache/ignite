@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -35,13 +36,13 @@ public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<V
     private final Collection<GridCacheAdapter> stoppedCaches;
 
     /** Security context. */
-    private final SecurityContext secCtx;
+    @Nullable private final SecurityContext secCtx;
 
     /**
      * @param secCtx Security context.
      * @param stoppedCaches Collection of stopped caches.
      */
-    public StopCachesOnClientReconnectExchangeTask(SecurityContext secCtx, Collection<GridCacheAdapter> stoppedCaches) {
+    public StopCachesOnClientReconnectExchangeTask(@Nullable SecurityContext secCtx, Collection<GridCacheAdapter> stoppedCaches) {
         this.secCtx = secCtx;
         this.stoppedCaches = stoppedCaches;
     }
@@ -52,7 +53,7 @@ public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<V
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext() {
+    @Override @Nullable public SecurityContext securityContext() {
         return secCtx;
     }
 
