@@ -248,9 +248,11 @@ bool IsTimeoutError(const ignite::IgniteError& err)
 BOOST_AUTO_TEST_CASE(TaskWithTimeout)
 {
     const int64_t timeout = 50;
+    const int64_t taskTimeout = 50 * 100;
+
     compute::ComputeClient tmCompute = compute.WithTimeout(timeout);
 
-    BOOST_CHECK_EXCEPTION(tmCompute.ExecuteJavaTask<ignite::Guid>(TEST_TASK, timeout * 100),
+    BOOST_CHECK_EXCEPTION(tmCompute.ExecuteJavaTask<ignite::Guid>(TEST_TASK, taskTimeout),
         ignite::IgniteError, IsTimeoutError);
 }
 
