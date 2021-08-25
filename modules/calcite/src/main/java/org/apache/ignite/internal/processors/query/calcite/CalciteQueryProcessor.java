@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.List;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
@@ -94,6 +95,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 .withConformance(IgniteSqlConformance.INSTANCE))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
+            .withDefaultNullCollation(NullCollation.LOW)
             .withSqlConformance(IgniteSqlConformance.INSTANCE))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(

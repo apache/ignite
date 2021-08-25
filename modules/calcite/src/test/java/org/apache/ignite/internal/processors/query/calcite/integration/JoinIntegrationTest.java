@@ -81,8 +81,8 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(1, 1, 1, 1, 1)
             .returns(2, 2, 2, 2, 2)
             .returns(2, 2, 2, 2, 2)
-            .returns(3, 3, 3, 3, 3)
             .returns(3, 3, null, 3, 3)
+            .returns(3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4)
             .check();
 
@@ -109,12 +109,29 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             "  join t2 " +
             "    on t1.c1 = t2.c1 " +
             "   and t1.c2 = t2.c2 " +
+            " order by t1.c1, t1.c2, t1.c3 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, null, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .check();
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t1.c3 c13, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
             " order by t1.c1 desc, t1.c2, t1.c3"
         )
             .ordered()
             .returns(4, 4, 4, 4, 4)
-            .returns(3, 3, 3, 3, 3)
             .returns(3, 3, null, 3, 3)
+            .returns(3, 3, 3, 3, 3)
             .returns(2, 2, 2, 2, 2)
             .returns(2, 2, 2, 2, 2)
             .returns(1, 1, 1, 1, 1)
@@ -132,6 +149,23 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(4, 4, 4, 4, 4)
             .returns(3, 3, null, 3, 3)
             .returns(3, 3, 3, 3, 3)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(1, 1, 1, 1, 1)
+            .check();
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t1.c3 c13, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t1.c1 desc, t1.c2, t1.c3 nulls last"
+        )
+            .ordered()
+            .returns(4, 4, 4, 4, 4)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, null, 3, 3)
             .returns(2, 2, 2, 2, 2)
             .returns(2, 2, 2, 2, 2)
             .returns(1, 1, 1, 1, 1)
@@ -183,6 +217,23 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4)
             .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t1.c3 nulls last, t1.c2 nulls last, t1.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, 3, 3, 3, 3)
+            .check();
     }
 
     /**
@@ -200,11 +251,11 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
         )
             .ordered()
             .returns(1, 1, 1, 1, 1)
-            .returns(2, 2, 2, 2, 2)
-            .returns(2, 2, 2, 2, 2)
             .returns(2, null, 2, null, null)
-            .returns(3, 3, 3, 3, 3)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
             .returns(3, 3, null, 3, 3)
+            .returns(3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4)
             .check();
 
@@ -232,15 +283,33 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             "  left join t2 " +
             "    on t1.c1 = t2.c1 " +
             "   and t1.c2 = t2.c2 " +
+            " order by t1.c1, t1.c2 nulls last, t1.c3 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, null, 2, null, null)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, null, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .check();
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t1.c3 c13, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  left join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
             " order by t1.c1 desc, t1.c2, t1.c3"
         )
             .ordered()
             .returns(4, 4, 4, 4, 4)
-            .returns(3, 3, 3, 3, 3)
             .returns(3, 3, null, 3, 3)
-            .returns(2, 2, 2, 2, 2)
-            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
             .returns(2, null, 2, null, null)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
             .returns(1, 1, 1, 1, 1)
             .check();
 
@@ -256,9 +325,27 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(4, 4, 4, 4, 4)
             .returns(3, 3, null, 3, 3)
             .returns(3, 3, 3, 3, 3)
-            .returns(2, 2, 2, 2, 2)
-            .returns(2, 2, 2, 2, 2)
             .returns(2, null, 2, null, null)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(1, 1, 1, 1, 1)
+            .check();
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t1.c3 c13, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  left join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t1.c1 desc, t1.c2, t1.c3 nulls last"
+        )
+            .ordered()
+            .returns(4, 4, 4, 4, 4)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, null, 3, 3)
+            .returns(2, null, 2, null, null)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
             .returns(1, 1, 1, 1, 1)
             .check();
 
@@ -271,12 +358,12 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             " order by t1.c3, t1.c2"
         )
             .ordered()
+            .returns(null, 3, null, null)
             .returns(1, 1, 1, 1)
-            .returns(2, 2, 2, 2)
             .returns(2, null, null, null)
+            .returns(2, 2, 2, 2)
             .returns(3, 3, 3, 3)
             .returns(4, 4, 4, 4)
-            .returns(null, 3, null, null)
             .check();
 
         assertQuery("" +
@@ -300,6 +387,23 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22 " +
             "  from t1 " +
             "  left join t2 " +
+            "    on t1.c3 = t2.c3 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t1.c3 nulls last, t1.c2 nulls last, t1.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, null, 2, null, null)
+            .returns(3, 3, 3, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, 3, 3, null, null)
+            .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  left join t2 " +
             "    on t1.c1 = t2.c1 " +
             "   and t1.c2 = t2.c2 " +
             " order by t1.c3 nulls first, t1.c2 nulls first, t1.c1 nulls first"
@@ -312,6 +416,24 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2, 2, 2, 2, 2)
             .returns(3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4)
+            .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  left join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t1.c3 nulls last, t1.c2 nulls last, t1.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, null, 2, null, null)
+            .returns(3, 3, 3, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, 3, 3, 3, 3)
             .check();
     }
 
@@ -332,11 +454,11 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
         )
             .ordered()
             .returns(1, 1, 1, 1, 1)
-            .returns(2, 2, 2, 2, 2)
             .returns(2, 2, 2, 2, null)
-            .returns(3, 3, 3, 3, 3)
-            .returns(3, 3, 3, 3, 3)
+            .returns(2, 2, 2, 2, 2)
             .returns(null, null, 3, null, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4)
             .check();
 
@@ -364,15 +486,33 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             " right join t2 " +
             "    on t1.c1 = t2.c1 " +
             "   and t1.c2 = t2.c2 " +
+            " order by t2.c1, t2.c2 nulls last, t2.c3 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, null)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(null, null, 3, null, 3)
+            .returns(4, 4, 4, 4, 4)
+            .check();
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " right join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
             " order by t2.c1 desc, t2.c2, t2.c3"
         )
             .ordered()
             .returns(4, 4, 4, 4, 4)
-            .returns(3, 3, 3, 3, 3)
-            .returns(3, 3, 3, 3, 3)
             .returns(null, null, 3, null, 3)
-            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
             .returns(2, 2, 2, 2, null)
+            .returns(2, 2, 2, 2, 2)
             .returns(1, 1, 1, 1, 1)
             .check();
 
@@ -386,11 +526,29 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
         )
             .ordered()
             .returns(4, 4, 4, 4, 4)
-            .returns(3, 3, 3, 3, 3)
-            .returns(3, 3, 3, 3, 3)
             .returns(null, null, 3, null, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
             .returns(2, 2, 2, 2, null)
             .returns(2, 2, 2, 2, 2)
+            .returns(1, 1, 1, 1, 1)
+            .check();
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " right join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t2.c1 desc, t2.c2, t2.c3 nulls last"
+        )
+            .ordered()
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, null, 3, null, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, null)
             .returns(1, 1, 1, 1, 1)
             .check();
 
@@ -403,12 +561,12 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             " order by t2.c3, t2.c2"
         )
             .ordered()
+            .returns(null, null, null, 2)
             .returns(1, 1, 1, 1)
             .returns(2, 2, 2, 2)
-            .returns(3, 3, 3, 3)
             .returns(null, null, 3, null)
+            .returns(3, 3, 3, 3)
             .returns(4, 4, 4, 4)
-            .returns(null, null, null, 2)
             .check();
 
         assertQuery("" +
@@ -426,6 +584,23 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(null, null, 3, null, 3)
             .returns(3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4)
+            .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " right join t2 " +
+            "    on t1.c3 = t2.c3 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t2.c3 nulls last, t2.c2 nulls last, t2.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(null, null, 3, null, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, null, 2, 2, null)
             .check();
 
         assertQuery("" +
@@ -447,6 +622,24 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertQuery("" +
+            "select t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " right join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            " order by t2.c3 nulls last, t2.c2 nulls last, t2.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(null, null, 3, null, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(2, 2, 2, 2, null)
+            .check();
+
+        assertQuery("" +
             "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
             "  from t1 " +
             " right join t2 " +
@@ -462,6 +655,24 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(null, null, null, 3, null, 3)
             .returns(3, 3, 3, 3, 3, 3)
             .returns(4, 4, 4, 4, 4, 4)
+            .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " right join t2 " +
+            "    on t1.c1 = t2.c1 " +
+            "   and t1.c2 = t2.c2 " +
+            "   and t1.c3 = t2.c3 " +
+            " order by t2.c3 nulls last, t2.c2 nulls last, t2.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3, 3)
+            .returns(null, null, null, 3, null, 3)
+            .returns(4, 4, 4, 4, 4, 4)
+            .returns(null, null, null, 2, 2, null)
             .check();
     }
 

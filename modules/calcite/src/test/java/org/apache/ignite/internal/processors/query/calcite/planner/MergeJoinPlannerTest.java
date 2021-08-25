@@ -72,8 +72,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, ASCENDING),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -109,8 +109,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, DESCENDING)
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -146,8 +146,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -221,7 +221,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         RelCollation expected = RelCollations.of(
             new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(1)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -259,16 +259,16 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(2, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortNodes.get(0).collation()
         );
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortNodes.get(1).collation()
         );
@@ -305,16 +305,16 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, DESCENDING),
-                new RelFieldCollation(2, DESCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(2, DESCENDING, RelFieldCollation.NullDirection.LAST)
             ),
             sortNodes.get(0).collation()
         );
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, DESCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
             ),
             sortNodes.get(1).collation()
         );
@@ -351,16 +351,16 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(2, DESCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(2, DESCENDING, RelFieldCollation.NullDirection.LAST)
             ),
             sortNodes.get(0).collation()
         );
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortNodes.get(1).collation()
         );
@@ -487,9 +487,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(2, ASCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(0, ASCENDING)
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             topSortNode.collation()
         );
@@ -542,8 +542,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, ASCENDING),
-            new RelFieldCollation(1, ASCENDING),
+            new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
             new RelFieldCollation(2, ASCENDING)
         );
 
@@ -581,8 +581,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, DESCENDING),
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST),
             new RelFieldCollation(2, ASCENDING)
         );
 
@@ -620,8 +620,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, ASCENDING),
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
             new RelFieldCollation(2, ASCENDING)
         );
 
@@ -736,8 +736,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, ASCENDING),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -773,8 +773,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, DESCENDING)
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -810,8 +810,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -921,9 +921,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(3, ASCENDING),
-                new RelFieldCollation(4, ASCENDING),
-                new RelFieldCollation(5, ASCENDING)
+                new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(4, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(5, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             topSortNode.collation()
         );
@@ -969,9 +969,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, ASCENDING),
-            new RelFieldCollation(1, ASCENDING),
-            new RelFieldCollation(2, ASCENDING)
+            new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+            new RelFieldCollation(2)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -1008,8 +1008,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, DESCENDING),
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST),
             new RelFieldCollation(2, ASCENDING)
         );
 
@@ -1047,8 +1047,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, ASCENDING),
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
             new RelFieldCollation(2, ASCENDING)
         );
 
@@ -1162,8 +1162,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             topSortNode.collation()
         );
@@ -1207,9 +1207,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(2, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             topSortNode.collation()
         );
@@ -1254,8 +1254,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, ASCENDING),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -1291,8 +1291,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, DESCENDING)
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -1328,8 +1328,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
 
         RelCollation expected = RelCollations.of(
-            new RelFieldCollation(0, DESCENDING),
-            new RelFieldCollation(1, ASCENDING)
+            new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+            new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
 
         assertEquals(expected, sortNodes.get(0).collation());
@@ -1436,8 +1436,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(3, ASCENDING),
-                new RelFieldCollation(4, ASCENDING)
+                new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(4, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfJoin(rel).collation()
         );
@@ -1480,8 +1480,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(3, ASCENDING),
-                new RelFieldCollation(4, ASCENDING)
+                new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(4, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfJoin(rel).collation()
         );
@@ -1524,8 +1524,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfJoin(rel).collation()
         );
@@ -1567,8 +1567,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(3, ASCENDING),
-                new RelFieldCollation(4, ASCENDING)
+                new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(4, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfJoin(rel).collation()
         );
@@ -2121,7 +2121,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
             "  join RIGHT_T " +
             "    on LEFT_T.c1 = RIGHT_T.c1 " +
             "   and LEFT_T.c2 = RIGHT_T.c2 " +
-            " order by LEFT_T.c1, LEFT_T.c2, LEFT_T.c3";
+            " order by LEFT_T.c1 NULLS LAST, LEFT_T.c2 NULLS LAST, LEFT_T.c3 NULLS LAST";
 
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
 
@@ -2170,7 +2170,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
             "  join RIGHT_T " +
             "    on LEFT_T.c1 = RIGHT_T.c1 " +
             "   and LEFT_T.c2 = RIGHT_T.c2 " +
-            " order by LEFT_T.c3, LEFT_T.c1, LEFT_T.c2";
+            " order by LEFT_T.c3 NULLS LAST, LEFT_T.c1 NULLS LAST, LEFT_T.c2 NULLS LAST";
 
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
 
@@ -2294,8 +2294,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         right.addIndex(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2317,8 +2317,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2338,8 +2338,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         right.addIndex(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2361,8 +2361,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2383,7 +2383,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         right.addIndex(
             RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2406,7 +2406,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertEquals(
             RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2426,9 +2426,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         right.addIndex(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(2, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2450,8 +2450,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2471,9 +2471,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         right.addIndex(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, DESCENDING),
-                new RelFieldCollation(2, DESCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(2, DESCENDING, RelFieldCollation.NullDirection.LAST)
             ),
             "idx"
         );
@@ -2495,8 +2495,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, DESCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2516,9 +2516,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         right.addIndex(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(2, ASCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2540,8 +2540,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(0, DESCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2562,8 +2562,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         right.addIndex(
             RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(2, ASCENDING)
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2586,7 +2586,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertEquals(
             RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
@@ -2595,7 +2595,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     /**
      * Test verifies the collation propagation from a parent node.
      *
-     * In case of inner join, right collation that is superset of join keys could be derived as is.
+     * In case of inner join, right collation that is subset of join keys can't be derived.
      *
      * @throws Exception In case of any unexpected error.
      */
@@ -2711,8 +2711,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         left.addIndex(
             RelCollations.of(
-                new RelFieldCollation(0, ASCENDING),
-                new RelFieldCollation(1, ASCENDING)
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2722,9 +2722,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         right.addIndex(
             RelCollations.of(
-                new RelFieldCollation(2, ASCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(0, ASCENDING)
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             "idx"
         );
@@ -2743,9 +2743,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         assertEquals(
             RelCollations.of(
-                new RelFieldCollation(2, ASCENDING),
-                new RelFieldCollation(1, ASCENDING),
-                new RelFieldCollation(0, ASCENDING)
+                new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
+                new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST)
             ),
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );

@@ -248,13 +248,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             boolean descending = idxDesc.descending(idxField);
             int fieldIdx = fieldDesc.fieldIndex();
 
-            RelFieldCollation collation = new RelFieldCollation(
-                fieldIdx,
-                descending ? RelFieldCollation.Direction.DESCENDING : RelFieldCollation.Direction.ASCENDING,
-                RelFieldCollation.NullDirection.FIRST
+            collations.add(
+                createFieldCollation(fieldIdx, !descending)
             );
-
-            collations.add(collation);
         }
 
         return RelCollations.of(collations);
@@ -279,5 +275,12 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         igniteSchemas.forEach(newCalciteSchema::add);
         calciteSchema = newCalciteSchema;
+    }
+
+    /** */
+    private static RelFieldCollation createFieldCollation(int fieldIdx, boolean asc) {
+        return asc
+            ? new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.FIRST)
+            : new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.DESCENDING, RelFieldCollation.NullDirection.LAST);
     }
 }

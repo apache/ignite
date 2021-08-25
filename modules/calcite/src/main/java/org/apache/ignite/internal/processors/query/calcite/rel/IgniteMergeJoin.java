@@ -174,7 +174,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelTraitSet right = inputTraits.get(1);
 
         if (joinType == FULL)
-            return passThroughDefaultCollation(required, left, right);
+            return defaultCollationPair(required, left, right);
 
         int leftInputFieldCount = this.left.getRowType().getFieldCount();
 
@@ -192,7 +192,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         if (reqKeySet.equals(leftKeySet)) {
             if (joinType == RIGHT)
-                return passThroughDefaultCollation(required, left, right);
+                return defaultCollationPair(required, left, right);
 
             nodeCollation = collation;
             leftCollation = collation;
@@ -200,7 +200,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         }
         else if (containsOrderless(leftKeys, collation)) {
             if (joinType == RIGHT)
-                return passThroughDefaultCollation(required, left, right);
+                return defaultCollationPair(required, left, right);
 
             // if sort keys are subset of left join keys, we can extend collations to make sure all join
             // keys are sorted.
@@ -210,7 +210,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         }
         else if (containsOrderless(collation, leftKeys) && reqKeys.stream().allMatch(i -> i < leftInputFieldCount)) {
             if (joinType == RIGHT)
-                return passThroughDefaultCollation(required, left, right);
+                return defaultCollationPair(required, left, right);
 
             // if sort keys are superset of left join keys, and left join keys is prefix of sort keys
             // (order not matter), also sort keys are all from left join input.
@@ -220,7 +220,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         }
         else if (reqKeySet.equals(rightKeySet)) {
             if (joinType == LEFT)
-                return passThroughDefaultCollation(required, left, right);
+                return defaultCollationPair(required, left, right);
 
             nodeCollation = collation;
             rightCollation = RelCollations.shift(collation, -leftInputFieldCount);
@@ -228,17 +228,14 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         }
         else if (containsOrderless(rightKeys, collation)) {
             if (joinType == LEFT)
-                return passThroughDefaultCollation(required, left, right);
+                return defaultCollationPair(required, left, right);
 
             nodeCollation = collation;
             rightCollation = RelCollations.shift(extendCollation(collation, rightKeys), -leftInputFieldCount);
             leftCollation = rightCollation.apply(buildTransposeMapping(false));
         }
-        else {
-            nodeCollation = EMPTY;
-            leftCollation = RelCollations.of(joinInfo.leftKeys);
-            rightCollation = RelCollations.of(joinInfo.rightKeys);
-        }
+        else
+            return defaultCollationPair(required, left, right);
 
         return Pair.of(
             required.replace(nodeCollation),
@@ -290,8 +287,8 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         return rightCollation;
     }
 
-    /** Creates pair with default collation for parent in simple collation for children nodes. */
-    private Pair<RelTraitSet, List<RelTraitSet>> passThroughDefaultCollation(
+    /** Creates pair with default collation for parent and simple yet sufficient collation for children nodes. */
+    private Pair<RelTraitSet, List<RelTraitSet>> defaultCollationPair(
         RelTraitSet nodeTraits,
         RelTraitSet leftInputTraits,
         RelTraitSet rightInputTraits
