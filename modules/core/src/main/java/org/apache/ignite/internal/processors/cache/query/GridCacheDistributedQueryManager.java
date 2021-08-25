@@ -113,20 +113,17 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         assert cctx.config().getCacheMode() != LOCAL;
 
-        pageRequester = new CacheQueryPageRequester(cctx) {
-            /** {@inheritDoc} */
-            @Override protected void sendLocal(GridCacheQueryRequest req) {
-                cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                    @Override public Object call() throws Exception {
-                        req.beforeLocalExecution(cctx);
+        pageRequester = new CacheQueryPageRequester(cctx, (req) ->
+            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    req.beforeLocalExecution(cctx);
 
-                        processQueryRequest(cctx.localNodeId(), req);
+                    processQueryRequest(cctx.localNodeId(), req);
 
-                        return null;
-                    }
-                }, GridIoPolicy.QUERY_POOL);
-            }
-        };
+                    return null;
+                }
+            }, GridIoPolicy.QUERY_POOL)
+        );
 
         cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {

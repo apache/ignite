@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -31,17 +32,24 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * This class is responsible for sending request for query result pages to remote nodes.
  */
-public abstract class CacheQueryPageRequester {
+public class CacheQueryPageRequester {
     /** Cache context. */
     private final GridCacheContext cctx;
 
     /** Ignite logger. */
     private final IgniteLogger log;
 
-    /** */
-    CacheQueryPageRequester(final GridCacheContext cctx) {
+    /** Local handler of cache query request. */
+    private final Consumer<GridCacheQueryRequest> sendLoc;
+
+    /**
+     * @param cctx Cache context.
+     * @param sendLoc Local handler of cache query request.
+     */
+    CacheQueryPageRequester(final GridCacheContext cctx, Consumer<GridCacheQueryRequest> sendLoc) {
         this.cctx = cctx;
         this.log = cctx.kernalContext().config().getGridLogger();
+        this.sendLoc = sendLoc;
     }
 
     /**
@@ -149,7 +157,7 @@ public abstract class CacheQueryPageRequester {
             for (UUID node : nodes) {
                 try {
                     if (cctx.localNodeId().equals(node)) {
-                        sendLocal(req);
+                        sendLoc.accept(req);
 
                         continue;
                     }
@@ -225,13 +233,6 @@ public abstract class CacheQueryPageRequester {
         }
 
         if (locNode != null)
-            sendLocal(req);
+            sendLoc.accept(req);
     }
-
-    /**
-     * Handle cache query request locally.
-     *
-     * @param req Query request.
-     */
-    protected abstract void sendLocal(GridCacheQueryRequest req);
 }
