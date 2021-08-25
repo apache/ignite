@@ -53,4 +53,16 @@ public class ClientDataType {
 
     /** BitMask. */
     public static final int BITMASK = 11;
+
+    /** Date. */
+    public static final int DATE = 12;
+
+    /** Time. */
+    public static final int TIME = 13;
+
+    /** DateTime. */
+    public static final int DATETIME = 14;
+
+    /** Timestamp. */
+    public static final int TIMESTAMP = 15;
 }

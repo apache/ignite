@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.DATE;
 import static org.apache.ignite.internal.schema.NativeTypes.INT32;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,15 +38,17 @@ public class ColumnTest {
         Column[] cols = new Column[] {
             new Column("C", BYTES, false),
             new Column("B", INT32, false),
+            new Column("A", DATE, false),
             new Column("AD", STRING, false),
             new Column("AA", STRING, false),
         };
 
         Arrays.sort(cols);
 
-        assertEquals("B", cols[0].name());
-        assertEquals("C", cols[1].name());
-        assertEquals("AA", cols[2].name());
-        assertEquals("AD", cols[3].name());
+        assertEquals("A", cols[0].name());
+        assertEquals("B", cols[1].name());
+        assertEquals("C", cols[2].name());
+        assertEquals("AA", cols[3].name());
+        assertEquals("AD", cols[4].name());
     }
 }

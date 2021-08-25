@@ -21,6 +21,10 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -95,21 +99,39 @@ public class SchemaDescriptorConverter {
             case BITMASK:
                 return NativeTypes.bitmaskOf(((ColumnType.VarLenColumnType)colType).length());
 
-            case STRING:
+            case STRING: {
                 int strLen = ((ColumnType.VarLenColumnType)colType).length();
 
                 if (strLen == 0)
                     strLen = Integer.MAX_VALUE;
 
                 return NativeTypes.stringOf(strLen);
-
-            case BLOB:
+            }
+            case BLOB: {
                 int blobLen = ((ColumnType.VarLenColumnType)colType).length();
 
                 if (blobLen == 0)
                     blobLen = Integer.MAX_VALUE;
 
                 return NativeTypes.blobOf(blobLen);
+            }
+            case DATE:
+                return NativeTypes.DATE;
+            case TIME: {
+                ColumnType.TemporalColumnType temporalType = (ColumnType.TemporalColumnType)colType;
+
+                return NativeTypes.time(temporalType.precision());
+            }
+            case DATETIME: {
+                ColumnType.TemporalColumnType temporalType = (ColumnType.TemporalColumnType)colType;
+
+                return NativeTypes.datetime(temporalType.precision());
+            }
+            case TIMESTAMP: {
+                ColumnType.TemporalColumnType temporalType = (ColumnType.TemporalColumnType)colType;
+
+                return NativeTypes.timestamp(temporalType.precision());
+            }
 
             case NUMBER: {
                 ColumnType.NumberColumnType numberType = (ColumnType.NumberColumnType)colType;
@@ -161,12 +183,20 @@ public class SchemaDescriptorConverter {
                 return Double.parseDouble(dflt);
             case DECIMAL:
                 return new BigDecimal(dflt).setScale(((DecimalNativeType)type).scale(), RoundingMode.HALF_UP);
+            case NUMBER:
+                return new BigInteger(dflt);
             case STRING:
                 return dflt;
             case UUID:
                 return java.util.UUID.fromString(dflt);
-            case NUMBER:
-                return new BigInteger(dflt);
+            case DATE:
+                return LocalDate.parse(dflt);
+            case TIME:
+                return LocalTime.parse(dflt);
+            case DATETIME:
+                return LocalDateTime.parse(dflt);
+            case TIMESTAMP:
+                return Instant.parse(dflt);
             default:
                 throw new SchemaException("Default value is not supported for type: type=" + type.toString());
         }

@@ -19,6 +19,10 @@ package org.apache.ignite.internal.schema;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
@@ -33,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.DATE;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
 import static org.apache.ignite.internal.schema.NativeTypes.INT16;
@@ -41,6 +46,9 @@ import static org.apache.ignite.internal.schema.NativeTypes.INT64;
 import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.datetime;
+import static org.apache.ignite.internal.schema.NativeTypes.time;
+import static org.apache.ignite.internal.schema.NativeTypes.timestamp;
 import static org.apache.ignite.internal.schema.TestUtils.randomBytes;
 import static org.apache.ignite.internal.schema.TestUtils.randomString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -70,7 +78,7 @@ public class RowTest {
      */
     @Test
     public void nullableFixSizedColumns() {
-        Column[] keyCols = new Column[] {
+        Column[] keyCols = new Column[]{
             new Column("keyByteCol", INT8, false),
             new Column("keyShortCol", INT16, false),
             new Column("keyIntCol", INT32, false),
@@ -78,11 +86,15 @@ public class RowTest {
             new Column("keyFloatCol", FLOAT, false),
             new Column("keyDoubleCol", DOUBLE, false),
             new Column("keyUuidCol", UUID, false),
+            new Column("keyDateCol", DATE, false),
+            new Column("keyTimeCol", time(), false),
+            new Column("keyDateTimeCol", datetime(), false),
+            new Column("keyTimeStampCol", timestamp(), false),
             new Column("keyBitmask1Col", NativeTypes.bitmaskOf(4), false),
             new Column("keyBitmask2Col", NativeTypes.bitmaskOf(22), false)
         };
 
-        Column[] valCols = new Column[] {
+        Column[] valCols = new Column[]{
             new Column("valByteCol", INT8, false),
             new Column("valShortCol", INT16, false),
             new Column("valIntCol", INT32, false),
@@ -90,6 +102,10 @@ public class RowTest {
             new Column("valFloatCol", FLOAT, false),
             new Column("valDoubleCol", DOUBLE, false),
             new Column("valUuidCol", UUID, false),
+            new Column("valDateCol", DATE, false),
+            new Column("valTimeCol", time(), false),
+            new Column("valDateTimeCol", datetime(), false),
+            new Column("valTimeStampCol", timestamp(), false),
             new Column("valBitmask1Col", NativeTypes.bitmaskOf(4), false),
             new Column("valBitmask2Col", NativeTypes.bitmaskOf(22), false)
         };
@@ -102,7 +118,7 @@ public class RowTest {
      */
     @Test
     public void fixSizedColumns() {
-        Column[] keyCols = new Column[] {
+        Column[] keyCols = new Column[]{
             new Column("keyByteCol", INT8, true),
             new Column("keyShortCol", INT16, true),
             new Column("keyIntCol", INT32, true),
@@ -110,11 +126,15 @@ public class RowTest {
             new Column("keyFloatCol", FLOAT, true),
             new Column("keyDoubleCol", DOUBLE, true),
             new Column("keyUuidCol", UUID, true),
+            new Column("keyDateCol", DATE, true),
+            new Column("keyTimeCol", time(), true),
+            new Column("keyDateTimeCol", datetime(), true),
+            new Column("keyTimeStampCol", timestamp(), true),
             new Column("keyBitmask1Col", NativeTypes.bitmaskOf(4), true),
             new Column("keyBitmask2Col", NativeTypes.bitmaskOf(22), true),
         };
 
-        Column[] valCols = new Column[] {
+        Column[] valCols = new Column[]{
             new Column("valByteCol", INT8, true),
             new Column("valShortCol", INT16, true),
             new Column("valIntCol", INT32, true),
@@ -122,6 +142,10 @@ public class RowTest {
             new Column("valFloatCol", FLOAT, true),
             new Column("valDoubleCol", DOUBLE, true),
             new Column("valUuidCol", UUID, true),
+            new Column("valDateCol", DATE, true),
+            new Column("valTimeCol", time(), true),
+            new Column("valDateTimeCol", datetime(), true),
+            new Column("valTimeStampCol", timestamp(), true),
             new Column("valBitmask1Col", NativeTypes.bitmaskOf(4), true),
             new Column("valBitmask2Col", NativeTypes.bitmaskOf(22), true),
         };
@@ -134,22 +158,24 @@ public class RowTest {
      */
     @Test
     public void mixedColumns() {
-        Column[] keyCols = new Column[] {
+        Column[] keyCols = new Column[]{
             new Column("keyByteCol", INT8, false),
             new Column("keyShortCol", INT16, false),
             new Column("keyIntCol", INT32, false),
             new Column("keyLongCol", INT64, false),
+            new Column("keyDateTimeCol", datetime(), false),
             new Column("keyBytesCol", BYTES, false),
             new Column("keyStringCol", STRING, false),
             new Column("keyNumberCol", NativeTypes.numberOf(9), false),
             new Column("keyDecimalCol", NativeTypes.decimalOf(20, 3), false),
         };
 
-        Column[] valCols = new Column[] {
-            new Column("keyByteCol", INT8, true),
-            new Column("keyShortCol", INT16, true),
-            new Column("keyIntCol", INT32, true),
-            new Column("keyLongCol", INT64, true),
+        Column[] valCols = new Column[]{
+            new Column("valByteCol", INT8, true),
+            new Column("valShortCol", INT16, true),
+            new Column("valIntCol", INT32, true),
+            new Column("valLongCol", INT64, true),
+            new Column("valDateTimeCol", datetime(), true),
             new Column("valBytesCol", BYTES, true),
             new Column("valStringCol", STRING, true),
             new Column("valNumberCol", NativeTypes.numberOf(9), true),
@@ -160,18 +186,44 @@ public class RowTest {
     }
 
     /**
+     * Check row serialization for schema with various columns.
+     */
+    @Test
+    public void temporalColumns() {
+        Column[] keyCols = new Column[]{
+            new Column("keyTimestampCol1", timestamp(0), false),
+            new Column("keyTimestampCol2", timestamp(1), false),
+            new Column("keyTimestampCol3", timestamp(4), false),
+            new Column("keyTimestampCol4", timestamp(9), false),
+        };
+
+        Column[] valCols = new Column[]{
+            new Column("valDateTimeCol1", datetime(0), false),
+            new Column("valDateTimeCol2", datetime(1), true),
+            new Column("valDateTimeCol3", datetime(4), false),
+            new Column("valDateTimeCol4", datetime(9), true),
+            new Column("valTimeCol1", time(0), true),
+            new Column("valTimeCol2", time(1), true),
+            new Column("valTimeCol3", time(4), false),
+            new Column("valTimeCol4", time(9), false),
+        };
+
+        checkSchema(keyCols, valCols);
+    }
+
+    /**
      * Check row serialization for schema with non-nullable varlen columns only.
      */
     @Test
     public void varlenColumns() {
-        Column[] keyCols = new Column[] {
+        Column[] keyCols = new Column[]{
             new Column("keyBytesCol", BYTES, false),
             new Column("keyStringCol", STRING, false),
             new Column("keyNumberCol", NativeTypes.numberOf(9), false),
             new Column("keyDecimalCol", NativeTypes.decimalOf(20, 3), false),
         };
 
-        Column[] valCols = new Column[] {
+        Column[] valCols = new Column[]{
             new Column("valBytesCol", BYTES, false),
             new Column("valStringCol", STRING, false),
             new Column("valNumberCol", NativeTypes.numberOf(9), false),
@@ -186,12 +238,12 @@ public class RowTest {
      */
     @Test
     public void nullableVarlenColumns() {
-        Column[] keyCols = new Column[] {
+        Column[] keyCols = new Column[]{
             new Column("keyBytesCol", BYTES, true),
             new Column("keyStringCol", STRING, true),
         };
 
-        Column[] valCols = new Column[] {
+        Column[] valCols = new Column[]{
             new Column("valBytesCol", BYTES, true),
             new Column("valStringCol", STRING, true),
             new Column("valNumberCol", NativeTypes.numberOf(9), true),
@@ -518,6 +570,22 @@ public class RowTest {
 
                     case BITMASK:
                         asm.appendBitmask((BitSet)vals[i]);
+                        break;
+
+                    case DATE:
+                        asm.appendDate((LocalDate)vals[i]);
+                        break;
+
+                    case TIME:
+                        asm.appendTime((LocalTime)vals[i]);
+                        break;
+
+                    case DATETIME:
+                        asm.appendDateTime((LocalDateTime)vals[i]);
+                        break;
+
+                    case TIMESTAMP:
+                        asm.appendTimestamp((Instant)vals[i]);
                         break;
 
                     default:

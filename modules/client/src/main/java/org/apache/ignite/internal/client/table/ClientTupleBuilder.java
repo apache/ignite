@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.client.table;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.UUID;
@@ -208,6 +212,46 @@ public final class ClientTupleBuilder implements TupleBuilder, Tuple {
 
     /** {@inheritDoc} */
     @Override public BitSet bitmaskValue(int columnIndex) {
+        return value(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDate dateValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDate dateValue(int columnIndex) {
+        return value(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalTime timeValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalTime timeValue(int columnIndex) {
+        return value(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDateTime datetimeValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDateTime datetimeValue(int columnIndex) {
+        return value(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Instant timestampValue(String columnName) {
+        return value(columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Instant timestampValue(int columnIndex) {
         return value(columnIndex);
     }
 

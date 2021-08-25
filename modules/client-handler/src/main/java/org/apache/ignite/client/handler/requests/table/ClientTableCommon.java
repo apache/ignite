@@ -18,6 +18,10 @@
 package org.apache.ignite.client.handler.requests.table;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -49,7 +53,7 @@ class ClientTableCommon {
      * @param schemaVer Schema version.
      * @param schema Schema.
      */
-    public static void writeSchema(ClientMessagePacker packer,int schemaVer, SchemaDescriptor schema) {
+    public static void writeSchema(ClientMessagePacker packer, int schemaVer, SchemaDescriptor schema) {
         packer.packInt(schemaVer);
 
         if (schema == null) {
@@ -85,7 +89,7 @@ class ClientTableCommon {
             return;
         }
 
-        var schema = ((SchemaAware) tuple).schema();
+        var schema = ((SchemaAware)tuple).schema();
 
         writeTuple(packer, tuple, schema);
     }
@@ -99,9 +103,9 @@ class ClientTableCommon {
      * @throws IgniteException on failed serialization.
      */
     public static void writeTuple(
-            ClientMessagePacker packer,
-            Tuple tuple,
-            SchemaDescriptor schema
+        ClientMessagePacker packer,
+        Tuple tuple,
+        SchemaDescriptor schema
     ) {
         writeTuple(packer, tuple, schema, false, false);
     }
@@ -116,10 +120,10 @@ class ClientTableCommon {
      * @throws IgniteException on failed serialization.
      */
     public static void writeTuple(
-            ClientMessagePacker packer,
-            Tuple tuple,
-            SchemaDescriptor schema,
-            boolean skipHeader
+        ClientMessagePacker packer,
+        Tuple tuple,
+        SchemaDescriptor schema,
+        boolean skipHeader
     ) {
         writeTuple(packer, tuple, schema, skipHeader, false);
     }
@@ -135,11 +139,11 @@ class ClientTableCommon {
      * @throws IgniteException on failed serialization.
      */
     public static void writeTuple(
-            ClientMessagePacker packer,
-            Tuple tuple,
-            SchemaDescriptor schema,
-            boolean skipHeader,
-            boolean keyOnly
+        ClientMessagePacker packer,
+        Tuple tuple,
+        SchemaDescriptor schema,
+        boolean skipHeader,
+        boolean keyOnly
     ) {
         if (tuple == null) {
             packer.packNil();
@@ -189,12 +193,13 @@ class ClientTableCommon {
 
         for (Tuple tuple : tuples) {
             if (schema == null) {
-                schema = ((SchemaAware) tuple).schema();
+                schema = ((SchemaAware)tuple).schema();
 
                 packer.packInt(schema.version());
                 packer.packInt(tuples.size());
-            } else
-                assert schema.version() == ((SchemaAware) tuple).schema().version();
+            }
+            else
+                assert schema.version() == ((SchemaAware)tuple).schema().version();
 
             writeTuple(packer, tuple, schema, true, keyOnly);
         }
@@ -257,10 +262,10 @@ class ClientTableCommon {
      * @return Tuple.
      */
     public static Tuple readTuple(
-            ClientMessageUnpacker unpacker,
-            TableImpl table,
-            boolean keyOnly,
-            SchemaDescriptor schema
+        ClientMessageUnpacker unpacker,
+        TableImpl table,
+        boolean keyOnly,
+        SchemaDescriptor schema
     ) {
         var builder = table.tupleBuilder();
 
@@ -367,6 +372,18 @@ class ClientTableCommon {
 
             case BITMASK:
                 return ClientDataType.BITMASK;
+
+            case DATE:
+                return ClientDataType.DATE;
+
+            case TIME:
+                return ClientDataType.TIME;
+
+            case DATETIME:
+                return ClientDataType.DATETIME;
+
+            case TIMESTAMP:
+                return ClientDataType.TIMESTAMP;
         }
 
         throw new IgniteException("Unsupported native type: " + spec);
@@ -382,49 +399,65 @@ class ClientTableCommon {
 
         switch (col.type().spec()) {
             case INT8:
-                packer.packByte((byte) val);
+                packer.packByte((byte)val);
                 break;
 
             case INT16:
-                packer.packShort((short) val);
+                packer.packShort((short)val);
                 break;
 
             case INT32:
-                packer.packInt((int) val);
+                packer.packInt((int)val);
                 break;
 
             case INT64:
-                packer.packLong((long) val);
+                packer.packLong((long)val);
                 break;
 
             case FLOAT:
-                packer.packFloat((float) val);
+                packer.packFloat((float)val);
                 break;
 
             case DOUBLE:
-                packer.packDouble((double) val);
+                packer.packDouble((double)val);
                 break;
 
             case DECIMAL:
-                packer.packDecimal((BigDecimal) val);
+                packer.packDecimal((BigDecimal)val);
                 break;
 
             case UUID:
-                packer.packUuid((UUID) val);
+                packer.packUuid((UUID)val);
                 break;
 
             case STRING:
-                packer.packString((String) val);
+                packer.packString((String)val);
                 break;
 
             case BYTES:
-                byte[] bytes = (byte[]) val;
+                byte[] bytes = (byte[])val;
                 packer.packBinaryHeader(bytes.length);
                 packer.writePayload(bytes);
                 break;
 
             case BITMASK:
                 packer.packBitSet((BitSet)val);
+                break;
+
+            case DATE:
+                packer.packDate((LocalDate)val);
+                break;
+
+            case TIME:
+                packer.packTime((LocalTime)val);
+                break;
+
+            case DATETIME:
+                packer.packDateTime((LocalDateTime)val);
+                break;
+
+            case TIMESTAMP:
+                packer.packTimestamp((Instant)val);
                 break;
 
             default:

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.client;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
 import java.util.BitSet;
 import java.util.UUID;
-
 import org.apache.ignite.client.proto.ClientDataType;
 import org.apache.ignite.internal.client.table.ClientColumn;
 import org.apache.ignite.internal.client.table.ClientSchema;
@@ -138,9 +142,18 @@ public class ClientTupleBuilderTest {
                 new ClientColumn("uuid", ClientDataType.UUID, false, false, 6),
                 new ClientColumn("str", ClientDataType.STRING, false, false, 7),
                 new ClientColumn("bits", ClientDataType.BITMASK, false, false, 8),
+                new ClientColumn("time", ClientDataType.TIME, false, false, 9),
+                new ClientColumn("date", ClientDataType.DATE, false, false, 10),
+                new ClientColumn("datetime", ClientDataType.DATETIME, false, false, 11),
+                new ClientColumn("timestamp", ClientDataType.TIMESTAMP, false, false, 12)
         });
 
         var uuid = UUID.randomUUID();
+
+        var date = LocalDate.of(1995, Month.MAY, 23);
+        var time = LocalTime.of(17, 0, 1, 222_333_444);
+        var datetime = LocalDateTime.of(1995, Month.MAY, 23, 17, 0, 1, 222_333_444);
+        var timestamp = Instant.now();
 
         var builder = new ClientTupleBuilder(schema)
                 .set("i8", (byte)1)
@@ -151,7 +164,11 @@ public class ClientTupleBuilderTest {
                 .set("double", (double)6.6)
                 .set("uuid", uuid)
                 .set("str", "8")
-                .set("bits", new BitSet(3));
+                .set("bits", new BitSet(3))
+                .set("date", date)
+                .set("time", time)
+                .set("datetime", datetime)
+                .set("timestamp", timestamp);
 
         var tuple = builder.build();
 
@@ -181,6 +198,11 @@ public class ClientTupleBuilderTest {
 
         assertEquals(0, tuple.bitmaskValue(8).length());
         assertEquals(0, tuple.bitmaskValue("bits").length());
+
+        assertEquals(date, tuple.dateValue("date"));
+        assertEquals(time, tuple.timeValue("time"));
+        assertEquals(datetime, tuple.datetimeValue("datetime"));
+        assertEquals(timestamp, tuple.timestampValue("timestamp"));
     }
 
     private static ClientTupleBuilder getBuilder() {

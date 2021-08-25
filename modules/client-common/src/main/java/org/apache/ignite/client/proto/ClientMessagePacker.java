@@ -22,6 +22,10 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.UUID;
 import io.netty.buffer.ByteBuf;
@@ -348,6 +352,59 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /**
+     * Writes a date.
+     *
+     * @param val Date value.
+     * @return This instance.
+     * @throws UnsupportedOperationException Not supported.
+     */
+    public ClientMessagePacker packDate(LocalDate val) {
+        assert !closed : "Packer is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
+     * Writes a time.
+     *
+     * @param val Time value.
+     * @return This instance.
+     * @throws UnsupportedOperationException Not supported.
+     */
+    public ClientMessagePacker packTime(LocalTime val) {
+        assert !closed : "Packer is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
+     * Writes a datetime.
+     *
+     * @param val Datetime value.
+     * @return This instance.
+     * @throws UnsupportedOperationException Not supported.
+     */
+    public ClientMessagePacker packDateTime(LocalDateTime val) {
+        packDate(val.toLocalDate());
+        packTime(val.toLocalTime());
+
+        return this;
+    }
+
+    /**
+     * Writes a timestamp.
+     *
+     * @param val Timestamp value.
+     * @return This instance.
+     * @throws UnsupportedOperationException Not supported.
+     */
+    public ClientMessagePacker packTimestamp(Instant val) {
+        assert !closed : "Packer is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
      * Packs an object.
      *
      * @param val Object value.
@@ -383,6 +440,18 @@ public class ClientMessagePacker extends MessagePacker {
 
         if (val instanceof BitSet)
             return packBitSet((BitSet) val);
+
+        if (val instanceof LocalDate)
+            return packDate((LocalDate)val);
+
+        if (val instanceof LocalTime)
+            return packTime((LocalTime)val);
+
+        if (val instanceof LocalDateTime)
+            return packDateTime((LocalDateTime)val);
+
+        if (val instanceof Instant)
+            return packTimestamp((Instant)val);
 
         // TODO: Support all basic types IGNITE-15163
         throw new UnsupportedOperationException("Unsupported type, can't serialize: " + val.getClass());

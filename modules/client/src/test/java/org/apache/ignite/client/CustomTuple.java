@@ -17,6 +17,10 @@
 
 package org.apache.ignite.client;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.UUID;
@@ -51,8 +55,10 @@ public class CustomTuple implements Tuple {
 
     @Override public String columnName(int columnIndex) {
         switch (columnIndex) {
-            case 0: return "id";
-            case 1: return "name";
+            case 0:
+                return "id";
+            case 1:
+                return "name";
         }
 
         return null;
@@ -60,8 +66,10 @@ public class CustomTuple implements Tuple {
 
     @Override public Integer columnIndex(String columnName) {
         switch (columnName) {
-            case "id": return 0;
-            case "name": return 1;
+            case "id":
+                return 0;
+            case "name":
+                return 1;
         }
 
         return null;
@@ -69,8 +77,10 @@ public class CustomTuple implements Tuple {
 
     @Override public <T> T valueOrDefault(String columnName, T def) {
         switch (columnName) {
-            case "id": return (T) id;
-            case "name": return (T) name;
+            case "id":
+                return (T)id;
+            case "name":
+                return (T)name;
         }
 
         return def;
@@ -82,8 +92,10 @@ public class CustomTuple implements Tuple {
 
     @Override public <T> T value(int columnIndex) {
         switch (columnIndex) {
-            case 0: return (T) id;
-            case 1: return (T) name;
+            case 0:
+                return (T)id;
+            case 1:
+                return (T)name;
         }
 
         return null;
@@ -166,6 +178,38 @@ public class CustomTuple implements Tuple {
     }
 
     @Override public BitSet bitmaskValue(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LocalDate dateValue(String columnName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LocalDate dateValue(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LocalTime timeValue(String columnName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LocalTime timeValue(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LocalDateTime datetimeValue(String columnName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LocalDateTime datetimeValue(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public Instant timestampValue(String columnName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public Instant timestampValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 

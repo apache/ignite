@@ -17,6 +17,10 @@
 
 package org.apache.ignite.table;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
@@ -237,4 +241,68 @@ public interface Tuple extends Iterable<Object> {
      * @return Column value.
      */
     BitSet bitmaskValue(int columnIndex);
+
+    /**
+     * Gets {@code LocalDate} column value.
+     *
+     * @param columnName Column name.
+     * @return Column value.
+     */
+    LocalDate dateValue(String columnName);
+
+    /**
+     * Gets {@code LocalDate} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    LocalDate dateValue(int columnIndex);
+
+    /**
+     * Gets {@code LocalTime} column value.
+     *
+     * @param columnName Column name.
+     * @return Column value.
+     */
+    LocalTime timeValue(String columnName);
+
+    /**
+     * Gets {@code LocalTime} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    LocalTime timeValue(int columnIndex);
+
+    /**
+     * Gets {@code LocalDateTime} column value.
+     *
+     * @param columnName Column name.
+     * @return Column value.
+     */
+    LocalDateTime datetimeValue(String columnName);
+
+    /**
+     * Gets {@code LocalDateTime} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    LocalDateTime datetimeValue(int columnIndex);
+
+    /**
+     * Gets {@code Instant} column value.
+     *
+     * @param columnName Column name.
+     * @return Column value.
+     */
+    Instant timestampValue(String columnName);
+
+    /**
+     * Gets {@code Instant} column value.
+     *
+     * @param columnIndex Column index.
+     * @return Column value.
+     */
+    Instant timestampValue(int columnIndex);
 }

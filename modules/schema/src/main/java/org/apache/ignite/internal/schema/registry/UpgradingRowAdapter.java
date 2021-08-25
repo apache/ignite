@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema.registry;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -72,13 +73,7 @@ class UpgradingRowAdapter extends Row {
         return mapper.map(colIdx);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public byte byteValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -90,13 +85,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (byte)column.defaultValue() : super.byteValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public Byte byteValueBoxed(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -108,13 +97,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (Byte)column.defaultValue() : super.byteValueBoxed(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public short shortValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -126,13 +109,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (short)column.defaultValue() : super.shortValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public Short shortValueBoxed(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -144,13 +121,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (Short)column.defaultValue() : super.shortValueBoxed(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public int intValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -162,13 +133,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (int)column.defaultValue() : super.intValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public Integer intValueBoxed(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -180,13 +145,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (Integer)column.defaultValue() : super.intValueBoxed(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public long longValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -198,13 +157,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (long)column.defaultValue() : super.longValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public Long longValueBoxed(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -216,13 +169,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (Long)column.defaultValue() : super.longValueBoxed(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public float floatValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -234,13 +181,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (float)column.defaultValue() : super.floatValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public Float floatValueBoxed(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -252,13 +193,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (Float)column.defaultValue() : super.floatValueBoxed(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public double doubleValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -270,13 +205,8 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (double)column.defaultValue() : super.doubleValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+
+    /** {@inheritDoc} */
     @Override public Double doubleValueBoxed(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -288,25 +218,31 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (Double)column.defaultValue() : super.doubleValueBoxed(mappedId);
     }
 
-    /**
-     * Reads value from specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public BigDecimal decimalValue(int colIdx) throws InvalidTypeException {
-        // TODO: IGNITE-13668 decimal support
-        return null;
+        int mappedId = mapColumn(colIdx);
+
+        Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.rowSchema().column(mappedId);
+
+        if (NativeTypeSpec.DECIMAL != column.type().spec())
+            throw new SchemaException("Type conversion is not supported yet.");
+
+        return mappedId < 0 ? (BigDecimal)column.defaultValue() : super.decimalValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
+    @Override public BigInteger numberValue(int colIdx) throws InvalidTypeException {
+        int mappedId = mapColumn(colIdx);
+
+        Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.rowSchema().column(mappedId);
+
+        if (NativeTypeSpec.NUMBER != column.type().spec())
+            throw new SchemaException("Type conversion is not supported yet.");
+
+        return mappedId < 0 ? (BigInteger)column.defaultValue() : super.numberValue(mappedId);
+    }
+
+    /** {@inheritDoc} */
     @Override public String stringValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -318,13 +254,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (String)column.defaultValue() : super.stringValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public byte[] bytesValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -336,13 +266,7 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (byte[])column.defaultValue() : super.bytesValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+    /** {@inheritDoc} */
     @Override public UUID uuidValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 
@@ -354,13 +278,8 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (UUID)column.defaultValue() : super.uuidValue(mappedId);
     }
 
-    /**
-     * Reads value for specified column.
-     *
-     * @param colIdx Column index.
-     * @return Column value.
-     * @throws InvalidTypeException If actual column type does not match the requested column type.
-     */
+
+    /** {@inheritDoc} */
     @Override public BitSet bitmaskValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 

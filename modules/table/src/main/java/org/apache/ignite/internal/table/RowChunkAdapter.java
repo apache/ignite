@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.table;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.UUID;
@@ -222,6 +226,66 @@ public abstract class RowChunkAdapter implements Tuple, SchemaAware {
         schema().validateColumnIndex(columnIndex);
 
         return row().bitmaskValue(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDate dateValue(String columnName) {
+        Column col = columnByName(columnName);
+
+        return row().dateValue(col.schemaIndex());
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDate dateValue(int columnIndex) {
+        schema().validateColumnIndex(columnIndex);
+
+        return row().dateValue(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalTime timeValue(String columnName) {
+        Column col = columnByName(columnName);
+
+        return row().timeValue(col.schemaIndex());
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalTime timeValue(int columnIndex) {
+        schema().validateColumnIndex(columnIndex);
+
+        return row().timeValue(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDateTime datetimeValue(String columnName) {
+        Column col = columnByName(columnName);
+
+        return row().dateTimeValue(col.schemaIndex());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return
+     */
+    @Override public LocalDateTime datetimeValue(int columnIndex) {
+        schema().validateColumnIndex(columnIndex);
+
+        return row().dateTimeValue(columnIndex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Instant timestampValue(String columnName) {
+        Column col = columnByName(columnName);
+
+        return row().timestampValue(col.schemaIndex());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Instant timestampValue(int columnIndex) {
+        schema().validateColumnIndex(columnIndex);
+
+        return row().timestampValue(columnIndex);
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,10 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.UUID;
 import io.netty.buffer.ByteBuf;
@@ -38,6 +42,8 @@ import org.msgpack.value.ImmutableValue;
 
 import static org.apache.ignite.client.proto.ClientDataType.BITMASK;
 import static org.apache.ignite.client.proto.ClientDataType.BYTES;
+import static org.apache.ignite.client.proto.ClientDataType.DATE;
+import static org.apache.ignite.client.proto.ClientDataType.DATETIME;
 import static org.apache.ignite.client.proto.ClientDataType.DECIMAL;
 import static org.apache.ignite.client.proto.ClientDataType.DOUBLE;
 import static org.apache.ignite.client.proto.ClientDataType.FLOAT;
@@ -46,6 +52,8 @@ import static org.apache.ignite.client.proto.ClientDataType.INT32;
 import static org.apache.ignite.client.proto.ClientDataType.INT64;
 import static org.apache.ignite.client.proto.ClientDataType.INT8;
 import static org.apache.ignite.client.proto.ClientDataType.STRING;
+import static org.apache.ignite.client.proto.ClientDataType.TIME;
+import static org.apache.ignite.client.proto.ClientDataType.TIMESTAMP;
 
 /**
  * Ignite-specific MsgPack extension based on Netty ByteBuf.
@@ -362,6 +370,54 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /**
+     * Reads a date.
+     *
+     * @return Date value.
+     * @throws UnsupportedOperationException Not supported yet.
+     */
+    public LocalDate unpackDate() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
+     * Reads a time.
+     *
+     * @return Time value.
+     * @throws UnsupportedOperationException Not supported yet.
+     */
+    public LocalTime unpackTime() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
+     * Reads a datetime.
+     *
+     * @return Datetime value.
+     * @throws UnsupportedOperationException Not supported yet.
+     */
+    public LocalDateTime unpackDateTime() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
+     * Reads a timestamp.
+     *
+     * @return Timestamp value.
+     * @throws UnsupportedOperationException Not supported yet.
+     */
+    public Instant unpackTimestamp() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+    }
+
+    /**
      * Unpacks an object based on the specified type.
      *
      * @param dataType Data type code.
@@ -408,6 +464,18 @@ public class ClientMessageUnpacker extends MessageUnpacker {
 
             case BITMASK:
                 return unpackBitSet();
+
+            case DATE:
+                return unpackDate();
+
+            case TIME:
+                return unpackTime();
+
+            case DATETIME:
+                return unpackDateTime();
+
+            case TIMESTAMP:
+                return unpackTimestamp();
         }
 
         throw new IgniteException("Unknown client data type: " + dataType);
