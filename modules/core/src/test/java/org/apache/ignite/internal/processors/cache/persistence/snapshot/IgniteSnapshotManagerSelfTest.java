@@ -27,10 +27,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,8 +45,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -56,6 +63,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionC
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -63,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
@@ -358,6 +368,306 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRemoteWithNodeFiler() throws Exception {
+        int grids = 3;
+        CacheConfiguration<Integer, Integer> ccfg = txCacheConfig(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
+            .setNodeFilter(node -> node.consistentId().toString().endsWith("1"));
+
+        for (int i = 0; i < grids; i++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+
+        IgniteEx ig0 = grid(0);
+        ig0.cluster().baselineAutoAdjustEnabled(false);
+        ig0.cluster().state(ACTIVE);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.getOrCreateCache(ccfg).put(i, i);
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
+
+        IgniteInternalFuture<?> fut = snp(grid(0)).requestRemoteSnapshot(grid(2).localNode().id(),
+            parts,
+            new BiConsumer<File, GroupPartitionId>() {
+                @Override public void accept(File file, GroupPartitionId gprPartId) {
+                    fail("We should not receive anything.");
+                }
+            });
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteCheckedException.class,
+            "The snapshot operation stopped");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRemotePartitionsWithLoad() throws Exception {
+        IgniteEx ig0 = startGrids(2);
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        AtomicInteger cntr = new AtomicInteger();
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, cntr.incrementAndGet());
+
+        GridCacheSharedContext<?, ?> cctx1 = grid(1).context().cache().context();
+        GridCacheDatabaseSharedManager db1 = (GridCacheDatabaseSharedManager)cctx1.database();
+
+        forceCheckpoint();
+
+        Map<String, Integer> rmtPartCRCs = new HashMap<>();
+        CountDownLatch cancelLatch = new CountDownLatch(1);
+
+        db1.addCheckpointListener(new CheckpointListener() {
+            /** {@inheritDoc} */
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                //No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onCheckpointBegin(Context ctx) {
+                SnapshotFutureTask task = cctx1.snapshotMgr().lastScheduledRemoteSnapshotTask(grid(0).localNode().id());
+
+                // Skip first remote snapshot creation due to it will be cancelled.
+                if (task == null || cancelLatch.getCount() > 0)
+                    return;
+
+                Map<Integer, Set<Integer>> processed = GridTestUtils.getFieldValue(task,
+                    SnapshotFutureTask.class,
+                    "processed");
+
+                if (!processed.isEmpty()) {
+                    assert rmtPartCRCs.isEmpty();
+
+                    // Calculate actual partition CRCs when the checkpoint will be finished on this node.
+                    ctx.finishedStateFut().listen(f -> {
+                        File cacheWorkDir = ((FilePageStoreManager)grid(1).context().cache().context().pageStore())
+                            .cacheWorkDir(dfltCacheCfg);
+
+                        rmtPartCRCs.putAll(calculateCRC32Partitions(cacheWorkDir));
+                    });
+                }
+            }
+        });
+
+        IgniteSnapshotManager mgr0 = snp(ig0);
+
+        UUID rmtNodeId = grid(1).localNode().id();
+        Map<String, Integer> snpPartCRCs = new HashMap<>();
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
+
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!Thread.currentThread().isInterrupted())
+                ig0.cache(DEFAULT_CACHE_NAME).put(cntr.incrementAndGet(), cntr.incrementAndGet());
+        }, 5, "cache-loader-");
+
+        try {
+            // Snapshot must be taken on node1 and transmitted to node0.
+            IgniteInternalFuture<?> fut = mgr0.requestRemoteSnapshot(rmtNodeId,
+                parts,
+                new BiConsumer<File, GroupPartitionId>() {
+                    @Override public void accept(File file, GroupPartitionId gprPartId) {
+                        log.info("Snapshot partition received successfully [rmtNodeId=" + rmtNodeId +
+                            ", part=" + file.getAbsolutePath() + ", gprPartId=" + gprPartId + ']');
+
+                        cancelLatch.countDown();
+                    }
+                });
+
+            cancelLatch.await();
+
+            fut.cancel();
+
+            IgniteInternalFuture<?> fut2 = mgr0.requestRemoteSnapshot(rmtNodeId,
+                parts,
+                (part, pair) -> {
+                    try {
+                        snpPartCRCs.put(part.getName(), FastCrc.calcCrc(part));
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+
+            fut2.get();
+        }
+        finally {
+            loadFut.cancel();
+        }
+
+        assertEquals("Partitions from remote node must have the same CRCs as those which have been received",
+            rmtPartCRCs, snpPartCRCs);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRemoteOnBothNodes() throws Exception {
+        IgniteEx ig0 = startGrids(2);
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        forceCheckpoint(ig0);
+
+        IgniteSnapshotManager mgr0 = snp(ig0);
+        IgniteSnapshotManager mgr1 = snp(grid(1));
+
+        UUID node0 = grid(0).localNode().id();
+        UUID node1 = grid(1).localNode().id();
+
+        Map<Integer, Set<Integer>> fromNode1 = owningParts(ig0,
+            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
+            node1);
+
+        Map<Integer, Set<Integer>> fromNode0 = owningParts(grid(1),
+            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
+            node0);
+
+        // Snapshot must be taken on node1 and transmitted to node0.
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshot(node1, fromNode1,
+            (part, pair) -> assertTrue("Received partition has not been requested", fromNode1.get(pair.getGroupId())
+                    .remove(pair.getPartitionId())));
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshot(node0, fromNode0,
+            (part, pair) -> assertTrue("Received partition has not been requested", fromNode0.get(pair.getGroupId())
+                .remove(pair.getPartitionId())));
+
+        futFrom0To1.get();
+        futFrom1To0.get();
+
+        assertTrue("Not all of partitions have been received: " + fromNode1,
+            fromNode1.get(CU.cacheId(DEFAULT_CACHE_NAME)).isEmpty());
+        assertTrue("Not all of partitions have been received: " + fromNode0,
+            fromNode0.get(CU.cacheId(DEFAULT_CACHE_NAME)).isEmpty());
+    }
+
+    /** @throws Exception If fails. */
+    @Test(expected = ClusterTopologyCheckedException.class)
+    public void testRemoteSnapshotRequestedNodeLeft() throws Exception {
+        IgniteEx ig0 = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ig1 = startGrid(1);
+
+        ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
+
+        awaitPartitionMapExchange();
+
+        CountDownLatch hold = new CountDownLatch(1);
+
+        ((GridCacheDatabaseSharedManager)ig1.context().cache().context().database())
+            .addCheckpointListener(new CheckpointListener() {
+                /** {@inheritDoc} */
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    // Listener will be executed inside the checkpoint thead.
+                    U.await(hold);
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onMarkCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+            });
+
+        UUID rmtNodeId = ig1.localNode().id();
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
+
+        snp(ig0).requestRemoteSnapshot(rmtNodeId, parts, (part, grp) -> {});
+
+        IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                IgniteInternalFuture<?> snpFut = snp(ig1)
+                    .lastScheduledRemoteSnapshotTask(ig0.localNode().id());
+
+                if (snpFut == null)
+                    return false;
+                else
+                    futs[0] = snpFut;
+
+                return true;
+            }
+        }, 5_000L));
+
+        stopGrid(0);
+
+        hold.countDown();
+
+        futs[0].get();
+    }
+
+    /**
+     * <pre>
+     * 1. Start 2 nodes.
+     * 2. Request snapshot from 2-nd node
+     * 3. Block snapshot-request message.
+     * 4. Start 3-rd node and change BLT.
+     * 5. Stop 3-rd node and change BLT.
+     * 6. 2-nd node now have MOVING partitions to be preloaded.
+     * 7. Release snapshot-request message.
+     * 8. Should get an error of snapshot creation since MOVING partitions cannot be snapshot.
+     * </pre>
+     *
+     * @throws Exception If fails.
+     */
+    @Test(expected = IgniteCheckedException.class)
+    public void testRemoteOutdatedSnapshot() throws Exception {
+        dfltCacheCfg.setBackups(1);
+
+        IgniteEx ig0 = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        TestRecordingCommunicationSpi.spi(ig0)
+            .blockMessages((node, msg) -> msg instanceof SnapshotRequestMessage);
+
+        UUID rmtNodeId = grid(1).localNode().id();
+
+        IgniteSnapshotManager mgr0 = snp(ig0);
+
+        // Snapshot must be taken on node1 and transmitted to node0.
+        IgniteInternalFuture<?> snpFut = mgr0.requestRemoteSnapshot(rmtNodeId,
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
+            (part, grp) -> {});
+
+        TestRecordingCommunicationSpi.spi(ig0)
+            .waitForBlocked();
+
+        startGrid(2);
+
+        ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
+
+        awaitPartitionMapExchange();
+
+        stopGrid(2);
+
+        TestRecordingCommunicationSpi.spi(grid(1))
+            .blockMessages((node, msg) -> msg instanceof GridDhtPartitionDemandMessage);
+
+        ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
+
+        TestRecordingCommunicationSpi.spi(ig0)
+            .stopBlock(true, obj -> obj.ioMessage().message() instanceof SnapshotRequestMessage);
+
+        snpFut.get();
+    }
+
+    /** @throws Exception If fails. */
     @Test(expected = IgniteCheckedException.class)
     public void testLocalSnapshotOnCacheStopped() throws Exception {
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
@@ -571,6 +881,33 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         snpFutTask.started().get();
 
         return snpFutTask;
+    }
+
+    /**
+     * @param src Source node to calculate.
+     * @param grps Groups to collect owning parts.
+     * @param rmtNodeId Remote node id.
+     * @return Map of collected parts.
+     */
+    private static Map<Integer, Set<Integer>> owningParts(IgniteEx src, Set<Integer> grps, UUID rmtNodeId) {
+        Map<Integer, Set<Integer>> result = new HashMap<>();
+
+        for (Integer grpId : grps) {
+            Set<Integer> parts = src.context()
+                .cache()
+                .cacheGroup(grpId)
+                .topology()
+                .partitions(rmtNodeId)
+                .entrySet()
+                .stream()
+                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+            result.put(grpId, parts);
+        }
+
+        return result;
     }
 
     /** */
