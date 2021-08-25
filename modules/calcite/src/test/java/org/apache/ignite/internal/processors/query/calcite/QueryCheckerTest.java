@@ -21,21 +21,12 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsResultRowCount;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsScanRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.matchesOnce;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /** Query checker tests. */
 public class QueryCheckerTest {
-    /** */
-    private static final String PLAN = "IgniteSingleHashAggregate(group=[{}], COUNT(NAME)=[COUNT($0)]): rowcount = 1.0, " +
-        "cumulative cost = IgniteCost [rowCount=9.0, cpu=9.0, memory=5.0, io=0.0, network=12.0], id = 110\n" +
-        "  IgniteExchange(distribution=[single]): rowcount = 3.0, cumulative cost = IgniteCost " +
-        "[rowCount=6.0, cpu=6.0, memory=0.0, io=0.0, network=12.0], id = 109\n" +
-        "    IgniteIndexScan(table=[[PUBLIC, PERSON]], index=[PERSON_NAME], requiredColumns=[{2}]): rowcount = 3.0, " +
-        "cumulative cost = IgniteCost [rowCount=3.0, cpu=3.0, memory=0.0, io=0.0, network=0.0], id = 29";
-
     /** */
     @Test
     public void testMatchesOnce() {
@@ -49,23 +40,6 @@ public class QueryCheckerTest {
 
         assertFalse(matcherTbl.matches(planMatchesOnce));
         assertTrue(matcherPrj.matches(planMatchesOnce));
-    }
-
-    /**
-     * Check that scan row query matcher match scan rows and doesn't match result row count.
-     */
-    @Test
-    public void testContainsScanRow() {
-        String plan = "    IgniteMapHashAggregate(group=[{}], COUNT(NAME)=[COUNT($0)]): rowcount = 1.0, " +
-            "cumulative cost = IgniteCost [rowCount=2000.0, cpu=2000.0, memory=5.0, io=0.0, network=0.0], id = 43\n" +
-            "      IgniteTableScan(table=[[PUBLIC, PERSON]], requiredColumns=[{2}]): rowcount = 1000.0, " +
-            "cumulative cost = IgniteCost [rowCount=1000.0, cpu=1000.0, memory=0.0, io=0.0, network=0.0], id = 34";
-
-        Matcher<String> containsScan = containsScanRowCount(2000);
-        Matcher<String> containsResult = containsScanRowCount(1);
-
-        assertTrue(containsScan.matches(plan));
-        assertFalse(containsResult.matches(plan));
     }
 
     /**

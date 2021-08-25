@@ -91,18 +91,6 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Ignite scanned row count mather.
-     *
-     * @param rowCount Expected scanned row count.
-     * @return Mather.
-     */
-    public static Matcher<String> containsScanRowCount(double rowCount) {
-        String rowCountStr = String.format(".*rowCount=%s,.*", printCostVal(rowCount));
-
-        return new RegexpMather(rowCountStr);
-    }
-
-    /**
      * Ignite result row count mather.
      *
      * @param rowCount Expected result row count.
@@ -376,7 +364,7 @@ public abstract class QueryChecker {
 
         if (!F.isEmpty(planMatchers)) {
             for (Matcher<String> matcher : planMatchers)
-                assertThat("Invalid plan:\n" + actualPlan, actualPlan, matcher);
+                assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
         }
 
         if (exactPlan != null)
@@ -429,7 +417,7 @@ public abstract class QueryChecker {
             Object item2 = it2.next();
 
             if (!F.eq(item1, item2))
-            fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
+                fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
         }

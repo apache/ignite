@@ -774,12 +774,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition1() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR age=55")
-            .matches(containsUnion(true))
-            .matches(anyOf(
-                containsIndexScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX),
-                containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
-            )
-            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
+            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();

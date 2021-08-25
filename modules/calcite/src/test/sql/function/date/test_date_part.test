@@ -29,6 +29,22 @@ SELECT LAST_DAY(d::timestamp) FROM dates ORDER BY d;
 1992-03-31
 1992-05-31
 
+#  monthname
+query T
+SELECT MONTHNAME(d) FROM dates ORDER BY d;
+----
+January
+March
+May
+
+#  dayname
+query T
+SELECT DAYNAME(d) FROM dates ORDER BY d;
+----
+Wednesday
+Tuesday
+Tuesday
+
 #  aliases
 query I
 SELECT DAYOFMONTH(d) FROM dates ORDER BY d;
