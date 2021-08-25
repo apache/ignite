@@ -119,14 +119,14 @@ class KillCommandsTests {
 
         // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
         assertThrowsWithCause(() -> {
-            for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
+            for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
                 assertNotNull(iter1.next());
 
             return null;
         }, IgniteCheckedException.class);
 
         // Checking that second query works fine after canceling first.
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ - 1; i++)
+        for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
             assertNotNull(iter2.next());
 
         // Checking all server node objects cleared after cancel.
