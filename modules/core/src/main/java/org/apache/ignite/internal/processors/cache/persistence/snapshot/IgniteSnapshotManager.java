@@ -1743,8 +1743,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         RemoteSnapshotRequestFuture snpTransFut = new RemoteSnapshotRequestFuture(rmtNodeId, rqId, snpName, tmpWorkDir, partHnd);
 
-        snpTransFut.listen(f -> rmtSnpReq.compareAndSet(snpTransFut, null));
-
         SnapshotRequestMessage msg0 = new SnapshotRequestMessage(rqId, snpName, parts);
         busyLock.enterBusy();
 
@@ -1761,7 +1759,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             try {
-                if (rmtSnpReq.compareAndSet(null, snpTransFut)) {
+                if (rmtSnpReq.compareAndSet(fut, snpTransFut)) {
                     cctx.gridIO().sendOrderedMessage(rmtNode, DFLT_INITIAL_SNAPSHOT_TOPIC, msg0, SYSTEM_POOL,
                         Long.MAX_VALUE, true);
                 }
@@ -1770,7 +1768,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             }
             catch (IgniteCheckedException e) {
-                rmtSnpReq.compareAndSet(snpTransFut, null);
+                rmtSnpReq.compareAndSet(snpTransFut, fut);
 
                 return new GridFinishedFuture<>(e);
             }
@@ -2523,9 +2521,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void accept(File part, GroupPartitionId gpId) {
+        @Override public synchronized void accept(File part, GroupPartitionId gpId) {
             if (isDone())
-                return;
+                throw new IgniteException("Future cancelled prior to the all requested partitions processed.");
 
             partHnd.accept(part, gpId);
             partsLeft.decrementAndGet();
@@ -2537,9 +2535,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
+        @Override protected synchronized boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             if (super.onDone(res, err, cancel)) {
-                U.delete(dir);
+                boolean success = U.delete(dir);
+
+                assert success;
 
                 return true;
             }

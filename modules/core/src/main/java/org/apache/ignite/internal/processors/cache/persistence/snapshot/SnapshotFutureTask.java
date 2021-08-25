@@ -590,8 +590,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
-        acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
-            "by external process [snpName=" + snpName + ']'));
+        super.cancel();
 
         try {
             closeAsync().get();

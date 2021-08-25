@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -129,7 +130,10 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         // Cancellation of snapshot future should not throw an exception.
-        return false;
+        acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
+            "by external process [snpName=" + snpName + ']'));
+
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -39,11 +40,13 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
 public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestoreBaseTest {
@@ -54,10 +57,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        Map<Integer, Set<Integer>> parts = owningParts(ignite,
-            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-            grid(1).localNode().id());
-
+        Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME), grid(1).localNode().id());
         Map<Integer, Set<Integer>> parts0 = new HashMap<>();
 
         for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
@@ -92,13 +92,8 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         UUID node0 = grid(0).localNode().id();
         UUID node1 = grid(1).localNode().id();
 
-        Map<Integer, Set<Integer>> fromNode1 = owningParts(ignite,
-            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-            node1);
-
-        Map<Integer, Set<Integer>> fromNode0 = owningParts(grid(1),
-            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-            node0);
+        Map<Integer, Set<Integer>> fromNode1 = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME), node1);
+        Map<Integer, Set<Integer>> fromNode0 = owningParts(grid(1), CU.cacheId(DEFAULT_CACHE_NAME), node0);
 
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g)
             .blockMessages((n, msg) -> msg instanceof SnapshotRequestMessage));
@@ -135,7 +130,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         UUID rmtNodeId = grid(1).localNode().id();
         UUID locNodeId = grid(0).localNode().id();
 
-        Map<Integer, Set<Integer>> parts = owningParts(ignite, Collections.singleton(CU.cacheId(DEFAULT_CACHE_NAME)), rmtNodeId);
+        Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME), rmtNodeId);
 
         CountDownLatch sndLatch = new CountDownLatch(1);
 
@@ -192,12 +187,10 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        awaitPartitionMapExchange();
-
-        Map<Integer, Set<Integer>> parts = owningParts(ignite, Collections.singleton(CU.cacheId(DEFAULT_CACHE_NAME)),
+        Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME),
             grid(1).localNode().id());
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(2);
 
         IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
@@ -206,40 +199,85 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                 assertEquals(partId(part.getName()), gpId.getPartitionId());
                 assertTrue(parts.get(gpId.getGroupId()).remove(gpId.getPartitionId()));
 
-                latch.countDown();
+                try {
+                    U.await(latch);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
             });
-
-        latch.await(DFLT_TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
         stopGrid(1);
 
-        fut.get(DFLT_TEST_TIMEOUT);
+        latch.countDown();
+
+        assertThrowsAnyCause(log, () -> fut.get(DFLT_TEST_TIMEOUT), ClusterTopologyCheckedException.class,
+            "he node from which a snapshot has been requested left the grid");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRequestRemoteCancel() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME),
+            grid(1).localNode().id());
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+            SNAPSHOT_NAME,
+            parts,
+            (part, gpId) -> {
+                try {
+                    U.await(latch);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+        IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                IgniteInternalFuture<?> snpFut = snp(grid(1))
+                    .lastScheduledSnapshotResponseRemoteTask(grid(0).localNode().id());
+
+                if (snpFut == null)
+                    return false;
+                else {
+                    futs[0] = snpFut;
+
+                    return true;
+                }
+            }
+        }, 5_000L));
+
+        latch.countDown();
+        fut.cancel();
+
+        futs[0].get();
     }
 
     /**
      * @param src Source node to calculate.
-     * @param grps Groups to collect owning parts.
+     * @param grpId Group id to collect OWNING partitions.
      * @param rmtNodeId Remote node id.
      * @return Map of collected parts.
      */
-    private static Map<Integer, Set<Integer>> owningParts(IgniteEx src, Set<Integer> grps, UUID rmtNodeId) {
-        Map<Integer, Set<Integer>> result = new HashMap<>();
-
-        for (Integer grpId : grps) {
-            Set<Integer> parts = src.context()
-                .cache()
-                .cacheGroup(grpId)
-                .topology()
-                .partitions(rmtNodeId)
-                .entrySet()
-                .stream()
-                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-
-            result.put(grpId, parts);
-        }
-
-        return result;
+    private static Map<Integer, Set<Integer>> owningParts(IgniteEx src, int grpId, UUID rmtNodeId) {
+        return Collections.singletonMap(grpId, src.context()
+            .cache()
+            .cacheGroup(grpId)
+            .topology()
+            .partitions(rmtNodeId)
+            .entrySet()
+            .stream()
+            .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet()));
     }
 }
