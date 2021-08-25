@@ -68,7 +68,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /** Default selectivity for is null conditions. */
     private static final double IS_NULL_SELECTIVITY = 0.1;
 
-    /** Default selectivity for is not null confitions. */
+    /** Default selectivity for IS NOT NULL conditions. */
     private static final double NOT_NULL_SELECTIVITY = 0.9;
 
     /** Default selectivity for equals conditions. */
