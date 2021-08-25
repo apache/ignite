@@ -247,8 +247,8 @@ bool IsTimeoutError(const ignite::IgniteError& err)
 
 BOOST_AUTO_TEST_CASE(TaskWithTimeout)
 {
-    const int64_t timeout = 50;
-    const int64_t taskTimeout = 50 * 100;
+    const int64_t timeout = 500;
+    const int64_t taskTimeout = timeout * 100;
 
     compute::ComputeClient tmCompute = compute.WithTimeout(timeout);
 

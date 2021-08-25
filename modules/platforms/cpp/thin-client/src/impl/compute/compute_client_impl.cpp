@@ -35,6 +35,11 @@ namespace ignite
                     ComputeTaskFinishedNotification notification(res);
 
                     router.Get()->SyncMessageWithNotification(req, notification);
+
+                    if (notification.IsFailure())
+                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_TASK_CANCELLED,
+                            notification.GetErrorMessage().c_str());
+
                 }
             }
         }
