@@ -57,6 +57,7 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Partition command handler.
@@ -301,13 +302,15 @@ public class PartitionListener implements RaftGroupListener {
 
     /** {@inheritDoc} */
     @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
-        // Not implemented yet.
+        storage.snapshot(path).whenComplete((unused, throwable) -> {
+            doneClo.accept(throwable);
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean onSnapshotLoad(Path path) {
-        // Not implemented yet.
-        return false;
+        storage.restoreSnapshot(path);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -344,5 +347,13 @@ public class PartitionListener implements RaftGroupListener {
         row.keySlice().get(key);
 
         return new SimpleDataRow(key, null);
+    }
+
+    /**
+     * @return Underlying storage.
+     */
+    @TestOnly
+    public Storage getStorage() {
+        return storage;
     }
 }

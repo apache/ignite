@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.metastorage.server.persistence;
+package org.apache.ignite.internal.rocksdb;
 
 import java.util.List;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -34,12 +34,12 @@ import org.rocksdb.WriteBatch;
 /**
  * Wrapper for the column family that encapsulates {@link ColumnFamilyHandle} and RocksDB's operations with it.
  */
-class ColumnFamily implements AutoCloseable {
+public class ColumnFamily implements AutoCloseable {
     /** RocksDB instance. */
     private final RocksDB db;
 
-    /** Column family type. */
-    private final StorageColumnFamilyType cfType;
+    /** Column family name. */
+    private final String cfName;
 
     /** Column family handle. */
     private final ColumnFamilyHandle cfHandle;
@@ -55,20 +55,20 @@ class ColumnFamily implements AutoCloseable {
      *
      * @param db Db.
      * @param handle Column family handle.
-     * @param cfType Column family type.
+     * @param cfName Column family name.
      * @param cfOptions Column family options.
      * @param options Options for the column family options.
      * @throws RocksDBException If failed.
      */
-    ColumnFamily(
+    public ColumnFamily(
         RocksDB db,
         ColumnFamilyHandle handle,
-        StorageColumnFamilyType cfType,
+        String cfName,
         ColumnFamilyOptions cfOptions,
         Options options
     ) {
         this.db = db;
-        this.cfType = cfType;
+        this.cfName = cfName;
         this.cfOptions = cfOptions;
         this.options = options;
         this.cfHandle = handle;
@@ -87,8 +87,20 @@ class ColumnFamily implements AutoCloseable {
      * @throws RocksDBException If failed.
      * @see RocksDB#get(ColumnFamilyHandle, byte[])
      */
-    byte @Nullable [] get(byte @NotNull [] key) throws RocksDBException {
+    public byte @Nullable [] get(byte @NotNull [] key) throws RocksDBException {
         return db.get(cfHandle, key);
+    }
+
+    /**
+     * Puts a key-value pair into this column family.
+     *
+     * @param key Key.
+     * @param value Value.
+     * @throws RocksDBException If failed.
+     * @see RocksDB#put(ColumnFamilyHandle, byte[], byte[])
+     */
+    public void put(byte @NotNull [] key, byte @NotNull [] value) throws RocksDBException {
+        db.put(cfHandle, key, value);
     }
 
     /**
@@ -100,8 +112,19 @@ class ColumnFamily implements AutoCloseable {
      * @throws RocksDBException If failed.
      * @see WriteBatch#put(ColumnFamilyHandle, byte[], byte[])
      */
-    void put(WriteBatch batch, byte @NotNull [] key, byte @NotNull [] value) throws RocksDBException {
+    public void put(WriteBatch batch, byte @NotNull [] key, byte @NotNull [] value) throws RocksDBException {
         batch.put(cfHandle, key, value);
+    }
+
+    /**
+     * Deletes the entry mapped by the key and associated with this column family.
+     *
+     * @param key Key.
+     * @throws RocksDBException If failed.
+     * @see RocksDB#delete(ColumnFamilyHandle, byte[])
+     */
+    public void delete(byte @NotNull [] key) throws RocksDBException {
+        db.delete(cfHandle, key);
     }
 
     /**
@@ -112,7 +135,7 @@ class ColumnFamily implements AutoCloseable {
      * @throws RocksDBException If failed.
      * @see WriteBatch#delete(ColumnFamilyHandle, byte[])
      */
-    void delete(WriteBatch batch, byte @NotNull [] key) throws RocksDBException {
+    public void delete(WriteBatch batch, byte @NotNull [] key) throws RocksDBException {
         batch.delete(cfHandle, key);
     }
 
@@ -122,7 +145,7 @@ class ColumnFamily implements AutoCloseable {
      * @return Iterator.
      * @see RocksDB#newIterator(ColumnFamilyHandle)
      */
-    RocksIterator newIterator() {
+    public RocksIterator newIterator() {
         return db.newIterator(cfHandle);
     }
 
@@ -133,7 +156,7 @@ class ColumnFamily implements AutoCloseable {
      * @return Iterator.
      * @see RocksDB#newIterator(ColumnFamilyHandle, ReadOptions)
      */
-    RocksIterator newIterator(ReadOptions options) {
+    public RocksIterator newIterator(ReadOptions options) {
         return db.newIterator(cfHandle, options);
     }
 
@@ -145,14 +168,14 @@ class ColumnFamily implements AutoCloseable {
      * @throws RocksDBException If failed.
      * @see RocksDB#ingestExternalFile(ColumnFamilyHandle, List, IngestExternalFileOptions)
      */
-    void ingestExternalFile(List<String> paths, IngestExternalFileOptions options) throws RocksDBException {
+    public void ingestExternalFile(List<String> paths, IngestExternalFileOptions options) throws RocksDBException {
         db.ingestExternalFile(cfHandle, paths, options);
     }
 
     /**
      * @return Name of the column family.
      */
-    String name() {
-        return cfType.name();
+    public String name() {
+        return cfName;
     }
 }

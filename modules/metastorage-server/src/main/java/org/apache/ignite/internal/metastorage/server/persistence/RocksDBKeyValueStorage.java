@@ -42,6 +42,8 @@ import org.apache.ignite.internal.metastorage.server.KeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.Operation;
 import org.apache.ignite.internal.metastorage.server.Value;
 import org.apache.ignite.internal.metastorage.server.WatchEvent;
+import org.apache.ignite.internal.rocksdb.ColumnFamily;
+import org.apache.ignite.internal.rocksdb.RocksBiPredicate;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -53,7 +55,6 @@ import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.DBOptions;
-import org.rocksdb.EnvOptions;
 import org.rocksdb.IngestExternalFileOptions;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
@@ -61,7 +62,6 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
-import org.rocksdb.SstFileWriter;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
@@ -69,14 +69,15 @@ import static org.apache.ignite.internal.metastorage.server.Value.TOMBSTONE;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.appendLong;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.bytesToLong;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.bytesToValue;
-import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.find;
-import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.forEach;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.getAsLongs;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.keyToRocksKey;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.longToBytes;
 import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.valueToBytes;
 import static org.apache.ignite.internal.metastorage.server.persistence.StorageColumnFamilyType.DATA;
 import static org.apache.ignite.internal.metastorage.server.persistence.StorageColumnFamilyType.INDEX;
+import static org.apache.ignite.internal.rocksdb.RocksUtils.createSstFile;
+import static org.apache.ignite.internal.rocksdb.RocksUtils.find;
+import static org.apache.ignite.internal.rocksdb.RocksUtils.forEach;
 import static org.apache.ignite.internal.util.ArrayUtils.LONG_EMPTY_ARRAY;
 
 /**
@@ -187,9 +188,9 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
 
             this.db = RocksDB.open(options, dbPath.toAbsolutePath().toString(), descriptors, handles);
 
-            data = new ColumnFamily(db, handles.get(0), DATA, dataFamilyOptions, dataOptions);
+            data = new ColumnFamily(db, handles.get(0), DATA.name(), dataFamilyOptions, dataOptions);
 
-            index = new ColumnFamily(db, handles.get(1), INDEX, indexFamilyOptions, indexOptions);
+            index = new ColumnFamily(db, handles.get(1), INDEX.name(), indexFamilyOptions, indexOptions);
         }
         catch (Exception e) {
             try {
@@ -246,8 +247,11 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
             }
         }, snapshotExecutor).thenCompose(aVoid ->
             // Create futures for capturing SST snapshots of the column families
-            CompletableFuture.allOf(createSstFile(data, snapshot, tempPath), createSstFile(index, snapshot, tempPath)))
-        .whenComplete((aVoid, throwable) -> {
+            CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> createSstFile(data, snapshot, tempPath), snapshotExecutor),
+                CompletableFuture.runAsync(() -> createSstFile(index, snapshot, tempPath), snapshotExecutor)
+            )
+        ).whenComplete((aVoid, throwable) -> {
             // Release a snapshot
             db.releaseSnapshot(snapshot);
 
@@ -269,39 +273,6 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
                 throw new IgniteInternalException("Failed to rename: " + tempPath + " to " + snapshotPath, e);
             }
         });
-    }
-
-    /**
-     * Create an SST file for the column family.
-     *
-     * @param columnFamily Column family.
-     * @param snapshot Point-in-time snapshot.
-     * @param path Directory to put the SST file in.
-     * @return Future representing pending completion of the operation.
-     */
-    private CompletableFuture<Void> createSstFile(ColumnFamily columnFamily, Snapshot snapshot, Path path) {
-        return CompletableFuture.runAsync(() -> {
-            try (
-                EnvOptions envOptions = new EnvOptions();
-                Options options = new Options();
-                ReadOptions readOptions = new ReadOptions().setSnapshot(snapshot);
-                RocksIterator it = columnFamily.newIterator(readOptions);
-                SstFileWriter sstFileWriter = new SstFileWriter(envOptions, options)
-            ) {
-                Path sstFile = path.resolve(columnFamily.name());
-
-                sstFileWriter.open(sstFile.toString());
-
-                it.seekToFirst();
-
-                forEach(it, sstFileWriter::put);
-
-                sstFileWriter.finish();
-            }
-            catch (Throwable t) {
-                throw new IgniteInternalException("Failed to write snapshot: " + t.getMessage(), t);
-            }
-        }, snapshotExecutor);
     }
 
     /** {@inheritDoc} */
@@ -1034,7 +1005,7 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
         try (RocksIterator iterator = index.newIterator()) {
             iterator.seek(key);
 
-            RocksStorageUtils.RocksBiPredicate predicate = strictlyHigher ?
+            RocksBiPredicate predicate = strictlyHigher ?
                 (k, v) -> CMP.compare(k, key) > 0 :
                 (k, v) -> CMP.compare(k, key) >= 0;
 

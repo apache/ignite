@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.storage.basic;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
@@ -167,6 +169,16 @@ public class ConcurrentHashMapStorage implements Storage {
                 // No-op.
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull CompletableFuture<Void> snapshot(Path snapshotPath) {
+        throw new UnsupportedOperationException("Not implemented!");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restoreSnapshot(Path snapshotPath) {
+        throw new UnsupportedOperationException("Not implemented!");
     }
 
     /** {@inheritDoc} */

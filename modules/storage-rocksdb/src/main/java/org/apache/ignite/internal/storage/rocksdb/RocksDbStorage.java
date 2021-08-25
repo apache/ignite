@@ -17,17 +17,26 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.rocksdb.ColumnFamily;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
 import org.apache.ignite.internal.storage.SearchRow;
@@ -39,19 +48,34 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 import org.rocksdb.AbstractComparator;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.ComparatorOptions;
+import org.rocksdb.DBOptions;
+import org.rocksdb.IngestExternalFileOptions;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.Snapshot;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
+
+import static org.apache.ignite.internal.rocksdb.RocksUtils.createSstFile;
 
 /**
  * Storage implementation based on a single RocksDB instance.
  */
 public class RocksDbStorage implements Storage {
+    /** Suffix for the temporary snapshot folder */
+    private static final String TMP_SUFFIX = ".tmp";
+
+    /** Snapshot file name. */
+    private static final String COLUMN_FAMILY_NAME = "data";
+
     static {
         RocksDB.loadLibrary();
     }
@@ -63,10 +87,19 @@ public class RocksDbStorage implements Storage {
     private final AbstractComparator comparator;
 
     /** RockDB options. */
-    private final Options options;
+    private final DBOptions options;
 
     /** RocksDb instance. */
     private final RocksDB db;
+
+    /** Data column family. */
+    private final ColumnFamily data;
+
+    /** DB path. */
+    private final Path dbPath;
+
+    /** Thread-pool for snapshot operations execution. */
+    private final ExecutorService snapshotExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * @param dbPath Path to the folder to store data.
@@ -75,6 +108,8 @@ public class RocksDbStorage implements Storage {
      */
     public RocksDbStorage(Path dbPath, Comparator<ByteBuffer> comparator) throws StorageException {
         try {
+            this.dbPath = dbPath;
+
             comparatorOptions = new ComparatorOptions();
 
             this.comparator = new AbstractComparator(comparatorOptions) {
@@ -89,13 +124,23 @@ public class RocksDbStorage implements Storage {
                 }
             };
 
-            options = new Options();
+            options = new DBOptions()
+                .setCreateMissingColumnFamilies(true)
+                .setCreateIfMissing(true);
 
-            options.setCreateIfMissing(true);
+            Options dataOptions = new Options().setCreateIfMissing(true).setComparator(this.comparator);
 
-            options.setComparator(this.comparator);
+            ColumnFamilyOptions dataFamilyOptions = new ColumnFamilyOptions(dataOptions);
 
-            this.db = RocksDB.open(options, dbPath.toAbsolutePath().toString());
+            List<ColumnFamilyDescriptor> descriptors = Collections.singletonList(
+                new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, dataFamilyOptions)
+            );
+
+            var handles = new ArrayList<ColumnFamilyHandle>();
+
+            this.db = RocksDB.open(options, dbPath.toAbsolutePath().toString(), descriptors, handles);
+
+            this.data = new ColumnFamily(db, handles.get(0), COLUMN_FAMILY_NAME, dataFamilyOptions, dataOptions);
         }
         catch (RocksDBException e) {
             try {
@@ -114,7 +159,7 @@ public class RocksDbStorage implements Storage {
         try {
             byte[] keyBytes = key.keyBytes();
 
-            return new SimpleDataRow(keyBytes, db.get(keyBytes));
+            return new SimpleDataRow(keyBytes, data.get(keyBytes));
         }
         catch (RocksDBException e) {
             throw new StorageException("Failed to read data from the storage", e);
@@ -148,7 +193,11 @@ public class RocksDbStorage implements Storage {
     /** {@inheritDoc} */
     @Override public void write(DataRow row) throws StorageException {
         try {
-            db.put(row.keyBytes(), row.valueBytes());
+            byte[] value = row.valueBytes();
+
+            assert value != null;
+
+            data.put(row.keyBytes(), value);
         }
         catch (RocksDBException e) {
             throw new StorageException("Filed to write data to the storage", e);
@@ -159,8 +208,13 @@ public class RocksDbStorage implements Storage {
     @Override public void writeAll(Collection<? extends DataRow> rows) throws StorageException {
         try (WriteBatch batch = new WriteBatch();
              WriteOptions opts = new WriteOptions()) {
-            for (DataRow row : rows)
-                batch.put(row.keyBytes(), row.valueBytes());
+            for (DataRow row : rows) {
+                byte[] value = row.valueBytes();
+
+                assert value != null;
+
+                data.put(batch, row.keyBytes(), value);
+            }
 
             db.write(opts, batch);
         }
@@ -177,9 +231,13 @@ public class RocksDbStorage implements Storage {
              WriteOptions opts = new WriteOptions()) {
 
             for (DataRow row : rows) {
-                if (db.get(row.keyBytes()) == null)
-                    batch.put(row.keyBytes(), row.valueBytes());
-                else
+                if (data.get(row.keyBytes()) == null) {
+                    byte[] value = row.valueBytes();
+
+                    assert value != null;
+
+                    data.put(batch, row.keyBytes(), value);
+                } else
                     cantInsert.add(row);
             }
 
@@ -195,7 +253,7 @@ public class RocksDbStorage implements Storage {
     /** {@inheritDoc} */
     @Override public void remove(SearchRow key) throws StorageException {
         try {
-            db.delete(key.keyBytes());
+            data.delete(key.keyBytes());
         }
         catch (RocksDBException e) {
             throw new StorageException("Failed to remove data from the storage", e);
@@ -212,12 +270,12 @@ public class RocksDbStorage implements Storage {
             for (SearchRow key : keys) {
                 byte[] keyBytes = key.keyBytes();
 
-                byte[] value = db.get(keyBytes);
+                byte[] value = data.get(keyBytes);
 
                 if (value != null) {
                     res.add(new SimpleDataRow(keyBytes, value));
 
-                    batch.delete(keyBytes);
+                    data.delete(batch, keyBytes);
                 }
             }
 
@@ -260,7 +318,7 @@ public class RocksDbStorage implements Storage {
                 if (Arrays.equals(value, expectedValue)) {
                     res.add(new SimpleDataRow(key, value));
 
-                    batch.delete(key);
+                    data.delete(batch, key);
                 }
             }
 
@@ -278,18 +336,26 @@ public class RocksDbStorage implements Storage {
     @Override public <T> T invoke(SearchRow key, InvokeClosure<T> clo) throws StorageException {
         try {
             byte[] keyBytes = key.keyBytes();
-            byte[] existingDataBytes = db.get(keyBytes);
+            byte[] existingDataBytes = data.get(keyBytes);
 
             clo.call(new SimpleDataRow(keyBytes, existingDataBytes));
 
             switch (clo.operationType()) {
                 case WRITE:
-                    db.put(keyBytes, clo.newRow().valueBytes());
+                    DataRow newRow = clo.newRow();
+
+                    assert newRow != null;
+
+                    byte[] value = newRow.valueBytes();
+
+                    assert value != null;
+
+                    data.put(keyBytes, value);
 
                     break;
 
                 case REMOVE:
-                    db.delete(keyBytes);
+                    data.delete(keyBytes);
 
                     break;
 
@@ -306,15 +372,75 @@ public class RocksDbStorage implements Storage {
 
     /** {@inheritDoc} */
     @Override public Cursor<DataRow> scan(Predicate<SearchRow> filter) throws StorageException {
-        return new ScanCursor(db.newIterator(), filter);
+        return new ScanCursor(data.newIterator(), filter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull CompletableFuture<Void> snapshot(Path snapshotPath) {
+        Path tempPath = Paths.get(snapshotPath.toString() + TMP_SUFFIX);
+
+        // Create a RocksDB point-in-time snapshot
+        Snapshot snapshot = db.getSnapshot();
+
+        return CompletableFuture.runAsync(() -> {
+            // (Re)create the temporary directory
+            IgniteUtils.deleteIfExists(tempPath);
+
+            try {
+                Files.createDirectories(tempPath);
+            }
+            catch (IOException e) {
+                throw new IgniteInternalException("Failed to create directory: " + tempPath, e);
+            }
+        }, snapshotExecutor)
+            .thenRunAsync(() -> createSstFile(data, snapshot, tempPath), snapshotExecutor)
+            .whenComplete((aVoid, throwable) -> {
+                // Release a snapshot
+                db.releaseSnapshot(snapshot);
+
+                // Snapshot is not actually closed here, because a Snapshot instance doesn't own a pointer, the
+                // database does. Calling close to maintain the AutoCloseable semantics
+                snapshot.close();
+
+                if (throwable != null)
+                    return;
+
+                // Delete snapshot directory if it already exists
+                IgniteUtils.deleteIfExists(snapshotPath);
+
+                try {
+                    // Rename the temporary directory
+                    Files.move(tempPath, snapshotPath);
+                }
+                catch (IOException e) {
+                    throw new IgniteInternalException("Failed to rename: " + tempPath + " to " + snapshotPath, e);
+                }
+            });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restoreSnapshot(Path path) {
+        try (IngestExternalFileOptions ingestOptions = new IngestExternalFileOptions()) {
+            Path snapshotPath = path.resolve(COLUMN_FAMILY_NAME);
+
+            if (!Files.exists(snapshotPath))
+                throw new IgniteInternalException("Snapshot not found: " + snapshotPath);
+
+            this.data.ingestExternalFile(Collections.singletonList(snapshotPath.toString()), ingestOptions);
+        }
+        catch (RocksDBException e) {
+            throw new IgniteInternalException("Fail to ingest sst file at path: " + path, e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        IgniteUtils.closeAll(comparatorOptions, comparator, options, db);
+        IgniteUtils.shutdownAndAwaitTermination(snapshotExecutor, 10, TimeUnit.SECONDS);
+
+        IgniteUtils.closeAll(data, db, options, comparator, comparatorOptions);
     }
 
-    /** Cusror wrapper over the RocksIterator object with custom filter. */
+    /** Cursor wrapper over the RocksIterator object with custom filter. */
     private static class ScanCursor implements Cursor<DataRow> {
         /** Iterator from RocksDB. */
         private final RocksIterator iter;
@@ -378,5 +504,13 @@ public class RocksDbStorage implements Storage {
         @Override public void close() throws Exception {
             iter.close();
         }
+    }
+
+    /**
+     * @return Path to the database.
+     */
+    @TestOnly
+    public Path getDbPath() {
+        return dbPath;
     }
 }

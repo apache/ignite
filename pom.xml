@@ -59,6 +59,7 @@
         <module>modules/raft</module>
         <module>modules/raft-client</module>
         <module>modules/rest</module>
+        <module>modules/rocksdb-common</module>
         <module>modules/runner</module>
         <module>modules/schema</module>
         <module>modules/storage-api</module>
