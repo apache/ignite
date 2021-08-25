@@ -15,32 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 /**
- *
+ * Type of snapshot operation handler.
  */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
+public enum SnapshotHandlerType {
+    /** Handler is called immediately after the snapshot is taken. */
+    CREATE,
 
-    /** Security context. */
-    private final SecurityContext secCtx;
-
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
-    }
+    /** Handler is called just before restore operation is started. */
+    RESTORE
 }

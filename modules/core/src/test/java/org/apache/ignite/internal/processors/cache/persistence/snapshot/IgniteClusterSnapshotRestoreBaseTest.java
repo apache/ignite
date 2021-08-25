@@ -17,10 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.function.Function;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Snapshot restore test base.
@@ -84,6 +95,38 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
 
         for (int i = 0; i < keysCnt; i++)
             assertEquals(valueBuilder().apply(i), cache.get(i));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException if failed.
+     */
+    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+        String cacheName = ccfg.getName();
+
+        for (Ignite ignite : G.allGrids()) {
+            GridKernalContext kctx = ((IgniteEx)ignite).context();
+
+            if (kctx.clientNode())
+                continue;
+
+            CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
+
+            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
+
+            boolean success = GridTestUtils.waitForCondition(
+                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
+                TIMEOUT);
+
+            assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
+
+            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
+
+            String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
+                ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
+
+            assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
+        }
     }
 
     /** */

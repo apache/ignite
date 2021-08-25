@@ -15,32 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+#include <ignite/impl/thin/writable.h>
+#include <ignite/impl/thin/readable.h>
+#include <ignite/thin/compute/compute_client.h>
 
-/**
- *
- */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
+#include "impl/compute/compute_client_impl.h"
 
-    /** Security context. */
-    private final SecurityContext secCtx;
+using namespace ignite::impl::thin;
+using namespace compute;
+using namespace ignite::common::concurrent;
 
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
+namespace
+{
+    ComputeClientImpl& GetComputeClientImpl(SharedPointer<void>& ptr)
+    {
+        return *reinterpret_cast<ComputeClientImpl*>(ptr.Get());
     }
+}
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
+namespace ignite
+{
+    namespace thin
+    {
+        namespace compute
+        {
+            void ComputeClient::InternalExecuteJavaTask(const std::string& taskName, Writable& wrArg, Readable& res)
+            {
+                GetComputeClientImpl(impl).ExecuteJavaTask(flags, timeout, taskName, wrArg, res);
+            }
+        }
     }
 }

@@ -76,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -304,7 +303,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, cacheGrpNames).listen(f -> {
+        snpMgr.checkSnapshot(snpName, cacheGrpNames, true).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -352,18 +351,6 @@ public class SnapshotRestoreProcess {
             if (!reqGrpIds.isEmpty()) {
                 finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
                     "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                return;
-            }
-
-            IdleVerifyResultV2 res = f.result().idleVerifyResult();
-
-            if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
-                StringBuilder sb = new StringBuilder();
-
-                res.print(sb::append, true);
-
-                finishProcess(fut0.rqId, new IgniteException(sb.toString()));
 
                 return;
             }
