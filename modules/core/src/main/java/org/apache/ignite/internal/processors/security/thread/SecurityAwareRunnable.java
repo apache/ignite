@@ -42,11 +42,17 @@ public class SecurityAwareRunnable implements Runnable {
 
         this.delegate = delegate;
         this.security = security;
-        secCtx = security.securityContext();
+        secCtx = security.isDefaultContext() ? null : security.securityContext();
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
+        if (secCtx == null) {
+            delegate.run();
+
+            return;
+        }
+
         try (OperationSecurityContext ignored = security.withContext(secCtx)) {
             delegate.run();
         }

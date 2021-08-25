@@ -45,11 +45,14 @@ public class SecurityAwareCallable<T> implements Callable<T> {
 
         this.delegate = delegate;
         this.security = security;
-        secCtx = security.securityContext();
+        secCtx = security.isDefaultContext() ? null : security.securityContext();
     }
 
     /** {@inheritDoc} */
     @Override public T call() throws Exception {
+        if (secCtx == null)
+            return delegate.call();
+
         try (OperationSecurityContext ignored = security.withContext(secCtx)) {
             return delegate.call();
         }
