@@ -1575,7 +1575,7 @@ public class SnapshotRestoreProcess {
                 return;
 
             IgniteUuid deploymentId = msg.cacheDeploymentIds().get(grp.groupId());
-            CacheGroupDescriptor desc = grp.shared().affinity().cacheGroups().get(grp.groupId());
+            CacheGroupDescriptor desc = (CacheGroupDescriptor)grp.shared().affinity().cacheGroups().get(grp.groupId());
 
             if (deploymentId == null || desc == null)
                 return;

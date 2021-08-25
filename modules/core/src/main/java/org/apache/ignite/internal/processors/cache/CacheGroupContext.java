@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -641,7 +640,7 @@ public class CacheGroupContext {
     /**
      * @return Cache shared context.
      */
-    public GridCacheSharedContext<?, ?> shared() {
+    public GridCacheSharedContext shared() {
         return ctx;
     }
 
@@ -1315,23 +1314,5 @@ public class CacheGroupContext {
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
             ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        CacheGroupContext context = (CacheGroupContext)o;
-
-        return grpId == context.grpId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(grpId);
     }
 }

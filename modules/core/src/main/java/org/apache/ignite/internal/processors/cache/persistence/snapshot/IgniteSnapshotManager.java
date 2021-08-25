@@ -60,6 +60,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -333,6 +334,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Local snapshot sender factory. */
     private Function<String, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
 
+    /** Local snapshot sender factory. */
+    private BiFunction<String, UUID, SnapshotSender> rmtSndrFactory = this::remoteSnapshotSenderFactory;
+
     /** Main snapshot directory to save created snapshots. */
     private volatile File locSnpDir;
 
@@ -485,16 +489,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                         AbstractSnapshotFutureTask<?> task = registerSnapshotTask(rqId,
                             new SnapshotResponseRemoteFutureTask(cctx,
-                            nodeId,
-                            snpName,
-                            tmpWorkDir,
-                            ioFactory,
-                            new RemoteSnapshotSender(log,
-                                new SequentialExecutorWrapper(log, snpRunner),
-                                () -> databaseRelativePath(pdsSettings.folderName()),
-                                cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
-                                rqId),
-                            reqMsg0.parts()));
+                                nodeId,
+                                snpName,
+                                tmpWorkDir,
+                                ioFactory,
+                                rmtSndrFactory.apply(rqId, nodeId),
+                                reqMsg0.parts()));
 
                         task.listen(f -> {
                             if (f.error() == null)
@@ -586,14 +586,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Remote snapshot handler.
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
             @Override public void onEnd(UUID nodeId) {
-                RemoteSnapshotRequestFuture snpTrFut = rmtSnpReq.get();
+                RemoteSnapshotRequestFuture fut = rmtSnpReq.get();
 
-                assert snpTrFut.partsLeft == 0 : snpTrFut;
+                if (fut == null)
+                    return;
 
-                snpTrFut.onDone();
+                assert fut.partsLeft.get() == 0 : fut;
 
                 log.info("Requested snapshot from remote node has been fully received " +
-                    "[rqId=" + snpTrFut.rqId + ", snpName=" + snpTrFut.snpName + ", snpTrans=" + snpTrFut + ']');
+                    "[rqId=" + fut.rqId + ", snpName=" + fut.snpName + ", snpTrans=" + fut + ']');
+
+                fut.onDone((Void)null);
             }
 
             /** {@inheritDoc} */
@@ -626,12 +629,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert snpTrFut.rqId.equals(rqId) && snpTrFut.rmtNodeId.equals(nodeId) :
                     "Another transmission in progress [snpTrFut=" + snpTrFut + ", nodeId=" + rqId + ']';
 
-                if (snpTrFut.partsLeft == -1)
-                    snpTrFut.partsLeft = partsCnt;
+                snpTrFut.partsLeft.compareAndSet(-1, partsCnt);
 
                 try {
-                    File cacheDir = U.resolveWorkDirectory(tmpWorkDir.getAbsolutePath(),
-                        Paths.get(rqId, rmtDbNodePath, cacheDirName).toString(),
+                    File cacheDir = U.resolveWorkDirectory(snpTrFut.dir.toString(),
+                        Paths.get(rmtDbNodePath, cacheDirName).toString(),
                         false);
 
                     return Paths.get(cacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
@@ -676,8 +678,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         busyLock.enterBusy();
 
                         try {
-                            fut0.partConsumer.accept(file, new GroupPartitionId(grpId, partId));
-                            fut0.partsLeft--;
+                            fut0.accept(file, new GroupPartitionId(grpId, partId));
                         }
                         finally {
                             busyLock.leaveBusy();
@@ -1628,17 +1629,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param rmtNodeId The remote node to connect to.
-     * @param partConsumer Received partition handler.
+     * @param partHnd Received partition handler.
      * @return Future which will be completed when requested snapshot fully received.
      */
     public IgniteInternalFuture<Void> requestRemoteSnapshot(
         UUID rmtNodeId,
         String snpName,
         Map<Integer, Set<Integer>> parts,
-        BiConsumer<File, GroupPartitionId> partConsumer
+        BiConsumer<File, GroupPartitionId> partHnd
     ) {
         assert U.alphanumericUnderscore(snpName) : snpName;
-        assert partConsumer != null;
+        assert partHnd != null;
 
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
@@ -1652,7 +1653,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         String rqId = RMT_SNAPSHOT_PREFIX + U.maskForFileName(UUID.randomUUID().toString());
 
-        RemoteSnapshotRequestFuture snpTransFut = new RemoteSnapshotRequestFuture(rmtNodeId, rqId, snpName, partConsumer);
+        RemoteSnapshotRequestFuture snpTransFut = new RemoteSnapshotRequestFuture(rmtNodeId, rqId, snpName, tmpWorkDir, partHnd);
+
+        snpTransFut.listen(f -> rmtSnpReq.compareAndSet(snpTransFut, null));
 
         busyLock.enterBusy();
         SnapshotRequestMessage msg0;
@@ -1893,6 +1896,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     Function<String, SnapshotSender> localSnapshotSenderFactory() {
         return locSndrFactory;
+    }
+
+    /**
+     * @param factory Factory which produces {@link RemoteSnapshotSender} implementation.
+     */
+    void remoteSnapshotSenderFactory(BiFunction<String, UUID, SnapshotSender> factory) {
+        rmtSndrFactory = factory;
+    }
+
+    RemoteSnapshotSender remoteSnapshotSenderFactory(String rqId, UUID nodeId) {
+        return new RemoteSnapshotSender(log,
+            new SequentialExecutorWrapper(log, snpRunner),
+            () -> databaseRelativePath(pdsSettings.folderName()),
+            cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
+            rqId);
     }
 
     /** Snapshot finished successfully or already restored. Key can be removed. */
@@ -2256,7 +2274,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Remote snapshot future which tracks remote snapshot transmission result. */
-    private class RemoteSnapshotRequestFuture extends GridFutureAdapter<Void> {
+    private static class RemoteSnapshotRequestFuture extends GridFutureAdapter<Void> implements BiConsumer<File, GroupPartitionId> {
         /** Snapshot name to create. */
         private final String rqId;
 
@@ -2267,19 +2285,42 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final UUID rmtNodeId;
 
         /** Partition handler given by request initiator. */
-        private final BiConsumer<File, GroupPartitionId> partConsumer;
+        private final BiConsumer<File, GroupPartitionId> partHnd;
+
+        /** Temporary working directory for consuming partitions. */
+        private final Path dir;
 
         /** Counter which show how many partitions left to be received. */
-        private int partsLeft = -1;
+        private final AtomicInteger partsLeft = new AtomicInteger(-1);
 
         /**
-         * @param partConsumer Received partition handler.
+         * @param rmtNodeId Remote node id to request snapshots.
+         * @param rqId Unique request id.
+         * @param snpName Snapshot name.
+         * @param tmpWorkDir Temporary work directory.
+         * @param partHnd Partition handler.
          */
-        public RemoteSnapshotRequestFuture(UUID rmtNodeId, String rqId, String snpName, BiConsumer<File, GroupPartitionId> partConsumer) {
+        public RemoteSnapshotRequestFuture(
+            UUID rmtNodeId,
+            String rqId,
+            String snpName,
+            File tmpWorkDir,
+            BiConsumer<File, GroupPartitionId> partHnd
+        ) {
             this.rqId = rqId;
+            dir = Paths.get(tmpWorkDir.getAbsolutePath(), rqId);
             this.snpName = snpName;
             this.rmtNodeId = rmtNodeId;
-            this.partConsumer = partConsumer;
+            this.partHnd = partHnd;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(File part, GroupPartitionId gpId) {
+            if (isDone())
+                return;
+
+            partHnd.accept(part, gpId);
+            partsLeft.decrementAndGet();
         }
 
         /** {@inheritDoc} */
@@ -2290,11 +2331,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             if (super.onDone(res, err, cancel)) {
-                boolean success = rmtSnpReq.compareAndSet(this, null);
-
-                assert success;
-
-                U.delete(Paths.get(tmpWorkDir.getAbsolutePath(), rqId));
+                U.delete(dir);
 
                 return true;
             }

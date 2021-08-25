@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectory;
@@ -70,7 +71,6 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             return false;
 
         try {
-            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName);
             List<GroupPartitionId> handled = new ArrayList<>();
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
@@ -83,6 +83,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName);
 
             List<CompletableFuture<Void>> futs = new ArrayList<>();
+            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName);
 
             for (SnapshotMetadata meta : metas) {
                 Map<Integer, Set<Integer>> parts0 = meta.partitions();
@@ -135,25 +136,21 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             CompletableFuture.allOf(futs.toArray(new CompletableFuture[size]))
                 .whenComplete((r, t) -> {
-                    Throwable th = ofNullable(t).orElse(err.get());
+                    Throwable th = ofNullable(err.get()).orElse(t);
 
-                    if (th == null) {
-                        onDone((Void)null);
-
-                        if (log.isInfoEnabled())
-                            log.info("Snapshot partitions have been sent to the remote node [snpName=" + snpName +
-                                ", rmtNodeId=" + srcNodeId + ']');
+                    if (th == null && log.isInfoEnabled()) {
+                        log.info("Snapshot partitions have been sent to the remote node [snpName=" + snpName +
+                            ", rmtNodeId=" + srcNodeId + ']');
                     }
-                    else
-                        onDone(th);
 
-                    snpSndr.close(th);
+                    close(th);
                 });
 
             return true;
         }
         catch (Throwable t) {
-            onDone(t);
+            if (err.compareAndSet(null, t))
+                close(t);
 
             return false;
         }
@@ -161,6 +158,21 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-        err.compareAndSet(null, th);
+        if (err.compareAndSet(null, th))
+            close(th);
+    }
+
+    /**
+     * @param th Additional close exception if occurred.
+     */
+    private void close(@Nullable Throwable th) {
+        if (th == null) {
+            snpSndr.close(null);
+            onDone((Void)null);
+        }
+        else {
+            snpSndr.close(th);
+            onDone(th);
+        }
     }
 }
