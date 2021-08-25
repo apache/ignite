@@ -57,12 +57,6 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     private final CacheQueryPageRequester pageRequester;
 
     /**
-     * Whether it is allowed to send cache query result requests to nodes.
-     * It is set to {@code false} if query doesn't accept initial pages from all nodes, or query is finished or failed.
-     */
-    private volatile boolean loadAllowed;
-
-    /**
      * Count down this latch when every node responses on initial cache query request.
      */
     private final CountDownLatch firstPageLatch = new CountDownLatch(1);
@@ -94,8 +88,6 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
 
     /** {@inheritDoc} */
     @Override public void onFinish() {
-        loadAllowed = false;
-
         firstPageLatch.countDown();
     }
 
@@ -108,8 +100,6 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
      * Callback that invoked when all nodes response with initial page.
      */
     private void onFirstItemReady() {
-        loadAllowed = true;
-
         firstPageLatch.countDown();
     }
 
@@ -147,7 +137,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
 
     /** {@inheritDoc} */
     @Override public boolean onPage(UUID nodeId, Collection<R> data, boolean last) {
-        if (!loadAllowed) {
+        if (rcvdFirstPage != null) {
             rcvdFirstPage.add(nodeId);
 
             if (rcvdFirstPage.size() == streams.size()) {
