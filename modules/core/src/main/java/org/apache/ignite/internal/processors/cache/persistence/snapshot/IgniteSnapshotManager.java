@@ -1657,12 +1657,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         snpTransFut.listen(f -> rmtSnpReq.compareAndSet(snpTransFut, null));
 
+        SnapshotRequestMessage msg0 = new SnapshotRequestMessage(rqId, snpName, parts);
         busyLock.enterBusy();
-        SnapshotRequestMessage msg0;
 
         try {
-            msg0 = new SnapshotRequestMessage(rqId, snpName, parts);
-
             RemoteSnapshotRequestFuture fut = rmtSnpReq.get();
 
             try {
