@@ -91,7 +91,7 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Ignite result row count mather.
+     * Ignite result row count matсher.
      *
      * @param rowCount Expected result row count.
      * @return Mather.
