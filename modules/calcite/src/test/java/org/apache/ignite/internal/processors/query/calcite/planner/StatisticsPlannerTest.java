@@ -102,14 +102,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
-        ColocationGroup colocation = ColocationGroup.forAssignments(Arrays.asList(
-            select(nodes, 0, 1),
-            select(nodes, 1, 2),
-            select(nodes, 2, 0),
-            select(nodes, 0, 1),
-            select(nodes, 1, 2)
-        ));
-
         int t1rc = 1000;
 
         tbl1NumericFields.addAll(Arrays.asList("T1C1INT", "T1C3DBL", "T1C4BYTE", "T1C7SHORT", "T1C8LONG", "T1C9FLOAT"));
