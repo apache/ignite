@@ -255,7 +255,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Chech index choosing with not null condition. Due to AbstractIndexScan logic - no index should be choosen.
+     * Check index choosing with not null condition. Due to AbstractIndexScan logic - no index should be choosen.
      */
     @Test
     public void testNotNull() throws Exception {
