@@ -17,10 +17,10 @@
 
 package org.apache.ignite.platform;
 
-import org.apache.ignite.cache.CacheEntryProcessor;
-
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
  * Entry processor that adds argument to cache entry and returns PlatformComputeBinarizable.
