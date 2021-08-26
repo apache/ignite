@@ -40,14 +40,20 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
      * 2) Get global statistics (with delay) and check its equality in all nodes.
      */
     @Test
-    public void testGathering() throws Exception {
-        ObjectStatisticsImpl stats[] = getStats("SMALL", StatisticsType.LOCAL);
+    public void testGathering() {
+        ObjectStatisticsImpl localStats[] = getStats("SMALL", StatisticsType.LOCAL);
 
-        testCond(Objects::nonNull, stats);
+        testCond(Objects::nonNull, localStats);
 
-        testCond(stat -> stat.columnsStatistics().size() == stats[0].columnsStatistics().size(), stats);
+        testCond(stat -> stat.columnsStatistics().size() == localStats[0].columnsStatistics().size(), localStats);
 
-        testCond(this::checkStat, stats);
+        testCond(this::checkStat, localStats);
+
+        ObjectStatisticsImpl globalStats[] = getStats("SMALL", StatisticsType.GLOBAL);
+
+        testCond(Objects::nonNull, globalStats);
+
+        testCond(this::checkStat, globalStats);
     }
 
     /**

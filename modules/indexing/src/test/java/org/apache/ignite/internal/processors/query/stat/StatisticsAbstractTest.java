@@ -396,16 +396,18 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * Collect or refresh statistics.
      *
      * @param collect If {@code true} - collect new statistics, if {@code false} - update existing.
-     * @param targets
+     * @param targets Targets to process statistics by.
      */
     private void makeStatistics(boolean collect, StatisticsTarget... targets) {
         try {
-            Map<StatisticsTarget, Long> expectedVersion = new HashMap<>();
+            Map<StatisticsTarget, Long> expectedVer = new HashMap<>();
             IgniteStatisticsManagerImpl statMgr = statisticsMgr(0);
+
             for (StatisticsTarget target : targets) {
                 StatisticsObjectConfiguration currCfg = statMgr.statisticConfiguration().config(target.key());
 
                 Predicate<StatisticsColumnConfiguration> pred;
+
                 if (F.isEmpty(target.columns()))
                     pred = c -> true;
                 else {
@@ -417,7 +419,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                 Long expVer = (currCfg == null) ? 1L : currCfg.columnsAll().values().stream().filter(pred)
                     .mapToLong(StatisticsColumnConfiguration::version).min().orElse(0L) + 1;
 
-                expectedVersion.put(target, expVer);
+                expectedVer.put(target, expVer);
             }
 
             if (collect)
@@ -425,7 +427,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
             else
                 statisticsMgr(0).refreshStatistics(targets);
 
-            awaitStatistics(TIMEOUT, expectedVersion);
+            awaitStatistics(TIMEOUT, expectedVer);
         }
         catch (Exception ex) {
             throw new IgniteException(ex);
@@ -508,30 +510,14 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         while (true) {
             try {
                 checkStatisticTasksEmpty(ign);
+
                 for (Map.Entry<StatisticsTarget, Long> targetVersionEntry : expectedVersions.entrySet()) {
                     StatisticsTarget target = targetVersionEntry.getKey();
                     Long ver = targetVersionEntry.getValue();
 
                     ObjectStatisticsImpl s = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(target.key());
-                    assertNotNull(s);
+                    checkStatisticsVersion(s, target, ver);
 
-                    long minVer = Long.MAX_VALUE;
-
-                    Set<String> cols;
-                    if (F.isEmpty(target.columns()))
-                        cols = s.columnsStatistics().keySet();
-                    else
-                        cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
-
-                    for (String col : cols) {
-                        if (s.columnStatistics(col).version() < minVer)
-                            minVer = s.columnStatistics(col).version();
-                    }
-
-                    if (minVer == Long.MAX_VALUE)
-                        minVer = -1;
-
-                    assertEquals((long)ver, minVer);
                 }
 
                 return;
@@ -543,6 +529,35 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                     U.sleep(200);
             }
         }
+    }
+
+    /**
+     * Check specified statistics.
+     *
+     * @param stat Object statistics to check.
+     * @param target Statistics target to check only some columns.
+     * @param ver Mininum allowed version.
+     * @return {@code true} if all column
+     */
+    private boolean checkStatisticsVersion(ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
+        if (stat == null || stat.columnsStatistics().isEmpty())
+            return false;
+
+        Set<String> cols;
+
+        if (F.isEmpty(target.columns()))
+            cols = stat.columnsStatistics().keySet();
+        else
+            cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
+
+        for (String col : cols) {
+            ColumnStatistics colStat = stat.columnStatistics(col);
+
+            if (colStat == null || colStat.version() < ver)
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -624,9 +639,17 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @return Local table statistics or {@code null} if there are no such statistics in specified node.
      */
     protected ObjectStatisticsImpl getStatsFromNode(int nodeIdx, String tblName, StatisticsType type) {
+        StatisticsKey key = new StatisticsKey(SCHEMA, tblName);
+
         switch (type) {
+            case GLOBAL:
+
+                return (ObjectStatisticsImpl)statisticsMgr(nodeIdx).getGlobalStatistics(key);
+
             case LOCAL:
-                return (ObjectStatisticsImpl)statisticsMgr(nodeIdx).getLocalStatistics(new StatisticsKey(SCHEMA, tblName));
+
+                return (ObjectStatisticsImpl)statisticsMgr(nodeIdx).getLocalStatistics(key);
+
             case PARTITION:
             default:
                 throw new UnsupportedOperationException();

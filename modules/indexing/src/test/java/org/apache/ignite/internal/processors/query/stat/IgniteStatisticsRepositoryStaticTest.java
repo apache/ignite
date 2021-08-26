@@ -114,19 +114,18 @@ public class IgniteStatisticsRepositoryStaticTest extends StatisticsAbstractTest
         ObjectStatisticsImpl os = new ObjectStatisticsImpl(100, colStat1);
 
         // 1) Remove not existing column.
-        ObjectStatisticsImpl os1 = IgniteStatisticsRepository.subtract(os, Collections.singleton("col0"));
+        ObjectStatisticsImpl os1 = os.subtract(Collections.singleton("col0"));
 
         assertEquals(os, os1);
 
         // 2) Remove some columns.
-        ObjectStatisticsImpl os2 = IgniteStatisticsRepository.subtract(os, Collections.singleton("col1"));
+        ObjectStatisticsImpl os2 = os.subtract(Collections.singleton("col1"));
 
         assertEquals(1, os2.columnsStatistics().size());
         assertEquals(cs2, os2.columnStatistics("col2"));
 
         // 3) Remove all columns.
-        ObjectStatisticsImpl os3 = IgniteStatisticsRepository.subtract(os,
-            Arrays.stream(new String[] {"col2", "col1"}).collect(Collectors.toSet()));
+        ObjectStatisticsImpl os3 = os.subtract(Arrays.stream(new String[] {"col2", "col1"}).collect(Collectors.toSet()));
 
         assertTrue(os3.columnsStatistics().isEmpty());
     }

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.systemview.SystemViewMBean;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
 import org.apache.ignite.internal.util.typedef.F;
@@ -149,6 +150,7 @@ public class SystemViewRowAttributeWalkerGenerator {
 
         gen.generateAndWrite(StatisticsColumnConfigurationView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(StatisticsColumnLocalDataView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnGlobalDataView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(StatisticsColumnPartitionDataView.class, INDEXING_SRC_DIR);
     }
 

@@ -197,7 +197,8 @@ public class IgniteStatisticsRepository {
             localStatsMap = Collections.singletonMap(key, objLocalStat.statistics());
         }
         else
-            localStatsMap = locStats.entrySet().stream().filter(e -> F.isEmpty(schema) || schema.equals(e.getKey().schema()))
+            localStatsMap = locStats.entrySet().stream()
+                .filter(e -> F.isEmpty(schema) || schema.equals(e.getKey().schema()))
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().statistics()));
 
         List<StatisticsColumnLocalDataView> res = new ArrayList<>();
@@ -216,6 +217,7 @@ public class IgniteStatisticsRepository {
             }
             else {
                 ColumnStatistics colStat = localStatsEntry.getValue().columnStatistics(column);
+
                 if (colStat != null) {
                     StatisticsColumnLocalDataView colStatView = new StatisticsColumnLocalDataView(key, column, stat);
 
@@ -259,7 +261,7 @@ public class IgniteStatisticsRepository {
         Collection<Integer> partitionsToRmv = new ArrayList<>();
 
         for (ObjectPartitionStatisticsImpl oldStat : oldStatistics) {
-            ObjectPartitionStatisticsImpl newStat = subtract(oldStat, colNames);
+            ObjectPartitionStatisticsImpl newStat = oldStat.subtract(colNames);
 
             if (!newStat.columnsStatistics().isEmpty())
                 newStatistics.add(newStat);
@@ -436,7 +438,7 @@ public class IgniteStatisticsRepository {
         }
 
         locStats.computeIfPresent(key, (k, v) -> {
-            ObjectStatisticsImpl locStatNew = subtract(v.statistics(), colNames);
+            ObjectStatisticsImpl locStatNew = v.statistics().subtract(colNames);
 
             return locStatNew.columnsStatistics().isEmpty() ? null :
                 new VersionedStatistics(v.topologyVersion(), locStatNew);
@@ -462,22 +464,6 @@ public class IgniteStatisticsRepository {
         T res = (T)add.clone();
         for (Map.Entry<String, ColumnStatistics> entry : base.columnsStatistics().entrySet())
             res.columnsStatistics().putIfAbsent(entry.getKey(), entry.getValue());
-
-        return res;
-    }
-
-    /**
-     * Remove specified columns from clone of base ObjectStatistics object.
-     *
-     * @param base ObjectStatistics to remove columns from.
-     * @param cols Columns to remove.
-     * @return Cloned object without specified columns statistics.
-     */
-    public static <T extends ObjectStatisticsImpl> T subtract(T base, Set<String> cols) {
-        T res = (T)base.clone();
-
-        for (String col : cols)
-            res.columnsStatistics().remove(col);
 
         return res;
     }

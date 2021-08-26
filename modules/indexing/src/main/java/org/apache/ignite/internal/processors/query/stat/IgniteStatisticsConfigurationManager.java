@@ -114,6 +114,9 @@ public class IgniteStatisticsConfigurationManager {
     private final GridCachePartitionExchangeManager exchange;
 
     /** */
+    private IgniteGlobalStatisticsManager globalStatMgr;
+
+    /** */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr = new DistributedMetastorageLifecycleListener() {
         @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
             distrMetaStorage = (DistributedMetaStorage)metastorage;
@@ -221,10 +224,10 @@ public class IgniteStatisticsConfigurationManager {
     /** */
     public IgniteStatisticsConfigurationManager(
         SchemaManager schemaMgr,
-        GridInternalSubscriptionProcessor subscriptionProcessor,
+        GridInternalSubscriptionProcessor subscriptionProc,
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
-        GridCachePartitionExchangeManager exchange,
+        GridCachePartitionExchangeManager<?, ?> exchange,
         IgniteStatisticsRepository repo,
         StatisticsGatherer gatherer,
         IgniteThreadPoolExecutor mgmtPool,
@@ -236,13 +239,22 @@ public class IgniteStatisticsConfigurationManager {
         this.mgmtPool = mgmtPool;
         this.gatherer = gatherer;
         this.cluster = cluster;
-        this.subscriptionProcessor = subscriptionProcessor;
+        this.subscriptionProcessor = subscriptionProc;
         this.exchange = exchange;
 
         this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
         sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
             new StatisticsColumnConfigurationViewWalker(), this::columnConfigurationViewSupplier, Function.identity());
+    }
+
+    /**
+     * Set global statistics manager.
+     *
+     * @param globalStatMgr Global statistics manager.
+     */
+    public void setGlobalStatMgr(IgniteGlobalStatisticsManager globalStatMgr) {
+        this.globalStatMgr = globalStatMgr;
     }
 
     /**
@@ -559,7 +571,7 @@ public class IgniteStatisticsConfigurationManager {
                 return Collections.emptySet();
             }
 
-            GridCacheContext cctx = tbl.cacheContext();
+            GridCacheContext<?, ?> cctx = tbl.cacheContext();
 
             if (cctx == null)
                 return Collections.emptySet();
@@ -570,7 +582,7 @@ public class IgniteStatisticsConfigurationManager {
 
             if (F.isEmpty(parts)) {
                 // There is no data on the node for specified cache.
-                // Remove oll data
+                // Remove all data
                 dropColumnsOnLocalStatistics(cfg, cfg.columns().keySet());
 
                 return Collections.emptySet();
@@ -639,7 +651,7 @@ public class IgniteStatisticsConfigurationManager {
                 dropColumnsOnLocalStatistics(cfg, colsToRmv);
 
             if (!F.isEmpty(partsToCollect))
-                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect);
+                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect, topVer0);
             else {
                 // All local statistics by partition are available.
                 // Only refresh aggregated local statistics.
@@ -673,8 +685,10 @@ public class IgniteStatisticsConfigurationManager {
 
             StatisticsObjectConfiguration.Diff diff = StatisticsObjectConfiguration.diff(oldCfg, newCfg);
 
-            if (!F.isEmpty(diff.dropCols()))
+            if (!F.isEmpty(diff.dropCols())) {
                 dropColumnsOnLocalStatistics(newCfg, diff.dropCols());
+                globalStatMgr.clearGlobalStatistics(oldCfg.key(), diff.dropCols());
+            }
 
             if (!F.isEmpty(diff.updateCols())) {
                 GridH2Table tbl = schemaMgr.dataTable(newCfg.key().schema(), newCfg.key().obj());
@@ -683,49 +697,18 @@ public class IgniteStatisticsConfigurationManager {
                 if (tbl == null)
                     return;
 
-                GridCacheContext cctx = tbl.cacheContext();
+                GridCacheContext<?, ?> cctx = tbl.cacheContext();
 
                 // Not affinity node (e.g. client node)
                 if (cctx == null)
                     return;
 
-                Set<Integer> parts = cctx.affinity().primaryPartitions(
-                    cctx.localNodeId(), cctx.affinity().affinityTopologyVersion());
+                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+                Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
 
-                gatherLocalStatistics(
-                    newCfg,
-                    tbl,
-                    parts,
-                    parts,
-                    diff.updateCols()
-                );
+                gatherLocalStatistics(newCfg, tbl, parts, parts, diff.updateCols(), topVer);
             }
         }
-    }
-
-    /**
-     * Gather local statistics for specified object and partitions.
-     *
-     * @param cfg Statistics object configuration.
-     * @param tbl Table.
-     * @param partsToAggregate Set of partition ids to aggregate.
-     * @param partsToCollect Set of partition ids to gather statistics from.
-     * @param colsToCollect If specified - collect statistics only for this columns,
-     *                      otherwise - collect to all columns from object configuration.
-     */
-    public void gatherLocalStatistics(
-        StatisticsObjectConfiguration cfg,
-        GridH2Table tbl,
-        Set<Integer> partsToAggregate,
-        Set<Integer> partsToCollect,
-        Map<String, StatisticsColumnConfiguration> colsToCollect
-    ) {
-        if (F.isEmpty(colsToCollect))
-            colsToCollect = cfg.columns();
-
-        gatherer.gatherLocalObjectsStatisticsAsync(tbl, cfg, colsToCollect, partsToCollect);
-
-        gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), partsToAggregate));
     }
 
     /** */
@@ -741,6 +724,7 @@ public class IgniteStatisticsConfigurationManager {
             gCtx.futureAggregate().thenAccept((v) -> {
                 repo.clearLocalStatistics(cfg.key(), cols);
                 repo.clearLocalPartitionsStatistics(cfg.key(), cols);
+
             });
         }
         else {
@@ -750,12 +734,39 @@ public class IgniteStatisticsConfigurationManager {
     }
 
     /**
+     * Gather local statistics for specified object and partitions.
+     *
+     * @param cfg Statistics object configuration.
+     * @param tbl Table.
+     * @param partsToAggregate Set of partition ids to aggregate.
+     * @param partsToCollect Set of partition ids to gather statistics from.
+     * @param colsToCollect If specified - collect statistics only for this columns,
+     *                      otherwise - collect to all columns from object configuration.
+     * @param topVer Topology version.
+     */
+    public void gatherLocalStatistics(
+        StatisticsObjectConfiguration cfg,
+        GridH2Table tbl,
+        Set<Integer> partsToAggregate,
+        Set<Integer> partsToCollect,
+        Map<String, StatisticsColumnConfiguration> colsToCollect,
+        AffinityTopologyVersion topVer
+    ) {
+        if (F.isEmpty(colsToCollect))
+            colsToCollect = cfg.columns();
+
+        gatherer.gatherLocalObjectsStatisticsAsync(tbl, cfg, colsToCollect, partsToCollect);
+
+        gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), partsToAggregate, topVer));
+    }
+
+    /**
      * Aggregate local primary partitions statistics to local one.
      *
      * @param key Statistics key to aggregate statistics by.
      * @param partsToAggregate Set of partition ids to aggregate.
-     * @param
-     * @return
+     * @param topVer Topology version.
+     * @return Aggregated local statistics.
      */
     private ObjectStatisticsImpl aggregateLocalGathering(
         StatisticsKey key,

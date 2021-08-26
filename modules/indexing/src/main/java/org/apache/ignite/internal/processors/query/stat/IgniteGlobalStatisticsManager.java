@@ -29,6 +29,10 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnGlobalDataViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnLocalDataViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnPartitionDataViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
@@ -40,6 +44,10 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMe
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
@@ -48,6 +56,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -60,6 +69,12 @@ import java.util.stream.Collectors;
  * Crawler tracks requests and call back statistics manager to process failed requests.
  */
 public class IgniteGlobalStatisticsManager implements GridMessageListener {
+    /** */
+    private static final String STAT_GLOBAL_VIEW_NAME = "statisticsGlobalData";
+
+    /** */
+    private static final String STAT_GLOBAL_VIEW_DESCRIPTION = "Global statistics.";
+
     /** Statistics configuration manager. */
     private final IgniteStatisticsConfigurationManager cfgMgr;
 
@@ -76,7 +91,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     private final GridClusterStateProcessor cluster;
 
     /** Cache partition exchange manager. */
-    private final GridCachePartitionExchangeManager exchange;
+    private final GridCachePartitionExchangeManager<?, ?> exchange;
 
     /** Helper to transform or generate statistics related messages. */
     private final IgniteStatisticsHelper helper;
@@ -127,6 +142,10 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
                     return;
 
                 // Just clear all activities and update topology version.
+                if (log.isTraceEnabled())
+                    log.trace("Resetting all global statistics activities due to new topology " +
+                        fut.topologyVersion());
+
                 inLocalRequests.clear();
                 inGloblaRequests.clear();
                 curCollections.clear();
@@ -144,11 +163,12 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      */
     public IgniteGlobalStatisticsManager(
         IgniteStatisticsConfigurationManager cfgMgr,
+        GridSystemViewManager sysViewMgr,
         IgniteStatisticsRepository repo,
         IgniteThreadPoolExecutor mgmtPool,
         GridDiscoveryManager discoMgr,
         GridClusterStateProcessor cluster,
-        GridCachePartitionExchangeManager exchange,
+        GridCachePartitionExchangeManager<?, ?> exchange,
         IgniteStatisticsHelper helper,
         GridIoManager ioMgr,
         Function<Class<?>, IgniteLogger> logSupplier
@@ -162,6 +182,69 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         this.helper = helper;
         this.ioMgr = ioMgr;
         log = logSupplier.apply(IgniteGlobalStatisticsManager.class);
+
+        sysViewMgr.registerFiltrableView(STAT_GLOBAL_VIEW_NAME, STAT_GLOBAL_VIEW_DESCRIPTION,
+            new StatisticsColumnGlobalDataViewWalker(), this::columnGlobalStatisticsViewSupplier, Function.identity());
+    }
+
+    /**
+     * Statistics column global data view filterable supplier.
+     *
+     * @param filter Filter.
+     * @return Iterable with statistics column global data views.
+     */
+    private Iterable<StatisticsColumnGlobalDataView> columnGlobalStatisticsViewSupplier(Map<String, Object> filter) {
+        String type = (String)filter.get(StatisticsColumnPartitionDataViewWalker.TYPE_FILTER);
+        if (type != null && !StatisticsColumnConfigurationView.TABLE_TYPE.equalsIgnoreCase(type))
+            return Collections.emptyList();
+
+        String schema = (String)filter.get(StatisticsColumnLocalDataViewWalker.SCHEMA_FILTER);
+        String name = (String)filter.get(StatisticsColumnLocalDataViewWalker.NAME_FILTER);
+        String column = (String)filter.get(StatisticsColumnPartitionDataViewWalker.COLUMN_FILTER);
+
+        Map<StatisticsKey, ObjectStatisticsImpl> globalStatsMap;
+        if (!F.isEmpty(schema) && !F.isEmpty(name)) {
+            StatisticsKey key = new StatisticsKey(schema, name);
+
+            CacheEntry<ObjectStatisticsImpl> objLocStat = globalStatistics.get(key);
+
+            if (objLocStat == null || objLocStat.obj == null)
+                return Collections.emptyList();
+
+            globalStatsMap = Collections.singletonMap(key, objLocStat.object());
+        }
+        else
+            globalStatsMap = globalStatistics.entrySet().stream()
+                .filter(e -> e.getValue().object() != null && (F.isEmpty(schema) || schema.equals(e.getKey().schema())))
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().object()));
+
+        List<StatisticsColumnGlobalDataView> res = new ArrayList<>();
+
+        for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> localStatsEntry : globalStatsMap.entrySet()) {
+            StatisticsKey key = localStatsEntry.getKey();
+            ObjectStatisticsImpl stat = localStatsEntry.getValue();
+
+            if (column == null) {
+                for (Map.Entry<String, ColumnStatistics> colStat : localStatsEntry.getValue().columnsStatistics()
+                    .entrySet()) {
+                    StatisticsColumnGlobalDataView colStatView = new StatisticsColumnGlobalDataView(key,
+                        colStat.getKey(), stat);
+
+                    res.add(colStatView);
+                }
+            }
+            else {
+                ColumnStatistics colStat = localStatsEntry.getValue().columnStatistics(column);
+
+                if (colStat != null) {
+                    StatisticsColumnGlobalDataView colStatView = new StatisticsColumnGlobalDataView(key, column, stat);
+
+                    res.add(colStatView);
+                }
+            }
+        }
+
+        return res;
     }
 
     /** Start. */
@@ -469,18 +552,21 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     }
 
     /**
-     * Process statistics configuration changes.
+     * Process statistics configuration changes:
+     *
      * 1) Remove all current activity by specified key.
-     * 2) If there are no live column config - remove cached global statistics.
-     * 3) If there are some live column config and global statistics cache contains statistics for the given key -
+     * 2) If there are no live columns config - remove cached global statistics.
+     * 3) If there are some live columns config and global statistics cache contains statistics for the given key -
      * start to collect it again.
      */
     public void onConfigChanged(StatisticsObjectConfiguration cfg) {
        StatisticsKey key = cfg.key();
+
        inLocalRequests.remove(key);
        inGloblaRequests.remove(key);
        curCollections.remove(key);
        outGlobalStatisticsRequests.remove(key);
+
        if (cfg.columns().isEmpty())
            globalStatistics.remove(key);
        else {
@@ -489,8 +575,20 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
            if (oldStatEntry != null)
                mgmtPool.submit(() -> collectGlobalStatistics(key));
        }
+    }
 
+    /**
+     * Clear global object statistics.
+     *
+     * @param key Object key to clear blobal statistics by.
+     * @param colNames Only statistics by specified columns will be cleared.
+     */
+    public void clearGlobalStatistics(StatisticsKey key, Set<String> colNames) {
+        globalStatistics.computeIfPresent(key, (k, v) -> {
+            ObjectStatisticsImpl globStatNew = v.object().subtract(colNames);
 
+            return globStatNew.columnsStatistics().isEmpty() ? null : new CacheEntry<>(v.cachedAt(), globStatNew);
+        });
     }
 
     /**
@@ -647,27 +745,49 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
     /** Cache entry. */
     private static class CacheEntry<T> {
-        /** */
+        /** Cache entry original timestamp. */
         private final long cachedAt;
 
-        /** */
+        /** Cached object. */
         private final T obj;
 
+        /**
+         * Constructor.
+         *
+         * @param obj Cached object.
+         */
         public CacheEntry(T obj) {
             cachedAt = System.currentTimeMillis();
             this.obj = obj;
         }
 
-        public long getCachedAt() {
+        /**
+         * Constructor.
+         *
+         * @param cachedAt Cache original timestamp.
+         * @param obj Object to cache.
+         */
+        public CacheEntry(long cachedAt, T obj) {
+            this.cachedAt = cachedAt;
+            this.obj = obj;
+        }
+
+        /**
+         * @return Cache entry original timestamp.
+         */
+        public long cachedAt() {
             return cachedAt;
         }
 
+        /**
+         * @return Cached object.
+         */
         public T object() {
             return obj;
         }
     }
 
-    /** */
+    /** Context of global statistics gathering. */
     private static class StatisticsGatheringContext {
         /** Number of remaining requests. */
         private int remainingResponses;

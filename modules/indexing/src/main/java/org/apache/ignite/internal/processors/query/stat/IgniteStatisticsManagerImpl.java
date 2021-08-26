@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -163,6 +164,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         globalStatsMgr = new IgniteGlobalStatisticsManager(
             statCfgMgr,
+            ctx.systemView(),
             statsRepos,
             mgmtPool,
             ctx.discovery(),
@@ -173,6 +175,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx::log);
 
         statsRepos.setGlobalStatMgr(globalStatsMgr);
+        statCfgMgr.setGlobalStatMgr(globalStatsMgr);
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
@@ -302,6 +305,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             if (!unfinishedTasks.isEmpty())
                 log.warning(String.format("%d statistics configuration change handler cancelled.", unfinishedTasks.size()));
         }
+
+        if (log.isDebugEnabled())
+            log.debug("Statistics manager started.");
     }
 
     /** */
@@ -376,10 +382,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
             GridCacheContext cctx = tbl.cacheContext();
 
-            Set<Integer> parts = cctx.affinity().primaryPartitions(
-                cctx.localNodeId(), cctx.affinity().affinityTopologyVersion());
+            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-            statCfgMgr.gatherLocalStatistics(objCfg, tbl, parts, new HashSet<>(objTask.getValue()), null);
+            Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
+
+            statCfgMgr.gatherLocalStatistics(objCfg, tbl, parts, new HashSet<>(objTask.getValue()), null, topVer);
         }
     }
 
