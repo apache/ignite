@@ -225,13 +225,13 @@ public class IndexQueryProcessor {
         if (segmentsCnt == 1)
             return query(0, idx, criteria, qryCtx);
 
-        final GridCursor<IndexRow>[] segments = new GridCursor[segmentsCnt];
+        final GridCursor<IndexRow>[] segmentCursors = new GridCursor[segmentsCnt];
 
-        // Actually it just traverse BPlusTree to find boundaries. It's too fast to parallelize this.
+        // Actually it just traverses BPlusTree to find boundaries. It's too fast to parallelize this.
         for (int i = 0; i < segmentsCnt; i++)
-            segments[i] = query(i, idx, criteria, qryCtx);
+            segmentCursors[i] = query(i, idx, criteria, qryCtx);
 
-        return new SegmentedIndexCursor(segments, ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator());
+        return new SegmentedIndexCursor(segmentCursors, ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator());
     }
 
     /**

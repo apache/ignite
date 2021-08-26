@@ -166,6 +166,16 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
                 return cache.query(qry).getAll();
             },
             IgniteCheckedException.class, "No index matches query");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                    .setCriteria(
+                        lt("id", Integer.MAX_VALUE),
+                        lt("nonExistedField", Integer.MAX_VALUE));
+
+                return cache.query(qry).getAll();
+            },
+            IgniteCheckedException.class, "No index matches query");
     }
 
     /** */

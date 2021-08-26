@@ -74,6 +74,8 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Sets conjunction (AND) criteria for index query.
      *
+     * Order of criteria fields matters and has to match the order of fields in a querying index.
+     *
      * @param criteria Criteria to set.
      * @return {@code this} for chaining.
      */
@@ -85,6 +87,8 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets conjunction (AND) criteria for index query.
+     *
+     * Order of criteria fields matters and has to match the order of fields in a querying index.
      *
      * @param criteria Criteria to set.
      * @return {@code this} for chaining.
