@@ -296,7 +296,9 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     public void testBorders() throws Exception {
         tbl1.setStatistics(tbl1stat);
         String templateFieldIdxLower = "select * from TBL1 where %s > 1000 and T1C1INT > 0";
+        String templateFieldIdxLowerOrEq = "select * from TBL1 where %s >= 1000 and T1C1INT > 0";
         String templateFieldIdxUpper = "select * from TBL1 where %s < 1 and T1C1INT > 10";
+        String templateFieldIdxUpperOrEq = "select * from TBL1 where %s < 1 and T1C1INT > 10";
 
         for (RelDataTypeField field : tbl1rt.getFieldList()) {
             if (field.getIndex() == 0)
@@ -304,24 +306,35 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
             if (tbl1NumericFields.contains(field.getName())) {
                 String sqlLower = String.format(templateFieldIdxLower, field.getName());
+                String sqlLowerOrEq = String.format(templateFieldIdxLowerOrEq, field.getName());
                 String sqlUpper = String.format(templateFieldIdxUpper, field.getName());
+                String sqlUpperOrEq = String.format(templateFieldIdxUpperOrEq, field.getName());
+
                 String idxName = getIdxName(1, field.getName().toUpperCase());
 
                 checkIdxUsed(sqlLower, idxName);
-                checkIdxNotUsed(sqlUpper, idxName);
+                checkIdxUsed(sqlLowerOrEq, idxName);
+                checkIdxUsed(sqlUpper, idxName);
+                checkIdxUsed(sqlUpperOrEq, idxName);
             }
         }
         // time
-        checkIdxUsed("select * from TBL1 where T1C11TIME > '" + MAX_TIME + "'", "TBL1_T1C11TIME");
         checkIdxUsed("select * from TBL1 where T1C11TIME < '" + MIN_TIME + "'", "TBL1_T1C11TIME");
+        checkIdxUsed("select * from TBL1 where T1C11TIME <= '" + MIN_TIME + "'", "TBL1_T1C11TIME");
+        checkIdxUsed("select * from TBL1 where T1C11TIME > '" + MAX_TIME + "'", "TBL1_T1C11TIME");
+        checkIdxUsed("select * from TBL1 where T1C11TIME >= '" + MAX_TIME + "'", "TBL1_T1C11TIME");
 
         // date
-        checkIdxUsed("select * from TBL1 where T1C10DATE > '" + MAX_DATE + "'", "TBL1_T1C10DATE");
         checkIdxUsed("select * from TBL1 where T1C10DATE < '" + MIN_DATE + "'", "TBL1_T1C10DATE");
+        checkIdxUsed("select * from TBL1 where T1C10DATE <= '" + MIN_DATE + "'", "TBL1_T1C10DATE");
+        checkIdxUsed("select * from TBL1 where T1C10DATE > '" + MAX_DATE + "'", "TBL1_T1C10DATE");
+        checkIdxUsed("select * from TBL1 where T1C10DATE >= '" + MAX_DATE + "'", "TBL1_T1C10DATE");
 
         // timestamp
-        checkIdxUsed("select * from TBL1 where T1C12TIMESTAMP > '" + MAX_TIMESTAMP + "'", "TBL1_T1C12TIMESTAMP");
         checkIdxUsed("select * from TBL1 where T1C12TIMESTAMP < '" + MIN_TIMESTAMP + "'", "TBL1_T1C12TIMESTAMP");
+        checkIdxUsed("select * from TBL1 where T1C12TIMESTAMP <= '" + MIN_TIMESTAMP + "'", "TBL1_T1C12TIMESTAMP");
+        checkIdxUsed("select * from TBL1 where T1C12TIMESTAMP > '" + MAX_TIMESTAMP + "'", "TBL1_T1C12TIMESTAMP");
+        checkIdxUsed("select * from TBL1 where T1C12TIMESTAMP >= '" + MAX_TIMESTAMP + "'", "TBL1_T1C12TIMESTAMP");
     }
 
     /**

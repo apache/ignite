@@ -97,7 +97,7 @@ public abstract class QueryChecker {
      * @return Mather.
      */
     public static Matcher<String> containsResultRowCount(double rowCount) {
-        String rowCountStr = String.format(".*rowcount = %s,.*", printCostVal(rowCount));
+        String rowCountStr = String.format(".*rowcount = %s,.*", rowCount);
 
         return new RegexpMather(rowCountStr);
     }
@@ -126,16 +126,6 @@ public abstract class QueryChecker {
 
             return matcher.matches();
         }
-    }
-
-    /**
-     * Print cost value to regexp.
-     *
-     * @param val Value to print.
-     * @return String representation for regexp.
-     */
-    private static String printCostVal(Double val) {
-        return (val == null) ? "\\d\\.\\d" : val.toString();
     }
 
     /**

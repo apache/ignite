@@ -268,7 +268,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 for (RexNode orPred : RelOptUtil.disjunctions(pred))
                     orSelTotal *= 1 - getTablePredicateBasedSelectivity(rel, tbl, mq, orPred);
 
-
                 sel *= 1 - orSelTotal;
             }
             else if (predKind == SqlKind.NOT) {

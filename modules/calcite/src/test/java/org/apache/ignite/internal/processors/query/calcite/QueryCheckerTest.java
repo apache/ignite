@@ -28,14 +28,6 @@ import static org.junit.Assert.assertTrue;
 /** Query checker tests. */
 public class QueryCheckerTest {
     /** */
-    private static final String PLAN = "IgniteSingleHashAggregate(group=[{}], COUNT(NAME)=[COUNT($0)]): rowcount = 1.0, " +
-        "cumulative cost = IgniteCost [rowCount=9.0, cpu=9.0, memory=5.0, io=0.0, network=12.0], id = 110\n" +
-        "  IgniteExchange(distribution=[single]): rowcount = 3.0, cumulative cost = IgniteCost " +
-        "[rowCount=6.0, cpu=6.0, memory=0.0, io=0.0, network=12.0], id = 109\n" +
-        "    IgniteIndexScan(table=[[PUBLIC, PERSON]], index=[PERSON_NAME], requiredColumns=[{2}]): rowcount = 3.0, " +
-        "cumulative cost = IgniteCost [rowCount=3.0, cpu=3.0, memory=0.0, io=0.0, network=0.0], id = 29";
-
-    /** */
     @Test
     public void testMatchesOnce() {
         String planMatchesOnce = "PLAN=IgniteExchange(distribution=[single])\n  " +
