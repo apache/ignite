@@ -65,7 +65,7 @@ import org.h2.value.Value;
 
 /** */
 public class IgniteMdSelectivity extends RelMdSelectivity {
-    /** Default selectivity for is null conditions. */
+    /** Default selectivity for IS NULL conditions. */
     private static final double IS_NULL_SELECTIVITY = 0.1;
 
     /** Default selectivity for IS NOT NULL conditions. */
