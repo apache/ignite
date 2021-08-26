@@ -103,7 +103,7 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Regexp string mather.
+     * Regexp string matсher.
      */
     private static class RegexpMather extends CustomTypeSafeMatcher<String> {
         /** Compilled pathern. */
