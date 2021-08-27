@@ -46,10 +46,10 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache<Long, Object> cache;
+    private static IgniteCache<Long, Object> cache;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         Ignite crd = startGrids(4);
 
         cache = crd.cache(CACHE);
@@ -57,7 +57,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
-        stopAllGrids();
+        cache.clear();
     }
 
     /** {@inheritDoc} */
@@ -65,7 +65,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
-            .setName("TEST_CACHE")
+            .setName(CACHE)
             .setIndexedTypes(Long.class, Person.class, Long.class, SecondPerson.class)
             .setQueryParallelism(4);
 

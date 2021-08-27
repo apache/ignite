@@ -399,7 +399,6 @@ public class IndexProcessor extends GridProcessorAdapter {
                 return null;
 
             return idxs.get(idxName.fullName());
-
         }
         finally {
             ddlLock.readLock().unlock();

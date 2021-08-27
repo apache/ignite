@@ -36,15 +36,15 @@ public class IndexQueryDesc implements Serializable {
     private final String idxName;
 
     /** */
-    private final String valCls;
+    private final String valType;
 
     /** */
-    public IndexQueryDesc(List<IndexQueryCriterion> criteria, String idxName, String valCls) {
+    public IndexQueryDesc(List<IndexQueryCriterion> criteria, String idxName, String valType) {
         A.notNull(criteria, "criteria");
 
         this.criteria = criteria;
         this.idxName = idxName;
-        this.valCls = valCls;
+        this.valType = valType;
     }
 
     /** */
@@ -58,8 +58,8 @@ public class IndexQueryDesc implements Serializable {
     }
 
     /** */
-    public String valCls() {
-        return valCls;
+    public String valType() {
+        return valType;
     }
 
     /** */
@@ -68,7 +68,7 @@ public class IndexQueryDesc implements Serializable {
 
         return "IndexQuery[" +
             "idxName=" + idxName + ", " +
-            "valCls=" + valCls + ", " +
+            "valType=" + valType + ", " +
             "fields=" + fields + "]";
     }
 }

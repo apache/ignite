@@ -2310,11 +2310,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Get table name by specified cache and cache value class.
      *
      * @param cacheName Cache name.
-     * @param valCls Value class.
+     * @param valType Value type.
      * @return Table name or {@code null} if there is no match.
      */
-    public @Nullable String tableName(String cacheName, Class<?> valCls) {
-        QueryTypeIdKey id = new QueryTypeIdKey(cacheName, valCls);
+    public @Nullable String tableName(String cacheName, String valType) {
+        int typeId = ctx.cacheObjects().typeId(valType);
+
+        QueryTypeIdKey id = new QueryTypeIdKey(cacheName, typeId);
 
         QueryTypeDescriptorImpl desc = types.get(id);
 

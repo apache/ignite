@@ -97,7 +97,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
-            .setName("TEST_CACHE")
+            .setName(CACHE)
             .setIndexedTypes(Long.class, Person.class)
             .setQueryParallelism(4);
 

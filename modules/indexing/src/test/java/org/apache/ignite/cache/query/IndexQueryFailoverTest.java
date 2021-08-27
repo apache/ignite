@@ -51,18 +51,13 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache<Long, Person> cache;
+    private static IgniteCache<Long, Person> cache;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Ignite crd = startGrids(4);
+    @Override protected void beforeTestsStarted() throws Exception {
+        Ignite crd = startGrids(2);
 
         cache = crd.cache(CACHE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -108,8 +103,8 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testQueryWrongType() {
-        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>(null),
-            NullPointerException.class, "Ouch! Argument cannot be null: valCls");
+        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>((String) null),
+            NullPointerException.class, "Ouch! Argument cannot be null: valType");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class)
@@ -117,7 +112,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
 
                 return cache.query(qry).getAll();
             },
-            IgniteCheckedException.class, "No table found: " + Integer.class.getName());
+            IgniteCheckedException.class, "No table found for type: " + Integer.class.getName());
     }
 
     /** */
@@ -183,7 +178,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     public void testRangeQueries() {
         insertData(0, CNT);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
@@ -225,7 +220,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     public void testConcurrentUpdateIndex() {
         insertData(0, CNT);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(between("id", CNT / 2, CNT + CNT / 2));
 
         Iterator<Cache.Entry<Long, Person>> cursor = cache.query(qry).iterator();

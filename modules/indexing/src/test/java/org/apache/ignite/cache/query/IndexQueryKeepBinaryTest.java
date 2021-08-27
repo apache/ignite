@@ -44,11 +44,6 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

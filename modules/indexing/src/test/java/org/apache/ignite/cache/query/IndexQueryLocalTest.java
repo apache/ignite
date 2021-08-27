@@ -39,17 +39,23 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     /** */
     private static final int CNT = 10_000;
 
+    /** */
+    private static Ignite crd;
+
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
+    @Override protected void beforeTestsStarted() throws Exception {
+        crd = startGrids(4);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        crd.cache(CACHE).destroy();
     }
 
     /** Should return full data. */
     @Test
-    public void testServerNodeReplicatedCache() throws Exception {
-        Ignite crd = startGrids(4);
-
-        IgniteCache<Long, Person> cache = crd.getOrCreateCache(ccfg(CacheMode.REPLICATED));
+    public void testServerNodeReplicatedCache() {
+        IgniteCache<Long, Person> cache = crd.createCache(ccfg(CacheMode.REPLICATED));
 
         insertData(crd, cache);
 
@@ -67,10 +73,8 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
     /** Should return part of data only. */
     @Test
-    public void testServerNodePartitionedCache() throws Exception {
-        Ignite crd = startGrids(4);
-
-        IgniteCache<Long, Person> cache = crd.getOrCreateCache(ccfg(CacheMode.PARTITIONED));
+    public void testServerNodePartitionedCache() {
+        IgniteCache<Long, Person> cache = crd.createCache(ccfg(CacheMode.PARTITIONED));
 
         insertData(crd, cache);
 
@@ -95,11 +99,9 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     /** Should fail as no data on nodes. */
     @Test
     public void testClientNodeReplicatedCache() throws Exception {
-        startGrid();
+        Ignite cln = startClientGrid(5);
 
-        Ignite cln = startClientGrid(1);
-
-        IgniteCache<Long, Person> cache = cln.getOrCreateCache(ccfg(CacheMode.REPLICATED));
+        IgniteCache<Long, Person> cache = cln.createCache(ccfg(CacheMode.REPLICATED));
 
         insertData(cln, cache);
 

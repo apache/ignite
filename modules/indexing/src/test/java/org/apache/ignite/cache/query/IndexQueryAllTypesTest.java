@@ -58,18 +58,18 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache<Long, Person> cache;
+    private static IgniteCache<Long, Person> cache;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         Ignite crd = startGrids(2);
 
         cache = crd.cache(CACHE);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
+    @Override protected void afterTest() throws Exception {
+        cache.clear();
     }
 
     /** {@inheritDoc} */

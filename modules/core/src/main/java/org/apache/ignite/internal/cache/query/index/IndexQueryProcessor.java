@@ -114,12 +114,10 @@ public class IndexQueryProcessor {
 
     /** Get index to run query by specified description. */
     private Index index(GridCacheContext cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
-        Class<?> valCls = idxQryDesc.valCls() != null ? loadValClass(cctx, idxQryDesc.valCls()) : null;
-
-        String tableName = cctx.kernalContext().query().tableName(cctx.name(), valCls);
+        String tableName = cctx.kernalContext().query().tableName(cctx.name(), idxQryDesc.valType());
 
         if (tableName == null)
-            throw failIndexQuery("No table found: " + idxQryDesc.valCls(), cctx, idxQryDesc);
+            throw failIndexQuery("No table found for type: " + idxQryDesc.valType(), cctx, idxQryDesc);
 
         if (idxQryDesc.idxName() != null) {
             Index idx = indexByName(cctx, idxQryDesc, tableName);
@@ -198,18 +196,6 @@ public class IndexQueryProcessor {
         }
 
         return true;
-    }
-
-    /** */
-    private Class<?> loadValClass(GridCacheContext cctx, String valClsName) throws IgniteCheckedException {
-        try {
-            ClassLoader clsLdr = U.resolveClassLoader(cctx.kernalContext().config());
-
-            return clsLdr.loadClass(valClsName);
-        }
-        catch (ClassNotFoundException e) {
-            throw new IgniteCheckedException("No cache serves class: " + valClsName);
-        }
     }
 
     /**

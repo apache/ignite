@@ -39,35 +39,55 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Index query criteria. */
     private List<IndexQueryCriterion> criteria;
 
-    /** Cache Value class. Describes a table within a cache that runs a query. */
-    private final String valCls;
+    /** Cache Value type. Describes a table within a cache that runs a query. */
+    private final String valType;
 
     /** Optional index name. */
     private final @Nullable String idxName;
+
+    /**
+     * Specify index with Cache Value type.
+     *
+     * @param valType Value type.
+     */
+    public IndexQuery(String valType) {
+        this(valType, null);
+    }
 
     /**
      * Specify index with cache value class.
      *
      * @param valCls Cache value class.
      */
-    public IndexQuery(Class<V> valCls) {
-        this(valCls, null);
+    public IndexQuery(Class<?> valCls) {
+        this(valCls.getName());
     }
 
     /**
      * Specify index with cache value class and index name. If {@code idxName} is {@code null} then Ignite checks
-     * all indexes to find best match by {@link #valCls} and {@link #criteria} fields.
+     * all indexes to find best match by {@link #valType} and {@link #criteria} fields.
      *
      * @param valCls Cache value class.
      * @param idxName Optional Index name.
      */
-    public IndexQuery(Class<V> valCls, @Nullable String idxName) {
-        A.notNull(valCls, "valCls");
+    public IndexQuery(Class<?> valCls, @Nullable String idxName) {
+        this(valCls.getName(), idxName);
+    }
+
+    /**
+     * Specify index with cache value class and index name. If {@code idxName} is {@code null} then Ignite checks
+     * all indexes to find best match by {@link #valType} and {@link #criteria} fields.
+     *
+     * @param valType Cache value class.
+     * @param idxName Optional Index name.
+     */
+    public IndexQuery(String valType, @Nullable String idxName) {
+        A.notNull(valType, "valType");
 
         if (idxName != null)
             A.notEmpty(idxName, "idxName");
 
-        this.valCls = valCls.getName();
+        this.valType = valType;
         this.idxName = idxName;
     }
 
@@ -109,12 +129,12 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
-     * Cache value class.
+     * Cache Value type.
      *
-     * @return Cache value class.
+     * @return Cache Value type.
      */
-    public String getValueClass() {
-        return valCls;
+    public String getValueType() {
+        return valType;
     }
 
     /**

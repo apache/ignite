@@ -62,13 +62,13 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache<Long, Person> cache;
+    private static IgniteCache<Long, Person> cache;
 
     /** */
-    private IgniteCache<Long, Person> cacheTblName;
+    private static IgniteCache<Long, Person> cacheTblName;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         Ignite crd = startGrids(4);
 
         cache = crd.cache(CACHE);
@@ -76,8 +76,9 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
+    @Override protected void afterTest() throws Exception {
+        cache.clear();
+        cacheTblName.clear();
     }
 
     /** {@inheritDoc} */

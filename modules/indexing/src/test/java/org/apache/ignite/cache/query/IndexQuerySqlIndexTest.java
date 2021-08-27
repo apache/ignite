@@ -27,16 +27,20 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
+@RunWith(Parameterized.class)
 public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -48,19 +52,35 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     private static final String TABLE = "TEST_TABLE";
 
     /** */
+    private static final String VALUE_TYPE = "MY_VALUE_TYPE";
+
+    /** */
     private static final String DESC_ID_IDX = "DESC_ID_IDX";
 
     /** */
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache<Object, Object> cache;
+    private static IgniteCache<Object, Object> cache;
 
     /** */
-    private Ignite crd;
+    private IgniteCache<Object, Object> tblCache;
+
+    /** */
+    private static Ignite crd;
+
+    /** */
+    @Parameterized.Parameter
+    public String valType;
+
+    /** */
+    @Parameterized.Parameters(name = "valType = {0}")
+    public static List<?> params() {
+        return F.asList(Person.class.getName(), VALUE_TYPE);
+    }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         crd = startGrids(4);
 
         cache = crd.cache(CACHE);
@@ -68,7 +88,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
-        stopAllGrids();
+        tblCache.destroy();
     }
 
     /** {@inheritDoc} */
@@ -88,12 +108,38 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     public void testEmptyCache() {
         prepareTable();
 
-        IgniteCache<Object, Object> tableCache = crd.cache(CACHE_TABLE);
+        tblCache = crd.cache(CACHE_TABLE);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+        IndexQuery<Long, Object> qry = new IndexQuery<Long, Object>(valType, DESC_ID_IDX)
             .setCriteria(lt("descId", Integer.MAX_VALUE));
 
-        assertTrue(tableCache.query(qry).getAll().isEmpty());
+        assertTrue(tblCache.query(qry).getAll().isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testWrongQueries() {
+        prepareTable();
+
+        tblCache = crd.cache(CACHE_TABLE);
+
+        // Wrong fields in query.
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(valType, DESC_ID_IDX)
+                .setCriteria(lt("id", Integer.MAX_VALUE));
+
+            return tblCache.query(wrongQry).getAll();
+
+        }, IgniteCheckedException.class, "Index DESC_ID_IDX doesn't match query.");
+
+        // Wrong cache.
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(valType, DESC_ID_IDX)
+                .setCriteria(lt("descId", Integer.MAX_VALUE));
+
+            return cache.query(wrongQry).getAll();
+
+        }, IgniteCheckedException.class, "No table found for type: " + valType);
     }
 
     /** */
@@ -105,30 +151,22 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IgniteCache<Object, Object> tableCache = crd.cache(CACHE_TABLE);
+        if (VALUE_TYPE.equals(valType)) {
+            tblCache = crd.cache(CACHE_TABLE).withKeepBinary();
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
-            .setCriteria(lt("descId", pivot));
+            IndexQuery<Long, BinaryObject> qry = new IndexQuery<Long, BinaryObject>(valType, DESC_ID_IDX)
+                .setCriteria(lt("descId", pivot));
 
-        check(tableCache.query(qry), 0, pivot);
+            checkBinary(tblCache.query(qry), 0, pivot);
 
-        // Wrong fields in query.
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
-                .setCriteria(lt("id", Integer.MAX_VALUE));
+        } else {
+            tblCache = crd.cache(CACHE_TABLE);
 
-            return tableCache.query(wrongQry).getAll();
+            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(valType, DESC_ID_IDX)
+                .setCriteria(lt("descId", pivot));
 
-        }, IgniteCheckedException.class, "Index DESC_ID_IDX doesn't match query.");
-
-        // Wrong cache.
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
-                .setCriteria(lt("descId", Integer.MAX_VALUE));
-
-            return cache.query(wrongQry).getAll();
-
-        }, IgniteCheckedException.class, "No table found: " + Person.class.getName());
+            check(tblCache.query(qry), 0, pivot);
+        }
     }
 
     /**
@@ -151,10 +189,31 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param left First cache key, inclusive.
+     * @param right Last cache key, exclusive.
+     */
+    private void checkBinary(QueryCursor<Cache.Entry<Long, BinaryObject>> cursor, int left, int right) {
+        List<Cache.Entry<Long, BinaryObject>> all = cursor.getAll();
+
+        assertEquals(right - left, all.size());
+
+        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
+
+        for (int i = 0; i < all.size(); i++) {
+            Cache.Entry<Long, BinaryObject> entry = all.get(i);
+
+            assertTrue(expKeys.remove(entry.getKey()));
+
+            assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("id"));
+            assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("descId"));
+        }
+    }
+
     /** */
     private void prepareTable() {
         SqlFieldsQuery qry = new SqlFieldsQuery("create table " + TABLE + " (prim_id long PRIMARY KEY, id int, descId int)" +
-            " with \"VALUE_TYPE=" + Person.class.getName() + ",CACHE_NAME=" + CACHE_TABLE + "\";");
+            " with \"VALUE_TYPE=" + valType + ",CACHE_NAME=" + CACHE_TABLE + "\";");
 
         cache.query(qry);
 
@@ -165,9 +224,13 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
     /** */
     private void insertData() {
-        try (IgniteDataStreamer<Long, Person> streamer = crd.dataStreamer(CACHE_TABLE)) {
-            for (int i = 0; i < CNT; i++)
-                streamer.addData((long) i, new Person(i));
+        SqlFieldsQuery qry = new SqlFieldsQuery("insert into " + TABLE + " (prim_id, id, descId)" +
+            " values(?, ?, ?);");
+
+        for (int i = 0; i < CNT; i++) {
+            qry.setArgs((long)i, i, i);
+
+            cache.query(qry);
         }
     }
 
