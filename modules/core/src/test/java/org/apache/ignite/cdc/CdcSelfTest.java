@@ -86,7 +86,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
         }
 
-        params.removeIf(p -> (boolean)p[2]);
+        //params.removeIf(p -> (boolean)p[2]);
 
         return params;
     }
