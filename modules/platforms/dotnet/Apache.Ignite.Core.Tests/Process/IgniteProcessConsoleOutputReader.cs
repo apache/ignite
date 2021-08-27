@@ -26,10 +26,10 @@ namespace Apache.Ignite.Core.Tests.Process
     public class IgniteProcessConsoleOutputReader : IIgniteProcessOutputReader
     {
         /** Out message format. */
-        private static readonly string OutFormat = ">>> {0} OUT: {1}";
+        private const string OutFormat = ">>> {0} OUT: {1}";
 
         /** Error message format. */
-        private static readonly string ErrFormat = ">>> {0} ERR: {1}";
+        private const string ErrFormat = ">>> {0} ERR: {1}";
 
         /** <inheritDoc /> */
         public void OnOutput(Process proc, string data, bool err)

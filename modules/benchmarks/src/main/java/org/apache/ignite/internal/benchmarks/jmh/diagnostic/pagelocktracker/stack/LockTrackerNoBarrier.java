@@ -21,16 +21,14 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 
 /**
- * Local without barrier syncronization on operation.
+ * Local without barrier synchronization on operation.
  */
 public class LockTrackerNoBarrier implements PageLockListener {
     /** */
-    private final PageLockTracker delegate;
+    private final PageLockTracker<?> delegate;
 
     /** */
-    public LockTrackerNoBarrier(
-        PageLockTracker delegate
-    ) {
+    public LockTrackerNoBarrier(PageLockTracker<?> delegate) {
         this.delegate = delegate;
     }
 
@@ -62,5 +60,10 @@ public class LockTrackerNoBarrier implements PageLockListener {
     /** {@inheritDoc} */
     @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
         delegate.onReadUnlock(cacheId, pageId, page, pageAddr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        delegate.close();
     }
 }

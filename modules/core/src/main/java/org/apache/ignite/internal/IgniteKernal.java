@@ -234,7 +234,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -347,7 +346,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     public static final String SITE = "ignite.apache.org";
 
     /** System line separator. */
-    private static final String NL = U.nl();
+    public static final String NL = U.nl();
 
     /** System megabyte. */
     private static final int MEGABYTE = 1024 * 1024;
@@ -937,24 +936,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cfg Ignite configuration to use.
-     * @param utilityCachePool Utility cache pool.
-     * @param execSvc Executor service.
-     * @param svcExecSvc Services executor service.
-     * @param sysExecSvc System executor service.
-     * @param stripedExecSvc Striped executor.
-     * @param p2pExecSvc P2P executor service.
-     * @param mgmtExecSvc Management executor service.
-     * @param dataStreamExecSvc Data streamer executor service.
-     * @param restExecSvc Reset executor service.
-     * @param affExecSvc Affinity executor service.
-     * @param idxExecSvc Indexing executor service.
-     * @param buildIdxExecSvc Create/rebuild indexes executor service.
-     * @param callbackExecSvc Callback executor service.
-     * @param qryExecSvc Query executor service.
-     * @param schemaExecSvc Schema executor service.
-     * @param rebalanceExecSvc Rebalance excutor service.
-     * @param rebalanceStripedExecSvc Striped rebalance excutor service.
-     * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @param workerRegistry Worker registry.
      * @param hnd Default uncaught exception handler used by thread pools.
@@ -962,24 +943,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public void start(
         final IgniteConfiguration cfg,
-        ExecutorService utilityCachePool,
-        final ExecutorService execSvc,
-        final ExecutorService svcExecSvc,
-        final ExecutorService sysExecSvc,
-        final StripedExecutor stripedExecSvc,
-        ExecutorService p2pExecSvc,
-        ExecutorService mgmtExecSvc,
-        StripedExecutor dataStreamExecSvc,
-        ExecutorService restExecSvc,
-        ExecutorService affExecSvc,
-        @Nullable ExecutorService idxExecSvc,
-        @Nullable ExecutorService buildIdxExecSvc,
-        IgniteStripedThreadPoolExecutor callbackExecSvc,
-        ExecutorService qryExecSvc,
-        ExecutorService schemaExecSvc,
-        ExecutorService rebalanceExecSvc,
-        IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc,
-        @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd,
         WorkersRegistry workerRegistry,
         Thread.UncaughtExceptionHandler hnd,
@@ -1058,9 +1021,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackRebalanceConfiguration();
         ackIPv4StackFlagIsSet();
 
-        // Run background network diagnostics.
-        GridDiagnostic.runBackgroundCheck(igniteInstanceName, execSvc, log);
-
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
             log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
@@ -1088,24 +1048,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 this,
                 cfg,
                 gw,
-                utilityCachePool,
-                execSvc,
-                svcExecSvc,
-                sysExecSvc,
-                stripedExecSvc,
-                p2pExecSvc,
-                mgmtExecSvc,
-                dataStreamExecSvc,
-                restExecSvc,
-                affExecSvc,
-                idxExecSvc,
-                buildIdxExecSvc,
-                callbackExecSvc,
-                qryExecSvc,
-                schemaExecSvc,
-                rebalanceExecSvc,
-                rebalanceStripedExecSvc,
-                customExecSvcs,
                 plugins,
                 MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
                 workerRegistry,
@@ -1155,7 +1097,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new FailureProcessor(ctx));
 
-            startProcessor(new PoolProcessor(ctx));
+            // Start security processors.
+            startProcessor(securityProcessor());
+
+            PoolProcessor pools = new PoolProcessor(ctx);
+
+            startProcessor(pools);
+
+            // Run background network diagnostics.
+            GridDiagnostic.runBackgroundCheck(igniteInstanceName, pools.getExecutorService(), log);
 
             // Closure processor should be started before all others
             // (except for resource processor), as many components can depend on it.
@@ -1168,9 +1118,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Timeout processor needs to be started before managers,
             // as managers may depend on it.
             startProcessor(new GridTimeoutProcessor(ctx));
-
-            // Start security processors.
-            startProcessor(securityProcessor());
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
@@ -1378,21 +1325,53 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startTimer.finishGlobalStage("Await transition");
 
-            ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
-                p2pExecSvc, mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
-                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
+            ctx.metric().registerThreadPools(
+                pools.utilityCachePool(),
+                pools.getExecutorService(),
+                pools.getServiceExecutorService(),
+                pools.getSystemExecutorService(),
+                pools.getStripedExecutorService(),
+                pools.getPeerClassLoadingExecutorService(),
+                pools.getManagementExecutorService(),
+                pools.getDataStreamerExecutorService(),
+                pools.getRestExecutorService(),
+                pools.getAffinityExecutorService(),
+                pools.getIndexingExecutorService(),
+                pools.asyncCallbackPool(),
+                pools.getQueryExecutorService(),
+                pools.getSchemaExecutorService(),
+                pools.getRebalanceExecutorService(),
+                pools.getStripedRebalanceExecutorService(),
+                pools.customExecutors());
 
             registerMetrics();
 
             ctx.cluster().registerMetrics();
 
             // Register MBeans.
-            mBeansMgr.registerMBeansAfterNodeStarted(utilityCachePool, execSvc, svcExecSvc, sysExecSvc,
-                stripedExecSvc, p2pExecSvc, mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
-                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs,
+            mBeansMgr.registerMBeansAfterNodeStarted(
+                pools.utilityCachePool(),
+                pools.getExecutorService(),
+                pools.getServiceExecutorService(),
+                pools.getSystemExecutorService(),
+                pools.getStripedExecutorService(),
+                pools.getPeerClassLoadingExecutorService(),
+                pools.getManagementExecutorService(),
+                pools.getDataStreamerExecutorService(),
+                pools.getRestExecutorService(),
+                pools.getAffinityExecutorService(),
+                pools.getIndexingExecutorService(),
+                pools.asyncCallbackPool(),
+                pools.getQueryExecutorService(),
+                pools.getSchemaExecutorService(),
+                pools.getRebalanceExecutorService(),
+                pools.getStripedRebalanceExecutorService(),
+                pools.customExecutors(),
                 ctx.workersRegistry());
 
-            ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
+            ctx.systemView().registerThreadPools(
+                pools.getStripedExecutorService(),
+                pools.getDataStreamerExecutorService());
 
             boolean recon = false;
 
@@ -1484,26 +1463,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 private long lastCompletedCntQry;
 
                 @Override public void run() {
-                    if (execSvc instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+                    if (ctx.pools().getExecutorService() instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getExecutorService();
 
                         lastCompletedCntPub = checkPoolStarvation(exec, lastCompletedCntPub, "public");
                     }
 
-                    if (sysExecSvc instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
+                    if (ctx.pools().getSystemExecutorService() instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getSystemExecutorService();
 
                         lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
                     }
 
-                    if (qryExecSvc instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)qryExecSvc;
+                    if (ctx.pools().getQueryExecutorService() instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getQueryExecutorService();
 
                         lastCompletedCntQry = checkPoolStarvation(exec, lastCompletedCntQry, "query");
                     }
 
-                    if (stripedExecSvc != null)
-                        stripedExecSvc.detectStarvation();
+                    if (ctx.pools().getStripedExecutorService() != null)
+                        ctx.pools().getStripedExecutorService().detectStarvation();
                 }
 
                 /**
@@ -1540,7 +1519,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 private final DecimalFormat dblFmt = doubleFormat();
 
                 @Override public void run() {
-                    ackNodeMetrics(dblFmt, execSvc, sysExecSvc, stripedExecSvc, customExecSvcs);
+                    ackNodeMetrics(
+                        dblFmt,
+                        ctx.pools().getExecutorService(),
+                        ctx.pools().getSystemExecutorService(),
+                        ctx.pools().getStripedExecutorService(),
+                        ctx.pools().customExecutors()
+                    );
                 }
             }, metricsLogFreq, metricsLogFreq);
         }
@@ -2387,7 +2372,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
                 long offHeapInit = regCfg.getInitialSize();
                 long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+                long offHeapComm = region.metrics().getOffHeapSize();
 
                 long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
                 long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
@@ -2427,7 +2412,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
 
                 if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsed = region.metrics().getTotalAllocatedSize();
                     long pdsUsedInMBytes = pdsUsed / MEGABYTE;
 
                     pdsUsedSummary += pdsUsed;

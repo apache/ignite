@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -58,8 +59,8 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setEmpty(pageAddr);
 
@@ -151,7 +152,7 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
      * @param idx Item index.
      * @return Item at the given index.
      */
-    private long getAt(long pageAddr, int idx) {
+    public long getAt(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx));
     }
 

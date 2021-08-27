@@ -171,8 +171,12 @@ public class GridTracingConfigurationManager implements TracingConfigurationMana
 
         if (coordinates.label() != null)
             newTracingConfiguration.remove(coordinates);
-        else
-            newTracingConfiguration.put(coordinates, DEFAULT_CONFIGURATION_MAP.get(new TracingConfigurationCoordinates.Builder(coordinates.scope()).build()));
+        else {
+            newTracingConfiguration.put(
+                coordinates,
+                DEFAULT_CONFIGURATION_MAP.get(new TracingConfigurationCoordinates.Builder(coordinates.scope()).build())
+            );
+        }
 
         try {
             distributedTracingConfiguration.propagate(newTracingConfiguration);

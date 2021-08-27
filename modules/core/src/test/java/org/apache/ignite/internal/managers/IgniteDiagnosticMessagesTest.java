@@ -729,9 +729,12 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                     String msg = fut.get();
 
+                    String searchMsg = "General node info [id=" + dstNode.id() + ", client=" + dstNode.isClient() +
+                        ", discoTopVer=AffinityTopologyVersion [topVer=5, minorTopVer=";
+
                     assertTrue("Unexpected message: " + msg,
                         msg.contains("Test diagnostic") &&
-                            msg.contains("General node info [id=" + dstNode.id() + ", client=" + dstNode.isClient() + ", discoTopVer=AffinityTopologyVersion [topVer=5, minorTopVer=") &&
+                            msg.contains(searchMsg) &&
                             msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer="));
                 }
             }

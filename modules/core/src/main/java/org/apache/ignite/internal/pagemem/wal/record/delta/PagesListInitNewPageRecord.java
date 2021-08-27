@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -104,7 +105,9 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PagesListNodeIO io = PageIO.getPageIO(PageIO.T_PAGE_LIST_NODE, ioVer);
 
-        io.initNewPage(pageAddr, pageId(), pageMem.realPageSize(groupId()));
+        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(groupId());
+
+        io.initNewPage(pageAddr, pageId(), pageMem.realPageSize(groupId()), metrics);
         io.setPreviousId(pageAddr, prevPageId);
 
         if (addDataPageId != 0L) {

@@ -72,7 +72,8 @@ public class SemaphoreView extends AbstractDataStructureView<GridCacheSemaphoreI
     }
 
     /**
-     * @return {@code True} if a node failed on this semaphore and {@link #failoverSafe} flag was set to {@code false}, {@code false} otherwise.
+     * @return {@code True} if a node failed on this semaphore and {@link #failoverSafe} flag was set to {@code false},
+     * {@code false} otherwise.
      * @see IgniteSemaphore#isBroken()
      */
     @Order(5)

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -56,6 +58,8 @@ import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
@@ -92,6 +96,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
+import org.apache.ignite.spi.systemview.view.BaselineNodeView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -110,6 +116,8 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
  *
@@ -121,6 +129,18 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** Warning of unsafe cluster deactivation. */
     public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Deactivation clears " +
         "in-memory caches (without persistence) including the system caches.";
+
+    /** */
+    public static final String BASELINE_NODES_SYS_VIEW = metricName("baseline", "nodes");
+
+    /** */
+    public static final String BASELINE_NODES_SYS_VIEW_DESC = "Baseline topology nodes";
+
+    /** */
+    public static final String BASELINE_NODE_ATTRIBUTES_SYS_VIEW = metricName("baseline", "node", "attributes");
+
+    /** */
+    public static final String BASELINE_NODE_ATTRIBUTES_SYS_VIEW_DESC = "Baseline node attributes";
 
     /** */
     private boolean inMemoryMode;
@@ -212,13 +232,29 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         distributedBaselineConfiguration.listenAutoAdjustTimeout(makeEventListener(
             EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED
         ));
+
+        ctx.systemView().registerView(
+            BASELINE_NODES_SYS_VIEW,
+            BASELINE_NODES_SYS_VIEW_DESC,
+            new BaselineNodeViewWalker(),
+            this::nodeViewSupplier,
+            Function.identity()
+        );
+
+        ctx.systemView().registerFiltrableView(
+            BASELINE_NODE_ATTRIBUTES_SYS_VIEW,
+            BASELINE_NODE_ATTRIBUTES_SYS_VIEW_DESC,
+            new BaselineNodeAttributeViewWalker(),
+            this::nodeAttributeViewSupplier,
+            Function.identity()
+        );
     }
 
     /** */
     private DistributePropertyListener<Object> makeEventListener(int evtType) {
         //noinspection CodeBlock2Expr
         return (name, oldVal, newVal) -> {
-            ctx.getStripedExecutorService().execute(() -> {
+            ctx.pools().getStripedExecutorService().execute(() -> {
                 if (ctx.event().isRecordable(evtType)) {
                     ctx.event().record(new BaselineConfigurationChangedEvent(
                         ctx.discovery().localNode(),
@@ -723,7 +759,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 DiscoveryDataClusterState newState = globalState = DiscoveryDataClusterState.createTransitionState(
                     msg.state(),
                     state,
-                    activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology() ? msg.baselineTopology() : state.baselineTopology(),
+                    activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology()
+                        ? msg.baselineTopology()
+                        : state.baselineTopology(),
                     msg.requestId(),
                     topVer,
                     nodeIds
@@ -749,7 +787,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 if (newState.state() != state.state()) {
                     if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
-                        ctx.getStripedExecutorService().execute(
+                        ctx.pools().getStripedExecutorService().execute(
                             () -> ctx.event().record(new ClusterStateChangeStartedEvent(
                                 state.state(),
                                 newState.state(),
@@ -1540,7 +1578,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 fut.initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
                         // initFut is completed from discovery thread, process response from other thread.
-                        ctx.getSystemExecutorService().execute(new Runnable() {
+                        ctx.pools().getSystemExecutorService().execute(new Runnable() {
                             @Override public void run() {
                                 fut.onResponse(nodeId, msg);
                             }
@@ -1833,6 +1871,66 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return defaultValue;
+    }
+
+    /**
+     * Baseline topology nodes view supplier.
+     */
+    private Collection<BaselineNodeView> nodeViewSupplier() {
+        BaselineTopology blt = globalState.baselineTopology();
+
+        if (blt == null)
+            return Collections.emptyList();
+
+        Set<Object> consistentIds = blt.consistentIds();
+
+        List<BaselineNodeView> rows = new ArrayList<>(consistentIds.size());
+
+        Collection<ClusterNode> srvNodes = ctx.discovery().aliveServerNodes();
+
+        Set<Object> aliveNodeIds = new HashSet<>(F.nodeConsistentIds(srvNodes));
+
+        for (Object consistentId : consistentIds)
+            rows.add(new BaselineNodeView(consistentId, aliveNodeIds.contains(consistentId)));
+
+        return rows;
+    }
+
+    /**
+     * Baseline node attributes view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<BaselineNodeAttributeView> nodeAttributeViewSupplier(Map<String, Object> filter) {
+        String nodeConsistentId = (String)filter.get(BaselineNodeAttributeViewWalker.NODE_CONSISTENT_ID_FILTER);
+        String attrName = (String)filter.get(BaselineNodeAttributeViewWalker.NAME_FILTER);
+
+        BaselineTopology blt = globalState.baselineTopology();
+
+        if (blt == null)
+            return Collections.emptyList();
+
+        return F.flat(F.iterator(blt.currentBaseline(), node -> {
+            Map<String, Object> attrs = node.attributes();
+
+            if (nodeConsistentId != null && !nodeConsistentId.equals(toStringSafe(node.consistentId())))
+                return Collections.emptyList();
+
+            if (attrName != null) {
+                Object attrVal = attrs.get(attrName);
+
+                if (attrVal == null)
+                    return Collections.emptyList();
+
+                attrs = F.asMap(attrName, attrs.get(attrName));
+            }
+
+            return F.iterator(
+                attrs.entrySet(),
+                na -> new BaselineNodeAttributeView(node.consistentId(), na.getKey(), na.getValue()),
+                true
+            );
+        }, true));
     }
 
     /**

@@ -211,8 +211,12 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      */
     class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
-                IgniteCheckedException {
+        @Override protected void writeToSocket(
+            Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 if (msg.senderNodeId() != null && clientJustStarted.get())
                     try {

@@ -36,6 +36,7 @@ import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.jotm.Jotm;
+import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 /**
  *
@@ -75,7 +76,7 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        jotm = new Jotm(true, false);
+        jotm = new Jotm(true, false, new RmiLocalConfiguration());
 
         super.beforeTestsStarted();
     }

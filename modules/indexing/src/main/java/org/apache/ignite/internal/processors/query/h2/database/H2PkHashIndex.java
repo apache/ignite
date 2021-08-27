@@ -170,7 +170,14 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(
+        Session ses,
+        int[] masks,
+        TableFilter[] filters,
+        int filter,
+        SortOrder sortOrder,
+        HashSet<Column> allColumnsSet
+    ) {
         return Double.MAX_VALUE;
     }
 

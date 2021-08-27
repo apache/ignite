@@ -48,8 +48,6 @@ import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
-
 /**
  *
  */
@@ -118,11 +116,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             new CacheDiagnosticManager()
         );
 
-        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
         return new PageMemoryImpl(
             provider, sizes,
@@ -137,10 +131,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
                 }
             },
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(),
-                cctx.metric(),
-                cctx.performanceStatistics(),
-                NO_OP_METRICS),
+            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

@@ -291,7 +291,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         };
 
                         if (stripe >= 0)
-                            cctx.kernalContext().getStripedExecutorService().execute(stripe, c);
+                            cctx.kernalContext().pools().getStripedExecutorService().execute(stripe, c);
                         else {
                             try {
                                 cctx.kernalContext().pools().poolForPolicy(plc).execute(c);
@@ -1554,7 +1554,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheGroupHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+    public void addOrderedCacheGroupHandler(
+        GridCacheSharedContext cctx,
+        Object topic,
+        IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c
+    ) {
         addOrderedHandler(cctx, true, topic, c);
     }
 
@@ -1566,7 +1570,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(
+        GridCacheSharedContext cctx,
+        boolean cacheGrp,
+        Object topic,
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c
+    ) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
         IgniteLogger log0 = log;

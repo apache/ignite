@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -108,9 +109,9 @@ public class TcpIgniteClient implements IgniteClient {
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
             ClientConfiguration cfg
     ) throws ClientException {
-        final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
+        final ClientBinaryMetadataHandler metadataHnd = new ClientBinaryMetadataHandler();
 
-        marsh = new ClientBinaryMarshaller(metadataHandler, new ClientMarshallerContext());
+        marsh = new ClientBinaryMarshaller(metadataHnd, new ClientMarshallerContext());
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
 
@@ -123,7 +124,10 @@ public class TcpIgniteClient implements IgniteClient {
         try {
             ch.channelsInit();
 
-            ch.addChannelFailListener(() -> metadataHandler.onReconnect());
+            ch.addChannelFailListener(metadataHnd::onReconnect);
+
+            // Send postponed metadata after channel init.
+            metadataHnd.sendAllMeta();
 
             transactions = new TcpClientTransactions(ch, marsh,
                     new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
@@ -377,10 +381,12 @@ public class TcpIgniteClient implements IgniteClient {
             // If type wasn't registered before or metadata changed, send registration request.
             if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {
-                    ch.request(
-                        ClientOperation.PUT_BINARY_TYPE,
-                        req -> serDes.binaryMetadata(newMeta, req.out())
-                    );
+                    if (ch != null) { // Postpone binary type registration requests to server before channels initiated.
+                        ch.request(
+                            ClientOperation.PUT_BINARY_TYPE,
+                            req -> serDes.binaryMetadata(newMeta, req.out())
+                        );
+                    }
                 }
                 catch (ClientException e) {
                     throw new BinaryObjectException(e);
@@ -388,6 +394,24 @@ public class TcpIgniteClient implements IgniteClient {
             }
 
             cache.addMeta(typeId, meta, failIfUnregistered); // merge
+        }
+
+        /** Send registration requests to the server for all collected metadata. */
+        public void sendAllMeta() {
+            try {
+                CompletableFuture.allOf(cache.metadata().stream()
+                    .map(type -> sendMetaAsync(((BinaryTypeImpl)type).metadata()).toCompletableFuture())
+                    .toArray(CompletableFuture[]::new)
+                ).get();
+            }
+            catch (Exception e) {
+                throw new ClientException(e);
+            }
+        }
+
+        /** Send metadata registration request to the server. */
+        private IgniteClientFuture<Void> sendMetaAsync(BinaryMetadata meta) {
+            return ch.requestAsync(ClientOperation.PUT_BINARY_TYPE, req -> serDes.binaryMetadata(meta, req.out()));
         }
 
         /** {@inheritDoc} */

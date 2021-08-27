@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,55 +42,80 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts = new HashMap<>();
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions = new HashMap<>();
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions = new HashMap<>();
 
     /** Exceptions. */
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
 
     /**
-     * @param cntrConflicts Counter conflicts.
-     * @param hashConflicts Hash conflicts.
-     * @param movingPartitions Moving partitions.
-     * @param exceptions Occurred exceptions.
+     * Default constructor for Externalizable.
      */
-    public IdleVerifyResultV2(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions,
-        Map<ClusterNode, Exception> exceptions
-    ) {
-        this.cntrConflicts = cntrConflicts;
-        this.hashConflicts = hashConflicts;
-        this.movingPartitions = movingPartitions;
-        this.lostPartitions = lostPartitions;
-        this.exceptions = exceptions;
+    public IdleVerifyResultV2() {
     }
 
     /**
      * @param exceptions Occurred exceptions.
      */
     public IdleVerifyResultV2(Map<ClusterNode, Exception> exceptions) {
-        this(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), exceptions);
+        this.exceptions = exceptions;
     }
 
     /**
-     * Default constructor for Externalizable.
+     * @param clusterHashes Map of cluster partition hashes.
+     * @param exceptions Exceptions on each cluster node.
      */
-    public IdleVerifyResultV2() {
+    public IdleVerifyResultV2(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        Map<ClusterNode, Exception> exceptions
+    ) {
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
+            Integer partHash = null;
+            Long updateCntr = null;
+
+            for (PartitionHashRecordV2 record : e.getValue()) {
+                if (record.partitionState() == PartitionHashRecordV2.PartitionState.MOVING) {
+                    movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                        .add(record);
+
+                    continue;
+                }
+
+                if (record.partitionState() == PartitionHashRecordV2.PartitionState.LOST) {
+                    lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                        .add(record);
+
+                    continue;
+                }
+
+                if (partHash == null) {
+                    partHash = record.partitionHash();
+
+                    updateCntr = record.updateCounter();
+                }
+                else {
+                    if (record.updateCounter() != updateCntr)
+                        cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
+
+                    if (record.partitionHash() != partHash)
+                        hashConflicts.putIfAbsent(e.getKey(), e.getValue());
+                }
+            }
+        }
+
+        this.exceptions = exceptions;
     }
 
     /** {@inheritDoc} */
