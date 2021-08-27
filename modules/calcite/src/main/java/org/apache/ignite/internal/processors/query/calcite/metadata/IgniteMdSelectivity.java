@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -467,7 +468,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             predKind != SqlKind.NOT && !predKind.belongsTo(SqlKind.COMPARISON))
             return null;
 
-        RexLocalRef operand = getOperand(pred, RexLocalRef.class);
+        RexSlot operand = getOperand(pred, RexSlot.class);
 
         if (operand == null)
             return null;
@@ -485,9 +486,18 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @return ColumnStatistics or {@code null}.
      */
     private ColumnStatistics getColStatBySlot(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexSlot pred) {
-        Set<RelColumnOrigin> origins = mq.getColumnOrigins(rel, pred.getIndex());
+        Set<RelColumnOrigin> origins = null;
 
-        if (origins == null || origins.isEmpty())
+        if (pred instanceof RexLocalRef) {
+            if (rel instanceof ProjectableFilterableTableScan) {
+                origins = Collections.singleton(
+                    ((ProjectableFilterableTableScan)rel).columnOriginsByRelLocalRef(pred.getIndex()));
+            }
+        }
+        else
+            origins = mq.getColumnOrigins(rel, pred.getIndex());
+
+        if (origins == null || origins.isEmpty() || origins.iterator().next().isDerived())
             return null;
 
         IgniteTypeFactory typeFactory = Commons.typeFactory(rel);

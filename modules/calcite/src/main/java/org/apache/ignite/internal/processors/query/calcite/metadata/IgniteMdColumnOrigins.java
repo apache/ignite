@@ -43,10 +43,12 @@ import org.apache.calcite.rel.metadata.RelColumnMapping;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.BuiltInMethod;
@@ -256,13 +258,47 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         RelMetadataQuery mq,
         int iOutputColumn
     ) {
-        if (rel.projects() != null)
-            return null;
+        if (rel.projects() != null) {
+            RexNode proj = rel.projects().get(iOutputColumn);
+            Set<RexSlot> sources = new HashSet<>();
 
-        int originColIdx = (rel.requiredColumns() == null) ? iOutputColumn :
-            rel.requiredColumns().toArray()[iOutputColumn];
+            getOperands(proj, RexSlot.class, sources);
 
-        return Collections.singleton(new RelColumnOrigin(rel.getTable(), originColIdx, false));
+            boolean derived = sources.size() > 1;
+            Set<RelColumnOrigin> res = new HashSet<>();
+
+            for (RexSlot slot : sources) {
+                if (slot instanceof RexLocalRef) {
+                    RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
+
+                    res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
+                        derived));
+                }
+            }
+
+            return res;
+        }
+
+        return Collections.singleton(rel.columnOriginsByRelLocalRef(iOutputColumn));
+    }
+
+    /**
+     * Get operands of specified type from RexCall nodes.
+     *
+     * @param rn RexNode to get operands
+     * @param cls Target class.
+     * @param res Set to store results into.
+     */
+    private <T> void getOperands(RexNode rn, Class<T> cls, Set<T> res) {
+        if (cls.isAssignableFrom(rn.getClass()))
+            res.add((T)rn);
+
+        if (rn instanceof RexCall) {
+            List<RexNode> operands = ((RexCall)rn).getOperands();
+
+            for (RexNode op : operands)
+                getOperands(op, cls, res);
+        }
     }
 
     /**
