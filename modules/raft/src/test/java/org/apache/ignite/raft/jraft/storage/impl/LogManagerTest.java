@@ -19,6 +19,7 @@ package org.apache.ignite.raft.jraft.storage.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Node;
@@ -39,6 +40,7 @@ import org.apache.ignite.raft.jraft.storage.BaseStorageTest;
 import org.apache.ignite.raft.jraft.storage.LogManager;
 import org.apache.ignite.raft.jraft.storage.LogStorage;
 import org.apache.ignite.raft.jraft.test.TestUtils;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +76,8 @@ public class LogManagerTest extends BaseStorageTest {
     /** Disruptor for this service test. */
     private StripedDisruptor disruptor;
 
+    private ExecutorService executor;
+
     @BeforeEach
     public void setup() throws Exception {
         this.confManager = new ConfigurationManager();
@@ -83,7 +87,8 @@ public class LogManagerTest extends BaseStorageTest {
         final LogManagerOptions opts = new LogManagerOptions();
 
         NodeOptions nodeOptions = new NodeOptions();
-        nodeOptions.setCommonExecutor(JRaftUtils.createExecutor("test-executor", Utils.cpus()));
+        executor = JRaftUtils.createExecutor("test-executor", Utils.cpus());
+        nodeOptions.setCommonExecutor(executor);
         Mockito.when(node.getOptions()).thenReturn(nodeOptions);
 
         opts.setConfigurationManager(this.confManager);
@@ -109,6 +114,7 @@ public class LogManagerTest extends BaseStorageTest {
     public void teardown() throws Exception {
         this.logStorage.shutdown();
         disruptor.shutdown();
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 
     @Test

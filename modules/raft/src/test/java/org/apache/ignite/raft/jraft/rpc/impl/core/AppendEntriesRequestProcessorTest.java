@@ -76,10 +76,11 @@ public class AppendEntriesRequestProcessorTest extends BaseNodeRequestProcessorT
     }
 
     @AfterEach
-    public void teardown() {
+    @Override public void teardown() {
         if (this.executor != null) {
             this.executor.shutdownNow();
         }
+        super.teardown();
     }
 
     @Test

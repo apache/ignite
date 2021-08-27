@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -30,6 +30,7 @@ import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
 
 /**
@@ -49,7 +50,7 @@ public class CounterListener implements RaftGroupListener {
     /**
      * Snapshot executor.
      */
-    private Executor executor = Executors.newSingleThreadExecutor();
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /** {@inheritDoc} */
     @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
@@ -106,7 +107,7 @@ public class CounterListener implements RaftGroupListener {
 
     /** {@inheritDoc} */
     @Override public void onShutdown() {
-        // No-op.
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 
     /**

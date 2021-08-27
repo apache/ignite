@@ -396,9 +396,9 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
 
         Random r = new Random();
 
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new Thread(new Runnable() {
-                @Override public void run() {
+        try {
+            for (int i = 0; i < threads.length; i++) {
+                threads[i] = new Thread(() -> {
                     try {
                         startBar.await();
                     }
@@ -456,19 +456,19 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
                             }
                         }
                     }
-                }
-            });
+                });
 
-            threads[i].setName("Worker" + i);
-            threads[i].start();
+                threads[i].setName("Worker" + i);
+                threads[i].start();
+            }
+
+            Thread.sleep(duration);
+
+            stop.set(true);
+        } finally {
+            for (Thread thread : threads)
+                thread.join();
         }
-
-        Thread.sleep(duration);
-
-        stop.set(true);
-
-        for (Thread thread : threads)
-            thread.join();
 
         log.info("After test rLocks={} wLocks={} fLocks={}", rLocks.sum(), wLocks.sum(), fLocks.sum());
 

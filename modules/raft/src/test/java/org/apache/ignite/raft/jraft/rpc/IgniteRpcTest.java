@@ -19,16 +19,20 @@ package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
+import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.util.Endpoint;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
+import org.junit.jupiter.api.AfterEach;
 
 import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
 
@@ -38,6 +42,17 @@ import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
 public class IgniteRpcTest extends AbstractRpcTest {
     /** The counter. */
     private final AtomicInteger cntr = new AtomicInteger();
+
+    /** Requests executor. */
+    private ExecutorService requestExecutor;
+
+    /** {@inheritDoc} */
+    @AfterEach
+    @Override public void tearDown() {
+        super.tearDown();
+
+        ExecutorServiceHelper.shutdownAndAwaitTermination(requestExecutor);
+    }
 
     /** {@inheritDoc} */
     @Override public RpcServer<?> createServer(Endpoint endpoint) {
@@ -49,7 +64,11 @@ public class IgniteRpcTest extends AbstractRpcTest {
             new TestScaleCubeClusterServiceFactory()
         );
 
-        var server = new TestIgniteRpcServer(service, new NodeManager(), new NodeOptions()) {
+        NodeOptions nodeOptions = new NodeOptions();
+
+        requestExecutor = JRaftUtils.createRequestExecutor(nodeOptions);
+
+        var server = new TestIgniteRpcServer(service, new NodeManager(), nodeOptions, requestExecutor) {
             @Override public void shutdown() {
                 super.shutdown();
 

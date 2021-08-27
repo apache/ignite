@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import org.apache.ignite.raft.jraft.JRaftUtils;
@@ -47,6 +48,7 @@ import org.apache.ignite.raft.jraft.storage.LogManager;
 import org.apache.ignite.raft.jraft.storage.SnapshotStorage;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.util.ByteString;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.ThreadId;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
@@ -90,6 +92,7 @@ public class ReplicatorTest {
     private SnapshotStorage snapshotStorage;
     private ReplicatorOptions opts;
     private final PeerId peerId = new PeerId("localhost", 8081);
+    private ExecutorService executor;
 
     @BeforeEach
     public void setup() {
@@ -109,7 +112,8 @@ public class ReplicatorTest {
         this.opts.setElectionTimeoutMs(1000);
 
         NodeOptions options = new NodeOptions();
-        options.setCommonExecutor(JRaftUtils.createExecutor("test-executor-", Utils.cpus()));
+        executor = JRaftUtils.createExecutor("test-executor-", Utils.cpus());
+        options.setCommonExecutor(executor);
 
         Mockito.when(this.logManager.getLastLogIndex()).thenReturn(10L);
         Mockito.when(this.logManager.getTerm(10)).thenReturn(1L);
@@ -154,6 +158,7 @@ public class ReplicatorTest {
     @AfterEach
     public void teardown() {
         this.timerManager.shutdown();
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 
     @Test

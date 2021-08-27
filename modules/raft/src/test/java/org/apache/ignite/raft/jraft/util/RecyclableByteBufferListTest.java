@@ -37,8 +37,11 @@ public class RecyclableByteBufferListTest {
     public void testMultipleRecycleAtDifferentThread() throws InterruptedException {
         final RecyclableByteBufferList object = RecyclableByteBufferList.newInstance();
         final Thread thread1 = new Thread(object::recycle);
-        thread1.start();
-        thread1.join();
+        try {
+            thread1.start();
+        } finally {
+            thread1.join();
+        }
         assertSame(object, RecyclableByteBufferList.newInstance());
     }
 

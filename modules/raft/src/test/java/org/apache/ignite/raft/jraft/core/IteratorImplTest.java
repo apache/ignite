@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.JRaftUtils;
@@ -28,7 +29,9 @@ import org.apache.ignite.raft.jraft.entity.LogEntry;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.storage.LogManager;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +63,8 @@ public class IteratorImplTest {
 
     private AtomicLong applyingIndex;
 
+    private ExecutorService executor;
+
     @BeforeEach
     public void setup() {
         this.applyingIndex = new AtomicLong(0);
@@ -72,8 +77,14 @@ public class IteratorImplTest {
             Mockito.when(this.logManager.getEntry(i)).thenReturn(log);
         }
         NodeOptions nodeOptions = new NodeOptions();
-        nodeOptions.setCommonExecutor(JRaftUtils.createExecutor("test-executor", Utils.cpus()));
+        executor = JRaftUtils.createExecutor("test-executor", Utils.cpus());
+        nodeOptions.setCommonExecutor(executor);
         this.iter = new IteratorImpl(fsm, logManager, closures, 0L, 0L, 10L, applyingIndex, nodeOptions);
+    }
+
+    @AfterEach
+    public void teardown() {
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 
     @Test

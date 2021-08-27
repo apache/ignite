@@ -64,11 +64,16 @@ public class FutureTest {
     @Test
     public void testGet() throws Exception {
         FutureImpl<Boolean> future = new FutureImpl<Boolean>();
-        new Thread(new NotifyFutureRunner(future, 2000, null)).start();
-        boolean result = future.get();
-        assertTrue(result);
-        assertTrue(future.isDone());
-        assertFalse(future.isCancelled());
+        Thread t = new Thread(new NotifyFutureRunner(future, 2000, null));
+        try {
+            t.start();
+            boolean result = future.get();
+            assertTrue(result);
+            assertTrue(future.isDone());
+            assertFalse(future.isCancelled());
+        } finally {
+            t.join();
+        }
     }
 
     @Test
@@ -84,45 +89,51 @@ public class FutureTest {
     @Test
     public void testGetException() throws Exception {
         FutureImpl<Boolean> future = new FutureImpl<Boolean>();
-        new Thread(new NotifyFutureRunner(future, 2000, new IOException("hello"))).start();
+        Thread t = new Thread(new NotifyFutureRunner(future, 2000, new IOException("hello")));
         try {
-            future.get();
-            fail();
-        }
-        catch (ExecutionException e) {
-            assertEquals("hello", e.getCause().getMessage());
+            t.start();
+            try {
+                future.get();
+                fail();
+            }
+            catch (ExecutionException e) {
+                assertEquals("hello", e.getCause().getMessage());
 
+            }
+            assertTrue(future.isDone());
+            assertFalse(future.isCancelled());
+        } finally {
+            t.join();
         }
-        assertTrue(future.isDone());
-        assertFalse(future.isCancelled());
-
     }
 
     @Test
     public void testCancel() throws Exception {
         final FutureImpl<Boolean> future = new FutureImpl<Boolean>();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(3000);
-                    future.cancel(true);
-                }
-                catch (Exception e) {
-                    log.error(e.getMessage(), e);
-                }
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                future.cancel(true);
             }
-        }).start();
+            catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        });
         try {
-            future.get();
-            fail();
-        }
-        catch (CancellationException e) {
-            assertTrue(true);
+            t.start();
+            try {
+                future.get();
+                fail();
+            }
+            catch (CancellationException e) {
+                assertTrue(true);
 
+            }
+            assertTrue(future.isDone());
+            assertTrue(future.isCancelled());
+        } finally {
+            t.join();
         }
-        assertTrue(future.isDone());
-        assertTrue(future.isCancelled());
     }
 
     @Test

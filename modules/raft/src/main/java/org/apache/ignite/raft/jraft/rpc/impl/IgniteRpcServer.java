@@ -21,17 +21,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import org.apache.ignite.network.NetworkMessageHandler;
-import org.apache.ignite.raft.client.message.RaftClientMessageGroup;
-import org.apache.ignite.raft.jraft.RaftMessageGroup;
-import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.NetworkMessageHandler;
 import org.apache.ignite.network.TopologyEventHandler;
+import org.apache.ignite.raft.client.message.RaftClientMessageGroup;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.NodeManager;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
 import org.apache.ignite.raft.jraft.rpc.RpcServer;
@@ -53,7 +53,6 @@ import org.apache.ignite.raft.jraft.rpc.impl.core.InstallSnapshotRequestProcesso
 import org.apache.ignite.raft.jraft.rpc.impl.core.ReadIndexRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.RequestVoteRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.TimeoutNowRequestProcessor;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * TODO https://issues.apache.org/jira/browse/IGNITE-14519 Unsubscribe on shutdown
@@ -81,7 +80,7 @@ public class IgniteRpcServer implements RpcServer<Void> {
         NodeManager nodeManager,
         RaftClientMessagesFactory raftClientMessagesFactory,
         RaftMessagesFactory raftMessagesFactory,
-        @Nullable Executor rpcExecutor
+        Executor rpcExecutor
     ) {
         this.service = service;
         this.nodeManager = nodeManager;

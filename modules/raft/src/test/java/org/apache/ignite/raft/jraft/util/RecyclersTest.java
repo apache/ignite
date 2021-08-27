@@ -54,8 +54,11 @@ public class RecyclersTest {
         final Recyclers<RecyclableObject> recyclers = newRecyclers(512);
         final RecyclableObject object = recyclers.get();
         final Thread thread1 = new Thread(() -> recyclers.recycle(object, object.handle));
-        thread1.start();
-        thread1.join();
+        try {
+            thread1.start();
+        } finally {
+            thread1.join();
+        }
         assertSame(object, recyclers.get());
     }
 
@@ -66,8 +69,11 @@ public class RecyclersTest {
 
         final AtomicReference<IllegalStateException> exceptionStore = new AtomicReference<>();
         final Thread thread1 = new Thread(() -> recyclers.recycle(object, object.handle));
-        thread1.start();
-        thread1.join();
+        try {
+            thread1.start();
+        } finally {
+            thread1.join();
+        }
 
         final Thread thread2 = new Thread(() -> {
             try {
@@ -77,8 +83,11 @@ public class RecyclersTest {
                 exceptionStore.set(e);
             }
         });
-        thread2.start();
-        thread2.join();
+        try {
+            thread2.start();
+        } finally {
+            thread2.join();
+        }
 
         assertNotNull(exceptionStore.get());
     }

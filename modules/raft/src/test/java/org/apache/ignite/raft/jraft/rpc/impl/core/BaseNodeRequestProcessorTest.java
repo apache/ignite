@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.rpc.impl.core;
 
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
@@ -26,6 +27,9 @@ import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftServerService;
 import org.apache.ignite.raft.jraft.test.MockAsyncContext;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
+import org.apache.ignite.raft.jraft.util.concurrent.FixedThreadsExecutorGroup;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +45,8 @@ public abstract class BaseNodeRequestProcessorTest<T extends Message> {
     protected final String peerIdStr = "localhost:8081";
     protected MockAsyncContext asyncContext;
     protected RaftMessagesFactory msgFactory = new RaftMessagesFactory();
+    private ExecutorService executor;
+    private FixedThreadsExecutorGroup appendEntriesExecutor;
 
     public abstract T createRequest(String groupId, PeerId peerId);
 
@@ -52,6 +58,13 @@ public abstract class BaseNodeRequestProcessorTest<T extends Message> {
     public void setup() {
         Mockito.lenient().when(node.getRaftOptions()).thenReturn(new RaftOptions());
         this.asyncContext = new MockAsyncContext();
+    }
+
+    @AfterEach
+    public void teardown() {
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
+        if (appendEntriesExecutor != null)
+            appendEntriesExecutor.shutdownGracefully();
     }
 
     @Test
@@ -71,8 +84,10 @@ public abstract class BaseNodeRequestProcessorTest<T extends Message> {
 
         NodeOptions nodeOptions = new NodeOptions();
 
-        nodeOptions.setCommonExecutor(JRaftUtils.createCommonExecutor(nodeOptions));
-        nodeOptions.setStripedExecutor(JRaftUtils.createAppendEntriesExecutor(nodeOptions));
+        executor = JRaftUtils.createCommonExecutor(nodeOptions);
+        nodeOptions.setCommonExecutor(executor);
+        appendEntriesExecutor = JRaftUtils.createAppendEntriesExecutor(nodeOptions);
+        nodeOptions.setStripedExecutor(appendEntriesExecutor);
 
         Mockito.lenient().when(node.getOptions()).thenReturn(nodeOptions);
         if (asyncContext != null)

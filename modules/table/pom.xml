@@ -152,6 +152,13 @@
             <type>test-jar</type>
         </dependency>
 
+        <!-- Logging in tests -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Benchmarks dependencies -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

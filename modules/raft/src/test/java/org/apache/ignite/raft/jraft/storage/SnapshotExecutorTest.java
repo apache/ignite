@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.storage;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -52,6 +53,7 @@ import org.apache.ignite.raft.jraft.storage.snapshot.local.LocalSnapshotWriter;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.Endpoint;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,6 +99,7 @@ public class SnapshotExecutorTest extends BaseStorageTest {
     private LocalSnapshotStorage snapshotStorage;
     private TimerManager timerManager;
     private NodeOptions options;
+    private ExecutorService executorService;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -139,6 +142,7 @@ public class SnapshotExecutorTest extends BaseStorageTest {
         executor.shutdown();
         timerManager.shutdown();
         options.getCommonExecutor().shutdown();
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executorService);
     }
 
     @Test
@@ -244,8 +248,10 @@ public class SnapshotExecutorTest extends BaseStorageTest {
         Mockito.lenient().when(
             raftClientService.getFile(eq(new Endpoint("localhost", 8080)), eq(rb),
                 eq(copyOpts.getTimeoutMs()), argument.capture())).thenReturn(future);
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        executorService = singleThreadExecutor;
         Utils.runInThread(
-            Executors.newSingleThreadExecutor(),
+            singleThreadExecutor,
             () -> executor.installSnapshot(irb, msgFactory.installSnapshotResponse(), new RpcRequestClosure(asyncCtx, msgFactory))
         );
 
@@ -278,7 +284,9 @@ public class SnapshotExecutorTest extends BaseStorageTest {
     public void testNotDoSnapshotWithIntervalDist() throws Exception {
         final NodeOptions nodeOptions = new NodeOptions();
         nodeOptions.setSnapshotLogIndexMargin(10);
-        nodeOptions.setCommonExecutor(JRaftUtils.createExecutor("test-executor", Utils.cpus()));
+        ExecutorService testExecutor = JRaftUtils.createExecutor("test-executor", Utils.cpus());
+        executorService = testExecutor;
+        nodeOptions.setCommonExecutor(testExecutor);
         Mockito.when(node.getOptions()).thenReturn(nodeOptions);
         Mockito.when(fSMCaller.getLastAppliedIndex()).thenReturn(1L);
         executor.doSnapshot(null);
@@ -292,7 +300,9 @@ public class SnapshotExecutorTest extends BaseStorageTest {
     public void testDoSnapshotWithIntervalDist() throws Exception {
         final NodeOptions nodeOptions = new NodeOptions();
         nodeOptions.setSnapshotLogIndexMargin(5);
-        nodeOptions.setCommonExecutor(JRaftUtils.createExecutor("test-executor", Utils.cpus()));
+        ExecutorService testExecutor = JRaftUtils.createExecutor("test-executor", Utils.cpus());
+        executorService = testExecutor;
+        nodeOptions.setCommonExecutor(testExecutor);
         Mockito.when(node.getOptions()).thenReturn(nodeOptions);
         Mockito.when(fSMCaller.getLastAppliedIndex()).thenReturn(6L);
 

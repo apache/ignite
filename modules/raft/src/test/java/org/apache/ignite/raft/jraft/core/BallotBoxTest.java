@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.FSMCaller;
 import org.apache.ignite.raft.jraft.JRaftUtils;
@@ -24,6 +25,7 @@ import org.apache.ignite.raft.jraft.closure.ClosureQueueImpl;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.BallotBoxOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,12 +47,14 @@ public class BallotBoxTest {
     @Mock
     private FSMCaller waiter;
     private ClosureQueueImpl closureQueue;
+    private ExecutorService executor;
 
     @BeforeEach
     public void setup() {
         BallotBoxOptions opts = new BallotBoxOptions();
         NodeOptions options = new NodeOptions();
-        options.setCommonExecutor(JRaftUtils.createExecutor("test-executor-", Utils.cpus()));
+        executor = JRaftUtils.createExecutor("test-executor-", Utils.cpus());
+        options.setCommonExecutor(executor);
         this.closureQueue = new ClosureQueueImpl(options);
         opts.setClosureQueue(this.closureQueue);
         opts.setWaiter(this.waiter);
@@ -61,6 +65,7 @@ public class BallotBoxTest {
     @AfterEach
     public void teardown() {
         box.shutdown();
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 
     @Test

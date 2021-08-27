@@ -32,11 +32,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteSystemProperties;
 import org.junit.jupiter.api.Test;
@@ -182,7 +184,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         String expN4 = n4.toString();
 
         CyclicBarrier bar = new CyclicBarrier(4);
-        Executor pool = Executors.newFixedThreadPool(4);
+        ExecutorService pool = Executors.newFixedThreadPool(4);
 
         CompletableFuture<String> fut1 = runAsync(new BarrierCallable(bar, n1, expN1), pool);
         CompletableFuture<String> fut2 = runAsync(new BarrierCallable(bar, n2, expN2), pool);
@@ -193,6 +195,8 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         fut2.get(3_000, TimeUnit.MILLISECONDS);
         fut3.get(3_000, TimeUnit.MILLISECONDS);
         fut4.get(3_000, TimeUnit.MILLISECONDS);
+
+        IgniteUtils.shutdownAndAwaitTermination(pool, 3_000, TimeUnit.MILLISECONDS);
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.util.ByteBufferCollector;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.apache.ignite.raft.jraft.util.Endpoint;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +77,7 @@ public class CopySessionTest {
     public void teardown() {
         Utils.closeQuietly(this.session);
         this.timerManager.shutdown();
+        ExecutorServiceHelper.shutdownAndAwaitTermination(this.nodeOptions.getCommonExecutor());
     }
 
     @Test
@@ -94,32 +96,34 @@ public class CopySessionTest {
     @Test
     public void testOnRpcReturnedEOF() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    //test join, should return
-                    session.join();
-                    latch.countDown();
-                }
-                catch (final InterruptedException e) {
-                    // No-op.
-                }
+        Thread t = new Thread(() -> {
+            try {
+                //test join, should return
+                session.join();
+                latch.countDown();
             }
-        }.start();
-        assertNull(this.session.getRpcCall());
-        final ByteBufferCollector bufRef = ByteBufferCollector.allocate(0);
-        this.session.setDestBuf(bufRef);
+            catch (final InterruptedException e) {
+                // No-op.
+            }
+        });
+        try {
+            t.start();
+            assertNull(this.session.getRpcCall());
+            final ByteBufferCollector bufRef = ByteBufferCollector.allocate(0);
+            this.session.setDestBuf(bufRef);
 
-        this.session.onRpcReturned(Status.OK(), raftOpts.getRaftMessagesFactory().getFileResponse().readSize(100).eof(true)
-            .data(new ByteString(new byte[100])).build());
-        assertEquals(100, bufRef.capacity());
-        //should be flip
-        assertEquals(0, bufRef.getBuffer().position());
-        assertEquals(100, bufRef.getBuffer().remaining());
+            this.session.onRpcReturned(Status.OK(), raftOpts.getRaftMessagesFactory().getFileResponse().readSize(100).eof(true)
+                .data(new ByteString(new byte[100])).build());
+            assertEquals(100, bufRef.capacity());
+            //should be flip
+            assertEquals(0, bufRef.getBuffer().position());
+            assertEquals(100, bufRef.getBuffer().remaining());
 
-        assertNull(this.session.getRpcCall());
-        latch.await();
+            assertNull(this.session.getRpcCall());
+            latch.await();
+        } finally {
+            t.join();
+        }
     }
 
     @Test

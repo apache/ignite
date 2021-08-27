@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.lang.IgniteLogger;
@@ -29,6 +31,7 @@ import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.entity.codec.v1.V1Decoder;
 import org.apache.ignite.raft.jraft.entity.codec.v1.V1Encoder;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,8 +102,9 @@ public class LogEntryCodecPerfTest {
         throws InterruptedException,
         BrokenBarrierException {
         final CyclicBarrier barrier = new CyclicBarrier(THREADS + 1);
+        ExecutorService executor = Executors.newFixedThreadPool(THREADS);
         for (int i = 0; i < THREADS; i++) {
-            new Thread(() -> {
+            executor.execute(() -> {
                 try {
                     testEncodeDecode(encoder, decoder, barrier);
                 }
@@ -108,12 +112,13 @@ public class LogEntryCodecPerfTest {
                     LOG.error("Failed to run test", e); // NOPMD
                     fail();
                 }
-            }).start();
+            });
         }
         long start = Utils.monotonicMs();
         barrier.await();
         barrier.await();
         LOG.info(version + " codec cost:" + (Utils.monotonicMs() - start) + " ms.");
         LOG.info("Total log size:" + this.logSize.get() + " bytes.");
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 }

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -42,6 +42,7 @@ import org.apache.ignite.raft.jraft.util.Bits;
 import org.apache.ignite.raft.jraft.util.BytesUtil;
 import org.apache.ignite.raft.jraft.util.DebugStatistics;
 import org.apache.ignite.raft.jraft.util.Describer;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.StorageOptionsFactory;
 import org.apache.ignite.raft.jraft.util.Utils;
@@ -145,7 +146,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     private LogEntryEncoder logEntryEncoder;
     private LogEntryDecoder logEntryDecoder;
 
-    private Executor executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public RocksDBLogStorage(final String path, final RaftOptions raftOptions) {
         super();
@@ -679,6 +680,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
      * Called after closing db.
      */
     protected void onShutdown() {
+        ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 
     /**

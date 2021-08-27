@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
@@ -57,6 +58,7 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
 import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
+import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.JDKMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,6 +85,9 @@ public class JRaftServerImpl implements RaftServer {
 
     /** Options. */
     private final NodeOptions opts;
+
+    /** Request executor. */
+    private ExecutorService requestExecutor;
 
     /**
      * @param service Cluster service.
@@ -125,12 +130,14 @@ public class JRaftServerImpl implements RaftServer {
         if (opts.getClientExecutor() == null)
             opts.setClientExecutor(JRaftUtils.createClientExecutor(opts, opts.getServerName()));
 
+        requestExecutor = JRaftUtils.createRequestExecutor(opts);
+
         rpcServer = new IgniteRpcServer(
             service,
             nodeManager,
             opts.getRaftClientMessagesFactory(),
             opts.getRaftMessagesFactory(),
-            JRaftUtils.createRequestExecutor(opts)
+            requestExecutor
         );
 
         if (opts.getfSMCallerExecutorDisruptor() == null) {
@@ -186,6 +193,20 @@ public class JRaftServerImpl implements RaftServer {
 
         if (opts.getLogManagerDisruptor() != null)
             opts.getLogManagerDisruptor().shutdown();
+
+        if (opts.getCommonExecutor() != null)
+            ExecutorServiceHelper.shutdownAndAwaitTermination(opts.getCommonExecutor());
+
+        if (opts.getStripedExecutor() != null)
+            opts.getStripedExecutor().shutdownGracefully();
+
+        if (opts.getScheduler() != null)
+            opts.getScheduler().shutdown();
+
+        if (opts.getClientExecutor() != null)
+            ExecutorServiceHelper.shutdownAndAwaitTermination(opts.getClientExecutor());
+
+        ExecutorServiceHelper.shutdownAndAwaitTermination(requestExecutor);
     }
 
     /** {@inheritDoc} */
