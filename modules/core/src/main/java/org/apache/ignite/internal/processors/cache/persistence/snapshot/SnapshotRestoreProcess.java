@@ -38,6 +38,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -96,6 +97,8 @@ import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_G
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
@@ -1159,8 +1162,6 @@ public class SnapshotRestoreProcess {
                 });
             }
 
-            // TODO Second preload partitions from remote nodes.
-
             opCtx0.locProgress.put(
                 CacheRestoreLifecycleFuture.create(grp,
                     partLfs,
@@ -1180,7 +1181,69 @@ public class SnapshotRestoreProcess {
                 partLfs);
         }
 
-        assert F.size(notScheduled.values(), p -> !p.isEmpty()) == 0 : "[notScheduled=" + notScheduled + ']';
+        // Load other partitions from remote nodes.
+        try {
+            for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m :
+                snapshotAffinity(opCtx0.metasPerNode,
+                    (grpId, partId) -> notScheduled.get(grpId) != null && notScheduled.get(grpId).contains(partId)).entrySet()) {
+                if (m.getKey().equals(ctx.localNodeId()))
+                    continue;
+
+                ctx.cache().context().snapshotMgr()
+                    .requestRemoteSnapshot(m.getKey(),
+                        opCtx0.snpName,
+                        m.getValue(),
+                        opCtx0.stopChecker,
+                        (snpFile, t) -> {
+                            if (t == null) {
+                                int grpId = CU.cacheId(cacheGroupName(snpFile.getParentFile()));
+                                int partId = partId(snpFile.getName());
+
+                                CacheRestoreLifecycleFuture plf = F.find(opCtx0.locProgress.keySet(),
+                                    null,
+                                    new IgnitePredicate<CacheRestoreLifecycleFuture>() {
+                                        @Override public boolean apply(CacheRestoreLifecycleFuture f) {
+                                            return f.grp.groupId() == grpId;
+                                        }
+                                    });
+
+                                assert plf != null : snpFile.getAbsolutePath();
+
+                                CacheGroupContext grp0 = plf.grp;
+                                CompletableFuture<Path> partFut = findLoadFuture(opCtx0.locProgress.get(plf), partId);
+
+                                assert partFut != null : snpFile.getAbsolutePath();
+
+                                File cacheDir = ((FilePageStoreManager)grp0.shared().pageStore())
+                                    .cacheWorkDir(grp0.sharedGroup(),
+                                    grp0.cacheOrGroupName());
+
+                                Path target0 = Paths.get(cacheDir.getAbsolutePath(), TMP_PREFIX + snpFile.getName());
+
+                                try {
+                                    IgniteSnapshotManager.copy(grp0.shared().snapshotMgr().ioFactory(),
+                                        snpFile,
+                                        target0.toFile(),
+                                        snpFile.length());
+
+                                    partFut.complete(target0);
+                                }
+                                catch (Exception e) {
+                                    partFut.completeExceptionally(e);
+                                }
+                            }
+                            else
+                                opCtx0.errHnd.accept(t);
+                        });
+
+                removeAllValues(notScheduled, m.getValue());
+            }
+
+            assert F.size(notScheduled.values(), p -> !p.isEmpty()) == 0 : "[notScheduled=" + notScheduled + ']';
+        }
+        catch (IgniteCheckedException e) {
+            opCtx0.errHnd.accept(e);
+        }
 
         // Complete cache future.
         int futsSize = opCtx0.locProgress.size();
@@ -1192,6 +1255,46 @@ public class SnapshotRestoreProcess {
                 else
                     opCtx0.cacheRebalanceFut.onDone(t);
             });
+    }
+
+    /**
+     * @param metas Map of snapshot metadata distribution across the cluster.
+     * @return Map of cache partitions per each node.
+     */
+    private static Map<UUID, Map<Integer, Set<Integer>>> snapshotAffinity(
+        Map<UUID, ArrayList<SnapshotMetadata>> metas,
+        BiPredicate<Integer, Integer> filter
+    ) {
+        Map<UUID, Map<Integer, Set<Integer>>> res = new HashMap<>();
+
+        for (Map.Entry<UUID, ArrayList<SnapshotMetadata>> e : metas.entrySet()) {
+            UUID nodeId = e.getKey();
+
+            for (SnapshotMetadata meta : ofNullable(e.getValue()).orElse(new ArrayList<>())) {
+                Map<Integer, Set<Integer>> parts = ofNullable(meta.partitions()).orElse(Collections.emptyMap());
+
+                for (Map.Entry<Integer, Set<Integer>> metaParts : parts.entrySet()) {
+                    for (Integer partId : metaParts.getValue()) {
+                        if (filter.test(metaParts.getKey(), partId)) {
+                            res.computeIfAbsent(nodeId, n -> new HashMap<>())
+                                .computeIfAbsent(metaParts.getKey(), k -> new HashSet<>())
+                                .add(partId);
+                        }
+                    }
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * @param from The source map to remove elements from.
+     * @param upd The map to check.
+     */
+    private static void removeAllValues(Map<Integer, Set<Integer>> from, Map<Integer, Set<Integer>> upd) {
+        for (Map.Entry<Integer, Set<Integer>> e : upd.entrySet())
+            from.getOrDefault(e.getKey(), Collections.emptySet()).removeAll(e.getValue());
     }
 
     /**
@@ -1484,7 +1587,7 @@ public class SnapshotRestoreProcess {
         private final CacheGroupContext grp;
 
         /** Future which will be completed when all related to cache group partitions are inited. */
-        private final CompletableFuture<Void> parts;
+        private final CompletableFuture<Void> inited;
 
         /** Future which will be completed when late affinity assignment on this cache group occurs. */
         private final CompletableFuture<Void> rebalanced;
@@ -1494,16 +1597,16 @@ public class SnapshotRestoreProcess {
 
         /**
          * @param grp Cache group context.
-         * @param parts Original future to listen to.
+         * @param inited Original future to listen to.
          */
         private CacheRestoreLifecycleFuture(
             CacheGroupContext grp,
-            CompletableFuture<Void> parts,
+            CompletableFuture<Void> inited,
             CompletableFuture<Void> rebalanced,
             CompletableFuture<Void> indexRebuild
         ) {
             this.grp = grp;
-            this.parts = parts;
+            this.inited = inited;
             this.rebalanced = rebalanced;
             this.indexRebuild = indexRebuild;
         }
@@ -1532,16 +1635,16 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.completedFuture(null) :
                 CompletableFuture.completedFuture(null);
 
-            CompletableFuture<Void> parts0 = CompletableFuture.allOf(arr0);
-            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, parts0, rebalanced, indexRebuild);
+            CompletableFuture<Void> inited = CompletableFuture.allOf(arr0);
+            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, inited, rebalanced, indexRebuild);
 
             // This will not be fired if partitions loading future completes with an exception.
-            parts0.thenRun(() -> grp.shared().exchange().registerExchangeAwareComponent(cl))
+            inited.thenRun(() -> grp.shared().exchange().registerExchangeAwareComponent(cl))
                 .thenRun(initAction);
 
             rebalanced.whenComplete((r, t) -> grp.shared().exchange().unregisterExchangeAwareComponent(cl));
 
-            CompletableFuture.allOf(parts0, rebalanced, indexRebuild)
+            CompletableFuture.allOf(inited, rebalanced, indexRebuild)
                 .whenComplete((r, t) -> {
                    if (t == null)
                        cl.complete(r);
@@ -1554,7 +1657,8 @@ public class SnapshotRestoreProcess {
 
         /** {@inheritDoc} */
         @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-            assert parts.isDone();
+            // Handle for the late affinity assignment message on partitions load complete.
+            assert inited.isDone();
 
             CacheAffinityChangeMessage msg = fut.affinityChangeMessage();
 
@@ -1592,6 +1696,16 @@ public class SnapshotRestoreProcess {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(grp.groupId());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "CacheRestoreLifecycleFuture{" +
+                "grp=" + grp +
+                ", inited=" + inited +
+                ", rebalanced=" + rebalanced +
+                ", indexRebuild=" + indexRebuild +
+                '}';
         }
     }
 

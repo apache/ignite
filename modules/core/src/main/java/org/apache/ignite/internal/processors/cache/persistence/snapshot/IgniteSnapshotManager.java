@@ -1741,6 +1741,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (log.isInfoEnabled()) {
                 log.info("Snapshot task has been registered on local node [sctx=" + this +
+                    ", task=" + task.getClass().getSimpleName() +
                     ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 

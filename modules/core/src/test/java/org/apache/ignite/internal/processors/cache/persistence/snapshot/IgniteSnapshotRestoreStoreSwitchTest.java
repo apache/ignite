@@ -38,6 +38,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
@@ -105,6 +106,7 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
 
         IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
         scc.cluster().state(ClusterState.ACTIVE);
+        scc.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
         snpParts.forEach(p -> {
             try {
@@ -127,9 +129,9 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
 
         awaitPartitionMapExchange(true, true, null, true);
 
-        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-        assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
-        assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
+        assertCacheKeys(scc.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(scc.cache(CACHE1), CACHE_KEYS_RANGE);
+        assertCacheKeys(scc.cache(CACHE2), CACHE_KEYS_RANGE);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }

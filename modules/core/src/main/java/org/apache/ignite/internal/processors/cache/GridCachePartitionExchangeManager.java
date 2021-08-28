@@ -3476,7 +3476,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
-                        cctx.snapshotMgr().onRebalanceReady(assignsSet, exchFut);
+                        if (forcedRebFut == null)
+                            cctx.snapshotMgr().onRebalanceReady(assignsSet, exchFut);
 
                         for (CacheGroupContext grp : assignsSet.descendingSet()) {
                             boolean disableRebalance = cctx.snapshot().partitionsAreFrozen(grp) ||
