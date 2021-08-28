@@ -26,16 +26,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -44,39 +49,55 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
-import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** @throws Exception If fails. */
     @Test
-    public void testSnapshotRemoteRequest() throws Exception {
+    public void testSnapshotRemoteRequestFromSingleNode() throws Exception {
+        int rqCnt = 10;
+
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME), grid(1).localNode().id());
-        Map<Integer, Set<Integer>> parts0 = new HashMap<>();
-
-        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
-            parts0.computeIfAbsent(e.getKey(), k -> new HashSet<>()).addAll(e.getValue());
 
         awaitPartitionMapExchange();
-        IgniteSnapshotManager mgr = snp(ignite);
 
-        IgniteInternalFuture<?> fut = mgr.requestRemoteSnapshot(grid(1).localNode().id(),
-            SNAPSHOT_NAME,
-            parts,
-            (part, gpId) -> {
-                assertEquals(partId(part.getName()), gpId.getPartitionId());
-                assertTrue(parts0.get(gpId.getGroupId()).remove(gpId.getPartitionId()));
-            });
+        CountDownLatch latch = new CountDownLatch(parts.values().stream().mapToInt(Set::size).sum() * rqCnt);
+        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>();
 
-        fut.get(DFLT_TEST_TIMEOUT);
+        IgniteInternalFuture<?> runFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                Map<Integer, Set<Integer>> parts0 = new HashMap<>();
 
-        assertEquals(F.size(parts0.values(), Set::isEmpty), parts0.size());
+                for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
+                    parts0.computeIfAbsent(e.getKey(), k -> new HashSet<>()).addAll(e.getValue());
+
+                IgniteInternalFuture<Void> locFut = null;
+
+                compFut.add(locFut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+                    SNAPSHOT_NAME,
+                    parts,
+                    () -> false,
+                    defaultPartitionConsumer(parts0, latch)));
+
+                locFut.listen(f -> assertEquals("All partitions must be handled: " + parts0,
+                    F.size(parts0.values(), Set::isEmpty), parts0.size()));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }, rqCnt, "rq-creator-");
+
+        runFut.get(TIMEOUT);
+        U.await(latch, TIMEOUT, TimeUnit.MILLISECONDS);
+        compFut.markInitialized().get(TIMEOUT);
     }
 
     /** @throws Exception If fails. */
@@ -98,23 +119,21 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g)
             .blockMessages((n, msg) -> msg instanceof SnapshotRequestMessage));
 
+        CountDownLatch latch = new CountDownLatch(fromNode1.values().stream().mapToInt(Set::size).sum() +
+            fromNode0.values().stream().mapToInt(Set::size).sum());
+
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshot(node1, SNAPSHOT_NAME, fromNode1,
-            (part, pair) -> assertTrue("Received partition has not been requested",
-                    fromNode1.get(pair.getGroupId()).remove(pair.getPartitionId())));
-        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshot(node0, SNAPSHOT_NAME, fromNode0,
-            (part, pair) -> assertTrue("Received partition has not been requested",
-                    fromNode0.get(pair.getGroupId()).remove(pair.getPartitionId())));
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshot(node1, SNAPSHOT_NAME, fromNode1, () -> false,
+            defaultPartitionConsumer(fromNode1, latch));
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshot(node0, SNAPSHOT_NAME, fromNode0, () -> false,
+            defaultPartitionConsumer(fromNode0, latch));
 
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g).stopBlock());
 
-        futFrom0To1.get();
-        futFrom1To0.get();
+        latch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
-        assertTrue("Not all of partitions have been received: " + fromNode1,
-            fromNode1.get(CU.cacheId(DEFAULT_CACHE_NAME)).isEmpty());
-        assertTrue("Not all of partitions have been received: " + fromNode0,
-            fromNode0.get(CU.cacheId(DEFAULT_CACHE_NAME)).isEmpty());
+        futFrom0To1.get(TIMEOUT);
+        futFrom1To0.get(TIMEOUT);
     }
 
     /** @throws Exception If fails. */
@@ -140,7 +159,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                     @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         if (partId(part.getName()) > 0) {
                             try {
-                                sndLatch.await(DFLT_TEST_TIMEOUT, TimeUnit.MILLISECONDS);
+                                sndLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
                             }
                             catch (Exception e) {
                                 throw new IgniteException(e);
@@ -156,11 +175,13 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
-            (part, grp) -> { });
+            () -> false,
+            (part, t) -> {
+            });
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 IgniteInternalFuture<?> snpFut = snp(grid(1)).lastScheduledSnapshotResponseRemoteTask(locNodeId);
 
@@ -177,12 +198,12 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         stopGrid(0);
         sndLatch.countDown();
 
-        futs[0].get();
+        futs[0].get(TIMEOUT);
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testSnapshotRequestRemoteNodeLeft() throws Exception {
+    public void testSnapshotRequestRemoteSourceNodeLeft() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
@@ -190,20 +211,30 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME),
             grid(1).localNode().id());
 
-        CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
-            (part, gpId) -> {
-                assertEquals(partId(part.getName()), gpId.getPartitionId());
-                assertTrue(parts.get(gpId.getGroupId()).remove(gpId.getPartitionId()));
+            () -> false,
+            (part, t) -> {
+                if (t == null) {
+                    int grpId = CU.cacheId(cacheGroupName(part.getParentFile()));
 
-                try {
-                    U.await(latch);
+                    assertTrue("Received cache group has not been requested", parts.containsKey(grpId));
+                    assertTrue("Received partition has not been requested",
+                        parts.get(grpId).contains(partId(part.getName())));
+
+                    try {
+                        U.await(latch, TIMEOUT, TimeUnit.MILLISECONDS);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
                 }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IgniteException(e);
+                else {
+                    assertTrue(t instanceof ClusterTopologyCheckedException);
+                    assertNull(part);
                 }
             });
 
@@ -211,7 +242,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         latch.countDown();
 
-        assertThrowsAnyCause(log, () -> fut.get(DFLT_TEST_TIMEOUT), ClusterTopologyCheckedException.class,
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
             "he node from which a snapshot has been requested left the grid");
     }
 
@@ -226,13 +257,15 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             grid(1).localNode().id());
 
         CountDownLatch latch = new CountDownLatch(1);
+        AtomicBoolean stopChecker = new AtomicBoolean();
 
-        IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+        IgniteInternalFuture<Void> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
-            (part, gpId) -> {
+            stopChecker::get,
+            (part, t) -> {
                 try {
-                    U.await(latch);
+                    U.await(latch, TIMEOUT, TimeUnit.MILLISECONDS);
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteException(e);
@@ -241,7 +274,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 IgniteInternalFuture<?> snpFut = snp(grid(1))
                     .lastScheduledSnapshotResponseRemoteTask(grid(0).localNode().id());
@@ -256,10 +289,31 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             }
         }, 5_000L));
 
+        stopChecker.set(true);
         latch.countDown();
-        fut.cancel();
 
-        futs[0].get();
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), TransmissionCancelledException.class,
+            "Future cancelled prior to the all requested partitions processed");
+        futs[0].get(TIMEOUT);
+    }
+
+    /**
+     * @param parts Expected partitions.
+     * @param latch Latch to await partitions processed.
+     * @return Consumer.
+     */
+    private static BiConsumer<File, Throwable> defaultPartitionConsumer(Map<Integer, Set<Integer>> parts, CountDownLatch latch) {
+        return (part, t) -> {
+            assertNull(t);
+
+            int grpId = CU.cacheId(cacheGroupName(part.getParentFile()));
+
+            assertTrue("Received cache group has not been requested", parts.containsKey(grpId));
+            assertTrue("Received partition has not been requested",
+                parts.get(grpId).remove(partId(part.getName())));
+
+            latch.countDown();
+        };
     }
 
     /**

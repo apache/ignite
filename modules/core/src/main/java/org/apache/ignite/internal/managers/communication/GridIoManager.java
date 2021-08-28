@@ -970,7 +970,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                     if (nodeId.equals(e.getValue().rmtNodeId)) {
                                         it.remove();
 
-                                        interruptRecevier(e.getValue(),
+                                        interruptReceiver(e.getValue(),
                                             new ClusterTopologyCheckedException("Remote node left the grid. " +
                                                 "Receiver has been stopped : " + nodeId));
                                     }
@@ -1179,7 +1179,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
 
             for (ReceiverContext rctx : rcvs) {
-                interruptRecevier(rctx, new NodeStoppingException("Local node io manager requested to be stopped: "
+                interruptReceiver(rctx, new NodeStoppingException("Local node io manager requested to be stopped: "
                     + ctx.localNodeId()));
             }
         }
@@ -1965,7 +1965,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rcvCtx0 = rcvCtxs.remove(topic);
         }
 
-        interruptRecevier(rcvCtx0,
+        interruptReceiver(rcvCtx0,
             new IgniteCheckedException("Receiver has been closed due to removing corresponding transmission handler " +
                 "on local node [nodeId=" + ctx.localNodeId() + ']'));
     }
@@ -2786,7 +2786,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param rctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptRecevier(ReceiverContext rctx, Exception ex) {
+    private void interruptReceiver(ReceiverContext rctx, Exception ex) {
         if (rctx == null)
             return;
 
@@ -2803,11 +2803,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (log.isInfoEnabled())
                     log.info("Transmission receiver has been cancelled [rctx=" + rctx + ']');
             }
-            else {
-                rctx.hnd.onException(rctx.rmtNodeId, ex);
-
+            else
                 U.error(log, "Receiver has been interrupted due to an exception occurred [rctx=" + rctx + ']', ex);
-            }
+
+            rctx.hnd.onException(rctx.rmtNodeId, ex);
         }
     }
 
@@ -2887,7 +2886,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (rcvCtx.lastState == null || rcvCtx.lastState.error() == null)
                     receiveFromChannel(topic, rcvCtx, in, out, ch);
                 else
-                    interruptRecevier(rcvCtxs.remove(topic), rcvCtx.lastState.error());
+                    interruptReceiver(rcvCtxs.remove(topic), rcvCtx.lastState.error());
             }
             finally {
                 rcvCtx.lock.unlock();
@@ -2895,7 +2894,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (Throwable t) {
             // Do not remove receiver context here, since sender will recconect to get this error.
-            interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
+            interruptReceiver(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
         }
         finally {
             U.closeQuiet(in);
@@ -2995,7 +2994,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 @Override public void onTimeout() {
-                    interruptRecevier(rcvCtxs.remove(topic), new IgniteCheckedException("Receiver is closed due to " +
+                    interruptReceiver(rcvCtxs.remove(topic), new IgniteCheckedException("Receiver is closed due to " +
                         "waiting for the reconnect has been timeouted"));
                 }
             });

@@ -74,11 +74,14 @@ public interface TransmissionHandler {
      *
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.
-     * @return Intance of read handler to process incoming data like the {@link FileChannel} manner.
+     * @return Instance of read handler to process incoming data like the {@link FileChannel} manner.
      */
     public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta);
 
     /**
+     * The {@link TransmissionCancelledException} will be received by exception handler if the local transmission
+     * ends by the user interruption request.
+     *
      * @param nodeId Remote node id on which the error occurred.
      * @param err The err of fail handling process.
      */
