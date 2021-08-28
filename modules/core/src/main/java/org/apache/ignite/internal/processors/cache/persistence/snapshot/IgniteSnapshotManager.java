@@ -2324,7 +2324,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param ex Exception occurred during receiving files.
          */
-        public synchronized void handleException(Throwable ex) {
+        public synchronized void acceptException(Throwable ex) {
             if (isDone())
                 return;
 
@@ -2341,7 +2341,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param part Received file which needs to be handled.
          */
-        public synchronized void handleFile(File part) {
+        public synchronized void acceptFile(File part) {
             if (isDone())
                 return;
 
@@ -2383,7 +2383,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** */
+    /**
+     * This manager is responsible for requesting and handling snapshots from a remote node. Each snapshot request
+     * processed asynchronously but strictly one by one.
+     */
     private class SequentialRemoteSnapshotManager implements TransmissionHandler, GridMessageListener {
         /** A task currently being executed and must be explicitly finished. */
         private final AtomicReference<RemoteSnapshotFutureTask> active = new AtomicReference<>();
@@ -2408,7 +2411,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 next.listen(f -> submit(queue::poll));
 
                 if (stopping)
-                    next.handleException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+                    next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
                 else
                     next.run();
             }
@@ -2444,7 +2447,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             futs.forEach(t -> {
                 if (t.rmtNodeId.equals(nodeId))
-                    t.handleException(ex);
+                    t.acceptException(ex);
             });
         }
 
@@ -2537,7 +2540,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
 
                     if (respMsg0.errorMessage() != null) {
-                        task.handleException(new IgniteCheckedException("Request cancelled. The snapshot operation stopped " +
+                        task.acceptException(new IgniteCheckedException("Request cancelled. The snapshot operation stopped " +
                             "on the remote node with an error: " + respMsg0.errorMessage()));
                     }
                 }
@@ -2577,7 +2580,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             assert task.rmtNodeId.equals(nodeId);
 
-            task.handleException(ex);
+            task.acceptException(ex);
         }
 
         /** {@inheritDoc} */
@@ -2656,7 +2659,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         if (stopping)
                             throw new IgniteException(SNP_NODE_STOPPING_ERR_MSG);
 
-                        task0.handleFile(file);
+                        task0.acceptFile(file);
                     }
                     finally {
                         busyLock.leaveBusy();
