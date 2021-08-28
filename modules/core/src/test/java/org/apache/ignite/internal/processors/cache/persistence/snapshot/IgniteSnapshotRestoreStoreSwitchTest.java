@@ -106,7 +106,6 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
 
         IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
         scc.cluster().state(ClusterState.ACTIVE);
-        scc.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
         snpParts.forEach(p -> {
             try {
@@ -208,6 +207,8 @@ public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotR
 
             startGrid(cfg);
         }
+
+        grid(0).events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
         return grid(0);
     }
