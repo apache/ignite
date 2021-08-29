@@ -18,9 +18,9 @@
 package org.apache.ignite.loadtests.job;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -36,6 +36,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskCancelledException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -162,7 +163,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                                 GridLoadTestUtils.appendLineToFile(
                                     outputFileName,
                                     "%s,%d",
-                                    GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                                    IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                                     avgTasksPerSec.get());
                             }
                             catch (IOException e) {
