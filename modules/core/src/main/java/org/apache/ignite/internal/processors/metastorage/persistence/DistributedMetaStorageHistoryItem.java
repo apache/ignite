@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@SuppressWarnings("PublicField")
-final class DistributedMetaStorageHistoryItem implements Serializable {
+final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,25 +36,34 @@ final class DistributedMetaStorageHistoryItem implements Serializable {
 
     /** */
     @GridToStringInclude
-    public final String[] keys;
+    private String[] keys;
 
     /** */
     @GridToStringInclude
-    public final byte[][] valBytesArray;
+    private byte[][] valBytesArr;
 
     /** */
     private transient long longHash;
 
-    /** */
-    public DistributedMetaStorageHistoryItem(String key, byte[] valBytes) {
-        keys = new String[] {key};
-        valBytesArray = new byte[][] {valBytes};
+    /** Default constructor for deserialization. */
+    public DistributedMetaStorageHistoryItem() {
+        // No-op.
     }
 
     /** */
-    public DistributedMetaStorageHistoryItem(String[] keys, byte[][] valBytesArray) {
+    public DistributedMetaStorageHistoryItem(String key, byte[] valBytes) {
+        keys = new String[] {key};
+        valBytesArr = new byte[][] {valBytes};
+    }
+
+    /** */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public DistributedMetaStorageHistoryItem(String[] keys, byte[][] valBytesArr) {
+        assert keys.length > 0;
+        assert keys.length == valBytesArr.length;
+
         this.keys = keys;
-        this.valBytesArray = valBytesArray;
+        this.valBytesArr = valBytesArr;
     }
 
     /** */
@@ -63,9 +75,49 @@ final class DistributedMetaStorageHistoryItem implements Serializable {
 
         // String encoding is ignored to make estimation faster. 2 "size" values added as well.
         for (int i = 0; i < len; i++)
-            size += keys[i].length() * 2 + (valBytesArray[i] == null ? 0 : valBytesArray[i].length);
+            size += keys[i].length() * 2 + (valBytesArr[i] == null ? 0 : valBytesArr[i].length);
 
         return size;
+    }
+
+    /**
+     * Array of keys modified in this update.
+     */
+    public String[] keys() {
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
+        return keys;
+    }
+
+    /**
+     * Array of serialized values corresponded to {@link #keys()} in the same order.
+     */
+    public byte[][] valuesBytesArray() {
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
+        return valBytesArr;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeInt(keys.length);
+
+        for (int i = 0; i < keys.length; i++) {
+            U.writeString(out, keys[i]);
+
+            U.writeByteArray(out, valBytesArr[i]);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        int len = in.readInt();
+
+        keys = new String[len];
+        valBytesArr = new byte[len][];
+
+        for (int i = 0; i < len; i++) {
+            keys[i] = U.readString(in);
+            valBytesArr[i] = U.readByteArray(in);
+        }
     }
 
     /** {@inheritDoc} */
@@ -78,12 +130,12 @@ final class DistributedMetaStorageHistoryItem implements Serializable {
 
         DistributedMetaStorageHistoryItem item = (DistributedMetaStorageHistoryItem)o;
 
-        return Arrays.equals(keys, item.keys) && Arrays.deepEquals(valBytesArray, item.valBytesArray);
+        return Arrays.equals(keys, item.keys) && Arrays.deepEquals(valBytesArr, item.valBytesArr);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * Arrays.hashCode(keys) + Arrays.deepHashCode(valBytesArray);
+        return Long.hashCode(longHash());
     }
 
     /** Long hash. */
@@ -96,7 +148,7 @@ final class DistributedMetaStorageHistoryItem implements Serializable {
             for (String key : keys)
                 hash = hash * 31L + key.hashCode();
 
-            for (byte[] valBytes : valBytesArray) {
+            for (byte[] valBytes : valBytesArr) {
                 if (valBytes == null)
                     hash *= 31L;
                 else

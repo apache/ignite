@@ -713,7 +713,9 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
         );
 
         execute("SELECT * FROM t1 INNER JOIN (SELECT * FROM t2) T2_SUB ON t1.k1 = T2_SUB.ak2 WHERE T2_SUB.ak2 = ?",
-            (res) -> assertNoPartitions(),
+            (res) -> assertPartitions(
+                partition("t2", "1")
+            ),
             "1"
         );
     }

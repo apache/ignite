@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PersistenceTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Sets up the test.
@@ -66,6 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests that cache data survives node restart.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestCacheDataSurvivesNodeRestart(
             [Values(true, false)] bool withCacheStore,
             [Values(true, false)] bool withCustomAffinity)

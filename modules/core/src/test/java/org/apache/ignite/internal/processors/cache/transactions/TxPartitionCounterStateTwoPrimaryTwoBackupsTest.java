@@ -47,7 +47,7 @@ import org.junit.Test;
  */
 public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** Tx sizes. */
-    private static final int [] SIZES = new int[] {5, 7, 3};
+    private static final int[] SIZES = new int[] {5, 7, 3};
 
     /** */
     private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
@@ -215,11 +215,14 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
         assertEqualsCollections(expKeys, keys);
 
         // Expect only one committed tx.
-        assertEquals(PRELOAD_KEYS_CNT + SIZES[finishedTxIdx] + 1 /** Key for part2. */, grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(
+            PRELOAD_KEYS_CNT + SIZES[finishedTxIdx] + 1 /** Key for part2. */,
+            grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size()
+        );
 
         // Expect consistent partitions.
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 }

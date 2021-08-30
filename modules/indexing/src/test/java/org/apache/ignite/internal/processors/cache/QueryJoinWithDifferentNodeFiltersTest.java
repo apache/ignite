@@ -69,9 +69,6 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
         if (getTestIgniteInstanceName(0).equals(igniteInstanceName) || getTestIgniteInstanceName(1).equals(igniteInstanceName))
             cfg.setUserAttributes(F.asMap("DATA", "true"));
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -95,7 +92,7 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
     public void testSize() throws Exception {
         startGrids(NODE_COUNT);
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         client.cluster().active(true);
 
@@ -109,7 +106,9 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
             cache2.put(i, new Person(i, i, "Person-" + i));
         }
 
-        info(cache2.query(new SqlFieldsQuery("select * from \"cache\".Organization r, \"cache2\".Person p where p.orgId=r.orgId")).getAll().toString());
+        info(cache2.query(
+            new SqlFieldsQuery("select * from \"cache\".Organization r, \"cache2\".Person p where p.orgId=r.orgId")
+        ).getAll().toString());
     }
 
     /**

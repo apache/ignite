@@ -84,7 +84,7 @@ public class CollectionsTest {
         test(new SVMLinearClassificationModel(null, 1.0), new SVMLinearClassificationModel(null, 0.5));
 
         test(new ANNClassificationModel(new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()),
-            new ANNClassificationModel(new LabeledVectorSet<>(1, 1, true), new ANNClassificationTrainer.CentroidStat()));
+            new ANNClassificationModel(new LabeledVectorSet<>(1, 1), new ANNClassificationTrainer.CentroidStat()));
 
         test(new ANNModelFormat(1, new ManhattanDistance(), false, new LabeledVectorSet<>(),
                 new ANNClassificationTrainer.CentroidStat()),

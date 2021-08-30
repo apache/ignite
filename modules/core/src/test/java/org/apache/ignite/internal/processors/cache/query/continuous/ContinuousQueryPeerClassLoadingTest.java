@@ -42,7 +42,6 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(gridName.contains("client"));
 
         return cfg;
     }
@@ -96,7 +95,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
         for (int i = 0; i < 10; i++)
             cache.put(i, String.valueOf(i));
 
-        final Ignite node2 = startGrid(node2Name);
+        final Ignite node2 = node2Name.contains("client") ? startClientGrid(node2Name) : startGrid(node2Name);
 
         final ContinuousQuery<Integer, String> qry1 = new ContinuousQuery<>();
         final ContinuousQuery<Integer, String> qry2 = new ContinuousQuery<>();
@@ -133,7 +132,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
             cache.put(i, String.valueOf(i));
 
         // Fail on start second client.
-        final Ignite node3 = startGrid(node3Name);
+        final Ignite node3 = node3Name.contains("client") ? startClientGrid(node3Name) : startGrid(node3Name);
 
         final IgniteCache<Integer, String> cache2 = node3.cache(CACHE_NAME);
 

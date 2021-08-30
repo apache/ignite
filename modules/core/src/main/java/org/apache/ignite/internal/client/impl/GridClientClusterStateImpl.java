@@ -19,21 +19,37 @@ package org.apache.ignite.internal.client.impl;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFuture;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
+
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 
 /**
  *
  */
 public class GridClientClusterStateImpl extends GridClientAbstractProjection<GridClientClusterStateImpl>
     implements GridClientClusterState {
+    /**
+     * Closure to execute Cluster ID and Tag view action on cluster.
+     */
+    private static final ClientProjectionClosure<VisorIdAndTagViewTaskResult> ID_AND_TAG_VIEW_CL = (conn, nodeId) ->
+        conn.execute(
+            VisorIdAndTagViewTask.class.getName(),
+            new VisorTaskArgument<>(nodeId, null, false),
+            nodeId,
+            false
+        );
+
     /**
      * Creates projection with specified client.
      *
@@ -52,37 +68,37 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void active(final boolean active) throws GridClientException {
-        withReconnectHandling(new ClientProjectionClosure<Void>() {
-            @Override public GridClientFuture apply(
-                GridClientConnection conn,
-                UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.changeState(active, nodeId);
+    @Override public ClusterState state() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::state).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException {
+        // Check compatibility of new forced deactivation on all nodes.
+        UUID oldVerNode = checkFeatureSupportedByCluster(client, IgniteFeatures.SAFE_CLUSTER_DEACTIVATION, false,
+            false);
+
+        if (oldVerNode == null)
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, forceDeactivation)).get();
+        else {
+            if (newState == INACTIVE && !forceDeactivation) {
+                throw new GridClientException("Deactivation stopped. Found a node not supporting checking of " +
+                    "safety of this operation: " + oldVerNode + ". Deactivation clears in-memory caches (without " +
+                    "persistence) including the system caches. To deactivate cluster pass flag 'force'.");
             }
-        }).get();
+
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean active() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::currentState).get();
+    @Override public UUID id() throws GridClientException {
+        return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().id();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readOnly() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::readOnlyState).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readOnly(boolean readOnly) throws GridClientException {
-        withReconnectHandling(new ClientProjectionClosure<Void>() {
-            @Override public GridClientFuture apply(
-                GridClientConnection conn,
-                UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.changeReadOnlyState(readOnly, nodeId);
-            }
-        }).get();
+    @Override public String tag() throws GridClientException {
+        return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().tag();
     }
 
     /** {@inheritDoc} */

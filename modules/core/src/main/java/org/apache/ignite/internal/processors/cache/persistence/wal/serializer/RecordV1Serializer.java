@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -32,8 +31,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
@@ -72,7 +71,8 @@ public class RecordV1Serializer implements RecordSerializer {
     public static final int CRC_SIZE = 4;
 
     /** Total length of HEADER record. */
-    public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
+    public static final int HEADER_RECORD_SIZE =
+        REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
 
     /** Skip CRC calculation/check flag */
     public static boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
@@ -124,13 +124,16 @@ public class RecordV1Serializer implements RecordSerializer {
         }
 
         /** {@inheritDoc} */
-        @Override public WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+        @Override public WALRecord readWithHeaders(
+            ByteBufferBackedDataInput in,
+            WALPointer expPtr
+        ) throws IOException, IgniteCheckedException {
             RecordType recType = readRecordType(in);
 
             if (recType == RecordType.SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
-            FileWALPointer ptr = readPosition(in);
+            WALPointer ptr = readPosition(in);
 
             if (!skipPositionCheck && !F.eq(ptr, expPtr))
                 throw new SegmentEofException("WAL segment rollover detected (will end iteration) [expPtr=" + expPtr +
@@ -223,7 +226,7 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(FileInput in0, WALPointer expPtr) throws  IOException, IgniteCheckedException {
+    @Override public WALRecord readRecord(FileInput in0, WALPointer expPtr) throws IOException, IgniteCheckedException {
         return readWithCrc(in0, expPtr, recordIO);
     }
 
@@ -237,7 +240,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param buf Byte buffer to serialize version to.
      * @param ptr File WAL pointer to write.
      */
-    public static void putPosition(ByteBuffer buf, FileWALPointer ptr) {
+    public static void putPosition(ByteBuffer buf, WALPointer ptr) {
         buf.putLong(ptr.index());
         buf.putInt(ptr.fileOffset());
     }
@@ -269,7 +272,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 throw new IOException("Can't read serializer version", null);
 
             // Read file pointer.
-            FileWALPointer ptr = readPosition(in);
+            WALPointer ptr = readPosition(in);
 
             if (io.getSegmentId() != ptr.index())
                 throw new SegmentEofException("Reached logical end of the segment by pointer", null);
@@ -304,11 +307,11 @@ public class RecordV1Serializer implements RecordSerializer {
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
-    public static FileWALPointer readPosition(DataInput in) throws IOException {
+    public static WALPointer readPosition(DataInput in) throws IOException {
         long idx = in.readLong();
         int fileOff = in.readInt();
 
-        return new FileWALPointer(idx, fileOff, 0);
+        return new WALPointer(idx, fileOff, 0);
     }
 
     /**
@@ -318,7 +321,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param rec WAL record.
      */
     private static void putPositionOfRecord(ByteBuffer buf, WALRecord rec) {
-        putPosition(buf, (FileWALPointer)rec.position());
+        putPosition(buf, rec.position());
     }
 
     /**
@@ -386,10 +389,13 @@ public class RecordV1Serializer implements RecordSerializer {
                 size = in0.io().size();
             }
             catch (IOException ignore) {
-                // No-op. It just for information. Fail calculate file size.
+                // It just for information. Fail calculate file size.
+                e.addSuppressed(ignore);
             }
 
-            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + " size: " + size, e);
+            throw new IgniteCheckedException(
+                "Failed to read WAL record at position: " + startPos + ", size: " + size + ", expectedPtr: " + expPtr, e
+            );
         }
     }
 

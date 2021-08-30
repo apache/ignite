@@ -51,6 +51,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** Default value of the update internal batch size. */
     private static final int DFLT_UPDATE_BATCH_SIZE = 1;
 
+    /** Default value of Query timeout. Default is -1 means no timeout is set. */
+    private static final int DFLT_QUERY_TIMEOUT = -1;
+
+    /** Threaded query originator. */
+    private static ThreadLocal<String> threadedQryInitiatorId = new ThreadLocal<>();
+
     /** Do not remove. For tests only. */
     @SuppressWarnings("NonConstantFieldWithUpperCaseName")
     private static boolean DFLT_LAZY;
@@ -66,7 +72,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean collocated;
 
     /** Query timeout in millis. */
-    private int timeout;
+    private int timeout = DFLT_QUERY_TIMEOUT;
 
     /** */
     private boolean enforceJoinOrder;
@@ -93,6 +99,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private int updateBatchSize = DFLT_UPDATE_BATCH_SIZE;
 
     /**
+     * Query's originator string (client host+port, user name,
+     * job name or any user's information about query initiator).
+     */
+    private String qryInitiatorId;
+
+    /**
      * Copy constructs SQL fields query.
      *
      * @param qry SQL query.
@@ -109,6 +121,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         parts = qry.parts;
         schema = qry.schema;
         updateBatchSize = qry.updateBatchSize;
+        qryInitiatorId = qry.qryInitiatorId;
     }
 
     /**
@@ -406,7 +419,29 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return {@code this} for chaining.
      */
     public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        A.ensure(updateBatchSize >= 1, "updateBatchSize cannot be lower than 1");
+
         this.updateBatchSize = updateBatchSize;
+
+        return this;
+    }
+
+    /**
+     * @return Query's initiator identifier string (client host+port, user name,
+     *       job name or any user's information about query initiator).
+     */
+    public String getQueryInitiatorId() {
+        return qryInitiatorId;
+    }
+
+    /**
+     * @param qryInitiatorId Query's initiator identifier string (client host+port, user name,
+     *      job name or any user's information about query initiator).
+     *
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setQueryInitiatorId(String qryInitiatorId) {
+        this.qryInitiatorId = qryInitiatorId;
 
         return this;
     }
@@ -416,6 +451,29 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery copy() {
         return new SqlFieldsQuery(this);
+    }
+
+    /**
+     * Used at the Job worker to setup originator by default for current thread.
+     *
+     * @param originator Query's originator string.
+     */
+    public static void setThreadedQueryInitiatorId(String originator) {
+        threadedQryInitiatorId.set(originator);
+    }
+
+    /**
+     * Used at the job worker to clear originator for current thread.
+     */
+    public static void resetThreadedQueryInitiatorId() {
+        threadedQryInitiatorId.remove();
+    }
+
+    /**
+     * @return originator set up by the job worker.
+     */
+    public static String threadedQueryInitiatorId() {
+        return threadedQryInitiatorId.get();
     }
 
     /** {@inheritDoc} */

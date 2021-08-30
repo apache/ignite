@@ -167,7 +167,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 }
 
                 // Go through iterators.
-                while(it.hasNext())
+                while (it.hasNext())
                     it.next();
 
                 // Make sure that hard references are gone.

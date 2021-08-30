@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -73,100 +71,6 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @Test
-    public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
-        // Run server endpoint.
-        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
-
-        new IgniteTestResources().inject(srv);
-
-        try {
-            srv.start();
-
-            info("Check that server gets correct exception upon client's killing.");
-
-            info("Shared memory IDs before starting client endpoint: " + IpcSharedMemoryUtils.sharedMemoryIds());
-
-            Collection<Integer> shmemIdsWithinInteractions = interactWithClient(srv, true);
-
-            Collection<Integer> shmemIdsAfterInteractions = null;
-
-            // Give server endpoint some time to make resource clean up. See IpcSharedMemoryServerEndpoint.GC_FREQ.
-            for (int i = 0; i < 12; i++) {
-                shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
-
-                info("Shared memory IDs created within interaction: " + shmemIdsWithinInteractions);
-                info("Shared memory IDs after killing client endpoint: " + shmemIdsAfterInteractions);
-
-                if (CollectionUtils.containsAny(shmemIdsAfterInteractions, shmemIdsWithinInteractions))
-                    U.sleep(1000);
-                else
-                    break;
-            }
-
-            assertFalse("List of shared memory IDs after killing client endpoint should not include IDs created " +
-                "within server-client interactions.",
-                CollectionUtils.containsAny(shmemIdsAfterInteractions, shmemIdsWithinInteractions));
-        }
-        finally {
-            srv.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1386")
-    @Test
-    public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
-        Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
-
-        info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);
-
-        Collection<Integer> shmemIdsWithinInteractions = interactWithServer();
-
-        Collection<Integer> shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
-
-        info("Shared memory IDs created within interaction: " + shmemIdsWithinInteractions);
-        info("Shared memory IDs after server and client killing: " + shmemIdsAfterInteractions);
-
-        if (!U.isLinux())
-            assertTrue("List of shared memory IDs after server-client interactions should include IDs created within " +
-                "client-server interactions.", shmemIdsAfterInteractions.containsAll(shmemIdsWithinInteractions));
-        else
-            assertFalse("List of shared memory IDs after server-client interactions should not include IDs created " +
-                "(on Linux): within client-server interactions.",
-                CollectionUtils.containsAny(shmemIdsAfterInteractions, shmemIdsWithinInteractions));
-
-        ProcessStartResult srvStartRes = startSharedMemoryTestServer();
-
-        try {
-            // Give server endpoint some time to make resource clean up. See IpcSharedMemoryServerEndpoint.GC_FREQ.
-            for (int i = 0; i < 12; i++) {
-                shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
-
-                info("Shared memory IDs after server restart: " + shmemIdsAfterInteractions);
-
-                if (CollectionUtils.containsAny(shmemIdsAfterInteractions, shmemIdsWithinInteractions))
-                    U.sleep(1000);
-                else
-                    break;
-            }
-
-            assertFalse("List of shared memory IDs after server endpoint restart should not include IDs created: " +
-                "within client-server interactions.",
-                CollectionUtils.containsAny(shmemIdsAfterInteractions, shmemIdsWithinInteractions));
-        }
-        finally {
-            srvStartRes.proc().kill();
-
-            srvStartRes.isKilledLatch().await();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testClientThrowsCorrectExceptionUponServerKilling() throws Exception {
         info("Shared memory IDs before starting server-client interactions: " +
             IpcSharedMemoryUtils.sharedMemoryIds());
@@ -184,37 +88,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Launches IgfsSharedMemoryTestServer and IgfsSharedMemoryTestClient.
-     * After successful connection kills firstly server and secondly client.
-     *
-     * @return Collection of shared memory IDs created while client-server interactions.
-     * @throws Exception In case of any exception happen.
-     */
-    private Collection<Integer> interactWithServer() throws Exception {
-        ProcessStartResult srvStartRes = startSharedMemoryTestServer();
-
-        ProcessStartResult clientStartRes = startSharedMemoryTestClient();
-
-        // Wait until client and server start to talk.
-        clientStartRes.isReadyLatch().await();
-
-        info("Going to kill server.");
-
-        srvStartRes.proc().kill();
-
-        srvStartRes.isKilledLatch().await();
-
-        info("Going to kill client.");
-
-        clientStartRes.proc().kill();
-
-        clientStartRes.isKilledLatch().await();
-
-        return clientStartRes.shmemIds();
-    }
-
-    /**
-     * Launches IgfsSharedMemoryTestServer and connects to it with client endpoint.
+     * Launches SharedMemoryTestServer and connects to it with client endpoint.
      * After couple of reads-writes kills the server and checks client throws correct exception.
      *
      * @return List of shared memory IDs created while client-server interactions.
@@ -277,130 +151,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Creates client endpoint and launches interaction between the one and the given server endpoint.
+     * Starts {@code SharedMemoryTestServer}. The method waits while server being started.
      *
-     *
-     * @param srv Server endpoint to interact with.
-     * @param killClient Whether or not kill client endpoint within interaction.
-     * @return List of shared memory IDs created while client-server interactions.
-     * @throws Exception In case of any exception happen.
-     */
-    @SuppressWarnings({"BusyWait"})
-    private Collection<Integer> interactWithClient(IpcSharedMemoryServerEndpoint srv, boolean killClient)
-        throws Exception {
-        ProcessStartResult clientStartRes = startSharedMemoryTestClient();
-
-        IpcSharedMemoryClientEndpoint clientEndpoint = (IpcSharedMemoryClientEndpoint)srv.accept();
-
-        Collection<Integer> shmemIds = new ArrayList<>();
-        InputStream is = null;
-
-        int interactionsCntBeforeClientKilling = 5;
-        int i = 1;
-
-        try {
-            is = clientEndpoint.inputStream();
-
-            shmemIds.add(clientEndpoint.inSpace().sharedMemoryId());
-            shmemIds.add(clientEndpoint.outSpace().sharedMemoryId());
-
-            for (; i < interactionsCntBeforeClientKilling * 2; i++) {
-                info("Before read.");
-
-                is.read();
-
-                Thread.sleep(RW_SLEEP_TIMEOUT);
-
-                if (killClient && i == interactionsCntBeforeClientKilling) {
-                    info("Going to kill client.");
-
-                    clientStartRes.proc().kill();
-                }
-            }
-        }
-        catch (IOException e) {
-            assertTrue("No IOException should be thrown if we do not kill client.", killClient);
-            assertTrue("No IOException should be thrown before client is killed.",
-                i > interactionsCntBeforeClientKilling);
-
-            assertTrue(X.hasCause(e, IgniteCheckedException.class));
-            assertTrue(X.cause(e, IgniteCheckedException.class).getMessage().contains("Shared memory segment has been closed"));
-
-            clientStartRes.isKilledLatch().await();
-
-            return shmemIds;
-        }
-        finally {
-            U.closeQuiet(is);
-        }
-
-        assertTrue(
-            "Interactions count should be bigger than interactionsCntBeforeClientKilling if we do not kill client.",
-            i > interactionsCntBeforeClientKilling);
-
-        // Cleanup client.
-        clientStartRes.proc().kill();
-
-        clientStartRes.isKilledLatch().await();
-
-        assertFalse("No IOException have been thrown while the client should be killed.", killClient);
-
-        return shmemIds;
-    }
-
-    /**
-     * Starts {@code IgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
-     *
-     * @return Start result of the {@code IgfsSharedMemoryTestClient}.
-     * @throws Exception In case of any exception happen.
-     */
-    private ProcessStartResult startSharedMemoryTestClient() throws Exception {
-        /** */
-        final CountDownLatch killedLatch = new CountDownLatch(1);
-
-        /** */
-        final CountDownLatch readyLatch = new CountDownLatch(1);
-
-        /** */
-        final ProcessStartResult res = new ProcessStartResult();
-
-        /** Process. */
-        GridJavaProcess proc = GridJavaProcess.exec(
-            IgfsSharedMemoryTestClient.class, null,
-            log,
-            new CI1<String>() {
-                @Override public void apply(String s) {
-                    info("Client process prints: " + s);
-
-                    if (s.startsWith(IgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
-                        res.shmemIds(s.substring(IgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
-
-                        readyLatch.countDown();
-                    }
-                }
-            },
-            new CA() {
-                @Override public void apply() {
-                    info("Client is killed");
-
-                    killedLatch.countDown();
-                }
-            },
-            null,
-            System.getProperty("surefire.test.class.path")
-        );
-
-        res.proc(proc);
-        res.isKilledLatch(killedLatch);
-        res.isReadyLatch(readyLatch);
-
-        return res;
-    }
-
-    /**
-     * Starts {@code IgfsSharedMemoryTestServer}. The method waits while server being started.
-     *
-     * @return Start result of the {@code IgfsSharedMemoryTestServer}.
+     * @return Start result of the {@code SharedMemoryTestServer}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestServer() throws Exception {
@@ -408,7 +161,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         final CountDownLatch isKilledLatch = new CountDownLatch(1);
 
         GridJavaProcess proc = GridJavaProcess.exec(
-            IgfsSharedMemoryTestServer.class, null,
+            SharedMemoryTestServer.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String str) {

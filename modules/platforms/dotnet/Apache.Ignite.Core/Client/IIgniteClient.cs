@@ -23,6 +23,10 @@ namespace Apache.Ignite.Core.Client
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
@@ -91,7 +95,13 @@ namespace Apache.Ignite.Core.Client
         ICollection<string> GetCacheNames();
 
         /// <summary>
-        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
+        /// Gets Ignite cluster.
+        /// </summary>
+        /// <returns>Instance of <see cref="IClientCluster" /> interface.</returns>
+        IClientCluster GetCluster();
+
+        /// <summary>
+        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or
         /// <see cref="GetOrCreateCache{TK,TV}(string)"/>) cache.
         /// </summary>
         /// <param name="name">The name of the cache to stop.</param>
@@ -103,6 +113,14 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Instance of <see cref="IBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IBinary GetBinary();
+
+        /// <summary>
+        /// Gets Ignite transactions facade <see cref="ITransactionsClient"/>.
+        /// <para /> Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
+        /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
+        /// <para /> Should not be used with async calls.
+        /// </summary>
+        ITransactionsClient GetTransactions();
 
         /// <summary>
         /// Gets the configuration.
@@ -123,5 +141,53 @@ namespace Apache.Ignite.Core.Client
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with EndPoint class name.")]
         EndPoint LocalEndPoint { get; }
+
+        /// <summary>
+        /// Gets all active connections. Ignite Thin Client maintains connections to multiple server nodes when
+        /// <see cref="IgniteClientConfiguration.EnablePartitionAwareness"/> is true.
+        /// </summary>
+        IEnumerable<IClientConnection> GetConnections();
+
+        /// <summary>
+        /// Gets the compute API.
+        /// </summary>
+        IComputeClient GetCompute();
+
+        /// <summary>
+        /// Gets the services API.
+        /// </summary>
+        IServicesClient GetServices();
+
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
+
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Data streamer options.</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions options);
+
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Data streamer options.</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions<TK, TV> options);
     }
 }

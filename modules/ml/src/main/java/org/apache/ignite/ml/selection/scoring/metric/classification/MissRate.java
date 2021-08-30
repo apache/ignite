@@ -56,7 +56,6 @@ public class MissRate<L extends Serializable> extends BinaryClassificationMetric
      */
     @Override public MissRate<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int p = aggr.getTruePositive() + aggr.getFalseNegative();
-        ;
         value = p == 0 ? 1 : (double)aggr.getFalseNegative() / p;
         return this;
     }

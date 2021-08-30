@@ -1701,7 +1701,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             while (id1.equals(id2))
                                 id2 = rnd.nextInt(ACCOUNTS);
 
-                            if(id1 > id2) {
+                            if (id1 > id2) {
                                 int tmp = id1;
                                 id1 = id2;
                                 id2 = tmp;
@@ -2057,7 +2057,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         while (keys.size() < keysCnt) {
                             int key = rnd.nextInt(KEYS);
 
-                            if(keys.add(key))
+                            if (keys.add(key))
                                 map.put(key, cnt);
                         }
 
@@ -2885,7 +2885,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         while (k1.equals(k2))
                             k2 = partKeys.get(rnd.nextInt(KEYS_PER_PART));
 
-                        if(k1 > k2) {
+                        if (k1 > k2) {
                             int tmp = k1;
                             k1 = k2;
                             k2 = tmp;

@@ -27,8 +27,8 @@ import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.knn.ann.KNNModelFormat;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.knn.ann.KNNModelFormat;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -179,6 +179,17 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
     public DistanceMeasure getDistanceMeasure() {
         return distanceMeasure;
     }
+
+    /** */
+    public int getK() {
+        return k;
+    }
+
+    /** */
+    public boolean isWeighted() {
+        return weighted;
+    }
+
 
     /** {@inheritDoc} */
     @Override public int hashCode() {

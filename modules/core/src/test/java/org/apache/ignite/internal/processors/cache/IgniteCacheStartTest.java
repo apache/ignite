@@ -36,16 +36,11 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "c1";
 
     /** */
-    private boolean client;
-
-    /** */
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);
@@ -79,9 +74,7 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
         checkCache(0, CACHE_NAME, true);
         checkCache(1, CACHE_NAME, true);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
 
         checkCache(0, CACHE_NAME, true);
         checkCache(1, CACHE_NAME, true);
@@ -118,21 +111,20 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
         startGrid(0);
         startGrid(1);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
 
         ccfg = cacheConfiguration(CACHE_NAME);
-        client = joinClient;
 
-        startGrid(3);
+        if (joinClient)
+            startClientGrid(3);
+        else
+            startGrid(3);
 
         checkCache(0, CACHE_NAME, true);
         checkCache(1, CACHE_NAME, true);
         checkCache(2, CACHE_NAME, false);
         checkCache(3, CACHE_NAME, true);
 
-        client = false;
         ccfg = null;
 
         startGrid(4);
@@ -143,9 +135,7 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
         checkCache(3, CACHE_NAME, true);
         checkCache(4, CACHE_NAME, true);
 
-        client = true;
-
-        startGrid(5);
+        startClientGrid(5);
 
         checkCache(0, CACHE_NAME, true);
         checkCache(1, CACHE_NAME, true);

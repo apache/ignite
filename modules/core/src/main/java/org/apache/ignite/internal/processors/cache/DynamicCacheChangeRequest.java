@@ -101,6 +101,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Master key digest. */
+    @Nullable private byte[] masterKeyDigest;
+
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
@@ -243,7 +246,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      */
-    public boolean destroy(){
+    public boolean destroy() {
         return destroy;
     }
 
@@ -467,6 +470,16 @@ public class DynamicCacheChangeRequest implements Serializable {
         return encKey;
     }
 
+    /** @param masterKeyDigest Master key digest. */
+    public void masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest;
+    }
+
+    /** @return Master key digest that encrypted the group encryption key. */
+    @Nullable public byte[] masterKeyDigest() {
+        return masterKeyDigest;
+    }
+
     /**
      * @return Cache configuration enrichment.
      */
@@ -489,7 +502,7 @@ public class DynamicCacheChangeRequest implements Serializable {
             ", clientStartOnly=" + clientStartOnly +
             ", stop=" + stop +
             ", destroy=" + destroy +
-            ", disabledAfterStart" + disabledAfterStart +
+            ", disabledAfterStart=" + disabledAfterStart +
             ']';
     }
 }

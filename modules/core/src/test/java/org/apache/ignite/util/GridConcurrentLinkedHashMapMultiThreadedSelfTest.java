@@ -553,7 +553,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
             }
 
             if (i % 500 == 0)
-                info(">>> Run "  + i + " iterations in " + (System.currentTimeMillis() - start) + "ms");
+                info(">>> Run " + i + " iterations in " + (System.currentTimeMillis() - start) + "ms");
         }
 
         info(">>> Stopping updater threads");

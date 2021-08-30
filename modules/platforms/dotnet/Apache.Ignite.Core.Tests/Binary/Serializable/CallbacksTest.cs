@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedParameter.Local
+// ReSharper disable UnusedMember.Local
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
@@ -196,7 +198,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         public void TestIncorrectMethodSignature()
         {
             var ex = Assert.Catch(() => TestUtils.SerializeDeserialize(new InvalidCallbackSignature()));
-            
+
             var tex = ex as TargetInvocationException;
             ex = tex != null ? tex.InnerException : ex;
 

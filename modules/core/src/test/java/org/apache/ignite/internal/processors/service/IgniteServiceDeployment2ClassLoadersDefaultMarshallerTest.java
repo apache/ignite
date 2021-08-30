@@ -63,9 +63,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     /** */
     private Set<String> grp2 = new HashSet<>();
 
-    /** */
-    private boolean client;
-
     /**
      * Initialize URLs.
      */
@@ -94,8 +91,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         if (grp2.contains(igniteInstanceName))
             cfg.setClassLoader(extClsLdr2);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -146,11 +141,9 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         startGrid(1).services().deploy(serviceConfig(false));
 
-        client = true;
+        startClientGrid(2).services().deploy(serviceConfig(true));
 
-        startGrid(2).services().deploy(serviceConfig(true));
-
-        startGrid(3).services().deploy(serviceConfig(false));
+        startClientGrid(3).services().deploy(serviceConfig(false));
 
         for (int i = 0; i < 4; i++)
             ignite(i).services().serviceDescriptors();
@@ -165,13 +158,11 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
      */
     @Test
     public void testServiceDeployment2() throws Exception {
-        for (int i = 0 ; i < 4; i++)
+        for (int i = 0; i < 4; i++)
             startGrid(i);
 
-        client = true;
-
-        for (int i = 4 ; i < 6; i++)
-            startGrid(i);
+        for (int i = 4; i < 6; i++)
+            startClientGrid(i);
 
         ignite(4).services().deploy(serviceConfig(true));
 

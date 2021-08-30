@@ -47,7 +47,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     private static final int KEYS = 1000;
 
     /** */
-    private static final int BATCH_SIZE  = 10;
+    private static final int BATCH_SIZE = 10;
 
     /** */
     private static final int ITERATION_CNT = 5;

@@ -38,8 +38,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.junit.Test;
@@ -766,7 +766,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
                 int partSize = 0;
 
-                for (Integer key : keys){
+                for (Integer key : keys) {
                     int keyPart = ignite(nodeIdx).affinity(DEFAULT_CACHE_NAME).partition(key);
                     if (keyPart == part)
                         partSize++;
@@ -796,9 +796,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
                 int partSize = 0;
 
-                for (Integer key :keys){
+                for (Integer key :keys) {
                     int keyPart = ignite(nodeIdx).affinity(DEFAULT_CACHE_NAME).partition(key);
-                    if(keyPart == part)
+                    if (keyPart == part)
                         partSize++;
                 }
 
@@ -883,7 +883,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             }
 
             if (cacheMode() == REPLICATED) {
-                assertEquals(primary+backups, cache0.localSizeLong(part, ALL));
+                assertEquals(primary + backups, cache0.localSizeLong(part, ALL));
                 assertEquals(primary, cache0.localSizeLong(part, PRIMARY));
                 assertEquals(backups, cache0.localSizeLong(part, BACKUP));
             }

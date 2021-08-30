@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -49,6 +50,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -75,16 +77,11 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private static final int NODES = SRVS + CLIENTS;
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private static final int MULTITHREADED_TEST_KEYS = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -102,9 +99,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         startGridsMultiThreaded(SRVS);
 
-        clientMode = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());
@@ -256,6 +251,9 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                             break;
                         }
                         catch (CacheException e) {
+                            if (X.hasCause(e, TransactionRollbackException.class))
+                                return;
+
                             MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
                     }

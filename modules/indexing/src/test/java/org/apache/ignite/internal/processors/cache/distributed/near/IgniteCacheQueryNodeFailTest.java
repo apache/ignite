@@ -35,14 +35,9 @@ import org.junit.Test;
  * Test added to check for https://issues.apache.org/jira/browse/IGNITE-2542.
  */
 public class IgniteCacheQueryNodeFailTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setBackups(0);
@@ -59,11 +54,7 @@ public class IgniteCacheQueryNodeFailTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        client = true;
-
-        startGrid(1);
-
-        client = false;
+        startClientGrid(1);
     }
 
     /**

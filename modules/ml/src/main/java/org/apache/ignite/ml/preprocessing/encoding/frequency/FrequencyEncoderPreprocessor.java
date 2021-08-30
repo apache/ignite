@@ -19,7 +19,7 @@ package org.apache.ignite.ml.preprocessing.encoding.frequency;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialValueException;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
@@ -35,7 +35,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * These indexes could be defined via .withEncodedFeature(featureIndex) call.
  * </p>
  * <p>
- * NOTE: it doesn’t add new column but change data in-place.
+ * NOTE: it does not add new column but change data in-place.
  * </p>
  *
  * @param <K> Type of a key in {@code upstream} data.
@@ -79,7 +79,7 @@ public class FrequencyEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V
                 else if (encodingFrequencies[i].containsKey(tmpObj))
                     res[i] = encodingFrequencies[i].get(tmpObj);
                 else
-                    throw new UnknownCategorialFeatureValue(tmpObj.toString());
+                    throw new UnknownCategorialValueException(tmpObj.toString());
             }
             else
                 res[i] = (double)tmpObj;

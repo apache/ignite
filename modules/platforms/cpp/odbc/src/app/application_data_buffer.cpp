@@ -1318,7 +1318,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 switch (type)
                 {
@@ -1390,7 +1392,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 int32_t nanos = 0;
 
@@ -1466,7 +1470,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 tmTime.tm_year = 70;
                 tmTime.tm_mon = 0;
@@ -1701,27 +1707,35 @@ namespace ignite
                         return buflen;
 
                     case OdbcNativeType::AI_SIGNED_SHORT:
+                        return static_cast<SqlLen>(sizeof(SQLSMALLINT));
+
                     case OdbcNativeType::AI_UNSIGNED_SHORT:
-                        return static_cast<SqlLen>(sizeof(short));
+                        return static_cast<SqlLen>(sizeof(SQLUSMALLINT));
 
                     case OdbcNativeType::AI_SIGNED_LONG:
+                        return static_cast<SqlLen>(sizeof(SQLUINTEGER));
+
                     case OdbcNativeType::AI_UNSIGNED_LONG:
-                        return static_cast<SqlLen>(sizeof(long));
+                        return static_cast<SqlLen>(sizeof(SQLINTEGER));
 
                     case OdbcNativeType::AI_FLOAT:
-                        return static_cast<SqlLen>(sizeof(float));
+                        return static_cast<SqlLen>(sizeof(SQLREAL));
 
                     case OdbcNativeType::AI_DOUBLE:
-                        return static_cast<SqlLen>(sizeof(double));
+                        return static_cast<SqlLen>(sizeof(SQLDOUBLE));
+
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                        return static_cast<SqlLen>(sizeof(SQLSCHAR));
 
                     case OdbcNativeType::AI_BIT:
-                    case OdbcNativeType::AI_SIGNED_TINYINT:
                     case OdbcNativeType::AI_UNSIGNED_TINYINT:
-                        return static_cast<SqlLen>(sizeof(char));
+                        return static_cast<SqlLen>(sizeof(SQLCHAR));
 
                     case OdbcNativeType::AI_SIGNED_BIGINT:
-                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                         return static_cast<SqlLen>(sizeof(SQLBIGINT));
+
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                        return static_cast<SqlLen>(sizeof(SQLUBIGINT));
 
                     case OdbcNativeType::AI_TDATE:
                         return static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
@@ -1753,7 +1767,7 @@ namespace ignite
                 {
                     const SqlLen *len = GetResLen();
 
-                    return len ? *len : SQL_DEFAULT_PARAM;
+                    return len ? *len : SQL_NTS;
                 }
 
                 return GetDataAtExecSize();

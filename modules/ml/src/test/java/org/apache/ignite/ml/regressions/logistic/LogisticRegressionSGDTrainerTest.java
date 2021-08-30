@@ -80,7 +80,8 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
             new DoubleArrayVectorizer<Integer>().labeled(0)
         );
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer =
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         LogisticRegressionModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
@@ -90,7 +91,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
 
         LogisticRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

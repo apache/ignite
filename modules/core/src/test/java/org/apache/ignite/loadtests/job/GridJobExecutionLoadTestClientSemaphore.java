@@ -18,9 +18,9 @@
 package org.apache.ignite.loadtests.job;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.G;
@@ -97,7 +98,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
             final int noThreads = args.length > 0 ? Integer.parseInt(args[0]) :
                 Runtime.getRuntime().availableProcessors();
             final int duration = args.length > 1 ? Integer.parseInt(args[1]) : 0;
-            int tasksCnt  = args.length > 2 ? Integer.parseInt(args[2]) : 4069;
+            int tasksCnt = args.length > 2 ? Integer.parseInt(args[2]) : 4069;
             final String outputFileName = args.length > 3 ? args[3] : null;
 
             X.println("Thread count: " + noThreads);
@@ -141,7 +142,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                             GridLoadTestUtils.appendLineToFile(
                                 outputFileName,
                                 "%s,%d",
-                                GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                                IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                                 avgTxPerSec.get()
                             );
                         }

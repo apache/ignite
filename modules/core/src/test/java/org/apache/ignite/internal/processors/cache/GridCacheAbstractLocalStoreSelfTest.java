@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +32,7 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
@@ -341,7 +341,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             cache.put(key1, key1);
             cache.put(key2, key2);
 
-            Map<Integer, Integer> m = new HashMap<>();
+            Map<Integer, Integer> m = new TreeMap<>();
 
             for (int i = KEYS; i < KEYS + 100; i++)
                 m.put(i, i);
@@ -433,7 +433,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                 startGrid(i);
 
             assertTrue(((IgniteCacheProxy)grid(1).cache(name)).context().isNear() ||
-                getCacheMode()  == REPLICATED);
+                getCacheMode() == REPLICATED);
 
             awaitPartitionMapExchange();
 
@@ -453,7 +453,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                     for (int j = 0; j < 5; j++)
                         cache.get(rn.nextInt(KEYS));
 
-                    Map<Integer, Integer> m = new HashMap<>(5);
+                    Map<Integer, Integer> m = new TreeMap<>();
 
                     for (int j = 0; j < 5; j++) {
                         Integer key = rn.nextInt(KEYS);
@@ -469,7 +469,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
             for (int i = 1; i <= 6; i++) {
                 assertTrue(grid(i).cache(name).localSize(CachePeekMode.NEAR) > 0 ||
-                    getCacheMode()  == REPLICATED);
+                    getCacheMode() == REPLICATED);
             }
 
             checkLocalStore(grid(1), LOCAL_STORE_1, name);
@@ -489,7 +489,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             CacheConfiguration ccfg = grid(1).cache(name).getConfiguration(CacheConfiguration.class);
 
             assertEquals(
-                getCacheMode()  == REPLICATED ?
+                getCacheMode() == REPLICATED ?
                     KEYS * 6 :
                     ccfg.getBackups() * KEYS + KEYS,
                 fullStoreSize);
@@ -565,7 +565,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
                 assertTrue(kP != kB && kB != kN && kN != kP);
 
-                Map<Integer, Integer> m = new HashMap<>(3);
+                Map<Integer, Integer> m = new TreeMap<>();
 
                 m.put(kP, kP);
                 m.put(kB, kB);
@@ -595,11 +595,10 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                     .withSkipStore().withAllowAtomicOpsInTx();
 
                 try (Transaction tx = grid(i).transactions().txStart()) {
-                    Map<Integer, Integer> m = new HashMap<>(3);
+                    Map<Integer, Integer> m = new TreeMap<>();
 
-                    for (int j = 0; j < 50; j++) {
+                    for (int j = 0; j < 50; j++)
                         m.put(rn.nextInt(1000), 1000);
-                    }
 
                     cache.putAll(m);
 
@@ -816,7 +815,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public Map<K, IgniteBiTuple<V, ?>> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
-            Map<K, IgniteBiTuple<V, ?>> res = new HashMap<>();
+            Map<K, IgniteBiTuple<V, ?>> res = new TreeMap<>();
 
             for (K key : keys) {
                 IgniteBiTuple<V, ?> val = map.get(key);
@@ -855,7 +854,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         /**
          * Clear store.
          */
-        public void clear(){
+        public void clear() {
             map.clear();
         }
     }

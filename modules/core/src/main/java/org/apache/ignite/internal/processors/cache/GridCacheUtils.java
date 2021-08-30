@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -77,11 +79,15 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.NoOpWarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategySupplier;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -111,19 +117,16 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
-import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
-import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME;
 
 /**
  * Cache utility methods.
@@ -132,9 +135,12 @@ public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
 
+    /** @see IgniteSystemProperties#IGNITE_TTL_EXPIRE_BATCH_SIZE */
+    public static final int DFLT_TTL_EXPIRE_BATCH_SIZE = 5;
+
     /** Each cache operation removes this amount of entries with expired TTL. */
     private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
+        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, DFLT_TTL_EXPIRE_BATCH_SIZE);
 
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;
@@ -171,15 +177,14 @@ public class GridCacheUtils {
         return cheatCacheId != 0 && id == cheatCacheId;
     }
 
-    /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
-
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
+    /** System cache group id. */
+    public static final int UTILITY_CACHE_GROUP_ID = cacheGroupId(UTILITY_CACHE_NAME, null);
+
     /** Reserved cache names */
     public static final String[] RESERVED_NAMES = new String[] {
-        SYS_CACHE_HADOOP_MR,
         UTILITY_CACHE_NAME,
         MetaStorage.METASTORAGE_CACHE_NAME,
         TxLog.TX_LOG_CACHE_NAME,
@@ -603,7 +608,7 @@ public class GridCacheUtils {
             private final LongAdder res = new LongAdder();
 
             @Override public boolean collect(Long l) {
-                if(l != null)
+                if (l != null)
                     res.add(l);
 
                 return true;
@@ -841,6 +846,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param tx Transaction.
+     * @return {@code True} if transaction is on primary node.
+     */
+    public static boolean txOnPrimary(IgniteInternalTx tx) {
+        if (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped())
+            return true;
+
+        return tx.dht() && tx.local();
+    }
+
+    /**
      * Alias for {@link #txString(IgniteInternalTx)}.
      */
     public static String txDump(@Nullable IgniteInternalTx tx) {
@@ -1050,53 +1066,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Validates that cache key object has overridden equals and hashCode methods.
-     * Will also check that a BinaryObject has a hash code set.
-     *
-     * @param key Key.
-     * @throws IllegalArgumentException If equals or hashCode is not implemented.
-     */
-    public static void validateCacheKey(@Nullable Object key) {
-        if (key == null)
-            return;
-
-        if (!U.overridesEqualsAndHashCode(key))
-            throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
-                key.getClass().getName());
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if this is Hadoop system cache.
-     */
-    public static boolean isHadoopSystemCache(String cacheName) {
-        return F.eq(cacheName, SYS_CACHE_HADOOP_MR);
-    }
-
-    /**
-     * Create system cache used by Hadoop component.
-     *
-     * @return Hadoop cache configuration.
-     */
-    public static CacheConfiguration hadoopSystemCache() {
-        CacheConfiguration cache = new CacheConfiguration();
-
-        cache.setName(CU.SYS_CACHE_HADOOP_MR);
-        cache.setCacheMode(REPLICATED);
-        cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-
-        cache.setEvictionPolicyFactory(null);
-        cache.setEvictionPolicy(null);
-        cache.setCacheStoreFactory(null);
-        cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-        cache.setEagerTtl(true);
-        cache.setRebalanceMode(SYNC);
-
-        return cache;
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
@@ -1109,7 +1078,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+        return isUtilityCache(cacheName);
     }
 
     /**
@@ -1141,15 +1110,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param cfg Grid configuration.
-     * @param cacheName Cache name.
-     * @return {@code True} in this is IGFS data or meta cache.
-     */
-    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        return IgfsUtils.isIgfsCache(cfg, cacheName);
-    }
-
-    /**
      * Convert TTL to expire time.
      *
      * @param ttl TTL.
@@ -1177,7 +1137,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
+        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K, V>> clo) throws IgniteCheckedException {
 
         try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation)) {
             clo.applyx(cache);
@@ -1196,7 +1156,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K, V>> clo) throws IgniteCheckedException {
 
         try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
@@ -1774,11 +1734,11 @@ public class GridCacheUtils {
                 cfg.setBackups(Integer.MAX_VALUE);
             }
             else
-                cfg.setAffinity(new GridCacheProcessor.LocalAffinityFunction());
+                cfg.setAffinity(new LocalAffinityFunction());
         }
         else {
-            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof GridCacheProcessor.LocalAffinityFunction)) {
-                cfg.setAffinity(new GridCacheProcessor.LocalAffinityFunction());
+            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)) {
+                cfg.setAffinity(new LocalAffinityFunction());
 
                 U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache" +
                     " [cacheName=" + U.maskName(cfg.getName()) + ']');
@@ -1882,7 +1842,8 @@ public class GridCacheUtils {
                             true,
                             topVer,
                             GridDrType.DR_BACKUP,
-                            true);
+                            true,
+                            false);
 
                         break;
                     }
@@ -1942,7 +1903,7 @@ public class GridCacheUtils {
             return false;
 
         // Special handling for system cache is needed.
-        if (isSystemCache(ccfg.getName()) || isIgfsCacheInSystemRegion(ccfg)) {
+        if (isSystemCache(ccfg.getName())) {
             if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
                 return true;
 
@@ -1969,16 +1930,6 @@ public class GridCacheUtils {
         }
 
         return false;
-    }
-
-    /**
-     * Checks whether cache configuration represents IGFS cache that will be placed in system memory region.
-     *
-     * @param ccfg Cache config.
-     */
-    private static boolean isIgfsCacheInSystemRegion(CacheConfiguration ccfg) {
-        return IgfsUtils.matchIgfsCacheName(ccfg.getName()) &&
-            (SYSTEM_DATA_REGION_NAME.equals(ccfg.getDataRegionName()) || ccfg.getDataRegionName() == null);
     }
 
     /**
@@ -2069,9 +2020,13 @@ public class GridCacheUtils {
      * @return Page size without encryption overhead.
      */
     public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        // If encryption is enabled, a space of one encryption block is reserved to store CRC and encryption key ID.
+        // If encryption is disabled, NoopEncryptionSPI with a zero encryption block size is used.
+        assert encSpi.blockSize() >= /* CRC */ 4 + /* Key ID */ 1 || encSpi.blockSize() == 0;
+
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize(); /* For CRC. */
+            - encSpi.blockSize(); /* For CRC and encryption key ID. */
     }
 
     /**
@@ -2121,9 +2076,82 @@ public class GridCacheUtils {
     }
 
     /**
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}.
+     *
+     * @param oldCfg Old cache config.
+     * @param op Schema add query entity operation.
+     */
+    public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
+        CacheConfiguration<K, V> oldCfg,
+        SchemaAddQueryEntityOperation op
+    ) {
+        return patchCacheConfiguration(oldCfg, op.entities(), op.schemaName(), op.isSqlEscape(),
+                op.queryParallelism());
+    }
+
+    /**
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}.
+     *
+     * @param oldCfg Old cache config.
+     * @param entities New query entities.
+     * @param sqlSchema Sql schema name.
+     * @param isSqlEscape Sql escape flag.
+     * @param qryParallelism Query parallelism parameter.
+     */
+    public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
+        CacheConfiguration<K, V> oldCfg,
+        Collection<QueryEntity> entities,
+        String sqlSchema,
+        boolean isSqlEscape,
+        int qryParallelism
+    ) {
+        return new CacheConfiguration<>(oldCfg)
+                .setQueryEntities(entities)
+                .setSqlSchema(sqlSchema)
+                .setSqlEscapeAll(isSqlEscape)
+                .setQueryParallelism(qryParallelism);
+    }
+
+    /**
+     * Getting available warming strategies.
+     *
+     * @param kernalCtx Kernal context.
+     * @return Mapping configuration to strategy.
+     */
+    public static Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies(
+        GridKernalContext kernalCtx
+    ) {
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> strategies = new HashMap<>();
+
+        // Adding default strategies.
+        WarmUpStrategy[] defStrats = {
+            new NoOpWarmUpStrategy(),
+            new LoadAllWarmUpStrategy(
+                kernalCtx.log(LoadAllWarmUpStrategy.class),
+                () -> kernalCtx.cache().cacheGroups()
+            )
+        };
+
+        for (WarmUpStrategy<?> strategy : defStrats)
+            strategies.putIfAbsent(strategy.configClass(), strategy);
+
+        // Adding strategies from plugins.
+        WarmUpStrategySupplier[] suppliers = kernalCtx.plugins().extensions(WarmUpStrategySupplier.class);
+
+        if (nonNull(suppliers)) {
+            for (WarmUpStrategySupplier supplier : suppliers) {
+                for (WarmUpStrategy<?> strategy : supplier.strategies())
+                    strategies.putIfAbsent(strategy.configClass(), strategy);
+            }
+        }
+
+        return strategies;
+    }
+
+    /**
      *
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
-        IgniteBiInClosure<CacheObject, GridCacheVersion>{
+        IgniteBiInClosure<CacheObject, GridCacheVersion> {
     }
 }

@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
-import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
-import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.regex.Pattern;
+import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
+import io.prometheus.client.exporter.HTTPServer;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
 import org.junit.Test;
 
@@ -150,7 +150,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
             "test_registry_test_histogram_10_100.* 2",
             "test_registry_test_histogram_100_inf.* 3"};
 
-        HistogramMetric histogramMetric =
+        HistogramMetricImpl histogramMetric =
             ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
 
         for (long value : testValues)

@@ -221,7 +221,7 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
             schemaName = "\"" + schemaName + "\"";
 
         SqlFieldsQuery qryCorrect = new SqlFieldsQuery("select f.\"id\", f.\"name\" " +
-            "from "+  schemaName + ".\"Fact\" f");
+            "from " + schemaName + ".\"Fact\" f");
 
         for ( List<?> row : cache.query(qryCorrect)) {
             assertEquals(2, row.size());

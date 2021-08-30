@@ -96,7 +96,7 @@ public class ContentionClosure implements IgniteCallable<ContentionInfo> {
 
                     GridCacheEntryEx cached = entry.cached();
 
-                    while(true) {
+                    while (true) {
                         try {
                             locs = cached.localCandidates();
 

@@ -36,11 +36,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -56,8 +56,6 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(CLIENT.equals(igniteInstanceName));
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -92,16 +90,12 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -117,6 +111,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         try {
             IgniteEx g0 = startGrid(0);
 
+            g0.cluster().baselineAutoAdjustEnabled(false);
             startGrid(1);
 
             g0.cluster().active(true);
@@ -188,16 +183,20 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             final GridDhtLocalPartition finalPart = part;
 
-            CountDownLatch clearLatch = new CountDownLatch(1);
+            CountDownLatch evictLatch = new CountDownLatch(1);
 
-            part.onClearFinished(fut -> {
-                assertEquals(GridDhtPartitionState.EVICTED, finalPart.state());
+            part.rent().listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    assertEquals(GridDhtPartitionState.EVICTED, finalPart.state());
 
-                clearLatch.countDown();
+                    evictLatch.countDown();
+                }
             });
 
             assertTrue("Failed to wait for partition eviction after restart",
-                clearLatch.await(5_000, TimeUnit.MILLISECONDS));
+                evictLatch.await(5_000, TimeUnit.MILLISECONDS));
+
+            awaitPartitionMapExchange(true, true, null);
         }
         finally {
             stopAllGrids();
@@ -246,6 +245,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         try {
             IgniteEx g0 = startGrids(2);
 
+            g0.cluster().baselineAutoAdjustEnabled(false);
             g0.cluster().active(true);
 
             awaitPartitionMapExchange();
@@ -265,7 +265,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             assertNotNull(part);
 
-            // Prevent eviction.
+            // Wait for eviction. Same could be achieved by calling awaitPartitionMapExchange(true, true, null, true);
             part.reserve();
 
             startGrid(2);
@@ -274,14 +274,15 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             part.release();
 
-            part.rent(false).get();
+            part.rent().get();
 
             CountDownLatch l1 = new CountDownLatch(1);
             CountDownLatch l2 = new CountDownLatch(1);
 
             // Create race between processing of final supply message and partition clearing.
-            top.partitionFactory((ctx, grp, id) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, false) :
-                new GridDhtLocalPartition(ctx, grp, id, false) {
+            // Evicted partition will be recreated using supplied factory.
+            top.partitionFactory((ctx, grp, id, recovery) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, recovery) :
+                new GridDhtLocalPartition(ctx, grp, id, recovery) {
                     @Override public void beforeApplyBatch(boolean last) {
                         if (last) {
                             l1.countDown();
@@ -305,7 +306,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
                         // Trigger partition clear on next topology version.
                         if (client)
-                            startGrid(CLIENT);
+                            startClientGrid(CLIENT);
                         else
                             startGrid(2);
 

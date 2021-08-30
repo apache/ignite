@@ -17,9 +17,9 @@
 
 package org.apache.ignite.examples.ml.dataset;
 
-import com.github.fommil.netlib.BLAS;
 import java.io.Serializable;
 import java.util.Arrays;
+import com.github.fommil.netlib.BLAS;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -78,9 +78,10 @@ public class AlgorithmSpecificDatasetExample {
             try {
                 persons = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1);
 
-                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] {lv.label()});
+                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+                    lv -> new LabeledVector<>(lv.features(), new double[] {lv.label()});
 
                 //NOTE: This class is part of Developer API and all lambdas should be loaded on server manually.
                 Preprocessor<Integer, Vector> preprocessor = new PatchedPreprocessor<>(func, vectorizer);
@@ -89,18 +90,19 @@ public class AlgorithmSpecificDatasetExample {
                 SimpleLabeledDatasetDataBuilder<Integer, Vector, AlgorithmSpecificPartitionContext> builder =
                     new SimpleLabeledDatasetDataBuilder<>(preprocessor);
 
-                IgniteBiFunction<SimpleLabeledDatasetData, AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> builderFun = (data, ctx) -> {
-                    double[] features = data.getFeatures();
-                    int rows = data.getRows();
+                IgniteBiFunction<SimpleLabeledDatasetData, AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> builderFun =
+                    (data, ctx) -> {
+                        double[] features = data.getFeatures();
+                        int rows = data.getRows();
 
-                    // Makes a copy of features to supplement it by columns with values equal to 1.0.
-                    double[] a = new double[features.length + rows];
-                    Arrays.fill(a, 1.0);
+                        // Makes a copy of features to supplement it by columns with values equal to 1.0.
+                        double[] a = new double[features.length + rows];
+                        Arrays.fill(a, 1.0);
 
-                    System.arraycopy(features, 0, a, rows, features.length);
+                        System.arraycopy(features, 0, a, rows, features.length);
 
-                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
-                };
+                        return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
+                    };
 
                 try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                     ignite,

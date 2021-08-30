@@ -55,9 +55,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /** Iteration. */
     private static final int ITERATIONS = 3;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -66,7 +63,12 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
             /** */
             private boolean delay = true;
 
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            @Override protected void writeToSocket(
+                Socket sock,
+                OutputStream out,
+                TcpDiscoveryAbstractMessage msg,
+                long timeout
+            ) throws IOException, IgniteCheckedException {
                 super.writeToSocket(sock, out, msg, timeout);
             }
 
@@ -99,8 +101,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -160,8 +160,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTest(final boolean createCache) throws Exception {
-        client = false;
-
         final int CLIENTS = 5;
         final int SRVS = 4;
 
@@ -171,14 +169,12 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         final CyclicBarrier b = new CyclicBarrier(CLIENTS);
 
-        client = true;
-
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
                 try {
                     b.await();
 
-                    Ignite node = startGrid(idx + SRVS);
+                    Ignite node = startClientGrid(idx + SRVS);
 
                     if (createCache) {
                         for (int c = 0; c < 5; c++) {

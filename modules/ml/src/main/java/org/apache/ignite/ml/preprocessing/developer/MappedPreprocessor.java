@@ -34,7 +34,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  */
 public final class MappedPreprocessor<K, V, L0, L1> implements Preprocessor<K, V>, DeployableObject {
     /** Original preprocessor. */
-    protected final Preprocessor<K, V> original;
+    private final Preprocessor<K, V> original;
 
     /** Vectors mapping. */
     private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> mapping;

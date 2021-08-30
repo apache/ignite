@@ -18,18 +18,26 @@
 package org.apache.ignite.spi.metric;
 
 import java.util.function.Predicate;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * Exporter of metric information to the external recepient.
+ * Exporter of metric information to the external recipient.
  * Expected, that each implementation would support some specific protocol.
  *
  * Implementation of this Spi should work by pull paradigm.
  * So after start SPI should respond to some incoming request.
  * HTTP servlet or JMX bean are good examples of expected implementations.
  *
+ * <p>
+ * Ignite provides the following {@code MetricExporterSpi} implementation:
+ * <ul>
+ * <li>{@link org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi}</li>
+ * <li>{@link org.apache.ignite.spi.metric.log.LogExporterSpi}</li>
+ * <li>{@code org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi}</li>
+ * <li>{@code org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi}</li>
+ * </ul>
+ *
+ * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
  * @see Metric
  * @see BooleanMetric
@@ -37,7 +45,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * @see IntMetric
  * @see LongMetric
  * @see ObjectMetric
- * @see JmxMetricExporterSpi
  */
 public interface MetricExporterSpi extends IgniteSpi {
     /**
@@ -46,7 +53,7 @@ public interface MetricExporterSpi extends IgniteSpi {
      *
      * @param registry Metric registry.
      */
-    public void setMetricRegistry(ReadOnlyMetricRegistry registry);
+    public void setMetricRegistry(ReadOnlyMetricManager registry);
 
     /**
      * Sets export filter.
@@ -54,5 +61,5 @@ public interface MetricExporterSpi extends IgniteSpi {
      *
      * @param filter Filter.
      */
-    public void setExportFilter(Predicate<MetricRegistry> filter);
+    public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter);
 }

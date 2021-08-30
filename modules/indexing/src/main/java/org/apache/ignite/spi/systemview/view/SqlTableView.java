@@ -47,57 +47,118 @@ public class SqlTableView {
         }
     }
 
-    /** @return Cache id. */
-    @Order(3)
+    /**
+     * Returns cache group ID.
+     *
+     * @return Cache group ID.
+     */
+    @Order()
+    public int cacheGroupId() {
+        return tbl.cacheInfo().groupId();
+    }
+
+    /**
+     * Returns Cache group name.
+     *
+     * @return Cache group name.
+     */
+    @Order(1)
+    public String cacheGroupName() {
+        return tbl.cacheInfo().groupName();
+    }
+
+    /**
+     * Returns cache ID.
+     *
+     * @return Cache ID.
+     */
+    @Order(2)
     public int cacheId() {
         return tbl.cacheId();
     }
 
-    /** @return Cache name. */
-    @Order(2)
+    /**
+     * Returns cache name.
+     *
+     * @return Cache name.
+     */
+    @Order(3)
     public String cacheName() {
         return tbl.cacheName();
     }
 
-    /** @return Schema name. */
-    @Order(1)
+    /**
+     * Returns schema name.
+     *
+     * @return Schema name.
+     */
+    @Order(4)
     public String schemaName() {
         return tbl.getSchema().getName();
     }
 
-    /** @return Table name. */
-    @Order
+    /**
+     * Returns table name.
+     *
+     * @return Table name.
+     */
+    @Order(5)
     public String tableName() {
         return tbl.identifier().table();
     }
 
-    /** @return Affinity key column. */
-    @Order(4)
+    /**
+     * Returns name of affinity key column.
+     *
+     * @return Affinity key column name.
+     */
+    @Order(6)
     public String affinityKeyColumn() {
         return affColName;
     }
 
-    /** @return Key alias. */
-    @Order(5)
+    /**
+     * Returns alias for key column.
+     *
+     * @return Key alias.
+     */
+    @Order(7)
     public String keyAlias() {
         return tbl.rowDescriptor().type().keyFieldAlias();
     }
 
-    /** @return Value alias. */
-    @Order(6)
+    /**
+     * Returns alias for value column.
+     *
+     * @return Value alias.
+     */
+    @Order(8)
     public String valueAlias() {
         return tbl.rowDescriptor().type().valueFieldAlias();
     }
 
-    /** @return Key type name. */
-    @Order(7)
+    /**
+     * Returns name of key type.
+     *
+     * @return Key type name.
+     */
+    @Order(9)
     public String keyTypeName() {
         return tbl.rowDescriptor().type().keyTypeName();
     }
 
-    /** @return Value type name. */
-    @Order(8)
+    /**
+     * Returns name of value type.
+     *
+     * @return Value type name.
+     */
+    @Order(10)
     public String valueTypeName() {
         return tbl.rowDescriptor().type().valueTypeName();
+    }
+
+    /** @return {@code True} if index rebuild is in progress. */
+    public boolean isIndexRebuildInProgress() {
+        return tbl.rebuildFromHashInProgress();
     }
 }

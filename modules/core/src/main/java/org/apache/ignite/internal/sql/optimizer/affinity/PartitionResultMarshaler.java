@@ -269,7 +269,7 @@ public class PartitionResultMarshaler {
 
         int idx = reader.readInt();
 
-        PartitionParameterType clientType = PartitionParameterType.fromOrdinal (reader.readInt());
+        PartitionParameterType clientType = PartitionParameterType.fromOrdinal(reader.readInt());
 
         return new PartitionParameterNode(null, null, idx, -1, clientType);
     }

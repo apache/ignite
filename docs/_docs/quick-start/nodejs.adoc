@@ -1,0 +1,104 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite Quick Start Guide for Node.JS
+
+This chapter explains system requirements for running Ignite, how to install Ignite, start a cluster and run a simple Hello World example using a thin client for Node.js.
+
+Thin Client is a lightweight Ignite connection mode.
+It does not participate in cluster, never holds any data, or performs computations.
+All it does is establish a socket connection to an individual Ignite node and perform all operations through that node.
+
+== Prerequisites
+
+Ignite was tested on:
+
+include::includes/prereqs.adoc[]
+
+and:
+
+[width="100%",cols="1,3"]
+|=======================================================================
+|Node.js |Version 8 or higher is required. Either download the Node.js pre-built binary for the target platform, or install Node.js via package manager.
+|=======================================================================
+
+== Installing Ignite
+
+include::includes/install-ignite.adoc[]
+
+Once that's done, execute the following command to install the Node.js Thin Client package:
+
+include::includes/install-nodejs-npm.adoc[]
+
+== Starting a Node
+
+Before connecting to Ignite from Node.JS thin client, you must start at least one cluster node.
+
+include::includes/starting-node.adoc[]
+
+== Running Your First Application
+
+
+Once the cluster is started, you can use the Ignite Node.js thin client to perform cache operations.
+Your Ignite installation includes several ready-to-run Node.JS examples in the `{client_dir}/examples` directory. For example,
+
+[source,shell]
+----
+cd {client_dir}/examples
+node CachePutGetExample.js
+----
+
+Assuming that the server node is running locally, and that you have completed
+all of the pre-requisites listed above, here is a very simple _HelloWorld_
+example that puts and gets values from the cache. If you followed the
+instructions above, and if you place this hello world example in your examples
+folder, it should work.
+
+[source,javascript]
+----
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const ObjectType = IgniteClient.ObjectType;
+const CacheEntry = IgniteClient.CacheEntry;
+
+async function performCacheKeyValueOperations() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = (await igniteClient.getOrCreateCache('myCache')).
+            setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER);
+        // put and get value
+        await cache.put(1, 'Hello World');
+        const value = await cache.get(1);
+        console.log(value);
+
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+performCacheKeyValueOperations();
+----
+
+== Next Steps
+
+From here, you may want to:
+
+* Read more about using Ignite Node.js Thin Client link:thin-clients/nodejs-thin-client[here]
+* Explore the link:https://github.com/apache/ignite-nodejs-thin-client/tree/master/examples[additional examples]
+

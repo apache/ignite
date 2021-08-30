@@ -58,7 +58,6 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
             attrs.put("test", "1");
 
             cfg.setUserAttributes(attrs);
-            cfg.setClientMode(true);
         }
 
         IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi spi = new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi();
@@ -99,7 +98,7 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
             }
         }, EventType.EVT_NODE_JOINED);
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         reconnectClientNode(log, client, srv, null);
 

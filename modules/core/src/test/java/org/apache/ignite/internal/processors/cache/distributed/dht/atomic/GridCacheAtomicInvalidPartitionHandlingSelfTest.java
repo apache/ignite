@@ -167,7 +167,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
             final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-            final int range = 100_000;
+            final int range = 10_000;
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
@@ -263,7 +263,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Random rnd = new Random();
 
             // Restart random nodes.
-            for (int r = 0; r < 20; r++) {
+            for (int r = 0; r < 10; r++) {
                 int idx0 = rnd.nextInt(gridCnt - 1) + 1;
 
                 stopGrid(idx0);

@@ -47,9 +47,6 @@ public class P2PStreamingClassLoaderTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.startsWith("client"))
-            cfg.setClientMode(true);
-
         cfg.setDeploymentMode(depMode);
 
         return cfg;
@@ -62,7 +59,7 @@ public class P2PStreamingClassLoaderTest extends GridCommonAbstractTest {
     private void processTest() throws Exception {
         try {
             startGrid("server");
-            Ignite client = startGrid("client");
+            Ignite client = startClientGrid("client");
 
             ClassLoader ldr = getExternalClassLoader();
 

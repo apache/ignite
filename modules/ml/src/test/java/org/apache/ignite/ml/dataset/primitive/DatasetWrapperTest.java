@@ -27,11 +27,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -61,7 +61,8 @@ public class DatasetWrapperTest {
     public void testComputeWithCtx() {
         doReturn(42).when(dataset).computeWithCtx(any(IgniteTriFunction.class), any(), any());
 
-        Integer res = (Integer) wrapper.computeWithCtx(mock(IgniteTriFunction.class), mock(IgniteBinaryOperator.class),
+        //NOTE: don't remove this cast due to Java9+ compilation failure on different Java versions and OS.
+        Integer res = (Integer)wrapper.computeWithCtx(mock(IgniteTriFunction.class), mock(IgniteBinaryOperator.class),
             null);
 
         assertEquals(42, res.intValue());
@@ -75,7 +76,8 @@ public class DatasetWrapperTest {
     public void testComputeWithCtx2() {
         doReturn(42).when(dataset).computeWithCtx(any(IgniteTriFunction.class), any(), any());
 
-        Integer res = (Integer) wrapper.computeWithCtx(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class),
+        //NOTE: don't remove this cast due to Java9+ compilation failure on different Java versions and OS.
+        Integer res = (Integer)wrapper.computeWithCtx(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class),
             null);
 
         assertEquals(42, res.intValue());
@@ -102,7 +104,8 @@ public class DatasetWrapperTest {
     public void testCompute() {
         doReturn(42).when(dataset).compute(any(IgniteBiFunction.class), any(), any());
 
-        Integer res = (Integer) wrapper.compute(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class),
+        //NOTE: don't remove this cast due to Java9+ compilation failure on different Java versions and OS.
+        Integer res = (Integer)wrapper.compute(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class),
             null);
 
         assertEquals(42, res.intValue());
@@ -116,7 +119,8 @@ public class DatasetWrapperTest {
     public void testCompute2() {
         doReturn(42).when(dataset).compute(any(IgniteBiFunction.class), any(IgniteBinaryOperator.class), any());
 
-        Integer res = (Integer) wrapper.compute(mock(IgniteFunction.class), mock(IgniteBinaryOperator.class),
+        //NOTE: don't remove this cast due to Java9+ compilation failure on different Java versions and OS.
+        Integer res = (Integer)wrapper.compute(mock(IgniteFunction.class), mock(IgniteBinaryOperator.class),
             null);
 
         assertEquals(42, res.intValue());

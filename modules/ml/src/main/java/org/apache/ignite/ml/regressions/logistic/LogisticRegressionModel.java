@@ -17,17 +17,27 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
-import java.io.Serializable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
  */
-public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>, Serializable {
+public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>,
+    JSONWritable {
     /** */
     private static final long serialVersionUID = -133984600091550776L;
 
@@ -38,10 +48,14 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
     private double intercept;
 
     /** Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise. */
-    private boolean isKeepingRawLabels = false;
+    private boolean isKeepingRawLabels;
 
     /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
     private double threshold = 0.5;
+
+    /** */
+    private LogisticRegressionModel() {
+    }
 
     /** */
     public LogisticRegressionModel(Vector weights, double intercept) {
@@ -202,4 +216,99 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
     @Override public String toString(boolean pretty) {
         return toString();
     }
+
+    /** Loads KMeansModel from JSON file. */
+    public static LogisticRegressionModel fromJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            LogisticRegressionJSONExportModel logisticRegressionJSONExportModel;
+            try {
+                logisticRegressionJSONExportModel = mapper
+                        .readValue(new File(path.toAbsolutePath().toString()), LogisticRegressionJSONExportModel.class);
+
+                return logisticRegressionJSONExportModel.convert();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                LogisticRegressionJSONExportModel exportModel = new LogisticRegressionJSONExportModel(
+                    System.currentTimeMillis(),
+                    "logReg_" + UUID.randomUUID().toString(),
+                    LogisticRegressionModel.class.getSimpleName());
+                exportModel.intercept = intercept;
+                exportModel.isKeepingRawLabels = isKeepingRawLabels;
+                exportModel.threshold = threshold;
+                exportModel.weights = weights.asArray();
+
+                File file = new File(path.toAbsolutePath().toString());
+                mapper.writeValue(file, exportModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+    }
+
+    /** */
+    public static class LogisticRegressionJSONExportModel extends JSONModel {
+        /**
+         * Multiplier of the objects's vector required to make prediction.
+         */
+        public double[] weights;
+
+        /**
+         * Intercept of the linear regression model.
+         */
+        public double intercept;
+
+        /**
+         * Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise.
+         */
+        public boolean isKeepingRawLabels;
+
+        /**
+         * Threshold to assign '1' label to the observation if raw value more than this threshold.
+         */
+        public double threshold = 0.5;
+
+        /** */
+        public LogisticRegressionJSONExportModel(Long timestamp, String uid, String modelClass) {
+            super(timestamp, uid, modelClass);
+        }
+
+        /** */
+        @JsonCreator
+        public LogisticRegressionJSONExportModel() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "LogisticRegressionJSONExportModel{" +
+                    "weights=" + Arrays.toString(weights) +
+                    ", intercept=" + intercept +
+                    ", isKeepingRawLabels=" + isKeepingRawLabels +
+                    ", threshold=" + threshold +
+                    '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public LogisticRegressionModel convert() {
+            LogisticRegressionModel logRegMdl = new LogisticRegressionModel();
+            logRegMdl.withWeights(VectorUtils.of(weights));
+            logRegMdl.withIntercept(intercept);
+            logRegMdl.withRawLabels(isKeepingRawLabels);
+            logRegMdl.withThreshold(threshold);
+
+            return logRegMdl;
+        }
+    }
 }
+
+
+

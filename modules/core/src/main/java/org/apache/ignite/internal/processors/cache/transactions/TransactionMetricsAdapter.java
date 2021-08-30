@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -88,10 +88,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     private LongAdderMetric totalTxUserTime;
 
     /** Holds the reference to metric for system time histogram on node. */
-    private HistogramMetric txSystemTimeHistogram;
+    private HistogramMetricImpl txSystemTimeHistogram;
 
     /** Holds the reference to metric for user time histogram on node. */
-    private HistogramMetric txUserTimeHistogram;
+    private HistogramMetricImpl txUserTimeHistogram;
 
     /**
      * @param ctx Kernal context.

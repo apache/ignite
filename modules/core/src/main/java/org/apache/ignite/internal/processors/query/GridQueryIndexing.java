@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -27,19 +29,14 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -108,11 +105,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param streamer Data streamer to feed data to.
+     * @param qryInitiatorId Query initiator ID.
      * @return Update counter.
      * @throws IgniteCheckedException If failed.
      */
     public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
-        IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+        IgniteDataStreamer<?, ?> streamer, String qryInitiatorId) throws IgniteCheckedException;
 
     /**
      * Execute a batched INSERT statement using data streamer as receiver.
@@ -121,11 +119,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param cliCtx Client connection context.
+     * @param qryInitiatorId Query initiator ID.
      * @return Update counters.
      * @throws IgniteCheckedException If failed.
      */
     public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
-        SqlClientContext cliCtx) throws IgniteCheckedException;
+        SqlClientContext cliCtx, String qryInitiatorId) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -135,10 +134,11 @@ public interface GridQueryIndexing {
      * @param qry Text query.
      * @param typeName Type name.
      * @param filter Cache name and key filter.    @return Queried rows.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
-        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String qry, String typeName, IndexingQueryFilter filter, int limit) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -210,27 +210,6 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
     public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
-
-    /**
-     * Destroy founded index which belongs to stopped cache.
-     *
-     * @param page Root page.
-     * @param indexName Index name.
-     * @param grpId Group id which contains garbage.
-     * @param pageMemory Page memory to work with.
-     * @param removeId Global remove id.
-     * @param reuseList Reuse list where free pages should be stored.
-     * @param mvccEnabled Is mvcc enabled for group or not.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void destroyOrphanIndex(
-        RootPage page,
-        String indexName,
-        int grpId,
-        PageMemory pageMemory,
-        final GridAtomicLong removeId,
-        final ReuseList reuseList,
-        boolean mvccEnabled) throws IgniteCheckedException;
 
     /**
      *
@@ -326,19 +305,11 @@ public interface GridQueryIndexing {
         throws IgniteCheckedException;
 
     /**
-     * Rebuild indexes for the given cache if necessary.
-     *
-     * @param cctx Cache context.
-     * @return Future completed when index rebuild finished.
-     */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
-
-    /**
      * Mark as rebuild needed for the given cache.
      *
      * @param cctx Cache context.
      */
-    void markAsRebuildNeeded(GridCacheContext cctx);
+    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val);
 
     /**
      * Returns backup filter.
@@ -400,20 +371,19 @@ public interface GridQueryIndexing {
     public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) throws SQLException;
 
     /**
-     * Return row cache cleaner.
-     *
-     * @param cacheGroupId Cache group id.
-     * @return Row cache cleaner.
-     */
-    public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
-
-    /**
      * Return context for registered cache info.
      *
      * @param cacheName Cache name.
      * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
      */
     @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
+
+    /**
+     * Clear cache info and clear parser cache on call cache.close() on client node.
+     *
+     * @param cacheName Cache name to clear.
+     */
+    public void closeCacheOnClient(String cacheName);
 
     /**
      * Initialize table's cache context created for not started cache.
@@ -455,4 +425,26 @@ public interface GridQueryIndexing {
      * @return Column information filtered by given patterns.
      */
     Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
+
+    /**
+     * Return index size by schema, table and index name.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @return Index size (Number of elements) or {@code 0} if index not found.
+     */
+    default long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /**
+     * Information about secondary indexes efficient (actual) inline size.
+     *
+     * @return Map with inline sizes. The key of entry is a full index name (with schema and table name), the value of
+     * entry is a inline size.
+     */
+    default Map<String, Integer> secondaryIndexesInlineSize() {
+        return Collections.emptyMap();
+    }
 }

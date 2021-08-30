@@ -35,10 +35,10 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.TestJdbcPojoDataSourceFactory;
 import org.apache.ignite.cache.store.jdbc.model.TestJdbcPojoStoreFactoryWithHangWriteAll;
 import org.apache.ignite.cache.store.jdbc.model.TestPojo;
-import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -49,6 +49,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
@@ -468,7 +469,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -490,7 +491,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -543,7 +544,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -565,7 +566,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -611,7 +612,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -633,7 +634,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }

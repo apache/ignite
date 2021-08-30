@@ -87,9 +87,9 @@ public class PartitionTableAffinityDescriptor {
 
     /**
      *
-     * @return True if applicable to jdbc thin client side affinity awareness.
+     * @return True if applicable to jdbc thin client side partition awareness.
      */
-    public boolean isClientAffinityAwarenessApplicable() {
+    public boolean isClientPartitionAwarenessApplicable() {
         return affFunc == PartitionAffinityFunctionType.RENDEZVOUS && !hasNodeFilter;
     }
 

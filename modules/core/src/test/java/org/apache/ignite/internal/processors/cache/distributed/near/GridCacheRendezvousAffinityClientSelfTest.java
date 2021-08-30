@@ -38,9 +38,6 @@ import org.junit.Test;
  * Tests rendezvous affinity function with CLIENT_ONLY node (GG-8768).
  */
 public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstractTest {
-    /** Client node. */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -52,10 +49,6 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAffinity(new RendezvousAffinityFunction());
-
-        if (client)
-            cfg.setClientMode(true);
-
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -67,11 +60,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     @Test
     public void testClientNode() throws Exception {
         try {
-            client = true;
-
-            startGrid(0);
-
-            client = false;
+            startClientGrid(0);
 
             startGrid(1);
             startGrid(2);

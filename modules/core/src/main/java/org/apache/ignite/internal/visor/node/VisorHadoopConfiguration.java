@@ -21,13 +21,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
-import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
 /**
  * Data transfer object for configuration of hadoop data structures.
@@ -59,21 +56,6 @@ public class VisorHadoopConfiguration extends VisorDataTransferObject {
      */
     public VisorHadoopConfiguration() {
         // No-op.
-    }
-
-    /**
-     * Create data transfer object for hadoop configuration.
-     *
-     * @param src Hadoop configuration.
-     */
-    public VisorHadoopConfiguration(HadoopConfiguration src) {
-        planner = compactClass(src.getMapReducePlanner());
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //extExecution = cfg.isExternalExecution();
-        finishedJobInfoTtl = src.getFinishedJobInfoTtl();
-        maxParallelTasks = src.getMaxParallelTasks();
-        maxTaskQueueSize = src.getMaxTaskQueueSize();
-        libNames = U.sealList(src.getNativeLibraryNames());
     }
 
     /**

@@ -32,23 +32,53 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
+import org.apache.ignite.internal.managers.systemview.SystemViewMBean;
+import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
-import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
+import org.apache.ignite.spi.systemview.view.BaselineNodeView;
+import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
+import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
+import org.apache.ignite.spi.systemview.view.NodeAttributeView;
+import org.apache.ignite.spi.systemview.view.NodeMetricsView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
+import org.apache.ignite.spi.systemview.view.PartitionStateView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
+import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
-import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
-import org.apache.ignite.spi.systemview.view.CacheGroupView;
-import org.apache.ignite.spi.systemview.view.CacheView;
-import org.apache.ignite.spi.systemview.view.ComputeTaskView;
-import org.apache.ignite.spi.systemview.view.ServiceView;
-import org.apache.ignite.spi.systemview.SystemViewLocal;
 import org.apache.ignite.spi.systemview.view.TransactionView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicLongView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicSequenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicStampedView;
+import org.apache.ignite.spi.systemview.view.datastructures.CountDownLatchView;
+import org.apache.ignite.spi.systemview.view.datastructures.QueueView;
+import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
+import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
+import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
@@ -59,7 +89,6 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
  * Generated code used in {@link SystemView}.
  *
  * @see SystemViewMBean
- * @see SystemViewLocal
  */
 public class SystemViewRowAttributeWalkerGenerator {
     /** Methods that should be excluded from specific {@link SystemViewRowAttributeWalker}. */
@@ -82,8 +111,34 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CacheView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ComputeJobView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ContinuousQueryView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ClusterNodeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ScanQueryView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlQueryView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlQueryHistoryView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StripedExecutorTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PagesListView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PartitionStateView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BinaryMetadataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetastorageView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(QueueView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SetView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicLongView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicReferenceView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicSequenceView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicStampedView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CountDownLatchView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ReentrantLockView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SemaphoreView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineNodeAttributeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineNodeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(NodeAttributeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(NodeMetricsView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CacheGroupIoView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
@@ -91,6 +146,10 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableColumnView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlViewColumnView.class, INDEXING_SRC_DIR);
+
+        gen.generateAndWrite(StatisticsColumnConfigurationView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnLocalDataView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnPartitionDataView.class, INDEXING_SRC_DIR);
     }
 
     /**
@@ -126,7 +185,7 @@ public class SystemViewRowAttributeWalkerGenerator {
      */
     private <T> Collection<String> generate(Class<T> clazz) {
         final List<String> code = new ArrayList<>();
-        final Set<String> imports = new TreeSet<>();
+        final Set<String> imports = new TreeSet<>(Comparator.comparing(s -> s.replace(";", "")));
 
         addImport(imports, SystemViewRowAttributeWalker.class);
         addImport(imports, clazz);
@@ -143,6 +202,38 @@ public class SystemViewRowAttributeWalkerGenerator {
         code.add(" * @see " + simpleName);
         code.add(" */");
         code.add("public class " + simpleName + "Walker implements SystemViewRowAttributeWalker<" + simpleName + "> {");
+
+        List<String> filtrableAttrs = new ArrayList<>();
+
+        forEachMethod(clazz, (m, i) -> {
+            if (m.getAnnotation(Filtrable.class) != null) {
+                code.add(TAB + "/** Filter key for attribute \"" + m.getName() + "\" */");
+                code.add(TAB + "public static final String " + m.getName()
+                    .replaceAll("(\\p{Upper})", "_$1")
+                    .toUpperCase() + "_FILTER = \"" + m.getName() + "\";");
+                code.add("");
+
+                filtrableAttrs.add(m.getName());
+            }
+        });
+
+        if (!filtrableAttrs.isEmpty()) {
+            addImport(imports, F.class);
+            addImport(imports, List.class);
+            addImport(imports, Collections.class);
+
+            code.add(TAB + "/** List of filtrable attributes. */");
+            code.add(TAB + "private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(");
+            code.add(TAB + TAB + '\"' + String.join("\", \"", filtrableAttrs) + '\"');
+            code.add(TAB + "));");
+            code.add("");
+            code.add(TAB + "/** {@inheritDoc} */");
+            code.add(TAB + "@Override public List<String> filtrableAttributes() {");
+            code.add(TAB + TAB + "return FILTRABLE_ATTRS;");
+            code.add(TAB + "}");
+            code.add("");
+        }
+
         code.add(TAB + "/** {@inheritDoc} */");
         code.add(TAB + "@Override public void visitAll(AttributeVisitor v) {");
 

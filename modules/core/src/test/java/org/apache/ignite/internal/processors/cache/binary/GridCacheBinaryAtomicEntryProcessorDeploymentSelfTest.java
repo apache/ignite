@@ -86,11 +86,9 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
      */
     private void doTestGet(boolean withKeepBinary) throws Exception {
         try {
-            clientMode = false;
             startGrid(0);
 
-            clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
 

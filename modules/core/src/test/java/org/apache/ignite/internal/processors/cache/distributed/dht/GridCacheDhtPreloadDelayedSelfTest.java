@@ -31,9 +31,12 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -74,7 +77,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setConsistentId(igniteInstanceName);
+
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(persistenceEnabled())).
+                setWalSegmentSize(4 * 1024 * 1024));
 
         assert preloadMode != null;
 
@@ -88,16 +98,34 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        c.setCacheConfiguration(cc);
+        cfg.setCacheConfiguration(cc);
 
-        c.setIncludeEventTypes(EventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
-        return c;
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /**
+     * @return {@code True} if a persistent grid is required.
+     */
+    protected boolean persistenceEnabled() {
+        return false;
     }
 
     /**
@@ -109,6 +137,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         Ignite g0 = startGrid(0);
 
+        if (persistenceEnabled())
+            g0.cluster().active(true);
+
         int cnt = KEY_CNT;
 
         IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
@@ -117,7 +148,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             c0.put(Integer.toString(i), i);
 
         Ignite g1 = startGrid(1);
+
+        if (persistenceEnabled())
+            resetBaselineTopology();
+
         Ignite g2 = startGrid(2);
+
+        if (persistenceEnabled())
+            resetBaselineTopology();
 
         IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
@@ -153,7 +191,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
         GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
-        checkMaps(false, d0, d1, d2);
+        doSleep(1000);
 
         // Force preload.
         c1.rebalance();
@@ -189,6 +227,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         Ignite g0 = startGrid(0);
 
+        if (persistenceEnabled())
+            g0.cluster().active(true);
+
         int cnt = KEY_CNT;
 
         IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
@@ -197,7 +238,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             c0.put(Integer.toString(i), i);
 
         Ignite g1 = startGrid(1);
+
+        if (persistenceEnabled())
+            resetBaselineTopology();
+
         Ignite g2 = startGrid(2);
+
+        if (persistenceEnabled())
+            resetBaselineTopology();
 
         IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
@@ -233,9 +281,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
         GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
-        info("Beginning to wait for caches repartition.");
+        // Partitions maps are not always equal because state is not send after moving to EVICTED state.
 
-        checkMaps(false, d0, d1, d2);
+        info("Beginning to wait for caches repartition.");
 
         assert l1.await(PRELOAD_DELAY * 3 / 2, MILLISECONDS);
 
@@ -262,6 +310,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         Ignite g0 = startGrid(0);
 
+        if (persistenceEnabled())
+            g0.cluster().active(true);
+
         int cnt = KEY_CNT;
 
         IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
@@ -270,7 +321,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             c0.put(Integer.toString(i), i);
 
         Ignite g1 = startGrid(1);
+
+        if (persistenceEnabled())
+            resetBaselineTopology();
+
         Ignite g2 = startGrid(2);
+
+        if (persistenceEnabled())
+            resetBaselineTopology();
 
         IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
@@ -301,7 +359,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 5; i++) {
                 ignites.add(startGrid(i));
 
-                awaitPartitionMapExchange();
+                if (persistenceEnabled()) {
+                    if (i == 0)
+                        grid(0).cluster().active(true);
+                    else
+                        resetBaselineTopology();
+                }
+
+                awaitPartitionMapExchange(true, true, null, false);
 
                 for (Ignite g : ignites) {
                     info(">>> Checking affinity for grid: " + g.name());
@@ -346,7 +411,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         delay = -1;
 
         try {
-            startGrid(0);
+            IgniteEx crd = startGrid(0);
+
+            if (persistenceEnabled())
+                crd.cluster().active(true);
         }
         finally {
             stopAllGrids();
@@ -361,7 +429,12 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         delay = 0;
         preloadMode = ASYNC;
 
-        startGridsMultiThreaded(9);
+        final int cnt = persistenceEnabled() ? 4 : 9;
+
+        startGridsMultiThreaded(cnt);
+
+        if (persistenceEnabled())
+            grid(0).cluster().active(true);
 
         U.sleep(2000);
 
@@ -369,7 +442,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             delay = -1;
             preloadMode = ASYNC;
 
-            Ignite g = startGrid(9);
+            Ignite g = startGrid(cnt);
+
+            if (persistenceEnabled())
+                resetBaselineTopology();
 
             info(">>> Starting manual preload");
 

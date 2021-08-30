@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  * Closure of cluster wide update of distributed property.
  */
-@FunctionalInterface
 public interface PropertyUpdateClosure {
 
     /**
@@ -36,4 +35,15 @@ public interface PropertyUpdateClosure {
      * @throws IgniteCheckedException if failed.
      */
     public GridFutureAdapter<?> update(String key, Serializable newValue) throws IgniteCheckedException;
+
+    /**
+     * Update property on cluster using compare and set way.
+     *
+     * @param key Property key.
+     * @param expectedValue Expected value for CAS.
+     * @param newValue New value.
+     * @return Future this boolean value. * @throws IgniteCheckedException if failed.
+     */
+    public GridFutureAdapter<?> casUpdate(String key, Serializable expectedValue, Serializable newValue)
+        throws IgniteCheckedException;
 }

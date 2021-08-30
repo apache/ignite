@@ -52,14 +52,9 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
     /** Nodes count. */
     private static final int NODES_CNT = 2;
 
-    /** Client. */
-    private static boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -78,9 +73,7 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
         startGrid(0);
 
-        client = true;
-
-        startGrid(1);
+        startClientGrid(1);
     }
 
     /**
@@ -177,7 +170,7 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
             assertTrue(deadlock.get());
 
-            for (int i = 0; i < NODES_CNT ; i++) {
+            for (int i = 0; i < NODES_CNT; i++) {
                 Ignite ignite = ignite(i);
 
                 IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();

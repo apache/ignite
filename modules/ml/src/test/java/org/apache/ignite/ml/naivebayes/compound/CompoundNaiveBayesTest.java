@@ -36,13 +36,12 @@ import static org.junit.Assert.assertEquals;
 
 /** Integration tests for Compound naive Bayes algorithm with different datasets. */
 public class CompoundNaiveBayesTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
     /** Test. */
     @Test
-    public void testLearnsAndPredictCorrently() {
+    public void testLearnsAndPredictCorrectly() {
         CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
             .withPriorProbabilities(classProbabilities)
             .withGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
@@ -51,15 +50,15 @@ public class CompoundNaiveBayesTest {
                 .setBucketThresholds(binarizedDataThresholds))
             .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
 
-        CompoundNaiveBayesModel model = trainer.fit(
+        CompoundNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
                 new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector observation1 = VectorUtils.of(5.92, 165, 10, 1, 1, 0, 0, 0);
-        assertEquals(LABEL_1, model.predict(observation1), PRECISION);
+        assertEquals(LABEL_1, mdl.predict(observation1), PRECISION);
 
         Vector observation2 = VectorUtils.of(6, 130, 8, 1, 0, 1, 1, 0);
-        assertEquals(LABEL_2, model.predict(observation2), PRECISION);
+        assertEquals(LABEL_2, mdl.predict(observation2), PRECISION);
     }
 }

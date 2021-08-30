@@ -32,22 +32,19 @@ public class DatasetStructureTest {
     @SuppressWarnings("unchecked")
     public void testBasic() {
         Assert.assertNull("Feature names constructor", new Dataset<DatasetRow<Vector>>(1, 1,
-            new String[] {"tests"}, false).data());
+            new String[] {"tests"}).data());
 
         Dataset<DatasetRow<Vector>> dataset = new Dataset<DatasetRow<Vector>>(new DatasetRow[] {},
             new FeatureMetadata[] {});
 
         Assert.assertEquals("Expect empty data", 0, dataset.data().length);
         Assert.assertEquals("Expect empty meta", 0, dataset.data().length);
-        Assert.assertFalse("Not distributed by default", dataset.isDistributed());
 
         dataset.setData(new DatasetRow[] {new DatasetRow()});
         dataset.setMeta(new FeatureMetadata[] {new FeatureMetadata()});
-        dataset.setDistributed(true);
 
         Assert.assertEquals("Expect non empty data", 1, dataset.data().length);
         Assert.assertEquals("Expect non empty meta", 1, dataset.data().length);
-        Assert.assertTrue("Expect distributed", dataset.isDistributed());
         Assert.assertEquals(1, dataset.meta().length);
     }
 }

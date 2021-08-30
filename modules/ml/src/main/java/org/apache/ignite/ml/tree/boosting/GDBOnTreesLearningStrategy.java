@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
-import org.apache.ignite.ml.composition.boosting.GDBTrainer;
+import org.apache.ignite.ml.composition.boosting.GDBModel;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -35,7 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.DecisionTree;
+import org.apache.ignite.ml.tree.DecisionTreeTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 
@@ -57,15 +57,15 @@ public class GDBOnTreesLearningStrategy extends GDBLearningStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+    @Override public <K, V> List<IgniteModel<Vector, Double>> update(GDBModel mdlToUpdate,
                                                                      DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
 
         LearningEnvironment environment = envBuilder.buildForTrainer();
         environment.initDeployingContext(vectorizer);
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
-        assert trainer instanceof DecisionTree;
-        DecisionTree decisionTreeTrainer = (DecisionTree)trainer;
+        assert trainer instanceof DecisionTreeTrainer;
+        DecisionTreeTrainer decisionTreeTrainer = (DecisionTreeTrainer)trainer;
 
         List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 

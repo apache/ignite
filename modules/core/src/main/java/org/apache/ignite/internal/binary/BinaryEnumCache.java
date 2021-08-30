@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.binary;
 
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.binary.BinaryObjectException;
-
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.binary.BinaryObjectException;
 
 /**
  * Cache for enum constants.

@@ -94,7 +94,7 @@ namespace ignite
             return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
         }
 
-        static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+        static int rmFiles(const char *pathname, const struct stat*, int, struct FTW*)
         {
             remove(pathname);
 
@@ -114,14 +114,17 @@ namespace ignite
 
         StdCharOutStream& Dle(StdCharOutStream& ostr)
         {
+#ifdef __APPLE__
+            static const char expansion[] = ".dylib";
+#else
             static const char expansion[] = ".so";
-
+#endif
             ostr.write(expansion, sizeof(expansion) - 1);
 
             return ostr;
         }
 
-        unsigned GetRandSeed()
+        IGNITE_IMPORT_EXPORT unsigned GetRandSeed()
         {
             timespec ts;
 

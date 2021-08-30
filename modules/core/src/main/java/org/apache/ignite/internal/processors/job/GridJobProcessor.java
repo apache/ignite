@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.job;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJobSibling;
@@ -63,11 +65,12 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.ComputeJobViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -87,6 +90,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -108,6 +113,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -116,7 +122,16 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 @SkipDaemon
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
-    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
+    public static final String JOBS_VIEW = "jobs";
+
+    /** */
+    public static final String JOBS_VIEW_DESC = "Running compute jobs, part of compute task started on remote host.";
+
+    /** @see IgniteSystemProperties#IGNITE_JOBS_HISTORY_SIZE */
+    public static final int DFLT_JOBS_HISTORY_SIZE = 10240;
+
+    /** */
+    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, DFLT_JOBS_HISTORY_SIZE);
 
     /** Metrics prefix. */
     public static final String JOBS_METRICS = metricName("compute", "jobs");
@@ -152,7 +167,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
@@ -277,7 +292,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Current session. */
-    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocal<>();
+    private final ThreadLocal<GridJobSessionImpl> currSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -292,8 +307,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
-            new JobsMap(1024, 0.75f, 256);
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
 
@@ -322,6 +336,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
         totalExecutionTimeMetric = mreg.longMetric(EXECUTION_TIME, "Total execution time of jobs.");
 
         totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue.");
+
+        ctx.systemView().registerInnerCollectionView(JOBS_VIEW, JOBS_VIEW_DESC,
+            new ComputeJobViewWalker(),
+            passiveJobs == null ?
+                Arrays.asList(activeJobs, cancelledJobs) :
+                Arrays.asList(activeJobs, passiveJobs, cancelledJobs),
+            ConcurrentMap::entrySet,
+            (map, e) -> {
+                ComputeJobState state = map == activeJobs ? ComputeJobState.ACTIVE :
+                    (map == passiveJobs ? ComputeJobState.PASSIVE : ComputeJobState.CANCELED);
+
+                return new ComputeJobView(e.getKey(), e.getValue(), state);
+            });
     }
 
     /** {@inheritDoc} */
@@ -350,7 +377,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
-        activeJobs.clear();
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         activeJobsMetric.reset();
 
@@ -478,6 +505,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (dep.obsolete())
             ctx.resource().onUndeployed(dep);
+    }
+
+    /**
+     * @param collisionsDisabled If collision SPI is disabled.
+     */
+    private ConcurrentMap<IgniteUuid, GridJobWorker> initJobsMap(boolean collisionsDisabled) {
+        return collisionsDisabled ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
+            new JobsMap(1024, 0.75f, 256);
     }
 
     /**
@@ -1213,7 +1248,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.getSubjectId(),
                             req.executorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
@@ -1350,7 +1384,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      * @param ses Session.
      */
-    public void currentTaskSession(ComputeTaskSession ses) {
+    public void currentTaskSession(GridJobSessionImpl ses) {
         currSess.set(ses);
     }
 
@@ -1380,6 +1414,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return null;
 
         return ses.getTaskName();
+    }
+
+    /**
+     * Returns current deployment.
+     *
+     * @return Deployment.
+     */
+    public GridDeployment currentDeployment() {
+        GridJobSessionImpl session = currSess.get();
+
+        if (session == null || session.deployment() == null)
+            return null;
+
+        return session.deployment();
     }
 
     /**
@@ -1450,11 +1498,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
                         "thread pool): " + jobWorker.executorName());
 
-                    ctx.getExecutorService().execute(jobWorker);
+                    ctx.pools().getExecutorService().execute(jobWorker);
                 }
             }
             else
-                ctx.getExecutorService().execute(jobWorker);
+                ctx.pools().getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();
@@ -1511,7 +1559,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
-                evt.taskSubjectId(req.getSubjectId());
+                evt.taskSubjectId(securitySubjectId(ctx));
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1589,7 +1637,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
-                evt.taskSubjectId(req.getSubjectId());
+                evt.taskSubjectId(securitySubjectId(ctx));
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1676,7 +1724,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class PartitionsReservation implements GridReservable {
+    public class PartitionsReservation implements GridReservable {
         /** Caches. */
         private final int[] cacheIds;
 
@@ -1700,6 +1748,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
             this.partId = partId;
             this.topVer = topVer;
             partititons = new GridDhtLocalPartition[cacheIds.length];
+        }
+
+        /** @return Caches identifiers. */
+        public int[] getCacheIds() {
+            return cacheIds;
+        }
+
+        /** @return Partition id. */
+        public int getPartId() {
+            return partId;
         }
 
         /** {@inheritDoc} */
@@ -1987,6 +2045,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
+            }
+
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().job(ses.getId(),
+                    worker.getQueuedTime(),
+                    worker.getStartTime(),
+                    worker.getExecuteTime(),
+                    worker.isTimedOut());
             }
         }
     }

@@ -1,5 +1,5 @@
 # Contributing to Apache Ignite
-## Joining Community and it's communication channels
+## Joining Community and its communication channels
 - Sign-in to Apache JIRA https://issues.apache.org/jira/
 - (To contribute code patches) Sing-in to [Apache Ignite](https://ignite.apache.org/) Continuous Integration server https://ci.ignite.apache.org/
 - (To contribute documentation to the wiki) Sing-in to [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE)
@@ -21,7 +21,7 @@ Thanks!
 ```
 
 ## Needed Contributions
-[Apache Ignite](https://ignite.apache.org/) Community values any type of contributions from [CoPDoc](https://community.apache.org/contributors/#contributing-a-project-copdoc). Community member can contibute to any areas from (Co)mmunity, (P)roject, (Do)cumentation, and (C)ode.
+[Apache Ignite](https://ignite.apache.org/) Community values any type of contributions from [CoPDoC](https://community.apache.org/contributors/#contributing-a-project-copdoc). Community member can contibute to any areas from (Co)mmunity, (P)roject, (Do)cumentation, and (C)ode.
 
 Community values code contributions, but project value non-code contributions too, from writers, editors, testers, etc.
 We value user support on the list, as well as providing a summary of [user list](https://lists.apache.org/list.html?user@ignite.apache.org) threads to Apache Ignite developers.
@@ -36,7 +36,7 @@ Apache Ignite prefer to use [consensus to make decisions](http://community.apach
 
 ## Contributing Documentation
 Documentation can be contributed to
- - End-User documentation https://apacheignite.readme.io/ . Use Suggest Edits. See also [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).
+ - End-User documentation https://ignite.apache.org/docs/latest/ . Use Suggest Edits. See also [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).
  - Developer documentation, design documents, IEPs [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE). Ask at [Dev List](https://lists.apache.org/list.html?dev@ignite.apache.org) to be added as editor.
  - Markdown files, visible at GitHub, e.g. README.md; drawings explaining Apache Ignite & product internals.
  - Javadocs for packages (package-info.java), classes, methods, etc.

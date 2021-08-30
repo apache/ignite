@@ -48,10 +48,6 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.UnregisteredBinaryTypeException;
-import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -67,52 +63,19 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.DuplicateTypeIdException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
-import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
-import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
-import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
-import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
-import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
-import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -121,6 +84,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
@@ -129,7 +93,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  * Binary context.
  */
 public class BinaryContext {
-    /** System loader.*/
+    /** System loader. */
     private static final ClassLoader sysLdr = U.gridClassLoader();
 
     /** */
@@ -146,49 +110,6 @@ public class BinaryContext {
     /* Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
-
-        // IGFS classes.
-        sysClss.add(IgfsPath.class.getName());
-
-        sysClss.add(IgfsBlockKey.class.getName());
-        sysClss.add(IgfsDirectoryInfo.class.getName());
-        sysClss.add(IgfsFileAffinityRange.class.getName());
-        sysClss.add(IgfsFileInfo.class.getName());
-        sysClss.add(IgfsFileMap.class.getName());
-        sysClss.add(IgfsListingEntry.class.getName());
-
-        sysClss.add(IgfsDataPutProcessor.class.getName());
-
-        sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingRenameProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
-        sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
-        sysClss.add(IgfsMetaFileLockProcessor.class.getName());
-        sysClss.add(IgfsMetaFileRangeDeleteProcessor.class.getName());
-        sysClss.add(IgfsMetaFileRangeUpdateProcessor.class.getName());
-        sysClss.add(IgfsMetaFileReserveSpaceProcessor.class.getName());
-        sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
-        sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
-        sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
-
-        sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
-        sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
-        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
-
-        sysClss.add(IgfsClientAffinityCallable.class.getName());
-        sysClss.add(IgfsClientDeleteCallable.class.getName());
-        sysClss.add(IgfsClientExistsCallable.class.getName());
-        sysClss.add(IgfsClientInfoCallable.class.getName());
-        sysClss.add(IgfsClientListFilesCallable.class.getName());
-        sysClss.add(IgfsClientListPathsCallable.class.getName());
-        sysClss.add(IgfsClientMkdirsCallable.class.getName());
-        sysClss.add(IgfsClientRenameCallable.class.getName());
-        sysClss.add(IgfsClientSetTimesCallable.class.getName());
-        sysClss.add(IgfsClientSizeCallable.class.getName());
-        sysClss.add(IgfsClientSummaryCallable.class.getName());
-        sysClss.add(IgfsClientUpdateCallable.class.getName());
 
         // Closure processor classes.
         sysClss.add(GridClosureProcessor.C1.class.getName());
@@ -398,18 +319,24 @@ public class BinaryContext {
 
     /**
      * @param marsh Binary marshaller.
-     * @param cfg Configuration.
      * @throws BinaryObjectException In case of error.
      */
-    public void configure(BinaryMarshaller marsh, IgniteConfiguration cfg) throws BinaryObjectException {
+    public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
+        configure(marsh, null);
+    }
+
+    /**
+     * @param marsh Binary marshaller.
+     * @param binaryCfg Binary configuration.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void configure(BinaryMarshaller marsh, BinaryConfiguration binaryCfg) throws BinaryObjectException {
         if (marsh == null)
             return;
 
         this.marsh = marsh;
 
         marshCtx = marsh.getContext();
-
-        BinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
 
         if (binaryCfg == null)
             binaryCfg = new BinaryConfiguration();
@@ -612,76 +539,141 @@ public class BinaryContext {
     }
 
     /**
-     * @param cls Class.
+     * Attempts registration of the provided class. If the type is already registered, then an existing descriptor is
+     * returned.
+     *
+     * @param cls Class to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered)
-        throws BinaryObjectException {
+    @NotNull public BinaryClassDescriptor registerClass(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
+        return registerClass(cls, registerMeta, failIfUnregistered, false);
+    }
+
+    /**
+     * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
+     * @return Class descriptor.
+     * @throws BinaryObjectException In case of error.
+     */
+    @NotNull public BinaryClassDescriptor registerClass(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered,
+        boolean onlyLocReg
+    ) throws BinaryObjectException {
         assert cls != null;
 
-        BinaryClassDescriptor desc = descByCls.get(cls);
+        BinaryClassDescriptor desc = descriptorForClass(cls);
 
-        if (desc == null) {
+        if (!desc.registered()) {
             if (failIfUnregistered)
                 throw new UnregisteredClassException(cls);
-
-            desc = registerClassDescriptor(cls, deserialize);
-        }
-        else if (!desc.registered()) {
-            if (!desc.userType()) {
-                BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
-                    this,
-                    desc.describedClass(),
-                    false,
-                    desc.typeId(),
-                    desc.typeName(),
-                    desc.affFieldKeyName(),
-                    desc.mapper(),
-                    desc.initialSerializer(),
-                    false,
-                    true
-                );
-
-                if (descByCls.replace(cls, desc, desc0)) {
-                    Collection<BinarySchema> schemas =
-                        desc0.schema() != null ? Collections.singleton(desc.schema()) : null;
-
-                    BinaryMetadata meta = new BinaryMetadata(desc0.typeId(),
-                        desc0.typeName(),
-                        desc0.fieldsMeta(),
-                        desc0.affFieldKeyName(),
-                        schemas, desc0.isEnum(),
-                        cls.isEnum() ? enumMap(cls) : null);
-
-                    metaHnd.addMeta(desc0.typeId(), meta.wrap(this), false);
-
-                    return desc0;
-                }
-            }
-            else {
-                if (failIfUnregistered)
-                    throw new UnregisteredClassException(cls);
-
-                desc = registerUserClassDescriptor(desc);
-            }
+            else
+                desc = registerDescriptor(desc, registerMeta, onlyLocReg);
         }
 
         return desc;
     }
 
     /**
+     * Registers binary type locally.
+     *
+     * @param binaryType Binary type to register.
+     * @param failIfUnregistered Whether to fail when not registered.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     */
+    public void registerClassLocally(BinaryType binaryType, boolean failIfUnregistered, byte platformId) {
+        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
+        registerUserClassName(binaryType.typeId(), binaryType.typeName(), failIfUnregistered, true, platformId);
+    }
+
+    /**
+     * @param cls Class.
+     * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
+     * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
+     */
+    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+        assert cls != null;
+
+        BinaryClassDescriptor desc = descByCls.get(cls);
+
+        if (desc != null)
+            return desc;
+        else
+            return createDescriptorForClass(cls);
+    }
+
+    /**
+     * @param cls Class to create a descriptor for.
+     * @return A descriptor for the given class. The descriptor needs to be registered in order to be used.
+     */
+    @NotNull private BinaryClassDescriptor createDescriptorForClass(Class<?> cls) {
+        String clsName = cls.getName();
+
+        if (marshCtx.isSystemType(clsName)) {
+            BinarySerializer serializer = null;
+
+            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
+                serializer = new BinaryReflectiveSerializer();
+
+            return new BinaryClassDescriptor(this,
+                cls,
+                false,
+                clsName.hashCode(),
+                clsName,
+                null,
+                SIMPLE_NAME_LOWER_CASE_MAPPER,
+                serializer,
+                false,
+                false
+            );
+        }
+        else {
+            BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+            final String typeName = mapper.typeName(clsName);
+
+            final int typeId = mapper.typeId(clsName);
+
+            BinarySerializer serializer = serializerForClass(cls);
+
+            String affFieldName = affinityFieldName(cls);
+
+            return new BinaryClassDescriptor(this,
+                cls,
+                true,
+                typeId,
+                typeName,
+                affFieldName,
+                mapper,
+                serializer,
+                true,
+                false
+            );
+        }
+    }
+
+    /**
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
-        boolean deserialize
+        boolean registerMeta
     ) {
         assert typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -697,27 +689,43 @@ public class BinaryContext {
         Class cls;
 
         try {
-            cls = marshCtx.getClass(typeId, ldr);
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
+                cls = marshCtx.getClass(typeId, ldr);
 
-            desc = descByCls.get(cls);
+                desc = descByCls.get(cls);
+            }
+            else {
+                String clsName = marshCtx.getClassName(JAVA_ID, typeId);
+
+                if (clsName == null)
+                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
+
+                cls = U.forName(clsName, ldr, null);
+
+                desc = descByCls.get(cls);
+
+                if (desc == null)
+                    return createNoneCacheClassDescriptor(cls);
+            }
+
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls, deserialize);
+            desc = registerClass(cls, registerMeta, false);
 
             assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
                 + ", desc=" + desc + "]";
@@ -727,69 +735,25 @@ public class BinaryContext {
     }
 
     /**
-     * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
+     * Creates descriptor without registration.
      *
      * @param cls Class.
-     * @return Class descriptor.
+     * @return Binary class descriptor.
      */
-    private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
-        BinaryClassDescriptor desc;
-
+    @NotNull private BinaryClassDescriptor createNoneCacheClassDescriptor(Class cls) {
         String clsName = cls.getName();
-
-        if (marshCtx.isSystemType(clsName)) {
-            BinarySerializer serializer = null;
-
-            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
-                serializer = new BinaryReflectiveSerializer();
-
-            desc = new BinaryClassDescriptor(this,
-                cls,
-                false,
-                clsName.hashCode(),
-                clsName,
-                null,
-                SIMPLE_NAME_LOWER_CASE_MAPPER,
-                serializer,
-                false,
-                true /* registered */
-            );
-
-            BinaryClassDescriptor old = descByCls.putIfAbsent(cls, desc);
-
-            if (old != null)
-                desc = old;
-        }
-        else
-            desc = registerUserClassDescriptor(cls, deserialize);
-
-        return desc;
-    }
-
-    /**
-     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
-     *
-     * @param cls Class.
-     * @return Class descriptor.
-     */
-    private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
-        boolean registered;
-
-        final String clsName = cls.getName();
 
         BinaryInternalMapper mapper = userTypeMapper(clsName);
 
-        final String typeName = mapper.typeName(clsName);
+        int typeId = mapper.typeId(clsName);
 
-        final int typeId = mapper.typeId(clsName);
-
-        registered = registerUserClassName(typeId, cls.getName(), false);
+        String typeName = mapper.typeName(clsName);
 
         BinarySerializer serializer = serializerForClass(cls);
 
         String affFieldName = affinityFieldName(cls);
 
-        BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
+        return new BinaryClassDescriptor(this,
             cls,
             true,
             typeId,
@@ -798,54 +762,80 @@ public class BinaryContext {
             mapper,
             serializer,
             true,
-            registered
+            true,
+            false
         );
-
-        if (!deserialize)
-            metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,
-                desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this), false);
-
-        descByCls.put(cls, desc);
-
-        typeId2Mapper.putIfAbsent(typeId, mapper);
-
-        return desc;
     }
 
     /**
-     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
+     * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster.
      *
-     * @param desc Old descriptor that should be re-registered.
+     * @param desc Class descriptor to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
+     * @return Registered class descriptor.
+     */
+    @NotNull public BinaryClassDescriptor registerDescriptor(
+        BinaryClassDescriptor desc,
+        boolean registerMeta,
+        boolean onlyLocReg
+    ) {
+        if (desc.userType())
+            return registerUserClassDescriptor(desc, registerMeta, onlyLocReg);
+        else {
+            BinaryClassDescriptor regDesc = desc.makeRegistered();
+
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
+                BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
+
+                if (old != null)
+                    return old;
+            }
+
+            return regDesc;
+        }
+    }
+
+    /**
+     * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster. The provided descriptor should correspond
+     * to a user class.
+     *
+     * @param desc Class descriptor to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @param onlyLocReg {@code true} if descriptor need to register only locally.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
-        boolean registered;
+    @NotNull private BinaryClassDescriptor registerUserClassDescriptor(
+        BinaryClassDescriptor desc,
+        boolean registerMeta,
+        boolean onlyLocReg
+    ) {
+        assert desc.userType() : "The descriptor doesn't correspond to a user class.";
 
-        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName(), false);
+        Class<?> cls = desc.describedClass();
+
+        int typeId = desc.typeId();
+
+        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg, JAVA_ID);
 
         if (registered) {
-            BinarySerializer serializer = desc.initialSerializer();
+            BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            if (serializer == null)
-                serializer = serializerForClass(desc.describedClass());
+            if (registerMeta) {
+                if (onlyLocReg)
+                    metaHnd.addMetaLocally(typeId, regDesc.metadata(false).wrap(this), false);
+                else
+                    metaHnd.addMeta(typeId, regDesc.metadata(true).wrap(this), false);
+            }
 
-            desc = new BinaryClassDescriptor(
-                this,
-                desc.describedClass(),
-                true,
-                desc.typeId(),
-                desc.typeName(),
-                desc.affFieldKeyName(),
-                desc.mapper(),
-                serializer,
-                true,
-                true
-            );
+            descByCls.put(cls, regDesc);
 
-            descByCls.put(desc.describedClass(), desc);
+            typeId2Mapper.putIfAbsent(typeId, regDesc.mapper());
+
+            return regDesc;
         }
-
-        return desc;
+        else
+            return desc;
     }
 
     /**
@@ -1188,22 +1178,32 @@ public class BinaryContext {
     /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#descriptorForClass(Class, boolean, boolean)} already call this functionality
+     * {@link BinaryContext#registerClass(Class, boolean, boolean)} already call this functionality
      * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
-     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with
-     *      {@link MappingExchangeResult} future instead of synchronously awaiting for its completion.
+     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@link
+     * org.apache.ignite.internal.processors.marshaller.MappingExchangeResult} future instead of synchronously awaiting
+     * for its completion.
+     * @param onlyLocReg Whether to register only on the current node.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
      * @return {@code True} if the mapping was registered successfully.
      */
-    public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered) {
+    public boolean registerUserClassName(
+            int typeId,
+            String clsName,
+            boolean failIfUnregistered,
+            boolean onlyLocReg,
+            byte platformId) {
         IgniteCheckedException e = null;
 
         boolean res = false;
 
         try {
-            res = marshCtx.registerClassName(JAVA_ID, typeId, clsName, failIfUnregistered);
+            res = onlyLocReg
+                ? marshCtx.registerClassNameLocally(platformId, typeId, clsName)
+                : marshCtx.registerClassName(platformId, typeId, clsName, failIfUnregistered);
         }
         catch (DuplicateTypeIdException dupEx) {
             // Ignore if trying to register mapped type name of the already registered class name and vise versa
@@ -1271,7 +1271,6 @@ public class BinaryContext {
     }
 
     /**
-     *
      * @param typeId Type ID
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
@@ -1294,7 +1293,7 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-        return metaHnd != null ? metaHnd.metadata(typeId, schemaId): null;
+        return metaHnd != null ? metaHnd.metadata(typeId, schemaId) : null;
     }
 
     /**
@@ -1429,7 +1428,7 @@ public class BinaryContext {
      * @param ldr Class loader being undeployed.
      */
     public void onUndeploy(ClassLoader ldr) {
-        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext();) {
+        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
 
             // Never undeploy system types.
@@ -1443,21 +1442,10 @@ public class BinaryContext {
     }
 
     /**
-     *
-     * @param cls Class
-     * @return Enum name to ordinal mapping.
+     * @param typeId Type ID.
      */
-    private static Map<String, Integer> enumMap(Class<?> cls) {
-        assert cls.isEnum();
-
-        Object[] enumVals = cls.getEnumConstants();
-
-        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
-
-        for (Object enumVal : enumVals)
-            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
-
-        return enumMap;
+    public synchronized void removeType(int typeId) {
+        schemas.remove(typeId);
     }
 
     /**
@@ -1546,6 +1534,7 @@ public class BinaryContext {
 
         /**
          * Constructor.
+         *
          * @param clsName Class name.
          * @param mapper ID mapper.
          * @param serializer Serializer.

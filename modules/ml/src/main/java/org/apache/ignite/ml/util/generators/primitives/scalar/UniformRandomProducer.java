@@ -20,7 +20,7 @@ package org.apache.ignite.ml.util.generators.primitives.scalar;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Pseudorandom producer generating values from uniform continuous distribution.
+ * Pseudo-random producer generating values from uniform continuous distribution.
  */
 public class UniformRandomProducer extends RandomProducerWithGenerator {
     /** Generate values from this value. */
@@ -57,10 +57,10 @@ public class UniformRandomProducer extends RandomProducerWithGenerator {
 
     /** {@inheritDoc} */
     @Override public Double get() {
-        double result = generator().nextDouble() * (to - from) + from;
-        if (result > to)
-            result = to;
+        double res = generator().nextDouble() * (to - from) + from;
+        if (res > to)
+            res = to;
 
-        return result;
+        return res;
     }
 }

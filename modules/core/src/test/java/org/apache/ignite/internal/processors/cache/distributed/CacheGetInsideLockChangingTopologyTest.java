@@ -55,10 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTest {
-
-    /** */
-    private static ThreadLocal<Boolean> client = new ThreadLocal<>();
-
     /** */
     private static final int SRVS = 3;
 
@@ -80,13 +76,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        Boolean clientMode = client.get();
-
-        client.set(null);
-
-        if (clientMode != null && clientMode)
-            cfg.setClientMode(true);
-        else {
+        if (!cfg.isClientMode()) {
             cfg.setCacheConfiguration(cacheConfiguration(TX_CACHE1, TRANSACTIONAL),
                 cacheConfiguration(TX_CACHE2, TRANSACTIONAL),
                 cacheConfiguration(ATOMIC_CACHE, ATOMIC));
@@ -117,15 +107,11 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
         startGridsMultiThreaded(SRVS);
 
-        client.set(true);
-
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         assertTrue(client1.configuration().isClientMode());
 
-        client.set(true);
-
-        Ignite client2 = startGrid(SRVS + 1);
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         assertTrue(client2.configuration().isClientMode());
 

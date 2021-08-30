@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.systemview;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,28 +27,26 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
+import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.StripedExecutor.Stripe;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
-import org.apache.ignite.spi.systemview.view.CacheGroupView;
-import org.apache.ignite.spi.systemview.view.CacheView;
-import org.apache.ignite.spi.systemview.view.ClientConnectionView;
-import org.apache.ignite.spi.systemview.view.ComputeTaskView;
-import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
-import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
@@ -60,27 +57,32 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
+    /** Class name for a SQL view exporter of system views. */
+    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
+
+    /** Name of the system view for a system {@link StripedExecutor} queue view. */
+    public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
+
+    /** Description of the system view for a system {@link StripedExecutor} queue view. */
+    public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
+
+    /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
+    public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
+
+    /** Description of the system view for a data streamer {@link StripedExecutor} queue view. */
+    public static final String STREAM_POOL_QUEUE_VIEW_DESC = "Datastream thread pool task queue";
+
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 
     /** System views creation listeners. */
     private final List<Consumer<SystemView<?>>> viewCreationLsnrs = new CopyOnWriteArrayList<>();
 
-    /** Registered walkers for view row. */
-    private final Map<Class<?>, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
     public GridSystemViewManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getSystemViewExporterSpi());
-
-        registerWalker(CacheGroupView.class, new CacheGroupViewWalker());
-        registerWalker(CacheView.class, new CacheViewWalker());
-        registerWalker(ServiceView.class, new ServiceViewWalker());
-        registerWalker(ComputeTaskView.class, new ComputeTaskViewWalker());
-        registerWalker(ClientConnectionView.class, new ClientConnectionViewWalker());
-        registerWalker(TransactionView.class, new TransactionViewWalker());
+        super(ctx, addStandardExporters(ctx.config().getSystemViewExporterSpi()));
     }
 
     /** {@inheritDoc} */
@@ -97,22 +99,51 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
+     * Registers system views for a striped thread pools.
+     *
+     * @param stripedExecSvc Striped executor.
+     * @param dataStreamExecSvc Data streamer executor service.
+     */
+    public void registerThreadPools(StripedExecutor stripedExecSvc, StripedExecutor dataStreamExecSvc) {
+        ctx.systemView().registerInnerCollectionView(SYS_POOL_QUEUE_VIEW, SYS_POOL_QUEUE_VIEW_DESC,
+            new StripedExecutorTaskViewWalker(),
+            Arrays.asList(stripedExecSvc.stripes()),
+            Stripe::queue,
+            StripedExecutorTaskView::new);
+
+        ctx.systemView().registerInnerCollectionView(STREAM_POOL_QUEUE_VIEW, STREAM_POOL_QUEUE_VIEW_DESC,
+            new StripedExecutorTaskViewWalker(),
+            Arrays.asList(dataStreamExecSvc.stripes()),
+            Stripe::queue,
+            StripedExecutorTaskView::new);
+    }
+
+    /**
+     * Registers {@link SystemView} instance.
+     *
+     * @param sysView System view.
+     * @param <R> Row type.
+     */
+    public <R> void registerView(SystemView<R> sysView) {
+        registerView0(sysView.name(), sysView);
+    }
+
+    /**
      * Registers {@link SystemViewAdapter} view which exports {@link Collection} content.
      *
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
+     * @param walker Row walker.
      * @param data Data.
      * @param rowFunc value to row function.
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <R, D> void registerView(String name, String desc, Class<R> rowCls, Collection<D> data,
-        Function<D, R> rowFunc) {
-        doRegister(name, new SystemViewAdapter<>(name,
+    public <R, D> void registerView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Collection<D> data, Function<D, R> rowFunc) {
+        registerView0(name, new SystemViewAdapter<>(name,
             desc,
-            rowCls,
-            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            walker,
             data,
             rowFunc));
     }
@@ -122,7 +153,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      *
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
+     * @param walker Row walker.
      * @param container Container of the data.
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function
@@ -130,12 +161,11 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <C, R, D> void registerInnerCollectionView(String name, String desc, Class<R> rowCls,
-        Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
+    public <C, R, D> void registerInnerCollectionView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Iterable<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
-            rowCls,
-            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            walker,
             container,
             dataExtractor,
             rowFunc));
@@ -146,7 +176,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      *
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
+     * @param walker Row walker.
      * @param container Container of the data.
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function
@@ -154,27 +184,64 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <C, R, D> void registerInnerArrayView(String name, String desc, Class<R> rowCls, Collection<C> container,
-        Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
+    public <C, R, D> void registerInnerArrayView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Collection<C> container, Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
-            rowCls,
-            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            walker,
             container,
             c -> Arrays.asList(dataExtractor.apply(c)),
             rowFunc));
     }
 
     /**
-     * Registers view and notifies listeners.
+     * Registers view which exports {@link Collection} content provided by specified {@code Supplier}.
      *
-     * @param name Name
+     * @param name Name.
+     * @param desc Description.
+     * @param walker Row walker.
+     * @param dataSupplier Data supplier.
+     * @param rowFunc value to row function.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <R, D> void registerView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
+        registerView0(name, new SystemViewAdapter<>(name,
+            desc,
+            walker,
+            dataSupplier,
+            rowFunc));
+    }
+
+    /**
+     * Registers {@link FiltrableSystemViewAdapter} view with content filtering capabilities.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param walker Row walker.
+     * @param dataSupplier Data supplier with content filtering capabilities.
+     * @param rowFunc Row function
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <R, D> void registerFiltrableView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Function<Map<String, Object>, Iterable<D>> dataSupplier, Function<D, R> rowFunc) {
+        registerView0(name, new FiltrableSystemViewAdapter<>(name,
+            desc,
+            walker,
+            dataSupplier,
+            rowFunc));
+    }
+
+    /**
+     * Registers view.
+     *
+     * @param name Name.
      * @param sysView System view.
      */
-    private void doRegister(String name, SystemView sysView) {
-        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
-
-        assert old == null;
+    private void registerView0(String name, SystemView sysView) {
+        systemViews.put(name, sysView);
 
         notifyListeners(sysView, viewCreationLsnrs, log);
     }
@@ -187,17 +254,6 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         return (SystemView<R>)systemViews.get(name);
     }
 
-    /**
-     * Registers walker for specified class.
-     *
-     * @param rowClass Row class.
-     * @param walker Walker.
-     * @param <R> Row type.
-     */
-    public <R> void registerWalker(Class<R> rowClass, SystemViewRowAttributeWalker<R> walker) {
-        walkers.put(rowClass, walker);
-    }
-
     /** {@inheritDoc} */
     @Override public void addSystemViewCreationListener(Consumer<SystemView<?>> lsnr) {
         viewCreationLsnrs.add(lsnr);
@@ -206,5 +262,38 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<SystemView<?>> iterator() {
         return systemViews.values().iterator();
+    }
+
+    /**
+     * Adds SQL and JMX view exporter to the spis array.
+     *
+     * @param spis Spis from config.
+     * @return Spis array with the SQL view exporter in it.
+     */
+    private static SystemViewExporterSpi[] addStandardExporters(SystemViewExporterSpi[] spis) {
+        int newSz = F.isEmpty(spis) ? 1 : spis.length + 1;
+
+        boolean addSql = IgniteComponentType.INDEXING.inClassPath();
+
+        if (addSql)
+            newSz += 1;
+
+        SystemViewExporterSpi[] newSpis = new SystemViewExporterSpi[newSz];
+
+        if (!F.isEmpty(spis))
+            System.arraycopy(spis, 0, newSpis, 0, spis.length);
+
+        if (addSql) {
+            try {
+                newSpis[newSpis.length - 2] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        newSpis[newSpis.length - 1] = new JmxSystemViewExporterSpi();
+
+        return newSpis;
     }
 }

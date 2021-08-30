@@ -22,6 +22,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertDataStreamerReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
@@ -55,10 +56,9 @@ public class ClusterReadOnlyModeNodeJoinTest extends GridCommonAbstractTest {
     public void testJoinNodeToReadOnlyCluster() throws Exception {
         IgniteEx grid = startGrid(0);
 
-        assertTrue(grid.cluster().active());
-        assertFalse(grid.cluster().readOnly());
+        grid.cluster().state(ACTIVE_READ_ONLY);
 
-        grid.cluster().readOnly(true);
+        assertEquals(ACTIVE_READ_ONLY, grid.cluster().state());
 
         assertCachesReadOnlyMode(true, cacheNames());
         assertDataStreamerReadOnlyMode(true, cacheNames());
@@ -68,7 +68,7 @@ public class ClusterReadOnlyModeNodeJoinTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         for (int i = 0; i < 2; i++)
-            assertTrue(grid(i).configuration().getIgniteInstanceName(), grid(i).cluster().readOnly());
+            assertEquals(grid(i).configuration().getIgniteInstanceName(), ACTIVE_READ_ONLY, grid(i).cluster().state());
 
         assertCachesReadOnlyMode(true, cacheNames());
         assertDataStreamerReadOnlyMode(true, cacheNames());

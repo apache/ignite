@@ -171,7 +171,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
     /**
      * @return Condition count.
      */
-    public int condtionCount(){
+    public int condtionCount() {
         return conditionMap.size();
     }
 

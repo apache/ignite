@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,8 +29,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
@@ -38,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
@@ -527,6 +529,9 @@ public class GridSqlQueryParser {
     /** */
     private final Map<String, Integer> optimizedTableFilterOrder;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      * We have a counter instead of a simple flag, because
      * a flag can be reset earlier than needed in case of
@@ -540,9 +545,14 @@ public class GridSqlQueryParser {
     /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.
      *                           Relies on uniqueness of table filter aliases.
+     * @param log Logger.
      */
-    public GridSqlQueryParser(boolean useOptimizedSubqry) {
-        optimizedTableFilterOrder = useOptimizedSubqry ? new HashMap<String, Integer>() : null;
+    public GridSqlQueryParser(boolean useOptimizedSubqry, IgniteLogger log) {
+        assert Objects.nonNull(log);
+
+        optimizedTableFilterOrder = useOptimizedSubqry ? new HashMap<>() : null;
+
+        this.log = log;
     }
 
     /**
@@ -856,28 +866,10 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
 
-        Column[] srcKeys = MERGE_KEYS.get(merge);
-
-        GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
-
-        GridH2RowDescriptor rowDesc = intoTbl.rowDescriptor();
-
-        GridSqlColumn[] keys = new GridSqlColumn[srcKeys.length];
-
-        for (int i = 0; i < srcKeys.length; i++) {
-            String colName = srcKeys[i].getName();
-
-            int colId = intoTbl.getColumn(colName).getColumnId();
-
-            if (!rowDesc.isKeyColumn(colId) && !F.eq(colName, rowDesc.type().affinityKey())) {
-                throw new IgniteSQLException("Invalid column name in KEYS clause of MERGE - it may include only " +
-                    "key and/or affinity columns: " + colName, IgniteQueryErrorCode.PARSING);
-            }
-
-            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, colName);
+        if (!F.isEmpty(MERGE_KEYS.get(merge))) {
+            log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
+                "[sql=" + merge.getSQL() + ']');
         }
-
-        res.keys(keys);
 
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
         if (!srcRows.isEmpty()) {
@@ -889,7 +881,7 @@ public class GridSqlQueryParser {
                     row[i] = parseExpression(srcRow[i], false);
 
                     if (row[i] == null) {
-                        throw new IgniteSQLException("DEFAULT values are unsupported for MERGE.",
+                        throw new IgniteSQLException("Explicit DEFAULT values are unsupported for MERGE.",
                             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                     }
                 }
@@ -899,7 +891,7 @@ public class GridSqlQueryParser {
             res.rows(rows);
         }
         else {
-            res.rows(Collections.<GridSqlElement[]>emptyList());
+            res.rows(Collections.emptyList());
             res.query(parseQuery(MERGE_QUERY.get(merge)));
         }
 
@@ -947,7 +939,7 @@ public class GridSqlQueryParser {
                     row[i] = parseExpression(srcRow[i], false);
 
                     if (row[i] == null) {
-                        throw new IgniteSQLException("DEFAULT values are unsupported for MERGE.",
+                        throw new IgniteSQLException("Explicit DEFAULT values are unsupported for INSERT.",
                             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                     }
                 }
@@ -1181,8 +1173,10 @@ public class GridSqlQueryParser {
 
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
-        for (Column col : data.columns)
-            cols.put(col.getName(), parseColumn(col));
+        for (Column col : data.columns) {
+            if (cols.put(col.getName(), parseColumn(col)) != null)
+                throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
+        }
 
         if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
             cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase())) {
@@ -1558,20 +1552,17 @@ public class GridSqlQueryParser {
             case PARAM_ATOMICITY:
                 ensureNotEmpty(name, val);
 
-                CacheAtomicityMode atomicityMode;
+                try {
+                    res.atomicityMode(CacheAtomicityMode.valueOf(val.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    String validVals = Arrays.stream(CacheAtomicityMode.values())
+                        .map(Enum::name)
+                        .collect(Collectors.joining(", "));
 
-                if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-                else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.ATOMIC;
-                else if (CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-                else {
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
-                        "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
+                        "(should be either " + validVals + "): " + val,
+                        IgniteQueryErrorCode.PARSING, e);
                 }
-
-                res.atomicityMode(atomicityMode);
 
                 break;
 
@@ -1811,11 +1802,11 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    //It's not affinity cache. Can't be local.
-                    if (tbl.cacheContext() == null)
-                        return false;
+                    GridCacheContext<?, ?> cctx = tbl.cacheContext();
 
-                    GridCacheContext cctx = tbl.cacheContext();
+                    //It's not affinity cache. Can't be local.
+                    if (cctx == null)
+                        return false;
 
                     if (cctx.mvccEnabled())
                         return false;
@@ -1823,13 +1814,20 @@ public class GridSqlQueryParser {
                     if (cctx.isPartitioned())
                         return false;
 
-                    if (cctx.isReplicated() && !cctx.isReplicatedAffinityNode())
+                    if (isReplicatedLocalExecutionImpossible(cctx))
                         return false;
                 }
             }
         }
 
         return true;
+    }
+
+    /** */
+    private static boolean isReplicatedLocalExecutionImpossible(GridCacheContext<?, ?> cctx) {
+        // Improvement is possible:
+        // MOVING partitions check inspects full partition map, but possibly only local node check is sufficient.
+        return cctx.isReplicated() && (!cctx.affinityNode() || cctx.topology().hasMovingPartitions());
     }
 
     /**
@@ -1922,8 +1920,8 @@ public class GridSqlQueryParser {
      * @param useOptimizedSubqry Whether to user optimized subquery.
      * @return Parsed query.
      */
-    public static GridSqlQuery parseQuery(Prepared prepared, boolean useOptimizedSubqry) {
-        return (GridSqlQuery)new GridSqlQueryParser(useOptimizedSubqry).parse(prepared);
+    public static GridSqlQuery parseQuery(Prepared prepared, boolean useOptimizedSubqry, IgniteLogger log) {
+        return (GridSqlQuery)new GridSqlQueryParser(useOptimizedSubqry, log).parse(prepared);
     }
 
     /**
@@ -2339,7 +2337,7 @@ public class GridSqlQueryParser {
 
                 Expression separator = GROUP_CONCAT_SEPARATOR.get((Aggregate)expression);
 
-                if (separator!= null)
+                if (separator != null)
                     res.setGroupConcatSeparator(parseExpression(separator, calcTypes));
 
                 return res;
@@ -2460,7 +2458,6 @@ public class GridSqlQueryParser {
     /**
      * Field getter.
      */
-    @SuppressWarnings("unchecked")
     public static class Getter<T, R> {
         /** */
         private final Field fld;

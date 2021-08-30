@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.knn;
 
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /**
  * Base class for decision trees test.
@@ -42,7 +41,7 @@ public class LabeledDatasetHelper {
         try {
             Path path = Paths.get(LabeledDatasetHelper.class.getClassLoader().getResource(rsrcPath).toURI());
             try {
-                return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
+                return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, isFallOnBadData);
             }
             catch (IOException e) {
                 e.printStackTrace();

@@ -327,7 +327,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
                 infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
                     locTx.concurrency(), locTx.timeout(), lb, mappings, locTx.state(), size,
-                    locTx.nearXidVersion().asGridUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
+                    locTx.nearXidVersion().asIgniteUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
                     verboseInfo));
 
                 if (arg.getOperation() == VisorTxOperation.KILL)
@@ -343,9 +343,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
                 if (completed != null) {
                     if (Boolean.TRUE.equals(completed))
-                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asGridUuid(), COMMITTED));
+                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asIgniteUuid(), COMMITTED));
                     else if (Boolean.FALSE.equals(completed))
-                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asGridUuid(), ROLLED_BACK));
+                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
                 }
             }
 

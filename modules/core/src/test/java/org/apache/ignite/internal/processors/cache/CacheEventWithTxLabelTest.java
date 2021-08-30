@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
@@ -71,9 +70,6 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "cache";
 
-    /** Client or server mode to start Ignite instance. */
-    private static boolean client;
-
     /** Key related to primary node. */
     private Integer primaryKey = 0;
 
@@ -102,23 +98,11 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     private static CacheEntryProcessor entryProcessor = (CacheEntryProcessor)(entry, objects) -> entry.getValue();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setClientMode(client);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = false;
-
         startGridsMultiThreaded(SRVS);
-
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
-
-        client = false;
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         waitForDiscovery(primary(), backup1(), backup2(), client());
 

@@ -50,7 +50,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assume;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -95,16 +94,12 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -181,15 +176,19 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     private void failWhilePut(boolean failWhileStart) throws Exception {
         Ignite ig = startGrids(gridCount());
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
+
+        // We should have value size large enough to switch WAL segment by ITRS/4 puts.
+        String valPrefix = "testValue" + new String(new char[512]).replace('\0', '#');
 
         for (int i = 0; i < ITRS; i++) {
             while (!Thread.currentThread().isInterrupted()) {
                 try (Transaction tx = ig.transactions().txStart(
                         TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                    cache.put(i, "testValue" + i);
+                    cache.put(i, valPrefix + i);
 
                     tx.commit();
 
@@ -240,7 +239,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         cache = grid0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ITRS; i++)
-            assertEquals(cache.get(i), "testValue" + i);
+            assertEquals(cache.get(i), valPrefix + i);
     }
 
     /** */
@@ -276,7 +275,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             return new FileIODecorator(delegate) {
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    System.out.println(">>>!!!! W "+file.getName());
+                    System.out.println(">>>!!!! W " + file.getName());
 
                     if (fail != null && file.getName().endsWith(".wal") && fail.get())
                         throw new IOException("No space left on device");
@@ -286,7 +285,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 /** {@inheritDoc} */
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-                    System.out.println(">>>!!!! M "+file.getName());
+                    System.out.println(">>>!!!! M " + file.getName());
 
                     if (fail != null && file.getName().endsWith(".wal") && fail.get())
                         throw new IOException("No space left on deive");

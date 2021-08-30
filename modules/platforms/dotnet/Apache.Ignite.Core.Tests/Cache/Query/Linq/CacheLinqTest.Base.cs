@@ -271,6 +271,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// <summary>
         /// Checks that function used in Where Clause maps to SQL function properly
         /// </summary>
+        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> expression, IQueryable<T> query)
+        {
+            CheckWhereFunc(expression, expression, query);
+        }
+
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
+        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> memoryExpression, 
+            Expression<Func<T, bool>> sqlExpression, IQueryable<T> query)
+        {
+            // Calculate result locally, using real method invocation
+            var expected = query.ToArray().AsQueryable().Where(memoryExpression).OrderBy(x => x).ToArray();
+
+            // Perform SQL query
+            var actual = query.Where(sqlExpression).ToArray().OrderBy(x => x).ToArray();
+
+            // Compare results
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+
+            // Perform intermediate anonymous type conversion to check type projection
+            actual = query.Where(sqlExpression).Select(x => new { Foo = x }).ToArray().Select(x => x.Foo)
+                .OrderBy(x => x).ToArray();
+
+            // Compare results
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+        }
+
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
         private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query,
             Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
         {
@@ -498,7 +529,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 if (Equals(x, y))
                     return 0;
 
-                if (x is double)
+                if (x is double && y is double)
                 {
                     var dx = (double) x;
                     var dy = (double) y;
@@ -512,6 +543,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     return Math.Abs((double) x - (double) y) < relEpsilon ? 0 : 1;
                 }
 
+                // ReSharper disable once PossibleNullReferenceException
                 return ((IComparable) x).CompareTo(y);
             }
         }

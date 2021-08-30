@@ -44,10 +44,11 @@ namespace Apache.Ignite.Core.Tests
 
             var type = x.GetType();
 
-            if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
+            var isCollection = type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type);
+            if (isCollection)
             {
-                var xCol = ((IEnumerable)x).OfType<object>().ToList();
-                var yCol = ((IEnumerable)y).OfType<object>().ToList();
+                var xCol = ((IEnumerable) x).OfType<object>().ToList();
+                var yCol = ((IEnumerable) y).OfType<object>().ToList();
 
                 Assert.AreEqual(xCol.Count, yCol.Count, propertyPath);
 
@@ -65,6 +66,21 @@ namespace Apache.Ignite.Core.Tests
 
             if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
             {
+                if (type.IsGenericType)
+                {
+                    Type baseType = type.GetGenericTypeDefinition();
+                    if (baseType == typeof(KeyValuePair<,>))
+                    {
+                        ReflectionEqual(
+                            GetReflectionValue(type, x, "Key"),
+                            GetReflectionValue(type, y, "Key"));
+                        ReflectionEqual(
+                            GetReflectionValue(type, x, "Value"),
+                            GetReflectionValue(type, y, "Value"));
+                        return;
+                    }
+                }
+
                 Assert.AreEqual(x, y, propertyPath);
                 return;
             }
@@ -85,6 +101,19 @@ namespace Apache.Ignite.Core.Tests
 
                 ReflectionEqual(xVal, yVal, propName, ignoredProperties);
             }
+        }
+
+        /// <summary>
+        /// Gets property value using reflection.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <param name="obj">Object.</param>
+        /// <param name="propertyName">Property name.</param>
+        /// <returns>Value.</returns>
+        private static object GetReflectionValue(Type type, object obj, string propertyName)
+        {
+            // ReSharper disable once PossibleNullReferenceException
+            return type.GetProperty(propertyName).GetValue(obj, null);
         }
     }
 }

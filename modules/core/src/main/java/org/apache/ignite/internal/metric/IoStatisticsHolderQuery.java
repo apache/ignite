@@ -23,7 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query Statistics holder to gather statistics related to concrete query.
- * Used in {@code org.apache.ignite.internal.stat.IoStatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
+ * Used in {@code org.apache.ignite.internal.stat.IoStatisticsHolderIndex}
+ * and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
  * Query Statistics holder to gather statistics related to concrete query. Used in {@code
  * org.apache.ignite.internal.stat.IoStatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
  */
@@ -39,16 +40,6 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
 
     /** */
     private LongAdder physicalReadCtr = new LongAdder();
-
-    /** */
-    private final String qryId;
-
-    /**
-     * @param qryId Query id.
-     */
-    public IoStatisticsHolderQuery(String qryId) {
-        this.qryId = qryId;
-    }
 
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
@@ -72,11 +63,9 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
         return physicalReadCtr.longValue();
     }
 
-    /**
-     * @return Query id.
-     */
-    public String queryId() {
-        return qryId;
+    /** {@inheritDoc} */
+    @Override public String metricRegistryName() {
+        return null;
     }
 
     /**
@@ -92,10 +81,10 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
         physicalReadCtr.add(physicalReads);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IoStatisticsHolderQuery.class, this,
             "logicalReadCtr", logicalReadCtr,
-            "physicalReadCtr", physicalReadCtr,
-            "qryId", qryId);
+            "physicalReadCtr", physicalReadCtr);
     }
 }

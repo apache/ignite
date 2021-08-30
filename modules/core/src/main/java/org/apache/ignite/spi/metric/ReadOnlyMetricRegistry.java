@@ -17,24 +17,50 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Read only metric registry.
+ * <p>
+ *
+ * <h2>Java example</h2>
+ * See the example below of how the internal metrics can be obtained through your application
+ * using {@link ReadOnlyMetricRegistry}.
+ *
+ * <pre>
+ * JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
+ *
+ * Ignite ignite = Ignition.start(new IgniteConfiguration()
+ *     .setDataStorageConfiguration(new DataStorageConfiguration()
+ *         .setDefaultDataRegionConfiguration(
+ *             new DataRegionConfiguration()
+ *                 .setMaxSize(12_000_000)))
+ *     .setIgniteInstanceName("jmxExampleInstanceName")
+ *     .setMetricExporterSpi(jmxSpi));
+ *
+ *
+ * ReadOnlyMetricRegistry ioReg = jmxSpi.getSpiContext().getOrCreateMetricRegistry("io.dataregion.default");
+ *
+ * Set<String> listOfMetrics = StreamSupport.stream(ioReg.spliterator(), false)
+ *     .map(Metric::name)
+ *     .collect(toSet());
+ *
+ * System.out.println("The list of available data region metrics: " + listOfMetrics);
+ * System.out.println("The 'default' data region MaxSize: " + ioReg.findMetric("MaxSize"));
+ * </pre>
+ *
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
+ *
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
-    /**
-     * Adds listener of metrics registry creation events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
+public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
+    /** @return Registry name. */
+    public String name();
 
     /**
-     * Adds listener of metrics registry remove events.
-     *
-     * @param lsnr Listener.
+     * @param name Name of the metric.
+     * @return Metric with specified name if exists. Null otherwise.
      */
-    public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr);
+    @Nullable public <M extends Metric> M findMetric(String name);
 }

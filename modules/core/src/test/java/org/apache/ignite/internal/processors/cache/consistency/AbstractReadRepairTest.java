@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
@@ -59,13 +60,10 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  */
 public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /** Events. */
-    private static ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
+    private static final ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
 
     /** Key. */
     protected static int iterableKey;
-
-    /** Is client flag. */
-    protected boolean client;
 
     /** Backups count. */
     protected Integer backupsCount() {
@@ -90,10 +88,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         grid(0).getOrCreateCache(cacheConfiguration());
 
-        client = true;
-
-        startGrid(G.allGrids().size() + 1); // Client node 1.
-        startGrid(G.allGrids().size() + 1); // Client node 2.
+        startClientGrid(G.allGrids().size() + 1); // Client node 1.
+        startClientGrid(G.allGrids().size() + 1); // Client node 2.
 
         final IgniteEvents evts = ignite.events();
 
@@ -145,8 +141,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(client);
-
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
@@ -155,28 +149,55 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static void checkEvent(ReadRepairData data) {
-        Map<Object, Object> fixed = new HashMap<>();
+    protected void checkEventMissed() {
+        assertTrue(evtDeq.isEmpty());
+    }
 
-        while (!evtDeq.isEmpty()) {
-            CacheConsistencyViolationEvent evt = evtDeq.remove();
+    /**
+     *
+     */
+    protected void checkEvent(ReadRepairData data, boolean checkFixed) {
+        Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> entries = new HashMap<>();
 
-            fixed.putAll(evt.getRepairedEntries()); // Optimistic and read committed transactions produce per key fixes.
+        while (!entries.keySet().equals(data.data.keySet())) {
+            if (!evtDeq.isEmpty()) {
+                CacheConsistencyViolationEvent evt = evtDeq.remove();
+
+                entries.putAll(evt.getEntries()); // Optimistic and read committed transactions produce per key fixes.
+            }
         }
 
-        int misses = 0;
+        int fixedCnt = 0;
 
-        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) {
-            Integer key = entry.getKey();
-            Integer latest = entry.getValue().latest;
+        for (Map.Entry<Integer, InconsistentMapping> mapping : data.data.entrySet()) {
+            Integer key = mapping.getKey();
+            Integer latest = mapping.getValue().latest;
 
-            if (latest == null)
-                misses++;
+            Object fixedVal = null;
 
-            assertEquals(latest, fixed.get(key));
+            Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> values = entries.get(key);
+
+            if (values != null)
+                for (Map.Entry<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> infoEntry : values.entrySet()) {
+                    ClusterNode node = infoEntry.getKey();
+                    CacheConsistencyViolationEvent.EntryInfo info = infoEntry.getValue();
+
+                    if (info.isCorrect()) {
+                        assertNull(fixedVal);
+
+                        fixedVal = info.getValue();
+
+                        fixedCnt++;
+                    }
+
+                    if (info.isPrimary())
+                        assertEquals(node, primaryNode(key, DEFAULT_CACHE_NAME).cluster().localNode());
+                }
+
+            assertEquals(checkFixed ? latest : null, fixedVal);
         }
 
-        assertEquals(data.data.size() - misses, fixed.size());
+        assertEquals(checkFixed ? data.data.size() : 0, fixedCnt);
 
         assertTrue(evtDeq.isEmpty());
     }
@@ -260,12 +281,13 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             boolean init = entry.initialValue(
                 new CacheObjectImpl(++val, null), // Incremental value.
-                mgr.next(), // Incremental version.
+                mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
                 0,
                 0,
                 false,
                 AffinityTopologyVersion.NONE,
                 GridDrType.DR_NONE,
+                false,
                 false);
 
             assertTrue("iterableKey " + key + " already inited", init);

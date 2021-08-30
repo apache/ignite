@@ -33,9 +33,12 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -43,8 +46,10 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Provides auto-generation framework for {@code toString()} output.
@@ -91,13 +96,31 @@ public class GridToStringBuilder {
     /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
-    /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
-    public static final boolean INCLUDE_SENSITIVE =
-        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
+    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
+
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
+    public static final boolean DFLT_TO_STRING_INCLUDE_SENSITIVE = true;
+
+    /** Supplier for {@link #includeSensitive} with default behavior. */
+    private static final AtomicReference<Supplier<Boolean>> INCL_SENS_SUP_REF =
+        new AtomicReference<>(new Supplier<Boolean>() {
+            /** Value of "IGNITE_TO_STRING_INCLUDE_SENSITIVE". */
+            final boolean INCLUDE_SENSITIVE =
+                getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
+
+            /** {@inheritDoc} */
+            @Override public Boolean get() {
+                return INCLUDE_SENSITIVE;
+            }
+        });
+
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_COLLECTION_LIMIT */
+    public static final int DFLT_TO_STRING_COLLECTION_LIMIT = 100;
 
     /** */
     private static final int COLLECTION_LIMIT =
-        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
+        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
     /** Every thread has its own string builder. */
     private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {
@@ -117,11 +140,46 @@ public class GridToStringBuilder {
      * have to keep a map of this objects pointed to the position of previous occurrence
      * and remove/add them in each {@code toString()} apply.
      */
-    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects = new ThreadLocal<IdentityHashMap<Object, EntryReference>>() {
-        @Override protected IdentityHashMap<Object, EntryReference> initialValue() {
-            return new IdentityHashMap<>();
-        }
-    };
+    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects =
+        ThreadLocal.withInitial(() -> new IdentityHashMap<>());
+
+    /**
+     * Implementation of the <a href=
+     * "https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom">
+     * "Initialization-on-demand holder idiom"</a>.
+     */
+    private static class Holder {
+        /** Supplier holder for {@link #includeSensitive}. */
+        static final Supplier<Boolean> INCL_SENS_SUP = INCL_SENS_SUP_REF.get();
+    }
+
+    /**
+     * Setting the logic of the {@link #includeSensitive} method. <br/>
+     * By default, it take the value of
+     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
+     * IGNITE_TO_STRING_INCLUDE_SENSITIVE} system property. <br/>
+     * <b>Important!</b> Changing the logic is possible only until the first
+     * call of  {@link #includeSensitive} method. <br/>
+     *
+     * @param sup
+     */
+    public static void setIncludeSensitiveSupplier(Supplier<Boolean> sup) {
+        assert nonNull(sup);
+
+        INCL_SENS_SUP_REF.set(sup);
+    }
+
+    /**
+     * Return {@code true} if need to include sensitive data otherwise
+     * {@code false}.
+     *
+     * @return {@code true} if need to include sensitive data otherwise
+     *      {@code false}.
+     * @see GridToStringBuilder#setIncludeSensitiveSupplier(Supplier)
+     */
+    public static boolean includeSensitive() {
+        return Holder.INCL_SENS_SUP.get();
+    }
 
     /**
      * @param obj Object.
@@ -1187,7 +1245,7 @@ public class GridToStringBuilder {
 
         for (int i = 0; i <= idxMax; ++i) {
             b.append(Array.get(arr, i));
-            
+
             if (i == idxMax)
                 return b.append(']').toString();
 
@@ -1618,6 +1676,52 @@ public class GridToStringBuilder {
     }
 
     /**
+     * Produces uniformed output of string with context properties
+     *
+     * @param str Output prefix or {@code null} if empty.
+     * @param triplets Triplets {@code {name, value, sencitivity}}.
+     * @return String presentation.
+     */
+    public static String toString(String str, Object... triplets) {
+        if (triplets.length % 3 != 0)
+            throw new IllegalArgumentException("Array length must be a multiple of 3");
+
+        int propCnt = triplets.length / 3;
+
+        Object[] propNames = new Object[propCnt];
+        Object[] propVals = new Object[propCnt];
+        boolean[] propSens = new boolean[propCnt];
+
+        for (int i = 0; i < propCnt; i++) {
+            Object name = triplets[i * 3];
+
+            assert name != null;
+
+            propNames[i] = name;
+
+            propVals[i] = triplets[i * 3 + 1];
+
+            Object sens = triplets[i * 3 + 2];
+
+            assert sens instanceof Boolean;
+
+            propSens[i] = (Boolean)sens;
+        }
+
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
+
+        try {
+            return toStringImpl(str, sb, propNames, propVals, propSens, propCnt);
+        }
+        finally {
+            if (newStr)
+                sb.reset();
+        }
+    }
+
+    /**
      * Creates an uniformed string presentation for the binary-like object.
      *
      * @param str Output prefix or {@code null} if empty.
@@ -1671,12 +1775,12 @@ public class GridToStringBuilder {
                 Object addVal = addVals[i];
 
                 if (addVal != null) {
-                    if (addSens != null && addSens[i] && !INCLUDE_SENSITIVE)
+                    if (addSens != null && addSens[i] && !includeSensitive())
                         continue;
 
                     GridToStringInclude incAnn = addVal.getClass().getAnnotation(GridToStringInclude.class);
 
-                    if (incAnn != null && incAnn.sensitive() && !INCLUDE_SENSITIVE)
+                    if (incAnn != null && incAnn.sensitive() && !includeSensitive())
                         continue;
                 }
 
@@ -1722,7 +1826,7 @@ public class GridToStringBuilder {
                     // Information is not sensitive when both the field and the field type are not sensitive.
                     // When @GridToStringInclude is not present then the flag is false by default for that attribute.
                     final boolean notSens = (incFld == null || !incFld.sensitive()) && (incType == null || !incType.sensitive());
-                    add = notSens || INCLUDE_SENSITIVE;
+                    add = notSens || includeSensitive();
                 }
                 else if (!f.isAnnotationPresent(GridToStringExclude.class) &&
                     !type.isAnnotationPresent(GridToStringExclude.class)
@@ -1782,26 +1886,46 @@ public class GridToStringBuilder {
      * @param col Collection of integers.
      * @return Compacted string representation of given collections.
      */
-    public static String compact(@NotNull Collection<Integer> col) {
+    public static String compact(Collection<Integer> col) {
+        return compact(col, i -> i + 1);
+    }
+
+    /**
+     * Returns sorted and compacted string representation of given {@code col}.
+     * Two nearby numbers are compacted to one continuous segment.
+     * E.g. collection of [1, 2, 3, 5, 6, 7, 10] with
+     * {@code nextValFun = i -> i + 1} will be compacted to [1-3, 5-7, 10].
+     *
+     * @param col Collection of numbers.
+     * @param nextValFun Function to get nearby number.
+     * @return Compacted string representation of given collections.
+     */
+    public static <T extends Number & Comparable<? super T>> String compact(
+        Collection<T> col,
+        Function<T, T> nextValFun
+    ) {
+        assert nonNull(col);
+        assert nonNull(nextValFun);
+
         if (col.isEmpty())
             return "[]";
 
         SB sb = new SB();
         sb.a('[');
 
-        List<Integer> l = new ArrayList<>(col);
+        List<T> l = new ArrayList<>(col);
         Collections.sort(l);
 
-        int left = l.get(0), right = left;
+        T left = l.get(0), right = left;
         for (int i = 1; i < l.size(); i++) {
-            int val = l.get(i);
+            T val = l.get(i);
 
-            if (right == val || right + 1 == val) {
+            if (right.compareTo(val) == 0 || nextValFun.apply(right).compareTo(val) == 0) {
                 right = val;
                 continue;
             }
 
-            if (left == right)
+            if (left.compareTo(right) == 0)
                 sb.a(left);
             else
                 sb.a(left).a('-').a(right);
@@ -1811,7 +1935,7 @@ public class GridToStringBuilder {
             left = right = val;
         }
 
-        if (left == right)
+        if (left.compareTo(right) == 0)
             sb.a(left);
         else
             sb.a(left).a('-').a(right);

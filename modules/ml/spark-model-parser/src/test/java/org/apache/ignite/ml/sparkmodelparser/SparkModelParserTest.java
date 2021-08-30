@@ -35,9 +35,11 @@ import static org.junit.Assert.assertTrue;
  */
 public class SparkModelParserTest {
     /** Learning environment. */
-    LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
-        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
+    LearningEnvironment env =
+        LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+            .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
+    /** Expected exception. */
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
@@ -49,8 +51,6 @@ public class SparkModelParserTest {
      */
     @Test
     public void failOnNullDirectory() {
-        URL url = getClass().getClassLoader().getResource(SPARK_MDL_PATH);
-
         try {
             SparkModelParser.parse(
                 "incorrectPath", SupportedSparkModels.LINEAR_REGRESSION

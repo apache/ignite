@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Transactions
 {
     using System;
     using System.ComponentModel;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Transactions configuration.
@@ -87,10 +88,14 @@ namespace Apache.Ignite.Core.Transactions
         public TimeSpan DefaultTimeoutOnPartitionMapExchange { get; set; }
 
         /// <summary>
-        /// Gets or sets timeout before starting deadlock detection.
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
+        /// Gets or sets timeout before starting deadlock detection for caches configured with
+        /// <code>TransactionalSnapshot</code> cache atomicity mode.
         /// <see cref="TimeSpan.Zero"/> for disabling deadlock detection.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        [IgniteExperimentalAttribute]
         public TimeSpan DeadlockTimeout { get; set; }
 
         /// <summary>

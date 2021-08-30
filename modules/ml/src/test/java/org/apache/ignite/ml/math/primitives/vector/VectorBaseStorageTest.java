@@ -63,6 +63,6 @@ public abstract class VectorBaseStorageTest<T extends VectorStorage> extends Ext
 
     /** */
     @Override public void externalizeTest() {
-        super.externalizeTest(storage);
+        externalizeTest(storage);
     }
 }

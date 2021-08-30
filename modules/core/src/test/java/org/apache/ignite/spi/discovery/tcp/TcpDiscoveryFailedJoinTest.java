@@ -72,14 +72,9 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(finder);
         discoSpi.setNetworkTimeout(2_000);
+        discoSpi.setForceServerMode(gridName.contains("client") && gridName.contains("server"));
 
         cfg.setDiscoverySpi(discoSpi);
-
-        if (gridName.contains("client")) {
-            cfg.setClientMode(true);
-
-            discoSpi.setForceServerMode(gridName.contains("server"));
-        }
 
         if (gridName.contains("failingNode")) {
             GridQueryProcessor.idxCls = FailingIndexing.class;
@@ -139,7 +134,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         assertStartFailed("client_server-47503");
 
         // Regular client starts normally.
-        startGrid("client-47503");
+        startClientGrid("client-47503");
     }
 
     /**
@@ -159,7 +154,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         assertStartFailed("client_server-47503");
 
         // Regular client starts normally.
-        startGrid("client-47503");
+        startClientGrid("client-47503");
     }
 
     /**
@@ -168,7 +163,10 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
     private void assertStartFailed(final String name) {
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {
-            startGrid(name);
+            if (name.contains("client"))
+                startClientGrid(name);
+            else
+                startGrid(name);
 
             return null;
         }, IgniteCheckedException.class, null);

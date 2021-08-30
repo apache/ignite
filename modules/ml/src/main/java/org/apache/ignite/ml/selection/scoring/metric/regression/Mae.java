@@ -46,8 +46,7 @@ public class Mae implements Metric<Double, EmptyContext<Double>, RegressionMetri
     /**
      * {@inheritDoc}
      */
-    @Override
-    public Mae initBy(RegressionMetricStatsAggregator aggr) {
+    @Override public Mae initBy(RegressionMetricStatsAggregator aggr) {
         value = aggr.getMAE();
         return this;
     }

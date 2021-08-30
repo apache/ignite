@@ -31,11 +31,19 @@ namespace ignite
         namespace thin
         {
             const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
+            const ProtocolVersion DataChannel::VERSION_1_3_0(1, 3, 0);
             const ProtocolVersion DataChannel::VERSION_1_4_0(1, 4, 0);
-            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_4_0);
+            const ProtocolVersion DataChannel::VERSION_1_5_0(1, 5, 0);
+            const ProtocolVersion DataChannel::VERSION_1_6_0(1, 6, 0);
+            const ProtocolVersion DataChannel::VERSION_1_7_0(1, 7, 0);
+            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_7_0);
 
             DataChannel::VersionSet::value_type supportedArray[] = {
+                DataChannel::VERSION_1_7_0,
+                DataChannel::VERSION_1_6_0,
+                DataChannel::VERSION_1_5_0,
                 DataChannel::VERSION_1_4_0,
+                DataChannel::VERSION_1_3_0,
                 DataChannel::VERSION_1_2_0,
             };
 
@@ -99,6 +107,11 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(ioMutex);
 
+                InternalSyncMessageUnguarded(mem, timeout);
+            }
+
+            void DataChannel::InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout)
+            {
                 bool success = Send(mem.Data(), mem.Length(), timeout);
 
                 if (!success)
@@ -107,20 +120,20 @@ namespace ignite
 
                     if (!success)
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Can not send message to remote host: timeout");
+                                          "Can not send message to remote host: timeout");
 
                     success = Send(mem.Data(), mem.Length(), timeout);
 
                     if (!success)
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Can not send message to remote host: timeout");
+                                          "Can not send message to remote host: timeout");
                 }
 
                 success = Receive(mem, timeout);
 
                 if (!success)
                     throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                        "Can not receive message response from the remote host: timeout");
+                                      "Can not receive message response from the remote host: timeout");
             }
 
             bool DataChannel::Send(const int8_t* data, size_t len, int32_t timeout)
@@ -284,6 +297,14 @@ namespace ignite
 
                 writer.WriteInt8(ClientType::THIN_CLIENT);
 
+                if (propVer >= VERSION_1_7_0)
+                {
+                    // Use features for any new changes in protocol.
+                    int8_t features[] = { 0 };
+
+                    writer.WriteInt8Array(features, 0);
+                }
+
                 writer.WriteString(config.GetUser());
                 writer.WriteString(config.GetPassword());
 
@@ -321,6 +342,18 @@ namespace ignite
                     reader.ReadInt32();
 
                     return false;
+                }
+
+                if (propVer >= VERSION_1_7_0)
+                {
+                    int32_t len = reader.ReadInt8Array(0, 0);
+                    std::vector<int8_t> features;
+
+                    if (len > 0)
+                    {
+                        features.resize(static_cast<size_t>(len));
+                        reader.ReadInt8Array(features.data(), len);
+                    }
                 }
 
                 if (propVer >= VERSION_1_4_0)

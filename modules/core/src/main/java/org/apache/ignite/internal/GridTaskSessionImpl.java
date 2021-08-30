@@ -114,9 +114,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    private final UUID subjId;
-
-    /** */
     private final IgniteFutureImpl mapFut;
 
     /** */
@@ -137,7 +134,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
-     * @param subjId Subject ID.
      * @param execName Custom executor name.
      */
     public GridTaskSessionImpl(
@@ -155,7 +151,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        UUID subjId,
         @Nullable String execName) {
         assert taskNodeId != null;
         assert taskName != null;
@@ -185,7 +180,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         this.fullSup = fullSup;
         this.internal = internal;
-        this.subjId = subjId;
         this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
@@ -194,11 +188,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public boolean isFullSupport() {
         return fullSup;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -759,7 +748,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @return Checkpoint.
      * @throws IgniteException If failed.
      */
-    protected  <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) {
+    protected <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) {
         assert ses != null; // Internal call, so assert should be enough.
 
         A.notNull(key, "key");

@@ -38,12 +38,12 @@ public class FMeasure<L extends Serializable> extends BinaryClassificationMetric
     /**
      * Precision.
      */
-    private final Precision<L> precision = new Precision<L>();
+    private final Precision<L> precision = new Precision<>();
 
     /**
      * Recall.
      */
-    private final Recall<L> recall = new Recall<L>();
+    private final Recall<L> recall = new Recall<>();
 
     /**
      * Fscore.

@@ -33,6 +33,14 @@ namespace Apache.Ignite.Benchmarks.ThinClient
         /** Native cache wrapper. */
         private ICacheClient<int, Employee> _cache;
 
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        public ICacheClient<int, Employee> Cache
+        {
+            get { return _cache; }
+        }
+
         /** <inheritDoc /> */
         protected override void OnStarted()
         {

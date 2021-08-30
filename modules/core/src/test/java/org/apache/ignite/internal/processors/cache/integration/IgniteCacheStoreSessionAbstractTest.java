@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache.integration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -136,13 +136,13 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         boolean tx = atomicityMode() == TRANSACTIONAL;
 
-        expData.add(new ExpectedData(false, "load", new HashMap<>(), cache.getName()));
+        expData.add(new ExpectedData(false, "load", new TreeMap<>(), cache.getName()));
 
         assertEquals(key, cache.get(key));
 
         assertTrue(expData.isEmpty());
 
-        expData.add(new ExpectedData(false, "loadAll", new HashMap<>(), cache.getName()));
+        expData.add(new ExpectedData(false, "loadAll", new TreeMap<>(), cache.getName()));
 
         assertEquals(3, cache.getAll(keys).size());
 
@@ -172,7 +172,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         assertTrue(expData.isEmpty());
 
-        Map<Object, Object> vals = new HashMap<>();
+        Map<Object, Object> vals = new TreeMap<>();
 
         for (Object key0 : keys)
             vals.put(key0, key0);
@@ -202,7 +202,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
      * @param expCacheName Expected cache name.
      */
     private void expectedData(boolean tx, String expMtd, String expCacheName) {
-        expData.add(new ExpectedData(tx, expMtd, new HashMap<>(), expCacheName));
+        expData.add(new ExpectedData(tx, expMtd, new TreeMap<>(), expCacheName));
 
         if (tx)
             expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, expMtd), expCacheName));
@@ -219,7 +219,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         private final String expMtd;
 
         /** */
-        private  final Map<Object, Object> expProps;
+        private final Map<Object, Object> expProps;
 
         /** */
         private final String expCacheName;
@@ -290,7 +290,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
             checkSession("loadAll");
 
-            Map<Object, Object> loaded = new HashMap<>();
+            Map<Object, Object> loaded = new TreeMap<>();
 
             for (Object key : keys)
                 loaded.put(key, key);

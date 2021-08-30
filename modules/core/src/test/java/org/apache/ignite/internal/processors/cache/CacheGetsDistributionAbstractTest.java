@@ -68,11 +68,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
 
         startGridsMultiThreaded(gridCount());
 
-        IgniteConfiguration clientCfg = getConfiguration(CLIENT_NAME);
-
-        clientCfg.setClientMode(true);
-
-        startGrid(clientCfg);
+        startClientGrid(getConfiguration(CLIENT_NAME));
     }
 
     /** {@inheritDoc} */

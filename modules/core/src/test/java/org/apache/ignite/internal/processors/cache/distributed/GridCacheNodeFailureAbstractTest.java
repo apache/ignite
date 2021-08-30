@@ -42,8 +42,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteState.STOPPED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -93,6 +91,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < GRID_CNT; i++)
             IGNITEs.add(startGrid(i));
+
+        // Wait for stable topology to avoid deadlocks.
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -117,6 +118,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             assert !jcache(i).isLocalLocked(KEY, false) : "Entry is locked for grid [idx=" + i + ']';
         }
+
+        // Wait for stable topology to avoid deadlocks.
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -186,8 +190,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
             stopGrid(idx);
 
             f.get();
-
-            U.sleep(getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 3000));
 
             IgniteCache<Integer, String> checkCache = jcache(checkIdx);
 

@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reuse list.
@@ -36,6 +40,9 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     /** */
     private volatile Stripe[] bucket;
 
+    /** Onheap pages cache. */
+    private final PagesCache bucketCache;
+
     /**
      * @param cacheId   Cache ID.
      * @param name Name (for debug purpose).
@@ -43,16 +50,21 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param wal       Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param pageLockTrackerManager Page lock tracker manager.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public ReuseListImpl(
         int cacheId,
         String name,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal,
+        @Nullable IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockTrackerManager pageLockTrackerManager,
+        GridKernalContext ctx,
+        @Nullable AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             cacheId,
@@ -61,8 +73,12 @@ public class ReuseListImpl extends PagesList implements ReuseList {
             1,
             wal,
             metaPageId,
-            lockLsnr
+            pageLockTrackerManager,
+            ctx,
+            pageFlag
         );
+
+        bucketCache = new PagesCache(pageListCacheLimit);
 
         reuseList = this;
 
@@ -71,7 +87,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override protected boolean isReuseBucket(int bucket) {
-        assert bucket == 0: bucket;
+        assert bucket == 0 : bucket;
 
         return true;
     }
@@ -87,6 +103,11 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
+    @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
+        return initRecycledPage0(pageId, flag, initIO);
+    }
+
+    /** {@inheritDoc} */
     @Override public long recycledPagesCount() throws IgniteCheckedException {
         return storedPagesCount(0);
     }
@@ -97,12 +118,22 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
+    @Override protected int getBucketIndex(int freeSpace) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
         return bucketUpdater.compareAndSet(this, exp, upd);
     }
 
     /** {@inheritDoc} */
+    @Override protected PagesCache getBucketCache(int bucket, boolean create) {
+        return bucketCache;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return "ReuseList [name=" + name + ']';
+        return "ReuseList [name=" + name() + ']';
     }
 }

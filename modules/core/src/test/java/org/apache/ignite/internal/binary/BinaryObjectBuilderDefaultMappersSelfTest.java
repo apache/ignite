@@ -28,12 +28,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -957,7 +957,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testPlainBinaryObjectCopyFrom() {
-        GridBinaryTestClasses.TestObjectPlainBinary obj = new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
+        GridBinaryTestClasses.TestObjectPlainBinary obj =
+            new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
 
         BinaryObjectBuilderImpl builder = builder(toBinary(obj));
         assertTrue(builder.getField("plainBinary") instanceof BinaryObject);

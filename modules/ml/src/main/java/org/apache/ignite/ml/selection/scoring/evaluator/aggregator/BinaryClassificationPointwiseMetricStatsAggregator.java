@@ -28,7 +28,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * This class represents statistics for pointwise metrics evaluation for binary classification like TruePositive,
  * FalsePositive, TrueNegative and FalseNegative.
  */
-public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serializable> implements MetricStatsAggregator<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
+public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serializable>
+    implements MetricStatsAggregator<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
     /**
      * Serial version uid.
      */
@@ -94,8 +95,8 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
     /**
      * {@inheritDoc}
      */
-    @Override public void aggregate(IgniteModel<Vector, L> model, LabeledVector<L> vector) {
-        L modelAns = model.predict(vector.features());
+    @Override public void aggregate(IgniteModel<Vector, L> mdl, LabeledVector<L> vector) {
+        L modelAns = mdl.predict(vector.features());
         L realAns = vector.label();
 
         if (modelAns.equals(falseLabel) && realAns.equals(falseLabel))
@@ -129,16 +130,16 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
     /**
      * {@inheritDoc}
      */
-    @Override public BinaryClassificationEvaluationContext<L> createUnitializedContext() {
+    @Override public BinaryClassificationEvaluationContext<L> createInitializedContext() {
         return new BinaryClassificationEvaluationContext<>();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public void initByContext(BinaryClassificationEvaluationContext<L> context) {
-        this.falseLabel = context.getFirstClassLbl();
-        this.truthLabel = context.getSecondClassLbl();
+    @Override public void initByContext(BinaryClassificationEvaluationContext<L> ctx) {
+        this.falseLabel = ctx.getFirstClsLbl();
+        this.truthLabel = ctx.getSecondClsLbl();
     }
 
     /**
@@ -232,7 +233,7 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
         /**
          * {@inheritDoc}
          */
-        @Override public BinaryClassificationEvaluationContext<L> createUnitializedContext() {
+        @Override public BinaryClassificationEvaluationContext<L> createInitializedContext() {
             return new BinaryClassificationEvaluationContext<L>(falseLabel, truthLabel) {
                 /**
                  * Serial version ID.

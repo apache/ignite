@@ -17,20 +17,33 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.naivebayes.BayesModel;
-
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONModelMixIn;
+import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.naivebayes.BayesModel;
 
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
  * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
-public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesModel, Vector, Double>, DeployableObject {
+public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesModel, Vector, Double>,
+    JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -38,23 +51,23 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
      * Probabilities of features for all classes for each label. {@code labels[c][f][b]} contains a probability for
      * class {@code c} for feature {@code f} for bucket {@code b}.
      */
-    private final double[][][] probabilities;
+    private double[][][] probabilities;
 
     /** Prior probabilities of each class */
-    private final double[] clsProbabilities;
+    private double[] clsProbabilities;
 
     /** Labels. */
-    private final double[] labels;
+    private double[] labels;
 
     /**
      * The bucket thresholds to convert a features to discrete values. {@code bucketThresholds[f][b]} contains the right
      * border for feature {@code f} for bucket {@code b}. Everything which is above the last thresdold goes to the next
      * bucket.
      */
-    private final double[][] bucketThresholds;
+    private double[][] bucketThresholds;
 
     /** Amount values in each buckek for each feature per label. */
-    private final DiscreteNaiveBayesSumsHolder sumsHolder;
+    private DiscreteNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param probabilities Probabilities of features for classes.
@@ -65,11 +78,15 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
         double[][] bucketThresholds, DiscreteNaiveBayesSumsHolder sumsHolder) {
-        this.probabilities = probabilities;
-        this.clsProbabilities = clsProbabilities;
-        this.labels = labels;
-        this.bucketThresholds = bucketThresholds;
+        this.probabilities = probabilities.clone();
+        this.clsProbabilities = clsProbabilities.clone();
+        this.labels = labels.clone();
+        this.bucketThresholds = bucketThresholds.clone();
         this.sumsHolder = sumsHolder;
+    }
+
+    /** */
+    public DiscreteNaiveBayesModel() {
     }
 
     /** {@inheritDoc} */
@@ -84,21 +101,19 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
     @Override public Double predict(Vector vector) {
         double[] probapilityPowers = probabilityPowers(vector);
 
-        int maxLabelIndex = 0;
+        int maxLbIdx = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
             probapilityPowers[i] += Math.log(clsProbabilities[i]);
 
-            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
-                maxLabelIndex = i;
-            }
+            if (probapilityPowers[i] > probapilityPowers[maxLbIdx])
+                maxLbIdx = i;
         }
 
-        return labels[maxLabelIndex];
+        return labels[maxLbIdx];
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] probabilityPowers(Vector vector) {
+    @Override public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {
@@ -114,22 +129,22 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
 
     /** A getter for probabilities.*/
     public double[][][] getProbabilities() {
-        return probabilities;
+        return probabilities.clone();
     }
 
     /** A getter for clsProbabilities.*/
     public double[] getClsProbabilities() {
-        return clsProbabilities;
+        return clsProbabilities.clone();
     }
 
     /** A getter for bucketThresholds.*/
     public double[][] getBucketThresholds() {
-        return bucketThresholds;
+        return bucketThresholds.clone();
     }
 
     /** A getter for labels.*/
     public double[] getLabels() {
-        return labels;
+        return labels.clone();
     }
 
     /** A getter for sumsHolder.*/
@@ -148,7 +163,44 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.addMixIn(DiscreteNaiveBayesModel.class, JSONModelMixIn.class);
+
+        ObjectWriter writer = mapper
+            .writerFor(DiscreteNaiveBayesModel.class)
+            .withAttribute("formatVersion", JSONModel.JSON_MODEL_FORMAT_VERSION)
+            .withAttribute("timestamp", System.currentTimeMillis())
+            .withAttribute("uid", "dt_" + UUID.randomUUID().toString())
+            .withAttribute("modelClass", DiscreteNaiveBayesModel.class.getSimpleName());
+
+        try {
+            File file = new File(path.toAbsolutePath().toString());
+            writer.writeValue(file, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Loads DiscreteNaiveBayesModel from JSON file. */
+    public static DiscreteNaiveBayesModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        DiscreteNaiveBayesModel mdl;
+        try {
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, DiscreteNaiveBayesModel.class.getSimpleName());
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), DiscreteNaiveBayesModel.class);
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

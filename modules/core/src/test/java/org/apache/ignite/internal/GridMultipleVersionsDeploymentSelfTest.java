@@ -211,7 +211,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             // Since we loader task/job classes with different class loaders we cannot
             // use any kind of mutex because of the illegal state exception.
             // We have to use timer here. DO NOT CHANGE 2 seconds here.
-            Thread.sleep(2000);
+            Thread.sleep(1000);
 
             // Deploy new one - this should move first task to the obsolete list.
             g1.compute().localDeployTask(taskCls2, ldr2);
@@ -250,7 +250,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * or on remote nodes if there are any. Never on both.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @ComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value = "GridDeploymentTestTask")
     public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** Ignite instance. */
         @IgniteInstanceResource

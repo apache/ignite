@@ -17,11 +17,23 @@
 
 package org.apache.ignite.internal.websession;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,14 +48,14 @@ import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.security.HashLoginService;
@@ -1030,8 +1042,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @param srv Server.
      * @throws Exception In case of error.
      */
-    private void stopServerWithLoginService(@Nullable Server srv) throws Exception{
-        if (srv != null){
+    private void stopServerWithLoginService(@Nullable Server srv) throws Exception {
+        if (srv != null) {
             srv.stop();
             File realmFile = new File("/tmp/realm.properties");
             realmFile.delete();
@@ -1039,7 +1051,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /** Creates a realm file to store test user credentials */
-    private void createRealm() throws Exception{
+    private void createRealm() throws Exception {
         File realmFile = new File("/tmp/realm.properties");
         FileWriter fileWriter = new FileWriter(realmFile);
         fileWriter.append("admin:admin");
@@ -1069,7 +1081,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 for (String headerValue : headerFieldValue) {
                     String[] fields = headerValue.split(";");
                     sessionCookieValue = fields[0];
-                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=")+1,
+                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=") + 1,
                             sessionCookieValue.length());
                 }
             }

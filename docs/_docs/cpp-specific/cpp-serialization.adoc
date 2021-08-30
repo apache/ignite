@@ -1,0 +1,266 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Serialization in Ignite.C++
+
+== BinaryType Templates
+
+Most user-defined classes going through Ignite C{pp} API will be passed over the wire to other cluster nodes. These classes
+include your data records, compute tasks, and other objects.
+
+Passing objects of these classes over wire requires serialization. For Ignite C{pp} it can be achieved by providing
+a `BinaryType` class template for your object type:
+
+[tabs]
+--
+tab:C++[]
+[source,cpp]
+----
+class Address
+{
+  friend struct ignite::binary::BinaryType<Address>;
+public:
+  Address() { }
+
+  Address(const std::string& street, int32_t zip) :
+  street(street), zip(zip) { }
+
+  const std::string& GetStreet() const
+  {
+    return street;
+  }
+
+  int32_t GetZip() const
+  {
+    return zip;
+  }
+
+private:
+  std::string street;
+  int32_t zip;
+};
+
+template<>
+struct ignite::binary::BinaryType<Address>
+{
+  static int32_t GetTypeId()
+  {
+    return GetBinaryStringHashCode("Address");
+  }
+
+  static void GetTypeName(std::string& name)
+  {
+    name = "Address";
+  }
+
+  static int32_t GetFieldId(const char* name)
+  {
+    return GetBinaryStringHashCode(name);
+  }
+
+  static bool IsNull(const Address& obj)
+  {
+    return obj.GetZip() && !obj.GetStreet().empty();
+  }
+
+  static void GetNull(Address& dst)
+  {
+    dst = Address();
+  }
+
+  static void Write(BinaryWriter& writer, const Address& obj)
+  {
+    writer.WriteString("street", obj.GetStreet());
+    writer.WriteInt32("zip", obj.GetZip());
+  }
+
+  static void Read(BinaryReader& reader, Address& dst)
+  {
+    dst.street = reader.ReadString("street");
+    dst.zip = reader.ReadInt32("zip");
+  }
+};
+----
+--
+
+Also, you can use the raw serialization mode without storing names of the object's fields in the serialized form. This
+mode is more compact and performs faster, but disables SQL queries that require to keep the names of the fields in the serialized form:
+
+[tabs]
+--
+tab:C++[]
+[source,cpp]
+----
+template<>
+struct ignite::binary::BinaryType<Address>
+{
+  static int32_t GetTypeId()
+  {
+    return GetBinaryStringHashCode("Address");
+  }
+
+  static void GetTypeName(std::string& name)
+  {
+    name = "Address";
+  }
+
+  static int32_t GetFieldId(const char* name)
+  {
+    return GetBinaryStringHashCode(name);
+  }
+
+  static bool IsNull(const Address& obj)
+  {
+    return false;
+  }
+
+  static void GetNull(Address& dst)
+  {
+    dst = Address();
+  }
+
+  static void Write(BinaryWriter& writer, const Address& obj)
+  {
+    BinaryRawWriter rawWriter = writer.RawWriter();
+
+    rawWriter.WriteString(obj.GetStreet());
+    rawWriter.WriteInt32(obj.GetZip());
+  }
+
+  static void Read(BinaryReader& reader, Address& dst)
+  {
+    BinaryRawReader rawReader = reader.RawReader();
+
+    dst.street = rawReader.ReadString();
+    dst.zip = rawReader.ReadInt32();
+  }
+};
+----
+--
+
+== Serialization Macros
+
+Ignite C{pp} defines a set of utility macros that could be used to simplify the `BinaryType` specialization. Here is a list of such macros with description:
+
+* `IGNITE_BINARY_TYPE_START(T)` - Start the binary type's specialization.
+* `IGNITE_BINARY_TYPE_END` - End the binary type's specialization.
+* `IGNITE_BINARY_GET_TYPE_ID_AS_CONST(id)` - Implementation of `GetTypeId()` which returns predefined constant `id`.
+* `IGNITE_BINARY_GET_TYPE_ID_AS_HASH(T)` - Implementation of `GetTypeId()` which returns hash of passed type name.
+* `IGNITE_BINARY_GET_TYPE_NAME_AS_IS(T)` - Implementation of `GetTypeName()` which returns type name as is.
+* `IGNITE_BINARY_GET_FIELD_ID_AS_HASH` - Default implementation of `GetFieldId()` function which returns Java-way hash code of the string.
+* `IGNITE_BINARY_IS_NULL_FALSE(T)` - Implementation of `IsNull()` function which always returns `false`.
+* `IGNITE_BINARY_IS_NULL_IF_NULLPTR(T)` - Implementation of `IsNull()` function which return `true` if passed object is null pointer.
+* `IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T)` - Implementation of `GetNull()` function which returns an instance created with default constructor.
+* `IGNITE_BINARY_GET_NULL_NULLPTR(T)` - Implementation of GetNull() function which returns `NULL` pointer.
+
+You can describe the `Address` class declared earlier using these macros:
+
+[tabs]
+--
+tab:C++[]
+[source,cpp]
+----
+namespace ignite
+{
+  namespace binary
+  {
+    IGNITE_BINARY_TYPE_START(Address)
+      IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Address)
+      IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Address)
+      IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Address)
+      IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+
+      static bool IsNull(const Address& obj)
+      {
+        return obj.GetZip() == 0 && !obj.GetStreet().empty();
+      }
+
+      static void Write(BinaryWriter& writer, const Address& obj)
+      {
+        writer.WriteString("street", obj.GetStreet());
+        writer.WriteInt32("zip", obj.GetZip());
+      }
+
+      static void Read(BinaryReader& reader, Address& dst)
+      {
+        dst.street = reader.ReadString("street");
+        dst.zip = reader.ReadInt32("zip");
+      }
+
+    IGNITE_BINARY_TYPE_END
+  }
+}
+----
+--
+
+== Reading and Writing Values
+
+There are several ways for writing and reading data. The first way is to use an object's value directly:
+
+
+[tabs]
+--
+tab:Writing[]
+[source,cpp]
+----
+CustomType val;
+
+// some application code here
+// ...
+
+writer.WriteObject<CustomType>("field_name", val);
+----
+tab:Reading[]
+[source,cpp]
+----
+CustomType val = reader.ReadObject<CustomType>("field_name");
+----
+--
+
+The second approach does the same but uses a pointer to the object:
+
+[tabs]
+--
+tab:Writing[]
+[source,cpp]
+----
+// Writing null to as a value for integer field.
+writer.WriteObject<int32_t*>("int_field_name", nullptr);
+
+// Writing a value of the custom type by pointer.
+CustomType *val;
+
+// some application code here
+// ...
+
+writer.WriteObject<CustomType*>("field_name", val);
+----
+tab:Reading[]
+[source,cpp]
+----
+// Reading value which can be null.
+CustomType* nullableVal = reader.ReadObject<CustomType*>("field_name");
+if (nullableVal) {
+  // ...
+}
+
+// You can use a smart pointer as well.
+std::unique_ptr<CustomType> nullablePtr = reader.ReadObject<CustomType*>();
+if (nullablePtr) {
+  // ...
+}
+----
+--
+
+An advantage of the pointer-based technique is that it allows writing or reading `null` values.

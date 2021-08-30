@@ -16,11 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 
 /**
  * Closure that is computed on near node to get the stack trace of active transaction owner thread.
@@ -28,9 +26,6 @@ import java.lang.management.ThreadMXBean;
 public class FetchActiveTxOwnerTraceClosure implements IgniteCallable<String> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final StackTraceElement[] STACK_TRACE_ELEMENT_EMPTY = new StackTraceElement[0];
 
     /** */
     private final long txOwnerThreadId;
@@ -47,33 +42,15 @@ public class FetchActiveTxOwnerTraceClosure implements IgniteCallable<String> {
      * @throws Exception If failed
      */
     @Override public String call() throws Exception {
-        StringBuilder traceDump = new StringBuilder("Stack trace of the transaction owner thread:\n");
+        GridStringBuilder traceDump = new GridStringBuilder("Stack trace of the transaction owner thread:\n");
 
-        for (StackTraceElement stackTraceElement : getStackTrace()) {
-            traceDump.append(stackTraceElement.toString());
-            traceDump.append("\n");
+        try {
+            U.printStackTrace(txOwnerThreadId, traceDump);
+        }
+        catch (SecurityException | IllegalArgumentException e) {
+            traceDump = new GridStringBuilder("Could not get stack trace of the transaction owner thread: " + e.getMessage());
         }
 
         return traceDump.toString();
-    }
-
-    /**
-     * Gets the stack trace of the transaction owner thread
-     *
-     * @return stack trace elements
-     */
-    private StackTraceElement[] getStackTrace() {
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-
-        ThreadInfo threadInfo;
-
-        try {
-            threadInfo = threadMXBean.getThreadInfo(txOwnerThreadId, Integer.MAX_VALUE);
-        }
-        catch (SecurityException | IllegalArgumentException ignored) {
-            threadInfo = null;
-        }
-
-        return threadInfo == null ? STACK_TRACE_ELEMENT_EMPTY : threadInfo.getStackTrace();
     }
 }

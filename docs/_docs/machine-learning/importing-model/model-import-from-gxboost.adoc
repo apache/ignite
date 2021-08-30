@@ -1,0 +1,35 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Import Model from XGBoost
+
+Using Apache Ignite you can import pre-trained models from XGBoost. The models are translated into Apache Ignite ML models. Apache Ignite ML also provides the ability to import pre-trained XGBoost models for local or distributed inference.
+
+The difference between translating the model into an Apache Ignite ML model and performing distributed inference is in the parser implementation. This example shows how you can import a model from XGBoost and translate it to an Apache Ignite ML model for distributed inference:
+
+
+[source, java]
+----
+File mdlRsrc = IgniteUtils.resolveIgnitePath(TEST_MODEL_RES);
+
+ModelReader reader = new FileSystemModelReader(mdlRsrc.getPath());
+
+XGModelParser parser = new XGModelParser();
+
+AsyncModelBuilder mdlBuilder = new IgniteDistributedModelBuilder(ignite, 4, 4);
+
+Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+
+----
+

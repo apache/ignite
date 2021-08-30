@@ -31,7 +31,8 @@ import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -114,7 +115,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = getDefaultDataRegion(ignite);
 
-        DataRegionMetricsImpl memMetrics = dataRegion.memoryMetrics();
+        DataRegionMetricsImpl memMetrics = dataRegion.metrics();
 
         memMetrics.enableMetrics();
 
@@ -146,7 +147,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception{
+    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception {
         final byte[] val = new byte[VAL_SIZE];
 
         for (int i = 0; i < MAX_VALS_AMOUNT * 4; i++)
@@ -341,10 +342,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         Ignite node = grid();
 
         Ignite node1 = startGrid(1);
-
-        Ignition.setClientMode(true);
-
-        Ignite node2 = startGrid(2);
+        Ignite node2 = startClientGrid(2);
 
         waitForDiscovery(node2, node1, node);
 
@@ -426,6 +424,33 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCpuLoadMetric() throws Exception {
+        Ignite ignite = grid();
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            try {
+                assertTrue(GridTestUtils.waitForCondition(
+                    () -> ignite.cluster().localNode().metrics().getCurrentCpuLoad() > 0, 10000L));
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        final IgniteCache cache = ignite.getOrCreateCache(new CacheConfiguration<>("TEST")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.REPLICATED));
+
+        for (int i = 0; i < MAX_VALS_AMOUNT * 1000; i++)
+            cache.put(i, i);
+
+        fut.get();
+    }
+
+    /**
      * Test message.
      */
     private static class TestMessage implements Serializable {
@@ -455,7 +480,10 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
          * @param cfg Ignite configuration.
          * @throws MalformedObjectNameException Thrown in case of any errors.
          */
-        private JmxClusterMetricsHelper(IgniteConfiguration cfg, Class<? extends ClusterMetricsMXBean> clazz) throws MalformedObjectNameException {
+        private JmxClusterMetricsHelper(
+            IgniteConfiguration cfg,
+            Class<? extends ClusterMetricsMXBean> clazz
+        ) throws MalformedObjectNameException {
             this.mbeanSrv = cfg.getMBeanServer();
 
             this.mbean = U.makeMBeanName(cfg.getIgniteInstanceName(), "Kernal", clazz.getSimpleName());

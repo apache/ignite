@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -44,12 +45,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -62,25 +65,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(client);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        client = false;
     }
 
     /** {@inheritDoc} */
@@ -128,9 +119,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        client = true;
-
-        final Ignite c = startGrid(3);
+        final Ignite c = startClientGrid(3);
 
         TestRecordingCommunicationSpi.spi(srv0).blockMessages(GridDhtAffinityAssignmentResponse.class, c.name());
 
@@ -141,8 +130,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "start-cache");
-
-        U.sleep(1000);
 
         assertFalse(fut.isDone());
 
@@ -200,11 +187,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         srv1.createCache(cfg);
 
-        client = true;
-
-        final Ignite c = startGrid(3);
-
-        client = false;
+        final Ignite c = startClientGrid(3);
 
         TestRecordingCommunicationSpi.spi(srv1).blockMessages(GridDhtAffinityAssignmentResponse.class, c.name());
 
@@ -215,8 +198,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "start-cache");
-
-        U.sleep(1000);
 
         assertFalse(fut.isDone());
 
@@ -278,15 +259,11 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = startCaches(ignite(0), 100);
 
-        client = true;
-
-        Ignite c = startGrid(SRVS);
+        Ignite c = startClientGrid(SRVS);
 
         assertTrue(c.configuration().isClientMode());
 
         awaitPartitionMapExchange();
-
-        client = false;
 
         TestRecordingCommunicationSpi.spi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
@@ -300,25 +277,25 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         for (String cacheName : cacheNames)
             c.cache(cacheName);
 
-        U.sleep(1000);
-
+        // Will switch to ideal topology but some partitions are not evicted yet.
         for (int i = 0; i < SRVS + 1; i++) {
-            AffinityTopologyVersion topVer = new AffinityTopologyVersion(SRVS + 2);
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(SRVS + 2, 1);
 
             IgniteKernal node = (IgniteKernal)ignite(i);
 
             for (String cacheName : cacheNames) {
-                GridDhtPartitionTopology top = node.context().cache().internalCache(cacheName).context().topology();
+                GridDhtPartitionTopology top = node.cachex(cacheName).context().topology();
 
                 waitForReadyTopology(top, topVer);
 
                 assertEquals(topVer, top.readyTopologyVersion());
-
-                assertFalse(top.rebalanceFinished(topVer));
             }
         }
 
         TestRecordingCommunicationSpi.spi(ignite(0)).stopBlock();
+
+        // Trigger eviction.
+        awaitPartitionMapExchange();
 
         for (int i = 0; i < SRVS + 1; i++) {
             final AffinityTopologyVersion topVer = new AffinityTopologyVersion(SRVS + 2, 1);
@@ -326,7 +303,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             final IgniteKernal node = (IgniteKernal)ignite(i);
 
             for (String cacheName : cacheNames) {
-                final GridDhtPartitionTopology top = node.context().cache().internalCache(cacheName).context().topology();
+                final GridDhtPartitionTopology top = node.cachex(cacheName).context().topology();
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
@@ -356,14 +333,10 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         final List<String> cacheNames = startCaches(srv0, KEYS);
 
-        client = true;
-
         final List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++)
-            clients.add(startGrid(SRVS1 + i));
-
-        client = false;
+            clients.add(startClientGrid(SRVS1 + i));
 
         final CyclicBarrier barrier = new CyclicBarrier(clients.size() + SRVS2);
 
@@ -391,9 +364,31 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
                         Map<Object, Object> map0 = cache.getAll(keys);
 
-                        assertEquals(KEYS, map0.size());
+                        assertEquals("[cache=" + cacheName +
+                            ", expected=" + KEYS +
+                            ", actual=" + map0.size() + ']', KEYS, map0.size());
 
-                        cache.put(rnd.nextInt(KEYS), i);
+                        int key = rnd.nextInt(KEYS);
+
+                        try {
+                            cache.put(key, i);
+                        }
+                        catch (CacheException e) {
+                            log.error("It couldn't put a value [cache=" + cacheName +
+                                ", key=" + key +
+                                ", val=" + i + ']', e);
+
+                            CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+                            TransactionSerializationException txEx = X.cause(e, TransactionSerializationException.class);
+
+                            boolean notContains = !txEx.getMessage().contains(
+                                "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
+                            );
+
+                            if (txEx == null || ccfg.getAtomicityMode() != TRANSACTIONAL_SNAPSHOT || notContains)
+                                fail("Assert violated because exception was thrown [e=" + e.getMessage() + ']');
+                        }
                     }
                 }
 
@@ -447,14 +442,10 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         final List<String> cacheNames = startCaches(ignite(0), 1000);
 
-        client = true;
-
         final List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++)
-            clients.add(startGrid(SRVS + i));
-
-        client = false;
+            clients.add(startClientGrid(SRVS + i));
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -548,7 +539,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     private List<String> startCaches(Ignite node, int keys) {
         List<String> cacheNames = new ArrayList<>();
 
-        final Map<Integer, Integer> map = new HashMap<>();
+        final Map<Integer, Integer> map = new TreeMap<>();
 
         for (int i = 0; i < keys; i++)
             map.put(i, i);

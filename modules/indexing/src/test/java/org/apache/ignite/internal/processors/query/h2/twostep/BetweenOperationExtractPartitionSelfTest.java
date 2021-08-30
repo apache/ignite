@@ -135,16 +135,11 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     /** Organizations cache. */
     private static IgniteCache<Integer, JoinSqlTestHelper.Organization> orgCache;
 
-    /** Client mode. */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new BetweenOperationExtractPartitionSelfTest.TestCommunicationSpi());
-
-        cfg.setClientMode(clientMode);
 
         return cfg;
     }
@@ -165,9 +160,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_COUNT - 1, false);
 
-        clientMode = true;
-
-        startGrid(NODES_COUNT);
+        startClientGrid(NODES_COUNT);
 
         orgCache = ignite(NODES_COUNT).getOrCreateCache(new CacheConfiguration<Integer, JoinSqlTestHelper.Organization>(ORG_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
@@ -451,7 +444,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     @Test
     public void testBetweenConstAgainstNonAffinityColumn() {
         testBetweenConstOperator("select * from Organization org where org.debtCapital between %d and %d",
-            1, 3,  3, EMPTY_PARTITIONS_ARRAY);
+            1, 3, 3, EMPTY_PARTITIONS_ARRAY);
     }
 
     /**
@@ -469,10 +462,10 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     @Test
     public void testBetweenPartitionsDefaultLimitExceeding() {
         // Default limit (16) not exceeded.
-        testBetweenConstOperator(BETWEEN_QRY, 1, 16,  16);
+        testBetweenConstOperator(BETWEEN_QRY, 1, 16, 16);
 
         // Default limit (16) exceeded.
-        testBetweenConstOperator(BETWEEN_QRY, 1, 17,  17, EMPTY_PARTITIONS_ARRAY);
+        testBetweenConstOperator(BETWEEN_QRY, 1, 17, 17, EMPTY_PARTITIONS_ARRAY);
     }
 
     /**

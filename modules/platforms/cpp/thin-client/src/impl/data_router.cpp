@@ -111,6 +111,16 @@ namespace ignite
                             break;
                         }
                     }
+
+                    if (config.GetConnectionsLimit())
+                    {
+                        common::concurrent::CsLockGuard lock(channelsMutex);
+
+                        size_t connectionsNum = newLegacyChannels.size() + channels.size();
+
+                        if (connectionsNum >= config.GetConnectionsLimit())
+                            break;
+                    }
                 }
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
@@ -149,7 +159,7 @@ namespace ignite
 
             void DataRouter::RefreshAffinityMapping(const std::vector<int32_t>& cacheIds)
             {
-                std::vector<AffinityAwarenessGroup> groups;
+                std::vector<PartitionAwarenessGroup> groups;
 
                 CachePartitionsRequest req(cacheIds);
                 CachePartitionsResponse rsp(groups);

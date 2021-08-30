@@ -98,7 +98,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withWeighted(false);
 
         ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.update(originalMdl,
-            new HashMap<Integer, double[]>(), parts,
+            new HashMap<>(), parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())

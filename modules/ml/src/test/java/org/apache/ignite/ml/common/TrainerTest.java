@@ -1166,7 +1166,7 @@ public class TrainerTest {
         {0.0, 0.0, 0.0},
         {0.0, 1.0, 1.0},
         {1.0, 0.0, 1.0},
-        {1.0 ,1.0, 0.0}
+        {1.0, 1.0, 0.0}
     };
 
     /**
@@ -1181,8 +1181,7 @@ public class TrainerTest {
         for (int i = 0; i < vals.length; i++) {
             double[] row = vals[i];
             double[] convertedRow = new double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
+            System.arraycopy(row, 0, convertedRow, 0, row.length);
             cacheMock.put(i, convertedRow);
         }
         return cacheMock;

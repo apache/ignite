@@ -29,7 +29,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * KNN model trader that trains model on top of distribtued spatial indices. Be aware that this model is linked with
+ * KNN model trader that trains model on top of distributed spatial indices. Be aware that this model is linked with
  * cluster environment it's been built on and can't be saved or used in other places. Under the hood it keeps
  * {@link Dataset} that consists of a set of resources allocated across the cluster.
  *

@@ -60,7 +60,6 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         spi.setMessageQueueLimit(100);
 
         cfg.setCommunicationSpi(spi);
-        cfg.setClientMode(gridName.contains("client"));
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -79,7 +78,7 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
 
-        final Ignite client = startGrid("client");
+        final Ignite client = startClientGrid("client");
 
         checkBackPressure(client, srv1, srv2);
     }

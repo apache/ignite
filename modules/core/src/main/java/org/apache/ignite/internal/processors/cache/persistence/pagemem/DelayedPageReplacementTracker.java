@@ -50,7 +50,7 @@ public class DelayedPageReplacementTracker {
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 
-            buf.order(ByteOrder.LITTLE_ENDIAN);
+            buf.order(ByteOrder.nativeOrder());
 
             return buf;
         }

@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,11 +31,6 @@ import org.jetbrains.annotations.Nullable;
  * It can be useful in tests to ensure that a specific message was (or was not) printed to the log.
  */
 public class ListeningTestLogger implements IgniteLogger {
-    /**
-     * If set to {@code true}, enables debug and trace log messages processing.
-     */
-    private final boolean dbg;
-
     /**
      * Logger to echo all messages, limited by {@code dbg} flag.
      */
@@ -49,23 +45,55 @@ public class ListeningTestLogger implements IgniteLogger {
      * Default constructor.
      */
     public ListeningTestLogger() {
-        this(false);
+        this(null);
     }
 
     /**
-     * @param dbg If set to {@code true}, enables debug and trace log messages processing.
+     * @param dbg Ignored. For setting debug use {@link GridAbstractTest#setRootLoggerDebugLevel()}.
+     * @deprecated Use {@link #ListeningTestLogger()} instead.
      */
+    @Deprecated
     public ListeningTestLogger(boolean dbg) {
-        this(dbg, null);
+        this(null);
     }
 
     /**
-     * @param dbg If set to {@code true}, enables debug and trace log messages processing.
+     * @param dbg Ignored. For setting debug use {@link GridAbstractTest#setRootLoggerDebugLevel()}.
+     * @param echo Logger to echo all messages, limited by {@code dbg} flag.
+     * @deprecated Use {@link #ListeningTestLogger(IgniteLogger)} instead.
+     */
+    @Deprecated
+    public ListeningTestLogger(boolean dbg, @Nullable IgniteLogger echo) {
+        this(echo);
+    }
+
+    /**
      * @param echo Logger to echo all messages, limited by {@code dbg} flag.
      */
-    public ListeningTestLogger(boolean dbg, @Nullable IgniteLogger echo) {
-        this.dbg = dbg;
+    public ListeningTestLogger(@Nullable IgniteLogger echo) {
         this.echo = echo;
+    }
+
+    /**
+     * @param dbg Ignored. For setting debug use {@link GridAbstractTest#setRootLoggerDebugLevel()}.
+     * @param echo Logger to echo all messages, limited by {@code dbg} flag.
+     * @param lsnrs LogListeners to register instantly.
+     * @deprecated Use {@link #ListeningTestLogger(IgniteLogger, LogListener...)} instead.
+     */
+    @Deprecated
+    public ListeningTestLogger(boolean dbg, @Nullable IgniteLogger echo, @NotNull LogListener... lsnrs) {
+        this(echo, lsnrs);
+    }
+
+    /**
+     * @param echo Logger to echo all messages, limited by {@code dbg} flag.
+     * @param lsnrs LogListeners to register instantly.
+     */
+    public ListeningTestLogger(@Nullable IgniteLogger echo, @NotNull LogListener... lsnrs) {
+        this(echo);
+
+        for (LogListener lsnr : lsnrs)
+            registerListener(lsnr);
     }
 
     /**
@@ -77,6 +105,19 @@ public class ListeningTestLogger implements IgniteLogger {
         lsnr.reset();
 
         lsnrs.add(lsnr);
+    }
+
+    /**
+     * Resets and registers all message listeners.
+     *
+     * @param lsnrs Message listeners.
+     */
+    public void registerAllListeners(@NotNull LogListener... lsnrs) {
+        for (LogListener lsnr : lsnrs) {
+            lsnr.reset();
+
+            this.lsnrs.add(lsnr);
+        }
     }
 
     /**
@@ -115,9 +156,6 @@ public class ListeningTestLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
-        if (!dbg)
-            return;
-
         if (echo != null)
             echo.trace(msg);
 
@@ -126,9 +164,6 @@ public class ListeningTestLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
-        if (!dbg)
-            return;
-
         if (echo != null)
             echo.debug(msg);
 
@@ -167,12 +202,12 @@ public class ListeningTestLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
-        return dbg;
+        return echo != null && echo.isTraceEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return dbg;
+        return echo != null && echo.isDebugEnabled();
     }
 
     /** {@inheritDoc} */

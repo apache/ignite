@@ -70,16 +70,12 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /** */
     private static final int KEY = 10;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        cfg.setClientMode(client);
         //set custom marshaller to get expected exception
         cfg.setMarshaller(new JdkMarshaller());
 
@@ -92,9 +88,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
         startGridsMultiThreaded(getServerNodeCount());
 
-        client = true;
-
-        startGrid(getServerNodeCount());
+        startClientGrid(getServerNodeCount());
     }
 
     /**

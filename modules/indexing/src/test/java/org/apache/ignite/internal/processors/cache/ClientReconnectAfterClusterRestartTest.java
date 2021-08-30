@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -65,8 +65,6 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
         if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             CacheConfiguration ccfg = getCacheConfiguration();
 
             cfg.setCacheConfiguration(ccfg);
@@ -153,7 +151,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         try {
             startGrid(SERVER_ID);
 
-            Ignite client = startGrid(CLIENT_ID);
+            Ignite client = startClientGrid(CLIENT_ID);
 
             checkTopology(2);
 

@@ -160,8 +160,7 @@ namespace ignite
 
             std::string str = token.ToString();
 
-            if (token.GetType() == TokenType::WORD &&
-                common::AllOf(str.begin(), str.end(), isdigit))
+            if (token.GetType() == TokenType::WORD && common::AllDigits(str))
             {
                 int64_t val = sign * common::LexicalCast<int64_t>(str);
 

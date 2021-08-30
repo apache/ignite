@@ -44,8 +44,6 @@ public class CacheMvccClientReconnectTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (igniteInstanceName.contains("client")) {
-            cfg.setClientMode(true);
-
             Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
 
             lsnrs.put(new IgnitePredicate<Event>() {
@@ -79,7 +77,7 @@ public class CacheMvccClientReconnectTest extends GridCommonAbstractTest {
     public void testClientReconnect() throws Exception {
         startGrid(0);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         MvccProcessor coordProc = client.context().coordinators();
 

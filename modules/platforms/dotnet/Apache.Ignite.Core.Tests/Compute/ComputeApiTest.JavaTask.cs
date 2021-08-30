@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Decimal task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
+        /** Echo argument task name. */
+        public const string EchoArgTask = "org.apache.ignite.platform.PlatformComputeEchoArgTask";
+
         /** Echo type: null. */
         private const int EchoTypeNull = 0;
 
@@ -61,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int EchoTypeChar = 4;
 
         /** Echo type: int. */
-        private const int EchoTypeInt = 5;
+        public const int EchoTypeInt = 5;
 
         /** Echo type: long. */
         private const int EchoTypeLong = 6;
@@ -85,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
-        private const int EchoTypeBinarizableJava = 13;
+        public const int EchoTypeBinarizableJava = 13;
 
         /** Type: object array. */
         private const int EchoTypeObjArray = 14;
@@ -316,14 +319,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
                 var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
 
                 Assert.AreEqual(dotNetBin.Header.HashCode, ((BinaryObject)binRes).Header.HashCode);
 
                 Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
                 Assert.AreEqual(getData(dotNetBin), getData((BinaryObject)binRes));
-#endif
             }
         }
 
@@ -347,7 +348,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
 
-            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
+            Assert.AreEqual(
+                "Failed to resolve class name [platformId=1, platform=.NET, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>

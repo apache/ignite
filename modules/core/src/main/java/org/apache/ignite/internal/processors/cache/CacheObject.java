@@ -38,12 +38,25 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BINARY_ENUM = 101;
 
+    /** */
+    public static final byte TOMBSTONE = -1;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.
      * @return Value.
      */
     @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy);
+
+    /**
+     * Deserializes a value from an internal representation.
+     *
+     * @param ctx Context.
+     * @param cpy If {@code true} need to copy value.
+     * @param ldr Class loader, if it is {@code null}, default class loader will be used.
+     * @return Value.
+     */
+    @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr);
 
     /**
      * @param ctx Context.

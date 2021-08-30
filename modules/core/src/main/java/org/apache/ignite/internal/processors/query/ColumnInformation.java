@@ -55,7 +55,6 @@ public class ColumnInformation {
     /** */
     private final boolean affinityCol;
 
-
     /**
      * @param ordinalPosition Ordinal column position.
      * @param schemaName Schema name.

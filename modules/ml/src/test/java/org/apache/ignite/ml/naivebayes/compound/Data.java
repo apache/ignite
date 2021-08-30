@@ -22,7 +22,6 @@ import java.util.Map;
 
 /** Data class which contains test data with precalculated statistics. */
 final class Data {
-
     /** Private constructor. */
     private Data() {
     }
@@ -48,7 +47,7 @@ final class Data {
     /** */
     static double[] classProbabilities;
 
-    /** Thresholds to binarize discret data. */
+    /** Thresholds to binarize discrete data. */
     static double[][] binarizedDataThresholds;
 
     /** Discrete probabilities. */

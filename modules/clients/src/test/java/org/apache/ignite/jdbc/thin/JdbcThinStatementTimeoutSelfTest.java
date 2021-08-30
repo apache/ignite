@@ -63,7 +63,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -147,6 +147,21 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to set negative timeout. <code>SQLException</> with message "Invalid timeout value." is expected.
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testNegativeQueryTimeout() throws SQLException {
+        GridTestUtils.assertThrows(log, () -> {
+            try (final Connection conn = DriverManager.getConnection(URL + "?queryTimeout=-1")) {
+                try (final Statement stmt = conn.createStatement()) {
+                    return null;
+                }
+            }
+        }, SQLException.class, "Property cannot be lower than 0 [name=queryTimeout, value=-1]");
+    }
+
+    /**
      * Trying to set zero timeout. Zero timeout means no timeout, so no exception is expected.
      *
      * @throws Exception If failed.
@@ -156,6 +171,22 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
         stmt.setQueryTimeout(0);
 
         stmt.executeQuery("select sleep_func(1000);");
+    }
+
+    /**
+     * Trying to set zero timeout. Zero timeout means no timeout, so no exception is expected.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testZeroQueryTimeout() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(URL + "?queryTimeout=0")) {
+            conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+            try (final Statement stmt = conn.createStatement()) {
+                stmt.executeQuery("select sleep_func(1000);");
+            }
+        }
     }
 
     /**
@@ -171,7 +202,32 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
             stmt.executeQuery("select sleep_func(10) from Integer;");
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryTimeoutRetrival() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(URL + "?queryTimeout=5")) {
+            conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+            try (final Statement stmt = conn.createStatement()) {
+                stmt.executeQuery("select sleep_func(2);");
+            }
+
+            try (final Statement stmt = conn.createStatement()) {
+                stmt.setQueryTimeout(1);
+
+                GridTestUtils.assertThrows(log, () -> {
+                    // This takes 10_000 ms.
+                    stmt.executeQuery("select sleep_func(2) from Integer;");
+
+                    return null;
+                }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
+            }
+        }
     }
 
     /**
@@ -186,16 +242,18 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
         stmt.setQueryTimeout(2);
 
         GridTestUtils.assertThrows(log, () -> {
-            stmt.executeQuery("select sleep_func(10) from Integer;");
+            stmt.executeQuery("select sleep_func(5) from Integer;");
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
 
         GridTestUtils.assertThrows(log, () -> {
-            stmt.executeQuery("select sleep_func(10) from Integer;");
+            stmt.executeQuery("select sleep_func(5) from Integer;");
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
+
+        stmt.executeQuery("select sleep_func(50)");
     }
 
     /**
@@ -226,7 +284,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
                     " format csv");
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
     }
 
     /**
@@ -246,7 +304,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
             stmt.executeBatch();
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
     }
 
     /**
@@ -268,7 +326,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
                     + "select _val, sleep_func(10) as s from Integer limit 10");
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
     }
 
     /**
@@ -283,7 +341,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
 
         GridTestUtils.assertThrows(log, () ->
                 stmt.executeUpdate("update Integer set _val=1 where _key > sleep_func(10)"),
-            SQLTimeoutException.class, "The query was cancelled while executing.");
+            SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
     }
 
     /**

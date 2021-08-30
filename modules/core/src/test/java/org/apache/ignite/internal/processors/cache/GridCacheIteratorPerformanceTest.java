@@ -107,7 +107,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
         IgniteInClosure<Cache.Entry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
-        for (int i = 0; i < 10; i ++)
+        for (int i = 0; i < 10; i++)
             iterate(cache, c);
 
         long start = System.currentTimeMillis();

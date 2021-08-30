@@ -20,15 +20,14 @@ package org.apache.ignite.internal.visor.igfs;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Data transfer object for {@link IgniteFileSystem}.
+ * Data transfer object.
  */
+@Deprecated
 public class VisorIgfs extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -37,7 +36,7 @@ public class VisorIgfs extends VisorDataTransferObject {
     private String name;
 
     /** IGFS instance working mode. */
-    private IgfsMode mode;
+    private VisorIgfsMode mode;
 
     /** IGFS metrics. */
     private VisorIgfsMetrics metrics;
@@ -60,25 +59,11 @@ public class VisorIgfs extends VisorDataTransferObject {
      * @param metrics IGFS metrics.
      * @param secondaryFsConfigured Whether IGFS has configured secondary file system.
      */
-    public VisorIgfs(String name, IgfsMode mode, VisorIgfsMetrics metrics, boolean secondaryFsConfigured) {
+    public VisorIgfs(String name, VisorIgfsMode mode, VisorIgfsMetrics metrics, boolean secondaryFsConfigured) {
         this.name = name;
         this.mode = mode;
         this.metrics = metrics;
         this.secondaryFsConfigured = secondaryFsConfigured;
-    }
-
-    /**
-     * Create data transfer object.
-     *
-     * @param igfs Source IGFS.
-     */
-    public VisorIgfs(IgniteFileSystem igfs) {
-        assert igfs != null;
-
-        name = igfs.name();
-        mode = igfs.configuration().getDefaultMode();
-        metrics = new VisorIgfsMetrics(igfs);
-        secondaryFsConfigured = igfs.configuration().getSecondaryFileSystem() != null;
     }
 
     /**
@@ -91,7 +76,7 @@ public class VisorIgfs extends VisorDataTransferObject {
     /**
      * @return IGFS instance working mode.
      */
-    public IgfsMode getMode() {
+    public VisorIgfsMode getMode() {
         return mode;
     }
 
@@ -120,7 +105,7 @@ public class VisorIgfs extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        mode = IgfsMode.fromOrdinal(in.readByte());
+        mode = VisorIgfsMode.fromOrdinal(in.readByte());
         metrics = (VisorIgfsMetrics)in.readObject();
         secondaryFsConfigured = in.readBoolean();
     }

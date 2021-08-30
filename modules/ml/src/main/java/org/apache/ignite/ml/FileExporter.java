@@ -31,7 +31,7 @@ import org.apache.ignite.IgniteLogger;
  */
 public class FileExporter<D> implements Exporter<D, String> {
     /** */
-    private IgniteLogger log = null;
+    private IgniteLogger log;
 
     /**
      * @param log Logger.

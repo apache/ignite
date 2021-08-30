@@ -307,7 +307,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
 
         PartitionUpdateCounter cntr1 = counter(PARTITION_ID, backup1.name());
         assertNotNull(cntr1);
@@ -438,9 +438,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertTrue(cntr.sequential());
 
-        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+        assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -493,7 +493,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                                 assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], upd[1]);
 
                                 runAsync(() -> {
-                                    stopGrid(skipCheckpointOnNodeStop, backup.name()); // Will stop backup node before all commits are applied.
+                                    // Will stop backup node before all commits are applied.
+                                    stopGrid(skipCheckpointOnNodeStop, backup.name());
                                 });
 
                                 return true;
@@ -664,7 +665,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
 
         startGrid(txTops.get(PARTITION_ID).get1().name());
 
@@ -672,7 +673,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -745,20 +746,20 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+        assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
 
-        assertEquals(PRELOAD_KEYS_CNT + expCommittedSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(PRELOAD_KEYS_CNT + expCommittedSize, grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
 
         // Start primary.
         startGrid(txTops.get(PARTITION_ID).get1().name());
 
         awaitPartitionMapExchange();
 
-        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+        assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -844,9 +845,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+        assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -895,18 +896,18 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        IgniteEx client = grid("client");
+        IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
 
         startGrid(txTops.get(PARTITION_ID).get1().name());
 
         awaitPartitionMapExchange();
 
         // TODO assert with expected lwm value.
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }

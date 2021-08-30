@@ -25,10 +25,9 @@ import org.apache.ignite.ml.IgniteModel;
  */
 public interface BayesModel<MODEL extends BayesModel, FEATURES, OUTPUT>
         extends IgniteModel<FEATURES, OUTPUT>, Exportable<MODEL> {
-
     /**
-     * Returns an array where the index correapons a label, and value corresponds {@code log(probalility)} to be this label.
+     * Returns an array where the index correapons a label, and value corresponds {@code log(probability)} to be this label.
      * The prior probabilities are not count.
      */
-    double[] probabilityPowers(FEATURES vector);
+    public double[] probabilityPowers(FEATURES vector);
 }

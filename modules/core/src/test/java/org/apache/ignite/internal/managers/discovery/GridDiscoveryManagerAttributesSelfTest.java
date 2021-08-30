@@ -59,9 +59,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-            cfg.setClientMode(true);
-
         if (binaryMarshallerEnabled)
             cfg.setMarshaller(new BinaryMarshaller());
 
@@ -69,7 +66,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
-        if(secEnabled)
+        if (secEnabled)
             cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;
@@ -118,7 +115,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         System.setProperty(PREFER_IPV4, "true");
 
         for (int i = 0; i < 2; i++) {
-            Ignite g = startGrid(i);
+            Ignite g = i == 1 ? startClientGrid(i) : startGrid(i);
 
             assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
 
@@ -166,7 +163,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
 
             try {
-                IgniteEx g = startGrid(1);
+                IgniteEx g = startClientGrid(1);
 
                 checkIsClientFlag(g);
 
@@ -228,7 +225,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
-                IgniteEx g = startGrid(1);
+                IgniteEx g = startClientGrid(1);
 
                 checkIsClientFlag(g);
 
@@ -319,7 +316,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(prop);
 
             try {
-                IgniteEx g = startGrid(1);
+                IgniteEx g = startClientGrid(1);
 
                 checkIsClientFlag(g);
 
@@ -353,7 +350,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         mode = CONTINUOUS;
 
         try {
-            startGrid(1);
+            startClientGrid(1);
 
             fail();
         }
@@ -375,7 +372,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         p2pEnabled = true;
 
         try {
-            startGrid(1);
+            startClientGrid(1);
 
             fail();
         }
@@ -395,7 +392,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         System.setProperty(PREFER_IPV4, val);
 
         for (int i = 0; i < 2; i++) {
-            Ignite g = startGrid(i);
+            Ignite g = i == 1 ? startClientGrid(i) : startGrid(i);
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
 

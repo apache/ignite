@@ -456,7 +456,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         loadAll(cache, vals.keySet(), true);
 
-        assert cache.size() == 0: "Cache is not empty.";
+        assert cache.size() == 0 : "Cache is not empty.";
 
         checkLastMethod("loadAll");
 

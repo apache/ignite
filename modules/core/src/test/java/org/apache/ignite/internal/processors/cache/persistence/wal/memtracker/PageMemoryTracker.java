@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -55,14 +55,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -75,6 +77,8 @@ import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_REF_MVCC_LEAF;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Page memory tracker.
@@ -83,6 +87,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * applying page snapshots and deltas.
  */
 public class PageMemoryTracker implements IgnitePlugin {
+    /** */
+    private final long DUMP_DIFF_BYTES_LIMIT = 65536L;
+
     /** Plugin context. */
     private final PluginContext ctx;
 
@@ -100,6 +107,9 @@ public class PageMemoryTracker implements IgnitePlugin {
 
     /** Pages. */
     private final Map<FullPageId, DirectMemoryPage> pages = new ConcurrentHashMap<>();
+
+    /** Dumped diff bytes. */
+    private volatile long dumpedDiffBytes = 0L;
 
     /** Page slots. */
     private volatile DirectMemoryPageSlot[] pageSlots;
@@ -141,7 +151,7 @@ public class PageMemoryTracker implements IgnitePlugin {
     private final ConcurrentMap<WALRecord.RecordType, AtomicInteger> stats = new ConcurrentHashMap<>();
 
     /** Checkpoint listener. */
-    private DbCheckpointListener checkpointLsnr;
+    private CheckpointListener checkpointLsnr;
 
     /** Temporary byte buffer, used to compact local pages. */
     private volatile ByteBuffer tmpBuf1;
@@ -199,8 +209,8 @@ public class PageMemoryTracker implements IgnitePlugin {
                     cleanupPages(fullPageId -> fullPageId.groupId() == grp.groupId());
                 }
 
-                @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
-                    super.onPartitionDestroyed(grpId, partId, tag);
+                @Override public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException {
+                    super.truncate(grpId, partId, tag);
 
                     cleanupPages(fullPageId -> fullPageId.groupId() == grpId
                         && PageIdUtils.partId(fullPageId.pageId()) == partId);
@@ -220,27 +230,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
 
-        EncryptionSpi encSpi = ctx.igniteConfiguration().getEncryptionSpi();
-
-        pageMemoryMock = Mockito.mock(PageMemory.class);
-
-        Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
-        Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
-            int grpId = (Integer)mock.getArguments()[0];
-
-            if (gridCtx.encryption().groupKey(grpId) == null)
-                return pageSize;
-
-            return pageSize
-                - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-                - encSpi.blockSize() /* For CRC. */;
-        });
-
-        Mockito.when(pageMemoryMock.pageBuffer(Mockito.anyLong())).then(mock -> {
-            long pageAddr = (Long)mock.getArguments()[0];
-
-            return GridUnsafe.wrapPointer(pageAddr, pageSize);
-        });
+        pageMemoryMock = mockPageMemory();
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
 
@@ -260,6 +250,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         memoryRegion = memoryProvider.nextRegion();
 
+        GridUnsafe.setMemory(memoryRegion.address(), memoryRegion.size(), (byte)0);
+
         maxPages = (int)(maxMemorySize / pageSize);
 
         pageSlots = new DirectMemoryPageSlot[maxPages];
@@ -270,7 +262,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         tmpBuf2 = ByteBuffer.allocateDirect(pageSize);
 
         if (cfg.isCheckPagesOnCheckpoint()) {
-            checkpointLsnr = new DbCheckpointListener() {
+            checkpointLsnr = new CheckpointListener() {
                 @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     if (!checkPages(false, true))
                         throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
@@ -293,6 +285,38 @@ public class PageMemoryTracker implements IgnitePlugin {
         started = true;
 
         log.info("PageMemory tracker started, " + U.readableSize(maxMemorySize, false) + " offheap memory allocated.");
+    }
+
+    /**
+     * Creates a mock for the Page Memory.
+     */
+    private PageMemory mockPageMemory() {
+        PageMemory mock = mock(PageMemory.class);
+
+        when(mock.pageSize()).thenReturn(pageSize);
+
+        when(mock.realPageSize(Mockito.anyInt())).then(invocation -> {
+            int grpId = (Integer)invocation.getArguments()[0];
+
+            if (gridCtx.encryption().getActiveKey(grpId) == null)
+                return pageSize;
+
+            EncryptionSpi encSpi = ctx.igniteConfiguration().getEncryptionSpi();
+
+            return pageSize
+                - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+                - encSpi.blockSize() /* For CRC. */;
+        });
+
+        when(mock.pageBuffer(Mockito.anyLong())).then(invocation -> {
+            long pageAddr = (Long)invocation.getArguments()[0];
+
+            return GridUnsafe.wrapPointer(pageAddr, pageSize);
+        });
+
+        when(mock.metrics()).thenReturn(new DataRegionMetricsImpl(new DataRegionConfiguration(), gridCtx));
+
+        return mock;
     }
 
     /**
@@ -465,8 +489,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 page.lock();
 
-            try {
-                GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
+                try {
+                    GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
 
                     page.changeHistory().clear();
 
@@ -688,7 +712,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         }
 
         if (!locBuf.equals(rmtBuf)) {
-            log.error("Page buffers are not equals: " + fullPageId);
+            log.error("Page buffers are not equals [fullPageId=" + fullPageId + ", pageIo=" + pageIo + ']');
 
             dumpDiff(locBuf, rmtBuf);
 
@@ -717,6 +741,9 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @param buf2 Buffer 2.
      */
     private void dumpDiff(ByteBuffer buf1, ByteBuffer buf2) {
+        if (dumpedDiffBytes > DUMP_DIFF_BYTES_LIMIT)
+            return;
+
         log.error(">>> Diff:");
 
         for (int i = 0; i < Math.min(buf1.remaining(), buf2.remaining()); i++) {
@@ -725,15 +752,21 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             if (b1 != b2)
                 log.error(String.format("        0x%04X: %02X %02X", i, b1, b2));
+
+            dumpedDiffBytes++;
         }
 
         if (buf1.remaining() < buf2.remaining()) {
             for (int i = buf1.remaining(); i < buf2.remaining(); i++)
                 log.error(String.format("        0x%04X:    %02X", i, buf2.get(buf2.position() + i)));
+
+            dumpedDiffBytes++;
         }
         else if (buf1.remaining() > buf2.remaining()) {
             for (int i = buf2.remaining(); i < buf1.remaining(); i++)
                 log.error(String.format("        0x%04X: %02X", i, buf1.get(buf1.position() + i)));
+
+            dumpedDiffBytes++;
         }
     }
 

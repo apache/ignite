@@ -78,7 +78,7 @@ public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, Gri
 
             for (IgniteInternalTx tx : transactions) {
                 if (tx.xid().equals(arg.uuid()) ||
-                    tx.nearXidVersion().asGridUuid().equals(arg.uuid()) ||
+                    tx.nearXidVersion().asIgniteUuid().equals(arg.uuid()) ||
                     tx.xidVersion().equals(arg.gridCacheVersion()) ||
                     tx.nearXidVersion().equals(arg.gridCacheVersion()))
                     return tx.nearXidVersion();

@@ -35,7 +35,7 @@ public class BaselineAutoAdjustInMemoryTest extends BaselineAutoAdjustTest {
     public void testWithZeroTimeout() throws Exception {
         startGrids(3);
 
-        startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+        startClientGrid(getConfiguration(UUID.randomUUID().toString()));
 
         stopGrid(2);
 
@@ -53,7 +53,7 @@ public class BaselineAutoAdjustInMemoryTest extends BaselineAutoAdjustTest {
 
         assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
 
-        IgniteEx client = startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+        IgniteEx client = startClientGrid(getConfiguration(UUID.randomUUID().toString()));
 
         assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
 

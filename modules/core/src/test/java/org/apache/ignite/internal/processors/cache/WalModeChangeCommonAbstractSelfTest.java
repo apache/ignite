@@ -328,7 +328,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfig(CacheMode mode) {
-        return cacheConfig(CACHE_NAME,null, mode, TRANSACTIONAL);
+        return cacheConfig(CACHE_NAME, null, mode, TRANSACTIONAL);
     }
 
     /**
@@ -340,7 +340,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfig(String name, CacheMode mode, CacheAtomicityMode atomicityMode) {
-        return cacheConfig(name,null,mode,atomicityMode);
+        return cacheConfig(name, null, mode, atomicityMode);
     }
 
     /**

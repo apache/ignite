@@ -46,17 +46,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.
  */
-@WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
 public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";
@@ -81,7 +77,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
             .setCheckpointFrequency(10 * 60 * 1000)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(512 * 1024 * 1024)
+                    .setMaxSize(256 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             );
 
@@ -134,6 +130,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         haltFileIO = true;
 
         additionalArgs = new ArrayList<>();
@@ -182,7 +179,13 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         corruptedNode.cluster().active(true);
 
+        // Not all owners have been returned, data loss is expected.
+        assertFalse(grid(0).cache(CACHE).lostPartitions().isEmpty());
+        assertFalse(grid(corruptedNodeName).cache(CACHE).lostPartitions().isEmpty());
+
         resetBaselineTopology();
+
+        grid(0).resetLostPartitions(Collections.singleton(CACHE));
 
         // If index was corrupted, rebalance or one of the following queries should be failed.
         awaitPartitionMapExchange();

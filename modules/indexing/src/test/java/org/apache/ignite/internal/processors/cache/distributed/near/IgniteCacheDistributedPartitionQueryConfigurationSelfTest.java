@@ -67,7 +67,7 @@ public class IgniteCacheDistributedPartitionQueryConfigurationSelfTest extends G
         });
 
         // Expecting ordered set.
-        int[] tmp = new int[] {6, 2 ,3};
+        int[] tmp = new int[] {6, 2, 3};
         qry.setPartitions(tmp);
 
         assertTrue(Arrays.equals(new int[]{2, 3, 6}, tmp));

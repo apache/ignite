@@ -56,7 +56,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -98,20 +97,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         );
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -189,6 +174,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     public void testBltChangeTopVerRemoveOnlineNodeFails() throws Exception {
         Ignite ignite = startGridWithConsistentId("A");
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
 
         long singleNodeTopVer = ignite.cluster().topologyVersion();
@@ -222,6 +208,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         Ignite nodeB = startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("OnlineConsID");
 
+        nodeC.cluster().baselineAutoAdjustEnabled(false);
         nodeC.cluster().active(true);
 
         boolean expectedExceptionIsThrown = false;
@@ -249,6 +236,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
+        nodeC.cluster().baselineAutoAdjustEnabled(false);
         nodeC.active(true);
 
         stopAllGrids(false);
@@ -408,6 +396,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         IgniteEx grid = grid("B");
 
+        grid.cluster().baselineAutoAdjustEnabled(false);
         grid.cluster().active(true);
 
         IgniteCache<Object, Object> cache = grid.getOrCreateCache(CACHE_NAME);
@@ -608,6 +597,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
+        nodeA.cluster().baselineAutoAdjustEnabled(false);
         nodeC.cluster().active(true);
 
         stopGrid("B", false);
@@ -663,6 +653,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         Ignite nodeB = startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
+        nodeA.cluster().baselineAutoAdjustEnabled(false);
         nodeC.cluster().active(true);
 
         IgniteEx nodeD = (IgniteEx) startGridWithConsistentId("D");
@@ -687,6 +678,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         Ignite nodeB = startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
+        nodeA.cluster().baselineAutoAdjustEnabled(false);
         nodeA.cluster().active(true);
 
         nodeA.cluster().setBaselineTopology(null);
@@ -884,6 +876,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("B");
         startGridWithConsistentId("C");
 
+        nodeA.cluster().baselineAutoAdjustEnabled(false);
         nodeA.cluster().active(true);
 
         stopGrid("C", false);
@@ -936,6 +929,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("B");
         startGridWithConsistentId("C");
 
+        nodeA.cluster().baselineAutoAdjustEnabled(false);
         nodeA.cluster().active(true);
 
         stopGrid("C", false);

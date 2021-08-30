@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.io.Serializable;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -123,6 +124,53 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /** @serial Query entities. */
     private QueryEntity[] qryEntities = null;
+
+    /** @serial Expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
+    /** Default constructor. */
+    public ClientCacheConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * Creates client cache configuration by coping all configuration properties from the given one.
+     *
+     * @param ccfg Client cache configuration to copy from.
+     */
+    public ClientCacheConfiguration(ClientCacheConfiguration ccfg) {
+        atomicityMode = ccfg.getAtomicityMode();
+        backups = ccfg.getBackups();
+        cacheMode = ccfg.getCacheMode();
+        cpOnRead = ccfg.isCopyOnRead();
+        dataRegionName = ccfg.getDataRegionName();
+        dfltLockTimeout = ccfg.getDefaultLockTimeout();
+        eagerTtl = ccfg.isEagerTtl();
+        expiryPlc = ccfg.getExpiryPolicy();
+        grpName = ccfg.getGroupName();
+        keyCfg = ccfg.getKeyConfiguration();
+        maxConcurrentAsyncOperations = ccfg.getMaxConcurrentAsyncOperations();
+        maxQryIteratorsCnt = ccfg.getMaxQueryIteratorsCount();
+        name = ccfg.getName();
+        onheapCacheEnabled = ccfg.isOnheapCacheEnabled();
+        partLossPlc = ccfg.getPartitionLossPolicy();
+        qryDetailMetricsSize = ccfg.getQueryDetailMetricsSize();
+        qryEntities = ccfg.getQueryEntities();
+        qryParallelism = ccfg.getQueryParallelism();
+        readFromBackup = ccfg.isReadFromBackup();
+        rebalanceBatchSize = ccfg.getRebalanceBatchSize();
+        rebalanceBatchesPrefetchCnt = ccfg.getRebalanceBatchesPrefetchCount();
+        rebalanceDelay = ccfg.getRebalanceDelay();
+        rebalanceMode = ccfg.getRebalanceMode();
+        rebalanceOrder = ccfg.getRebalanceOrder();
+        rebalanceThrottle = ccfg.getRebalanceThrottle();
+        rebalanceTimeout = ccfg.getRebalanceTimeout();
+        sqlEscapeAll = ccfg.isSqlEscapeAll();
+        sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
+        sqlSchema = ccfg.getSqlSchema();
+        statisticsEnabled = ccfg.isStatisticsEnabled();
+        writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
+    }
 
     /**
      * @return Cache name.
@@ -644,6 +692,22 @@ public final class ClientCacheConfiguration implements Serializable {
      */
     public ClientCacheConfiguration setQueryEntities(QueryEntity... newVal) {
         qryEntities = newVal;
+
+        return this;
+    }
+
+    /**
+     * @return Expire policy.
+     */
+    public ExpiryPolicy getExpiryPolicy() {
+        return expiryPlc;
+    }
+
+    /**
+     * @param expiryPlc Expiry policy.
+     */
+    public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
+        this.expiryPlc = expiryPlc;
 
         return this;
     }

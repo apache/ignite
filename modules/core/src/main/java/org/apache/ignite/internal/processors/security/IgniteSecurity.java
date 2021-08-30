@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -40,11 +41,6 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * </ul>
  */
 public interface IgniteSecurity {
-    /** */
-    static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
-        "is not equal to remote node's grid security processor class " +
-        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
-
     /**
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
@@ -64,6 +60,9 @@ public interface IgniteSecurity {
      * @return Security context holder.
      */
     public OperationSecurityContext withContext(UUID nodeId);
+
+    /** @return {@code True} if current thread executed in default security context. */
+    public boolean isDefaultContext();
 
     /**
      * @return SecurityContext of holder {@link OperationSecurityContext}.
@@ -121,8 +120,46 @@ public interface IgniteSecurity {
     }
 
     /**
+     * @return Instance of IgniteSandbox.
+     */
+    public IgniteSandbox sandbox();
+
+    /**
      * @return True if IgniteSecurity is a plugin implementation,
      * false if it's used a default NoOp implementation.
      */
     public boolean enabled();
+
+    /**
+     * Creates user with the specified login and password.
+     *
+     * @param login Login of the user to be created.
+     * @param pwd User password.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public void createUser(String login, char[] pwd) throws IgniteCheckedException;
+
+    /**
+     * Alters password of user with the specified login.
+     *
+     * @param login Login of the user which password should be altered.
+     * @param pwd User password to alter.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public void alterUser(String login, char[] pwd) throws IgniteCheckedException;
+
+    /**
+     * Drops user with the specified login.
+     *
+     * @param login Login of the user to be dropped.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public void dropUser(String login) throws IgniteCheckedException;
+
+    /**
+     * Callback for local join events for which the regular events are not generated.
+     * <p/>
+     * Local join event is expected in cases of joining to topology or client reconnect.
+     */
+    public void onLocalJoin();
 }

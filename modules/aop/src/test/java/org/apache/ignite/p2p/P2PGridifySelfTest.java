@@ -28,12 +28,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 @GridCommonTest(group = "P2P")
 public class P2PGridifySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
@@ -94,7 +96,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @return The same value as parameter has.
      */
     @Gridify(taskName = "org.apache.ignite.p2p.GridP2PTestTask",
-        igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+        igniteInstanceName = "org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public int executeGridify(int res) {
         return res;
     }
@@ -130,7 +132,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @param res Result.
      * @return The same value as parameter has.
      */
-    @Gridify(igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+    @Gridify(igniteInstanceName = "org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public Integer executeGridifyResource(int res) {
         String path = "org/apache/ignite/p2p/p2p.properties";
 
@@ -140,7 +142,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
         );
 
         // Test property file load.
-        byte [] bytes = new byte[20];
+        byte[] bytes = new byte[20];
 
         try (InputStream in = tstClsLdr.getResourceAsStream(path)) {
             if (in == null) {

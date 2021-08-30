@@ -163,7 +163,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
     public void testGridJobMetrics() throws Exception {
         latch = new CountDownLatch(1);
 
-        try(IgniteEx g = startGrid(0)) {
+        try (IgniteEx g = startGrid(0)) {
             MetricRegistry mreg = g.context().metric().registry(JOBS_METRICS);
 
             LongMetric started = mreg.findMetric(STARTED);

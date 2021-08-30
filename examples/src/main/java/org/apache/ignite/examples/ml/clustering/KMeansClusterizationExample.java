@@ -24,14 +24,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run KMeans clustering algorithm ({@link KMeansTrainer}) over distributed dataset.
@@ -62,7 +62,8 @@ public class KMeansClusterizationExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer =
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
                 KMeansTrainer trainer = new KMeansTrainer();
 
@@ -73,8 +74,8 @@ public class KMeansClusterizationExample {
                 );
 
                 System.out.println(">>> KMeans centroids");
-                Tracer.showAscii(mdl.getCenters()[0]);
-                Tracer.showAscii(mdl.getCenters()[1]);
+                Tracer.showAscii(mdl.centers()[0]);
+                Tracer.showAscii(mdl.centers()[1]);
                 System.out.println(">>>");
 
                 System.out.println(">>> --------------------------------------------");
@@ -97,7 +98,8 @@ public class KMeansClusterizationExample {
                 }
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

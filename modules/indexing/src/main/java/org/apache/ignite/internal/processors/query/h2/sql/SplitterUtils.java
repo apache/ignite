@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.TreeSet;
 import org.apache.ignite.IgniteException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.TreeSet;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MAX;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -45,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -76,9 +77,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Asynchronous rollback marker for lock futures. */
     public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
@@ -111,12 +109,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
 
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    protected GridDhtTxLocalAdapter() {
-        // No-op.
-    }
+    /** Tracing span. */
+    private Span span = NoopSpan.INSTANCE;
 
     /**
      * @param xidVer Transaction version.
@@ -459,7 +453,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(GridCacheContext ctx, int part) {
+    @Override public void addInvalidPartition(int cacheId, int part) {
         assert false : "DHT transaction encountered invalid partition [part=" + part + ", tx=" + this + ']';
     }
 
@@ -934,6 +928,20 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         }
 
         return prepFut;
+    }
+
+    /**
+     * @return Tracing span.
+     */
+    public Span span() {
+        return span;
+    }
+
+    /**
+     * @param span New tracing span.
+     */
+    public void span(Span span) {
+        this.span = span;
     }
 
     /** {@inheritDoc} */

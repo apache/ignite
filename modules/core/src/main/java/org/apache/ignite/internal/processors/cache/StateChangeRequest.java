@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
@@ -37,22 +38,26 @@ public class StateChangeRequest {
     private final BaselineTopologyHistoryItem prevBltHistItem;
 
     /** */
-    private final boolean activeChanged;
+    private ClusterState prevState;
 
     /** */
     private final AffinityTopologyVersion topVer;
 
     /**
      * @param msg Message.
+     * @param bltHistItem Baseline history item.
+     * @param prevState Previous cluster state.
      * @param topVer State change topology versoin.
      */
-    public StateChangeRequest(ChangeGlobalStateMessage msg,
+    public StateChangeRequest(
+        ChangeGlobalStateMessage msg,
         BaselineTopologyHistoryItem bltHistItem,
-        boolean activeChanged,
-        AffinityTopologyVersion topVer) {
+        ClusterState prevState,
+        AffinityTopologyVersion topVer
+    ) {
         this.msg = msg;
         prevBltHistItem = bltHistItem;
-        this.activeChanged = activeChanged;
+        this.prevState = prevState;
         this.topVer = topVer;
     }
 
@@ -79,23 +84,32 @@ public class StateChangeRequest {
 
     /**
      * @return New state.
+     * @deprecated Use {@link #state()} instead.
      */
+    @Deprecated
     public boolean activate() {
         return msg.activate();
     }
 
     /**
-     * @return Read-only mode flag.
+     * @return New cluster state.
      */
-    public boolean readOnly() {
-        return msg.readOnly();
+    public ClusterState state() {
+        return msg.state();
+    }
+
+    /**
+     * @return Previous cluster state.
+     */
+    public ClusterState prevState() {
+        return prevState;
     }
 
     /**
      * @return {@code True} if active state was changed.
      */
     public boolean activeChanged() {
-        return activeChanged;
+        return prevState.active() != msg.state().active();
     }
 
     /**

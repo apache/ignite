@@ -59,31 +59,35 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     private final LongAdderMetric physicalReadInnerCtr;
 
     /** */
-    private final String cacheName;
+    private final String grpName;
 
     /** */
     private final String idxName;
 
+    /** */
+    private IoStatisticsType type;
+
     /**
      * @param type Type of statistics.
-     * @param cacheName Cache name.
+     * @param grpName Group name.
      * @param idxName Index name.
      * @param mmgr Metric manager.
      */
     public IoStatisticsHolderIndex(
         IoStatisticsType type,
-        String cacheName,
+        String grpName,
         String idxName,
         GridMetricManager mmgr) {
-        assert cacheName != null && idxName != null;
+        assert grpName != null && idxName != null;
 
-        this.cacheName = cacheName;
+        this.type = type;
+        this.grpName = grpName;
         this.idxName = idxName;
 
-        MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), cacheName, idxName));
+        MetricRegistry mreg = mmgr.registry(metricRegistryName());
 
         mreg.longMetric("startTime", null).value(U.currentTimeMillis());
-        mreg.objectMetric("name", String.class, null).value(cacheName);
+        mreg.objectMetric("name", String.class, null).value(grpName);
         mreg.objectMetric("indexName", String.class, null).value(idxName);
 
         logicalReadLeafCtr = mreg.longAdderMetric(LOGICAL_READS_LEAF, null);
@@ -148,13 +152,18 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     }
 
     /** {@inheritDoc} */
+    @Override public String metricRegistryName() {
+        return metricName(type.metricGroupName(), grpName, idxName);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IoStatisticsHolderIndex.class, this,
             "logicalReadLeafCtr", logicalReadLeafCtr,
             "logicalReadInnerCtr", logicalReadInnerCtr,
             "physicalReadLeafCtr", physicalReadLeafCtr,
             "physicalReadInnerCtr", physicalReadInnerCtr,
-            "cacheName", cacheName,
+            "grpName", grpName,
             "idxName", idxName);
     }
 }

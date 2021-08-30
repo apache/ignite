@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,11 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /** */
 public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest {
@@ -73,20 +69,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         persistence = false;
         srvcCfg = null;
@@ -111,7 +93,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testDeployOutsideBaselineNoPersistence() throws Exception {
         checkDeploymentFromOutsideNode(false, false);
     }
@@ -128,7 +109,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testDeployOutsideBaselineStaticNoPersistence() throws Exception {
         checkDeploymentFromOutsideNode(false, true);
     }
@@ -177,7 +157,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, false);
     }
@@ -249,6 +228,8 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         Ignite insideNode = startGrid(0);
 
+        insideNode.cluster().baselineAutoAdjustEnabled(false);
+
         if (persistence)
             insideNode.cluster().active(true);
         else {
@@ -275,6 +256,8 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
         persistence = true;
 
         Ignite insideNode = startGrid(0);
+
+        insideNode.cluster().baselineAutoAdjustEnabled(false);
 
         IgniteCluster cluster = insideNode.cluster();
 
@@ -312,6 +295,9 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
         persistence = true;
 
         Ignite insideNode = startGrid(0);
+
+        insideNode.cluster().baselineAutoAdjustEnabled(false);
+
         startGrid(1);
 
         IgniteCluster cluster = insideNode.cluster();
@@ -367,6 +353,8 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
             depFut.get(10, TimeUnit.SECONDS);
         }
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         return ignite;
     }

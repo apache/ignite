@@ -18,12 +18,20 @@ package org.apache.ignite.mxbean;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This interface defines a JMX view on {@link DataRegionMetrics}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=io.dataregion.{data_region_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 @MXBeanDescription("MBean that provides access to DataRegionMetrics of a local Apache Ignite node.")
@@ -117,6 +125,28 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @MXBeanDescription("Offheap used size in bytes.")
     @Override public long getOffheapUsedSize();
 
+    /** {@inheritDoc} */
+    @MXBeanDescription("The size of the memory page in bytes.")
+    @Override public int getPageSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription(
+        "The total size of pages loaded to the RAM. When persistence is disabled, this metric is equal to TotalAllocatedSize."
+    )
+    @Override public long getPhysicalMemorySize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The used checkpoint buffer size in pages.")
+    @Override public long getUsedCheckpointBufferPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The used checkpoint buffer size in bytes.")
+    @Override public long getUsedCheckpointBufferSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The checkpoint buffer size in bytes.")
+    @Override public long getCheckpointBufferSize();
+
     /**
      * Enables memory metrics collection on an Apache Ignite node.
      */
@@ -136,17 +166,16 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @param rateTimeInterval Time interval (in milliseconds) used for allocation and eviction rates calculations.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @MXBeanDescription(
         "Sets time interval for pages allocation and eviction monitoring purposes."
     )
-    @MXBeanParametersNames(
-        "rateTimeInterval"
-    )
-    @MXBeanParametersDescriptions(
-        "Time interval (in milliseconds) to set."
-    )
-    public void rateTimeInterval(long rateTimeInterval);
+    @Deprecated
+    public void rateTimeInterval(
+        @MXBeanParameter(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
+            long rateTimeInterval
+    );
 
     /**
      * Sets a number of sub-intervals the whole {@link #rateTimeInterval(long)} will be split into to calculate
@@ -157,15 +186,13 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      * calculation overhead.
      *
      * @param subInts A number of sub-intervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @MXBeanDescription(
         "Sets a number of sub-intervals to calculate allocation and eviction rates metrics."
     )
-    @MXBeanParametersNames(
-        "subInts"
-    )
-    @MXBeanParametersDescriptions(
-        "Number of subintervals to set."
-    )
-    public void subIntervals(int subInts);
+    @Deprecated
+    public void subIntervals(
+        @MXBeanParameter(name = "subInts", description = "Number of subintervals to set.") int subInts
+    );
 }

@@ -92,25 +92,25 @@ public class DepthFirstSearchTest {
         assertAllNull(wfg);
 
         wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, new HashSet<GridCacheVersion>(){{add(T2);}});
-            put(T2, new HashSet<GridCacheVersion>(){{add(T3);}});
-            put(T4, new HashSet<GridCacheVersion>(){{add(T1); add(T3);}});
+            put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
+            put(T2, new HashSet<GridCacheVersion>() {{ add(T3); }});
+            put(T4, new HashSet<GridCacheVersion>() {{ add(T1); add(T3); }});
         }};
 
         assertAllNull(wfg);
 
         wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, new HashSet<GridCacheVersion>(){{add(T2);}});
-            put(T2, new HashSet<GridCacheVersion>(){{add(T3);}});
-            put(T4, new HashSet<GridCacheVersion>(){{add(T1); add(T2); add(T3);}});
+            put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
+            put(T2, new HashSet<GridCacheVersion>() {{ add(T3); }});
+            put(T4, new HashSet<GridCacheVersion>() {{ add(T1); add(T2); add(T3); }});
         }};
 
         assertAllNull(wfg);
 
         wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, new HashSet<GridCacheVersion>(){{add(T2);}});
-            put(T3, new HashSet<GridCacheVersion>(){{add(T4);}});
-            put(T4, new HashSet<GridCacheVersion>(){{add(T1);}});
+            put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
+            put(T3, new HashSet<GridCacheVersion>() {{ add(T4); }});
+            put(T4, new HashSet<GridCacheVersion>() {{ add(T1); }});
         }};
 
         assertAllNull(wfg);

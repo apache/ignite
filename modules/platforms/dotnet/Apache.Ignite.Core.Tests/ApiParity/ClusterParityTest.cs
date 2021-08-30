@@ -23,7 +23,7 @@
     /// <summary>
     /// Tests that <see cref="ICluster"/> has all APIs from Java Ignite interface.
     /// </summary>
-    [Ignore(ParityTest.IgnoreReason)]
+    [Explicit(ParityTest.IgnoreReason)]
     public class ClusterParityTest
     {
         /** Members that are not needed on .NET side. */
@@ -37,15 +37,17 @@
             "isBaselineAutoAdjustEnabled",
             "baselineAutoAdjustEnabled",
             "baselineAutoAdjustTimeout",
-            "baselineAutoAdjustStatus",
-            "readOnly"
+            "baselineAutoAdjustStatus"
         };
 
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
             "enableStatistics",  // IGNITE-7276
-            "clearStatistics"  // IGNITE-9017
+            "clearStatistics",  // IGNITE-9017
+            "state", // IGNITE-11863
+            "id",  // IGNITE-13141
+            "tag"  // IGNITE-13141
         };
 
         /// <summary>

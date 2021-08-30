@@ -227,7 +227,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
-        lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
+        lockVer = tx != null ? tx.xidVersion() : cctx.cache().nextVersion();
 
         futId = IgniteUuid.randomUuid();
 
@@ -577,7 +577,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -596,6 +598,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -843,30 +848,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
-            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)){
-                    Throwable err = null;
-
-                    // Before cache validation, make sure that this topology future is already completed.
-                    try {
-                        fut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        err = fut.error();
-                    }
-
-                    err = (err == null)? fut.validateCache(cctx, recovery, read, null, keys): err;
-
-                    if (err != null) {
-                        onDone(err);
-
-                        return;
-                    }
-
-                    break;
-                }
-            }
-
             // Continue mapping on the same topology version as it was before.
             if (this.topVer == null)
                 this.topVer = topVer;
@@ -895,8 +876,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         try {
             if (cctx.topology().stopping()) {
                 onDone(
-                    cctx.shared().cache().isCacheRestarting(cctx.name())?
-                        new IgniteCacheRestartingException(cctx.name()):
+                    cctx.shared().cache().isCacheRestarting(cctx.name()) ?
+                        new IgniteCacheRestartingException(cctx.name()) :
                         new CacheStoppedException(cctx.name()));
 
                 return;
@@ -1068,7 +1049,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                                 if (cand != null) {
                                     if (tx == null && !cand.reentry())
-                                        cctx.mvcc().addExplicitLock(threadId,cand,topVer);
+                                        cctx.mvcc().addExplicitLock(threadId, cand, topVer);
 
                                     IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
 
@@ -1647,10 +1628,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                 if (res.compatibleRemapVersion()) {
                     if (tx != null) {
-                        // Versions are compatible.
-                        cctx.shared().exchange().
-                            lastAffinityChangedTopologyVersion(res.clientRemapVersion(), tx.topologyVersionSnapshot());
-
                         tx.onRemap(res.clientRemapVersion(), false);
 
                         // Use remapped version for all subsequent mappings.

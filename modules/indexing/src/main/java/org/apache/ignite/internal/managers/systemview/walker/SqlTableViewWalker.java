@@ -29,32 +29,38 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlTableViewWalker implements SystemViewRowAttributeWalker<SqlTableView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "tableName", String.class);
-        v.accept(1, "schemaName", String.class);
-        v.accept(2, "cacheName", String.class);
-        v.accept(3, "cacheId", int.class);
-        v.accept(4, "affinityKeyColumn", String.class);
-        v.accept(5, "keyAlias", String.class);
-        v.accept(6, "valueAlias", String.class);
-        v.accept(7, "keyTypeName", String.class);
-        v.accept(8, "valueTypeName", String.class);
+        v.accept(0, "cacheGroupId", int.class);
+        v.accept(1, "cacheGroupName", String.class);
+        v.accept(2, "cacheId", int.class);
+        v.accept(3, "cacheName", String.class);
+        v.accept(4, "schemaName", String.class);
+        v.accept(5, "tableName", String.class);
+        v.accept(6, "affinityKeyColumn", String.class);
+        v.accept(7, "keyAlias", String.class);
+        v.accept(8, "valueAlias", String.class);
+        v.accept(9, "keyTypeName", String.class);
+        v.accept(10, "valueTypeName", String.class);
+        v.accept(11, "isIndexRebuildInProgress", boolean.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(SqlTableView row, AttributeWithValueVisitor v) {
-        v.accept(0, "tableName", String.class, row.tableName());
-        v.accept(1, "schemaName", String.class, row.schemaName());
-        v.accept(2, "cacheName", String.class, row.cacheName());
-        v.acceptInt(3, "cacheId", row.cacheId());
-        v.accept(4, "affinityKeyColumn", String.class, row.affinityKeyColumn());
-        v.accept(5, "keyAlias", String.class, row.keyAlias());
-        v.accept(6, "valueAlias", String.class, row.valueAlias());
-        v.accept(7, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(8, "valueTypeName", String.class, row.valueTypeName());
+        v.acceptInt(0, "cacheGroupId", row.cacheGroupId());
+        v.accept(1, "cacheGroupName", String.class, row.cacheGroupName());
+        v.acceptInt(2, "cacheId", row.cacheId());
+        v.accept(3, "cacheName", String.class, row.cacheName());
+        v.accept(4, "schemaName", String.class, row.schemaName());
+        v.accept(5, "tableName", String.class, row.tableName());
+        v.accept(6, "affinityKeyColumn", String.class, row.affinityKeyColumn());
+        v.accept(7, "keyAlias", String.class, row.keyAlias());
+        v.accept(8, "valueAlias", String.class, row.valueAlias());
+        v.accept(9, "keyTypeName", String.class, row.keyTypeName());
+        v.accept(10, "valueTypeName", String.class, row.valueTypeName());
+        v.acceptBoolean(11, "isIndexRebuildInProgress", row.isIndexRebuildInProgress());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 9;
+        return 12;
     }
 }

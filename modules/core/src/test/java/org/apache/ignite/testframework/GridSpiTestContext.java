@@ -29,7 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -44,13 +45,16 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -62,6 +66,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -90,7 +95,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private final Map<ClusterNode, Serializable> sentMsgs = new HashMap<>();
 
     /** */
-    private final ConcurrentMap<String, Map> cache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Map<?, ?>> cache = new ConcurrentHashMap<>();
 
     /** */
     private MessageFormatter formatter;
@@ -101,6 +106,9 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** */
     private GridTimeoutProcessor timeoutProcessor;
 
+    /** */
+    private volatile Function<String, ReadOnlyMetricRegistry> metricsRegistryProducer;
+
     /**
      * @param timeoutProcessor Timeout processor.
      */
@@ -108,7 +116,15 @@ public class GridSpiTestContext implements IgniteSpiContext {
         this.timeoutProcessor = timeoutProcessor;
     }
 
+    /**
+     * @param producer Producer to create {@link ReadOnlyMetricRegistry} objects.
+     */
+    public void metricsRegistryProducer(Function<String, ReadOnlyMetricRegistry> producer) {
+        this.metricsRegistryProducer = producer;
+    }
+
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Collection<ClusterNode> remoteNodes() {
         return rmtNodes;
     }
@@ -333,13 +349,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
-        try {
-            addMessageListener(TOPIC_COMM_USER,
-                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        addMessageListener(TOPIC_COMM_USER, new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
     }
 
     /**
@@ -362,13 +372,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
-        try {
-            removeMessageListener(TOPIC_COMM_USER,
-                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        removeMessageListener(TOPIC_COMM_USER, new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
     }
 
     /**
@@ -401,7 +405,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void addLocalEventListener(GridLocalEventListener lsnr, int... types) {
-        Set<Integer> typeSet = F.addIfAbsent(evtLsnrs, lsnr, F.<Integer>newSet());
+        Set<Integer> typeSet = F.addIfAbsent(evtLsnrs, lsnr, F.newSet());
 
         assert typeSet != null;
 
@@ -567,9 +571,18 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new GridIoMessageFactory(null);
+            factory = new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
 
         return factory;
+    }
+
+    /**
+     * Sets custom test message factory.
+     *
+     * @param factory Message factory.
+     */
+    public void messageFactory(MessageFactory factory) {
+        this.factory = factory;
     }
 
     /** {@inheritDoc} */
@@ -614,14 +627,36 @@ public class GridSpiTestContext implements IgniteSpiContext {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+        if (metricsRegistryProducer != null)
+            return metricsRegistryProducer.apply(name);
+
+        return new MetricRegistry(name, null, null, new NullLogger());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeMetricRegistry(String name) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+        // No-op.
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.
      */
-    @SuppressWarnings("unchecked")
     private <K, V> Map<K, V> getOrCreateCache(String cacheName) {
         synchronized (cache) {
-            Map<K, V> map = cache.get(cacheName);
+            Map<K, V> map = (Map<K, V>)cache.get(cacheName);
 
             if (map == null)
                 cache.put(cacheName, map = new ConcurrentHashMap<>());
@@ -653,7 +688,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /**
      * This class represents a message listener wrapper that knows about peer deployment.
      */
-    private class GridLocalMessageListener implements GridMessageListener {
+    private static class GridLocalMessageListener implements GridMessageListener {
         /** Predicate listeners. */
         private final IgniteBiPredicate<UUID, Object> predLsnr;
 
@@ -663,10 +698,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
         /**
          * @param topic User topic.
          * @param predLsnr Predicate listener.
-         * @throws IgniteCheckedException If failed to inject resources to predicates.
          */
-        GridLocalMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
-            throws IgniteCheckedException {
+        GridLocalMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr) {
             this.topic = topic;
             this.predLsnr = predLsnr;
         }

@@ -63,7 +63,7 @@ public class IgniteComputeJobOneThreadTest extends GridCommonAbstractTest {
         IgniteFuture fut = null;
 
         for (int i = 0; i < 10000; i++) {
-            fut =  ignite.compute().runAsync(new IgniteRunnable() {
+            fut = ignite.compute().runAsync(new IgniteRunnable() {
                 @Override public void run() {
 
                 }

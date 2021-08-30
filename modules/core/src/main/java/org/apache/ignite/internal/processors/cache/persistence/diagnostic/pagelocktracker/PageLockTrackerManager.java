@@ -17,34 +17,62 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.State;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.NotNull;
 
-import static java.io.File.separatorChar;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_TYPE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 
 /**
  * Page lock manager.
  */
 public class PageLockTrackerManager implements LifecycleAware {
+    /** No-op page lock listener. */
+    public static final PageLockListener NOOP_LSNR = new PageLockListener() {
+        @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
+            // No-op.
+        }
+
+        @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
+            // No-op.
+        }
+
+        @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
+            // No-op.
+        }
+
+        @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
+            // No-op.
+        }
+
+        @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
+            // No-op.
+        }
+
+        @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
+            // No-op.
+        }
+
+        @Override public void close() {
+            // No-op.
+        }
+    };
+
     /** */
-    private static final long OVERHEAD_SIZE = 16 + 8  + 8 + 8 + 8;
+    private static final long OVERHEAD_SIZE = 16 + 8 + 8 + 8 + 8;
 
     /** */
     private final MemoryCalculator memoryCalculator = new MemoryCalculator();
@@ -59,20 +87,19 @@ public class PageLockTrackerManager implements LifecycleAware {
     private final IgniteLogger log;
 
     /** */
-    private Set<State> threads;
+    private Set<PageLockThreadState> threads;
 
     /** */
     private final String managerNameId;
 
     /** */
-    private final boolean trackingEnable;
-
+    private final boolean trackingEnabled;
 
     /**
      * Default constructor.
      */
     public PageLockTrackerManager(IgniteLogger log) {
-        this(log, "mgr_" + UUID.randomUUID().toString());
+        this(log, "mgr_" + UUID.randomUUID());
     }
 
     /**
@@ -80,7 +107,7 @@ public class PageLockTrackerManager implements LifecycleAware {
      * @param managerNameId Manager name.
      */
     public PageLockTrackerManager(IgniteLogger log, String managerNameId) {
-        this.trackingEnable = !(getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, HEAP_LOG) == -1);
+        this.trackingEnabled = getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, HEAP_LOG) != -1;
         this.managerNameId = managerNameId;
         this.mxBean = new PageLockTrackerMXBeanImpl(this, memoryCalculator);
         this.sharedPageLockTracker = new SharedPageLockTracker(this::onHangThreads, memoryCalculator);
@@ -92,7 +119,7 @@ public class PageLockTrackerManager implements LifecycleAware {
     /**
      * @param threads Hang threads.
      */
-    private void onHangThreads(@NotNull Set<State> threads) {
+    private void onHangThreads(@NotNull Set<PageLockThreadState> threads) {
         assert threads != null;
 
         // Processe only one for same list thread state.
@@ -100,7 +127,7 @@ public class PageLockTrackerManager implements LifecycleAware {
         if (!threads.equals(this.threads)) {
             this.threads = threads;
 
-            ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
+            SharedPageLockTrackerDump dump = sharedPageLockTracker.dump();
 
             StringBuilder sb = new StringBuilder();
 
@@ -119,12 +146,13 @@ public class PageLockTrackerManager implements LifecycleAware {
             log.warning("Threads hanged: [" + sb + "]");
             // If some thread is hangs
             // Print to log.
-            log.warning(ToStringDumpProcessor.toStringDump(dump));
+            log.warning(ToStringDumpHelper.toStringDump(dump));
 
             try {
                 // Write dump to file.
-                ToFileDumpProcessor.toFileDump(dump, new File(U.defaultWorkDirectory() +
-                    separatorChar + DEFAULT_TARGET_FOLDER +  separatorChar), managerNameId);
+                Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
+
+                ToFileDumpProcessor.toFileDump(dump, path, managerNameId);
             }
             catch (IgniteCheckedException e) {
                 log.warning("Failed to save locks dump file.", e);
@@ -137,10 +165,14 @@ public class PageLockTrackerManager implements LifecycleAware {
      * @return Instance of {@link PageLockListener} for tracking lock/unlock operations.
      */
     public PageLockListener createPageLockTracker(String name) {
-        if (!trackingEnable)
-            return DataStructure.NOOP_LSNR;
+        return trackingEnabled ? sharedPageLockTracker.registerStructure(name) : NOOP_LSNR;
+    }
 
-        return sharedPageLockTracker.registrateStructure(name);
+    /**
+     * Creates a page lock dump.
+     */
+    public SharedPageLockTrackerDump dumpLocks() {
+        return sharedPageLockTracker.dump();
     }
 
     /**
@@ -148,17 +180,15 @@ public class PageLockTrackerManager implements LifecycleAware {
      *
      * @return String representation of page locks dump.
      */
-    public String dumpLocks() {
-        ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
-        return ToStringDumpProcessor.toStringDump(dump);
+    public String dumpLocksToString() {
+        return ToStringDumpHelper.toStringDump(dumpLocks());
     }
 
     /**
      * Take page locks dump and print it to console.
      */
     public void dumpLocksToLog() {
-        log.warning(dumpLocks());
+        log.warning(dumpLocksToString());
     }
 
     /**
@@ -167,12 +197,10 @@ public class PageLockTrackerManager implements LifecycleAware {
      * @return Absolute file path.
      */
     public String dumpLocksToFile() {
-        ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
         try {
-            return ToFileDumpProcessor.toFileDump(dump,
-                new File(U.defaultWorkDirectory() +
-                    File.separatorChar + DEFAULT_TARGET_FOLDER +  File.separatorChar), managerNameId);
+            Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
+
+            return ToFileDumpProcessor.toFileDump(dumpLocks(), path, managerNameId);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -186,10 +214,8 @@ public class PageLockTrackerManager implements LifecycleAware {
      * @return Absolute file path.
      */
     public String dumpLocksToFile(String path) {
-        ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
         try {
-            return ToFileDumpProcessor.toFileDump(dump, new File(path), managerNameId);
+            return ToFileDumpProcessor.toFileDump(dumpLocks(), Paths.get(path), managerNameId);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -209,14 +235,14 @@ public class PageLockTrackerManager implements LifecycleAware {
      * @return Total heap overhead in bytes.
      */
     public long getHeapOverhead() {
-        return memoryCalculator.heapUsed.get();
+        return memoryCalculator.getHeapUsed();
     }
 
     /**
      * @return Total offheap overhead in bytes.
      */
     public long getOffHeapOverhead() {
-        return memoryCalculator.offHeapUsed.get();
+        return memoryCalculator.getOffHeapUsed();
     }
 
     /**
@@ -234,45 +260,5 @@ public class PageLockTrackerManager implements LifecycleAware {
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         sharedPageLockTracker.stop();
-    }
-
-    /**
-     *
-     */
-   public static class MemoryCalculator {
-        /** */
-        private final AtomicLong heapUsed = new AtomicLong();
-
-        /** */
-        private final AtomicLong offHeapUsed = new AtomicLong();
-
-        /** */
-        MemoryCalculator(){
-            onHeapAllocated(16 + (8 + 16) * 2);
-        }
-
-        /** */
-        public void onHeapAllocated(long bytes) {
-            assert bytes >= 0;
-
-            heapUsed.getAndAdd(bytes);
-        }
-
-        /** */
-        public void onOffHeapAllocated(long bytes) {
-            assert bytes >= 0;
-
-            offHeapUsed.getAndAdd(bytes);
-        }
-
-        /** */
-        public void onHeapFree(long bytes) {
-            heapUsed.getAndAdd(-bytes);
-        }
-
-        /** */
-        public void onOffHeapFree(long bytes) {
-            offHeapUsed.getAndAdd(-bytes);
-        }
     }
 }

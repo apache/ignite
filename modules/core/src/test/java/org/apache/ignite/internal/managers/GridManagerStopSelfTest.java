@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers;
 
+import java.lang.management.ManagementFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -27,9 +28,11 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
@@ -68,9 +71,12 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         ctx = newContext();
 
         ctx.config().setPeerClassLoadingEnabled(true);
+        ctx.config().setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
         ctx.add(new PoolProcessor(ctx));
+        ctx.add(new NoOpIgniteSecurityProcessor(ctx));
         ctx.add(new GridResourceProcessor(ctx));
+        ctx.add(new GridSystemViewManager(ctx));
 
         ctx.start();
     }

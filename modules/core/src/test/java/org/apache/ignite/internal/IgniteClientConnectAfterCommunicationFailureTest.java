@@ -41,8 +41,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return super.getConfiguration(gridName)
             .setNetworkTimeout(500)
-            .setCommunicationSpi(new TcpCommunicationSpi(gridName.contains("block")))
-            .setClientMode(gridName.contains("client"));
+            .setCommunicationSpi(new TcpCommunicationSpi(gridName.contains("block")));
     }
 
     /**
@@ -52,7 +51,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     public void testClientReconnects() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
-        startGrid("client-block");
+        startClientGrid("client-block");
 
         assertEquals(1, srv2.cluster().forClients().nodes().size());
         assertEquals(1, srv1.cluster().forClients().nodes().size());
@@ -65,7 +64,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     public void testClientThreadsSuspended() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         boolean blockedAnything = false;
 

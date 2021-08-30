@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -78,10 +79,10 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+        BinaryInputStream stream = new BinaryHeapInputStream(msg.payload());
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
@@ -210,6 +211,15 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 break;
             }
 
+            case OdbcRequest.META_RESULTSET: {
+                String schema = reader.readString();
+                String sqlQuery = reader.readString();
+
+                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQuery);
+
+                break;
+            }
+
             case OdbcRequest.MORE_RESULTS: {
                 long queryId = reader.readLong();
                 int pageSize = reader.readInt();
@@ -242,7 +252,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(ClientListenerResponse msg0) {
+    @Override public ClientMessage encode(ClientListenerResponse msg0) {
         assert msg0 != null;
 
         assert msg0 instanceof OdbcResponse;
@@ -263,13 +273,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
-            return writer.array();
+            return new ClientMessage(writer.array());
         }
 
         Object res0 = msg.response();
 
         if (res0 == null)
-            return writer.array();
+            return new ClientMessage(writer.array());
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
 
@@ -280,12 +290,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             Collection<OdbcColumnMeta> metas = res.columnsMetadata();
 
-            assert metas != null;
-
-            writer.writeInt(metas.size());
-
-            for (OdbcColumnMeta meta : metas)
-                meta.write(writer);
+            writeResultsetMeta(writer, metas);
 
             writeAffectedRows(writer, res.affectedRows());
         }
@@ -377,12 +382,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             Collection<OdbcColumnMeta> columnsMeta = res.meta();
 
-            assert columnsMeta != null;
-
-            writer.writeInt(columnsMeta.size());
-
-            for (OdbcColumnMeta columnMeta : columnsMeta)
-                columnMeta.write(writer);
+            writeResultsetMeta(writer, columnsMeta);
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
             OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;
@@ -403,22 +403,41 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             SqlListenerUtils.writeObject(writer, typeIds, true);
         }
+        else if (res0 instanceof OdbcQueryGetResultsetMetaResult) {
+            OdbcQueryGetResultsetMetaResult res = (OdbcQueryGetResultsetMetaResult) res0;
+
+            writeResultsetMeta(writer, res.columnsMetadata());
+        }
         else
             assert false : "Should not reach here.";
 
-        return writer.array();
+        return new ClientMessage(writer.array());
+    }
+
+    /**
+     * Write resultset columns metadata in a unified way.
+     * @param writer Writer.
+     * @param meta Metadata
+     */
+    private void writeResultsetMeta(BinaryWriterExImpl writer, Collection<OdbcColumnMeta> meta) {
+        assert meta != null;
+
+        writer.writeInt(meta.size());
+
+        for (OdbcColumnMeta columnMeta : meta)
+            columnMeta.write(writer, ver);
     }
 
     /** {@inheritDoc} */
-    @Override public int decodeCommandType(byte[] msg) {
+    @Override public int decodeCommandType(ClientMessage msg) {
         assert msg != null;
 
-        return msg[0];
+        return msg.payload()[0];
     }
 
 
     /** {@inheritDoc} */
-    @Override public long decodeRequestId(byte[] msg) {
+    @Override public long decodeRequestId(ClientMessage msg) {
         return 0;
     }
 

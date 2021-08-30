@@ -32,7 +32,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.junit.Test;
@@ -83,7 +83,7 @@ public class GDBTrainerTest extends TrainerTest {
         assertTrue(!composition.toString(true).isEmpty());
         assertTrue(!composition.toString(false).isEmpty());
 
-        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
+        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeModel));
 
         assertEquals(2000, composition.getModels().size());
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
@@ -145,7 +145,7 @@ public class GDBTrainerTest extends TrainerTest {
 
         assertTrue(mdl instanceof ModelsComposition);
         ModelsComposition composition = (ModelsComposition)mdl;
-        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
+        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeModel));
 
         assertTrue(composition.getModels().size() < 500);
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
@@ -193,7 +193,8 @@ public class GDBTrainerTest extends TrainerTest {
 
         LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
         FeatureLabelExtractor<Integer, double[], Double> extractor = (k, v) -> new LabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v));
-        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, new FeatureLabelExtractorWrapper<>(extractor));
+        ModelsComposition updatedOnEmptyDataset =
+            trainer.updateModel(originalMdl, emptyDataset, new FeatureLabelExtractorWrapper<>(extractor));
 
         dataset.forEach((k,v) -> {
             Vector features = fExtr.apply(k, v);

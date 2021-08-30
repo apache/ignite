@@ -43,6 +43,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -56,11 +57,13 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -131,7 +134,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withNoRetries();
 
     /**
-     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache read operations
      * regardless of partition loss policy.
      *
      * @return Cache without partition loss protection.
@@ -139,22 +142,24 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
+     * <b>This is an experimental API.</b>
+     * <p>
      * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
      * <p>
      * Read Repair means that each backup node will be checked to have the same entry as primary node has,
      * and in case consistency violation found:
      * <ul>
      *  <li>for transactional caches:
-     *  <p>values across the topology will be replaced by latest versioned value:
+     *  <p>Values across the topology will be replaced by latest versioned value:
      *  <ul>
      *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
      *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
      *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
-     *  <p>consistency violation event will be recorded in case it's configured as recordable</li>
+     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
      *  <li>for atomic caches: consistency violation exception will be thrown.
-     *  Be aware that consistency violation event will not be recorded in this case.</li>
+     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
      * </ul>
      * <p>
      * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
@@ -185,6 +190,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </ul>
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
+    @IgniteExperimental
     public IgniteCache<K, V> withReadRepair();
 
     /**
@@ -393,6 +399,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return New lock instance associated with passed key.
      * @see Lock#lock()
      * @see Lock#tryLock(long, TimeUnit)
+     * @deprecated It is recommended to use {@link Ignite#reentrantLock(String, boolean, boolean, boolean)} instead.
+     *      This method will be removed in future releases.
      */
     public Lock lockAll(Collection<? extends K> keys);
 
@@ -403,7 +411,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * or access to persistent storage in any way.
      *
      * @param key Key to check.
-     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, other vise
+     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, otherwise
      *     will check that any thread on any node owns a lock on this key.
      * @return {@code True} if lock is owned by some node.
      */
@@ -639,6 +647,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
      * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * Keys are locked in the order in which they appear in map. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
@@ -653,7 +665,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         Object... args) throws TransactionException;
 
     /**
-     * Asynchronously version of the {@link #invokeAll(Map, Object...)} method.
+     * Asynchronous version of the {@link #invokeAll(Map, Object...)} method.
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
@@ -898,6 +910,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Keys are locked in the order in which they appear in map. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -919,6 +936,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * In Default Consistency mode, individual puts occur atomically but not
      * the entire putAll.  Listeners may observe individual updates.
+     * <p>
+     * Keys are locked in the order in which they appear in map. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param map Map containing keys and values to put into the cache.
      * @return a Future representing pending completion of the operation.
@@ -1099,6 +1120,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -1115,6 +1141,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *   <li>if the cache is a write-through cache, the {@link CacheWriter}</li>
      * </ul>
      * If the key set is empty, the {@link CacheWriter} is not called.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys Keys set.
      * @return a Future representing pending completion of the operation.
@@ -1356,6 +1386,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
      * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1385,6 +1419,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
      * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
@@ -1418,6 +1456,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1462,6 +1504,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1565,7 +1611,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
+     * This method provides a facility for fine-tuned handling of lost partitions.
+     * Once all lost partitions are considered recovered (for example, after the previously failed
+     * primary and backup nodes, that stored partition data in Ignite persistence, are booted)
+     * {@link Ignite#resetLostPartitions(Collection)} can used in order to clear {@code lost} flag
+     * making all partitions fully operational.
+     *
      * @return Lost partitions.
+     * @see PartitionLossPolicy
+     * @see EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST
+     * @see Ignite#resetLostPartitions(Collection)
      */
     public Collection<Integer> lostPartitions();
 

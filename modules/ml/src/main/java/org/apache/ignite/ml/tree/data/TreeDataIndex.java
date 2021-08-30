@@ -118,10 +118,10 @@ public class TreeDataIndex {
         }
 
         int[][] prj = new int[projSize][columnsCount()];
-        for(int feature = 0; feature < columnsCount(); feature++) {
+        for (int feature = 0; feature < columnsCount(); feature++) {
             int ptr = 0;
-            for(int row = 0; row < rowsCount(); row++) {
-                if(filter.test(featuresInSortedOrder(row, feature)))
+            for (int row = 0; row < rowsCount(); row++) {
+                if (filter.test(featuresInSortedOrder(row, feature)))
                     prj[ptr++][feature] = idx[row][feature];
             }
         }

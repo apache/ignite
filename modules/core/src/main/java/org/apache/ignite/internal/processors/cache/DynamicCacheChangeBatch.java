@@ -83,11 +83,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
@@ -110,7 +105,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /**
      * @return Cache updates to be executed on exchange.
      */
-    ExchangeActions exchangeActions() {
+    public ExchangeActions exchangeActions() {
         return exchangeActions;
     }
 

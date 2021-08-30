@@ -93,9 +93,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     public static final int SYSTEM_POOL_SIZE = 10;
 
     /** */
-    private boolean client;
-
-    /** */
     private static AtomicInteger filterCbCntr = new AtomicInteger(0);
 
     /** {@inheritDoc} */
@@ -105,8 +102,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
         cfg.setSystemThreadPoolSize(SYSTEM_POOL_SIZE);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
         storeSpi.setExpireCount(100);
@@ -122,9 +117,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     /** {@inheritDoc} */

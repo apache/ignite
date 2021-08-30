@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 /**
  * Implementation of observer-observable pattern. For handling specific changes of segment.
  */
-public abstract class SegmentObservable {
+abstract class SegmentObservable {
     /** Observers for handle changes of archived index. */
     private final Queue<Consumer<Long>> observers = new ConcurrentLinkedQueue<>();
 

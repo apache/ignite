@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-set -o nounset
-set -o errexit
-set -o pipefail
-set -o errtrace
-set -o functrace
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,7 +38,7 @@ set -o functrace
 
 # Extract java version to `version` variable.
 javaVersion() {
-    version=$("$1" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+    version=$("$1" -version 2>&1 | awk -F[\"\-] '/version/ {print $2}')
 }
 
 # Extract only major version of java to `version` variable.
@@ -118,31 +121,6 @@ setIgniteHome() {
     if [ "${IGNITE_HOME}" != "${IGNITE_HOME_TMP}" ] &&
        [ "${IGNITE_HOME}" != "${IGNITE_HOME_TMP}/" ]; then
         echo $0", WARN: IGNITE_HOME environment variable may be pointing to wrong folder: $IGNITE_HOME"
-    fi
-}
-
-#
-# Finds available port for JMX.
-# The function exports JMX_MON variable with Java JMX options.
-#
-findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.apache.ignite.internal.util.portscanner.GridJmxPortFinder`
-
-    #
-    # This variable defines necessary parameters for JMX
-    # monitoring and management.
-    #
-    # This enables remote unsecure access to JConsole or VisualVM.
-    #
-    # ADD YOUR ADDITIONAL PARAMETERS/OPTIONS HERE
-    #
-    if [ -n "$JMX_PORT" ]; then
-        JMX_MON="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
-            -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-    else
-        # If JMX port wasn't found do not initialize JMX.
-        echo "$0, WARN: Failed to resolve JMX host (JMX will be disabled): $HOSTNAME"
-        JMX_MON=""
     fi
 }
 

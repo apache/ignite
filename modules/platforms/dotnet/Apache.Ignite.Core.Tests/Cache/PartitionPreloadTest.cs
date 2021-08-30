@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -36,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PartitionPreloadTest
     {
         /** Temp dir for PDS. */
-        private static readonly string TempDir = IgniteUtils.GetTempDirectoryName();
+        private static readonly string TempDir = PathUtils.GetTempDirectoryName();
 
         /** */
         private const string MemoryRegionName = "mem-region";
@@ -248,7 +247,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     if (affinity.GetPartition(k) == preloadPart)
                     {
-                        streamer.AddData(k, k);
+                        streamer.Add(k, k);
                         
                         cnt--;
                     }

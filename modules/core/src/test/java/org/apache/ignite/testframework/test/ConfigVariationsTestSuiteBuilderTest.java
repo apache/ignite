@@ -355,7 +355,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @BeforeClass
-        public static void init(){
+        public static void init() {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
         }
     }
@@ -478,7 +478,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @BeforeClass
-        public static void init(){
+        public static void init() {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
         }
     }

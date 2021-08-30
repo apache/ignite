@@ -26,24 +26,27 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
-import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIOV2;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,7 +58,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 /**
  *
  */
-public class TxLog implements DbCheckpointListener {
+public class TxLog implements CheckpointListener {
     /** */
     public static final String TX_LOG_CACHE_NAME = "TxLog";
 
@@ -96,21 +99,20 @@ public class TxLog implements DbCheckpointListener {
     private void init(GridKernalContext ctx) throws IgniteCheckedException {
         String txLogName = TX_LOG_CACHE_NAME + "##Tree";
 
-        CacheDiagnosticManager diagnosticMgr = ctx.cache().context().diagnostic();
+        DataRegion txLogDataRegion = mgr.dataRegion(TX_LOG_CACHE_NAME);
 
-        PageLockListener txLogLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogName);
+        GridCacheSharedContext<?, ?> cacheCtx = ctx.cache().context();
 
         if (CU.isPersistenceEnabled(ctx.config())) {
             String txLogReuseListName = TX_LOG_CACHE_NAME + "##ReuseList";
-            PageLockListener txLogReuseListLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogReuseListName);
 
             mgr.checkpointReadLock();
 
             try {
-                IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
-                PageMemoryEx pageMemory = (PageMemoryEx)mgr.dataRegion(TX_LOG_CACHE_NAME).pageMemory();
+                IgniteWriteAheadLogManager wal = cacheCtx.wal();
+                PageMemoryEx pageMemory = (PageMemoryEx)txLogDataRegion.pageMemory();
 
-                long metaId = pageMemory.metaPageId(TX_LOG_CACHE_ID);
+                long metaId = PageMemory.META_PAGE_ID;
                 long metaPage = pageMemory.acquirePage(TX_LOG_CACHE_ID, metaId);
 
                 long treeRoot, reuseListRoot;
@@ -123,15 +125,17 @@ public class TxLog implements DbCheckpointListener {
                     try {
                         if (PageIO.getType(pageAddr) != PageIO.T_META) {
                             // Initialize new page.
-                            PageMetaIO io = PageMetaIO.VERSIONS.latest();
+                            PageMetaIO io = PageMetaIOV2.VERSIONS.latest();
 
-                            io.initNewPage(pageAddr, metaId, pageMemory.pageSize());
+                            PageMetrics metrics = txLogDataRegion.metrics().pageMetrics();
 
-                            treeRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, PageMemory.FLAG_IDX);
-                            reuseListRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, PageMemory.FLAG_IDX);
+                            io.initNewPage(pageAddr, metaId, pageMemory.pageSize(), metrics);
 
-                            assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_IDX;
-                            assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_IDX;
+                            treeRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, FLAG_IDX);
+                            reuseListRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, FLAG_IDX);
+
+                            assert PageIdUtils.flag(treeRoot) == FLAG_IDX;
+                            assert PageIdUtils.flag(reuseListRoot) == FLAG_IDX;
 
                             io.setTreeRoot(pageAddr, treeRoot);
                             io.setReuseListRoot(pageAddr, reuseListRoot);
@@ -156,9 +160,9 @@ public class TxLog implements DbCheckpointListener {
                             treeRoot = io.getTreeRoot(pageAddr);
                             reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                            assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_IDX :
+                            assert PageIdUtils.flag(treeRoot) == FLAG_IDX :
                                 U.hexLong(treeRoot) + ", TX_LOG_CACHE_ID=" + TX_LOG_CACHE_ID;
-                            assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_IDX :
+                            assert PageIdUtils.flag(reuseListRoot) == FLAG_IDX :
                                 U.hexLong(reuseListRoot) + ", TX_LOG_CACHE_ID=" + TX_LOG_CACHE_ID;
                         }
                     }
@@ -172,12 +176,15 @@ public class TxLog implements DbCheckpointListener {
 
                 reuseList = new ReuseListImpl(
                     TX_LOG_CACHE_ID,
-                    TX_LOG_CACHE_NAME,
+                    txLogReuseListName,
                     pageMemory,
                     wal,
                     reuseListRoot,
                     isNew,
-                    txLogReuseListLockLsnr
+                    cacheCtx.diagnostic().pageLockTracker(),
+                    ctx,
+                    null,
+                    FLAG_IDX
                 );
 
                 tree = new TxLogTree(
@@ -188,17 +195,17 @@ public class TxLog implements DbCheckpointListener {
                     reuseList,
                     ctx.failure(),
                     isNew,
-                    txLogLockLsnr
+                    cacheCtx.diagnostic().pageLockTracker()
                 );
 
-                ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this);
+                ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this, txLogDataRegion);
             }
             finally {
                 mgr.checkpointReadUnlock();
             }
         }
         else {
-            PageMemory pageMemory = mgr.dataRegion(TX_LOG_CACHE_NAME).pageMemory();
+            PageMemory pageMemory = txLogDataRegion.pageMemory();
             ReuseList reuseList1 = mgr.reuseList(TX_LOG_CACHE_NAME);
 
             long treeRoot;
@@ -214,7 +221,7 @@ public class TxLog implements DbCheckpointListener {
                 reuseList1,
                 ctx.failure(),
                 true,
-                txLogLockLsnr
+                cacheCtx.diagnostic().pageLockTracker()
             );
         }
     }
@@ -236,11 +243,11 @@ public class TxLog implements DbCheckpointListener {
     private void saveReuseListMetadata(Context ctx) throws IgniteCheckedException {
         Executor executor = ctx.executor();
         if (executor == null)
-            reuseList.saveMetadata();
+            reuseList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
         else {
             executor.execute(() -> {
                 try {
-                    reuseList.saveMetadata();
+                    reuseList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -388,6 +395,17 @@ public class TxLog implements DbCheckpointListener {
 
             break;
         }
+    }
+
+    /**
+     * Frees the underlying resources.
+     */
+    public void close() {
+        if (reuseList != null)
+            reuseList.close();
+
+        if (tree != null)
+            tree.close();
     }
 
     /**
@@ -628,7 +646,7 @@ public class TxLog implements DbCheckpointListener {
             assert treeOp == null;
 
             throw new IllegalStateException("Unexpected new transaction state. [currState=" +
-                currState +  ", newState=" + newState +  ", cntr=" + minor +']');
+                currState + ", newState=" + newState + ", cntr=" + minor + ']');
         }
 
         /**

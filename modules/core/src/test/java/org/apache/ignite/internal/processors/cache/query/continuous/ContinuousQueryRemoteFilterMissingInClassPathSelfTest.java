@@ -67,9 +67,6 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     private IgniteLogger log;
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private boolean setExternalLoader;
 
     /** */
@@ -88,8 +85,6 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -116,17 +111,15 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testClientJoinsMissingClassWarning() throws Exception {
-        clientMode = false;
         setExternalLoader = true;
         Ignite ignite0 = startGrid(1);
 
         executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
         log = new GridStringLogger();
-        clientMode = true;
         setExternalLoader = false;
 
-        startGrid(2);
+        startClientGrid(2);
 
         String logStr = log.toString();
 
@@ -141,15 +134,13 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     public void testClientJoinsExtClassLoaderNoWarning() throws Exception {
         setExternalLoader = true;
 
-        clientMode = false;
         Ignite ignite0 = startGrid(1);
 
         executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
         log = new GridStringLogger();
-        clientMode = true;
 
-        startGrid(2);
+        startClientGrid(2);
 
         assertTrue(!log.toString().contains("Failed to unmarshal continuous query remote filter on client node. " +
             "Can be ignored."));
@@ -160,8 +151,6 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testServerJoinsMissingClassException() throws Exception {
-        clientMode = false;
-
         setExternalLoader = true;
         Ignite ignite0 = startGrid(1);
 
@@ -191,8 +180,6 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testServerJoinsExtClassLoaderNoException() throws Exception {
-        clientMode = false;
-
         setExternalLoader = true;
         Ignite ignite0 = startGrid(1);
 
@@ -211,8 +198,6 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testServerMissingClassFailsRegistration() throws Exception {
-        clientMode = false;
-
         setExternalLoader = true;
 
         Ignite ign1 = startGrid(1);
@@ -236,17 +221,13 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testClientMissingClassDoesNotFailRegistration() throws Exception {
-        clientMode = false;
-
         setExternalLoader = true;
 
         Ignite ign1 = startGrid(1);
 
         setExternalLoader = false;
 
-        clientMode = true;
-
-        startGrid(2);
+        startClientGrid(2);
 
         executeContinuousQuery(ign1.cache(DEFAULT_CACHE_NAME));
     }
@@ -256,8 +237,6 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testNodeFilterServerMissingClassDoesNotFailRegistration() throws Exception {
-        clientMode = false;
-
         setExternalLoader = true;
 
         Ignite ign1 = startGrid(1);

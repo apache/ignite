@@ -167,7 +167,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
 
     /** {@inheritDoc} */
     @Override public final long getLink(long pageAddr, int idx) {
-        assert idx < getCount(pageAddr) : idx;
+        assert idx < getCount(pageAddr) : "idx=" + idx + ", cnt=" + getCount(pageAddr);
 
         return PageUtils.getLong(pageAddr, offset(idx));
     }
@@ -188,7 +188,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /**
      * @return {@code True} if cache ID has to be stored.
      */
-    protected boolean storeCacheId() {
+    public boolean storeCacheId() {
         return false;
     }
 

@@ -39,7 +39,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are not executed.
  */
-public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest {
+public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest
+    extends CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest {
     /** */
     @Before
     public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {

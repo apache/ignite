@@ -17,11 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.cluster.GridClusterStateChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteBaselineAffinityTopologyActivationTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateFailOverTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateServiceTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteNoParrallelClusterIsAllowedTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
@@ -58,10 +63,10 @@ import org.junit.runners.Suite;
     JoinInActiveNodeToActiveClusterWithPersistence.class,
     JoinInActiveNodeToInActiveClusterWithPersistence.class,
 
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 IgniteChangeGlobalStateTest.class,
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 IgniteChangeGlobalStateCacheTest.class,
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 IgniteChangeGlobalStateDataStructureTest.class,
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 IgniteChangeGlobalStateServiceTest.class,
+    IgniteChangeGlobalStateTest.class,
+    IgniteChangeGlobalStateCacheTest.class,
+    IgniteChangeGlobalStateDataStructureTest.class,
+    IgniteChangeGlobalStateServiceTest.class,
 
     IgniteChangeGlobalStateDataStreamerTest.class,
     IgniteChangeGlobalStateFailOverTest.class,
@@ -69,7 +74,8 @@ import org.junit.runners.Suite;
     IgniteNoParrallelClusterIsAllowedTest.class,
 
     CacheBaselineTopologyTest.class,
-    IgniteBaselineAffinityTopologyActivationTest.class
+    IgniteBaselineAffinityTopologyActivationTest.class,
+    GridClusterStateChangeSelfTest.class
 })
 public class IgniteStandByClusterSuite {
 }

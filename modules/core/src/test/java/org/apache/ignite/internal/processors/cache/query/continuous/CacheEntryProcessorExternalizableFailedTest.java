@@ -73,9 +73,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     public static final int KEY = 10;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean failOnWrite;
 
     /** {@inheritDoc} */
@@ -83,8 +80,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -95,9 +90,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
         startGridsMultiThreaded(getServerNodeCount());
 
-        client = true;
-
-        startGrid(getServerNodeCount());
+        startClientGrid(getServerNodeCount());
     }
 
     /** {@inheritDoc} */

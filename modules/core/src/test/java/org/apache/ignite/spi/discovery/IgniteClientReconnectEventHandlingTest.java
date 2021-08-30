@@ -65,8 +65,6 @@ public class IgniteClientReconnectEventHandlingTest extends GridCommonAbstractTe
             ((TcpDiscoverySpi)discoSpi).setReconnectDelay(RECONNECT_DELAY);
 
         if (igniteInstanceName.contains("client")) {
-            cfg.setClientMode(true);
-
             Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
 
             lsnrs.put(new IgnitePredicate<Event>() {
@@ -112,7 +110,7 @@ public class IgniteClientReconnectEventHandlingTest extends GridCommonAbstractTe
     public void testClientReconnect() throws Exception {
         startGrid(0);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         // Creates the join event and hold up it on the client.
         startGrid(1);

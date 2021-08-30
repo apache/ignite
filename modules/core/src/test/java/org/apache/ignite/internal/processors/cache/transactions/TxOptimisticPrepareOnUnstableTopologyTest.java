@@ -54,9 +54,6 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
     /** */
     private static final int GRID_CNT = 4;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -70,8 +67,6 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
         ccfg.setCacheMode(PARTITIONED);
 
         c.setCacheConfiguration(ccfg);
-
-        c.setClientMode(client);
 
         return c;
     }
@@ -106,13 +101,14 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
 
             try {
                 for (int i = 0; i < GRID_CNT; i++) {
-                    client = (clientIdx == i);
+                    IgniteEx grid;
 
-                    IgniteEx grid = startGrid(i);
+                    if (clientIdx == i)
+                        grid = startClientGrid(i);
+                    else
+                        grid = startGrid(i);
 
-                    assertEquals(client, grid.configuration().isClientMode().booleanValue());
-
-                    client = false;
+                    assertEquals(clientIdx == i, grid.configuration().isClientMode().booleanValue());
 
                     IgniteInternalFuture<Void> fut = runCacheOperationsAsync(grid, stopFlag, isolation, timeout, keys);
 

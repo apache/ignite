@@ -96,7 +96,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Computes the hash code of specified stream content.
+        /// </summary>
         public static int GetHashCode(IBinaryStream stream, int startPos, int length)
         {
             Debug.Assert(stream != null);

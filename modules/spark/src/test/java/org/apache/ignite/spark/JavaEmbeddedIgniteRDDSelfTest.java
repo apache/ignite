@@ -277,16 +277,13 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param igniteInstanceName Ignite instance name.
-     * @param client Client.
      * @throws Exception If failed.
      * @return Confiuration.
      */
-    private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
+    private static IgniteConfiguration igniteConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setClientMode(client);
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 
@@ -317,7 +314,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteConfiguration apply() {
             try {
-                return getConfiguration("worker-" + igniteInstanceNames.get(), false);
+                return igniteConfiguration("worker-" + igniteInstanceNames.get());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

@@ -16,11 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -28,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -45,18 +39,17 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.SF;
 
 /**
  *
@@ -86,8 +79,8 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /** Checkpoint threads. */
     private int checkpointThreads;
 
-    /** String logger. */
-    private GridStringLogger strLog;
+    /** Test logger. */
+    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -95,7 +88,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setFileIOFactory(new SlowCheckpointFileIOFactory())
+                .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, CHECKPOINT_PARK_NANOS))
                 .setCheckpointThreads(checkpointThreads)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
@@ -107,9 +100,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
-        strLog = new GridStringLogger(false, new GridTestLog4jLogger());
-
-        cfg.setGridLogger(strLog);
+        cfg.setGridLogger(log);
 
         return cfg;
     }
@@ -143,7 +134,16 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     public void testFourCheckpointThreads() throws Exception {
         checkpointThreads = 4;
 
-        runDeadlockScenario();
+        for (int i = 0; i < SF.applyLB(10, 3); i++) {
+            beforeTest();
+
+            try {
+                runDeadlockScenario();
+            }
+            finally {
+                afterTest();
+            }
+        }
     }
 
     /**
@@ -160,6 +160,10 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
      *
      */
     private void runDeadlockScenario() throws Exception {
+        LogListener lsnr = LogListener.matches(s -> s.contains("AssertionError")).build();
+
+        log.registerListener(lsnr);
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
@@ -223,6 +227,17 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                             long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
 
+                            long page = pageMem.acquirePage(CU.cacheId(cacheName), pageId);
+
+                            try {
+                                // We do not know correct flag(FLAG_DATA or FLAG_AUX). Skip page if no luck.
+                                if (pageId != PageIO.getPageId(page + PageMemoryImpl.PAGE_OVERHEAD))
+                                    continue;
+                            }
+                            finally {
+                                pageMem.releasePage(CU.cacheId(cacheName), pageId, page);
+                            }
+
                             pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                         }
 
@@ -234,11 +249,11 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                         pickedPages.sort(new Comparator<FullPageId>() {
                             @Override public int compare(FullPageId o1, FullPageId o2) {
                                 int cmp = Long.compare(o1.groupId(), o2.groupId());
+
                                 if (cmp != 0)
                                     return cmp;
 
-                                return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
-                                        PageIdUtils.effectivePageId(o2.pageId()));
+                                return Long.compare(o1.effectivePageId(), o2.effectivePageId());
                             }
                         });
 
@@ -313,56 +328,8 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         //check that there is no problem with pinned pages
         ig.destroyCache(cacheName);
 
-        assertFalse(strLog.toString().contains("AssertionError"));
+        assertFalse(lsnr.check());
+
+        log.unregisterListener(lsnr);
     }
-
-    /**
-     * Create File I/O that emulates poor checkpoint write speed.
-     */
-    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Delegate factory. */
-        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
-            final FileIO delegate = delegateFactory.create(file, openOption);
-
-            return new FileIODecorator(delegate) {
-                @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(srcBuf);
-                }
-
-                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(srcBuf, position);
-                }
-
-                @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(buf, off, len);
-                }
-
-                /**
-                 * Parks current checkpoint thread if slow mode is enabled.
-                 */
-                private void parkIfNeeded() {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
-                }
-
-                /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-                    return delegate.map(sizeBytes);
-                }
-            };
-        }
-    }
-
 }

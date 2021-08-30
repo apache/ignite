@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Data Entry for automatic unwrapping key and value from Data Entry
@@ -46,6 +48,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
      * @param partCnt Partition counter.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
      * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
+     * @param flags Flags.
      */
     public UnwrapDataEntry(
         final int cacheId,
@@ -58,8 +61,9 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final int partId,
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
-        final boolean keepBinary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        final boolean keepBinary,
+        final byte flags) {
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }
@@ -108,9 +112,13 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass().getSimpleName() + "[k = " + unwrappedKey() + ", v = [ "
-            + unwrappedValue()
-            + "], super = ["
-            + super.toString() + "]]";
+        SB sb = new SB();
+
+        sb.a(getClass().getSimpleName()).a('[');
+
+        if (S.includeSensitive())
+            sb.a("k = ").a(unwrappedKey()).a(", v = [ ").a(unwrappedValue()).a("], ");
+
+        return sb.a("super = [").a(super.toString()).a("]]").toString();
     }
 }

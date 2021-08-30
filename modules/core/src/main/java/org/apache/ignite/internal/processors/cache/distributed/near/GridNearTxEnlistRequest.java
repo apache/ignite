@@ -389,7 +389,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
                     rows.add(keys[i]);
                 else {
                     if (values[i] != null) {
-                        if(op.isInvoke())
+                        if (op.isInvoke())
                             ((GridInvokeValue)values[i]).finishUnmarshal(ctx, ldr);
                         else
                             ((CacheObject)values[i]).finishUnmarshal(objCtx, ldr);

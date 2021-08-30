@@ -17,18 +17,35 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
+import org.apache.ignite.ml.math.functions.IgniteDoubleConsumer;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.pipeline.PipelineMdl;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
-import org.apache.ignite.ml.selection.paramgrid.*;
+import org.apache.ignite.ml.selection.paramgrid.BruteForceStrategy;
+import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
+import org.apache.ignite.ml.selection.paramgrid.HyperParameterTuningStrategy;
+import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
+import org.apache.ignite.ml.selection.paramgrid.ParameterSetGenerator;
+import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
@@ -38,12 +55,6 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.genetic.Chromosome;
 import org.apache.ignite.ml.util.genetic.GeneticAlgorithm;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.DoubleConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
@@ -59,7 +70,7 @@ import java.util.stream.Collectors;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Double>, K, V> {
+public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Double>, K, V> implements Serializable {
     /** Learning environment builder. */
     protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
@@ -97,9 +108,9 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
     protected UniformMapper<K, V> mapper = new SHA256UniformMapper<>();
 
     /**
-     * Finds the best set of hyperparameters based on parameter search strategy.
+     * Finds the best set of hyper-parameters based on parameter search strategy.
      */
-    public CrossValidationResult tuneHyperParamterers() {
+    public CrossValidationResult tuneHyperParameters() {
         HyperParameterTuningStrategy hyperParamTuningStgy = paramGrid.getHyperParameterTuningStrategy();
 
         if (hyperParamTuningStgy instanceof BruteForceStrategy) return scoreBruteForceHyperparameterOptimization();
@@ -111,7 +122,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
     }
 
     /**
-     * Finds the best set of hyperparameters based on Genetic Programming approach.
+     * Finds the best set of hyper-parameters based on Genetic Programming approach.
      */
     private CrossValidationResult scoreEvolutionAlgorithmSearchHyperparameterOptimization() {
         EvolutionOptimizationStrategy stgy = (EvolutionOptimizationStrategy) paramGrid.getHyperParameterTuningStrategy();
@@ -132,17 +143,11 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
 
             cvRes.addScores(tr.locScores, tr.paramMap);
 
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore >= cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-
-            return locAvgScore;
+            return Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
         };
 
-        Random rnd = new Random(stgy.getSeed()); //TODO: common seed for shared lambdas can produce the same value on each function call? or sequent?
+        //TODO: common seed for shared lambdas can produce the same value on each function call? or sequent?
+        Random rnd = new Random(stgy.getSeed());
 
         BiFunction<Integer, Double, Double> mutator = (Integer geneIdx, Double geneValue) -> {
             Double newGeneVal;
@@ -156,10 +161,10 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         GeneticAlgorithm ga = new GeneticAlgorithm(rndParamSets);
         ga.withFitnessFunction(fitnessFunction)
             .withMutationOperator(mutator)
-            .withAmountOfEliteChromosomes(stgy.getAmountOfEliteChromosomes())
+            .withAmountOfEliteChromosomes(stgy.getNumberOfEliteChromosomes())
             .withCrossingoverProbability(stgy.getCrossingoverProbability())
             .withCrossoverStgy(stgy.getCrossoverStgy())
-            .withAmountOfGenerations(stgy.getAmountOfGenerations())
+            .withAmountOfGenerations(stgy.getNumberOfGenerations())
             .withSelectionStgy(stgy.getSelectionStgy())
             .withMutationProbability(stgy.getMutationProbability());
 
@@ -194,16 +199,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
-        taskResults.forEach(tr -> {
-            cvRes.addScores(tr.locScores, tr.paramMap);
-
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore >= cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-        });
+        taskResults.forEach(tr -> cvRes.addScores(tr.locScores, tr.paramMap));
 
         return cvRes;
     }
@@ -224,17 +220,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
-        taskResults.forEach(tr -> {
-            cvRes.addScores(tr.locScores, tr.paramMap);
-
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore > cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-
-        });
+        taskResults.forEach(tr -> cvRes.addScores(tr.locScores, tr.paramMap));
         return cvRes;
     }
 
@@ -253,22 +239,22 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
          * @param locScores Locale scores.
          */
         public TaskResult(Map<String, Double> paramMap, double[] locScores) {
-            this.paramMap = paramMap;
-            this.locScores = locScores;
+            this.paramMap = Collections.unmodifiableMap(paramMap);
+            this.locScores = locScores.clone();
         }
 
         /**
          * @param paramMap Parameter map.
          */
         public void setParamMap(Map<String, Double> paramMap) {
-            this.paramMap = paramMap;
+            this.paramMap = Collections.unmodifiableMap(paramMap);;
         }
 
         /**
          * @param locScores Local scores.
          */
         public void setLocScores(double[] locScores) {
-            this.locScores = locScores;
+            this.locScores = locScores.clone();
         }
     }
 
@@ -300,7 +286,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         Map<String, Double> paramMap = new HashMap<>();
 
         for (int paramIdx = 0; paramIdx < paramSet.length; paramIdx++) {
-            DoubleConsumer setter = paramGrid.getSetterByIndex(paramIdx);
+            IgniteDoubleConsumer setter = paramGrid.getSetterByIndex(paramIdx);
 
             Double paramVal = paramSet[paramIdx];
             setter.accept(paramVal);
@@ -330,13 +316,13 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
                 return pnt < from || pnt > to;
             };
 
-            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k,v);
+            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k, v);
 
             DatasetBuilder<K, V> trainSet = datasetBuilderSupplier.apply(trainSetFilter);
-            M mdl = trainer.fit(trainSet, preprocessor); //TODO: IGNITE-11580
+            M mdl = trainer.fit(trainSet, preprocessor);
 
             DatasetBuilder<K, V> testSet = datasetBuilderSupplier.apply(testSetFilter);
-            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSignle();
+            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSingle();
         }
 
         return scores;
@@ -361,13 +347,13 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
                 return pnt < from || pnt > to;
             };
 
-            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k,v);
+            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k, v);
 
-            DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetFilter);
-            PipelineMdl<K, V> mdl = pipeline.fit(datasetBuilder);
+            DatasetBuilder<K, V> trainSet = datasetBuilderSupplier.apply(trainSetFilter);
+            PipelineMdl<K, V> mdl = pipeline.fit(trainSet);
 
             DatasetBuilder<K, V> testSet = datasetBuilderSupplier.apply(testSetFilter);
-            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSignle();
+            scores[i] = Evaluator.evaluate(testSet, mdl, pipeline.getFinalPreprocessor(), metric).getSingle();
         }
 
         return scores;

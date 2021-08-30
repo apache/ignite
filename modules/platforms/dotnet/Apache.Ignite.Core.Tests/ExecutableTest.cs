@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP
 // ReSharper disable UnusedVariable
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Tests
     public class ExecutableTest
     {
         /** Spring configuration path. */
-        private const string SpringCfgPath = "config\\compute\\compute-standalone.xml";
+        private const string SpringCfgPath = "Config/Compute/compute-standalone.xml";
 
         /** Min memory Java task. */
         private const string MinMemTask = "org.apache.ignite.platform.PlatformMinMemoryTask";
@@ -59,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            _tempDir = TestUtils.GetTempDirectoryName();
+            _tempDir = PathUtils.GetTempDirectoryName();
 
             TestUtils.KillProcesses();
 
@@ -127,7 +128,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Test assemblies passing through command-line. 
+        /// Test assemblies passing through command-line.
         /// </summary>
         [Test]
         public void TestAssemblyCmd()
@@ -150,7 +151,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Test JVM options passing through command-line. 
+        /// Test JVM options passing through command-line.
         /// </summary>
         [Test]
         public void TestJvmOptsCmd()
@@ -553,3 +554,4 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 }
+#endif

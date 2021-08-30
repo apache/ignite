@@ -75,4 +75,9 @@ public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
     protected String defaultConfig() {
         return DFLT_CFG;
     }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 2; // TutorialStepByStepExample can take a long time.
+    }
 }

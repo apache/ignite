@@ -87,14 +87,14 @@ namespace ignite
                  *
                  * @param writer Writer.
                  */
-                void Write(ignite::binary::BinaryRawWriter& writer) const;
+                IGNITE_IMPORT_EXPORT void Write(ignite::binary::BinaryRawWriter& writer) const;
 
                 /**
                  * Read from data stream.
                  *
                  * @param reader reader.
                  */
-                void Read(ignite::binary::BinaryRawReader& reader);
+                IGNITE_IMPORT_EXPORT void Read(ignite::binary::BinaryRawReader& reader);
 
             private:
                 /** Type ID. */

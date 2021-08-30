@@ -51,9 +51,6 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     private static final String TEMPLATE3 = "org.apache.ignite.test2.*";
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private boolean addTemplate;
 
     /** {@inheritDoc} */
@@ -80,8 +77,6 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
 
             cfg.setCacheConfiguration(dfltCfg, templateCfg1, templateCfg2);
         }
-
-        cfg.setClientMode(clientMode);
 
         cfg.setIncludeEventTypes(EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
@@ -122,9 +117,8 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkCreated(ignite1, "org.apache1");
 
         addTemplate = false;
-        clientMode = true;
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         assertNotNull(ignite2.cache("org.apache.ignite.test.cache1"));
         assertNotNull(ignite2.cache("org.apache.ignite1"));
@@ -143,7 +137,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkCreated(ignite1, "org.apache.ignite.test2.cache1");
         checkCreated(ignite2, "org.apache.ignite.test2.cache1");
 
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         checkCreate(ignite3, "org.apache.ignite.test2.cache2", 5);
 
@@ -181,9 +175,8 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkNoTemplateCaches(2);
 
         addTemplate = false;
-        clientMode = true;
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         assertNotNull(ignite2.cache("org.apache.ignite.test.cache1"));
         assertNotNull(ignite2.cache("org.apache.ignite1"));
@@ -208,7 +201,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkGetOrCreate(ignite1, "org.apache.ignite.test2.cache1", 5);
         checkGetOrCreate(ignite2, "org.apache.ignite.test2.cache1", 5);
 
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         checkGetOrCreate(ignite3, "org.apache.ignite.test2.cache1", 5);
 
@@ -234,14 +227,12 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     @Test
     public void testStartClientNodeFirst() throws Exception {
         addTemplate = true;
-        clientMode = true;
 
-        Ignite ignite0 = startGrid(0);
+        Ignite ignite0 = startClientGrid(0);
 
         checkNoTemplateCaches(0);
 
         addTemplate = false;
-        clientMode = false;
 
         Ignite ignite1 = startGrid(1);
 
@@ -307,7 +298,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testNoPartitionExchangeForTemplate() throws Exception{
+    public void testNoPartitionExchangeForTemplate() throws Exception {
         final int GRID_CNT = 3;
 
         startGridsMultiThreaded(GRID_CNT);
@@ -350,7 +341,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
 
         evt = evtLatch.await(3000, TimeUnit.MILLISECONDS);
 
-        assertTrue(evt);
+        assertFalse(evt);
     }
 
     /**

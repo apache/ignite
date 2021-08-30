@@ -70,7 +70,6 @@ public class SimpleStackedDatasetTrainer<I, O, AM extends IgniteModel<I, O>, L> 
      * Constructs instance of this class.
      */
     public SimpleStackedDatasetTrainer() {
-        super();
     }
 
     //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.

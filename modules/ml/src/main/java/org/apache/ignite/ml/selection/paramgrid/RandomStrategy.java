@@ -21,10 +21,10 @@ package org.apache.ignite.ml.selection.paramgrid;
  * This strategy enables the random search in hyper-parameter space.
  */
 public class RandomStrategy extends HyperParameterTuningStrategy {
-    /** Satisfactory fitness to stop the hyperparameter search. */
+    /** Satisfactory fitness to stop the hyper-parameter search. */
     private double satisfactoryFitness = 0.5;
 
-    /** Max tries to stop the hyperparameter search. */
+    /** Max tries to stop the hyper-parameter search. */
     private int maxTries = 100;
 
     /** Seed. */
@@ -53,7 +53,7 @@ public class RandomStrategy extends HyperParameterTuningStrategy {
     }
 
     /**
-     * Set up the satisfactory fitness to stop the hyperparameter search.
+     * Set up the satisfactory fitness to stop the hyper-parameter search.
      *
      * @param fitness Fitness.
      */
@@ -62,13 +62,13 @@ public class RandomStrategy extends HyperParameterTuningStrategy {
         return this;
     }
 
-    /** Returns the max number of tries to stop the hyperparameter search. */
+    /** Returns the max number of tries to stop the hyper-parameter search. */
     public int getMaxTries() {
         return maxTries;
     }
 
     /**
-     * Set up the max number of tries to stop the hyperparameter search.
+     * Set up the max number of tries to stop the hyper-parameter search.
      *
      * @param maxTries Max tries.
      */

@@ -20,8 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
-import org.apache.ignite.mxbean.MXBeanParametersNames;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 import org.jetbrains.annotations.Nullable;
@@ -96,11 +95,13 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     public int getThreadPriority();
 
     /**
-     * Gets IP finder clean frequency.
+     * Gets frequency with which coordinator cleans IP finder and keeps it in the correct state, unregistering addresses
+     * of the nodes that have left the topology.
      *
      * @return IP finder clean frequency.
      */
-    @MXBeanDescription("IP finder clean frequency.")
+    @MXBeanDescription("The frequency with which coordinator cleans IP finder and keeps it in the correct state, " +
+        "unregistering addresses of the nodes that have left the topology.")
     public long getIpFinderCleanFrequency();
 
     /**
@@ -248,11 +249,16 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     public long getSocketTimeout();
 
     /**
-     * Gets join timeout.
+     * The join timeout, in milliseconds. Time to wait for joining. If node cannot connect to any address from the IP
+     * finder, the node continues to try to join during this timeout. If all addresses still do not respond, an
+     * exception will occur and the node will fail to start. If 0 is specified, it means wait forever.
      *
      * @return Join timeout.
      */
-    @MXBeanDescription("Join timeout.")
+    @MXBeanDescription("The join timeout, in milliseconds. Time to wait for joining. " +
+        "If node cannot connect to any address from the IP finder, the node continues to try to join during this timeout. " +
+        "If all addresses still do not respond, an exception will occur and the node will fail to start. " +
+        "If 0 is specified, it means wait forever.")
     public long getJoinTimeout();
 
     /**
@@ -278,17 +284,10 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
      * @param maxHops Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).
      */
     @MXBeanDescription("Check ring latency.")
-    @MXBeanParametersNames(
-        {
-            "maxHops"
-        }
-    )
-    @MXBeanParametersDescriptions(
-        {
-            "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended)."
-        }
-    )
-    public void checkRingLatency(int maxHops);
+    public void checkRingLatency(
+        @MXBeanParameter(name = "maxHops",
+            description = "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).") int maxHops
+    );
 
     /**
      * Current topology version.

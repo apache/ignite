@@ -39,7 +39,7 @@ import java.util.UUID;
  * <ul>
  * <li>{@link #compute()}</li>
  * </ul>
- * <h1 class="header">Affinity Awareness</h1>
+ * <h1 class="header">Partition awareness</h1>
  * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
@@ -146,9 +146,9 @@ public interface GridClient extends AutoCloseable {
     @Override public void close();
 
     /**
-     * If client was not connected topology, throw last error encountered.
+     * Check for last topology errors.
      *
-     * @throws GridClientException If client was not connected
+     * @return {@code Exception} if client was not connected.
      */
-    public void throwLastError() throws GridClientException;
+    public GridClientException checkLastError();
 }

@@ -25,7 +25,7 @@ import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGe
 
 /**
  * Examples of using {@link ParametricVectorGenerator} for generating two dimensional data. {@link
- * ParametricVectorGenerator} allows to create surfaces in N-dinensional spaces where each dimension depends on one
+ * ParametricVectorGenerator} allows to create surfaces in N-dimensional spaces where each dimension depends on one
  * parameter 't'. In such generator just one random producer is used, it defines a set of values for parameter 't'.
  */
 public class ParametricVectorGeneratorExample {

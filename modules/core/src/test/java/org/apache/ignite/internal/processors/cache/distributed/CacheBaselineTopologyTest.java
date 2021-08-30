@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -42,6 +41,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -61,8 +61,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
@@ -75,9 +73,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private boolean client;
-
-    /** */
     private static final int NODE_COUNT = 4;
 
     /** */
@@ -88,20 +83,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DATA_NODE = "dataNodeUserAttr";
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -118,11 +99,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        client = false;
-
         disableAutoActivation = false;
-
-        System.clearProperty(IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /** {@inheritDoc} */
@@ -154,9 +131,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);
 
-        if (client)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -179,6 +153,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
             IgniteEx ignite = startGrid(2);
 
+            ignite.cluster().baselineAutoAdjustEnabled(false);
             ignite.cluster().active(true);
 
             awaitPartitionMapExchange();
@@ -238,7 +213,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static class DataNodeFilter implements IgnitePredicate<ClusterNode> {
-
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
             return clusterNode.attribute(DATA_NODE);
         }
@@ -253,6 +228,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = grid(0);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -405,6 +381,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ig = grid(0);
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         assertTrue(ig.cluster().active());
@@ -441,16 +418,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ignite;
 
-        if (fromClient) {
-            client = true;
-
-            ignite = startGrid(NODE_COUNT + 10);
-
-            client = false;
-        }
+        if (fromClient)
+            ignite = startClientGrid(NODE_COUNT + 10);
         else
             ignite = grid(0);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -899,13 +872,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void checkMapTxNodes(boolean primary, boolean near) throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
-
         int bltNodesCnt = 3;
 
         Ignite ig = startGrids(bltNodesCnt);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         ig.createCache(new CacheConfiguration<>()
             .setName(CACHE_NAME)
@@ -1001,8 +972,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         for (int i = 1; i < 4; i++) {
             IgniteEx ig0 = grid(i);
 
-            for (int p = 0; p < 32; p++)
-                assertEqualsCollections(ig.affinity(cacheName).mapPartitionToPrimaryAndBackups(p), ig0.affinity(cacheName).mapPartitionToPrimaryAndBackups(p));
+            for (int p = 0; p < 32; p++) {
+                assertEqualsCollections(
+                    ig.affinity(cacheName).mapPartitionToPrimaryAndBackups(p),
+                    ig0.affinity(cacheName).mapPartitionToPrimaryAndBackups(p)
+                );
+            }
         }
 
         for (Map.Entry<Integer, String> e : keyToConsId.entrySet()) {
@@ -1052,6 +1027,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     public void testSettingBaselineTopologyWithOfflineNodeFromOldTopology() throws Exception {
         Ignite ignite = startGrids(2);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         ignite.cluster().active(true);
 

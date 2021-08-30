@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.algo;
 
+import java.nio.ByteBuffer;
+import java.util.Random;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -27,9 +29,6 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
-
-import java.nio.ByteBuffer;
-import java.util.Random;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.openjdk.jmh.annotations.Mode.AverageTime;

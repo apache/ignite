@@ -42,9 +42,9 @@ public interface DeployingContext {
     /**
      * Inits context by any client-defined object.
      *
-     * @param jobObject Specific class for job.
+     * @param jobObj Specific class for job.
      */
-    public void initByClientObject(Object jobObject);
+    public void initByClientObject(Object jobObj);
 
     /**
      * @return Unitialized deploy context.

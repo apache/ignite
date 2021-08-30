@@ -17,13 +17,13 @@
 
 package org.apache.ignite.cache.store;
 
-import com.google.common.base.Throwables;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import com.google.common.base.Throwables;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;

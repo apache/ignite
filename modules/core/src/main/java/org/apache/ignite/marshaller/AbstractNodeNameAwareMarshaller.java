@@ -17,14 +17,13 @@
 
 package org.apache.ignite.marshaller;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Marshaller allowing for {@link Ignition#localIgnite()} calls.
@@ -101,7 +100,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      * Marshals object to the output stream. This method should not close
      * given output stream.
      *
-     * @param obj Object to marshal.
+     * @param obj Object to marshal. {@code null} object will be marshaled to binary {@code null} representation.
      * @param out Output stream to marshal into.
      * @throws IgniteCheckedException If marshalling failed.
      */
@@ -110,7 +109,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
     /**
      * Marshals object to byte array.
      *
-     * @param obj Object to marshal.
+     * @param obj Object to marshal. {@code null} object will be marshaled to binary {@code null} representation.
      * @return Byte array.
      * @throws IgniteCheckedException If marshalling failed.
      */
@@ -122,7 +121,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      *
      * @param <T> Type of unmarshalled object.
      * @param in Input stream.
-     * @param clsLdr Class loader to use.
+     * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
@@ -133,7 +132,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      *
      * @param <T> Type of unmarshalled object.
      * @param arr Byte array.
-     * @param clsLdr Class loader to use.
+     * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */

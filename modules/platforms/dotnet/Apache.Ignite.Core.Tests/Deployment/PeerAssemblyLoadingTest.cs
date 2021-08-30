@@ -17,12 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.Deployment
 {
-    extern alias ExamplesDll;
+    extern alias TestDll2;
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Deployment;
@@ -32,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
-    using Address = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Address;
+    using Address = TestDll2::Apache.Ignite.Core.Tests.TestDll2.Address;
 
     /// <summary>
     /// Tests peer assembly loading feature:
@@ -180,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             // Copy Apache.Ignite.exe and Apache.Ignite.Core.dll 
             // to a separate folder so that it does not locate our assembly automatically.
-            var folder = IgniteUtils.GetTempDirectoryName();
+            var folder = PathUtils.GetTempDirectoryName();
             foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly})
             {
                 Assert.IsNotNull(asm.Location);
@@ -191,31 +189,41 @@ namespace Apache.Ignite.Core.Tests.Deployment
 
             // Start separate Ignite process without loading current dll.
             // ReSharper disable once AssignNullToNotNullAttribute
-            var config = Path.Combine(Path.GetDirectoryName(typeof(PeerAssemblyLoadingTest).Assembly.Location),
-                "Deployment\\peer_assembly_app.config");
+            var config = Path.Combine(
+                Path.GetDirectoryName(typeof(PeerAssemblyLoadingTest).Assembly.Location),
+                "Deployment",
+                "peer_assembly_app.config");
 
-            var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(null), null,
+            var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(), null,
                 "-ConfigFileName=" + config, "-ConfigSectionName=igniteConfiguration");
 
-            Thread.Sleep(300);
-            Assert.IsFalse(proc.HasExited);
-
-            // Start Ignite and execute computation on remote node.
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            try
             {
-                PeerAssemblyLoadingMode = enablePeerDeployment
-                    ? PeerAssemblyLoadingMode.CurrentAppDomain
-                    : PeerAssemblyLoadingMode.Disabled
-            };
+                Thread.Sleep(300);
+                Assert.IsFalse(proc.HasExited);
 
-            using (var ignite = Ignition.Start(cfg))
-            {
-                Assert.IsTrue(ignite.WaitTopology(2));
-
-                for (var i = 0; i < 10; i++)
+                // Start Ignite and execute computation on remote node.
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    test(ignite);
+                    PeerAssemblyLoadingMode = enablePeerDeployment
+                        ? PeerAssemblyLoadingMode.CurrentAppDomain
+                        : PeerAssemblyLoadingMode.Disabled
+                };
+
+                using (var ignite = Ignition.Start(cfg))
+                {
+                    Assert.IsTrue(ignite.WaitTopology(2));
+
+                    for (var i = 0; i < 10; i++)
+                    {
+                        test(ignite);
+                    }
                 }
+            }
+            finally
+            {
+                proc.Kill();
+                proc.WaitForExit();
             }
         }
 

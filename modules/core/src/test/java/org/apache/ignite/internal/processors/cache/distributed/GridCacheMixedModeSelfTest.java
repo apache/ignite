@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -40,9 +39,6 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        if (F.eq(igniteInstanceName, getTestIgniteInstanceName(0)))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -60,7 +56,9 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(4);
+        startGrids(3);
+
+        startClientGrid(3);
     }
 
     /**
@@ -68,7 +66,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBasicOps() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = grid(3).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);

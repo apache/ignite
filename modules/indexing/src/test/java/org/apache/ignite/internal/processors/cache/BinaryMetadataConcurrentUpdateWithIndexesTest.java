@@ -46,8 +46,8 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -91,8 +91,6 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
         rndAddrsField.set(spi, true);
 
         cfg.setDiscoverySpi(spi.setIpFinder(sharedStaticIpFinder));
-
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         QueryEntity qryEntity = new QueryEntity("java.lang.Integer", "Value");
 
@@ -145,7 +143,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         Ignite node1 = startGrid("node1");
 
-        IgniteEx client0 = startGrid("client0");
+        IgniteEx client0 = startClientGrid("client0");
 
         CacheObjectBinaryProcessorImpl.TestBinaryContext clientCtx =
             (CacheObjectBinaryProcessorImpl.TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().

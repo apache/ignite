@@ -48,9 +48,6 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -69,8 +66,6 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -217,13 +212,9 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         }, NODES, "cache-thread");
 
         while (!fut.isDone()) {
-            client = true;
-
-            startGrid(NODES);
+            startClientGrid(NODES);
 
             stopGrid(NODES);
-
-            client = false;
 
             startGrid(NODES);
 

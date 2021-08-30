@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cache.store.cassandra.common;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Row;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -29,6 +27,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.Row;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.ignite.cache.store.cassandra.persistence.PojoFieldAccessor;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;

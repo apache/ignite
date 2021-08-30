@@ -196,7 +196,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             cache.query(new SqlFieldsQuery("INSERT INTO \"AllTypes\" (_key, _val) VALUES(2, ?)")
                 .setArgs(new AllTypes(2L))).getAll();
 
-            cache.query (new SqlFieldsQuery(
+            cache.query(new SqlFieldsQuery(
                 "UPDATE \"AllTypes\" " +
                     "SET " +
                     "\"dateCol\" = '2016-11-30 12:00:00', " +
@@ -400,7 +400,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
-    static final class AllTypes implements Serializable {
+    public static final class AllTypes implements Serializable {
         /**
          * Data Long.
          */
@@ -602,7 +602,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         }
 
         /** */
-        AllTypes(Long key) {
+        public AllTypes(Long key) {
             this.init(key, Long.toString(key));
         }
 

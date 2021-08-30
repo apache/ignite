@@ -329,7 +329,7 @@ public class IgniteNodeStartUtils {
         String cfg = props.get(CFG) != null ? (String)props.get(CFG) : dfltSpec.configuration();
         String script = props.get(SCRIPT) != null ? (String)props.get(SCRIPT) : dfltSpec.script();
 
-        if (port<= 0)
+        if (port <= 0)
             throw new IgniteCheckedException("Invalid port number: " + port);
 
         if (nodes <= 0)

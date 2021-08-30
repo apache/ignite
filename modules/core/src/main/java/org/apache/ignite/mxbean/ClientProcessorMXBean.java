@@ -45,11 +45,7 @@ public interface ClientProcessorMXBean {
      * @return {@code True} if connection has been dropped successfully, {@code false} otherwise.
      */
     @MXBeanDescription("Drop client connection by ID.")
-    @MXBeanParametersNames(
-        "id"
-    )
-    @MXBeanParametersDescriptions(
-        "Client connection ID."
-    )
-    public boolean dropConnection(long id);
+    public boolean dropConnection(
+        @MXBeanParameter(name = "id", description = "Client connection ID.") long id
+    );
 }

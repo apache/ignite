@@ -16,37 +16,33 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointFileIOFactory;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
@@ -73,7 +69,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
             .setCheckpointFrequency(20_000)
             .setWriteThrottlingEnabled(true)
             .setCheckpointThreads(1)
-            .setFileIOFactory(new SlowCheckpointFileIOFactory());
+            .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, 5_000_000));
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -120,7 +116,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         startGrids(2).active(true);
 
         try {
-            Ignite ig = ignite(0);
+            IgniteEx ig = ignite(0);
 
             final int keyCnt = 2_000_000;
 
@@ -200,10 +196,29 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
                 fail("Put rate degraded to zero for at least 10 seconds");
             }
+
+            LongAdderMetric totalThrottlingTime = totalThrottlingTime(ig);
+
+            assertTrue(totalThrottlingTime.value() > 0);
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @return {@code totalThrottlingTime} metric for the default region.
+     */
+    private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
+        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
+
+        LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
+
+        assertNotNull(totalThrottlingTime);
+
+        return totalThrottlingTime;
     }
 
     /**
@@ -264,49 +279,5 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
-    }
-
-    /**
-     * Create File I/O that emulates poor checkpoint write speed.
-     */
-    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Delegate factory. */
-        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
-            final FileIO delegate = delegateFactory.create(file, openOption);
-
-            return new FileIODecorator(delegate) {
-                @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(5_000_000);
-
-                    return delegate.write(srcBuf);
-                }
-
-                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(5_000_000);
-
-                    return delegate.write(srcBuf, position);
-                }
-
-                @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(5_000_000);
-
-                    return delegate.write(buf, off, len);
-                }
-
-                /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-                    return delegate.map(sizeBytes);
-                }
-            };
-        }
     }
 }

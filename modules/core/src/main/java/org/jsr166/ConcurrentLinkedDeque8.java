@@ -1713,8 +1713,7 @@ public class ConcurrentLinkedDeque8<E>
             try {
                 return AccessController.doPrivileged
                     (new PrivilegedExceptionAction<Unsafe>() {
-                        @Override
-                        public Unsafe run() throws Exception {
+                        @Override public Unsafe run() throws Exception {
                             Field f = Unsafe.class.getDeclaredField("theUnsafe");
 
                             f.setAccessible(true);

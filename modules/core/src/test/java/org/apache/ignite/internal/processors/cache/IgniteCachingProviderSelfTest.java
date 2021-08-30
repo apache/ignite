@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
+import com.google.common.collect.Sets;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachingProvider;
@@ -85,7 +85,11 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        try {
+            Caching.getCachingProvider().close();
+        } finally {
+            stopAllGrids();
+        }
     }
 
     /**

@@ -220,11 +220,10 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
             IgniteConfiguration cfg = getConfiguration(name);
 
             cfg.setConsistentId(node);
-            cfg.setClientMode(true);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(primaryIpFinder);
 
-            Ignite ig = startGrid(name, cfg);
+            Ignite ig = startClientGrid(name, cfg);
 
             nodes.put(name, ig);
         }
@@ -243,10 +242,9 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
             IgniteConfiguration cfg = getConfiguration(name);
             cfg.setConsistentId(node);
             cfg.setActiveOnStart(false);
-            cfg.setClientMode(true);
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(backUpIpFinder);
 
-            Ignite ig = startGrid(name, cfg);
+            Ignite ig = startClientGrid(name, cfg);
 
             nodes.put(name, ig);
         }

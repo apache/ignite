@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -65,23 +66,25 @@ public interface PageMemoryEx extends PageMemory {
         boolean dirtyFlag, boolean restore);
 
     /**
-     * Gets or allocates metadata page for specified grpId.
-     *
-     * @param grpId Group ID.
-     * @return Meta page for grpId.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long metaPageId(int grpId) throws IgniteCheckedException;
-
-    /**
-     * Gets or allocates partition metadata page for specified grpId and partId.
+     * Gets partition metadata page for specified grpId and partId.
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @return Meta page for grpId and partId.
-     * @throws IgniteCheckedException If failed.
      */
-    public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException;
+    public long partitionMetaPageId(int grpId, int partId);
+
+    /**
+     * @see #acquirePage(int, long)
+     * Sets additional flag indicating that page was not found in memory and had to be allocated.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param pageAllocated Flag is set if new page was allocated in offheap memory.
+     * @return Page.
+     * @throws IgniteCheckedException
+     */
+    public long acquirePage(int grpId, long pageId, AtomicBoolean pageAllocated) throws IgniteCheckedException;
 
     /**
      * @see #acquirePage(int, long)
@@ -99,7 +102,7 @@ public interface PageMemoryEx extends PageMemory {
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications
-     * in regard with checkpointing.
+     * in regard with checkpointing. May return false-negative result during or after partition eviction.
      *
      * @return {@code False} if there are too many dirty pages and a thread should wait for a
      *      checkpoint to begin.
@@ -141,6 +144,9 @@ public interface PageMemoryEx extends PageMemory {
          CheckpointMetricsTracker tracker
      ) throws IgniteCheckedException;
 
+     /** */
+     public PageReadWriteManager pageManager();
+
     /**
      * Marks partition as invalid / outdated.
      *
@@ -165,4 +171,19 @@ public interface PageMemoryEx extends PageMemory {
      * @return Future that will be completed when all pages are cleared.
      */
     public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
+
+    /**
+     * Pull page from checkpoint buffer.
+     */
+    public FullPageId pullPageFromCpBuffer();
+
+    /**
+     * Calculates throttling condition.
+     */
+    public boolean shouldThrottle();
+
+    /**
+     * Total pages can be placed to memory.
+     */
+    public long totalPages();
 }

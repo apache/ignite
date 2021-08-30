@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,15 +39,15 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Ignore;
@@ -62,11 +61,30 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** {@code True} if indexing disabled. */
+    private boolean indexingDisabled;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        if (indexingDisabled)
+            GridQueryProcessor.idxCls = DummyQueryIndexing.class;
+
+        return cfg;
     }
-    
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        indexingDisabled = false;
+
+        GridQueryProcessor.idxCls = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -219,74 +237,6 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     /**
      * @throws Exception If failed.
      */
-    private void checkZkNodesCleanup() throws Exception {
-        final ZookeeperClient zkClient = new ZookeeperClient(getTestResources().getLogger(),
-            zkCluster.getConnectString(),
-            30_000,
-            null);
-
-        final String basePath = ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT + "/";
-
-        final String aliveDir = basePath + ZkIgnitePaths.ALIVE_NODES_DIR + "/";
-
-        try {
-            List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
-
-            boolean foundAlive = false;
-
-            for (String znode : znodes) {
-                if (znode.startsWith(aliveDir)) {
-                    foundAlive = true;
-
-                    break;
-                }
-            }
-
-            assertTrue(foundAlive); // Sanity check to make sure we check correct directory.
-
-            assertTrue("Failed to wait for unused znodes cleanup", GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    try {
-                        List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
-
-                        for (String znode : znodes) {
-                            if (znode.startsWith(aliveDir) || znode.length() < basePath.length())
-                                continue;
-
-                            znode = znode.substring(basePath.length());
-
-                            if (!znode.contains("/")) // Ignore roots.
-                                continue;
-
-                            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8193
-                            if (znode.startsWith("jd/"))
-                                continue;
-
-                            log.info("Found unexpected znode: " + znode);
-
-                            return false;
-                        }
-
-                        return true;
-                    }
-                    catch (Exception e) {
-                        error("Unexpected error: " + e, e);
-
-                        fail("Unexpected error: " + e);
-                    }
-
-                    return false;
-                }
-            }, 10_000));
-        }
-        finally {
-            zkClient.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9138")
     @Test
     public void testRandomTopologyChanges_RestartZk() throws Exception {
@@ -316,13 +266,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testDeployService2() throws Exception {
-        helper.clientMode(false);
-
         startGrid(0);
 
-        helper.clientMode(true);
-
-        startGrid(1);
+        startClientGrid(1);
 
         grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
     }
@@ -334,15 +280,11 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     public void testDeployService3() throws Exception {
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                helper.clientModeThreadLocal(true);
-
-                startGrid(0);
+                startClientGrid(0);
 
                 return null;
             }
         }, "start-node");
-
-        helper.clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -414,9 +356,10 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
             else
                 userAttrs = null;
 
-            helper.clientMode(i > 5);
-
-            startGrid(i);
+            if (i > 5)
+                startClientGrid(i);
+            else
+                startGrid(i);
         }
 
         waitForTopology(10);
@@ -492,10 +435,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         startGrid(0);
 
         sesTimeout = 2000;
-        helper.clientMode(true);
         testSockNio = true;
 
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         client.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
@@ -515,9 +457,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         startGrids(SRVS);
 
-        helper.clientMode(true);
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -541,9 +481,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         startGrids(SRVS);
 
-        helper.clientMode(true);
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -563,31 +501,23 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testDuplicatedNodeId() throws Exception {
+        indexingDisabled = true;
+
         UUID nodeId0 = nodeId = UUID.randomUUID();
 
         startGrid(0);
 
         int failingNodeIdx = 100;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 2; i++) {
             final int idx = failingNodeIdx++;
 
             nodeId = nodeId0;
 
             info("Start node with duplicated ID [iter=" + i + ", nodeId=" + nodeId + ']');
 
-            Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    startGrid(idx);
-
-                    return null;
-                }
-            }, IgniteCheckedException.class, null);
-
-            assertTrue(err instanceof IgniteCheckedException);
-
-            assertTrue(err.getMessage().contains("Failed to start processor:")
-                || err.getMessage().contains("Failed to start manager:"));
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> startGrid(idx), IgniteSpiException.class, "Node with the same ID already exists");
 
             nodeId = null;
 
@@ -763,25 +693,6 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         for (Ignite client : clients)
             client.events().stopLocalListen(p);
-    }
-
-    /**
-     * @param zk ZooKeeper client.
-     * @param root Root path.
-     * @return All children znodes for given path.
-     * @throws Exception If failed/
-     */
-    private List<String> listSubTree(ZooKeeper zk, String root) throws Exception {
-        for (int i = 0; i < 30; i++) {
-            try {
-                return ZKUtil.listSubTreeBFS(zk, root);
-            }
-            catch (KeeperException.NoNodeException e) {
-                info("NoNodeException when get znodes, will retry: " + e);
-            }
-        }
-
-        throw new Exception("Failed to get znodes: " + root);
     }
 
     /**
@@ -1024,13 +935,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         for (int i = 0; i < 3; i++) {
             info("Iteration: " + i);
 
-            helper.clientMode(false);
-
             startGridsMultiThreaded(4, i == 0);
 
-            helper.clientMode(true);
-
-            startGridsMultiThreaded(4, 3);
+            startClientGridsMultiThreaded(4, 3);
 
             waitForTopology(7);
 

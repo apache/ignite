@@ -108,16 +108,14 @@ public class GridClientCacheBean implements Serializable {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return name != null ? name.hashCode() : 0;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
-    public boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
 
@@ -132,8 +130,7 @@ public class GridClientCacheBean implements Serializable {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "GridClientCacheBean [name=" + name + ", mode=" + mode + ']';
     }
 }

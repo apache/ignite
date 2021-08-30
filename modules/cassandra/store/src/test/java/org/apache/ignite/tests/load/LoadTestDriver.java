@@ -70,7 +70,7 @@ public abstract class LoadTestDriver {
 
         if (cfg == null && attempt == NUMBER_OF_SETUP_ATTEMPTS) {
             throw new RuntimeException("All " + NUMBER_OF_SETUP_ATTEMPTS + " attempts to setup load test '" +
-                    testName+ "' have failed");
+                    testName + "' have failed");
         }
 
         // calculates host unique prefix based on its subnet IP address
@@ -193,7 +193,7 @@ public abstract class LoadTestDriver {
 
         float errPercent = errCnt == 0 ?
             0 :
-            cnt + errCnt ==  0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
+            cnt + errCnt == 0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
 
         StringBuilder builder = new StringBuilder();
         builder.append(SystemHelper.LINE_SEPARATOR);

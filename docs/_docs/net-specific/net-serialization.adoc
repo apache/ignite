@@ -1,0 +1,314 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Serialization in Ignite.NET
+
+Most of the user-defined classes going through the Ignite .NET API will be trasferred over the network to other cluster nodes. These classes include:
+
+* Cache keys and values
+* Cache processors and filters (`ICacheEntryProcessor`, `ICacheEntryFilter`, `ICacheEntryEventFilter`, `ICacheEntryEventListener`)
+* Compute functions (`IComputeFunc`), actions (`IComputeAction`) and jobs (`IComputeJob`)
+* Services (`IService`)
+* Event and Message handlers (`IEventListener`, `IEventFilter`, `IMessageListener`)
+
+Passing objects of these classes over the network requires serialization. Ignite .NET supports the following ways of serializing user data:
+
+* `Apache.Ignite.Core.Binary.IBinarizable` interface
+* `Apache.Ignite.Core.Binary.IBinarySerializer` interface
+* `System.Runtime.Serialization.ISerializable` interface
+* Ignite reflective serialization (when none of the above applies)
+
+== IBinarizable
+
+`IBinarizable` approach provides a fine-grained control over serialization. This is a preferred way for high-performance production code.
+
+First, implement the `IBinarizable` interface in your class:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+public class Address : IBinarizable
+{
+    public string Street { get; set; }
+
+    public int Zip { get; set; }
+
+    public void WriteBinary(IBinaryWriter writer)
+    {
+        // Alphabetic field order is required for SQL DML to work.
+        // Even if DML is not used, alphabetic order is recommended.
+        writer.WriteString("street", Street);
+        writer.WriteInt("zip", Zip);
+    }
+
+    public void ReadBinary(IBinaryReader reader)
+    {
+        // Read order does not matter, however, reading in the same order
+        // as writing improves performance.
+        Street = reader.ReadString("street");
+        Zip = reader.ReadInt("zip");
+    }
+}
+----
+--
+
+`IBinarizable` can also be implemented in raw mode, without field names. This provides the fastest and the most compact
+serialization, but disables SQL queries:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+public class Address : IBinarizable
+{
+    public string Street { get; set; }
+
+    public int Zip { get; set; }
+
+    public void WriteBinary(IBinaryWriter writer)
+    {
+        var rawWriter = writer.GetRawWriter();
+
+        rawWriter.WriteString(Street);
+        rawWriter.WriteInt(Zip);
+    }
+
+    public void ReadBinary(IBinaryReader reader)
+    {
+        // Read order must be the same as write order
+        var rawReader = reader.GetRawReader();
+
+        Street = rawReader.ReadString();
+        Zip = rawReader.ReadInt();
+    }
+}
+----
+--
+
+[NOTE]
+====
+[discrete]
+=== Automatic GetHashCode and Equals Implementation
+If an object can be serialized into a binary form, then Ignite will calculate its hash code during serialization and
+write it to the resulting binary array. Also, Ignite provides a custom implementation of the equals method for the
+binary object's comparison needs. This means that you do not need to override the `GetHashCode` and `Equals` methods of
+your custom keys and values in order for them to be used in Ignite.
+====
+
+== IBinarySerializer
+
+`IBinarySerializer` is similar to `IBinarizable`, but separates serialization logic from the class implementation.
+This may be useful when the class code can not be modified, and serialization logic is shared between multiple classes,
+etc. The following code has exactly the same serialization as in the `Address` example above:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+public class Address : IBinarizable
+{
+    public string Street { get; set; }
+
+    public int Zip { get; set; }
+}
+
+public class AddressSerializer : IBinarySerializer
+{
+    public void WriteBinary(object obj, IBinaryWriter writer)
+    {
+        var addr = (Address) obj;
+
+        writer.WriteString("street", addr.Street);
+        writer.WriteInt("zip", addr.Zip);
+    }
+
+    public void ReadBinary(object obj, IBinaryReader reader)
+    {
+        var addr = (Address) obj;
+
+        addr.Street = reader.ReadString("street");
+        addr.Zip = reader.ReadInt("zip");
+    }
+}
+----
+--
+
+The `Serializer` should be specified in the configuration like this:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var cfg = new IgniteConfiguration
+{
+    BinaryConfiguration = new BinaryConfiguration
+    {
+        TypeConfigurations = new[]
+        {
+            new BinaryTypeConfiguration(typeof (Address))
+            {
+                Serializer = new AddressSerializer()
+            }
+        }
+    }
+};
+
+using (var ignite = Ignition.Start(cfg))
+{
+  ...
+}
+----
+--
+
+== ISerializable
+
+Types that implement the `System.Runtime.Serialization.ISerializable` interface will be serialized accordingly
+(by calling `GetObjectData` and serialization constructor). All system features are supported: `IObjectReference`,
+`IDeserializationCallback`, `OnSerializingAttribute`, `OnSerializedAttribute`, `OnDeserializingAttribute`, `OnDeserializedAttribute`.
+
+The `GetObjectData` result is written into the Ignite binary format. The following three classes provide identical serialized representation:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+class Reflective
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
+
+class Binarizable : IBinarizable
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+
+    public void WriteBinary(IBinaryWriter writer)
+    {
+        writer.WriteInt("Id", Id);
+        writer.WriteString("Name", Name);
+    }
+
+    public void ReadBinary(IBinaryReader reader)
+    {
+        Id = reader.ReadInt("Id");
+        Name = reader.ReadString("Name");
+    }
+}
+
+class Serializable : ISerializable
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+
+    public Serializable() {}
+
+    protected Serializable(SerializationInfo info, StreamingContext context)
+    {
+        Id = info.GetInt32("Id");
+        Name = info.GetString("Name");
+    }
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        info.AddValue("Id", Id);
+        info.AddValue("Name", Name);
+    }
+}
+----
+--
+
+== Ignite Reflective Serialization
+
+Ignite reflective serialization is essentially the `IBinarizable` approach where the interface is implemented automatically
+by reflecting over all fields and emitting write/read calls.
+
+There are no requirements for this mechanism, any class or struct can be serialized including all system types, delegates,
+expression trees, or anonymous types.
+
+Use the `[NonSerialized]` attribute to filter out specific fields during serialization.
+
+The raw mode can be enabled by specifying `BinaryReflectiveSerializer` explicitly:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var binaryConfiguration = new BinaryConfiguration
+{
+    TypeConfigurations = new[]
+    {
+        new BinaryTypeConfiguration(typeof(MyClass))
+        {
+            Serializer = new BinaryReflectiveSerializer {RawMode = true}
+        }
+    }
+};
+----
+tab:app.config[]
+[source,xml]
+----
+<igniteConfiguration>
+    <binaryConfiguration>
+        <typeConfigurations>
+            <binaryTypeConfiguration typeName='Apache.Ignite.ExamplesDll.Binary.Address'>
+                <serializer type='Apache.Ignite.Core.Binary.BinaryReflectiveSerializer, Apache.Ignite.Core' rawMode='true' />
+            </binaryTypeConfiguration>
+        </typeConfigurations>
+    </binaryConfiguration>
+</igniteConfiguration>
+----
+--
+
+Otherwise, `BinaryConfiguration` is not required.
+
+Performance is identical to manual the `IBinarizable` approach. Reflection is only used on startup to iterate over the
+fields and emit efficient IL code.
+
+Types marked with `[Serializable]` attribute but without `ISerializable` interface are written with Ignite reflective serializer.
+
+== Using Entity Framework POCOs
+
+The Entity Framework POCOs can be used directly with Ignite.
+
+However, https://msdn.microsoft.com/en-us/data/jj592886.aspx[POCO proxies, window=_blank] cannot be directly serialized
+or deserialized by Ignite, because the proxy type is a dynamic type.
+
+Make sure to disable proxy creation when using EF objects with Ignite:
+
+[tabs]
+--
+tab:Entity Framework 6[]
+[source,csharp]
+----
+ctx.Configuration.ProxyCreationEnabled = false;
+----
+tab:Entity Framework 5[]
+[source,csharp]
+----
+ctx.ContextOptions.ProxyCreationEnabled = false;
+----
+--
+
+== More Info
+
+See https://ptupitsyn.github.io/Ignite-Serialization-Performance/[Ignite Serialization Performance, window=_blank] blog
+post for more details on serialization performance of various modes introduced on this page.

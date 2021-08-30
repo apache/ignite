@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -36,9 +35,6 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal static class IgniteUtils
     {
-        /** Prefix for temp directory names. */
-        private const string DirIgniteTmp = "Ignite_";
-        
         /** Thread-local random. */
         [ThreadStatic]
         private static Random _rnd;
@@ -131,33 +127,6 @@ namespace Apache.Ignite.Core.Impl
             }
         }
 
-
-
-        /// <summary>
-        /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
-        /// </summary>
-        /// <returns>The full path of the temporary directory.</returns>
-        internal static string GetTempDirectoryName()
-        {
-            var baseDir = Path.Combine(Path.GetTempPath(), DirIgniteTmp);
-
-            while (true)
-            {
-                try
-                {
-                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
-                }
-                catch (IOException)
-                {
-                    // Expected
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Expected
-                }
-            }
-        }
-
         /// <summary>
         /// Convert unmanaged char array to string.
         /// </summary>
@@ -240,9 +209,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Encodes the peek modes into a single int value.
         /// </summary>
-        public static int EncodePeekModes(CachePeekMode[] modes)
+        public static int EncodePeekModes(CachePeekMode[] modes, out bool hasPlatformCache)
         {
             var res = 0;
+            hasPlatformCache = false;
 
             if (modes == null)
             {
@@ -251,10 +221,15 @@ namespace Apache.Ignite.Core.Impl
 
             foreach (var mode in modes)
             {
-                res |= (int)mode;
+                res |= (int) mode;
             }
 
-            return res;
+            // Clear Platform bit: Java does not understand it.
+            const int platformCache = (int) CachePeekMode.Platform;
+            const int all = (int) CachePeekMode.All;
+            hasPlatformCache = (res & platformCache) == platformCache || (res & all) == all;
+            
+            return res & ~platformCache;
         }
     }
 }

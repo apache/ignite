@@ -17,25 +17,24 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.management.ManagementFactory;
 import java.util.Collection;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.ACTIVE_BASELINE_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_BASELINE_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Baseline nodes metrics self test.
@@ -47,20 +46,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -68,10 +53,14 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     public void testBaselineNodes() throws Exception {
         // Start 2 server nodes.
         IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
         startGrid(1);
 
         // Cluster metrics.
         ClusterMetricsMXBean mxBeanCluster = mxBean(0, ClusterMetricsMXBeanImpl.class);
+
+        MetricRegistry mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
 
         ignite0.cluster().active(true);
 
@@ -82,9 +71,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         startGrid(2);
 
         // Start client node.
-        Ignition.setClientMode(true);
-        startGrid(3);
-        Ignition.setClientMode(false);
+        startClientGrid(3);
 
         Collection<BaselineNode> baselineNodes;
 
@@ -92,9 +79,13 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         log.info(String.format(">>> State #0: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(3, mxBeanCluster.getTotalServerNodes());
+        assertEquals(3, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
+        assertEquals(2, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
@@ -105,9 +96,13 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         log.info(String.format(">>> State #1: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(2, mxBeanCluster.getTotalServerNodes());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(1, mxBeanCluster.getActiveBaselineNodes());
+        assertEquals(1, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
@@ -120,9 +115,13 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         log.info(String.format(">>> State #2: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(3, mxBeanCluster.getTotalServerNodes());
+        assertEquals(3, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
+        assertEquals(2, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
         assertEquals(1, mxBeanLocalNode1.getTotalBaselineNodes());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
@@ -169,19 +168,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
      * @param clazz Class of ClusterMetricsMXBean implementation.
      * @return MBean instance.
      */
-    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz)
-        throws MalformedObjectNameException {
-
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(nodeIdx),
-            "Kernal",
-            clazz.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, ClusterMetricsMXBean.class, true);
+    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz) {
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), "Kernal", clazz, ClusterMetricsMXBean.class);
     }
 }

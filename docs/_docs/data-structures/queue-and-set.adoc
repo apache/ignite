@@ -1,0 +1,81 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Queue and Set
+:javaFile: {javaCodeDir}/DataStructures.java
+== Overview
+
+In addition to providing standard key-value map-like storage, Ignite also provides an implementation of a fast Distributed Blocking Queue and Distributed Set.
+
+`IgniteQueue` and `IgniteSet`, an implementation of `java.util.concurrent.BlockingQueue` and `java.util.Set` interface respectively, also support all operations from the `java.util.Collection` interface.
+Both types can be created in either collocated or non-collocated mode.
+
+Below is an example of how to create a distributed queue and set.
+
+.Queue:
+[source, java]
+----
+include::{javaFile}[tags=queue, indent=0]
+----
+
+
+.Set:
+[source, java]
+----
+include::{javaFile}[tags=set, indent=0]
+----
+
+== Collocated vs. Non-Collocated Mode
+
+If you plan to create just a few queues or sets containing lots of data, then you would create them in non-collocated mode. This will make sure that about equal portion of each queue or set will be stored on each cluster node. On the other hand, if you plan to have many queues or sets, relatively small in size (compared to the whole cache), then you would most likely create them in collocated mode. In this mode all queue or set elements will be stored on the same cluster node, but about equal amount of queues/sets will be assigned to every node.
+
+Non-collocated mode only makes sense for and is only supported for `PARTITIONED` caches.
+
+A collocated queue and set can be created by setting the `collocated` property of `CollectionConfiguration`, like so:
+
+.Queue:
+[source, java]
+----
+include::{javaFile}[tags=colocated-queue, indent=0]
+----
+
+
+.Set:
+[source, java]
+----
+include::{javaFile}[tags=colocated-set, indent=0]
+----
+
+== Cache Queues and Load Balancing
+
+Given that elements will remain in the queue until someone takes them, and that no two nodes should ever receive the same element from the queue, cache queues can be used as an alternate work distribution and load balancing approach within Ignite.
+
+For example, you could simply add computations, such as instances of `IgniteRunnable` to a queue, and have threads on remote nodes call `IgniteQueue.take()`  method which will block if queue is empty. Once the `take()` method will return a job, a thread will process it and call `take()` again to get the next job. Given this approach, threads on remote nodes will only start working on the next job when they have completed the previous one, hence creating ideally balanced system where every node only takes the number of jobs it can process, and not more.
+
+== Collection Configuration
+
+Ignite collections can be in configured in API via `CollectionConfiguration` (see above examples). The following configuration parameters can be used:
+
+
+
+[cols="1,1,1",opts="header"]
+|===
+| Setter | Description |  Default
+| `setCollocated(boolean)` | Sets collocation mode. | `false`
+|`setCacheMode(CacheMode)` | Sets underlying cache mode (`PARTITIONED`, `REPLICATED` or `LOCAL`). | `PARTITIONED`
+| `setAtomicityMode(CacheAtomicityMode)` | Sets underlying cache atomicity mode (`ATOMIC` or `TRANSACTIONAL`). | `ATOMIC`
+| `setOffHeapMaxMemory(long)` | Sets offheap maximum memory size. | `0` (unlimited)
+| `setBackups(int)` |  Sets number of backups. | `0`
+|`setNodeFilter(IgnitePredicate<ClusterNode>)` | Sets optional predicate specifying on which nodes entries should be stored. |
+|===

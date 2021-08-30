@@ -62,9 +62,6 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
         rndAddrsField.set(spi, true);
 
         cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
-
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
@@ -82,7 +79,7 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
 
             nodes.add(startGrid(1));
 
-            nodes.add(startGrid("client"));
+            nodes.add(startClientGrid("client"));
 
             nodes.add(startGrid(2));
 

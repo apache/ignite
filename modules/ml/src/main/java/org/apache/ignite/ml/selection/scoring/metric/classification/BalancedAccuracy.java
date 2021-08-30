@@ -33,7 +33,7 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
     /**
      * Metric value.
      */
-    private Double value = Double.NaN;
+    private Double val = Double.NaN;
 
     /**
      * Creates an instance of BalancedAccuracy.
@@ -44,11 +44,11 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
     /**
      * Creates an instance of BalancedAccuracy class.
      *
-     * @param truthLabel Truth label.
-     * @param falseLabel False label.
+     * @param truthLb Truth label.
+     * @param falseLb False label.
      */
-    public BalancedAccuracy(L truthLabel, L falseLabel) {
-        super(truthLabel, falseLabel);
+    public BalancedAccuracy(L truthLb, L falseLb) {
+        super(truthLb, falseLb);
     }
 
     /**
@@ -56,10 +56,8 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
      */
     @Override public BalancedAccuracy<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int n = aggr.getTrueNegative() + aggr.getFalsePositive();
-        ;
         int p = aggr.getTruePositive() + aggr.getFalseNegative();
-        ;
-        value = n == 0 && p == 0 ? 1 : ((double)aggr.getTruePositive() / p + (double)aggr.getTrueNegative() / n) / 2;
+        val = n == 0 && p == 0 ? 1 : ((double)aggr.getTruePositive() / p + (double)aggr.getTrueNegative() / n) / 2;
         return this;
     }
 
@@ -67,7 +65,7 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
      * {@inheritDoc}
      */
     @Override public double value() {
-        return value;
+        return val;
     }
 
     /**

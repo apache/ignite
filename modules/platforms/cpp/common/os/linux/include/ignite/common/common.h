@@ -44,11 +44,13 @@
 #   define IGNITE_NO_THROW throw()
 #endif
 
+#define IGNITE_UNUSED(x) ((void) x)
+
 /**
  * Common construction to disable copy constructor and assignment for class.
  */
 #define IGNITE_NO_COPY_ASSIGNMENT(cls) \
     cls(const cls& src); \
-    cls& operator= (const cls& other);
+    cls& operator= (const cls& other)
 
-#endif
+#endif //_IGNITE_COMMON_COMMON

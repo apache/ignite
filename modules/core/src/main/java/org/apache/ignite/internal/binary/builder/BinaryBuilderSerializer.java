@@ -19,10 +19,9 @@ package org.apache.ignite.internal.binary.builder;
 
 import java.util.Collection;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -111,25 +110,27 @@ class BinaryBuilderSerializer {
             return;
         }
 
+        if (val instanceof BinaryEnumObjectImpl) {
+            BinaryEnumObjectImpl obj = (BinaryEnumObjectImpl)val;
+
+            writer.writeByte(GridBinaryMarshaller.ENUM);
+            writer.writeInt(obj.typeId());
+
+            if (obj.typeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                writer.doWriteString(obj.className());
+
+            writer.writeInt(obj.enumOrdinal());
+
+            return;
+        }
+
         if (IgniteUtils.isEnum(val.getClass())) {
             String clsName = ((Enum)val).getDeclaringClass().getName();
 
             int typeId = writer.context().typeId(clsName);
-            String typeName = writer.context().userTypeName(clsName);
-
-            Object[] enumVals = val.getClass().getEnumConstants();
-
-            Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
-
-            for (Object enumVal : enumVals)
-                enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
-
-            BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true, enumMap);
-
-            writer.context().updateMetadata(typeId, meta, writer.failIfUnregistered());
 
             // Need register class for marshaller to be able to deserialize enum value.
-            writer.context().descriptorForClass(((Enum)val).getDeclaringClass(), false, false);
+            writer.context().registerClass(((Enum)val).getDeclaringClass(), true, false);
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(typeId);
@@ -179,16 +180,20 @@ class BinaryBuilderSerializer {
         }
 
         if (val instanceof Object[]) {
-            int compTypeId = writer.context().typeId(((Object[])val).getClass().getComponentType().getName());
+            Class<?> compCls = ((Object[])val).getClass().getComponentType();
 
-            if (val instanceof BinaryBuilderEnum[]) {
+            int compTypeId = writer.context().typeId(compCls.getName());
+
+            if (BinaryEnumObjectImpl.class.isAssignableFrom(compCls) || val instanceof BinaryBuilderEnum[]) {
                 writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
                 return;
             }
 
-            if (((Object[])val).getClass().getComponentType().isEnum()) {
+            if (compCls.isEnum()) {
                 Enum[] enumArr = (Enum[])val;
+
+                writer.context().registerClass(compCls, true, false);
 
                 writer.writeByte(GridBinaryMarshaller.ENUM_ARR);
                 writer.writeInt(compTypeId);

@@ -20,9 +20,10 @@ package org.apache.ignite.internal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -35,9 +36,9 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -50,23 +51,21 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsHelper;
-import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -75,15 +74,14 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -203,6 +201,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridMetricManager metric();
 
     /**
+     * Gets maintenance registry.
+     *
+     * @return Maintenance registry.
+     */
+    public MaintenanceRegistry maintenanceRegistry();
+
+    /**
      * Gets system view manager.
      *
      * @return Monitoring manager.
@@ -236,6 +241,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Distributed configuration processor.
      */
     public DistributedConfigurationProcessor distributedConfiguration();
+
+    /**
+     * Gets tracing processor.
+     *
+     * @return Tracing processor.
+     */
+    public Tracing tracing();
 
     /**
      * Gets task session processor.
@@ -277,7 +289,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return REST processor.
      */
-    public GridRestProcessor rest();
+    public IgniteRestProcessor rest();
 
     /**
      * Gets segmentation processor.
@@ -294,39 +306,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public <K, V> DataStreamProcessor<K, V> dataStream();
 
     /**
-     * Gets authentication processor.
-     *
-     * @return Authentication processor.
-     */
-    public IgniteAuthenticationProcessor authentication();
-
-    /**
-     * Gets file system processor.
-     *
-     * @return File system processor.
-     */
-    public IgfsProcessorAdapter igfs();
-
-    /**
-     * Gets IGFS utils processor.
-     *
-     * @return IGFS utils processor.
-     */
-    public IgfsHelper igfsHelper();
-
-    /**
      * Gets event continuous processor.
      *
      * @return Event continuous processor.
      */
     public GridContinuousProcessor continuous();
-
-    /**
-     * Gets Hadoop processor.
-     *
-     * @return Hadoop processor.
-     */
-    public HadoopProcessorAdapter hadoop();
 
     /**
      * Gets pool processor.
@@ -341,27 +325,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Mapping processor.
      */
     public GridMarshallerMappingProcessor mapping();
-
-    /**
-     * Gets Hadoop helper.
-     *
-     * @return Hadoop helper.
-     */
-    public HadoopHelper hadoopHelper();
-
-    /**
-     * Gets utility cache pool.
-     *
-     * @return Utility cache pool.
-     */
-    public ExecutorService utilityCachePool();
-
-    /**
-     * Gets async callback pool.
-     *
-     * @return Async callback pool.
-     */
-    public IgniteStripedThreadPoolExecutor asyncCallbackPool();
 
     /**
      * Gets cache object processor.
@@ -460,11 +423,25 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
+     * Indexes processor.
+     *
+     * @return Indexes processor.
+     */
+    public IndexProcessor indexProcessor();
+
+    /**
      * Gets encryption manager.
      *
      * @return Encryption manager.
      */
     public GridEncryptionManager encryption();
+
+    /**
+     * Gets defragmentation manager.
+     *
+     * @return Defragmentation manager.
+     */
+    public IgniteDefragmentation defragmentation();
 
     /**
      * Gets workers registry.
@@ -558,122 +535,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Created component.
      */
     public <T> T createComponent(Class<T> cls);
-
-    /**
-     * @return Thread pool implementation to be used in grid to process job execution
-     *      requests and user messages sent to the node.
-     */
-    public ExecutorService getExecutorService();
-
-    /**
-     * Executor service that is in charge of processing service proxy invocations.
-     *
-     * @return Thread pool implementation to be used in grid for service proxy invocations.
-     */
-    public ExecutorService getServiceExecutorService();
-
-    /**
-     * Executor service that is in charge of processing internal system messages.
-     *
-     * @return Thread pool implementation to be used in grid for internal system messages.
-     */
-    public ExecutorService getSystemExecutorService();
-
-    /**
-     * Executor service that is in charge of processing internal system messages
-     * in stripes (dedicated threads).
-     *
-     * @return Thread pool implementation to be used in grid for internal system messages.
-     */
-    public StripedExecutor getStripedExecutorService();
-
-    /**
-     * Executor service that is in charge of processing internal and Visor
-     * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
-     *
-     * @return Thread pool implementation to be used in grid for internal and Visor
-     *      jobs processing.
-     */
-    public ExecutorService getManagementExecutorService();
-
-    /**
-     * @return Thread pool implementation to be used for peer class loading
-     *      requests handling.
-     */
-    public ExecutorService getPeerClassLoadingExecutorService();
-
-    /**
-     * Executor service that is in charge of processing outgoing IGFS messages.
-     *
-     * @return Thread pool implementation to be used for IGFS outgoing message sending.
-     */
-    public ExecutorService getIgfsExecutorService();
-
-    /**
-     * Executor service that is in charge of processing data stream messages.
-     *
-     * @return Thread pool implementation to be used for data stream messages.
-     */
-    public StripedExecutor getDataStreamerExecutorService();
-
-    /**
-     * Should return an instance of fully configured thread pool to be used for
-     * processing of client messages (REST requests).
-     *
-     * @return Thread pool implementation to be used for processing of client
-     *      messages.
-     */
-    public ExecutorService getRestExecutorService();
-
-    /**
-     * Get affinity executor service.
-     *
-     * @return Affinity executor service.
-     */
-    public ExecutorService getAffinityExecutorService();
-
-    /**
-     * Get indexing executor service.
-     *
-     * @return Indexing executor service.
-     */
-    @Nullable public ExecutorService getIndexingExecutorService();
-
-    /**
-     * Executor service that is in charge of processing query messages.
-     *
-     * @return Thread pool implementation to be used in grid for query messages.
-     */
-    public ExecutorService getQueryExecutorService();
-
-
-    /**
-     * Executor services that is in charge of processing user compute task.
-     *
-     * @return Map of custom thread pool executors.
-     */
-    @Nullable public Map<String, ? extends ExecutorService> customExecutors();
-
-    /**
-     * Executor service that is in charge of processing schema change messages.
-     *
-     * @return Executor service that is in charge of processing schema change messages.
-     */
-    public ExecutorService getSchemaExecutorService();
-
-    /**
-     * Executor service that is in charge of processing rebalance messages.
-     *
-     * @return Executor service that is in charge of processing rebalance messages.
-     */
-    public ExecutorService getRebalanceExecutorService();
-
-    /**
-     * Executor service that is in charge of processing unorderable rebalance messages.
-     *
-     * @return Executor service that is in charge of processing unorderable rebalance messages.
-     */
-    public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService();
 
     /**
      * Gets exception registry.
@@ -770,4 +631,23 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return {@code True} if node is in recovery mode (before join to topology).
      */
     public boolean recoveryMode();
+
+    /**
+     * @return Local continuous tasks processor.
+     */
+    public DurableBackgroundTasksProcessor durableBackgroundTask();
+
+    /**
+     * Gets Performance statistics processor.
+     *
+     * @return Performance statistics processor.
+     */
+    public PerformanceStatisticsProcessor performanceStatistics();
+
+    /**
+     * Executor that is in charge of processing user async continuations.
+     *
+     * @return Executor that is in charge of processing user async continuations.
+     */
+    public Executor getAsyncContinuationExecutor();
 }

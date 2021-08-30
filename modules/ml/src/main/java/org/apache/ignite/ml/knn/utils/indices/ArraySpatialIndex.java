@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transfomToListOrdered;
+import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToListOrdered;
 import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoHeap;
 
 /**
@@ -65,6 +65,6 @@ public class ArraySpatialIndex<L> implements SpatialIndex<L> {
             tryToAddIntoHeap(heap, k, dataPnt, distance);
         }
 
-        return transfomToListOrdered(heap);
+        return transformToListOrdered(heap);
     }
 }

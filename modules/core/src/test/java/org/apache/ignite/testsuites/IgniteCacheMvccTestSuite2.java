@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTes
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
+import org.apache.ignite.internal.processors.cache.NoPresentCacheInterceptorOnClientTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
@@ -167,6 +169,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedProjectionAffinitySelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionBackupFilterSelfTest.class);
         ignoredTests.add(ClusterNodeAttributeAffinityBackupFilterSelfTest.class);
+        ignoredTests.add(ClusterNodeAttributeColocatedBackupFilterSelfTest.class);
         ignoredTests.add(NonAffinityCoordinatorDynamicStartStopTest.class);
 
         ignoredTests.add(NoneRebalanceModeSelfTest.class);
@@ -200,7 +203,8 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedTxSingleThreadedSelfTest.class); // See GridCachePartitionedMvccTxSingleThreadedSelfTest
         ignoredTests.add(GridCacheColocatedTxSingleThreadedSelfTest.class); // See GridCacheColocatedMvccTxSingleThreadedSelfTest
         ignoredTests.add(GridCachePartitionedTxMultiThreadedSelfTest.class); // See GridCachePartitionedMvccTxMultiThreadedSelfTest
-        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class); // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class);
         ignoredTests.add(GridCachePartitionedTxTimeoutSelfTest.class); // See GridCachePartitionedMvccTxTimeoutSelfTest
 
         ignoredTests.add(GridCacheColocatedDebugTest.class);
@@ -219,6 +223,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(IgniteCacheContainsKeyNearSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyNearAtomicSelfTest.class);
+        ignoredTests.add(NoPresentCacheInterceptorOnClientTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite2.suite(ignoredTests));
 

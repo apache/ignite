@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class TestTask : ComputeTaskAdapter<Tuple<bool, bool>, int, int>
         {
             /** <inheritDoc /> */
-            public override IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, 
+            public override IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid,
                 Tuple<bool, bool> arg)
             {
                 Assert.AreEqual(2, subgrid.Count);
@@ -124,8 +124,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var serializable = arg.Item1;
                 var local = arg.Item2;
 
-                var job = serializable 
-                    ? (IComputeJob<int>) new TestSerializableJob() 
+                var job = serializable
+                    ? (IComputeJob<int>) new TestSerializableJob()
                     :  new TestBinarizableJob();
 
                 var node = subgrid.Single(x => x.IsLocal == local);
@@ -207,6 +207,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.NotNull(grid);
 
+            // ReSharper disable once NonAtomicCompoundOperator
             _cnt++;
 
             if (_gridName == null)

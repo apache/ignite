@@ -45,7 +45,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleThreadExecutor() throws Exception {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
+        ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "grid-thread-pool-test-exec"));
 
         exec.submit(new InterruptingRunnable()).get();
 

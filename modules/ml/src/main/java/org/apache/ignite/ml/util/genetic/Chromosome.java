@@ -20,7 +20,7 @@ package org.apache.ignite.ml.util.genetic;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Representes the set of genes, known as chromosome in genetic programming.
+ * Represents the set of genes, known as chromosome in genetic programming.
  *
  * Note: this class has a natural ordering that is inconsistent with equals.
  */

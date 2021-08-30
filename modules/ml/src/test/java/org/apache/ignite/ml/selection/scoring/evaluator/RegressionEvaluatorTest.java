@@ -19,6 +19,7 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -32,6 +33,7 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.regression.Rss;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
+import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +43,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class RegressionEvaluatorTest extends TrainerTest {
     /**
-     * Test evalutor and trainer.
+     * Test evaluator and trainer.
      */
     @Test
     public void testEvaluatorWithoutFilter() {
@@ -76,7 +78,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
     }
 
     /**
-     * Test evalutor and trainer with test-train splitting.
+     * Test evaluator and trainer with test-train splitting.
      */
     @Test
     public void testEvaluatorWithFilter() {
@@ -99,7 +101,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         KNNRegressionTrainer trainer = new KNNRegressionTrainer().withK(3).withDistanceMeasure(new EuclideanDistance());
 
-        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>(new SHA256UniformMapper<>(new Random(0)))
             .split(0.5);
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
@@ -113,7 +115,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         double score = Evaluator.evaluate(new LocalDatasetBuilder<>(data, split.getTrainFilter(), parts),
             mdl, vectorizer, new Rss()
-        ).getSignle();
+        ).getSingle();
 
         assertEquals(4800164.444444457, score, 1e-4);
     }

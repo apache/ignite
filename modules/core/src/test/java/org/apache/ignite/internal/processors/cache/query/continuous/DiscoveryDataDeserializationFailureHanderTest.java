@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
@@ -70,7 +71,7 @@ public class DiscoveryDataDeserializationFailureHanderTest extends GridCommonAbs
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
         finally {
-            GridTestUtils.assertThrows(log, fut::get, IgniteCheckedException.class, "Failed to start");
+            GridTestUtils.assertThrows(log, (Callable<Object>)fut::get, IgniteCheckedException.class, "Failed to start");
         }
     }
 

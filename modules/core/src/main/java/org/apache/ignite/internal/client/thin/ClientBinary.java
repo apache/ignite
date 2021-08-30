@@ -24,9 +24,11 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 
@@ -54,7 +56,7 @@ class ClientBinary implements IgniteBinary {
         if (obj == null)
             return null;
 
-        if (obj instanceof IgniteBinary)
+        if (BinaryUtils.isBinaryType(obj.getClass()))
             return (T)obj;
 
         byte[] objBytes = marsh.marshal(obj);
@@ -162,5 +164,12 @@ class ClientBinary implements IgniteBinary {
         ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, null, true, vals), false);
 
         return ctx.metadata(typeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
+        BinaryClassDescriptor clsDesc = marsh.context().registerClass(cls, true, false);
+
+        return marsh.context().metadata(clsDesc.typeId());
     }
 }

@@ -17,11 +17,20 @@
 
 package org.apache.ignite.ml.composition.predictionsaggregator;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * Predictions aggregator interface.
  */
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes(
+        {
+                @JsonSubTypes.Type(value = MeanValuePredictionsAggregator.class, name = "MeanValuePredictionsAggregator"),
+                @JsonSubTypes.Type(value = OnMajorityPredictionsAggregator.class, name = "OnMajorityPredictionsAggregator"),
+                @JsonSubTypes.Type(value = WeightedPredictionsAggregator.class, name = "WeightedPredictionsAggregator"),
+        })
 public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
     /**
      * Represents aggregator as String.

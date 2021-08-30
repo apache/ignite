@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -30,21 +29,6 @@ import org.junit.Test;
 public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "partitioned";
-
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (client)
-            cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /**
      * @return Cache configuration.
@@ -68,9 +52,8 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
         startGrids(srvCnt);
 
         try {
-            client = true;
-
-            IgniteEx client = startGrid(srvCnt);
+            IgniteEx client = startClientGrid(getConfiguration("client").
+                setCacheConfiguration(cacheConfiguration()));
 
             for (int i = 0; i < 100; i++)
                 client.cache(CACHE_NAME).put(i, i);

@@ -77,7 +77,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             _header = header;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type id.
+        /// </summary>
         public int TypeId
         {
             get { return _header.TypeId; }
@@ -98,9 +100,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
 
-            int pos;
+            int unused;
 
-            return TryGetFieldPosition(fieldName, out pos);
+            return TryGetFieldPosition(fieldName, out unused);
         }
 
         /// <summary>
@@ -122,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return Deserialize<T>(BinaryMode.Deserialize);
+            return Deserialize<T>(BinaryMode.KeepBinary);
         }
 
         /** <inheritdoc /> */
@@ -230,7 +232,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void InitializeFields(IBinaryTypeDescriptor desc = null)
         {
-            if (_fields != null) 
+            if (_fields != null)
                 return;
 
             desc = desc ?? _marsh.GetDescriptor(true, _header.TypeId);
@@ -273,7 +275,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public override string ToString()
         {
-            return ToString(new Dictionary<int, int>());            
+            return ToString(new Dictionary<int, int>());
         }
 
         /// <summary>
@@ -316,7 +318,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     handled[_offset] = idHash;
 
                     InitializeFields();
-                    
+
                     foreach (string fieldName in meta.Fields)
                     {
                         sb.Append(", ");

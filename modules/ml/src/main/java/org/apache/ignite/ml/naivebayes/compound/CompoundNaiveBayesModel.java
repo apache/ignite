@@ -17,16 +17,27 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.io.Serializable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONModelMixIn;
+import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
@@ -36,7 +47,8 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
  * A compound Naive Bayes model which uses a composition of{@code GaussianNaiveBayesModel} and {@code
  * DiscreteNaiveBayesModel}.
  */
-public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable, DeployableObject {
+public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>,
+    JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -5045925321135798960L;
 
@@ -58,6 +70,10 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Feature ids which should be skipped in Discrete model. */
     private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
+    /** */
+    public CompoundNaiveBayesModel() {
+    }
+
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
         exporter.save(this, path);
@@ -65,26 +81,22 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector vector) {
-        double[] probapilityPowers = new double[priorProbabilities.length];
-        for (int i = 0; i < priorProbabilities.length; i++) {
-            probapilityPowers[i] = Math.log(priorProbabilities[i]);
-        }
+        double[] probabilityPowers = new double[priorProbabilities.length];
+        for (int i = 0; i < priorProbabilities.length; i++)
+            probabilityPowers[i] = Math.log(priorProbabilities[i]);
 
-        if (discreteModel != null) {
-            probapilityPowers = sum(probapilityPowers, discreteModel.probabilityPowers(skipFeatures(vector, discreteFeatureIdsToSkip)));
-        }
+        if (discreteModel != null)
+            probabilityPowers = sum(probabilityPowers, discreteModel.probabilityPowers(skipFeatures(vector, discreteFeatureIdsToSkip)));
 
-        if (gaussianModel != null) {
-            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(skipFeatures(vector, gaussianFeatureIdsToSkip)));
-        }
+        if (gaussianModel != null)
+            probabilityPowers = sum(probabilityPowers, gaussianModel.probabilityPowers(skipFeatures(vector, gaussianFeatureIdsToSkip)));
 
-        int maxLabelIndex = 0;
-        for (int i = 0; i < probapilityPowers.length; i++) {
-            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
-                maxLabelIndex = i;
-            }
+        int maxLbIdx = 0;
+        for (int i = 0; i < probabilityPowers.length; i++) {
+            if (probabilityPowers[i] > probabilityPowers[maxLbIdx])
+                maxLbIdx = i;
         }
-        return labels[maxLabelIndex];
+        return labels[maxLbIdx];
     }
 
     /** Returns a gaussian model. */
@@ -97,8 +109,24 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return discreteModel;
     }
 
+    public double[] getPriorProbabilities() {
+        return priorProbabilities;
+    }
+
+    public double[] getLabels() {
+        return labels;
+    }
+
+    public Collection<Integer> getGaussianFeatureIdsToSkip() {
+        return gaussianFeatureIdsToSkip;
+    }
+
+    public Collection<Integer> getDiscreteFeatureIdsToSkip() {
+        return discreteFeatureIdsToSkip;
+    }
+
     /** Sets prior probabilities. */
-    public CompoundNaiveBayesModel wirhPriorProbabilities(double[] priorProbabilities) {
+    public CompoundNaiveBayesModel withPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
@@ -139,9 +167,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         double[] result = new double[arr1.length];
 
-        for (int i = 0; i < arr1.length; i++) {
+        for (int i = 0; i < arr1.length; i++)
             result[i] = arr1[i] + arr2[i];
-        }
+
         return result;
     }
 
@@ -152,7 +180,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         int index = 0;
         for (int j = 0; j < vector.size(); j++) {
-            if(featureIdsToSkip.contains(j)) continue;
+            if (featureIdsToSkip.contains(j)) continue;
 
             newFeaturesValues[index] = vector.get(j);
             ++index;
@@ -161,7 +189,44 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Arrays.asList(discreteModel, gaussianModel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.addMixIn(CompoundNaiveBayesModel.class, JSONModelMixIn.class);
+
+        ObjectWriter writer = mapper
+            .writerFor(CompoundNaiveBayesModel.class)
+            .withAttribute("formatVersion", JSONModel.JSON_MODEL_FORMAT_VERSION)
+            .withAttribute("timestamp", System.currentTimeMillis())
+            .withAttribute("uid", "dt_" + UUID.randomUUID().toString())
+            .withAttribute("modelClass", CompoundNaiveBayesModel.class.getSimpleName());
+
+        try {
+            File file = new File(path.toAbsolutePath().toString());
+            writer.writeValue(file, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Loads CompoundNaiveBayesModel from JSON file. */
+    public static CompoundNaiveBayesModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        CompoundNaiveBayesModel mdl;
+        try {
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, CompoundNaiveBayesModel.class.getSimpleName());
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), CompoundNaiveBayesModel.class);
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
