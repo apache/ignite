@@ -328,13 +328,13 @@ public class SecurityUtils {
      * @param node Cluster node to authenticate.
      * @param cred Node credentials.
      * @param nodeAuth Node authenticator.
-     * @throws IgniteSpiException if authentication fails.
+     * @return {@link SecurityContext} instance as authentication result.
      */
     public static SecurityContext authenticateLocalNode(
         ClusterNode node,
         SecurityCredentials cred,
         DiscoverySpiNodeAuthenticator nodeAuth
-    ) throws IgniteSpiException {
+    ) {
         assert nodeAuth != null;
         assert cred != null || node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED) != null;
 
