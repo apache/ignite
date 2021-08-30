@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,7 +118,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  1. Disable WAL for starting caches.
  *  (done) 2. Own partitions on exchange (like the rebalancing does).
  *  (done) 3. Handle and fire affinity change message when waitInfo becomes empty.
- *  4. Load partitions from remote nodes.
+ *  (done) 4. Load partitions from remote nodes.
  *  (no need) 5. Set partition to MOVING state during copy from snapshot and read partition Metas.
  *  (done) 6. Replace index if topology match partitions.
  *  7. Rebuild index if need.
@@ -125,6 +126,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  Cache groups were not reserved [[[grpId=-903566235, grpName=shared], reason=Checkpoint was marked
  *  as inapplicable for historical rebalancing]])
  *  9. Add cache destroy rollback procedure if loading was unsuccessful.
+ *  10. Crash-recovery when node crashes with started, but not loaded caches.
  *
  * Other strategies to be memento to:
  *
@@ -948,6 +950,7 @@ public class SnapshotRestoreProcess {
      * @param errs Errors.
      */
     private void finishPreload(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
+        // TODO Remove duplicated code which handles distributed process finish action.
         if (ctx.clientNode())
             return;
 
@@ -1265,7 +1268,7 @@ public class SnapshotRestoreProcess {
         Map<UUID, ArrayList<SnapshotMetadata>> metas,
         BiPredicate<Integer, Integer> filter
     ) {
-        Map<UUID, Map<Integer, Set<Integer>>> res = new HashMap<>();
+        Map<UUID, Map<Integer, Set<Integer>>> nodeToSnp = new HashMap<>();
 
         for (Map.Entry<UUID, ArrayList<SnapshotMetadata>> e : metas.entrySet()) {
             UUID nodeId = e.getKey();
@@ -1276,7 +1279,7 @@ public class SnapshotRestoreProcess {
                 for (Map.Entry<Integer, Set<Integer>> metaParts : parts.entrySet()) {
                     for (Integer partId : metaParts.getValue()) {
                         if (filter.test(metaParts.getKey(), partId)) {
-                            res.computeIfAbsent(nodeId, n -> new HashMap<>())
+                            nodeToSnp.computeIfAbsent(nodeId, n -> new HashMap<>())
                                 .computeIfAbsent(metaParts.getKey(), k -> new HashSet<>())
                                 .add(partId);
                         }
@@ -1285,7 +1288,13 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        return res;
+        List<UUID> list = new ArrayList<>(nodeToSnp.keySet());
+        Collections.shuffle(list);
+
+        Map<UUID, Map<Integer, Set<Integer>>> shuffleMap = new LinkedHashMap<>();
+        list.forEach(k -> shuffleMap.put(k, nodeToSnp.get(k)));
+
+        return shuffleMap;
     }
 
     /**
@@ -1666,7 +1675,7 @@ public class SnapshotRestoreProcess {
                 return;
 
             IgniteUuid deploymentId = msg.cacheDeploymentIds().get(grp.groupId());
-            CacheGroupDescriptor desc = (CacheGroupDescriptor)grp.shared().affinity().cacheGroups().get(grp.groupId());
+            CacheGroupDescriptor desc = grp.shared().affinity().cacheGroups().get(grp.groupId());
 
             if (deploymentId == null || desc == null)
                 return;
