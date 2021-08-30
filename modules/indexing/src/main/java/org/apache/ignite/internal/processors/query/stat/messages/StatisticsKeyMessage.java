@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -174,6 +175,11 @@ public class StatisticsKeyMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StatisticsKeyMessage.class, this);
     }
 
     /** {@inheritDoc} */

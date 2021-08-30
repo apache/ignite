@@ -562,7 +562,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param topVer topology version.
      * @return Set of local primary partitions.
      */
-    private Set<Integer> checkLocalStatistics(StatisticsObjectConfiguration cfg, final AffinityTopologyVersion topVer) {
+    public Set<Integer> checkLocalStatistics(StatisticsObjectConfiguration cfg, final AffinityTopologyVersion topVer) {
         try {
             GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
 
@@ -576,9 +576,7 @@ public class IgniteStatisticsConfigurationManager {
             if (cctx == null)
                 return Collections.emptySet();
 
-            AffinityTopologyVersion topVer0 = cctx.affinity().affinityReadyFuture(topVer).get();
-
-            final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
+            final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
 
             if (F.isEmpty(parts)) {
                 // There is no data on the node for specified cache.
@@ -589,7 +587,7 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             final Set<Integer> partsOwn = new HashSet<>(
-                cctx.affinity().backupPartitions(cctx.localNodeId(), topVer0)
+                cctx.affinity().backupPartitions(cctx.localNodeId(), topVer)
             );
 
             partsOwn.addAll(parts);
@@ -651,11 +649,11 @@ public class IgniteStatisticsConfigurationManager {
                 dropColumnsOnLocalStatistics(cfg, colsToRmv);
 
             if (!F.isEmpty(partsToCollect))
-                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect, topVer0);
+                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect, topVer);
             else {
                 // All local statistics by partition are available.
                 // Only refresh aggregated local statistics.
-                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts, topVer0));
+                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts, topVer));
             }
 
             return parts;
@@ -706,7 +704,11 @@ public class IgniteStatisticsConfigurationManager {
                 AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
                 Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
 
-                gatherLocalStatistics(newCfg, tbl, parts, parts, diff.updateCols(), topVer);
+                LocalStatisticsGatheringContext ctx = gatherLocalStatistics(newCfg, tbl, parts, parts, diff.updateCols(),
+                    topVer);
+
+                ctx.futureAggregate().thenAccept(stat -> globalStatMgr.onLocalStatisticsAggregated(newCfg.key(), stat,
+                    topVer));
             }
         }
     }
@@ -743,8 +745,9 @@ public class IgniteStatisticsConfigurationManager {
      * @param colsToCollect If specified - collect statistics only for this columns,
      *                      otherwise - collect to all columns from object configuration.
      * @param topVer Topology version.
+     * @return Gathering context.
      */
-    public void gatherLocalStatistics(
+    public LocalStatisticsGatheringContext gatherLocalStatistics(
         StatisticsObjectConfiguration cfg,
         GridH2Table tbl,
         Set<Integer> partsToAggregate,
@@ -757,7 +760,8 @@ public class IgniteStatisticsConfigurationManager {
 
         gatherer.gatherLocalObjectsStatisticsAsync(tbl, cfg, colsToCollect, partsToCollect);
 
-        gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), partsToAggregate, topVer));
+        return gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), partsToAggregate,
+            topVer));
     }
 
     /**

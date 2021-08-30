@@ -93,7 +93,7 @@ public class PSUBasicValueDistributionTableStatisticsUsageTest extends Statistic
 
         sql("CREATE INDEX empty_distribution_no_stat_col_a ON empty_distribution_no_stat(col_a)");
 
-        collectStatistics("digital_distribution", "empty_distribution");
+        collectStatistics(StatisticsType.GLOBAL, "digital_distribution", "empty_distribution");
     }
 
     /**

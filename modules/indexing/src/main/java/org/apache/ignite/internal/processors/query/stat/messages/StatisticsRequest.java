@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -46,6 +49,7 @@ public class StatisticsRequest implements Message {
     private StatisticsType type;
 
     /** For local statistics request - column config versions map: name to version. */
+    @GridDirectMap(keyType = String.class, valueType = Long.class)
     private Map<String, Long> versions;
 
     /** For local statistics request - version to gather statistics by. */
@@ -113,6 +117,12 @@ public class StatisticsRequest implements Message {
         return versions;
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StatisticsRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -137,7 +147,19 @@ public class StatisticsRequest implements Message {
                 writer.incrementState();
 
             case 2:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMap("versions", versions, MessageCollectionItemType.STRING, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -147,6 +169,7 @@ public class StatisticsRequest implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -171,6 +194,14 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 2:
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -182,19 +213,30 @@ public class StatisticsRequest implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                versions = reader.readMap("versions", MessageCollectionItemType.STRING, MessageCollectionItemType.LONG, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(StatisticsRequest.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return 0;
+        return TYPE_CODE;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 5;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }

@@ -166,6 +166,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             statCfgMgr,
             ctx.systemView(),
             statsRepos,
+            gatherer,
             mgmtPool,
             ctx.discovery(),
             ctx.state(),

@@ -353,52 +353,57 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     /**
      * Update statistics on specified objects in PUBLIC schema.
      *
+     * @param type Statistics type to collect statistics by.
      * @param tables Tables where to update statistics.
      */
-    protected void updateStatistics(@NotNull String... tables) {
+    protected void updateStatistics(StatisticsType type, @NotNull String... tables) {
         StatisticsTarget[] targets = Arrays.stream(tables).map(tbl -> new StatisticsTarget(SCHEMA, tbl.toUpperCase()))
             .toArray(StatisticsTarget[]::new);
 
-        updateStatistics(targets);
+        updateStatistics(type, targets);
     }
 
     /**
      * Collect statistics for specified objects in PUBLIC schema.
      *
+     * @param type Statistics type to collect statistics by.
      * @param tables Tables where to collect statistics.
      */
-    protected void collectStatistics(@NotNull String... tables) {
+    protected void collectStatistics(StatisticsType type, @NotNull String... tables) {
         StatisticsTarget[] targets = Arrays.stream(tables).map(tbl -> new StatisticsTarget(SCHEMA, tbl.toUpperCase()))
             .toArray(StatisticsTarget[]::new);
 
-        collectStatistics(targets);
+        collectStatistics(type, targets);
     }
 
     /**
      * Update statistics on specified objects.
      *
+     * @param type Statistics type to ubdate statistics by.
      * @param targets Targets to refresh statistics by.
      */
-    protected void updateStatistics(StatisticsTarget... targets) {
-        makeStatistics(false, targets);
+    protected void updateStatistics(StatisticsType type, StatisticsTarget... targets) {
+        makeStatistics(false, type, targets);
     }
 
     /**
      * Update statistics on specified objects.
      *
+     * @param type Statistics type to update statistics by.
      * @param targets Targets to collect statistics by.
      */
-    protected void collectStatistics(StatisticsTarget... targets) {
-        makeStatistics(true, targets);
+    protected void collectStatistics(StatisticsType type, StatisticsTarget... targets) {
+        makeStatistics(true, type, targets);
     }
 
     /**
      * Collect or refresh statistics.
      *
      * @param collect If {@code true} - collect new statistics, if {@code false} - update existing.
+     * @param type Statistics type to get statistics by.
      * @param targets Targets to process statistics by.
      */
-    private void makeStatistics(boolean collect, StatisticsTarget... targets) {
+    private void makeStatistics(boolean collect, StatisticsType type, StatisticsTarget... targets) {
         try {
             Map<StatisticsTarget, Long> expectedVer = new HashMap<>();
             IgniteStatisticsManagerImpl statMgr = statisticsMgr(0);
@@ -427,7 +432,17 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
             else
                 statisticsMgr(0).refreshStatistics(targets);
 
-            awaitStatistics(TIMEOUT, expectedVer);
+            if (StatisticsType.GLOBAL == type) {
+                for (Ignite ign :G.allGrids()) {
+                    IgniteStatisticsManagerImpl nodeMgr = statisticsMgr((IgniteEx)ign);
+
+                    for (StatisticsTarget target : targets)
+                        nodeMgr.getGlobalStatistics(target.key());
+                }
+
+            }
+
+            awaitStatistics(TIMEOUT, expectedVer, type);
         }
         catch (Exception ex) {
             throw new IgniteException(ex);
@@ -484,12 +499,17 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      *
      * @param timeout Timeout.
      * @param expectedVersions Expected versions for specified targets.
+     * @param type Type to get statistics by.
      * @throws Exception In case of errors.
      */
-    protected void awaitStatistics(long timeout, Map<StatisticsTarget, Long> expectedVersions) throws Exception {
+    protected void awaitStatistics(
+        long timeout,
+        Map<StatisticsTarget, Long> expectedVersions,
+        StatisticsType type
+    ) throws Exception {
         for (Ignite ign : G.allGrids()) {
-            if (!((IgniteEx)ign).context().clientNode())
-                awaitStatistics(timeout, expectedVersions, (IgniteEx)ign);
+            if (StatisticsType.GLOBAL == type || !((IgniteEx)ign).context().clientNode())
+                awaitStatistics(timeout, expectedVersions, (IgniteEx)ign, type);
         }
     }
 
@@ -499,13 +519,19 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param timeout Timeout.
      * @param expectedVersions Expected versions for specified targets.
      * @param ign Node to await.
+     * @param type Statistics type.
      * @throws Exception In case of errors.
      */
-    protected void awaitStatistics(long timeout, Map<StatisticsTarget, Long> expectedVersions, IgniteEx ign)
-        throws Exception {
+    protected void awaitStatistics(
+        long timeout,
+        Map<StatisticsTarget, Long> expectedVersions,
+        IgniteEx ign,
+        StatisticsType type
+    ) throws Exception {
         long t0 = U.currentTimeMillis();
 
         IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
+
 
         while (true) {
             try {
@@ -515,9 +541,24 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                     StatisticsTarget target = targetVersionEntry.getKey();
                     Long ver = targetVersionEntry.getValue();
 
-                    ObjectStatisticsImpl s = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(target.key());
-                    checkStatisticsVersion(s, target, ver);
+                    ObjectStatisticsImpl s;
 
+                    switch (type) {
+                        case LOCAL:
+                            s = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(target.key());
+
+                            break;
+
+                        case GLOBAL:
+                            s = (ObjectStatisticsImpl)indexing.statsManager().getGlobalStatistics(target.key());
+
+                            break;
+
+                        default:
+                            throw new IllegalArgumentException("Unexpected statistics type " + type);
+                    }
+
+                    checkStatisticsVersion(s, target, ver);
                 }
 
                 return;
@@ -537,11 +578,9 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param stat Object statistics to check.
      * @param target Statistics target to check only some columns.
      * @param ver Mininum allowed version.
-     * @return {@code true} if all column
      */
-    private boolean checkStatisticsVersion(ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
-        if (stat == null || stat.columnsStatistics().isEmpty())
-            return false;
+    private void checkStatisticsVersion(ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
+        assertFalse (stat == null || stat.columnsStatistics().isEmpty());
 
         Set<String> cols;
 
@@ -553,11 +592,8 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         for (String col : cols) {
             ColumnStatistics colStat = stat.columnStatistics(col);
 
-            if (colStat == null || colStat.version() < ver)
-                return false;
+            assertFalse (colStat == null || colStat.version() < ver);
         }
-
-        return true;
     }
 
     /**

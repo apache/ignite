@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.util.Map;
 import java.util.Objects;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
@@ -31,7 +38,7 @@ import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsH
 public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
     /** {@inheritDoc} */
     @Override public int nodes() {
-        return 1;
+        return 2;
     }
 
     /**
@@ -40,7 +47,7 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
      * 2) Get global statistics (with delay) and check its equality in all nodes.
      */
     @Test
-    public void testGathering() {
+    public void testGathering() throws InterruptedException, IgniteCheckedException {
         ObjectStatisticsImpl localStats[] = getStats("SMALL", StatisticsType.LOCAL);
 
         testCond(Objects::nonNull, localStats);
@@ -49,11 +56,55 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
 
         testCond(this::checkStat, localStats);
 
+        ObjectStatisticsImpl globalStat = getStatsFromNode(0, "SMALL", StatisticsType.GLOBAL);
+
+        assertNotNull(globalStat);
+    }
+
+    /**
+     * Test that all node contains the same global statistics.
+     *
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void testGlobalIsEqual() throws Exception {
         ObjectStatisticsImpl globalStats[] = getStats("SMALL", StatisticsType.GLOBAL);
 
         testCond(Objects::nonNull, globalStats);
-
         testCond(this::checkStat, globalStats);
+
+        ObjectStatisticsImpl globalStat = globalStats[0];
+
+        assertTrue(globalStats.length > 1);
+
+        for (int i = 1;i < globalStats.length;i++)
+            testEquaData(globalStat, globalStats[i]);
+
+    }
+
+    /**
+     * Check specified statistics contains equal data (all, except collection time and versions).
+     *
+     * @param expected Expected statistics.
+     * @param actual Actual statistics.
+     */
+    private static void testEquaData(ObjectStatisticsImpl expected, ObjectStatisticsImpl actual) {
+        assertEquals(expected.rowCount(), actual.rowCount());
+
+        assertEquals(expected.columnsStatistics().size(), actual.columnsStatistics().size());
+
+        for (Map.Entry<String, ColumnStatistics> expectedColStatEntry : expected.columnsStatistics().entrySet()) {
+            ColumnStatistics expColStat = expectedColStatEntry.getValue();
+            ColumnStatistics actColStat = actual.columnStatistics(expectedColStatEntry.getKey());
+
+            assertNotNull(actColStat);
+            assertEquals(expColStat.min(), actColStat.min());
+            assertEquals(expColStat.max(), actColStat.max());
+            assertEquals(expColStat.size(), actColStat.size());
+            assertEquals(expColStat.distinct(), actColStat.distinct());
+            assertEquals(expColStat.total(), actColStat.total());
+            assertEquals(expColStat.nulls(), actColStat.nulls());
+        }
     }
 
     /**
@@ -74,7 +125,7 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
             "Table doesn't exist [schema=PUBLIC, table=SMALL101wrong]"
         );
 
-        updateStatistics(t100, t101);
+        updateStatistics(StatisticsType.GLOBAL, t100, t101);
 
         ObjectStatisticsImpl[] stats100 = getStats(t100.obj(), StatisticsType.LOCAL);
         ObjectStatisticsImpl[] stats101 = getStats(t101.obj(), StatisticsType.LOCAL);

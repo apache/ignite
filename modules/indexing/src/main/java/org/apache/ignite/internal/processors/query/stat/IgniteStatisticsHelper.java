@@ -79,7 +79,7 @@ public class IgniteStatisticsHelper {
      * @return Cache group context for the given key.
      * @throws IgniteCheckedException If unable to find table by specified key.
      */
-    private CacheGroupContext getGroupContext(StatisticsKeyMessage key) throws IgniteCheckedException {
+    public CacheGroupContext getGroupContext(StatisticsKey key) throws IgniteCheckedException {
         GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
 
         if (tbl == null)
@@ -93,23 +93,22 @@ public class IgniteStatisticsHelper {
      *
      * @param target Statistics target to request local statistics by.
      * @param cfg Statistics configuration.
-     * @param topVer Affinity topology version to get statistics by.
      * @return Collection of statistics request.
      */
     public List<StatisticsAddressedRequest> generateGatheringRequests(
         StatisticsTarget target,
-        StatisticsObjectConfiguration cfg,
-        AffinityTopologyVersion topVer
+        StatisticsObjectConfiguration cfg
     ) throws IgniteCheckedException {
-        StatisticsKeyMessage keyMsg = new StatisticsKeyMessage(target.schema(), target.obj(),
-            Arrays.asList(target.columns()));
+        List<String> cols = (target.columns() == null) ? null : Arrays.asList(target.columns());
+        StatisticsKeyMessage keyMsg = new StatisticsKeyMessage(target.schema(), target.obj(), cols);
 
         Map<String, Long> versions = cfg.columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().version()));
+        CacheGroupContext grpCtx = getGroupContext(target.key());
+        AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
 
         StatisticsRequest req = new StatisticsRequest(UUID.randomUUID(), keyMsg, StatisticsType.LOCAL, topVer, versions);
 
-        CacheGroupContext grpCtx = getGroupContext(keyMsg);
         List<List<ClusterNode>> assignments = grpCtx.affinity().assignments(topVer);
         Set<UUID> nodes = new HashSet<>();
 

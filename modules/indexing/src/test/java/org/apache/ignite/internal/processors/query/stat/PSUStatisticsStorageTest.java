@@ -43,7 +43,7 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
      */
     @Test
     public void testPartialDeletionCollection() throws Exception {
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         IgniteEx ign = grid(0);
 
@@ -82,13 +82,13 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
         // 4) partially collect statistics for extra column and check that query plan still unable to get all statistics
         // it wants
 
-        collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "A"));
+        collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "A"));
 
         checkOptimalPlanChosenForDifferentIndexes(ign, new String[]{"SMALL_C"}, SQL, NO_HINTS);
 
         // 5) partially collect statistics for the necessarily column
         // and check that the query plan will restore to optimal
-        collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "B"));
+        collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "B"));
 
         checkOptimalPlanChosenForDifferentIndexes(ign, new String[]{"SMALL_B"}, SQL, NO_HINTS);
     }

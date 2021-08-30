@@ -409,7 +409,7 @@ public class IgniteStatisticsRepository {
 
         return (stat == null || !stat.topologyVersion().equals(topVer)) ? null : stat.statistics();
     }
-
+    
     /**
      * Clear local object statistics.
      *

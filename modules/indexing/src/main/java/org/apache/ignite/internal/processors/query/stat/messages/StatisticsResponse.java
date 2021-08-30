@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -73,6 +74,12 @@ public class StatisticsResponse implements Message {
         return data;
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StatisticsResponse.class, this);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -101,6 +108,7 @@ public class StatisticsResponse implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -129,14 +137,17 @@ public class StatisticsResponse implements Message {
         return reader.afterMessageRead(StatisticsResponse.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return 0;
+        return TYPE_CODE;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }

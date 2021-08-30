@@ -41,7 +41,7 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
         createSmallTable(null);
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
     }
 
     /**
