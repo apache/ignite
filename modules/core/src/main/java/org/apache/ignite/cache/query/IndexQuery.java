@@ -55,9 +55,9 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
-     * Specify index with cache value class and index name.
+     * Specify index with cache value type and index name.
      *
-     * @param valType Cache value class.
+     * @param valType Cache value type.
      * @param idxName Index name.
      */
     public IndexQuery(String valType, String idxName) {

@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -73,7 +71,7 @@ public class IndexQueryProcessor {
 
         Index idx = index(cctx, idxQryDesc);
 
-        List<IndexQueryCriterion> criteria = alineCriteriaWithIndex(idxProc.indexDefinition(idx.id()), idxQryDesc);
+        List<IndexQueryCriterion> criteria = alignCriteriaWithIndex(idxProc.indexDefinition(idx.id()), idxQryDesc);
 
         GridCursor<IndexRow> cursor = query(cctx, idx, criteria, qryCtx);
 
@@ -166,12 +164,7 @@ public class IndexQueryProcessor {
     }
 
     /** Checks that specified index matches index query criteria. */
-    private boolean checkIndex(IndexDefinition idxDef, List<IndexQueryCriterion> criteria) {
-        return criteria.size() <= idxDef.indexKeyDefinitions().size();
-    }
-
-    /** Checks that specified index matches index query criteria. */
-    private List<IndexQueryCriterion> alineCriteriaWithIndex(IndexDefinition idxDef, IndexQueryDesc idxQryDesc)
+    private List<IndexQueryCriterion> alignCriteriaWithIndex(IndexDefinition idxDef, IndexQueryDesc idxQryDesc)
         throws IgniteCheckedException {
         if (idxQryDesc.criteria().size() > idxDef.indexKeyDefinitions().size())
             throw failIndexQueryCriteria(idxDef, idxQryDesc);
@@ -231,7 +224,8 @@ public class IndexQueryProcessor {
         for (int i = 0; i < segmentsCnt; i++)
             segmentCursors[i] = query(i, idx, criteria, qryCtx);
 
-        return new SegmentedIndexCursor(segmentCursors, ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator());
+        return new SegmentedIndexCursor(
+            segmentCursors, ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator());
     }
 
     /**
@@ -320,7 +314,7 @@ public class IndexQueryProcessor {
                 if (!findRes.next())
                     return false;
 
-                while (exclude(get(), lower, 1) || exclude(get(), upper, -1)) {
+                while (rowIsOutOfRange(get(), lower, upper)) {
                     if (!findRes.next())
                         return false;
                 }
@@ -331,6 +325,15 @@ public class IndexQueryProcessor {
             /** {@inheritDoc} */
             @Override public IndexRow get() throws IgniteCheckedException {
                 return findRes.get();
+            }
+
+            /**
+             * Checks that {@code row} belongs to the range specified with {@code lower} and {@code upper}.
+             *
+             * @return {@code true} if the row doesn't belong the range, otherwise {@code false}.
+             */
+            private boolean rowIsOutOfRange(IndexRow row, IndexRow lower, IndexRow upper) throws IgniteCheckedException {
+                return exclude(row, lower, 1) || exclude(row, upper, -1);
             }
 
             /**
@@ -397,20 +400,17 @@ public class IndexQueryProcessor {
         /** Cursors over segments. */
         private final PriorityQueue<GridCursor<IndexRow>> cursors;
 
-        /** Whether returns first value for user. */
-        private boolean returnFirst;
-
         /** Comparator to compare index rows. */
         private final Comparator<GridCursor<IndexRow>> cursorComp;
 
         /** */
-        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, IndexRowComparator rowCmp) {
+        private IndexRow head;
+
+        /** */
+        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, IndexRowComparator rowCmp) throws IgniteCheckedException {
             cursorComp = new Comparator<GridCursor<IndexRow>>() {
                 @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
                     try {
-                        if (!returnFirst)
-                            return -1;
-
                         return rowCmp.compareKey(o1.get(), o2.get(), 0);
                     }
                     catch (IgniteCheckedException e) {
@@ -421,36 +421,30 @@ public class IndexQueryProcessor {
 
             this.cursors = new PriorityQueue<>(cursors.length, cursorComp);
 
-            this.cursors.addAll(Arrays.asList(cursors));
+            for (GridCursor<IndexRow> c: cursors) {
+                if (c.next())
+                    this.cursors.add(c);
+            }
         }
 
         /** {@inheritDoc} */
         @Override public boolean next() throws IgniteCheckedException {
-            if (!returnFirst) {
-                returnFirst = true;
+            if (cursors.isEmpty())
+                return false;
 
-                GridCursor<IndexRow>[] cc = cursors
-                    .toArray((GridCursor[]) Array.newInstance(GridCursor.class, cursors.size()));
+            GridCursor<IndexRow> c = cursors.poll();
 
-                cursors.clear();
+            head = c.get();
 
-                for (GridCursor<IndexRow> c: cc) {
-                    if (c.next())
-                        cursors.add(c);
-                }
-            } else {
-                GridCursor<IndexRow> c = cursors.poll();
+            if (c != null && c.next())
+                cursors.add(c);
 
-                if (c != null && c.next())
-                    cursors.add(c);
-            }
-
-            return !cursors.isEmpty();
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public IndexRow get() throws IgniteCheckedException {
-            return cursors.peek().get();
+            return head;
         }
     }
 }
