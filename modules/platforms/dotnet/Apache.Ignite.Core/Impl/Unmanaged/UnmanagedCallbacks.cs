@@ -1150,6 +1150,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "proc0 is saved for later use.")]
         private long OnStart(long memPtr, long unused, long unused1, void* proc)
         {
             var proc0 = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) proc);

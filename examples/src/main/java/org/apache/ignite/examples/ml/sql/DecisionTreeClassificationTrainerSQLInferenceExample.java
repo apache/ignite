@@ -30,7 +30,7 @@ import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
 import org.apache.ignite.ml.sql.SQLFunctions;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 import static org.apache.ignite.examples.ml.sql.DecisionTreeClassificationTrainerSQLTableExample.loadTitanicDatasets;
 
@@ -101,7 +101,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 System.out.println(">>> Perform training...");
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIC_TRAIN"),
                     new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
                         .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
@@ -118,8 +118,8 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 System.out.println("Inference...");
                 try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
                     "survived as truth, " +
-                    "predict('titanic_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction " +
-                    "from titanic_train"))) {
+                    "predict('titanic_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction" +
+                    " from titanic_train"))) {
                     // Print inference result.
                     System.out.println("| Truth | Prediction |");
                     System.out.println("|--------------------|");

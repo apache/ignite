@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.compress;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -72,8 +74,8 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
             .setAtomicityMode(ATOMIC)
             .setIndexedTypes(Integer.class, TestVal.class);
 
-        IgniteCache<Integer,TestVal> cache0 = ignite0.getOrCreateCache(ccfg);
-        IgniteCache<Integer,TestVal> cache1 = ignite1.getOrCreateCache(ccfg);
+        IgniteCache<Integer, TestVal> cache0 = ignite0.getOrCreateCache(ccfg);
+        IgniteCache<Integer, TestVal> cache1 = ignite1.getOrCreateCache(ccfg);
 
         int cnt = 20_000;
 
@@ -96,5 +98,21 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
 
         assertTrue("Compressed WAL must be smaller than uncompressed [ptr0=" + ptr0 + ", ptr1=" + ptr1 + ']',
             ptr0.compareTo(ptr1) < 0);
+    }
+
+    /** */
+    @Test
+    public void testSkipGarbageApplyPageSnapshotWrongAssertion() throws Exception {
+        compression = DiskPageCompression.SKIP_GARBAGE;
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        stopGrid(0, true);
+
+        startGrid(0);
     }
 }

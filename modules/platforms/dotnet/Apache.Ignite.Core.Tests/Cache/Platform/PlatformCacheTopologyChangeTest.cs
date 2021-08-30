@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     /// <summary>
     /// Tests platform cache behavior when cluster topology changes.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class PlatformCacheTopologyChangeTest
     {
         /** */
@@ -185,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("checkMode", checkMode, "Invalid check mode");
             }
 
             // Updates are propagated to client platform cache.

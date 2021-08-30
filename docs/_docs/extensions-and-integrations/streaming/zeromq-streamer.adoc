@@ -29,8 +29,8 @@ tab:pom.xml[]
     ...
     <dependency>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-zeromq</artifactId>
-        <version>${ignite.version}</version>
+        <artifactId>ignite-zeromq-ext</artifactId>
+        <version>${ignite-zeromq-ext.version}</version>
     </dependency>
     ...
 </dependencies>

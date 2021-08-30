@@ -65,4 +65,13 @@ public interface GridQueryFieldMetadata extends Externalizable {
      * @return Field scale.
      */
     public int scale();
+
+    /**
+     * Gets field nullability.
+     *
+     * See {@link java.sql.ResultSetMetaData#isNullable(int)} for more info.
+     *
+     * @return Field nullability.
+     */
+    public int nullability();
 }

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -88,6 +89,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
     private int pageScanBatchSize = EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 
+    /** Checkpoint frequency (seconds). */
+    private long checkpointFreq = 30;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -109,7 +113,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
             .setWalSegmentSize(10 * 1024 * 1024)
             .setWalSegments(4)
             .setMaxWalArchiveSize(100 * 1024 * 1024L)
-            .setCheckpointFrequency(30 * 1000L)
+            .setCheckpointFrequency(TimeUnit.SECONDS.toMillis(checkpointFreq))
             .setWalMode(LOG_ONLY)
             .setFileIOFactory(new FailingFileIOFactory(new RandomAccessFileIOFactory(), failFileIO))
             .setEncryptionConfiguration(encCfg);
@@ -221,6 +225,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         forceCheckpoint();
 
+        enableCheckpoints(G.allGrids(), false);
+
         failFileIO.set(true);
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
@@ -229,6 +235,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         updateFut.cancel();
 
         assertThrowsAnyCause(log, () -> {
+            enableCheckpoints(G.allGrids(), true);
+
             forceCheckpoint();
 
             return null;
@@ -271,8 +279,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
 
-        assertEquals(1, node0.context().encryption().groupKey(grpId).id());
-        assertEquals(1, node1.context().encryption().groupKey(grpId).id());
+        assertEquals(1, node0.context().encryption().getActiveKey(grpId).id());
+        assertEquals(1, node1.context().encryption().getActiveKey(grpId).id());
 
         stopAllGrids();
 
@@ -385,7 +393,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     @Test
     public void testPartitionFileDestroy() throws Exception {
         backups = 1;
-        pageScanRate = 1;
+        pageScanRate = 0.2;
         pageScanBatchSize = 10;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
@@ -408,6 +416,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         forceCheckpoint();
 
         assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
+
+        // Set unlimited re-encryption rate.
+        nodes.get1().context().encryption().setReencryptionRate(0);
+        nodes.get2().context().encryption().setReencryptionRate(0);
 
         checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
@@ -514,12 +526,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         for (long segment = startIdx1; segment <= endIdx1; segment++)
             grid(GRID_0).context().encryption().onWalSegmentRemoved(segment);
 
-        assertEquals(1, grid(GRID_0).context().encryption().groupKeyIds(grpId).size());
+        checkKeysCount(grid(GRID_0), grpId, 1, MAX_AWAIT_MILLIS);
 
         for (long segment = startIdx2; segment <= endIdx2; segment++)
             grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
 
-        assertEquals(1, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
+        checkKeysCount(grid(GRID_1), grpId, 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -623,9 +635,50 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testDeactivation() throws Exception {
+        pageScanRate = 1;
+
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        loadData(100_000);
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        int grpId = CU.cacheId(cacheName());
+
+        assertFalse("Re-encryption must be started.", node0.context().encryption().reencryptionFuture(grpId).isDone());
+        assertFalse("Re-encryption must be started.", node1.context().encryption().reencryptionFuture(grpId).isDone());
+
+        node0.cluster().state(ClusterState.INACTIVE);
+
+        // Check node join to inactive cluster.
+        stopGrid(GRID_1);
+        node1 = startGrid(GRID_1);
+
+        assertTrue("Re-encryption should not start ", node0.context().encryption().reencryptionFuture(grpId).isDone());
+        assertTrue("Re-encryption should not start ", node1.context().encryption().reencryptionFuture(grpId).isDone());
+
+        node0.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
+        node1.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
+
+        node0.cluster().state(ClusterState.ACTIVE);
+
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testChangeBaseline() throws Exception {
         backups = 1;
         pageScanRate = 2;
+        checkpointFreq = 10;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -733,6 +786,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         validateMetrics(node0, false);
         validateMetrics(node1, false);
 
+        forceCheckpoint();
+
         pageScanRate = DFLT_REENCRYPTION_RATE_MBPS;
 
         stopAllGrids();
@@ -758,12 +813,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         MetricRegistry registry =
             node.context().metric().registry(metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheName()));
 
-        LongMetric pagesLeft = registry.findMetric("ReencryptionPagesLeft");
+        LongMetric bytesLeft = registry.findMetric("ReencryptionBytesLeft");
 
         if (finished)
-            assertEquals(0, pagesLeft.value());
+            assertEquals(0, bytesLeft.value());
         else
-            assertTrue(pagesLeft.value() > 0);
+            assertTrue(bytesLeft.value() > 0);
 
         BooleanMetric reencryptionFinished = registry.findMetric("ReencryptionFinished");
 

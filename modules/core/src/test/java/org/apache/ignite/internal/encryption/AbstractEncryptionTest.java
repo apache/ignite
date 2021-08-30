@@ -69,6 +69,7 @@ import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.CIPHER_ALGO;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Abstract encryption test.
@@ -171,7 +172,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertTrue(encrypted1.configuration().isEncryptionEnabled());
 
-            GroupKey grpKey0 = grid0.context().encryption().groupKey(grpId);
+            GroupKey grpKey0 = grid0.context().encryption().getActiveKey(grpId);
 
             assertNotNull(grpKey0);
 
@@ -181,7 +182,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             assertNotNull(encKey0.key());
 
             if (!grid1.configuration().isClientMode()) {
-                GroupKey grpKey1 = grid1.context().encryption().groupKey(grpId);
+                GroupKey grpKey1 = grid1.context().encryption().getActiveKey(grpId);
 
                 assertNotNull(grpKey1);
 
@@ -193,7 +194,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 assertEquals(encKey0.key(), encKey1.key());
             }
             else
-                assertNull(grid1.context().encryption().groupKey(grpId));
+                assertNull(grid1.context().encryption().getActiveKey(grpId));
         }
 
         checkData(grid0);
@@ -345,6 +346,20 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param node Ignite node.
+     * @param grpId Cache group ID.
+     * @param keysCnt Expected keys count.
+     */
+    protected void checkKeysCount(IgniteEx node, int grpId, int keysCnt, long timeout)
+        throws IgniteInterruptedCheckedException {
+        GridEncryptionManager encMgr = node.context().encryption();
+
+        waitForCondition(() -> encMgr.groupKeyIds(grpId).size() == keysCnt, timeout);
+
+        assertEquals(keysCnt, encMgr.groupKeyIds(grpId).size());
+    }
+
+    /**
      * Ensures that all pages of page store have expected encryption key identifier.
      *
      * @param grpId Cache group ID.
@@ -373,7 +388,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             GridEncryptionManager encryption = grid.context().encryption();
 
-            assertEquals(grid.localNode().id().toString(), (byte)expKeyId, encryption.groupKey(grpId).id());
+            assertEquals(grid.localNode().id().toString(), (byte)expKeyId, encryption.getActiveKey(grpId).id());
 
             IgniteInternalFuture<Void> fut = encryption.reencryptionFuture(grpId);
 
@@ -394,6 +409,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             }, timeout);
 
             assertTrue(fut.isDone());
+
+            assertEquals(0, encryption.getBytesLeftForReencryption(grpId));
 
             List<Integer> parts = IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
                 .boxed().collect(Collectors.toList());

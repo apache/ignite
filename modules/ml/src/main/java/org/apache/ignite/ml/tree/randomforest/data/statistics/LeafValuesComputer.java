@@ -30,8 +30,8 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartit
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
+import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 
 /**
  * Class containing logic of leaf values computing after building of all trees in random forest.
@@ -49,11 +49,11 @@ public abstract class LeafValuesComputer<T> implements Serializable {
      * @param roots Learned trees.
      * @param dataset Dataset.
      */
-    public void setValuesForLeaves(ArrayList<TreeRoot> roots,
+    public void setValuesForLeaves(ArrayList<RandomForestTreeModel> roots,
         Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
 
         Map<NodeId, TreeNode> leafs = roots.stream()
-            .flatMap(r -> r.getLeafs().stream())
+            .flatMap(r -> r.leafs().stream())
             .collect(Collectors.toMap(TreeNode::getId, Function.identity()));
 
         Map<NodeId, T> stats = dataset.compute(
@@ -78,7 +78,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
      * @param data Data.
      * @return Statistics on labels for each leaf nodes.
      */
-    private Map<NodeId, T> computeLeafsStatisticsInPartition(ArrayList<TreeRoot> roots,
+    private Map<NodeId, T> computeLeafsStatisticsInPartition(ArrayList<RandomForestTreeModel> roots,
         Map<NodeId, TreeNode> leafs, BootstrappedDatasetPartition data) {
 
         Map<NodeId, T> res = new HashMap<>();

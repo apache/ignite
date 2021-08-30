@@ -32,10 +32,16 @@
     <ClCompile Include="..\..\src\ssl_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql_fields_query_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\auth_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cache_client_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compute_client_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,6 +53,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\complex_type.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\test_type.h">
       <Filter>Code\Types</Filter>
     </ClInclude>
   </ItemGroup>
@@ -85,6 +94,15 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\non-ssl-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\sql-query-fields.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\sql-query-fields-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\sql-query-fields-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

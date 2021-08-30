@@ -77,6 +77,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
+        /// Tests that config is propagated from Spring XML to .NET object model.
+        /// </summary>
+        [Test]
+        public void TestSpringConfigPropagation()
+        {
+            var cfg = Grid.GetCache<int, int>("cache-with-backup-filter").GetConfiguration();
+            var aff = cfg.AffinityFunction as RendezvousAffinityFunction;
+
+            Assert.IsNotNull(aff);
+            Assert.AreEqual(256, aff.Partitions);
+
+            var filter = aff.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+
+            Assert.IsNotNull(filter);
+            Assert.AreEqual(new[]{"AVAILABILITY_ZONE", "REGION"}, filter.AttributeNames);
+        }
+
+        /// <summary>
         /// Validates the affinity function.
         /// </summary>
         /// <param name="cache">The cache.</param>

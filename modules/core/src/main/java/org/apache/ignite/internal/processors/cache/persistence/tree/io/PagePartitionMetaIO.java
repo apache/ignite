@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -53,8 +54,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     );
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setSize(pageAddr, 0);
         setUpdateCounter(pageAddr, 0);
@@ -236,6 +237,44 @@ public class PagePartitionMetaIO extends PageMetaIO {
      */
     public boolean setGapsLink(long pageAddr, long link) {
         throw new UnsupportedOperationException("Gaps link is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    public int getEncryptedPageIndex(long pageAddr) {
+        throw new UnsupportedOperationException("Gaps link is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param pageIdx Page index.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
+     */
+    public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
+        throw new UnsupportedOperationException("Encrypted page index is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    public int getEncryptedPageCount(long pageAddr) {
+        throw new UnsupportedOperationException("Encrypted page count is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param pagesCnt Pages count.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
+     */
+    public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
+        throw new UnsupportedOperationException("Encrypted page count is not supported by " +
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 

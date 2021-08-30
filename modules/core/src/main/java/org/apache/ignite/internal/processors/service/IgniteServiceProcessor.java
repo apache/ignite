@@ -350,7 +350,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
         for (ServiceInfo desc : clusterData.registeredServices())
-            registeredServices.put(desc.serviceId(), desc);
+            registerService(desc);
     }
 
     /** {@inheritDoc} */
@@ -383,7 +383,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             oldDesc = lookupInRegisteredServices(desc.name());
 
             if (oldDesc == null) {
-                registeredServices.put(desc.serviceId(), desc);
+                registerService(desc);
 
                 continue;
             }
@@ -1513,7 +1513,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             // First node start, method onGridDataReceived(DiscoveryDataBag.GridDiscoveryData) has not been called.
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
 
-            staticServicesInfo.forEach(desc -> registeredServices.put(desc.serviceId(), desc));
+            staticServicesInfo.forEach(this::registerService);
         }
 
         ServiceDeploymentActions depActions = null;
@@ -1556,8 +1556,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
 
-            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs)
-                staticServicesInfo.add(new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true));
+            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+
+                serviceInfo.context(ctx);
+
+                staticServicesInfo.add(serviceInfo);
+            }
         }
 
         return staticServicesInfo;
@@ -1615,7 +1620,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         else {
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
-                            registeredServices.put(reqSrvcId, desc);
+                            registerService(desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }
@@ -1667,6 +1672,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             msg.servicesDeploymentActions(depActions);
         }
+    }
+
+    /**
+     * @param desc Service descriptor.
+     */
+    private void registerService(ServiceInfo desc) {
+        desc.context(ctx);
+
+        registeredServices.put(desc.serviceId(), desc);
     }
 
     /**

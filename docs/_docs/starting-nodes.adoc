@@ -189,30 +189,7 @@ Alternatively, you can stop all the nodes non-gracefully (by sending `kill -9`).
 However, the latter option is not recommended for clusters with persistence.
 ////
 
-== Setting JVM Options
 
-There are several ways you can set JVM options when starting a node with the `ignite.sh` script.
-These ways are described in the following sections.
-
-=== JVM_OPTS System Variable
-
-You can set the `JVM_OPTS` environment variable:
-
-[source, shell]
-----
-export JVM_OPTS="$JVM_OPTS -Xmx6G -DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false"; $IGNITE_HOME/bin/ignite.sh
-----
-
-
-
-=== Command Line Arguments
-
-You can also pass JVM options by using the `-J` prefix:
-
-[source, shell]
-----
-./ignite.sh -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
-----
 == Node Lifecycle Events
 
 

@@ -74,6 +74,7 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -97,13 +98,14 @@ import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -139,7 +141,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -242,9 +243,9 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -258,6 +259,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -309,6 +313,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
+    /** */
+    public static final long KB = 1024L;
+
     /** */
     public static final long MB = 1024L * 1024;
 
@@ -363,9 +370,6 @@ public abstract class IgniteUtils {
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
 
-    /** Lock hold message. */
-    public static final String LOCK_HOLD_MESSAGE = "ReadLock held the lock more than ";
-
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
         new ConcurrentHashMap<>();
@@ -386,10 +390,10 @@ public abstract class IgniteUtils {
     private static volatile GridTuple<String> ggHome;
 
     /** OS JDK string. */
-    private static String osJdkStr;
+    private static final String osJdkStr;
 
     /** OS string. */
-    private static String osStr;
+    private static final String osStr;
 
     /** JDK string. */
     private static String jdkStr;
@@ -446,7 +450,7 @@ public abstract class IgniteUtils {
     private static boolean mac;
 
     /** Indicates whether current OS is of RedHat family. */
-    private static boolean redHat;
+    private static final boolean redHat;
 
     /** Indicates whether current OS architecture is Sun Sparc. */
     private static boolean sparc;
@@ -491,7 +495,7 @@ public abstract class IgniteUtils {
     private static String jvmImplName;
 
     /** Will be set to {@code true} if detected a 32-bit JVM. */
-    private static boolean jvm32Bit;
+    private static final boolean jvm32Bit;
 
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
@@ -507,17 +511,24 @@ public abstract class IgniteUtils {
     private static final int MASK = 0xf;
 
     /** Long date format pattern for log messages. */
-    private static final SimpleDateFormat LONG_DATE_FMT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+    public static final DateTimeFormatter LONG_DATE_FMT =
+        DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /**
      * Short date format pattern for log messages in "quiet" mode.
      * Only time is included since we don't expect "quiet" mode to be used
      * for longer runs.
      */
-    private static final SimpleDateFormat SHORT_DATE_FMT = new SimpleDateFormat("HH:mm:ss");
+    public static final DateTimeFormatter SHORT_DATE_FMT =
+        DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /** Debug date format. */
-    private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
+    public static final DateTimeFormatter DEBUG_DATE_FMT =
+        DateTimeFormatter.ofPattern("HH:mm:ss,SSS").withZone(ZoneId.systemDefault());
+
+    /** Date format for thread dumps. */
+    private static final DateTimeFormatter THREAD_DUMP_FMT =
+        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss z").withZone(ZoneId.systemDefault());
 
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
@@ -622,7 +633,7 @@ public abstract class IgniteUtils {
     private static final Field urlClsLdrField = urlClassLoaderField();
 
     /** Dev only logging disabled. */
-    private static boolean devOnlyLogDisabled =
+    private static final boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
     /** JDK9: jdk.internal.loader.URLClassPath. */
@@ -632,7 +643,7 @@ public abstract class IgniteUtils {
     private static Method mthdURLClassPathGetUrls;
 
     /** Byte count prefixes. */
-    private static String BYTE_CNT_PREFIXES = " KMGTPE";
+    private static final String BYTE_CNT_PREFIXES = " KMGTPE";
 
     /*
      * Initializes enterprise check.
@@ -1329,7 +1340,7 @@ public abstract class IgniteUtils {
      * @return Common prefix for debug messages.
      */
     private static String debugPrefix() {
-        return '<' + DEBUG_DATE_FMT.format(new Date(System.currentTimeMillis())) + "><DEBUG><" +
+        return '<' + DEBUG_DATE_FMT.format(Instant.now()) + "><DEBUG><" +
             Thread.currentThread().getName() + '>' + ' ';
     }
 
@@ -1341,7 +1352,7 @@ public abstract class IgniteUtils {
 
         Runtime runtime = Runtime.getRuntime();
 
-        X.println('<' + DEBUG_DATE_FMT.format(new Date(System.currentTimeMillis())) + "><DEBUG><" +
+        X.println('<' + DEBUG_DATE_FMT.format(Instant.now()) + "><DEBUG><" +
             Thread.currentThread().getName() + "> Heap stats [free=" + runtime.freeMemory() / (1024 * 1024) +
             "M, total=" + runtime.totalMemory() / (1024 * 1024) + "M]");
     }
@@ -1473,7 +1484,7 @@ public abstract class IgniteUtils {
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
         GridStringBuilder sb = new GridStringBuilder(THREAD_DUMP_MSG)
-            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
+            .a(THREAD_DUMP_FMT.format(Instant.ofEpochMilli(U.currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
             printThreadInfo(info, sb, deadlockedThreadsIds);
@@ -1665,7 +1676,8 @@ public abstract class IgniteUtils {
      *
      * @param cls Class.
      * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @param includePrimitiveTypes Whether class resolution should include primitive types
+     *                              (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
     @Nullable public static Class<?> classForName(
@@ -3358,7 +3370,7 @@ public abstract class IgniteUtils {
      * @return Formatted time string.
      */
     public static String format(long sysTime) {
-        return LONG_DATE_FMT.format(new java.util.Date(sysTime));
+        return LONG_DATE_FMT.format(Instant.ofEpochMilli(sysTime));
     }
 
     /**
@@ -4220,6 +4232,39 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Closes given socket logging possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to shutdown socket", ex);
+        }
+        catch (Exception e) {
+            warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
+        }
+
+        try {
+            sock.close();
+        }
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to close socket", ex);
+        }
+        catch (Exception e) {
+            warn(log, "Failed to close socket: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Closes given resource suppressing possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -4374,7 +4419,7 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
             sock.shutdownOutput();
             sock.shutdownInput();
         }
@@ -4455,7 +4500,7 @@ public abstract class IgniteUtils {
         if (log != null)
             log.getLogger(IgniteConfiguration.COURTESY_LOGGER_NAME).warning(compact(longMsg.toString()));
         else
-            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (courtesy) " +
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (courtesy) " +
                 compact(shortMsg.toString()));
     }
 
@@ -4551,7 +4596,7 @@ public abstract class IgniteUtils {
         if (log != null)
             log.warning(compact(msg.toString()), e);
         else {
-            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
                     compact(msg.toString()));
 
             if (e != null)
@@ -4581,7 +4626,7 @@ public abstract class IgniteUtils {
         if (log != null)
             log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
         else
-            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
                 compact(msg.toString()));
     }
 
@@ -4609,6 +4654,130 @@ public abstract class IgniteUtils {
         }
         else
             quiet(false, shortMsg);
+    }
+
+    /**
+     * Resolves work directory.
+     * @param cfg Ignite configuration.
+     */
+    public static void initWorkDir(IgniteConfiguration cfg) throws IgniteCheckedException {
+        String igniteHome = cfg.getIgniteHome();
+
+        // Set Ignite home.
+        if (igniteHome == null)
+            igniteHome = U.getIgniteHome();
+
+        String userProvidedWorkDir = cfg.getWorkDirectory();
+
+        // Correctly resolve work directory and set it back to configuration.
+        cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param app Application name.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static IgniteLogger initLogger(IgniteConfiguration cfg, String app) throws IgniteCheckedException {
+        return initLogger(
+            cfg.getGridLogger(),
+            app,
+            cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
+            cfg.getWorkDirectory()
+        );
+    }
+
+    /**
+     * @param cfgLog Configured logger.
+     * @param app Application name.
+     * @param workDir Work directory.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ErrorNotRethrown")
+    public static IgniteLogger initLogger(
+        @Nullable IgniteLogger cfgLog,
+        @Nullable String app,
+        UUID nodeId,
+        String workDir
+    ) throws IgniteCheckedException {
+        try {
+            Exception log4jInitErr = null;
+
+            if (cfgLog == null) {
+                Class<?> log4jCls;
+
+                try {
+                    log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
+                }
+                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                    log4jCls = null;
+                }
+
+                if (log4jCls != null) {
+                    try {
+                        URL url = U.resolveIgniteUrl("config/ignite-log4j.xml");
+
+                        if (url == null) {
+                            File cfgFile = new File("config/ignite-log4j.xml");
+
+                            if (!cfgFile.exists())
+                                cfgFile = new File("../config/ignite-log4j.xml");
+
+                            if (cfgFile.exists()) {
+                                try {
+                                    url = cfgFile.toURI().toURL();
+                                }
+                                catch (MalformedURLException ignore) {
+                                    // No-op.
+                                }
+                            }
+                        }
+
+                        if (url != null) {
+                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                            if (configured)
+                                url = null;
+                        }
+
+                        if (url != null) {
+                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                            cfgLog = (IgniteLogger)ctor.newInstance(url);
+                        }
+                        else
+                            cfgLog = (IgniteLogger)log4jCls.newInstance();
+                    }
+                    catch (Exception e) {
+                        log4jInitErr = e;
+                    }
+                }
+
+                if (log4jCls == null || log4jInitErr != null)
+                    cfgLog = new JavaLogger();
+            }
+
+            // Special handling for Java logger which requires work directory.
+            if (cfgLog instanceof JavaLogger)
+                ((JavaLogger)cfgLog).setWorkDirectory(workDir);
+
+            // Set node IDs for all file appenders.
+            if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
+                ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
+            else if (cfgLog instanceof LoggerNodeIdAware)
+                ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+            if (log4jInitErr != null)
+                U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
+                    + log4jInitErr.getCause());
+
+            return cfgLog;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to create logger.", e);
+        }
     }
 
     /**
@@ -4653,7 +4822,7 @@ public abstract class IgniteUtils {
                 log.error(compact(longMsg.toString()), e);
         }
         else {
-            X.printerr("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (err) " +
+            X.printerr("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (err) " +
                 compact(shortMsg.toString()));
 
             if (e != null)
@@ -4686,7 +4855,7 @@ public abstract class IgniteUtils {
     public static void quiet(boolean err, Object... objs) {
         assert objs != null;
 
-        String time = SHORT_DATE_FMT.format(new java.util.Date());
+        String time = SHORT_DATE_FMT.format(Instant.now());
 
         SB sb = new SB();
 
@@ -5803,8 +5972,22 @@ public abstract class IgniteUtils {
      * @param e Enum value to write, possibly {@code null}.
      * @throws IOException If write failed.
      */
-    public static <E extends Enum> void writeEnum(DataOutput out, E e) throws IOException {
+    public static <E extends Enum<E>> void writeEnum(DataOutput out, E e) throws IOException {
         out.writeByte(e == null ? -1 : e.ordinal());
+    }
+
+    /** */
+    public static <E extends Enum<E>> E readEnum(DataInput in, Class<E> enumCls) throws IOException {
+        byte ordinal = in.readByte();
+
+        if (ordinal == (byte)-1)
+            return null;
+
+        int idx = ordinal & 0xFF;
+
+        E[] values = enumCls.getEnumConstants();
+
+        return idx < values.length ? values[idx] : null;
     }
 
     /**
@@ -5983,6 +6166,20 @@ public abstract class IgniteUtils {
         ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
 
         return nameAnn == null ? taskCls.getName() : nameAnn.value();
+    }
+
+    /**
+     * Gets resource name.
+     * Returns a task name if it is a Compute task or a class name otherwise.
+     *
+     * @param rscCls Class of resource.
+     * @return Name of resource.
+     */
+    public static String getResourceName(Class rscCls) {
+        if (ComputeTask.class.isAssignableFrom(rscCls))
+            return getTaskName(rscCls);
+
+        return rscCls.getName();
     }
 
     /**
@@ -7664,19 +7861,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Formats passed date with specified pattern.
-     *
-     * @param date Date to format.
-     * @param ptrn Pattern.
-     * @return Formatted date.
-     */
-    public static String format(Date date, String ptrn) {
-        java.text.DateFormat format = new java.text.SimpleDateFormat(ptrn);
-
-        return format.format(date);
-    }
-
-    /**
      * @param ctx Kernal context.
      * @return Closure that converts node ID to a node.
      */
@@ -8941,7 +9125,11 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter
+    ) throws ClassNotFoundException {
         return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
     }
 
@@ -8950,11 +9138,16 @@ public abstract class IgniteUtils {
      *
      * @param clsName Class name.
      * @param ldr Class loader.
-    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter,
+        boolean useCache
+    ) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8993,7 +9186,7 @@ public abstract class IgniteUtils {
 
         if (cls == null) {
             if (clsFilter != null && !clsFilter.apply(clsName))
-                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
             if (ldr instanceof CacheClassLoaderMarker)
@@ -9279,8 +9472,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link org.apache.ignite.lifecycle.LifecycleAware}
+     * interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.
@@ -9600,7 +9793,7 @@ public abstract class IgniteUtils {
                         "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // Ignore.
             }
 
@@ -10788,7 +10981,8 @@ public abstract class IgniteUtils {
      * @return User-set max WAL archive size of triple size of the maximum checkpoint buffer.
      */
     public static long adjustedWalHistorySize(DataStorageConfiguration dsCfg, @Nullable IgniteLogger log) {
-        if (dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE)
+        if (dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE &&
+            dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE)
             return dsCfg.getMaxWalArchiveSize();
 
         // Find out the maximum checkpoint buffer size.
@@ -11409,7 +11603,7 @@ public abstract class IgniteUtils {
     /**
      * The batch of tasks with a batch index in global array.
      */
-    private static class Batch<T,R> {
+    private static class Batch<T, R> {
         /** List tasks. */
         private final List<T> tasks;
 
@@ -11528,180 +11722,6 @@ public abstract class IgniteUtils {
         };
     }
 
-    /** */
-    public static class ReentrantReadWriteLockTracer extends ReentrantReadWriteLock {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Read lock. */
-        private final ReadLockTracer readLock;
-
-        /** Write lock. */
-        private final WriteLockTracer writeLock;
-
-        /** Lock print threshold. */
-        private long readLockThreshold;
-
-        /** */
-        private IgniteLogger log;
-
-        /**
-         * @param delegate RWLock delegate.
-         * @param log Ignite logger.
-         * @param readLockThreshold ReadLock threshold timeout.
-         *
-         */
-        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, IgniteLogger log, long readLockThreshold) {
-            this.log = log;
-
-            readLock = new ReadLockTracer(delegate, log, readLockThreshold);
-
-            writeLock = new WriteLockTracer(delegate);
-
-            this.readLockThreshold = readLockThreshold;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ReadLock readLock() {
-            return readLock;
-        }
-
-        /** {@inheritDoc} */
-        @Override public WriteLock writeLock() {
-            return writeLock;
-        }
-
-        /** */
-        public long lockWaitThreshold() {
-            return readLockThreshold;
-        }
-    }
-
-    /** */
-    private static class ReadLockTracer extends ReentrantReadWriteLock.ReadLock {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Delegate. */
-        private final ReentrantReadWriteLock.ReadLock delegate;
-
-        /** */
-        private static final ThreadLocal<T2<Integer, Long>> READ_LOCK_HOLDER_TS =
-            ThreadLocal.withInitial(() -> new T2<>(0, 0L));
-
-        /** */
-        private IgniteLogger log;
-
-        /** */
-        private long readLockThreshold;
-
-        /** */
-        public ReadLockTracer(ReentrantReadWriteLock lock, IgniteLogger log, long readLockThreshold) {
-            super(lock);
-
-            delegate = lock.readLock();
-
-            this.log = log;
-
-            this.readLockThreshold = readLockThreshold;
-        }
-
-        /** */
-        private void inc() {
-            T2<Integer, Long> val = READ_LOCK_HOLDER_TS.get();
-
-            int cntr = val.get1();
-
-            if (cntr == 0)
-                val.set2(U.currentTimeMillis());
-
-            val.set1(++cntr);
-
-            READ_LOCK_HOLDER_TS.set(val);
-        }
-
-        /** */
-        private void dec() {
-            T2<Integer, Long> val = READ_LOCK_HOLDER_TS.get();
-
-            int cntr = val.get1();
-
-            if (--cntr == 0) {
-                long timeout = U.currentTimeMillis() - val.get2();
-
-                if (timeout > readLockThreshold) {
-                    GridStringBuilder sb = new GridStringBuilder();
-
-                    sb.a(LOCK_HOLD_MESSAGE + timeout + " ms." + nl());
-
-                    U.printStackTrace(Thread.currentThread().getId(), sb);
-
-                    U.warn(log, sb.toString());
-                }
-            }
-
-            val.set1(cntr);
-
-            READ_LOCK_HOLDER_TS.set(val);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lock() {
-            delegate.lock();
-
-            inc();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lockInterruptibly() throws InterruptedException {
-            delegate.lockInterruptibly();
-
-            inc();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock() {
-            if (delegate.tryLock()) {
-                inc();
-
-                return true;
-            }
-            else
-                return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
-            if (delegate.tryLock(time, unit)) {
-                inc();
-
-                return true;
-            }
-            else
-                return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unlock() {
-            delegate.unlock();
-
-            dec();
-        }
-    }
-
-    /** */
-    private static class WriteLockTracer extends ReentrantReadWriteLock.WriteLock {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public WriteLockTracer(ReentrantReadWriteLock lock) {
-            super(lock);
-        }
-    }
-
     /**
      * @param key Cipher Key.
      * @param encMode Enc mode see {@link Cipher#ENCRYPT_MODE}, {@link Cipher#DECRYPT_MODE}, etc.
@@ -11804,7 +11824,11 @@ public abstract class IgniteUtils {
      * @param cancel Wheter should cancel workers.
      * @param log Logger.
      */
-    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, IgniteLogger log) {
+    public static void awaitForWorkersStop(
+        Collection<GridWorker> workers,
+        boolean cancel,
+        @Nullable IgniteLogger log
+    ) {
         for (GridWorker worker : workers) {
             try {
                 if (cancel)
@@ -11813,7 +11837,8 @@ public abstract class IgniteUtils {
                 worker.join();
             }
             catch (Exception e) {
-                log.warning(String.format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+                if (log != null)
+                    log.warning("Failed to cancel grid runnable [" + worker.toString() + "]: " + e.getMessage());
             }
         }
     }
@@ -12192,4 +12217,36 @@ public abstract class IgniteUtils {
 
         return sb.toString();
     }
+
+    /**
+     * Getting the total size of uncompressed data in zip.
+     *
+     * @param zip Zip file.
+     * @return Total uncompressed size.
+     * @throws IOException If failed.
+     */
+    public static long uncompressedSize(File zip) throws IOException {
+        try (ZipFile zipFile = new ZipFile(zip)) {
+            long size = 0;
+
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+
+            while (entries.hasMoreElements())
+                size += entries.nextElement().getSize();
+
+            return size;
+        }
+    }
+
+    /**
+     * Maps object hash to some index between 0 and specified size via modulo operation.
+     *
+     * @param hash Object hash.
+     * @param size Size greater than 0.
+     * @return Calculated index in range [0..size).
+     */
+    public static int hashToIndex(int hash, int size) {
+        return safeAbs(hash % size);
+    }
+
 }

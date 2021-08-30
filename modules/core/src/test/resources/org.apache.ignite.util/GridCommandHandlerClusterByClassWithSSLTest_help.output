@@ -1,5 +1,5 @@
 Control utility [ver. <!any!>
-2020 Copyright(C) Apache Software Foundation
+2021 Copyright(C) Apache Software Foundation
 User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
@@ -71,6 +71,27 @@ This utility can do the following commands:
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
+  Change the encryption key of the cache group:
+    control.(sh|bat) --encryption change_cache_key cacheGroupName
+
+  View encryption key identifiers of the cache group:
+    control.(sh|bat) --encryption cache_key_ids cacheGroupName
+
+  Display re-encryption status of the cache group:
+    control.(sh|bat) --encryption reencryption_status cacheGroupName
+
+  Suspend re-encryption of the cache group:
+    control.(sh|bat) --encryption suspend_reencryption cacheGroupName
+
+  Resume re-encryption of the cache group:
+    control.(sh|bat) --encryption resume_reencryption cacheGroupName
+
+  View/change re-encryption rate limit:
+    control.(sh|bat) --encryption reencryption_rate_limit [new_limit]
+
+    Parameters:
+      new_limit  - Decimal value to change re-encryption rate limit (MB/s).
+
   Kill compute task by session id:
     control.(sh|bat) --kill COMPUTE session_id
 
@@ -124,6 +145,31 @@ This utility can do the following commands:
 
   Cancel running snapshot:
     control.(sh|bat) --snapshot cancel snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Check snapshot:
+    control.(sh|bat) --snapshot check snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Restore snapshot:
+    control.(sh|bat) --snapshot restore snapshot_name --start [group1,...groupN]
+
+    Parameters:
+      snapshot_name     - Snapshot name.
+      group1,...groupN  - Cache group names.
+
+  Snapshot restore operation status:
+    control.(sh|bat) --snapshot restore snapshot_name --status
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Cancel snapshot restore operation:
+    control.(sh|bat) --snapshot restore snapshot_name --cancel
 
     Parameters:
       snapshot_name  - Snapshot name.
@@ -223,6 +269,27 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
 
   Backup data files of only given caches:
     control.(sh|bat) --persistence backup caches cache1,cache2,cache3
+
+  Schedule PDS defragmentation on given nodes for all caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1
+
+  Schedule PDS defragmentation on given nodes but only for given caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 --caches cache1,cache2,cache3
+
+  Cancel scheduled or active PDS defragmentation on underlying node:
+    control.(sh|bat) --defragmentation cancel
+
+  Start collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics start
+
+  Stop collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics stop
+
+  Rotate collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics rotate
+
+  Get status of collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics status
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

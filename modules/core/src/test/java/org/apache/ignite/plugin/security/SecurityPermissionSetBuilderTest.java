@@ -99,7 +99,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                     }
                 }, IgniteException.class,
                 "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                    "JOIN_AS_SERVER], but you try TASK_EXECUTE"
+                    "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS], but you try TASK_EXECUTE"
         );
 
         assertThrows(log, new Callable<Object>() {
@@ -109,7 +109,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 }
             }, IgniteException.class,
             "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                "JOIN_AS_SERVER], but you try SERVICE_INVOKE"
+                "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS], but you try SERVICE_INVOKE"
         );
 
         permsBuilder

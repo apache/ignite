@@ -22,17 +22,19 @@
 #include <string>
 #include <vector>
 
+#include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/transactions/transaction_consts.h>
+
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include <ignite/thin/transactions/transaction_consts.h>
-
-#include "impl/protocol_version.h"
 #include "impl/affinity/affinity_topology_version.h"
 #include "impl/affinity/partition_awareness_group.h"
+#include "impl/cache/query/cursor_page.h"
+#include "impl/protocol_version.h"
 
 namespace ignite
 {
@@ -147,11 +149,14 @@ namespace ignite
                     /** Cache destroy. */
                     CACHE_DESTROY = 1056,
 
-                    /** Cache nodes and partitions request. */
-                    CACHE_NODE_PARTITIONS = 1100,
-
                     /** Cache partitions request. */
                     CACHE_PARTITIONS = 1101,
+
+                    /** SQL fields query request. */
+                    QUERY_SQL_FIELDS = 2004,
+
+                    /** SQL fields query get next cursor page request. */
+                    QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005,
 
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
@@ -163,7 +168,13 @@ namespace ignite
                     OP_TX_START = 4000,
 
                     /** Commit transaction. */
-                    OP_TX_END = 4001
+                    OP_TX_END = 4001,
+
+                    /** Execute compute task. */
+                    COMPUTE_TASK_EXECUTE = 6000,
+
+                    /** Compute task completion notification. */
+                    COMPUTE_TASK_FINISHED = 6001,
                 };
             };
 
@@ -358,7 +369,8 @@ namespace ignite
                 CacheRequest(int32_t cacheId, bool binary) :
                     cacheId(cacheId),
                     binary(binary),
-                    actTx(false)
+                    actTx(false),
+                    txId(0)
                 {
                     // No-op.
                 }
@@ -531,15 +543,6 @@ namespace ignite
                 }
 
                 /**
-                 * Sets transaction active flag and appropriate txId.
-                 * @param active Transaction activity flag.
-                 * @param id Transaction id.
-                 */
-                void activeTx(bool active, int32_t id) {
-                    CacheRequest<OpCode>::activeTx(active, id);
-                }
-
-                /**
                  * Write request using provided writer.
                  * @param writer Writer.
                  * @param ver Version.
@@ -686,11 +689,11 @@ namespace ignite
                  * Constructor.
                  *
                  * @param id Transaction id.
-                 * @param comm Need to commit flag.
+                 * @param commit Need to commit flag.
                  */
-                TxEndRequest(int32_t id, bool comm) :
+                TxEndRequest(int32_t id, bool commit) :
                     txId(id),
-                    commited(comm)
+                    commited(commit)
                 {
                     // No-op.
                 }
@@ -793,6 +796,130 @@ namespace ignite
             private:
                 /** Cache ID. */
                 const binary::Snap& snapshot;
+            };
+
+            /**
+             * Cache SQL fields query request.
+             */
+            class SqlFieldsQueryRequest : public CacheRequest<RequestType::QUERY_SQL_FIELDS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param qry SQL query.
+                 */
+                explicit SqlFieldsQueryRequest(int32_t cacheId, const ignite::thin::cache::query::SqlFieldsQuery &qry);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsQueryRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Query. */
+                const ignite::thin::cache::query::SqlFieldsQuery &qry;
+            };
+
+            /**
+             * Cache SQL fields cursor get page request.
+             */
+            class SqlFieldsCursorGetPageRequest : public Request<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cursorId Cursor ID.
+                 */
+                explicit SqlFieldsCursorGetPageRequest(int64_t cursorId) :
+                    cursorId(cursorId)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsCursorGetPageRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cursor ID. */
+                const int64_t cursorId;
+            };
+
+            /**
+             * Compute task execute request.
+             */
+            class ComputeTaskExecuteRequest : public Request<RequestType::COMPUTE_TASK_EXECUTE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param flags Flags.
+                 * @param timeout Timeout in milliseconds.
+                 * @param taskName Task name.
+                 * @param arg Argument.
+                 */
+                ComputeTaskExecuteRequest(int8_t flags, int64_t timeout, const std::string& taskName,
+                    const Writable& arg) :
+                    flags(flags),
+                    timeout(timeout),
+                    taskName(taskName),
+                    arg(arg)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskExecuteRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Flags. */
+                const int8_t flags;
+
+                /** Timeout in milliseconds. */
+                const int64_t timeout;
+
+                /** Task name. */
+                const std::string& taskName;
+
+                /** Argument. */
+                const Writable& arg;
             };
 
             /**
@@ -1206,6 +1333,228 @@ namespace ignite
             private:
                 /** Value. */
                 int32_t value;
+            };
+
+            /**
+             * Cache SQL fields query response.
+             */
+            class SqlFieldsQueryResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                SqlFieldsQueryResponse() :
+                    cursorId(0),
+                    cursorPage(new cache::query::CursorPage())
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsQueryResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor ID.
+                 *
+                 * @return Cursor ID.
+                 */
+                int64_t GetCursorId() const
+                {
+                    return cursorId;
+                }
+
+                /**
+                 * Get columns.
+                 *
+                 * @return Column names.
+                 */
+                const std::vector<std::string>& GetColumns() const
+                {
+                    return columns;
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cursor ID. */
+                int64_t cursorId;
+
+                /** Column names. */
+                std::vector<std::string> columns;
+
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Cache SQL fields cursor get page response.
+             */
+            class SqlFieldsCursorGetPageResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                SqlFieldsCursorGetPageResponse() :
+                    cursorPage(new cache::query::CursorPage())
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsCursorGetPageResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Compute task execute response.
+             */
+            class ComputeTaskExecuteResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ComputeTaskExecuteResponse() :
+                    taskId(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskExecuteResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get Notification ID.
+                 * @return Notification ID.
+                 */
+                int64_t GetNotificationId() const
+                {
+                    return taskId;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Task ID. */
+                int64_t taskId;
+            };
+
+            /**
+             * Compute task finished notification.
+             */
+            class ComputeTaskFinishedNotification
+            {
+            public:
+                typedef ComputeTaskExecuteResponse ResponseType;
+
+                /**
+                 * Constructor.
+                 */
+                ComputeTaskFinishedNotification(Readable& result) :
+                    status(0),
+                    errorMessage(),
+                    result(result)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskFinishedNotification()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Check if the message is failure.
+                 * @return @c true on failure.
+                 */
+                bool IsFailure() const
+                {
+                    return !errorMessage.empty();
+                }
+
+                /**
+                 * Get error message.
+                 * @return Error message.
+                 */
+                const std::string& GetErrorMessage() const
+                {
+                    return errorMessage;
+                }
+
+                /**
+                 * Read response using provided reader.
+                 * @param reader Reader.
+                 * @param ver Protocol version.
+                 */
+                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+
+            private:
+                /** Status. */
+                int32_t status;
+
+                /** Error message. */
+                std::string errorMessage;
+
+                /** Result. */
+                Readable& result;
             };
         }
     }

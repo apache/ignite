@@ -51,6 +51,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private const int PartitionCount = 10;
 
         /** */
+        private const string BackupFilterAttrName = "DC";
+
+        /** */
         private static readonly ConcurrentBag<Guid> RemovedNodes = new ConcurrentBag<Guid>();
 
         /** */
@@ -76,12 +79,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     {
                         AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
                     }
-                }
+                },
+                UserAttributes = new Dictionary<string, object>{{BackupFilterAttrName, 1}}
             };
 
             _ignite = Ignition.Start(cfg);
 
-            _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "grid2"});
+            var cfg2 = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid2",
+                UserAttributes = new Dictionary<string, object>{{BackupFilterAttrName, 2}}
+            };
+
+            _ignite2 = Ignition.Start(cfg2);
 
             AffinityTopologyVersion waitingTop = new AffinityTopologyVersion(2, 1);
 
@@ -98,9 +108,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             try
             {
                 // Check that affinity handles are present:
-                // TestDynamicCachePredefined and TestSimpleInheritance do not produce extra handles, so "-2" here.
-                TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 2, 0);
-                TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 2, 0);
+                // TestDynamicCachePredefined, TestSimpleInheritance, TestSimpleInheritanceWithBackupFilter
+                // do not produce extra handles, so "-3" here.
+                TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 3, 0);
+                TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 3, 0);
 
                 // Destroy all caches
                 _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
@@ -109,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // Check that all affinity functions got released
                 TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite, _ignite2);
             }
-            finally 
+            finally
             {
                 Ignition.StopAll(true);
             }
@@ -140,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }));
 
             VerifyCacheAffinity(_ignite2.GetCache<int, int>(cacheName));
-            
+
             // Verify context for new cache
             var lastCtx = Contexts.Where(x => x.GetPreviousAssignment(1) == null)
                 .OrderBy(x => x.DiscoveryEvent.Timestamp).Last();
@@ -259,7 +270,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 _ignite.GetCache<int, int>(CacheNameRendezvous),
                 _ignite.CreateCache<int, int>(new CacheConfiguration(CacheNameRendezvous + "2")
                 {
-                    AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
+                    AffinityFunction = new RendezvousAffinityFunctionEx
+                    {
+                        Bar = "test",
+                        AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                        {
+                            AttributeNames = new[] {BackupFilterAttrName}
+                        }
+                    }
                 })
             };
 
@@ -279,6 +297,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // Check config
                 var func = (RendezvousAffinityFunctionEx)cache.GetConfiguration().AffinityFunction;
                 Assert.AreEqual("test", func.Bar);
+
+                if (cache.Name == CacheNameRendezvous)
+                {
+                    Assert.IsNull(func.AffinityBackupFilter);
+                }
+                else
+                {
+                    var filter = func.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+                    Assert.IsNotNull(filter);
+                    CollectionAssert.AreEqual(new[]{BackupFilterAttrName}, filter.AttributeNames);
+                }
             }
         }
 
@@ -299,6 +328,81 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(PartitionCount, aff.Partitions);
             Assert.AreEqual(3, aff.GetPartition(33));
             Assert.AreEqual(4, aff.GetPartition(34));
+        }
+
+        /// <summary>
+        /// Tests the AffinityFunction with simple inheritance and a backup filter: none of the methods are overridden,
+        /// so there are no callbacks, and user object is not passed over the wire.
+        /// </summary>
+        [Test]
+        public void TestSimpleInheritanceWithBackupFilter()
+        {
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration(TestUtils.TestName)
+            {
+                AffinityFunction = new SimpleOverride
+                {
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = new[] {BackupFilterAttrName}
+                    }
+                }
+            });
+
+            var aff = cache.GetConfiguration().AffinityFunction as RendezvousAffinityFunction;
+            Assert.IsNotNull(aff);
+
+            var filter = aff.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+            Assert.IsNotNull(filter);
+            CollectionAssert.AreEqual(new[] {BackupFilterAttrName}, filter.AttributeNames);
+        }
+
+        /// <summary>
+        /// Tests that custom backup filters are not allowed.
+        /// </summary>
+        [Test]
+        public void TestCustomBackupFilterThrowsNotSupportedException()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                AffinityFunction = new RendezvousAffinityFunction
+                {
+                    AffinityBackupFilter = new CustomBackupFilter()
+                }
+            };
+
+            var ex = Assert.Throws<NotSupportedException>(() => _ignite.CreateCache<int, int>(cfg));
+
+            var expectedMessage = string.Format(
+                "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
+                "Only predefined implementations are supported: 'ClusterNodeAttributeAffinityBackupFilter'",
+                typeof(CustomBackupFilter).FullName);
+
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
+        /// <summary>
+        /// Tests that backup filter requires a non-empty attribute set.
+        /// </summary>
+        [Test]
+        public void TestBackupFilterWithNullAttributesThrowsException([Values(true, false)] bool nullOrEmpty)
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                AffinityFunction = new RendezvousAffinityFunction
+                {
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = nullOrEmpty ? null : new List<string>()
+                    }
+                }
+            };
+
+            var ex = Assert.Throws<ArgumentException>(() => _ignite.CreateCache<int, int>(cfg));
+
+            var expectedMessage =
+                "'ClusterNodeAttributeAffinityBackupFilter.AttributeNames' argument should not be null or empty.";
+
+            StringAssert.StartsWith(expectedMessage, ex.Message);
         }
 
         [Serializable]
@@ -411,6 +515,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
 
             public override bool ExcludeNeighbors { get; set; }
+        }
+
+        /// <summary>
+        /// Custom backup filter.
+        /// </summary>
+        private class CustomBackupFilter : IAffinityBackupFilter
+        {
+            // No-op.
         }
     }
 }

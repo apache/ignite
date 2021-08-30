@@ -141,24 +141,28 @@ public class CheckpointMarkersStorage {
     }
 
     /**
-     * Wal truncate callBack.
+     * Wal truncate callback.
      *
-     * @param highBound WALPointer.
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
      */
-    public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
-        List<CheckpointEntry> removedFromHistory = history().onWalTruncated(highBound);
+    public void removeCheckpointsUntil(@Nullable WALPointer highBound) throws IgniteCheckedException {
+        List<CheckpointEntry> rmvFromHist = history().onWalTruncated(highBound);
 
-        for (CheckpointEntry cp : removedFromHistory)
+        for (CheckpointEntry cp : rmvFromHist)
             removeCheckpointFiles(cp);
     }
 
     /**
      * Logs and clears checkpoint history after checkpoint finish.
+     *
+     * @param chp Finished checkpoint.
+     * @throws IgniteCheckedException If failed.
      */
     public void onCheckpointFinished(Checkpoint chp) throws IgniteCheckedException {
-        List<CheckpointEntry> removedFromHistory = history().onCheckpointFinished(chp);
+        List<CheckpointEntry> rmvFromHist = history().onCheckpointFinished(chp);
 
-        for (CheckpointEntry cp : removedFromHistory)
+        for (CheckpointEntry cp : rmvFromHist)
             removeCheckpointFiles(cp);
     }
 
@@ -300,7 +304,7 @@ public class CheckpointMarkersStorage {
 
             return new WALPointer(buf.getLong(), buf.getInt(), buf.getInt());
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new IgniteCheckedException(
                 "Failed to read checkpoint pointer from marker file: " + cpMarkerFile.getAbsolutePath(), e);
         }
@@ -328,9 +332,7 @@ public class CheckpointMarkersStorage {
 
         Map<Integer, CacheState> cacheGrpStates = null;
 
-        // Do not hold groups state in-memory if there is no space in the checkpoint history to prevent possible OOM.
-        // In this case the actual group states will be readed from WAL by demand.
-        if (rec != null && cpHistory.hasSpace())
+        if (rec != null)
             cacheGrpStates = rec.cacheGroupStates();
 
         return new CheckpointEntry(cpTs, ptr, cpId, cacheGrpStates);
@@ -426,7 +428,7 @@ public class CheckpointMarkersStorage {
         );
 
         if (type == CheckpointEntryType.START)
-            cpHistory.addCheckpoint(entry);
+            cpHistory.addCheckpoint(entry, rec.cacheGroupStates());
 
         writeCheckpointEntry(tmpWriteBuf, entry, type, skipSync);
 

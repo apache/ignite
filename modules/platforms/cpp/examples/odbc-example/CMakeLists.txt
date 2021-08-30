@@ -25,7 +25,8 @@ find_package(Java 1.8 REQUIRED)
 find_package(JNI REQUIRED)
 find_package(ODBC REQUIRED)
 
-include_directories(../include ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
+include_directories(../include)
 
 add_executable(${TARGET} src/odbc_example.cpp)
 

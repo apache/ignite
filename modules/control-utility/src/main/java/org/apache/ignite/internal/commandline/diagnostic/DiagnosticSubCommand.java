@@ -27,7 +27,10 @@ public enum DiagnosticSubCommand {
     HELP("help", null),
 
     /** */
-    PAGE_LOCKS("pageLocks", new PageLocksCommand());
+    PAGE_LOCKS("pageLocks", new PageLocksCommand()),
+
+    /** */
+    CONNECTIVITY("connectivity", new ConnectivityCommand());
 
     /** Diagnostic command name. */
     private final String name;

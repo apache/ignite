@@ -17,7 +17,8 @@
 
 project(ignite)
 
-include_directories(${JNI_INCLUDE_DIRS} include)
+include_directories(SYSTEM ${JNI_INCLUDE_DIRS})
+include_directories(include)
 
 set(TARGET ${PROJECT_NAME})
 
@@ -36,7 +37,7 @@ set(SOURCES src/ignite.cpp
         src/impl/transactions/transactions_impl.cpp
         src/impl/cluster/cluster_group_impl.cpp
         src/impl/compute/cancelable_impl.cpp
-        src/impl/compute/compute_impl.cpp
+		src/impl/compute/compute_impl.cpp
         src/impl/ignite_impl.cpp
         src/impl/ignite_binding_impl.cpp
         src/transactions/transaction.cpp

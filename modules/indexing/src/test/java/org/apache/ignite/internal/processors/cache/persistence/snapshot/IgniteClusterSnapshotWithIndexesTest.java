@@ -71,6 +71,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
             "primary key (id, name)) WITH \"cache_name=" + tblName + "\"");
         executeSql(ignite, "CREATE INDEX ON " + tblName + "(city, age)");
 
+        forceCheckpoint();
+
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             executeSql(ignite, "INSERT INTO " + tblName + " (id, name, age, city) VALUES(?, 'name', 3, 'city')", i);
 
@@ -109,7 +111,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         forceCheckpoint();
 
         // Validate indexes on start.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false,
+            new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
             0, 0, false, true);
 
         for (Ignite node : G.allGrids()) {

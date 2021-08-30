@@ -573,7 +573,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
                 int len = tab.length;
 
-                for (int i = 0 ; i < len; i++) {
+                for (int i = 0; i < len; i++) {
                     for (HashEntry<K, V> e = tab[i]; e != null; e = e.next) {
                         V v = e.val;
 
@@ -2040,7 +2040,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @param v Value
          */
         WriteThroughEntry(K k, V v) {
-            super(k,v);
+            super(k, v);
         }
 
         /**
@@ -2177,7 +2177,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             if (!(o instanceof Map.Entry))
                 return false;
 
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
             V v = get(e.getKey());
 
@@ -2189,7 +2189,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             if (!(o instanceof Map.Entry))
                 return false;
 
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
             return ConcurrentLinkedHashMap.this.remove(e.getKey(), e.getValue());
         }

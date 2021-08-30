@@ -80,7 +80,10 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(WALPointer start, @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter) throws IgniteCheckedException, StorageException {
+    @Override public WALIterator replay(
+        WALPointer start,
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
+    ) throws IgniteCheckedException, StorageException {
         return null;
     }
 
@@ -90,12 +93,12 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void release(WALPointer start) throws IgniteCheckedException {
+    @Override public void release(WALPointer start) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer low, WALPointer high) {
+    @Override public int truncate(@Nullable WALPointer high) {
         return 0;
     }
 
@@ -185,11 +188,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public long maxArchivedSegmentToDelete() {
-        return -1;
-    }
-
-    /** {@inheritDoc} */
     @Override public long segmentSize(long idx) {
         return -1;
     }
@@ -197,5 +195,10 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public WALPointer lastWritePointer() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void startAutoReleaseSegments() {
+        // No-op.
     }
 }

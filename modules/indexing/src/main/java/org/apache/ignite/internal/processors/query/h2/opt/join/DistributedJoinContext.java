@@ -100,7 +100,7 @@ public class DistributedJoinContext {
      * @return Partitions map.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public Map<UUID,int[]> partitionsMap() {
+    public Map<UUID, int[]> partitionsMap() {
         return partsMap;
     }
 

@@ -25,6 +25,7 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -39,6 +40,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -90,6 +93,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -1424,6 +1428,34 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test to verify the {@link U#uncompressedSize}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUncompressedSize() throws Exception {
+        File zipFile = new File(System.getProperty("java.io.tmpdir"), "test.zip");
+
+        try {
+            assertThrows(log, () -> U.uncompressedSize(zipFile), IOException.class, null);
+
+            byte[] raw = IntStream.range(0, 10).mapToObj(i -> zipFile.getAbsolutePath() + i)
+                .collect(joining()).getBytes(StandardCharsets.UTF_8);
+
+            try (FileOutputStream fos = new FileOutputStream(zipFile)) {
+                fos.write(U.zip(raw));
+
+                fos.flush();
+            }
+
+            assertEquals(raw.length, U.uncompressedSize(zipFile));
+        }
+        finally {
+            assertTrue(U.delete(zipFile));
+        }
+    }
+
+    /**
      * Reading lines from a resource file and passing them to consumer.
      * If read string is {@code "null"}, it is converted to {@code null}.
      *
@@ -1495,4 +1527,32 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
          */
         void accept(@Nullable T t) throws Exception;
     }
+
+    /**
+     * Test to verify the {@link U#hashToIndex(int, int)}.
+     */
+    @Test
+    public void testHashToIndexDistribution() {
+        assertEquals(0, U.hashToIndex(1, 1));
+        assertEquals(0, U.hashToIndex(2, 1));
+        assertEquals(1, U.hashToIndex(1, 2));
+        assertEquals(0, U.hashToIndex(2, 2));
+
+        assertEquals(1, U.hashToIndex(1, 4));
+        assertEquals(2, U.hashToIndex(2, 4));
+        assertEquals(3, U.hashToIndex(3, 4));
+        assertEquals(0, U.hashToIndex(4, 4));
+        assertEquals(1, U.hashToIndex(5, 4));
+        assertEquals(0, U.hashToIndex(8, 4));
+        assertEquals(3, U.hashToIndex(15, 4));
+
+        assertEquals(1, U.hashToIndex(-1, 4));
+        assertEquals(2, U.hashToIndex(-2, 4));
+        assertEquals(3, U.hashToIndex(-3, 4));
+        assertEquals(0, U.hashToIndex(-4, 4));
+        assertEquals(1, U.hashToIndex(-5, 4));
+        assertEquals(0, U.hashToIndex(-8, 4));
+        assertEquals(3, U.hashToIndex(-15, 4));
+    }
+
 }

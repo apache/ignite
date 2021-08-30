@@ -90,6 +90,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_WRITE;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
@@ -161,6 +162,12 @@ public class GridNioServer<T> {
 
     /** */
     public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
+
+    /** The name of the metric that indicates whether SSL is enabled for the connector. */
+    public static final String SSL_ENABLED_METRIC_NAME = "SslEnabled";
+
+    /** The name of the metric that provides the active TCP sessions count. */
+    public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;
@@ -450,6 +457,14 @@ public class GridNioServer<T> {
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );
+
+        if (mreg != null) {
+            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
+
+            boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
+
+            mreg.register(SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
+        }
     }
 
     /**
@@ -1246,6 +1261,8 @@ public class GridNioServer<T> {
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
+                        span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
+
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
 
@@ -1574,7 +1591,11 @@ public class GridNioServer<T> {
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
+                int startPos = buf.position();
+
                 finished = msg.writeTo(buf, writer);
+
+                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
                 if (finished) {
                     pendingRequests.add(req);
@@ -1763,7 +1784,11 @@ public class GridNioServer<T> {
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
+                int startPos = buf.position();
+
                 finished = msg.writeTo(buf, writer);
+
+                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
                 if (finished) {
                     onMessageWritten(ses, msg);

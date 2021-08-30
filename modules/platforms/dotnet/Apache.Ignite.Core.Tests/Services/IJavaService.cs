@@ -19,8 +19,10 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Java service proxy interface.
@@ -162,6 +164,48 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         IBinaryObject testBinaryObject(IBinaryObject x);
+
+        /** */
+        Address testAddress(Address addr);
+
+        /** */
+        int testOverload(int count, Employee[] emps);
+
+        /** */
+        int testOverload(int first, int second);
+
+        /** */
+        int testOverload(int count, Parameter[] param);
+
+        /** */
+        Employee[] testEmployees(Employee[] emps);
+        
+        /** */
+        Account[] testAccounts();
+
+        /** */
+        User[] testUsers();
+
+        /** */
+        ICollection testDepartments(ICollection deps);
+
+        /** */
+        IDictionary testMap(IDictionary<Key, Value> dict);
+
+        /** */
+        void testDateArray(DateTime?[] dates);
+
+        /** */
+        DateTime testDate(DateTime date);
+
+        /** */
+        void testUTCDateFromCache();
+
+        /** */
+        void testLocalDateFromCache();
+
+        /** */
+        void testException(string exceptionClass);
 
         /** */
         void sleep(long delayMs);

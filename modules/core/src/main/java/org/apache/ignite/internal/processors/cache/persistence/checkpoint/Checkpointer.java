@@ -23,10 +23,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -117,7 +120,7 @@ public class Checkpointer extends GridWorker {
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
 
     /** Avoid the start checkpoint if checkpointer was canceled. */
-    private final boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
+    private volatile boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
     /** Long JVM pause threshold. */
     private final int longJvmPauseThreshold =
@@ -154,6 +157,9 @@ public class Checkpointer extends GridWorker {
     /** The number of IO-bound threads which will write pages to disk. */
     private final int checkpointWritePageThreads;
 
+    /** Checkpoint frequency deviation. */
+    private final Supplier<Integer> cpFreqDeviation;
+
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private volatile IgniteThreadPoolExecutor checkpointWritePagesPool;
 
@@ -168,6 +174,9 @@ public class Checkpointer extends GridWorker {
 
     /** Last checkpoint timestamp. */
     private long lastCpTs;
+
+    /** Performance statistics processor. */
+    private final PerformanceStatisticsProcessor psproc;
 
     /** For testing only. */
     private GridFutureAdapter<Void> enableChangeApplied;
@@ -189,6 +198,7 @@ public class Checkpointer extends GridWorker {
      * @param factory Page writer factory.
      * @param checkpointFrequency Checkpoint frequency.
      * @param checkpointWritePageThreads The number of IO-bound threads which will write pages to disk.
+     * @param cpFreqDeviation Deviation of checkpoint frequency.
      */
     Checkpointer(
         @Nullable String gridName,
@@ -203,7 +213,8 @@ public class Checkpointer extends GridWorker {
         CheckpointWorkflow checkpoint,
         CheckpointPagesWriterFactory factory,
         long checkpointFrequency,
-        int checkpointWritePageThreads
+        int checkpointWritePageThreads,
+        Supplier<Integer> cpFreqDeviation
     ) {
         super(gridName, name, logger.apply(Checkpointer.class), workersRegistry);
         this.pauseDetector = detector;
@@ -216,8 +227,10 @@ public class Checkpointer extends GridWorker {
         this.cacheProcessor = cacheProcessor;
         this.checkpointWritePageThreads = Math.max(checkpointWritePageThreads, 1);
         this.checkpointWritePagesPool = initializeCheckpointPool();
+        this.cpFreqDeviation = cpFreqDeviation;
+        this.psproc = cacheProcessor.context().kernalContext().performanceStatistics();
 
-        scheduledCp = new CheckpointProgressImpl(checkpointFreq);
+        scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
     }
 
     /**
@@ -231,7 +244,7 @@ public class Checkpointer extends GridWorker {
                 checkpointWritePageThreads,
                 checkpointWritePageThreads,
                 30_000,
-                new LinkedBlockingQueue<Runnable>()
+                new LinkedBlockingQueue<>()
             );
 
         return null;
@@ -264,7 +277,7 @@ public class Checkpointer extends GridWorker {
                     doCheckpoint();
                 else {
                     synchronized (this) {
-                        scheduledCp.nextCpNanos(System.nanoTime() + U.millisToNanos(checkpointFreq));
+                        scheduledCp.nextCpNanos(System.nanoTime() + U.millisToNanos(nextCheckpointInterval()));
                     }
                 }
             }
@@ -301,6 +314,24 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
+     * Gets a checkpoint interval with a randomized delay.
+     * It helps when the cluster makes a checkpoint in the same time in every node.
+     *
+     * @return Next checkpoint interval.
+     */
+    private long nextCheckpointInterval() {
+        Integer deviation = cpFreqDeviation.get();
+
+        if (deviation == null || deviation == 0)
+            return checkpointFreq;
+
+        long startDelay = ThreadLocalRandom.current().nextLong(U.ensurePositive(U.safeAbs(checkpointFreq * deviation) / 100, 1))
+            - U.ensurePositive(U.safeAbs(checkpointFreq * deviation) / 200, 1);
+
+        return U.safeAbs(checkpointFreq + startDelay);
+    }
+
+    /**
      * Change the information for a scheduled checkpoint if it was scheduled further than {@code delayFromNow}, or do
      * nothing otherwise.
      *
@@ -332,13 +363,13 @@ public class Checkpointer extends GridWorker {
 
         long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
-        if (sched.nextCpNanos() <= nextNanos)
+        if (sched.nextCpNanos() - nextNanos <= 0)
             return sched;
 
         synchronized (this) {
             sched = scheduledCp;
 
-            if (sched.nextCpNanos() > nextNanos) {
+            if (sched.nextCpNanos() - nextNanos > 0) {
                 sched.reason(reason);
 
                 sched.nextCpNanos(nextNanos);
@@ -456,16 +487,12 @@ public class Checkpointer extends GridWorker {
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                 if (log.isInfoEnabled()) {
-                    String walSegsCoveredMsg = chp.walSegsCoveredRange == null ? "" : prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
-
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                            "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
-                            "total=%dms]",
+                            "walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
                         chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                         chp.pagesSize,
                         chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
-                        chp.walFilesDeleted,
-                        walSegsCoveredMsg,
+                        walRangeStr(chp.walSegsCoveredRange),
                         tracker.markDuration(),
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
@@ -575,12 +602,37 @@ public class Checkpointer extends GridWorker {
      * @param tracker Tracker.
      */
     private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
-        if (persStoreMetrics.metricsEnabled()) {
-            persStoreMetrics.onCheckpoint(
+        if (psproc.enabled()) {
+            psproc.checkpoint(
+                tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
                 tracker.markDuration(),
+                tracker.lockHoldDuration(),
                 tracker.pagesWriteDuration(),
                 tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
+                tracker.totalDuration(),
+                tracker.checkpointStartTime(),
+                chp.pagesSize,
+                tracker.dataPagesWritten(),
+                tracker.cowPagesWritten());
+        }
+
+        if (persStoreMetrics.metricsEnabled()) {
+            persStoreMetrics.onCheckpoint(
+                tracker.beforeLockDuration(),
+                tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
+                tracker.markDuration(),
+                tracker.lockHoldDuration(),
+                tracker.pagesWriteDuration(),
+                tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
                 tracker.totalDuration(),
                 tracker.checkpointStartTime(),
                 chp.pagesSize,
@@ -591,9 +643,15 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
+     * Creates a string of a range WAL segments.
+     *
+     * @param walRange Range of WAL segments.
      * @return The message about how many WAL segments was between previous checkpoint and current one.
      */
-    private String prepareWalSegsCoveredMsg(IgniteBiTuple<Long, Long> walRange) {
+    private String walRangeStr(@Nullable IgniteBiTuple<Long, Long> walRange) {
+        if (walRange == null)
+            return "";
+
         String res;
 
         long startIdx = walRange.get1();
@@ -641,7 +699,7 @@ public class Checkpointer extends GridWorker {
 
             Runnable destroyPartTask = () -> {
                 try {
-                    offheap.destroyPartitionStore(grpId, partId);
+                    offheap.destroyPartitionStore(partId);
 
                     req.onDone(null);
 
@@ -705,31 +763,42 @@ public class Checkpointer extends GridWorker {
     /**
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
         PartitionDestroyRequest req;
+        boolean canceled = false;
 
         synchronized (this) {
-            req = scheduledCp.getDestroyQueue().cancelDestroy(grpId, partId);
+            req = scheduledCp.getDestroyQueue().removeRequest(grpId, partId);
+
+            if (req != null) {
+                canceled = req.cancel();
+
+                assert canceled;
+            }
+
+            CheckpointProgressImpl cur = curCpProgress;
+
+            if (cur != null) {
+                req = cur.getDestroyQueue().removeRequest(grpId, partId);
+
+                if (req != null)
+                    canceled = req.cancel();
+            }
         }
 
-        if (req != null)
-            req.waitCompleted();
+        if (!canceled) {
+            if (req != null)
+                req.waitCompleted();
 
-        CheckpointProgressImpl cur;
-
-        synchronized (this) {
-            cur = curCpProgress;
-
-            if (cur != null)
-                req = cur.getDestroyQueue().cancelDestroy(grpId, partId);
+            return false;
         }
 
-        if (req != null)
-            req.waitCompleted();
-
-        if (req != null && log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("Partition file destroy has cancelled [grpId=" + grpId + ", partId=" + partId + "]");
+
+        return true;
     }
 
     /**
@@ -806,7 +875,7 @@ public class Checkpointer extends GridWorker {
                 curr.reason("timeout");
 
             // It is important that we assign a new progress object before checkpoint mark in page memory.
-            scheduledCp = new CheckpointProgressImpl(checkpointFreq);
+            scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
 
             curCpProgress = curr;
         }
@@ -937,5 +1006,14 @@ public class Checkpointer extends GridWorker {
      */
     private boolean isShutdownNow() {
         return shutdownNow;
+    }
+
+    /**
+     * Skip checkpoint on node stop.
+     *
+     * @param skip If {@code true} skips checkpoint on node stop.
+     */
+    public void skipCheckpointOnNodeStop(boolean skip) {
+        skipCheckpointOnNodeStop = skip;
     }
 }

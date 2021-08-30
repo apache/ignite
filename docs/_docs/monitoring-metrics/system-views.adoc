@@ -61,6 +61,34 @@ include::{javaCodeDir}/JavaThinClient.java[tag=system-views,indent=0]
 ----
 
 
+System views can also be queried through the link:tools/control-script#system-view-command[Control Script system view command].
+Note that the mentioned above command result contains all columns of the requested system view. If filtering is necessary, it should be performed manually.
+
+Examples of the use of link:tools/control-script#system-view-command[Control Script system view command]:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+# get the list of nodes
+control.sh --system-view NODES
+
+# get the list of metrics from the node with the specific ID
+control.sh --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684f3bae
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+# get the list of nodes
+control.bat --system-view NODES
+
+# get the list of metrics from the node with the specific ID
+control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684f3bae
+----
+--
+
+
 :table_opts: cols="2,1,4",opts="header"
 
 == CACHES
@@ -313,6 +341,21 @@ The BASELINE_NODES view contains information about the nodes that are part of th
 | Column |Data Type |Description
 |CONSISTENT_ID |VARCHAR |Node consistent ID.
 |ONLINE |BOOLEAN |Indicates whether the node is up and running.
+
+|===
+
+
+== BASELINE_NODE_ATTRIBUTES
+
+
+The BASELINE_NODE_ATTRIBUTES view exposes node attributes fixed at a moment when a current baseline topology was set.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
+| NAME | VARCHAR | Name of the node attribute.
+| VALUE | VARCHAR | Attribute value.
 
 |===
 
@@ -675,4 +718,184 @@ This view exposes information about the distribution of cache group partitions a
 |NODE_ID | UUID | Node ID
 |STATE | string | Partition state. Possible states: MOVING - partition is being loaded from another node to this node; OWNING - this node is either a primary or backup owner; RENTING - this node is neither primary nor back up owner (is being currently evicted); EVICTED - partition has been evicted; LOST - partition state is invalid, the partition should not be used.
 |IS_PRIMARY | boolean  | Primary partition flag
+|===
+
+== BINARY_METADATA
+
+This view exposes information about all available binary types.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|TYPE_ID | int | Type ID
+|TYPE_NAME | string | Type name
+|AFF_KEY_FIELD_NAME | string | Affinity key field name
+|FIELDS_COUNT | int | Fields count
+|FIELDS | string | Recorded object fields
+|SCHEMAS_IDS | string | Schema IDs registered for this type
+|IS_ENUM | boolean | Whether this is enum type
+|===
+
+== METASTORAGE
+
+This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
+== DS_QUEUES
+
+This view exposes the list of `IgniteQueue`.
+Note, queue will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|ID | UUID | ID
+|NAME | string | Data structure name
+|CAPACITY | int | Capacity
+|SIZE | int | Current size
+|BOUNDED | boolean | `True` when queue capacity is bounded
+|COLLOCATED | boolean | `True` when collocated
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_SETS
+
+This view exposes the list of `IgniteSet`.
+Note, set will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|ID | UUID | ID
+|NAME | string | Data structure name
+|SIZE | int | Current size
+|COLLOCATED | boolean | `True` when collocated
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICSEQUENCES
+
+This view exposes the list of `IgniteAtomicSequence`.
+Note, atomicsequence will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | long | Current sequence value
+|BATCH_SIZE | long | Local batch size
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICLONGS
+
+This view exposes the list of `IgniteAtomicLong`.
+Note, atomiclong will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | long | Current value
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICREFERENCES
+
+This view exposes the list of `IgniteAtomicReference`.
+Note, atomicreference will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | string | Current value
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICSTAMPED
+
+This view exposes the list of `IgniteAtomicStamped`.
+Note, atomicstamped will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | string | Current value
+|STAMP | string | Current stamp value
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_COUNTDOWNLATCHES
+
+This view exposes the list of `IgniteCountDownLatch`.
+Note, latch will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|COUNT | int | Current count
+|INITIAL_COUT | int | Initial count
+|AUTO_DELETE | boolean | True to automatically delete the latch from a cache when its count reaches zero
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_SEMAPHORES
+
+This view exposes the list of `IgniteSemaphore`.
+Note, semaphores will be shown on the non parent nodes only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|AVAILABLE_PERMITS | long | Number of permits available
+|HAS_QUEUED_THREADS | boolean | `True` if there may be other threads waiting to acquire the lock
+|QUEUE_LENGTH | int | The estimated number of nodes waiting for this lock
+|FAILOVER_SAFE | boolean | `True` if failover safe
+|BROKEN | boolean | `True` if a node failed on this semaphore and `FAILOVER_SAFE` flag was set to `false`, `false` otherwise.
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_REENTRANTLOCKS
+
+This view exposes the contents of `IgniteLock`.
+Note, lock will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|LOCKED | boolean | `True` if locked
+|HAS_QUEUED_THREADS | boolean | `True` if there may be other threads waiting to acquire the lock
+|FAILOVER_SAFE | boolean | `True` if failover safe
+|FAIR | boolean | `True` if lock is fair
+|BROKEN | boolean | `True` if a node failed on this semaphore and `FAILOVER_SAFE` flag was set to `false`, `false` otherwise.
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
 |===

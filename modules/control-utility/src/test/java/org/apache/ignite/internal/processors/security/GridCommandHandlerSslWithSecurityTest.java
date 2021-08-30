@@ -17,22 +17,29 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
@@ -47,11 +54,49 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
     /** Password. */
     private final String pwd = "testPwd";
 
+    /** System out. */
+    protected static PrintStream sysOut;
+
+    /**
+     * Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test.
+     * Will be as well passed as a handler output for an anonymous logger in the test.
+     */
+    protected static ByteArrayOutputStream testOut;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        testOut = new ByteArrayOutputStream(16 * 1024);
+
+        sysOut = System.out;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        System.setOut(sysOut);
+
+        testOut.reset();
+
         stopAllGrids();
+    }
+
+    /**
+     * Sets test output stream.
+     */
+    protected void injectTestSystemOut() {
+        System.setOut(new PrintStream(testOut));
+    }
+
+    /**
+     * Flushes all Logger handlers to make log data available to test.
+     * @param hnd Command handler.
+     */
+    private void flushCommandOutput(CommandHandler hnd) {
+        Logger log = U.field(hnd, "logger");
+        Arrays.stream(log.getHandlers()).forEach(Handler::flush);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +122,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
     public void testInputKeyTrustStorePwdOnlyOnce() throws Exception {
         IgniteEx crd = startGrid();
 
-        crd.cluster().active(true);
+        crd.cluster().state(ACTIVE);
 
         CommandHandler cmd = new CommandHandler();
 
@@ -129,7 +174,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
     public void testConnector() throws Exception {
         IgniteEx crd = startGrid();
 
-        crd.cluster().active(true);
+        crd.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
 
         CommandHandler hnd = new CommandHandler();
 
@@ -143,5 +190,13 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
             "--truststore-password", keyStorePassword()));
 
         assertEquals(EXIT_CODE_OK, exitCode);
+
+        flushCommandOutput(hnd);
+
+        // Make sure all sensitive information is masked.
+        String testOutput = testOut.toString();
+        assertContains(log, testOutput, "--password *****");
+        assertContains(log, testOutput, "--keystore-password *****");
+        assertContains(log, testOutput, "--truststore-password *****");
     }
 }

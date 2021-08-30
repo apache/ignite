@@ -24,7 +24,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright 2020")]
+[assembly: AssemblyCopyright("Copyright 2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -33,8 +33,8 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("c6b58e4a-a2e9-4554-ad02-68ce6da5cfb7")]
 
-[assembly: AssemblyVersion("2.10.0.47753")]
-[assembly: AssemblyFileVersion("2.10.0.47753")]
-[assembly: AssemblyInformationalVersion("2.10.0")]
+[assembly: AssemblyVersion("2.12.0.56898")]
+[assembly: AssemblyFileVersion("2.12.0.56898")]
+[assembly: AssemblyInformationalVersion("2.12.0")]
 
 [assembly: CLSCompliant(true)]

@@ -109,7 +109,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         Map<String, Integer> precision = new HashMap<>();
         Map<String, Integer> scale = new HashMap<>();
 
-        precision.put("amount",PRECISION);
+        precision.put("amount", PRECISION);
         scale.put("amount", SCALE);
 
         queryEntity.setFieldsPrecision(precision);

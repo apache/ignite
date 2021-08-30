@@ -42,7 +42,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
- * Tests of serialization and deserialization of all WAL record types {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
+ * Tests of serialization and deserialization of all WAL record types
+ * {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
  *
  * It checks that all records can be successfully deserialized from early serialized record included serialization via
  * compaction.

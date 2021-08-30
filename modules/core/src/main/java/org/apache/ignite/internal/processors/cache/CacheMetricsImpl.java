@@ -215,7 +215,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     private GridCacheWriteBehindStore store;
 
     /** Tx collisions info. */
-    private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> txKeyCollisionInfo;
+    private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>>
+        txKeyCollisionInfo;
 
     /** Offheap entries count. */
     private final LongGauge offHeapEntriesCnt;
@@ -408,7 +409,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             () -> getEntriesStat().cacheSize(), "Local cache size.");
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
-            "Number of keys processed during index rebuilding.");
+            "Number of keys processed during the index rebuilding.");
     }
 
     /**
@@ -915,7 +916,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      * @param coll Key collisions info holder.
      */
-    public void keyCollisionsInfo(Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> coll) {
+    public void keyCollisionsInfo(
+        Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> coll
+    ) {
         txKeyCollisionInfo = coll;
 
         if (delegate != null)
@@ -1494,11 +1497,13 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Rebalance entry store callback.
+     *
+     * @param keys Key count.
      */
-    public void onRebalanceKeyReceived() {
-        rebalancedKeys.increment();
+    public void onRebalanceKeyReceived(long keys) {
+        rebalancedKeys.add(keys);
 
-        rebalancingKeysRate.increment();
+        rebalancingKeysRate.add(keys);
     }
 
     /**

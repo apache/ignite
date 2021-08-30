@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -162,6 +161,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Transaction start time. */
     @GridToStringInclude
     protected long startTime = U.currentTimeMillis();
+
+    /** Transaction start time in nanoseconds to measure duration. */
+    protected long startTimeNanos;
 
     /** Node ID. */
     @GridToStringInclude
@@ -343,6 +345,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
         taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
+
+        if (cctx.kernalContext().performanceStatistics().enabled())
+            startTimeNanos = System.nanoTime();
     }
 
     /**
@@ -399,6 +404,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
         taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
+
+        if (cctx.kernalContext().performanceStatistics().enabled())
+            startTimeNanos = System.nanoTime();
     }
 
     /**
@@ -722,6 +730,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public long startTime() {
         return startTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long startTimeNanos() {
+        return startTimeNanos;
     }
 
     /**
@@ -1214,7 +1227,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     seal();
 
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    cctx.tm().setMvccState(this, toMvccState(state));
+                    cctx.tm().setMvccState(this, state);
 
                     ptr = cctx.tm().logTxRecord(this);
                 }
@@ -1243,20 +1256,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return valid;
-    }
-
-    /** */
-    private byte toMvccState(TransactionState state) {
-        switch (state) {
-            case PREPARED:
-                return TxState.PREPARED;
-            case COMMITTED:
-                return TxState.COMMITTED;
-            case ROLLED_BACK:
-                return TxState.ABORTED;
-            default:
-                throw new IllegalStateException("Unexpected state: " + state);
-        }
     }
 
     /** */
@@ -2027,6 +2026,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** Start time. */
         private final long startTime;
 
+        /** Start time in nanoseconds. */
+        private final long startTimeNanos;
+
         /** Transaction isolation. */
         private final TransactionIsolation isolation;
 
@@ -2061,13 +2063,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
          * @param state Transaction state.
          * @param rollbackOnly Rollback-only flag.
          */
-        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, TransactionIsolation isolation,
-            TransactionConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
-            TransactionState state, boolean rollbackOnly) {
+        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, long startTimeNanos,
+            TransactionIsolation isolation, TransactionConcurrency concurrency, boolean invalidate, boolean implicit,
+            long timeout, TransactionState state, boolean rollbackOnly) {
             this.xid = xid;
             this.nodeId = nodeId;
             this.threadId = threadId;
             this.startTime = startTime;
+            this.startTimeNanos = startTimeNanos;
             this.isolation = isolation;
             this.concurrency = concurrency;
             this.invalidate = invalidate;
@@ -2110,6 +2113,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public long startTime() {
             return startTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long startTimeNanos() {
+            return startTimeNanos;
         }
 
         /** {@inheritDoc} */

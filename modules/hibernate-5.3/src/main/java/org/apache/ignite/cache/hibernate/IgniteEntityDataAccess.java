@@ -75,7 +75,14 @@ public class IgniteEntityDataAccess extends IgniteCachedDomainDataAccess impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, Object curVer, Object prevVer, SoftLock lock) {
+    @Override public boolean afterUpdate(
+        SharedSessionContractImplementor ses,
+        Object key,
+        Object val,
+        Object curVer,
+        Object prevVer,
+        SoftLock lock
+    ) {
         return stgy.afterUpdate(key, val);
     }
 

@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -123,6 +122,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -1101,7 +1103,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static IgniteInternalFuture runAsync(final Runnable task) {
-        return runAsync(task,"async-runnable-runner");
+        return runAsync(task, "async-runnable-runner");
     }
 
     /**
@@ -1606,14 +1608,31 @@ public final class GridTestUtils {
     private static Object findField(Class<?> cls, Object obj,
         String fieldName) throws NoSuchFieldException, IllegalAccessException {
         // Resolve inner field.
-        Field field = cls.getDeclaredField(fieldName);
 
-        boolean accessible = field.isAccessible();
+        NoSuchFieldException ex = null;
 
-        if (!accessible)
-            field.setAccessible(true);
+        while (cls != null) {
+            try {
+                Field field = cls.getDeclaredField(fieldName);
 
-        return field.get(obj);
+                boolean accessible = field.isAccessible();
+
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            catch (NoSuchFieldException ex0) {
+                if (ex == null)
+                    ex = ex0;
+                else
+                    ex.addSuppressed(ex0);
+
+                cls = cls.getSuperclass();
+            }
+        }
+
+        throw ex;
     }
 
     /**
@@ -1931,13 +1950,13 @@ public final class GridTestUtils {
      * @throws IOException If keystore cannot be accessed.
      */
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
-        SSLContext ctx = SSLContext.getInstance("TLS");
+        SSLContext ctx = SSLContext.getInstance(DFLT_SSL_PROTOCOL);
 
         char[] storePass = keyStorePassword().toCharArray();
 
-        KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
+        KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(DFLT_KEY_ALGORITHM);
 
-        KeyStore keyStore = KeyStore.getInstance("JKS");
+        KeyStore keyStore = KeyStore.getInstance(DFLT_STORE_TYPE);
 
         keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
             storePass);
@@ -2181,6 +2200,23 @@ public final class GridTestUtils {
     }
 
     /**
+     * Removing the directory cache groups.
+     * Deletes all directory satisfy the {@code cacheGrpFilter}.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cacheGrpFilter Filter cache groups.
+     * @throws Exception If failed.
+     */
+    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        String nodeDirName = U.maskForFileName(igniteInstanceName);
+
+        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
+            U.delete(cacheGrpDir);
+    }
+
+    /**
      * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
      * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
      * This method return correct simple name for inner classes.
@@ -2352,16 +2388,6 @@ public final class GridTestUtils {
             connStr += "/?" + params;
 
         return DriverManager.getConnection(connStr);
-    }
-
-    /**
-     * Removes idle_verify log files created in tests.
-     */
-    public static void cleanIdleVerifyLogFiles() {
-        File dir = new File(".");
-
-        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
-            f.delete();
     }
 
     /**

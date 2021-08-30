@@ -88,7 +88,15 @@ public class CacheDataRowStore extends RowStore {
      * @param opCntr Mvcc operation counter.
      * @return Search row.
      */
-    protected MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
+    protected MvccDataRow mvccRow(
+        int cacheId,
+        int hash,
+        long link,
+        CacheDataRowAdapter.RowData rowData,
+        long crdVer,
+        long mvccCntr,
+        int opCntr
+    ) {
         MvccDataRow row = new MvccDataRow(
             grp,
             hash,

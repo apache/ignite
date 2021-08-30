@@ -121,7 +121,12 @@ public class MovingPartitionIsEvictedDuringClearingTest extends GridCommonAbstra
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id, boolean recovery) {
+                        @Override public GridDhtLocalPartition create(
+                            GridCacheSharedContext ctx,
+                            CacheGroupContext grp,
+                            int id,
+                            boolean recovery
+                        ) {
                             return id == evictingPart ?
                                 new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock, unlock) :
                                 new GridDhtLocalPartition(ctx, grp, id, recovery);

@@ -180,6 +180,9 @@ public class GridCacheUtils {
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
+    /** System cache group id. */
+    public static final int UTILITY_CACHE_GROUP_ID = cacheGroupId(UTILITY_CACHE_NAME, null);
+
     /** Reserved cache names */
     public static final String[] RESERVED_NAMES = new String[] {
         UTILITY_CACHE_NAME,
@@ -843,6 +846,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param tx Transaction.
+     * @return {@code True} if transaction is on primary node.
+     */
+    public static boolean txOnPrimary(IgniteInternalTx tx) {
+        if (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped())
+            return true;
+
+        return tx.dht() && tx.local();
+    }
+
+    /**
      * Alias for {@link #txString(IgniteInternalTx)}.
      */
     public static String txDump(@Nullable IgniteInternalTx tx) {
@@ -1049,22 +1063,6 @@ public class GridCacheUtils {
      */
     private static String capitalize(String str) {
         return Character.toUpperCase(str.charAt(0)) + str.substring(1);
-    }
-
-    /**
-     * Validates that cache key object has overridden equals and hashCode methods.
-     * Will also check that a BinaryObject has a hash code set.
-     *
-     * @param key Key.
-     * @throws IllegalArgumentException If equals or hashCode is not implemented.
-     */
-    public static void validateCacheKey(@Nullable Object key) {
-        if (key == null)
-            return;
-
-        if (!U.overridesEqualsAndHashCode(key))
-            throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
-                key.getClass().getName());
     }
 
     /**
@@ -1844,7 +1842,8 @@ public class GridCacheUtils {
                             true,
                             topVer,
                             GridDrType.DR_BACKUP,
-                            true);
+                            true,
+                            false);
 
                         break;
                     }

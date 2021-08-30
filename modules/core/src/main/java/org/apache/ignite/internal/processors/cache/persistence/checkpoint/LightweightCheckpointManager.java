@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -106,8 +105,7 @@ public class LightweightCheckpointManager {
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
-        GridCacheProcessor cacheProcessor,
-        FilePageStoreManager pageStoreManager
+        GridCacheProcessor cacheProcessor
     ) throws IgniteCheckedException {
         CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
 
@@ -139,7 +137,7 @@ public class LightweightCheckpointManager {
             logger,
             snapshotMgr,
             (pageMemEx, fullPage, buf, tag) ->
-                pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
+                pageMemEx.pageManager().write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy,
             threadBuf,
@@ -159,7 +157,8 @@ public class LightweightCheckpointManager {
             checkpointWorkflow,
             checkpointPagesWriterFactory,
             persistenceCfg.getCheckpointFrequency(),
-            persistenceCfg.getCheckpointThreads()
+            persistenceCfg.getCheckpointThreads(),
+            () -> 0
         );
 
         checkpointer = checkpointerProvider.get();
@@ -283,12 +282,12 @@ public class LightweightCheckpointManager {
     /**
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
         Checkpointer cp = checkpointer;
 
-        if (cp != null)
-            checkpointer.cancelOrWaitPartitionDestroy(grpId, partId);
+        return cp != null && cp.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**

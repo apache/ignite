@@ -71,7 +71,7 @@ To load in Ignite ML you should use SparkModelParser class via method parse() ca
 
 [source, java]
 ----
-DecisionTreeNode mdl = (DecisionTreeNode)SparkModelParser.parse(
+DecisionTreeModel mdl = (DecisionTreeModel)SparkModelParser.parse(
    SPARK_MDL_PATH,
    SupportedSparkModels.DECISION_TREE
 );

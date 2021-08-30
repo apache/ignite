@@ -43,7 +43,7 @@ to interact with Ignite Caches, Compute, Events, Messaging, etc. from within a C
 
 == Maven Dependency
 
-To make use of the `ignite-camel` streamer, you need to add the following dependency:
+To make use of the `ignite-camel-ext` streamer, you need to add the following dependency:
 
 [tabs]
 --
@@ -52,8 +52,8 @@ tab:pom.xml[]
 ----
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-camel</artifactId>
-    <version>${ignite.version}</version>
+    <artifactId>ignite-camel-ext</artifactId>
+    <version>${ignite-camel-ext.version}</version>
 </dependency>
 ----
 --

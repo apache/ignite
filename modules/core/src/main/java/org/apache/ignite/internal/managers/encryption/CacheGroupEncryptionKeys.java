@@ -323,6 +323,15 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
+     * @return {@code True} if any key reserved for WAL reading can be removed.
+     */
+    boolean isReleaseWalKeysRequired(long walIdx) {
+        Iterator<TrackedWalSegment> iter = trackedWalSegments.iterator();
+
+        return iter.hasNext() && iter.next().idx <= walIdx;
+    }
+
+    /**
      * Remove all of the segments that are not greater than the specified index.
      *
      * @param walIdx WAL segment index.

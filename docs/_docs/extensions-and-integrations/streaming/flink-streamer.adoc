@@ -21,7 +21,7 @@ Starting data transfer to Ignite cache can be done with the following steps.
 
 . Import Ignite Flink Sink Module in Maven Project
 If you are using Maven to manage dependencies of your project, you can add Flink module
-dependency like this (replace `${ignite.version}` with actual Ignite version you are
+dependency like this (replace `${ignite-flink-ext.version}` with actual Ignite Flink Extension version you are
 interested in):
 +
 [tabs]
@@ -38,8 +38,8 @@ tab:pom.xml[]
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-flink</artifactId>
-            <version>${ignite.version}</version>
+            <artifactId>ignite-flink-ext</artifactId>
+            <version>${ignite-flink-ext.version}</version>
         </dependency>
         ...
     </dependencies>

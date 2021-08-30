@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -35,6 +36,7 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +53,8 @@ import static org.mockito.Mockito.mock;
  */
 public class ReliableChannelTest {
     /** Mock factory for creating new channels. */
-    private final Function<ClientChannelConfiguration, ClientChannel> chFactory = cfg -> new TestClientChannel();
+    private final BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory =
+            (cfg, hnd) -> new TestClientChannel();
 
     /** */
     private final String[] dfltAddrs = new String[]{"127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"};
@@ -170,7 +173,9 @@ public class ReliableChannelTest {
      */
     @Test
     public void testNodeChannelsAreNotCleaned() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
+        ClientConfiguration ccfg = new ClientConfiguration()
+                .setAddresses(dfltAddrs)
+                .setPartitionAwarenessEnabled(false);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
@@ -233,7 +238,9 @@ public class ReliableChannelTest {
             .nextAddresesResponse(dfltAddrs)
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804");
 
-        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
+        ClientConfiguration ccfg = new ClientConfiguration()
+                .setAddressesFinder(finder)
+                .setPartitionAwarenessEnabled(false);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
@@ -259,7 +266,7 @@ public class ReliableChannelTest {
             .setAddresses(dfltAddrs)
             .setPartitionAwarenessEnabled(true);
 
-        ReliableChannel rc = new ReliableChannel(cfg -> new TestFailureClientChannel(), ccfg, null);
+        ReliableChannel rc = new ReliableChannel((cfg, hnd) -> new TestFailureClientChannel(), ccfg, null);
 
         rc.channelsInit();
     }
@@ -302,7 +309,7 @@ public class ReliableChannelTest {
         // Emulate cluster is down after TcpClientChannel#send operation.
         AtomicInteger step = new AtomicInteger();
 
-        ReliableChannel rc = new ReliableChannel(cfg -> {
+        ReliableChannel rc = new ReliableChannel((cfg, hnd) -> {
             if (step.getAndIncrement() == 0)
                 return new TestAsyncServiceFailureClientChannel();
             else
@@ -316,7 +323,7 @@ public class ReliableChannelTest {
         ClientBinaryMarshaller marsh = mock(ClientBinaryMarshaller.class);
         TcpClientTransactions transactions = mock(TcpClientTransactions.class);
 
-        TcpClientCache cache = new TcpClientCache("", rc, marsh, transactions, false, null);
+        TcpClientCache cache = new TcpClientCache("", rc, marsh, transactions, null, false, null);
 
         GridTestUtils.assertThrowsWithCause(() -> op.accept(cache), TestChannelException.class);
     }
@@ -363,7 +370,13 @@ public class ReliableChannelTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void addNotificationListener(NotificationListener lsnr) {
+        @Override public void addNotificationListener(ClientNotificationType type, Long rsrcId,
+            NotificationListener lsnr) {
+            /* No-op */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ClientNotificationType type, Long rsrcId) {
             /* No-op */
         }
 

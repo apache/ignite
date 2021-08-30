@@ -25,15 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -41,15 +37,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -68,16 +62,19 @@ public class CacheGroupMetricsImpl {
     private final CacheGroupContext ctx;
 
     /** */
-    private final LongAdderMetric grpPageAllocationTracker;
-
-    /** */
     private final LongMetric storageSize;
 
     /** */
     private final LongMetric sparseStorageSize;
 
     /** Number of local partitions initialized on current node. */
-    private final AtomicLongMetric initLocalPartitionsNumber;
+    private final AtomicLongMetric initLocPartitionsNum;
+
+    /**
+     * Memory page metrics. Will be {@code null} on client nodes.
+     */
+    @Nullable
+    private final PageMetrics pageMetrics;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -94,40 +91,36 @@ public class CacheGroupMetricsImpl {
     public CacheGroupMetricsImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
 
-        CacheConfiguration cacheCfg = ctx.config();
+        CacheConfiguration<?, ?> cacheCfg = ctx.config();
 
-        DataStorageConfiguration dsCfg = ctx.shared().kernalContext().config().getDataStorageConfiguration();
+        GridKernalContext kernalCtx = ctx.shared().kernalContext();
 
-        boolean persistentEnabled = !ctx.shared().kernalContext().clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
+        DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
 
-        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
+        boolean persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
+
+        MetricRegistry mreg = kernalCtx.metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
         storageSize = mreg.register("StorageSize",
-            () -> persistentEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0,
+            () -> persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0,
             "Storage space allocated for group, in bytes.");
 
         sparseStorageSize = mreg.register("SparseStorageSize",
-            () -> persistentEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0,
+            () -> persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0,
             "Storage space allocated for group adjusted for possible sparsity, in bytes.");
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
 
-        initLocalPartitionsNumber = mreg.longMetric("InitializedLocalPartitionsNumber", "Number of local partitions initialized on current node.");
+        initLocPartitionsNum = mreg.longMetric("InitializedLocalPartitionsNumber",
+            "Number of local partitions initialized on current node.");
 
-        DataRegion region = ctx.dataRegion();
-
-        // On client node, region is null.
-        if (region != null) {
-            DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
-
-            grpPageAllocationTracker =
-                dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.cacheOrGroupName());
-        }
-        else
-            grpPageAllocationTracker = new LongAdderMetric("NO_OP", null);
+        // disable memory page metrics for client nodes (dataRegion is null on client nodes)
+        pageMetrics = ctx.dataRegion() == null ?
+            null :
+            ctx.dataRegion().metrics().cacheGrpPageMetrics(ctx.groupId());
     }
 
     /** Callback for initializing metrics after topology was initialized. */
@@ -187,9 +180,9 @@ public class CacheGroupMetricsImpl {
                 () -> !ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()),
                 "The flag indicates whether reencryption is finished or not.");
 
-            mreg.register("ReencryptionPagesLeft",
-                this::getPagesLeftForReencryption,
-                "Number of pages left for reencryption.");
+            mreg.register("ReencryptionBytesLeft",
+                () -> ctx.shared().kernalContext().encryption().getBytesLeftForReencryption(ctx.groupId()),
+                "The number of bytes left for re-ecryption.");
         }
     }
 
@@ -214,14 +207,14 @@ public class CacheGroupMetricsImpl {
      * Increments number of local partitions initialized on current node.
      */
     public void incrementInitializedLocalPartitions() {
-        initLocalPartitionsNumber.increment();
+        initLocPartitionsNum.increment();
     }
 
     /**
      * Decrements number of local partitions initialized on current node.
      */
     public void decrementInitializedLocalPartitions() {
-        initLocalPartitionsNumber.decrement();
+        initLocPartitionsNum.decrement();
     }
 
     /** */
@@ -480,9 +473,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return ctx.shared().kernalContext().clientNode() ?
-            0 :
-            grpPageAllocationTracker.value();
+        return pageMetrics == null ? 0 : pageMetrics.totalPages().value();
     }
 
     /** */
@@ -502,51 +493,21 @@ public class CacheGroupMetricsImpl {
         return sparseStorageSize == null ? 0 : sparseStorageSize.value();
     }
 
-    /** */
-    public long getPagesLeftForReencryption() {
-        if (!ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()))
-            return 0;
-
-        long pagesLeft = 0;
-
-        FilePageStoreManager mgr = (FilePageStoreManager)ctx.shared().pageStore();
-
-        GridEncryptionManager encMgr = ctx.shared().kernalContext().encryption();
-
-        try {
-            for (int p = 0; p < ctx.affinity().partitions(); p++) {
-                PageStore pageStore = mgr.getStore(ctx.groupId(), p);
-
-                if (!pageStore.exists())
-                    continue;
-
-                long state = encMgr.getEncryptionState(ctx.groupId(), p);
-
-                pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
-            }
-
-            long state = encMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
-
-            pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
-        return pagesLeft;
-    }
-
-    /** Removes all metric for cache group. */
-    public void remove() {
+    /**
+     * Removes all metric for cache group.
+     *
+     * @param destroy Group destroy flag.
+     */
+    public void remove(boolean destroy) {
         if (ctx.shared().kernalContext().isStopping())
             return;
 
         if (ctx.config().getNearConfiguration() != null)
-            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true));
+            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true), destroy);
 
-        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false));
+        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false), destroy);
 
-        ctx.shared().kernalContext().metric().remove(metricGroupName());
+        ctx.shared().kernalContext().metric().remove(metricGroupName(), destroy);
     }
 
     /**

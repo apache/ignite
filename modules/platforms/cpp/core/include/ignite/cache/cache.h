@@ -56,9 +56,9 @@ namespace ignite
          * copy-constructable and assignable. Also BinaryType class
          * template should be specialized for both types.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
-         * underlying object. Underlying object released automatically once all
+         * underlying object. Underlying object will be released automatically once all
          * the instances are destructed.
          *
          * @tparam K Cache key type.
@@ -1539,11 +1539,11 @@ namespace ignite
              * BinaryType class template should be specialized for every custom
              * class.
              *
-             * Processor class should be registered as a cache entry processor using
-             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
-             * #IgniteModuleInit() function to register your cache processors upon
-             * module loading. There should be at most one instance of such function
-             * per module.
+             * Processor class should be registered as a cache entry processor
+             * using IgniteBinding::RegisterCacheEntryProcessor() method. You
+             * can declare #IgniteModuleInit() function to register your cache
+             * processors upon module loading. There should be at most one
+             * instance of such function per module.
              *
              * See the example below for details:
              * @code{.cpp}
@@ -1592,11 +1592,11 @@ namespace ignite
              * BinaryType class template should be specialized for every custom
              * class.
              *
-             * Processor class should be registered as a cache entry processor using
-             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
-             * #IgniteModuleInit() function to register your cache processors upon
-             * module loading. There should be at most one instance of such function
-             * per module.
+             * Processor class should be registered as a cache entry processor
+             * using IgniteBinding::RegisterCacheEntryProcessor() method. You
+             * can declare #IgniteModuleInit() function to register your cache
+             * processors upon module loading. There should be at most one
+             * instance of such function per module.
              *
              * See the example below for details:
              * @code{.cpp}
@@ -1620,7 +1620,8 @@ namespace ignite
              * @param processor The processor.
              * @param arg The argument.
              * @param err Error.
-             * @return Result of the processing. Default-constructed value on error.
+             * @return Result of the processing. Default-constructed value on
+             *   error.
              */
             template<typename R, typename P, typename A>
             R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
@@ -1634,6 +1635,83 @@ namespace ignite
                 impl::Out1Operation<R> outOp(res);
 
                 impl.Get()->Invoke(inOp, outOp, err);
+
+                return res;
+            }
+
+            /**
+             * Invokes an instance of Java class CacheEntryProcessor against the
+             * entry specified by the provided key. If an entry does not exist
+             * for the specified key, an attempt is made to load it (if a loader
+             * is configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * If task for given name has not been deployed yet, then
+             * @c processorName will be used as task class name to auto-deploy
+             * the task.
+             *
+             * Return value and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * For additional information on CacheEntryProcessor class and
+             * details of its invocation refer to Java API documentation for
+             * method org.apache.ignite.IgniteCache#invoke(...).
+             *
+             * @throw IgniteError on fail.
+             *
+             * @param key The key.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename A>
+            R InvokeJava(const K& key, const std::string& processorName, const A& arg)
+            {
+                IgniteError err;
+
+                R res = InvokeJava<R>(key, processorName, arg, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Invokes an instance of Java class CacheEntryProcessor against the
+             * entry specified by the provided key. If an entry does not exist
+             * for the specified key, an attempt is made to load it (if a loader
+             * is configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * If task for given name has not been deployed yet, then
+             * @c processorName will be used as task class name to auto-deploy
+             * the task.
+             *
+             * Return value and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * For additional information on CacheEntryProcessor class and
+             * details of its invocation refer to Java API documentation for
+             * method org.apache.ignite.IgniteCache#invoke(...).
+             *
+             * @throw IgniteError on fail.
+             *
+             * @param key The key.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename A>
+            R InvokeJava(const K& key, const std::string& processorName, const A& arg, IgniteError& err)
+            {
+                R res;
+
+                impl::In3Operation<std::string, K, A> inOp(processorName, key, arg);
+                impl::Out1Operation<R> outOp(res);
+
+                impl.Get()->InvokeJava(inOp, outOp, err);
 
                 return res;
             }

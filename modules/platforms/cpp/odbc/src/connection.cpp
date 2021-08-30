@@ -85,7 +85,8 @@ namespace ignite
                 << config::ConnectionInfo::InfoTypeToString(type) << "), "
                 << std::hex << reinterpret_cast<size_t>(buf) << ", "
                 << buflen << ", "
-                << std::hex << reinterpret_cast<size_t>(reslen));
+                << std::hex << reinterpret_cast<size_t>(reslen)
+                << std::dec);
 
             IGNITE_ODBC_API_CALL(InternalGetInfo(type, buf, buflen, reslen));
         }
@@ -119,7 +120,7 @@ namespace ignite
             {
                 std::string dsn = config.GetDsn();
 
-                ReadDsnConfiguration(dsn.c_str(), config);
+                ReadDsnConfiguration(dsn.c_str(), config, &GetDiagnosticRecords());
             }
 
             return InternalEstablish(config);

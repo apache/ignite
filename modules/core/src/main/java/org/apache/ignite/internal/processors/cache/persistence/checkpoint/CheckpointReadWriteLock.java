@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.ReentrantReadWriteLockWithTracking;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS;
@@ -45,18 +44,16 @@ public class CheckpointReadWriteLock {
     static final String CHECKPOINT_RUNNER_THREAD_PREFIX = "checkpoint-runner";
 
     /** Checkpont lock. */
-    private final ReentrantReadWriteLock checkpointLock;
+    private final ReentrantReadWriteLockWithTracking checkpointLock;
 
     /**
      * @param logger Logger.
      */
     CheckpointReadWriteLock(Function<Class<?>, IgniteLogger> logger) {
-        ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
         if (getBoolean(IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS))
-            checkpointLock = new U.ReentrantReadWriteLockTracer(lock, logger.apply(getClass()), 5_000);
+            checkpointLock = new ReentrantReadWriteLockWithTracking(logger.apply(getClass()), 5_000);
         else
-            checkpointLock = lock;
+            checkpointLock = new ReentrantReadWriteLockWithTracking();
     }
 
     /**

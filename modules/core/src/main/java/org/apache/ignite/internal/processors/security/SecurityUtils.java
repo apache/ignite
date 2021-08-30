@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -164,6 +165,13 @@ public class SecurityUtils {
         }
     }
 
+    /** @return Current security subject ID if security is enabled, otherwise null. */
+    public static UUID securitySubjectId(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        return security.enabled() ? security.securityContext().subject().id() : null;
+    }
+
     /**
      * Computes a result in a privileged action.
      *
@@ -271,7 +279,7 @@ public class SecurityUtils {
                     GridInternalWrapper.class.getMethod(mtd.getName(), mtd.getParameterTypes()) != null)
                     return mtd.invoke(original, args);
             }
-            catch (NoSuchMethodException e) {
+            catch (NoSuchMethodException ignore) {
                 // Ignore.
             }
 

@@ -28,7 +28,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -37,7 +36,6 @@
     <DocumentationFile>bin\Release\Apache.Ignite.Core.xml</DocumentationFile>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DebugType>none</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -52,6 +50,9 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Binary\ITimestampConverter.cs" />
+    <Compile Include="Cache\Affinity\IAffinityBackupFilter.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\ClusterNodeAttributeAffinityBackupFilter.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\Configuration\PlatformCacheConfiguration.cs" />
@@ -63,6 +64,8 @@
     <Compile Include="Client\Cache\Query\Continuous\ContinuousQueryDisconnectedEventArgs.cs" />
     <Compile Include="Client\Cache\Query\Continuous\IContinuousQueryHandleClient.cs" />
     <Compile Include="Client\Compute\IComputeClient.cs" />
+    <Compile Include="Client\Datastream\DataStreamerClientOptions.cs" />
+    <Compile Include="Client\Datastream\IDataStreamerClient.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
     <Compile Include="Client\IClientClusterNode.cs" />
@@ -78,6 +81,7 @@
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteIllegalStateException.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
+    <Compile Include="Configuration\AsyncContinuationExecutor.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DiskPageCompression.cs" />
@@ -101,6 +105,7 @@
     <Compile Include="IIgniteLock.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Binary\IgniteBiTuple.cs" />
+    <Compile Include="Impl\Cache\CacheAffinityManager.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryExpireEvent.cs" />
     <Compile Include="Impl\Cache\Platform\IPlatformCache.cs" />
     <Compile Include="Impl\Cache\Platform\PlatformCache.cs" />
@@ -110,6 +115,8 @@
     <Compile Include="Impl\Cache\Query\IQueryBaseInternal.cs" />
     <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
+    <Compile Include="Impl\Client\Binary\BinaryConfigurationClientInternal.cs" />
+    <Compile Include="Impl\Client\Binary\BinaryNameMapperMode.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientContinuousQueryHandle.cs" />
     <Compile Include="Impl\Client\ClientBitmaskFeature.cs" />
     <Compile Include="Impl\Client\ClientConnection.cs" />
@@ -117,6 +124,7 @@
     <Compile Include="Impl\Client\ClientDiscoveryNode.cs" />
     <Compile Include="Impl\Client\ClientFeatures.cs" />
     <Compile Include="Impl\Client\ClientNotificationHandler.cs" />
+    <Compile Include="Impl\Client\ClientPlatformId.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
     <Compile Include="Impl\Client\ClientResponseContext.cs" />
     <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
@@ -130,6 +138,10 @@
     <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
     <Compile Include="Impl\Client\Compute\ComputeClient.cs" />
     <Compile Include="Impl\Client\Compute\ComputeClientFlags.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClient.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientBuffer.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientEntry.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientPerNodeBuffer.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\Services\ServicesClient.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
@@ -145,6 +157,7 @@
     <Compile Include="Impl\Transactions\TransactionRollbackOnlyProxy.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Jvm.CrossAppDomain.cs" />
+    <Compile Include="Impl\Unmanaged\NativeLibraryUtils.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedThread.cs" />
     <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\IDateTimeProvider.cs" />
@@ -161,7 +174,6 @@
     <Compile Include="Impl\Binary\MultidimensionalArrayHolder.cs" />
     <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
     <Compile Include="Impl\Binary\OptimizedMarshallerObject.cs" />
-    <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientFieldsQueryCursor.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
@@ -612,7 +624,6 @@
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="IgniteClientConfigurationSection.xsd">

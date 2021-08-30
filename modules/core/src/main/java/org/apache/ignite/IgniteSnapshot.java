@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -49,6 +50,27 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when cancel operation finished.
      */
     public IgniteFuture<Void> cancelSnapshot(String name);
+
+    /**
+     * Restore cache group(s) from the snapshot.
+     * <p>
+     * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,
+     * they must be destroyed by the user (eg with {@link IgniteCache#destroy()}) before starting this operation.
+     *
+     * @param name Snapshot name.
+     * @param cacheGroupNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
+     * @return Future which will be completed when restore operation finished.
+     */
+    public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> cacheGroupNames);
+
+    /**
+     * Cancel snapshot restore operation.
+     *
+     * @param name Snapshot name.
+     * @return Future that will be finished when the process is complete on all nodes. The result of this
+     * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
 
     /**
      * Status snapshot operation.

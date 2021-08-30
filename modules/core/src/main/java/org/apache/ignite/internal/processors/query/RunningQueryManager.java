@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
@@ -44,6 +46,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 
 /**
  * Keep information about all running queries.
@@ -91,12 +94,20 @@ public class RunningQueryManager {
      */
     private final AtomicLongMetric canceledQrsCnt;
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
+    /** Current running query info. */
+    private final ThreadLocal<GridRunningQueryInfo> currQryInfo = new ThreadLocal<>();
+
     /**
      * Constructor.
      *
      * @param ctx Context.
      */
     public RunningQueryManager(GridKernalContext ctx) {
+        this.ctx = ctx;
+
         localNodeId = ctx.localNodeId();
 
         histSz = ctx.config().getSqlConfiguration().getSqlQueryHistorySize();
@@ -136,23 +147,34 @@ public class RunningQueryManager {
      * @return Id of registered query.
      */
     public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
-        @Nullable GridQueryCancel cancel) {
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId) {
         long qryId = qryIdGen.incrementAndGet();
 
-        GridRunningQueryInfo run = new GridRunningQueryInfo(
+        if (qryInitiatorId == null)
+            qryInitiatorId = SqlFieldsQuery.threadedQueryInitiatorId();
+
+        final GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
             localNodeId,
             qry,
             qryType,
             schemaName,
             System.currentTimeMillis(),
+            ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
-            loc
+            loc,
+            qryInitiatorId
         );
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);
 
+        if (ctx.performanceStatistics().enabled())
+            currQryInfo.set(run);
+
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
+
+        run.span().addTag(SQL_QRY_ID, run::globalQueryId);
 
         return qryId;
     }
@@ -199,9 +221,29 @@ public class RunningQueryManager {
                         canceledQrsCnt.increment();
                 }
             }
+
+            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+                ctx.performanceStatistics().query(
+                    qry.queryType(),
+                    qry.query(),
+                    qry.requestId(),
+                    qry.startTime(),
+                    System.nanoTime() - qry.startTimeNanos(),
+                    !failed);
+            }
         }
         finally {
             qrySpan.end();
+        }
+    }
+
+    /** @param reqId Request ID of query to track. */
+    public void trackRequestId(long reqId) {
+        if (ctx.performanceStatistics().enabled()) {
+            GridRunningQueryInfo info = currQryInfo.get();
+
+            if (info != null)
+                info.requestId(reqId);
         }
     }
 

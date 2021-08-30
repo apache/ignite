@@ -28,6 +28,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -41,6 +43,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -59,17 +62,19 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProducer;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -171,9 +176,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     );
 
     /**
-     * Map with futures used to wait for async write/remove operations completion.
+     * Map with user futures used to wait for async write/remove operations completion.
      */
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
+
+    /** */
+    private final ReadWriteLock updateFutsStopLock = new ReentrantReadWriteLock();
+
+    /** */
+    private boolean stopped;
 
     /**
      * Lock to access/update data and component's state.
@@ -287,7 +298,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         finally {
             lock.writeLock().unlock();
 
-            cancelUpdateFutures();
+            cancelUpdateFutures(nodeStoppingException(), true);
         }
     }
 
@@ -430,11 +441,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) {
         assert isPersistenceEnabled;
 
-        worker.setMetaStorage(metastorage);
+        lock.writeLock().lock();
 
-        IgniteThread workerThread = new IgniteThread(ctx.igniteInstanceName(), "dms-writer-thread", worker);
+        try {
+            worker.setMetaStorage(metastorage);
 
-        workerThread.start();
+            worker.start();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -914,7 +930,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             ver = INITIAL_VERSION;
 
-            cancelUpdateFutures();
+            cancelUpdateFutures(new IgniteCheckedException("Client was disconnected during the operation."), false);
         }
         finally {
             lock.writeLock().unlock();
@@ -924,12 +940,27 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Cancel all waiting futures and clear the map.
      */
-    private void cancelUpdateFutures() {
-        for (GridFutureAdapter<Boolean> fut : updateFuts.values())
-            fut.onDone(new IgniteCheckedException("Client was disconnected during the operation."));
+    private void cancelUpdateFutures(Exception e, boolean stop) {
+        updateFutsStopLock.writeLock().lock();
 
-        updateFuts.clear();
+        try {
+            stopped = stop;
+
+            for (GridFutureAdapter<Boolean> fut : updateFuts.values())
+                fut.onDone(e);
+
+            updateFuts.clear();
+        }
+        finally {
+            updateFutsStopLock.writeLock().unlock();
+        }
     }
+
+    /** */
+    private static NodeStoppingException nodeStoppingException() {
+        return new NodeStoppingException("Node is stopping.");
+    }
+
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
@@ -1033,14 +1064,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @throws IgniteCheckedException If there was an error while sending discovery message.
      */
     private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
-       if (!isSupported(ctx))
-            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
-
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> fut = prepareWriteFuture(key, reqId);
 
-        updateFuts.put(reqId, fut);
+        if (fut.isDone())
+            return fut;
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
 
@@ -1054,18 +1083,68 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
         throws IgniteCheckedException {
-         if (!isSupported(ctx))
-            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
-
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> fut = prepareWriteFuture(key, reqId);
 
-        updateFuts.put(reqId, fut);
+        if (fut.isDone())
+            return fut;
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expValBytes, newValBytes);
 
         ctx.discovery().sendCustomEvent(msg);
+
+        return fut;
+    }
+
+    /**
+     * This method will perform some preliminary checks before starting write or cas operation.
+     * It also updates {@link #updateFuts} in case if everything's ok.
+     *
+     * Tricky part is exception handling from "isSupported" method. It can be thrown by
+     * {@code ZookeeperDiscoveryImpl#checkState()} method, but we can't just leave it as is.
+     * There are components that rely on distributed metastorage throwing {@link NodeStoppingException}.
+     *
+     * @return Future that must be returned immediately or {@code null}.
+     * @throws IgniteCheckedException If cluster can't perform this update.
+     */
+    private GridFutureAdapter<Boolean> prepareWriteFuture(String key, UUID reqId) throws IgniteCheckedException {
+        boolean supported;
+
+        try {
+            supported = isSupported(ctx);
+        }
+        catch (Exception e) {
+            if (X.hasCause(e, IgniteSpiException.class) && e.getMessage() != null && e.getMessage().contains("Node stopped.")) {
+                GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+                fut.onDone(nodeStoppingException());
+
+                return fut;
+            }
+
+            throw e;
+        }
+
+        if (!supported)
+            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
+
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+        updateFutsStopLock.readLock().lock();
+
+        try {
+            if (stopped) {
+                fut.onDone(nodeStoppingException());
+
+                return fut;
+            }
+
+            updateFuts.put(reqId, fut);
+        }
+        finally {
+            updateFutsStopLock.readLock().unlock();
+        }
 
         return fut;
     }
@@ -1092,6 +1171,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
+        lock.writeLock().lock();
+
         try {
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
@@ -1103,6 +1184,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
         catch (IgniteCheckedException | Error e) {
             throw criticalError(e);
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -1137,6 +1221,32 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
+     * @return Future which will be completed when all the updates prior to the pause processed.
+     */
+    public Future<?> flush() {
+        assert isPersistenceEnabled;
+
+        return worker.flush();
+    }
+
+    /**
+     * @param compFut Future which should be completed when worker may proceed with updates.
+     */
+    public void suspend(IgniteInternalFuture<?> compFut) {
+        assert isPersistenceEnabled;
+
+        lock.readLock().lock();
+
+        try {
+            // Read lock taken, so no other distributed updated will be added to the queue.
+            worker.suspend(compFut);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
      * Invoke failure handler and rethrow passed exception, possibly wrapped into the unchecked one.
      */
     private RuntimeException criticalError(Throwable e) {
@@ -1157,32 +1267,40 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void completeWrite(
         DistributedMetaStorageHistoryItem histItem
     ) throws IgniteCheckedException {
-        lock.writeLock().lock();
+        assert lock.writeLock().isHeldByCurrentThread();
 
-        try {
-            histItem = optimizeHistoryItem(histItem);
+        histItem = optimizeHistoryItem(histItem);
 
-            if (histItem == null)
-                return;
+        if (histItem == null)
+            return;
 
-            ver = ver.nextVersion(histItem);
+        ver = ver.nextVersion(histItem);
 
-            for (int i = 0, len = histItem.keys().length; i < len; i++)
-                notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]), unmarshal(marshaller, histItem.valuesBytesArray()[i]));
+        for (int i = 0, len = histItem.keys().length; i < len; i++) {
+            String key = histItem.keys()[i];
+            byte[] valBytes = histItem.valuesBytesArray()[i];
 
-            for (int i = 0, len = histItem.keys().length; i < len; i++)
-                bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
-
-            addToHistoryCache(ver.id(), histItem);
+            notifyListeners(
+                histItem.keys()[i],
+                () -> bridge.read(key),
+                () -> unmarshal(marshaller, valBytes));
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+
+        for (int i = 0, len = histItem.keys().length; i < len; i++)
+            bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
+
+        addToHistoryCache(ver.id(), histItem);
 
         if (isPersistenceEnabled)
             worker.update(histItem);
 
-        shrinkHistory();
+        // Shrink history so that its estimating size doesn't exceed {@link #histMaxBytes}.
+        while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
+            histCache.removeOldest();
+
+            if (isPersistenceEnabled)
+                worker.removeHistItem(ver.id() - histCache.size());
+        }
     }
 
     /**
@@ -1284,25 +1402,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * Shrikn history so that its estimating size doesn't exceed {@link #histMaxBytes}.
-     */
-    private void shrinkHistory() {
-        lock.writeLock().lock();
-
-        try {
-            while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
-                histCache.removeOldest();
-
-                if (isPersistenceEnabled)
-                    worker.removeHistItem(ver.id() - histCache.size());
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
      * Notify listeners on node start. Even if there was no data restoring.
      *
      * @param newData Data about which listeners should be notified.
@@ -1326,21 +1425,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             int c = oldKey.compareTo(newKey);
 
             if (c < 0) {
-                notifyListeners(oldKey, unmarshal(marshaller, oldValBytes), null);
+                notifyListeners(oldKey, () -> unmarshal(marshaller, oldValBytes), () -> null);
 
                 ++oldIdx;
             }
             else if (c > 0) {
-                notifyListeners(newKey, null, unmarshal(marshaller, newValBytes));
+                notifyListeners(newKey, () -> null, () -> unmarshal(marshaller, newValBytes));
 
                 ++newIdx;
             }
             else {
-                Serializable oldVal = unmarshal(marshaller, oldValBytes);
-
-                Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(marshaller, newValBytes);
-
-                notifyListeners(oldKey, oldVal, newVal);
+                notifyListeners(
+                    oldKey,
+                    () -> unmarshal(marshaller, oldValBytes),
+                    () -> unmarshal(marshaller, newValBytes));
 
                 ++oldIdx;
 
@@ -1348,23 +1446,41 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             }
         }
 
-        for (; oldIdx < oldData.length; ++oldIdx)
-            notifyListeners(oldData[oldIdx].key, unmarshal(marshaller, oldData[oldIdx].valBytes), null);
+        for (; oldIdx < oldData.length; ++oldIdx) {
+            byte[] oldValBytes = oldData[oldIdx].valBytes;
+            notifyListeners(oldData[oldIdx].key, () -> unmarshal(marshaller, oldValBytes), () -> null);
+        }
 
-        for (; newIdx < newData.length; ++newIdx)
-            notifyListeners(newData[newIdx].key, null, unmarshal(marshaller, newData[newIdx].valBytes));
+        for (; newIdx < newData.length; ++newIdx) {
+            byte[] newValBytes = newData[newIdx].valBytes;
+            notifyListeners(newData[newIdx].key, () -> null, () -> unmarshal(marshaller, newValBytes));
+        }
     }
 
     /**
      * Notify listeners.
      *
      * @param key The key.
-     * @param oldVal Old value.
-     * @param newVal New value.
+     * @param oldValProducer Lazy getter for an old value and is executed only if there are listeners for the given key.
+     * @param newValProducer Lazy getter for a new value and is executed only if there are listeners for the given key.
      */
-    private void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
+    private void notifyListeners(String key,
+                                 @NotNull IgniteProducer<Serializable> oldValProducer,
+                                 @NotNull IgniteProducer<Serializable> newValProducer) throws IgniteCheckedException {
+        boolean valuesProduced = false;
+
+        Serializable newVal = null;
+
+        Serializable oldVal = null;
+
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {
+                if (!valuesProduced) {
+                    newVal = newValProducer.produce();
+                    oldVal = oldValProducer.produce();
+                    valuesProduced = true;
+                }
+
                 try {
                     // ClassCastException might be thrown here for crappy listeners.
                     entry.get2().onUpdate(key, oldVal, newVal);

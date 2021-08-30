@@ -23,7 +23,7 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="cache.cfg" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="encrypted-client"/>
+        <property name="name" value="encrypted"/>
         <property name="encryptionEnabled" value="true"/>
     </bean>
 

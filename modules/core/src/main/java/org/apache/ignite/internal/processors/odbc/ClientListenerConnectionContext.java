@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +27,11 @@ import org.jetbrains.annotations.Nullable;
  * SQL listener connection context.
  */
 public interface ClientListenerConnectionContext {
+    /**
+     * @return Client type.
+     */
+    byte clientType();
+
     /**
      * @return Current connection id.
      */
@@ -73,13 +77,6 @@ public interface ClientListenerConnectionContext {
      * or due to {@code IOException} during network operations.
      */
     void onDisconnected();
-
-    /**
-     * Return connection authorization context.
-     *
-     * @return authorization context.
-     */
-    @Nullable AuthorizationContext authorizationContext();
 
     /**
      * @return Security context.

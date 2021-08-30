@@ -18,7 +18,7 @@ Ignite Twitter Streamer module consumes tweets from Twitter and feeds the transf
 
 To stream data from Twitter into Ignite, you need to:
 
-. Import Ignite Twitter Module with Maven and replace `${ignite.version}` with the actual Ignite version you are interested in.
+. Import Ignite Twitter Module with Maven and replace `${ignite-twitter-ext.version}` with the actual Ignite Twitter Extension version you are interested in.
 +
 [tabs]
 --
@@ -27,8 +27,8 @@ tab:pom.xml[]
 ----
 <dependency>
   <groupId>org.apache.ignite</groupId>
-  <artifactId>ignite-twitter</artifactId>
-  <version>${ignite.version}</version>
+  <artifactId>ignite-twitter-ext</artifactId>
+  <version>${ignite-twitter-ext.version}</version>
 </dependency>
 ----
 --

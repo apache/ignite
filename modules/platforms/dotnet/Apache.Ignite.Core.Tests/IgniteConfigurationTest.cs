@@ -274,6 +274,8 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.NotNull(cfg.ExecutorConfiguration);
                 AssertExtensions.ReflectionEqual(cfg.ExecutorConfiguration, resCfg.ExecutorConfiguration);
+
+                Assert.AreEqual(false, resCfg.JavaPeerClassLoadingEnabled);
             }
         }
 
@@ -289,7 +291,8 @@ namespace Apache.Ignite.Core.Tests
                 DataStorageConfiguration = null,
                 SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
-                MetricsHistorySize = 57
+                MetricsHistorySize = 57,
+                JavaPeerClassLoadingEnabled = false
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -310,6 +313,28 @@ namespace Apache.Ignite.Core.Tests
 
                 // Connector defaults.
                 CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
+
+                Assert.AreEqual(false, resCfg.JavaPeerClassLoadingEnabled);
+                Assert.AreEqual(AsyncContinuationExecutor.Custom, resCfg.AsyncContinuationExecutor);
+            }
+        }
+
+        /// <summary>
+        /// Tests that values specified in spring.xml could be read properly by .NET side.
+        /// </summary>
+        [Test]
+        public void TestSpringXmlIsReadCorrectly()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
+            };
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var resCfg = ignite.GetConfiguration();
+                Assert.AreEqual(765, resCfg.NetworkSendRetryDelay.TotalMilliseconds);
+                Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);
+                Assert.AreEqual(true, resCfg.JavaPeerClassLoadingEnabled);
             }
         }
 
@@ -348,6 +373,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the default spi.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
         public void TestDefaultSpi()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -397,6 +423,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the static ip finder.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
         public void TestStaticIpFinder()
         {
             TestIpFinders(new TcpDiscoveryStaticIpFinder
@@ -412,6 +439,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the multicast ip finder.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
         public void TestMulticastIpFinder()
         {
             TestIpFinders(
@@ -528,6 +556,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumFrequency, cfg.MvccVacuumFrequency);
             Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumThreadCount, cfg.MvccVacuumThreadCount);
+            Assert.AreEqual(AsyncContinuationExecutor.ThreadPool, cfg.AsyncContinuationExecutor);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -601,6 +630,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalAutoArchiveAfterInactivity);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
+                cfg.WalForceArchiveTimeout);
         }
 
         /// <summary>
@@ -860,6 +891,7 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
+                    WalForceArchiveTimeout = TimeSpan.FromMinutes(6),
                     CheckpointReadLockTimeout = TimeSpan.FromSeconds(9.5),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
@@ -898,6 +930,7 @@ namespace Apache.Ignite.Core.Tests
                 MvccVacuumFrequency = 20000,
                 MvccVacuumThreadCount = 8,
                 SqlQueryHistorySize = 99,
+                JavaPeerClassLoadingEnabled = false,
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" },
                 ExecutorConfiguration = new[]
                 {

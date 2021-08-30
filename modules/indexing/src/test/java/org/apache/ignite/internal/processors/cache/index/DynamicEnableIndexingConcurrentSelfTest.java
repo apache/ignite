@@ -47,13 +47,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -115,7 +118,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
 
         for (T2<CountDownLatch, CountDownLatch> block : BLOCKS.values())
             block.get1().countDown();
@@ -226,8 +229,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         ignitionStart(serverConfiguration(2), finishLatch);
         ignitionStart(serverConfiguration(3), finishLatch);
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-13572
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange();
 
         assertFalse(tblFut.isDone());
 
@@ -332,8 +334,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         ignitionStart(serverConfiguration(4));
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-13572
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange();
 
         tblFut.get();
 
@@ -495,8 +496,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         // Check that only one successful attempt.
         assertEquals(1, success.get());
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-13572
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange();
 
         for (Ignite g: G.allGrids()) {
             assertEquals(LARGE_NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
@@ -605,7 +605,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      * @throws Exception If failed.
      */
     private IgniteEx ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) throws Exception {
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         IgniteEx node = startGrid(cfg);
 
@@ -628,12 +628,14 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     /**
      * Blocking indexing processor.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
+    private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-            awaitIndexing(ctx.localNodeId());
+        @Override public void startRebuild(
+            GridCacheContext cctx, GridFutureAdapter<Void> fut, SchemaIndexCacheVisitorClosure clo,
+            SchemaIndexOperationCancellationToken cancel) {
+            awaitIndexing(cctx.localNodeId());
 
-            return super.rebuildIndexesFromHash(cctx);
+            super.startRebuild(cctx, fut, clo, cancel);
         }
     }
 }

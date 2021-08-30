@@ -85,7 +85,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
         IgniteCache<Object, Object> mvccCache = node.createCache(new CacheConfiguration<>("mvcc-cache")
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT).setIndexedTypes(Integer.class, Integer.class));
 
-        mvccCache.put(1,1);
+        mvccCache.put(1, 1);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

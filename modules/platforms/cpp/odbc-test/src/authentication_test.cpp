@@ -85,8 +85,6 @@ struct AuthenticationTestSuiteFixture : odbc::OdbcTestSuite
      */
     static std::string MakeConnectionString(const std::string& user, const std::string& pass)
     {
-        std::string cfgDirPath = GetTestConfigDir();
-
         std::stringstream connectString;
 
         connectString <<
@@ -117,6 +115,95 @@ BOOST_FIXTURE_TEST_SUITE(AuthenticationTestSuite, AuthenticationTestSuiteFixture
 BOOST_AUTO_TEST_CASE(TestConnectionDefaultAuthSuccess)
 {
     Connect(MakeDefaultConnectionString());
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+/**
+ * Check that connection with UID and PWD arguments established successfully.
+ *
+ * 1. Start test node with configured authentication.
+ * 2. Establish connection using UID and PWD arguments. Check that it established successfully.
+ * 3. Check that connection can be used successfully for SQL insert and select operations.
+ */
+BOOST_AUTO_TEST_CASE(TestConnectionLegacyAuthSuccess)
+{
+    std::stringstream comp;
+
+    comp <<
+        "DRIVER={Apache Ignite};"
+        "ADDRESS=127.0.0.1:11110;"
+        "SCHEMA=cache;"
+        "UID=" << defaultUser << ";"
+        "PWD=" << defaultPass << ";";
+
+    std::string connStr = comp.str();
+
+    Connect(connStr);
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+/**
+ * Check that connection with UID, USER, PWD and PASSWORD arguments established successfully.
+ *
+ * 1. Start test node with configured authentication.
+ * 2. Establish connection using UID, USER, PWD and PASSWORD arguments. Check that it established successfully.
+ * 3. Check that connection returns warning that password and user arguments duplicated.
+ * 4. Check that connection can be used successfully for SQL insert and select operations.
+ */
+BOOST_AUTO_TEST_CASE(TestConnectionBothAuthSuccess)
+{
+    std::stringstream comp;
+
+    comp <<
+        "DRIVER={Apache Ignite};"
+        "ADDRESS=127.0.0.1:11110;"
+        "SCHEMA=cache;"
+        "UID=" << defaultUser << ";"
+        "PWD=" << defaultPass << ";"
+        "USER=" << defaultUser << ";"
+        "PASSWORD=" << defaultPass << ";";
+
+    std::string connStr = comp.str();
+
+    Prepare();
+
+    // Connect string
+    std::vector<SQLCHAR> connectStr0(connStr.begin(), connStr.end());
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+
+    BOOST_CHECK_EQUAL(ret, SQL_SUCCESS_WITH_INFO);
+
+    std::string message = GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc);
+
+    BOOST_CHECK(!message.empty());
+
+    BOOST_CHECK(message.find("01S02") != std::string::npos);
+    BOOST_CHECK(message.find("Re-writing PASSWORD (have you specified it several times?") != std::string::npos);
+
+    message = GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc, 2);
+
+    BOOST_CHECK(!message.empty());
+
+    BOOST_CHECK(message.find("01S02") != std::string::npos);
+    BOOST_CHECK(message.find("Re-writing USER (have you specified it several times?") != std::string::npos);
+
+    // Allocate a statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    BOOST_REQUIRE(stmt != NULL);
 
     InsertTestStrings(10, false);
     InsertTestBatch(11, 20, 9);

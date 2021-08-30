@@ -1,0 +1,129 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Performance Statistics
+
+WARNING: This feature is experimental and may change in future releases.
+
+== Overview
+
+Ignite provides a built-in tool for cluster profiling.
+
+You can link:#collecting-statistics[collect] performance statistics from the cluster and then
+link:#building-the-report[build] the performance report.
+
+== Collecting Statistics
+
+link:#jmx[JMX interface] and link:#control-script[Control Script] are used to start and stop statistics collecting.
+
+Each node collects performance statistics in a binary file. This file is placed under
+the `Ignite_work_directory/perf_stat/` directory. The name mask is `node-{nodeId}-{index}.prf`.
+
+Performance statistics files are used to build the report offline.
+
+Nodes use off-heap cyclic buffer to temporarily store serialized statistics. The writer thread flushes buffer to the
+file when the flush size is reached. Some statistics are skipped if the buffer overflows due to a slow disk. See
+the link:#system-properties[properties] section for customization.
+
+Each statistics collection process creates a new file on nodes. Each next file has the same name with the
+corresponding index. See the examples below:
+
+* `node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf`
+* `node-faedc6c9-3542-4610-ae10-4ff7e0600000-1.prf`
+* `node-faedc6c9-3542-4610-ae10-4ff7e0600000-2.prf`
+
+== Building the Report
+
+Ignite provides a tool to generate the report from performance statistics files. The tool is published in the
+https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[ignite-extensions,
+windows="_blank"] repository as link:extensions-and-integrations/performance-statistics[performance-statistics-ext]
+extension.
+
+Follow these steps to build the performance report:
+
+1. Stop collecting statistics and place files from all nodes under an empty directory. For example:
+
+    /path_to_files/
+        ├── node-162c7147-fef8-4ea2-bd25-8653c41fc7fa.prf
+        ├── node-7b8a7c5c-f3b7-46c3-90da-e66103c00001.prf
+        └── node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf
+
+2.  Run the script from the release package of the tool:
+
+        performance-statistics-tool/build-report.sh path_to_files
+
+The performance report is created in the new directory under the performance statistics files
+path: `path_to_files/report_yyyy-MM-dd_HH-mm-ss/`. Open `report_yyyy-MM-dd_HH-mm-ss/index.html` in the browser to see
+the report.
+
+== Management
+
+The following section provides information on JMX, Control Script and system properties.
+
+=== JMX
+
+You can manage the performance statistics collection via the `PerformanceStatisticsMBean` interface:
+
+[cols="1,2",opts="header"]
+|===
+|Method | Description
+|start() | Start collecting performance statistics in the cluster.
+|stop() | Stop collecting performance statistics in the cluster.
+|rotate() | Rotate collecting performance statistics in the cluster.
+|started() | True if performance statistics collection is started.
+|===
+
+
+=== Control Script
+
+You can manage the performance statistics collection via the link:tools/control-script[Control Script].
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --performance-statistics [start|stop|rotate|status]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --performance-statistics [start|stop|rotate|status]
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `start`| Start collecting performance statistics in the cluster.
+| `stop`| Stop collecting performance statistics in the cluster.
+| `rotate`| Rotate collecting performance statistics in the cluster.
+| `status`| Get status of collecting performance statistics in the cluster.
+|===
+
+
+=== System properties
+
+[cols="2,1,1,3",opts="header"]
+|===
+|Property | Type | Default Value | Description
+|IGNITE_PERF_STAT_FILE_MAX_SIZE | Long | 32 Gb | Maximum performance statistics file size in bytes. Performance
+statistics collection is stopped when the file size is exceeded.
+|IGNITE_PERF_STAT_BUFFER_SIZE | Integer | 32 Mb | Performance statistics off heap buffer size in bytes.
+|IGNITE_PERF_STAT_FLUSH_SIZE | Integer | 8 Mb | Minimal performance statistics batch size to be flushed in bytes.
+|IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD | Integer | 1024 | Maximum performance statistics cached strings threshold.
+String caching is stopped when the threshold is exceeded.
+|===

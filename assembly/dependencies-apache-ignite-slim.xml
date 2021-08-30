@@ -145,6 +145,7 @@
                 <!-- Removed from slim packaging are: -->
                 <exclude>org.apache.ignite:ignite-aop</exclude>
                 <exclude>org.apache.ignite:ignite-aws</exclude>
+                <exclude>org.apache.ignite:ignite-azure</exclude>
                 <exclude>org.apache.ignite:ignite-cassandra-serializers</exclude>
                 <exclude>org.apache.ignite:ignite-cassandra-store</exclude>
                 <exclude>org.apache.ignite:ignite-cloud</exclude>
@@ -156,6 +157,7 @@
                 <exclude>org.apache.ignite:ignite-ml-h2o-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-ml-spark-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-ml-xgboost-model-parser</exclude>
+                <exclude>org.apache.ignite:ignite-ml-catboost-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-osgi</exclude>
                 <exclude>org.apache.ignite:ignite-osgi-karaf</exclude>
                 <exclude>org.apache.ignite:ignite-osgi-paxlogging</exclude>

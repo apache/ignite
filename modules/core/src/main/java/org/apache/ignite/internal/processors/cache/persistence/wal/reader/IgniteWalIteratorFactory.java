@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -172,19 +173,46 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        return new StandaloneWalRecordsIterator(
-            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-            iteratorParametersBuilder.sharedCtx == null ? prepareSharedCtx(iteratorParametersBuilder) :
+        if (iteratorParametersBuilder.sharedCtx == null) {
+            GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
+
+            for (GridComponent comp : sctx.kernalContext())
+                comp.start();
+
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                sctx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            ) {
+                @Override protected void onClose() throws IgniteCheckedException {
+                    super.onClose();
+
+                    for (GridComponent comp : sctx.kernalContext())
+                        comp.stop(true);
+                }
+            };
+        }
+        else {
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
                 iteratorParametersBuilder.sharedCtx,
-            iteratorParametersBuilder.ioFactory,
-            resolveWalFiles(iteratorParametersBuilder),
-            iteratorParametersBuilder.filter,
-            iteratorParametersBuilder.lowBound,
-            iteratorParametersBuilder.highBound,
-            iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize,
-            iteratorParametersBuilder.strictBoundsCheck
-        );
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            );
+        }
     }
 
     /**
@@ -332,7 +360,7 @@ public class IgniteWalIteratorFactory {
         FileDescriptor ds = new FileDescriptor(file);
 
         try (
-            SegmentIO fileIO = ds.toIO(ioFactory);
+            SegmentIO fileIO = ds.toReadOnlyIO(ioFactory);
             ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
         ) {
             final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);

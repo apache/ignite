@@ -113,6 +113,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -166,7 +167,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
@@ -306,8 +307,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
-            new JobsMap(1024, 0.75f, 256);
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
 
@@ -377,7 +377,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
-        activeJobs.clear();
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         activeJobsMetric.reset();
 
@@ -505,6 +505,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (dep.obsolete())
             ctx.resource().onUndeployed(dep);
+    }
+
+    /**
+     * @param collisionsDisabled If collision SPI is disabled.
+     */
+    private ConcurrentMap<IgniteUuid, GridJobWorker> initJobsMap(boolean collisionsDisabled) {
+        return collisionsDisabled ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
+            new JobsMap(1024, 0.75f, 256);
     }
 
     /**
@@ -1240,7 +1248,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.getSubjectId(),
                             req.executorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
@@ -1491,11 +1498,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
                         "thread pool): " + jobWorker.executorName());
 
-                    ctx.getExecutorService().execute(jobWorker);
+                    ctx.pools().getExecutorService().execute(jobWorker);
                 }
             }
             else
-                ctx.getExecutorService().execute(jobWorker);
+                ctx.pools().getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();
@@ -1552,7 +1559,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
-                evt.taskSubjectId(req.getSubjectId());
+                evt.taskSubjectId(securitySubjectId(ctx));
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1630,7 +1637,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
-                evt.taskSubjectId(req.getSubjectId());
+                evt.taskSubjectId(securitySubjectId(ctx));
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -2038,6 +2045,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
+            }
+
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().job(ses.getId(),
+                    worker.getQueuedTime(),
+                    worker.getStartTime(),
+                    worker.getExecuteTime(),
+                    worker.isTimedOut());
             }
         }
     }

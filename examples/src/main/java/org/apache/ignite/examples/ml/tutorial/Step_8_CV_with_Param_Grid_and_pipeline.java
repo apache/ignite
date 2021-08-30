@@ -36,7 +36,7 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * To choose the best hyper-parameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -91,7 +91,7 @@ public class Step_8_CV_with_Param_Grid_and_pipeline {
 
                 // Tune hyper-parameters with K-fold Cross-Validation on the split training set.
 
-                CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
+                CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()

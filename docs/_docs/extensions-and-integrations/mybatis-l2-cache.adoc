@@ -52,4 +52,4 @@ tab:XML[]
 --
 
 and configure your Ignite cache in `config/default-config.xml`. (Simple reference configurations are available on
-https://github.com/mybatis/ignite-cache/tree/master/config[Github, window=_blank])
+https://github.com/mybatis/ignite-cache/tree/master/config[GitHub, window=_blank])
