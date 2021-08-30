@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,8 +53,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 
 /**
  * Security utilities.
@@ -292,5 +295,53 @@ public class SecurityUtils {
                 }
             });
         }
+    }
+
+    /**
+     * Marshals specified security context and adds it to the node attributes.
+     *
+     * @param secCtx Security context to be added.
+     * @param node Cluster node to which attributes security context is to be added.
+     * @param marsh Marshaller.
+     * @return Updated node attributes.
+     * @throws IgniteCheckedException If security context serialization exception occurs.
+     */
+    public static Map<String, Object> addSecurityContextToNodeAttributes(
+        SecurityContext secCtx,
+        ClusterNode node,
+        Marshaller marsh
+    ) throws IgniteCheckedException {
+        if (!(secCtx instanceof Serializable))
+            throw new IgniteCheckedException("Authentication subject is not serializable.");
+
+        Map<String, Object> nodeAttrs = new HashMap<>(node.attributes());
+
+        nodeAttrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, secCtx));
+
+        return nodeAttrs;
+    }
+
+    /**
+     * Performs node authentication.
+     *
+     * @param node Cluster node to authenticate.
+     * @param cred Node credentials.
+     * @param nodeAuth Node authenticator.
+     * @throws IgniteCheckedException if authentication fails.
+     */
+    public static SecurityContext authenticateNode(
+        ClusterNode node,
+        SecurityCredentials cred,
+        DiscoverySpiNodeAuthenticator nodeAuth
+    ) throws IgniteCheckedException {
+        assert nodeAuth != null;
+        assert cred != null || node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED) != null;
+
+        SecurityContext secCtx = nodeAuth.authenticateNode(node, cred);
+
+        if (secCtx == null)
+            throw new IgniteCheckedException("Authentication failed for node: " + node.id());
+
+        return secCtx;
     }
 }
