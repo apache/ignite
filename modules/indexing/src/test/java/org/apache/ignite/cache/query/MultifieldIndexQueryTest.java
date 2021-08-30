@@ -122,18 +122,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testEmptyCacheQuery() {
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
         assertTrue(cursor.getAll().isEmpty());
-
-        // Check same query with specify index name.
-        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
-            .setCriteria(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Check query with single column only.
         qry = new IndexQuery<Long, Person>(Person.class, INDEX)
@@ -149,7 +143,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         cache.put(2L, new Person(1, 0));
         cache.put(3L, new Person(1, 1));
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(between("id", 0, 1), eq("secId", 1));
 
         List<Cache.Entry<Long, Person>> result = cache.query(qry).getAll();
@@ -171,23 +165,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         insertData();
 
         // Should return empty result for ID that less any inserted.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", -1));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Should return all data for ID that greater any inserted.
-        qry = new IndexQuery<Long, Person>(Person.class)
-            .setCriteria(lt("id", 1));
-
-        checkPerson(cache.query(qry), 0, CNT);
-
-        // Checks the same with query with specified index name.
-        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
-            .setCriteria(lt("id", -1));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
         qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 1));
 
@@ -213,47 +196,58 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Should return empty result for ID that less any inserted.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", -1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Should return all data for ID and SECID that greater any inserted.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 1), lt("secId", CNT));
 
         checkPerson(cache.query(qry), 0, CNT);
 
         // Should return part of data, as ID equals to inserted data ID field.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 0), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Should return all data for ID greater any inserted.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
+    }
 
-        // Checks the same with query with specified index name.
-        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
-            .setCriteria(lt("id", -1), lt("secId", pivot));
+    /** */
+    @Test
+    public void testLtQueryMultipleFieldReverseFieldsOrder() {
+        insertData();
+
+        int pivot = new Random().nextInt(CNT);
+
+        // Should return empty result for ID that less any inserted.
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("secId", pivot), lt("id", -1));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
+        // Should return all data for ID and SECID that greater any inserted.
         qry = new IndexQuery<Long, Person>(Person.class, INDEX)
-            .setCriteria(lt("id", 1), lt("secId", CNT));
+            .setCriteria(lt("secId", CNT), lt("id", 1));
 
         checkPerson(cache.query(qry), 0, CNT);
 
+        // Should return part of data, as ID equals to inserted data ID field.
         qry = new IndexQuery<Long, Person>(Person.class, INDEX)
-            .setCriteria(lt("id", 0), lt("secId", pivot));
+            .setCriteria(lt("secId", pivot), lt("id", 0));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
+        // Should return all data for ID greater any inserted.
         qry = new IndexQuery<Long, Person>(Person.class, INDEX)
-            .setCriteria(lt("id", 1), lt("secId", pivot));
+            .setCriteria(lt("secId", pivot), lt("id", 1));
 
         checkPerson(cache.query(qry), 0, pivot);
     }
@@ -549,7 +543,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         insertData();
 
         // Use long boundary instead of int.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", (long) 0));
 
         GridTestUtils.assertThrows(null,
@@ -566,7 +560,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(eq("id", 0), lt("secId", pivot), lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);

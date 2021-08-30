@@ -37,6 +37,9 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     private static final String CACHE = "TEST_CACHE";
 
     /** */
+    private static final String IDX = "PERSON_ID_IDX";
+
+    /** */
     private static final int CNT = 10_000;
 
     /** */
@@ -59,7 +62,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         insertData(crd, cache);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
         for (int i = 0; i < 4; i++) {
@@ -78,7 +81,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         insertData(crd, cache);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
         int resultSize = 0;
@@ -105,7 +108,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         insertData(cln, cache);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
         GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),

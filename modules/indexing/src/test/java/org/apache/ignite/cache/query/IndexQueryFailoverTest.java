@@ -54,10 +54,15 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     private static IgniteCache<Long, Person> cache;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         Ignite crd = startGrids(2);
 
         cache = crd.cache(CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -77,14 +82,14 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testQueryWithWrongCriteria() {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryNoCriteria = new IndexQuery<>(Person.class);
+                IndexQuery<Long, Person> qryNoCriteria = new IndexQuery<>(Person.class, IDX);
 
                 return cache.query(qryNoCriteria);
             },
             NullPointerException.class, "Ouch! Argument cannot be null: criteria");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class)
+                IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class, IDX)
                     .setCriteria(lt(null, 12));
 
                 return cache.query(qryNullCriteria);
@@ -92,7 +97,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             NullPointerException.class, "Ouch! Argument cannot be null: field");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryDuplicateField = new IndexQuery<Long, Person>(Person.class)
+                IndexQuery<Long, Person> qryDuplicateField = new IndexQuery<Long, Person>(Person.class, IDX)
                     .setCriteria(lt("id", 12), lt("id", 32));
 
                 return cache.query(qryDuplicateField);
@@ -103,11 +108,14 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testQueryWrongType() {
-        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>((String) null),
+        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>((String) null, IDX),
             NullPointerException.class, "Ouch! Argument cannot be null: valType");
 
+        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>("", IDX),
+            IllegalArgumentException.class, "Ouch! Argument is invalid: valType must not be empty");
+
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class)
+                IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, IDX)
                     .setCriteria(lt("id", Integer.MAX_VALUE));
 
                 return cache.query(qry).getAll();
@@ -118,6 +126,14 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testQueryWrongIndexName() {
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, null)
+                    .setCriteria(lt("id", Integer.MAX_VALUE));
+
+                return cache.query(qry).getAll();
+            },
+            NullPointerException.class, "Ouch! Argument cannot be null: idxName");
+
         GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "")
                     .setCriteria(lt("id", Integer.MAX_VALUE));
@@ -139,7 +155,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testQueryWrongQuery() {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
                     .setCriteria();
 
                 return cache.query(qry).getAll();
@@ -147,7 +163,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
                     .setCriteria(Collections.emptyList());
 
                 return cache.query(qry).getAll();
@@ -155,22 +171,22 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
                     .setCriteria(lt("dummy", Integer.MAX_VALUE));
 
                 return cache.query(qry).getAll();
             },
-            IgniteCheckedException.class, "No index matches query");
+            IgniteCheckedException.class, "Index doesn't match query.");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
                     .setCriteria(
                         lt("id", Integer.MAX_VALUE),
                         lt("nonExistedField", Integer.MAX_VALUE));
 
                 return cache.query(qry).getAll();
             },
-            IgniteCheckedException.class, "No index matches query");
+            IgniteCheckedException.class, "Index doesn't match query.");
     }
 
     /** */
@@ -195,7 +211,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     public void testDestroyIndex() {
         insertData(0, CNT);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT));
 
         Iterator<Cache.Entry<Long, Person>> cursor = cache.query(qry).iterator();

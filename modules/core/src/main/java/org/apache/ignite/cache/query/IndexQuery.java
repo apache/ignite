@@ -26,7 +26,6 @@ import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Index query runs over internal index structure and returns cache entries for index rows that match specified criteria.
@@ -42,50 +41,28 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Cache Value type. Describes a table within a cache that runs a query. */
     private final String valType;
 
-    /** Optional index name. */
-    private final @Nullable String idxName;
+    /** Index name. */
+    private final String idxName;
 
     /**
-     * Specify index with Cache Value type.
-     *
-     * @param valType Value type.
-     */
-    public IndexQuery(String valType) {
-        this(valType, null);
-    }
-
-    /**
-     * Specify index with cache value class.
+     * Specify index with cache value class and index name.
      *
      * @param valCls Cache value class.
+     * @param idxName Index name.
      */
-    public IndexQuery(Class<?> valCls) {
-        this(valCls.getName());
-    }
-
-    /**
-     * Specify index with cache value class and index name. If {@code idxName} is {@code null} then Ignite checks
-     * all indexes to find best match by {@link #valType} and {@link #criteria} fields.
-     *
-     * @param valCls Cache value class.
-     * @param idxName Optional Index name.
-     */
-    public IndexQuery(Class<?> valCls, @Nullable String idxName) {
+    public IndexQuery(Class<?> valCls, String idxName) {
         this(valCls.getName(), idxName);
     }
 
     /**
-     * Specify index with cache value class and index name. If {@code idxName} is {@code null} then Ignite checks
-     * all indexes to find best match by {@link #valType} and {@link #criteria} fields.
+     * Specify index with cache value class and index name.
      *
      * @param valType Cache value class.
-     * @param idxName Optional Index name.
+     * @param idxName Index name.
      */
-    public IndexQuery(String valType, @Nullable String idxName) {
-        A.notNull(valType, "valType");
-
-        if (idxName != null)
-            A.notEmpty(idxName, "idxName");
+    public IndexQuery(String valType, String idxName) {
+        A.notEmpty(valType, "valType");
+        A.notEmpty(idxName, "idxName");
 
         this.valType = valType;
         this.idxName = idxName;
@@ -93,8 +70,6 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets conjunction (AND) criteria for index query.
-     *
-     * Order of criteria fields matters and has to match the order of fields in a querying index.
      *
      * @param criteria Criteria to set.
      * @return {@code this} for chaining.
@@ -107,8 +82,6 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets conjunction (AND) criteria for index query.
-     *
-     * Order of criteria fields matters and has to match the order of fields in a querying index.
      *
      * @param criteria Criteria to set.
      * @return {@code this} for chaining.
@@ -140,9 +113,9 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Index name.
      *
-     * @return Index name or {@code null} if not specified.
+     * @return Index name.
      */
-    public @Nullable String getIndexName() {
+    public String getIndexName() {
         return idxName;
     }
 

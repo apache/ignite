@@ -20,9 +20,10 @@ package org.apache.ignite.internal.cache.query.index;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import org.apache.ignite.IgniteCheckedException;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
@@ -73,7 +73,9 @@ public class IndexQueryProcessor {
 
         Index idx = index(cctx, idxQryDesc);
 
-        GridCursor<IndexRow> cursor = query(cctx, idx, idxQryDesc.criteria(), qryCtx);
+        List<IndexQueryCriterion> criteria = alineCriteriaWithIndex(idxProc.indexDefinition(idx.id()), idxQryDesc);
+
+        GridCursor<IndexRow> cursor = query(cctx, idx, criteria, qryCtx);
 
         // Map IndexRow to Cache Key-Value pair.
         return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
@@ -113,31 +115,22 @@ public class IndexQueryProcessor {
     }
 
     /** Get index to run query by specified description. */
-    private Index index(GridCacheContext cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
+    private Index index(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
         String tableName = cctx.kernalContext().query().tableName(cctx.name(), idxQryDesc.valType());
 
         if (tableName == null)
-            throw failIndexQuery("No table found for type: " + idxQryDesc.valType(), cctx, idxQryDesc);
+            throw failIndexQuery("No table found for type: " + idxQryDesc.valType(), null, idxQryDesc);
 
-        if (idxQryDesc.idxName() != null) {
-            Index idx = indexByName(cctx, idxQryDesc, tableName);
-
-            if (idx == null)
-                throw failIndexQuery("No index found: " + idxQryDesc.idxName(), cctx, idxQryDesc);
-
-            return idx;
-        }
-
-        Index idx = indexByCriteria(cctx, idxQryDesc, tableName);
+        Index idx = indexByName(cctx, idxQryDesc, tableName);
 
         if (idx == null)
-            throw failIndexQuery("No index matches query", cctx, idxQryDesc);
+            throw failIndexQuery("No index found: " + idxQryDesc.idxName(), null, idxQryDesc);
 
         return idx;
     }
 
     /** Get index by name, or return {@code null}. */
-    private Index indexByName(GridCacheContext cctx, IndexQueryDesc idxQryDesc, String tableName) throws IgniteCheckedException {
+    private Index indexByName(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc, String tableName) {
         String name = idxQryDesc.idxName();
 
         if (!QueryUtils.PRIMARY_KEY_INDEX.equals(name))
@@ -145,57 +138,78 @@ public class IndexQueryProcessor {
 
         String schema = cctx.kernalContext().query().schemaName(cctx);
 
-        IndexName idxName = new IndexName(cctx.name(), schema, tableName, name);
+        IndexName normIdxName = new IndexName(cctx.name(), schema, tableName, name);
 
-        Index idx = idxProc.index(idxName);
+        Index idx = idxProc.index(normIdxName);
 
-        if (idx == null)
-            return null;
+        if (idx != null)
+            return idx;
 
-        if (!checkIndex(idxProc.indexDefinition(idx.id()), idxQryDesc.criteria()))
-            throw failIndexQuery("Index " + idxQryDesc.idxName() + " doesn't match query", cctx, idxQryDesc);
+        IndexName origIdxName = new IndexName(cctx.name(), schema, tableName, idxQryDesc.idxName());
 
-        return idx;
+        return idxProc.index(origIdxName);
     }
 
     /** */
-    private IgniteCheckedException failIndexQuery(String msg, GridCacheContext cctx, IndexQueryDesc desc) {
-        return new IgniteCheckedException(
-            "Failed to parse IndexQuery. " + msg + ". Cache=" + cctx.name() + "; Query=" + desc);
+    private IgniteCheckedException failIndexQueryCriteria(IndexDefinition idxDef, IndexQueryDesc idxQryDesc) {
+        return failIndexQuery( "Index doesn't match query", idxDef, idxQryDesc);
     }
 
-    /**
-     * Get index by list of fields to query, or return {@code null}.
-     *
-     * Note, it tries to find best index match: count of index fields should equal to count of index criteria fields.
-     */
-    private Index indexByCriteria(GridCacheContext cctx, IndexQueryDesc idxQryDesc, String tableName) {
-        Collection<Index> idxs = idxProc.indexes(cctx);
+    /** */
+    private IgniteCheckedException failIndexQuery(String msg, IndexDefinition idxDef, IndexQueryDesc desc) {
+        String exMsg = "Failed to parse IndexQuery. " + msg + ".";
 
-        for (Index i: idxs) {
-            IndexDefinition idxDef = idxProc.indexDefinition(i.id());
+        if (idxDef != null)
+            exMsg += " Index=" + idxDef;
 
-            if (!tableName.equals(idxDef.idxName().tableName()))
-                continue;
-
-            if (checkIndex(idxDef, idxQryDesc.criteria()))
-                return i;
-        }
-
-        return null;
+        return new IgniteCheckedException(exMsg + "; Query=" + desc);
     }
 
     /** Checks that specified index matches index query criteria. */
     private boolean checkIndex(IndexDefinition idxDef, List<IndexQueryCriterion> criteria) {
-        if (criteria.size() > idxDef.indexKeyDefinitions().size())
-            return false;
+        return criteria.size() <= idxDef.indexKeyDefinitions().size();
+    }
 
-        for (int i = 0; i < criteria.size(); i++) {
-            if (!idxDef.indexKeyDefinitions().get(i).name().equalsIgnoreCase(criteria.get(i).field()))
-                return false;
+    /** Checks that specified index matches index query criteria. */
+    private List<IndexQueryCriterion> alineCriteriaWithIndex(IndexDefinition idxDef, IndexQueryDesc idxQryDesc)
+        throws IgniteCheckedException {
+        if (idxQryDesc.criteria().size() > idxDef.indexKeyDefinitions().size())
+            throw failIndexQueryCriteria(idxDef, idxQryDesc);
+
+        Map<String, IndexQueryCriterion> critFlds = new HashMap<>();
+        Map<String, IndexQueryCriterion> normCritFlds = new HashMap<>();
+
+        // We need check both original and normalized field names.
+        idxQryDesc.criteria().forEach(c -> {
+            critFlds.put(c.field(), c);
+            normCritFlds.put(c.field().toUpperCase(), c);
+        });
+
+        List<IndexQueryCriterion> aligned = new ArrayList<>();
+
+        // Checks that users criteria matches a prefix subset of index fields.
+        for (int i = 0; i < idxQryDesc.criteria().size(); i++) {
+            String idxFld = idxDef.indexKeyDefinitions().get(i).name();
+
+            IndexQueryCriterion c = normCritFlds.remove(idxFld);
+
+            if (c == null) {
+                // Check this field is escaped.
+                c = critFlds.remove(idxFld);
+
+                if (c == null)
+                    throw failIndexQueryCriteria(idxDef, idxQryDesc);
+            }
+            else
+                critFlds.remove(c.field());
+
+            aligned.add(c);
         }
 
-        return true;
+        if (!critFlds.isEmpty())
+            throw failIndexQueryCriteria(idxDef, idxQryDesc);
+
+        return aligned;
     }
 
     /**
@@ -203,7 +217,7 @@ public class IndexQueryProcessor {
      *
      * @return Result cursor over index segments.
      */
-    private GridCursor<IndexRow> query(GridCacheContext cctx, Index idx, List<IndexQueryCriterion> criteria, IndexQueryContext qryCtx)
+    private GridCursor<IndexRow> query(GridCacheContext<?, ?> cctx, Index idx, List<IndexQueryCriterion> criteria, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
         int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
@@ -379,7 +393,7 @@ public class IndexQueryProcessor {
     }
 
     /** Single cursor over multiple segments. Next value is choose with the index row comparator. */
-    private class SegmentedIndexCursor implements GridCursor<IndexRow> {
+    private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
         /** Cursors over segments. */
         private final PriorityQueue<GridCursor<IndexRow>> cursors;
 

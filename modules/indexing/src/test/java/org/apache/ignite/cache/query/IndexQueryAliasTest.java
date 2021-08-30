@@ -54,18 +54,16 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache<Long, Person> cache;
+    private static IgniteCache<Long, Person> cache;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Ignite crd = startGrids(4);
+    @Override protected void beforeTestsStarted() throws Exception {
+        Ignite crd = startGrids(2);
 
         cache = crd.cache(CACHE);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
+        for (int i = 0; i < CNT; i++)
+            cache.put((long) i, new Person(i));
     }
 
     /** {@inheritDoc} */
@@ -94,31 +92,35 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testAliasRangeQueries() {
-        insertData();
-
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
             .setCriteria(lt("asId", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
-        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
             .setCriteria(lt("asDescId", pivot));
 
         check(cache.query(descQry), 0, pivot);
+    }
+
+    /** */
+    @Test
+    public void testAliasCaseRangeQueries() {
+        int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
-            .setCriteria(lt("asId", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, ID_IDX.toLowerCase())
+            .setCriteria(lt("ASID", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
-        descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
-            .setCriteria(lt("asDescId", pivot));
+        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX.toLowerCase())
+            .setCriteria(lt("ASDESCID", pivot));
 
         check(cache.query(descQry), 0, pivot);
     }
@@ -141,12 +143,6 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
 
             assertEquals(new Person(entry.getKey().intValue()), all.get(i).getValue());
         }
-    }
-
-    /** */
-    private void insertData() {
-        for (int i = 0; i < CNT; i++)
-            cache.put((long) i, new Person(i));
     }
 
     /** */

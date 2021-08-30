@@ -98,38 +98,40 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
 
         int pivot = CNT / 5;
 
+        String intNullIdx = idxName("intNullId");
+
         // Should include nulls.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, intNullIdx)
             .setCriteria(lt("intNullId", pivot));
 
         check(cache.query(qry), 0, CNT / 5, i -> i, persGen);
 
         // Should exclude nulls.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, intNullIdx)
             .setCriteria(gte("intNullId", 0));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
 
         // Should return only nulls.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, intNullIdx)
             .setCriteria(lt("intNullId", 0));
 
         check(cache.query(qry), 0, CNT / 10, i -> i, persGen);
 
         // Should return only nulls.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, intNullIdx)
             .setCriteria(lte("intNullId", null));
 
         check(cache.query(qry), 0, CNT / 10, i -> i, persGen);
 
         // Should return all non nulls.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, intNullIdx)
             .setCriteria(gt("intNullId", null));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
 
         // Should return all items.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, intNullIdx)
             .setCriteria(gte("intNullId", null));
 
         check(cache.query(qry), 0, CNT, i -> i, persGen);
@@ -242,26 +244,28 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
 
         insertData(valGen, persGen, CNT);
 
+        String boolIdx = idxName("boolId");
+
         // Lt.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
             .setCriteria(lt("boolId", true));
 
         check(cache.query(qry), CNT / 2 + 1, CNT, valGen, persGen);
 
         // Lte.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
             .setCriteria(lte("boolId", true));
 
         check(cache.query(qry), 0, CNT, valGen, persGen);
 
         // Gt.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
             .setCriteria(gt("boolId", false));
 
         check(cache.query(qry), 0, CNT / 2 + 1, valGen, persGen);
 
         // Gte.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
             .setCriteria(gte("boolId", false));
 
         check(cache.query(qry), 0, CNT, valGen, persGen);
@@ -283,16 +287,22 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         T val = valGen.apply(pivot);
 
         // Lt.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, idxName(fieldName))
             .setCriteria(lt(fieldName, val));
 
         check(cache.query(qry), 0, pivot, valGen, persGen);
 
         // Lte.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, idxName(fieldName))
             .setCriteria(lte(fieldName, val));
 
         check(cache.query(qry), 0, pivot + 1, valGen, persGen);
+    }
+
+    /** */
+    private String idxName(String field) {
+        // TODO: test case for escaping (true / false) separately.
+        return ("Person_" + field + "_idx").toUpperCase();
     }
 
     /** */

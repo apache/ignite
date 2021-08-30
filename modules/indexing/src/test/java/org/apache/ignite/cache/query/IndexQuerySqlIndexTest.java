@@ -29,18 +29,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
-@RunWith(Parameterized.class)
 public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -61,57 +58,35 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private static IgniteCache<Object, Object> cache;
+    private IgniteCache<Object, Object> cache;
 
     /** */
     private IgniteCache<Object, Object> tblCache;
 
     /** */
-    private static Ignite crd;
-
-    /** */
-    @Parameterized.Parameter
-    public String valType;
-
-    /** */
-    @Parameterized.Parameters(name = "valType = {0}")
-    public static List<?> params() {
-        return F.asList(Person.class.getName(), VALUE_TYPE);
-    }
+    private Ignite crd;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        crd = startGrids(4);
+    @Override protected void beforeTest() throws Exception {
+        crd = startGrids(1);
 
-        cache = crd.cache(CACHE);
+        cache = crd.createCache(new CacheConfiguration<>().setName(CACHE));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
-        tblCache.destroy();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
-            .setName(CACHE);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        return cfg;
+        stopAllGrids();
     }
 
     /** */
     @Test
     public void testEmptyCache() {
-        prepareTable();
+        prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", false);
 
         tblCache = crd.cache(CACHE_TABLE);
 
-        IndexQuery<Long, Object> qry = new IndexQuery<Long, Object>(valType, DESC_ID_IDX)
-            .setCriteria(lt("descId", Integer.MAX_VALUE));
+        IndexQuery<Long, Object> qry = new IndexQuery<Long, Object>(Person.class.getName(), DESC_ID_IDX)
+            .setCriteria(lte("descId", Integer.MAX_VALUE));
 
         assertTrue(tblCache.query(qry).getAll().isEmpty());
     }
@@ -119,54 +94,138 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testWrongQueries() {
-        prepareTable();
+        prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", false);
 
         tblCache = crd.cache(CACHE_TABLE);
 
         // Wrong fields in query.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(valType, DESC_ID_IDX)
+            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(Person.class.getName(), DESC_ID_IDX)
                 .setCriteria(lt("id", Integer.MAX_VALUE));
 
             return tblCache.query(wrongQry).getAll();
 
-        }, IgniteCheckedException.class, "Index DESC_ID_IDX doesn't match query.");
+        }, IgniteCheckedException.class, "Index doesn't match query.");
 
         // Wrong cache.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(valType, DESC_ID_IDX)
+            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(Person.class.getName(), DESC_ID_IDX)
                 .setCriteria(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 
-        }, IgniteCheckedException.class, "No table found for type: " + valType);
+        }, IgniteCheckedException.class, "No table found for type: " + Person.class.getName());
+    }
+
+    /** Should support both fields: normalized and original. */
+    @Test
+    public void testRangeQueries() {
+        prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", true);
+
+        int pivot = new Random().nextInt(CNT);
+
+        tblCache = crd.cache(CACHE_TABLE);
+
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
+
+        check(tblCache.query(qry), 0, pivot);
+
+        qry = new IndexQuery<Long, Person>(Person.class.getName(), DESC_ID_IDX)
+            .setCriteria(lt("DESCID", pivot));
+
+        check(tblCache.query(qry), 0, pivot);
+    }
+
+    /** Should support only original field. */
+    @Test
+    public void testEscapedColumnName() {
+        prepareTable(Person.class.getName(), DESC_ID_IDX, "\"descId\"", true);
+
+        int pivot = new Random().nextInt(CNT);
+
+        tblCache = crd.cache(CACHE_TABLE);
+
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
+
+        check(tblCache.query(qry), 0, pivot);
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(Person.class.getName(), DESC_ID_IDX)
+                .setCriteria(lt("DESCID", Integer.MAX_VALUE));
+
+            return tblCache.query(wrongQry).getAll();
+
+        }, IgniteCheckedException.class, "Index doesn't match query.");
+    }
+
+    /** Should support only original field. */
+    @Test
+    public void testEscapedIndexName() {
+        prepareTable(Person.class.getName(), "\"" + DESC_ID_IDX.toLowerCase() + "\"", "descId", true);
+
+        int pivot = new Random().nextInt(CNT);
+
+        tblCache = crd.cache(CACHE_TABLE);
+
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), DESC_ID_IDX.toLowerCase())
+            .setCriteria(lt("descId", pivot));
+
+        check(tblCache.query(qry), 0, pivot);
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+            IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(Person.class.getName(), DESC_ID_IDX)
+                .setCriteria(lt("descId", Integer.MAX_VALUE));
+
+            return tblCache.query(wrongQry).getAll();
+
+        }, IgniteCheckedException.class, "No index found");
     }
 
     /** */
     @Test
-    public void testRangeQueries() {
-        prepareTable();
-
-        insertData();
+    public void testRangeQueriesWithKeepBinary() {
+        prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", true);
 
         int pivot = new Random().nextInt(CNT);
 
-        if (VALUE_TYPE.equals(valType)) {
-            tblCache = crd.cache(CACHE_TABLE).withKeepBinary();
+        tblCache = crd.cache(CACHE_TABLE).withKeepBinary();
 
-            IndexQuery<Long, BinaryObject> qry = new IndexQuery<Long, BinaryObject>(valType, DESC_ID_IDX)
-                .setCriteria(lt("descId", pivot));
+        IndexQuery<Long, BinaryObject> qry = new IndexQuery<Long, BinaryObject>(Person.class.getName(), DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
 
-            checkBinary(tblCache.query(qry), 0, pivot);
+        checkBinary(tblCache.query(qry), 0, pivot);
+    }
 
-        } else {
-            tblCache = crd.cache(CACHE_TABLE);
+    /** */
+    @Test
+    public void testRangeQueriesWithValueType() {
+        prepareTable(VALUE_TYPE, DESC_ID_IDX, "descId", true);
 
-            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(valType, DESC_ID_IDX)
-                .setCriteria(lt("descId", pivot));
+        int pivot = new Random().nextInt(CNT);
 
-            check(tblCache.query(qry), 0, pivot);
-        }
+        tblCache = crd.cache(CACHE_TABLE).withKeepBinary();
+
+        IndexQuery<Long, BinaryObject> qry = new IndexQuery<Long, BinaryObject>(VALUE_TYPE, DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
+
+        checkBinary(tblCache.query(qry), 0, pivot);
+    }
+
+    /** */
+    @Test
+    public void testReverseFieldOrder() {
+        prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", true);
+
+        int pivot = new Random().nextInt(CNT);
+
+        tblCache = crd.cache(CACHE_TABLE);
+
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), DESC_ID_IDX)
+            .setCriteria(eq("_KEY", (long) pivot), lte("descId", pivot));
+
+        check(tblCache.query(qry), pivot, pivot + 1);
     }
 
     /**
@@ -211,26 +270,24 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void prepareTable() {
-        SqlFieldsQuery qry = new SqlFieldsQuery("create table " + TABLE + " (prim_id long PRIMARY KEY, id int, descId int)" +
+    private void prepareTable(String valType, String idxName, String descIdFld, boolean insert) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("create table " + TABLE + " (prim_id long PRIMARY KEY, id int, " + descIdFld + " int)" +
             " with \"VALUE_TYPE=" + valType + ",CACHE_NAME=" + CACHE_TABLE + "\";");
 
         cache.query(qry);
 
-        qry = new SqlFieldsQuery("create index " + DESC_ID_IDX + " on " + TABLE + " (descId DESC);");
+        qry = new SqlFieldsQuery("create index " + idxName + " on " + TABLE + " (" + descIdFld + " DESC);");
 
         cache.query(qry);
-    }
 
-    /** */
-    private void insertData() {
-        SqlFieldsQuery qry = new SqlFieldsQuery("insert into " + TABLE + " (prim_id, id, descId)" +
-            " values(?, ?, ?);");
+        if (insert) {
+            qry = new SqlFieldsQuery("insert into " + TABLE + " (prim_id, id, " + descIdFld + ") values(?, ?, ?);");
 
-        for (int i = 0; i < CNT; i++) {
-            qry.setArgs((long)i, i, i);
+            for (int i = 0; i < CNT; i++) {
+                qry.setArgs((long)i, i, i);
 
-            cache.query(qry);
+                cache.query(qry);
+            }
         }
     }
 

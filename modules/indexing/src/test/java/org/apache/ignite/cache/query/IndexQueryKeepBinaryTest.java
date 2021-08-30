@@ -41,6 +41,9 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
     private static final String CACHE = "TEST_CACHE";
 
     /** */
+    private static final String IDX = "PERSON_ID_IDX";
+
+    /** */
     private static final int CNT = 10_000;
 
     /** {@inheritDoc} */
@@ -65,7 +68,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
 
         insertData(crd, cache);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
         check(cache.withKeepBinary().query(qry), 0, CNT / 2);
