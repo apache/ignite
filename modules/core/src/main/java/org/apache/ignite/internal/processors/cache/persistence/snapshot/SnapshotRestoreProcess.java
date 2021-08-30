@@ -127,6 +127,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  as inapplicable for historical rebalancing]])
  *  9. Add cache destroy rollback procedure if loading was unsuccessful.
  *  10. Crash-recovery when node crashes with started, but not loaded caches.
+ *  11. Do not allow schema changes during the restore procedure.
  *
  * Other strategies to be memento to:
  *
@@ -159,7 +160,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *   and then re-init index for started cache group. The second case will require data structures re-initialization on the fly.
  *
  */
-public class SnapshotRestoreProcess {
+public class SnapshotRestoreProcess implements PartitionsExchangeAware {
     /** Temporary cache directory prefix. */
     public static final String TMP_PREFIX = "_tmp_snp_restore_";
 
@@ -171,6 +172,9 @@ public class SnapshotRestoreProcess {
 
     /** Snapshot restore operation failed message. */
     private static final String OP_FAILED_MSG = "Failed to restore snapshot cache groups";
+
+    /** Prefix for meta store records which means that cache restore is in progress. */
+    private static final String RESTORE_KEY_PREFIX = "restore-cache-group-";
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -1024,6 +1028,33 @@ public class SnapshotRestoreProcess {
         return awaitBoth;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture exchFut) {
+        if (ctx.clientNode())
+            return;
+
+        SnapshotRestoreContext opCtx0 = opCtx;
+        Set<Integer> grpIdsToStart = getCachesLoadingFromSnapshot(exchFut, opCtx0);
+
+        if (F.isEmpty(grpIdsToStart))
+            return;
+
+        assert opCtx0 != null;
+        assert !opCtx0.sameTop : "WAL must be disabled only for caches restoring from snapshot taken on another cluster: " + opCtx0;
+
+        // This is happened on the exchange which has been initiated by a dynamic cache start message and intend to switch
+        // off the WAL for cache groups loading from a snapshot.
+        for (CacheGroupContext grp : F.view(ctx.cache().cacheGroups(), g -> grpIdsToStart.contains(g.groupId()))) {
+            assert grp.localWalEnabled() : grp.cacheOrGroupName();
+
+            // Check partitions have not even been created yet, so the PartitionMetaStateRecord won't be logged to the WAL.
+            for (int p = 0; p < grp.topology().partitions(); p++)
+                assert grp.topology().localPartition(p) == null : p;
+
+            grp.localWalEnabled(false, true);
+        }
+    }
+
     /**
      * @param reqId Request ID.
      * @param res Results.
@@ -1060,20 +1091,12 @@ public class SnapshotRestoreProcess {
      * @param exchFut Exchange future.
      */
     public void onRebalanceReady(Set<CacheGroupContext> grps, @Nullable GridDhtPartitionsExchangeFuture exchFut) {
-        if (exchFut == null || exchFut.exchangeActions() == null)
+        if (ctx.clientNode())
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 == null)
-            return;
-
-        Set<Integer> exchGrpIds = exchFut.exchangeActions().cacheGroupsToStart().stream()
-            .filter(d -> Objects.nonNull(d.restartId()))
-            .filter(d -> d.restartId().equals(opCtx0.reqId))
-            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
-            .map(g -> g.descriptor().groupId())
-            .collect(Collectors.toSet());
+        Set<Integer> exchGrpIds = getCachesLoadingFromSnapshot(exchFut, opCtx0);
 
         Set<CacheGroupContext> filtered = grps.stream()
             .filter(Objects::nonNull)
@@ -1083,6 +1106,8 @@ public class SnapshotRestoreProcess {
         // Restore requests has been already processed at previous exchange.
         if (filtered.isEmpty())
             return;
+
+        assert opCtx0 != null;
 
         // First preload everything from the local node.
         List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
@@ -1495,6 +1520,23 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param fut Current exchange future.
+     * @param ctx Current snapshot restore context.
+     * @return The set of cache groups needs to be processed.
+     */
+    private static Set<Integer> getCachesLoadingFromSnapshot(GridDhtPartitionsExchangeFuture fut, SnapshotRestoreContext ctx) {
+        if (fut == null || fut.exchangeActions() == null || ctx == null)
+            return Collections.emptySet();
+
+        return fut.exchangeActions().cacheGroupsToStart().stream()
+            .filter(d -> Objects.nonNull(d.restartId()))
+            .filter(d -> d.restartId().equals(ctx.reqId))
+            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
+            .map(g -> g.descriptor().groupId())
+            .collect(Collectors.toSet());
+    }
+
+    /**
      * Cache group restore from snapshot operation context.
      */
     private static class SnapshotRestoreContext {
@@ -1623,13 +1665,13 @@ public class SnapshotRestoreProcess {
         /**
          * @param grp Cache group context.
          * @param parts Future which
-         * @param initAction Action to do cache group initialization.
+         * @param resendAct Action to do cache group initialization.
          * @return Future which will be completed when cache group processing ends.
          */
         public static CacheRestoreLifecycleFuture create(
             CacheGroupContext grp,
             Set<PartitionRestoreLifecycleFuture> parts,
-            Runnable initAction
+            Runnable resendAct
         ) {
             assert !grp.isLocal();
             assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
@@ -1640,6 +1682,7 @@ public class SnapshotRestoreProcess {
 
             CompletableFuture<Void> rebalanced = new CompletableFuture<>();
 
+            // TODO: IGNITE-11075 Add rebuild index over a partition file.
             CompletableFuture<Void> indexRebuild = grp.shared().kernalContext().query().moduleEnabled() ?
                 CompletableFuture.completedFuture(null) :
                 CompletableFuture.completedFuture(null);
@@ -1649,7 +1692,7 @@ public class SnapshotRestoreProcess {
 
             // This will not be fired if partitions loading future completes with an exception.
             inited.thenRun(() -> grp.shared().exchange().registerExchangeAwareComponent(cl))
-                .thenRun(initAction);
+                .thenRun(resendAct);
 
             rebalanced.whenComplete((r, t) -> grp.shared().exchange().unregisterExchangeAwareComponent(cl));
 

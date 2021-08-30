@@ -308,9 +308,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
 
-    /** Requested snapshot from remote node. */
-    private final AtomicReference<RemoteSnapshotFutureTask> rmtSnpReq = new AtomicReference<>();
-
     /** Mutex used to order cluster snapshot operation progress. */
     private final Object snpOpMux = new Object();
 
@@ -507,6 +504,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
+        cctx.exchange().registerExchangeAwareComponent(restoreCacheGrpProc);
+
         // Manage remote snapshots.
         snpRmtHandler = new SequentialRemoteSnapshotManager();
 
@@ -547,6 +546,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx.kernalContext().event().removeDiscoveryEventListener(discoLsnr);
 
             cctx.exchange().unregisterExchangeAwareComponent(this);
+            cctx.exchange().unregisterExchangeAwareComponent(restoreCacheGrpProc);
         }
         finally {
             busyLock.unblock();

@@ -44,7 +44,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_ST
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 
 /** */
-public class IgniteSnapshotRestoreStoreSwitchTest extends IgniteClusterSnapshotRestoreBaseTest {
+public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** */
     private static final String FIRST_CLUSTER_PREFIX = "one_";
 
