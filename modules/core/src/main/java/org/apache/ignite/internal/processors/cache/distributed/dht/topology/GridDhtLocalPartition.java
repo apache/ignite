@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
@@ -231,15 +230,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (grp.walEnabled() && !recovery)
                 ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
 
-            // Inject row cache cleaner on store creation
-            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
-            if (ctx.kernalContext().query().moduleEnabled()) {
-                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().indexProcessor()
-                    .rowCacheCleaner(grp.groupId());
-
-                if (store != null && cleaner != null)
-                    store.setRowCacheCleaner(cleaner);
-            }
+            // Inject row cache cleaner on store creation.
+            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group.
+            if (ctx.kernalContext().query().moduleEnabled())
+                store.setRowCacheCleaner(ctx.kernalContext().indexProcessor().rowCacheCleaner(grp.groupId()));
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db
@@ -649,11 +643,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             if (casState(state, MOVING)) {
                 // The state is switched under global topology lock, safe to record version here.
-                clearVer = ctx.versions().localOrder();
+                updateClearVersion();
 
                 return true;
             }
         }
+    }
+
+    /**
+     * Records a version for row clearing. Must be called when a partition is marked for full rebalancing.
+     * @see #clearAll(EvictionContext)
+     */
+    public void updateClearVersion() {
+        clearVer = ctx.versions().localOrder();
     }
 
     /**

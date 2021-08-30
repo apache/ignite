@@ -21,7 +21,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -272,9 +274,11 @@ public class PdsFolderResolver<L extends FileLockHolder> {
 
         res.a(params.size);
         res.a(" bytes, modified ");
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
 
-        res.a(simpleDateFormat.format(params.lastModified));
+        DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm a").withZone(ZoneId.systemDefault());
+
+        res.a(formatter.format(Instant.ofEpochMilli(params.lastModified)));
         res.a(" ");
 
         return res.toString();

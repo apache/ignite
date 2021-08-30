@@ -168,8 +168,11 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /**
      * @param req Request.
      * @return Future.
+     *
+     * This method made {@code protected} intentionally so any plugin provided implementation
+     * can extend it to enhance request handling.
      */
-    private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
+    protected IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
