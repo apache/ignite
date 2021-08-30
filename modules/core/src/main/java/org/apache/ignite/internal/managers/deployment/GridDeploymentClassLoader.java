@@ -466,7 +466,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             if (cls == null)
                 cls = loadClass(name, true);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException | UnsupportedClassVersionError e) {
             throw e;
         }
         // Catch Throwable to secure against any errors resulted from
