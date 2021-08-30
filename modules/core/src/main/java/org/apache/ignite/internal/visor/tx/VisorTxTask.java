@@ -226,7 +226,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
             int perNodelimit = DEFAULT_MAP_LIMIT;
 
-            if (arg.getLimit() != null && arg.getLimit() > DEFAULT_MAP_LIMIT)
+            if (arg.getLimit() != null && arg.getLimit() > perNodelimit)
                 perNodelimit = arg.getLimit();
 
             Pattern lbMatch = null;
@@ -335,13 +335,13 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
                 TxVerboseInfo verboseInfo = arg.verboseMode() ? createVerboseInfo(ignite, locTx) : null;
 
+                if (arg.getOperation() == VisorTxOperation.KILL)
+                    killClo.apply(locTx, tm);
+
                 infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
                     locTx.concurrency(), locTx.timeout(), lb, mappings, locTx.state(), size,
                     locTx.nearXidVersion().asIgniteUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
                     verboseInfo));
-
-                if (arg.getOperation() == VisorTxOperation.KILL)
-                    killClo.apply(locTx, tm);
 
                 if (infos.size() == perNodelimit)
                     break;
@@ -382,7 +382,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 }
             }
 
-            Collections.sort(infos, comp);
+            infos.sort(comp);
 
             return new VisorTxTaskResult(infos);
         }

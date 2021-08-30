@@ -17,7 +17,8 @@ import org.junit.Test;
 
 import static org.apache.ignite.lang.IgniteUuid.randomUuid;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test for VisorTxTaskTest
@@ -44,7 +45,7 @@ public class VisorTxTaskTest {
     /**
      * Exeteneded task enables preparing specific fields.
      */
-    private class VisorTxTestTask extends VisorTxTask {
+    private static class VisorTxTestTask extends VisorTxTask {
 
         /**
          * Constructor with VisorTxTaskArg.
@@ -52,7 +53,7 @@ public class VisorTxTaskTest {
          * @param arg - task arguments
          */
         public VisorTxTestTask(VisorTxTaskArg arg) {
-            this.taskArg = arg;
+            taskArg = arg;
         }
     }
 
@@ -115,7 +116,20 @@ public class VisorTxTaskTest {
      * @return mock VisorTxInfo.
      */
     private VisorTxInfo mockInfo(IgniteUuid xid, IgniteUuid nearXid, ClusterNode masterNodeId) {
-        return new VisorTxInfo(xid, r.nextLong(), r.nextLong(), null, null, r.nextLong(), "some label", null, ACTIVE, 0, nearXid, Collections.singleton(masterNodeId.id()), null, null);
+        return new VisorTxInfo(xid,
+            r.nextLong(),
+            r.nextLong(),
+            null,
+            null,
+            r.nextLong(),
+            "some label",
+            null,
+            ACTIVE,
+            0,
+            nearXid,
+            Collections.singleton(masterNodeId.id()),
+            null,
+            null);
     }
 
     /**
