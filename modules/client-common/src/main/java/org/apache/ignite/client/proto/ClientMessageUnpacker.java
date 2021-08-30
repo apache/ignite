@@ -51,6 +51,7 @@ import static org.apache.ignite.client.proto.ClientDataType.INT16;
 import static org.apache.ignite.client.proto.ClientDataType.INT32;
 import static org.apache.ignite.client.proto.ClientDataType.INT64;
 import static org.apache.ignite.client.proto.ClientDataType.INT8;
+import static org.apache.ignite.client.proto.ClientDataType.NUMBER;
 import static org.apache.ignite.client.proto.ClientDataType.STRING;
 import static org.apache.ignite.client.proto.ClientDataType.TIME;
 import static org.apache.ignite.client.proto.ClientDataType.TIMESTAMP;
@@ -333,7 +334,7 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var len = hdr.getLength();
 
         if (type != ClientMsgPackType.UUID)
-            throw new MessageTypeException("Expected UUID extension (1), but got " + type);
+            throw new MessageTypeException("Expected UUID extension (3), but got " + type);
 
         if (len != 16)
             throw new MessageSizeException("Expected 16 bytes for UUID extension, but got " + len, len);
@@ -349,72 +350,170 @@ public class ClientMessageUnpacker extends MessageUnpacker {
      * Reads a decimal.
      *
      * @return Decimal value.
-     * @throws UnsupportedOperationException Not supported yet.
+     * @throws MessageTypeException when type is not Decimal.
      */
     public BigDecimal unpackDecimal() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.DECIMAL)
+            throw new MessageTypeException("Expected DECIMAL extension (2), but got " + type);
+
+        var bytes = readPayload(len);
+
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+        int scale = bb.getInt();
+
+        return new BigDecimal(new BigInteger(bytes, bb.position(), bb.remaining()), scale);
     }
 
     /**
      * Reads a bit set.
      *
      * @return Bit set.
-     * @throws UnsupportedOperationException Not supported yet.
+     * @throws MessageTypeException when type is not BitSet.
      */
     public BitSet unpackBitSet() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.BITMASK)
+            throw new MessageTypeException("Expected BITSET extension (7), but got " + type);
+
+        var bytes = readPayload(len);
+
+        return BitSet.valueOf(bytes);
+    }
+
+    /**
+     * Reads a number.
+     *
+     * @return BigInteger value.
+     * @throws MessageTypeException when type is not BigInteger.
+     */
+    public BigInteger unpackNumber() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.NUMBER)
+            throw new MessageTypeException("Expected NUMBER extension (1), but got " + type);
+
+        var bytes = readPayload(len);
+
+        return new BigInteger(bytes);
     }
 
     /**
      * Reads a date.
      *
      * @return Date value.
-     * @throws UnsupportedOperationException Not supported yet.
+     * @throws MessageTypeException when type is not DATE.
+     * @throws MessageSizeException when size is not correct.
      */
     public LocalDate unpackDate() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.DATE)
+            throw new MessageTypeException("Expected DATE extension (4), but got " + type);
+
+        if (len != 6)
+            throw new MessageSizeException("Expected 6 bytes for DATE extension, but got " + len, len);
+
+        var data = ByteBuffer.wrap(readPayload(len));
+
+        return LocalDate.of(data.getInt(), data.get(), data.get());
     }
 
     /**
      * Reads a time.
      *
      * @return Time value.
-     * @throws UnsupportedOperationException Not supported yet.
+     * @throws MessageTypeException when type is not TIME.
+     * @throws MessageSizeException when size is not correct.
      */
     public LocalTime unpackTime() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.TIME)
+            throw new MessageTypeException("Expected TIME extension (5), but got " + type);
+
+        if (len != 7)
+            throw new MessageSizeException("Expected 7 bytes for TIME extension, but got " + len, len);
+
+        var data = ByteBuffer.wrap(readPayload(len));
+
+        return LocalTime.of(data.get(), data.get(), data.get(), data.getInt());
     }
 
     /**
      * Reads a datetime.
      *
      * @return Datetime value.
-     * @throws UnsupportedOperationException Not supported yet.
+     * @throws MessageTypeException when type is not DATETIME.
+     * @throws MessageSizeException when size is not correct.
      */
     public LocalDateTime unpackDateTime() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.DATETIME)
+            throw new MessageTypeException("Expected DATETIME extension (6), but got " + type);
+
+        if (len != 13)
+            throw new MessageSizeException("Expected 13 bytes for DATETIME extension, but got " + len, len);
+
+        var data = ByteBuffer.wrap(readPayload(len));
+
+        return LocalDateTime.of(
+            LocalDate.of(data.getInt(), data.get(), data.get()),
+            LocalTime.of(data.get(), data.get(), data.get(), data.getInt())
+        );
     }
 
     /**
      * Reads a timestamp.
      *
      * @return Timestamp value.
-     * @throws UnsupportedOperationException Not supported yet.
+     * @throws MessageTypeException when type is not TIMESTAMP.
+     * @throws MessageSizeException when size is not correct.
      */
     public Instant unpackTimestamp() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        throw new UnsupportedOperationException("TODO: IGNITE-15163");
+        var hdr = unpackExtensionTypeHeader();
+        var type = hdr.getType();
+        var len = hdr.getLength();
+
+        if (type != ClientMsgPackType.TIMESTAMP)
+            throw new MessageTypeException("Expected TIMESTAMP extension (6), but got " + type);
+
+        if (len != 12)
+            throw new MessageSizeException("Expected 12 bytes for TIMESTAMP extension, but got " + len, len);
+
+        var data = ByteBuffer.wrap(readPayload(len));
+
+        return Instant.ofEpochSecond(data.getLong(), data.getInt());
     }
 
     /**
@@ -454,16 +553,20 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             case STRING:
                 return unpackString();
 
-            case BYTES:
+            case BYTES: {
                 var cnt = unpackBinaryHeader();
 
                 return readPayload(cnt);
+            }
 
             case DECIMAL:
                 return unpackDecimal();
 
             case BITMASK:
                 return unpackBitSet();
+
+            case NUMBER:
+                return unpackNumber();
 
             case DATE:
                 return unpackDate();

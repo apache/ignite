@@ -26,13 +26,11 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
 
 import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.MAX_YEAR;
 import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.MIN_YEAR;
 import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.normalizeNanos;
-import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomBitSet;
-import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomBytes;
-import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomString;
 
 /**
  * Test utility class.
@@ -69,10 +67,10 @@ public final class TestUtils {
                 return new java.util.UUID(rnd.nextLong(), rnd.nextLong());
 
             case STRING:
-                return randomString(rnd, rnd.nextInt(255));
+                return IgniteTestUtils.randomString(rnd, rnd.nextInt(255));
 
             case BYTES:
-                return randomBytes(rnd, rnd.nextInt(255));
+                return IgniteTestUtils.randomBytes(rnd, rnd.nextInt(255));
 
             case NUMBER:
                 return BigInteger.probablePrime(12, rnd);
@@ -83,7 +81,7 @@ public final class TestUtils {
             case BITMASK: {
                 BitmaskNativeType maskType = (BitmaskNativeType)type;
 
-                return randomBitSet(rnd, maskType.bits());
+                return IgniteTestUtils.randomBitSet(rnd, maskType.bits());
             }
 
             case DATE: {
