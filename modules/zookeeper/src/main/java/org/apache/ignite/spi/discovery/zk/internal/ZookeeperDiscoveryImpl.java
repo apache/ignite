@@ -1116,7 +1116,7 @@ public class ZookeeperDiscoveryImpl {
     private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred) {
         try {
             locNode.setAttributes(addSecurityContextToNodeAttributes(
-                SecurityUtils.authenticateNode(locNode, locCred, nodeAuth),
+                SecurityUtils.authenticateLocalNode(locNode, locCred, nodeAuth),
                 locNode,
                 marsh));
         }

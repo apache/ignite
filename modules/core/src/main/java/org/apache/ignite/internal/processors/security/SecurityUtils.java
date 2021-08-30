@@ -56,6 +56,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 
 /**
@@ -312,7 +313,7 @@ public class SecurityUtils {
         Marshaller marsh
     ) throws IgniteCheckedException {
         if (!(secCtx instanceof Serializable))
-            throw new IgniteCheckedException("Authentication subject is not serializable.");
+            throw new IgniteSpiException("Authentication subject is not serializable.");
 
         Map<String, Object> nodeAttrs = new HashMap<>(node.attributes());
 
@@ -322,25 +323,25 @@ public class SecurityUtils {
     }
 
     /**
-     * Performs node authentication.
+     * Performs local node authentication.
      *
      * @param node Cluster node to authenticate.
      * @param cred Node credentials.
      * @param nodeAuth Node authenticator.
-     * @throws IgniteCheckedException if authentication fails.
+     * @throws IgniteSpiException if authentication fails.
      */
-    public static SecurityContext authenticateNode(
+    public static SecurityContext authenticateLocalNode(
         ClusterNode node,
         SecurityCredentials cred,
         DiscoverySpiNodeAuthenticator nodeAuth
-    ) throws IgniteCheckedException {
+    ) throws IgniteSpiException {
         assert nodeAuth != null;
         assert cred != null || node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED) != null;
 
         SecurityContext secCtx = nodeAuth.authenticateNode(node, cred);
 
         if (secCtx == null)
-            throw new IgniteCheckedException("Authentication failed for node: " + node.id());
+            throw new IgniteSpiException("Authentication failed for local node: " + node.id());
 
         return secCtx;
     }

@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.addSecurityContextToNodeAttributes;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateNode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 
 /**
  * Special discovery SPI implementation to start a single-node cluster in "isolated" mode.
@@ -209,7 +209,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                 SecurityCredentials locSecCred = (SecurityCredentials)locNode.attributes().get(ATTR_SECURITY_CREDENTIALS);
 
                 Map<String, Object> attrs = addSecurityContextToNodeAttributes(
-                    authenticateNode(locNode, locSecCred, nodeAuth), locNode, marsh);
+                    authenticateLocalNode(locNode, locSecCred, nodeAuth), locNode, marsh);
 
                 attrs.remove(ATTR_SECURITY_CREDENTIALS);
 
