@@ -71,7 +71,7 @@ public class RestorePartitionStateBenchmark {
 
         List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
 
-        for (int i = 1; i < 50; i++) {
+        for (int i = 1; i < 60; i++) {
             int parts;
 
             if (i < 20)
