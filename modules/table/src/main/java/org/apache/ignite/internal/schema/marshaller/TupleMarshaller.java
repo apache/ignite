@@ -20,26 +20,33 @@ package org.apache.ignite.internal.schema.marshaller;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Tuple marshaller interface.
- *
- * @apiNote For key tuple marshalling, a {@code marshal(key, null)} method call must be used.
- * A {@code marshal(key} may return the same result, but it validates value columns even if not specified.
- *
  */
 public interface TupleMarshaller {
     /**
+     * Marshals tuple.
+     *
      * @param tuple Record tuple.
      * @return Table row with columns set from given tuples.
      */
     Row marshal(@NotNull Tuple tuple);
 
     /**
+     * Marshal tuple key part only.
+     *
+     * @param tuple Record tuple with key columns only.
+     * @return Table row with columns set from given tuples.
+     */
+    Row marshalKey(@NotNull Tuple tuple);
+
+    /**
+     * Marshals KV pair.
+     *
      * @param keyTuple Key tuple.
      * @param valTuple Value tuple.
      * @return Table row with columns set from given tuples.
      */
-    Row marshal(@NotNull Tuple keyTuple, @Nullable Tuple valTuple);
+    Row marshal(@NotNull Tuple keyTuple, Tuple valTuple);
 }

@@ -49,8 +49,8 @@ import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 import static org.apache.ignite.internal.schema.NativeTypes.datetime;
 import static org.apache.ignite.internal.schema.NativeTypes.time;
 import static org.apache.ignite.internal.schema.NativeTypes.timestamp;
-import static org.apache.ignite.internal.schema.TestUtils.randomBytes;
-import static org.apache.ignite.internal.schema.TestUtils.randomString;
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomBytes;
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

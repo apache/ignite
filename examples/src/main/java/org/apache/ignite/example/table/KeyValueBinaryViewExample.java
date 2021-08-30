@@ -87,15 +87,13 @@ public class KeyValueBinaryViewExample {
         //
         //---------------------------------------------------------------------------------
 
-        Tuple key = accounts.tupleBuilder()
-            .set("accountNumber", 123456)
-            .build();
+        Tuple key = Tuple.create()
+            .set("accountNumber", 123456);
 
-        Tuple value = accounts.tupleBuilder()
+        Tuple value = Tuple.create()
             .set("firstName", "Val")
             .set("lastName", "Kulichenko")
-            .set("balance", 100.00d)
-            .build();
+            .set("balance", 100.00d);
 
         kvView.put(key, value);
 

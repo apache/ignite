@@ -32,6 +32,7 @@ import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -162,7 +163,7 @@ public class FieldAccessorTest {
 
         final TestSimpleObject obj = new TestSimpleObject();
         obj.longCol = rnd.nextLong();
-        obj.stringCol = TestUtils.randomString(rnd, 255);
+        obj.stringCol = IgniteTestUtils.randomString(rnd, 255);
 
         for (int i = 0; i < cols.length; i++) {
             FieldAccessor accessor = FieldAccessor.create(TestSimpleObject.class, cols[i], i);
@@ -318,9 +319,9 @@ public class FieldAccessorTest {
             obj.doubleCol = rnd.nextDouble();
 
             obj.uuidCol = new UUID(rnd.nextLong(), rnd.nextLong());
-            obj.bitmaskCol = TestUtils.randomBitSet(rnd, rnd.nextInt(42));
-            obj.stringCol = TestUtils.randomString(rnd, rnd.nextInt(255));
-            obj.bytesCol = TestUtils.randomBytes(rnd, rnd.nextInt(255));
+            obj.bitmaskCol = IgniteTestUtils.randomBitSet(rnd, rnd.nextInt(42));
+            obj.stringCol = IgniteTestUtils.randomString(rnd, rnd.nextInt(255));
+            obj.bytesCol = IgniteTestUtils.randomBytes(rnd, rnd.nextInt(255));
             obj.numberCol = (BigInteger)TestUtils.generateRandomValue(rnd, NativeTypes.numberOf(12));
             obj.decimalCol = (BigDecimal) TestUtils.generateRandomValue(rnd, NativeTypes.decimalOf(19, 3));
 

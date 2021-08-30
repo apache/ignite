@@ -35,6 +35,7 @@ import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.SchemaTable;
 import org.apache.ignite.table.Table;
+import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,8 +121,8 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
                 Table table = tables.get(0);
                 assertEquals(String.format("%s.%s", SCHEMA_NAME, TABLE_NAME), table.tableName());
 
-                var tuple = table.tupleBuilder().set(keyCol, 1).set(valCol, "Hello").build();
-                var keyTuple = table.tupleBuilder().set(keyCol, 1).build();
+                var tuple = Tuple.create().set(keyCol, 1).set(valCol, "Hello");
+                var keyTuple = Tuple.create().set(keyCol, 1);
 
                 table.upsert(tuple);
                 assertEquals("Hello", table.get(keyTuple).stringValue(valCol));

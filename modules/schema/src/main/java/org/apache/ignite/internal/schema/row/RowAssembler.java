@@ -189,6 +189,26 @@ public class RowAssembler {
 
                 break;
             }
+            case TIME: {
+                rowAsm.appendTime((LocalTime)val);
+
+                break;
+            }
+            case DATE: {
+                rowAsm.appendDate((LocalDate)val);
+
+                break;
+            }
+            case DATETIME: {
+                rowAsm.appendDateTime((LocalDateTime)val);
+
+                break;
+            }
+            case TIMESTAMP: {
+                rowAsm.appendTimestamp((Instant)val);
+
+                break;
+            }
             case STRING: {
                 rowAsm.appendString((String)val);
 

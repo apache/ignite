@@ -53,29 +53,27 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
-        final Tuple newTuple = tbl.tupleBuilder().set("id", 1L).set("val", 22L).build();
-        final Tuple nonExistedTuple = tbl.tupleBuilder().set("id", 2L).build();
+        final Tuple tuple = Tuple.create().set("id", 1L).set("val", 11L);
+        final Tuple newTuple = Tuple.create().set("id", 1L).set("val", 22L);
+        final Tuple nonExistedTuple = Tuple.create().set("id", 2L);
 
-        assertNull(tbl.get(tuple));
+        assertNull(tbl.get(Tuple.create().set("id", 1L)));
 
         // Insert new tuple.
         assertTrue(tbl.insert(tuple));
 
-        assertEqualsRows(schema, tuple, tbl.get(tuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, tuple, tbl.get(Tuple.create().set("id", 1L)));
 
         // Ignore insert operation for exited row.
         assertFalse(tbl.insert(newTuple));
 
-        assertEqualsRows(schema, tuple, tbl.get(newTuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, tuple, tbl.get(Tuple.create().set("id", 1L)));
 
         assertNull(tbl.get(nonExistedTuple));
     }
@@ -88,30 +86,27 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
-        final Tuple newTuple = tbl.tupleBuilder().set("id", 1L).set("val", 22L).build();
-        final Tuple nonExistedTuple = tbl.tupleBuilder().set("id", 2L).build();
+        final Tuple tuple = Tuple.create().set("id", 1L).set("val", 11L);
+        final Tuple newTuple = Tuple.create().set("id", 1L).set("val", 22L);
+        final Tuple nonExistedTuple = Tuple.create().set("id", 2L);
 
-        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).build()));
-        assertNull(tbl.get(tuple));
+        assertNull(tbl.get(Tuple.create().set("id", 1L)));
 
         // Insert new tuple.
         tbl.upsert(tuple);
 
-        assertEqualsRows(schema, tuple, tbl.get(tuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, tuple, tbl.get(Tuple.create().set("id", 1L)));
 
         // Update exited row.
         tbl.upsert(newTuple);
 
-        assertEqualsRows(schema, newTuple, tbl.get(tuple));
-        assertEqualsRows(schema, newTuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, newTuple, tbl.get(Tuple.create().set("id", 1L)));
 
         assertNull(tbl.get(nonExistedTuple));
     }
@@ -124,29 +119,26 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
-        final Tuple newTuple = tbl.tupleBuilder().set("id", 1L).set("val", 22L).build();
+        final Tuple tuple = Tuple.create().set("id", 1L).set("val", 11L);
+        final Tuple newTuple = Tuple.create().set("id", 1L).set("val", 22L);
 
-        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).build()));
-        assertNull(tbl.get(tuple));
+        assertNull(tbl.get(Tuple.create().set("id", 1L)));
 
         // Insert new tuple.
         assertNull(tbl.getAndUpsert(tuple));
 
-        assertEqualsRows(schema, tuple, tbl.get(tuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, tuple, tbl.get(Tuple.create().set("id", 1L)));
 
         // Update exited row.
         assertEqualsRows(schema, tuple, tbl.getAndUpsert(newTuple));
 
-        assertEqualsRows(schema, newTuple, tbl.get(tuple));
-        assertEqualsRows(schema, newTuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, newTuple, tbl.get(Tuple.create().set("id", 1L)));
     }
 
     /**
@@ -157,27 +149,25 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
+        tbl.upsert(Tuple.create().set("id", 1L).set("val", 11L));
 
-        tbl.upsert(tuple);
+        final Tuple keyTuple = Tuple.create().set("id", 1L);
 
-        assertEqualsRows(schema, tuple, tbl.get(tuple));
+        // Delete not existed keyTuple.
+        assertFalse(tbl.delete(Tuple.create().set("id", 2L)));
 
-        // Delete not existed tuple.
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).build()));
+        // Delete existed keyTuple.
+        assertTrue(tbl.delete(keyTuple));
+        assertNull(tbl.get(keyTuple));
 
-        // Delete existed tuple.
-        assertTrue(tbl.delete(tuple));
-        assertNull(tbl.get(tuple));
-
-        // Delete already deleted tuple.
-        assertFalse(tbl.delete(tuple));
+        // Delete already deleted keyTuple.
+        assertFalse(tbl.delete(keyTuple));
     }
 
     /**
@@ -188,16 +178,16 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple keyTuple = tbl.tupleBuilder().set("id", 1L).build();
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
-        final Tuple tuple2 = tbl.tupleBuilder().set("id", 1L).set("val", 22L).build();
-        final Tuple nonExistedTuple = tbl.tupleBuilder().set("id", 2L).set("val", 22L).build();
+        final Tuple keyTuple = Tuple.create().set("id", 1L);
+        final Tuple tuple = Tuple.create().set("id", 1L).set("val", 11L);
+        final Tuple tuple2 = Tuple.create().set("id", 1L).set("val", 22L);
+        final Tuple nonExistedTuple = Tuple.create().set("id", 2L).set("val", 22L);
 
         tbl.insert(tuple);
 
@@ -240,15 +230,15 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple keyTuple = tbl.tupleBuilder().set("id", 1L).build();
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
-        final Tuple tuple2 = tbl.tupleBuilder().set("id", 1L).set("val", 22L).build();
+        final Tuple keyTuple = Tuple.create().set("id", 1L);
+        final Tuple tuple = Tuple.create().set("id", 1L).set("val", 11L);
+        final Tuple tuple2 = Tuple.create().set("id", 1L).set("val", 22L);
 
         assertNull(tbl.get(keyTuple));
 
@@ -256,7 +246,6 @@ public class TableBinaryViewOperationsTest {
         assertFalse(tbl.replace(tuple));
 
         assertNull(tbl.get(keyTuple));
-        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         // Insert row.
         tbl.insert(tuple);
@@ -265,7 +254,6 @@ public class TableBinaryViewOperationsTest {
         assertTrue(tbl.replace(tuple2));
 
         assertEqualsRows(schema, tuple2, tbl.get(keyTuple));
-        assertEqualsRows(schema, tuple2, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
     }
 
     /**
@@ -276,24 +264,23 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple keyTuple = tbl.tupleBuilder().set("id", 1L).build();
-        final Tuple tuple = tbl.tupleBuilder().set("id", 1L).set("val", 11L).build();
-        final Tuple tuple2 = tbl.tupleBuilder().set("id", 1L).set("val", 22L).build();
+        final Tuple tuple = Tuple.create().set("id", 1L).set("val", 11L);
+        final Tuple tuple2 = Tuple.create().set("id", 1L).set("val", 22L);
 
-        assertNull(tbl.get(keyTuple));
+        assertNull(tbl.get(Tuple.create().set("id", 1L)));
 
         // Ignore replace operation for non-existed row.
         // TODO: IGNITE-14479: Fix default value usage.
 //        assertTrue(tbl.replace(keyTuple, tuple));
 
 //        assertNull(tbl.get(keyTuple));
-//        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+//        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1)));
 
         // Insert row.
         tbl.insert(tuple);
@@ -301,8 +288,7 @@ public class TableBinaryViewOperationsTest {
         // Replace existed row.
         assertTrue(tbl.replace(tuple, tuple2));
 
-        assertEqualsRows(schema, tuple2, tbl.get(keyTuple));
-        assertEqualsRows(schema, tuple2, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+        assertEqualsRows(schema, tuple2, tbl.get(Tuple.create().set("id", 1L)));
     }
 
     /**
@@ -313,8 +299,8 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {
                 new Column("val", NativeTypes.INT64, true),
                 new Column("str", NativeTypes.stringOf(3), true),
                 new Column("blob", NativeTypes.blobOf(3), true)
@@ -323,10 +309,10 @@ public class TableBinaryViewOperationsTest {
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple keyTuple0 = new TestTupleBuilder().set("id", 0).set("id1", 0).build();
-        final Tuple keyTuple1 = new TestTupleBuilder().set("id1", 0).build();
-        final Tuple tuple0 = new TestTupleBuilder().set("id", 1L).set("str", "qweqweqwe").set("val", 11L).build();
-        final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[]{0, 1, 2, 3}).set("val", 22L).build();
+        final Tuple keyTuple0 = new TestTupleBuilder().set("id", 0).set("id1", 0);
+        final Tuple keyTuple1 = new TestTupleBuilder().set("id1", 0);
+        final Tuple tuple0 = new TestTupleBuilder().set("id", 1L).set("str", "qweqweqwe").set("val", 11L);
+        final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[] {0, 1, 2, 3}).set("val", 22L);
 
         assertThrows(InvalidTypeException.class, () -> tbl.get(keyTuple0));
         assertThrows(IllegalArgumentException.class, () -> tbl.get(keyTuple1));
@@ -349,22 +335,22 @@ public class TableBinaryViewOperationsTest {
         SchemaDescriptor schema = new SchemaDescriptor(
             tableId,
             1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{
+            new Column[] {new Column("id", NativeTypes.INT64, false)},
+            new Column[] {
                 new Column("val", NativeTypes.INT64, true, () -> 28L),
                 new Column("str", NativeTypes.stringOf(3), true, () -> "ABC"),
-                new Column("blob", NativeTypes.blobOf(3), true, () -> new byte[]{0, 1, 2})
+                new Column("blob", NativeTypes.blobOf(3), true, () -> new byte[] {0, 1, 2})
             }
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
-        final Tuple keyTuple0 = tbl.tupleBuilder().set("id", 0L).build();
-        final Tuple keyTuple1 = tbl.tupleBuilder().set("id", 1L).build();
+        final Tuple keyTuple0 = Tuple.create().set("id", 0L);
+        final Tuple keyTuple1 = Tuple.create().set("id", 1L);
 
-        final Tuple tuple0 = tbl.tupleBuilder().set("id", 0L).build();
-        final Tuple tupleExpected0 = tbl.tupleBuilder().set("id", 0L).set("val", 28L).set("str", "ABC").set("blob", new byte[]{0, 1, 2}).build();
-        final Tuple tuple1 = tbl.tupleBuilder().set("id", 1L).set("val", null).set("str", null).set("blob", null).build();
+        final Tuple tuple0 = Tuple.create().set("id", 0L);
+        final Tuple tupleExpected0 = Tuple.create().set("id", 0L).set("val", 28L).set("str", "ABC").set("blob", new byte[] {0, 1, 2});
+        final Tuple tuple1 = Tuple.create().set("id", 1L).set("val", null).set("str", null).set("blob", null);
 
         tbl.insert(tuple0);
         tbl.insert(tuple1);

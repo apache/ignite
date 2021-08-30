@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Schema-aware entity.
  */
@@ -24,7 +26,7 @@ public interface SchemaAware {
     /**
      * Gets the schema descriptor.
      *
-     * @return Schema descriptor.
+     * @return Schema descriptor or {@code null} if a schema is not set or inapplicable for the entity.
      */
-    SchemaDescriptor schema();
+    @Nullable SchemaDescriptor schema();
 }

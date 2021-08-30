@@ -15,121 +15,151 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
+package org.apache.ignite.table;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjects;
-import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.SchemaAware;
-import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Buildable tuple.
+ * Simple tuple implementation.
  */
-public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
+public class TupleImpl implements Tuple {
+    /** Column name -&gt; index mapping. */
+    private final Map<String, Integer> colIdxMap;
+
+    /** Columns names. */
+    private final List<String> colNames;
+
     /** Columns values. */
-    protected Map<String, Object> map;
-
-    /** Current schema descriptor. */
-    private SchemaDescriptor schemaDesc;
+    private final List<Object> vals;
 
     /**
-     * Creates tuple builder.
-     *
-     * @param schemaDesc Schema descriptor.
+     * Creates tuple.
      */
-    public TupleBuilderImpl(SchemaDescriptor schemaDesc) {
-        Objects.requireNonNull(schemaDesc);
-
-        this.schemaDesc = schemaDesc;
-        map = new HashMap<>(schemaDesc.length());
-    }
-
-    /** {@inheritDoc} */
-    @Override public TupleBuilder set(String columnName, Object val) {
-        getColumnOrThrow(columnName).validate(val);
-
-        map.put(columnName, val);
-
-        return this;
+    public TupleImpl() {
+        this(new HashMap<>(), new ArrayList(), new ArrayList());
     }
 
     /**
-     * Sets column value.
+     * Creates a tuple with specified initial capacity.
      *
-     * @param col Column.
-     * @param value Value to set.
-     * @return {@code this} for chaining.
+     * @param capacity Initial capacity.
      */
-    public TupleBuilder set(Column col, Object value) {
-        assert col != null;
+    public TupleImpl(int capacity) {
+        this(new HashMap<>(capacity), new ArrayList(capacity), new ArrayList(capacity));
+    }
 
-        col.validate(value);
+    /**
+     * Copying constructor.
+     *
+     * @param tuple Tuple to copy.
+     */
+    public TupleImpl(@NotNull TupleImpl tuple) {
+        this(new HashMap<>(tuple.colIdxMap), new ArrayList<>(tuple.colNames), new ArrayList<>(tuple.vals));
+    }
 
-        map.put(col.name(), value);
+    /**
+     * Private constructor.
+     *
+     * @param columnNameMapping Column name mapping.
+     * @param columnNames Column names.
+     * @param values Column values.
+     */
+    private TupleImpl(Map<String, Integer> columnNameMapping, List<String> columnNames, List<Object> values) {
+        this.colIdxMap = columnNameMapping;
+        this.colNames = columnNames;
+        this.vals = values;
+    }
 
-        return this;
+    /**
+     * Copying constructor.
+     *
+     * @param tuple Tuple.
+     */
+    public TupleImpl(@NotNull Tuple tuple) {
+        this(tuple.columnCount());
+
+        for (int i = 0, len = tuple.columnCount(); i < len; i++)
+            set(tuple.columnName(i), tuple.value(i));
     }
 
     /** {@inheritDoc} */
-    @Override public Tuple build() {
+    @Override public Tuple set(@NotNull String columnName, Object val) {
+        Objects.nonNull(columnName);
+
+        int idx = colIdxMap.computeIfAbsent(columnName, name -> colIdxMap.size());
+
+        if (idx == colNames.size()) {
+            colNames.add(idx, columnName);
+            vals.add(idx, val);
+        } else {
+            colNames.set(idx, columnName);
+            vals.set(idx, val);
+        }
+
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public String columnName(int columnIndex) {
-        return schemaDesc.column(columnIndex).name();
+        Objects.checkIndex(columnIndex, vals.size());
+
+        return colNames.get(columnIndex);
     }
 
     /** {@inheritDoc} */
-    @Override public Integer columnIndex(String columnName) {
-        var col = schemaDesc.column(columnName);
+    @Override public int columnIndex(@NotNull String columnName) {
+        Objects.requireNonNull(columnName);
 
-        return col == null ? null : col.schemaIndex();
+        Integer idx = colIdxMap.get(columnName);
+
+        return idx == null ? -1 : idx;
     }
 
     /** {@inheritDoc} */
     @Override public int columnCount() {
-        return schemaDesc.length();
+        return colNames.size();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T valueOrDefault(String columnName, T def) {
-        return (T)map.getOrDefault(columnName, def);
+    @Override public <T> T valueOrDefault(@NotNull String columnName, T def) {
+        int idx = columnIndex(columnName);
+
+        return (idx == -1) ? def : (T) vals.get(idx);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T value(String columnName) {
-        getColumnOrThrow(columnName);
+    @Override public <T> T value(@NotNull String columnName) {
+        int idx = columnIndex(columnName);
 
-        return (T)map.get(columnName);
+        if (idx == -1)
+            throw new IllegalArgumentException("Column not found: columnName=" + columnName);
+
+        return (T) vals.get(idx);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T value(int columnIndex) {
-        Column col = schemaDesc.column(columnIndex);
+        Objects.checkIndex(columnIndex, vals.size());
 
-        return (T)map.get(col.name());
+        return (T) vals.get(columnIndex);
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectValue(String columnName) {
-        byte[] data = value(columnName);
-
-        return BinaryObjects.wrap(data);
+    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
+        return value(columnName);
     }
 
     /** {@inheritDoc} */
@@ -138,7 +168,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(String columnName) {
+    @Override public byte byteValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -148,7 +178,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(String columnName) {
+    @Override public short shortValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -158,7 +188,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(String columnName) {
+    @Override public int intValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -168,7 +198,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(String columnName) {
+    @Override public long longValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -178,7 +208,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(String columnName) {
+    @Override public float floatValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -188,7 +218,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(String columnName) {
+    @Override public double doubleValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -198,7 +228,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(String columnName) {
+    @Override public String stringValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -208,7 +238,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(String columnName) {
+    @Override public UUID uuidValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -218,7 +248,7 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(String columnName) {
+    @Override public BitSet bitmaskValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -268,48 +298,20 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema() {
-        return schemaDesc;
-    }
-
-    /** {@inheritDoc} */
     @NotNull @Override public Iterator<Object> iterator() {
         return new Iterator<>() {
             /** Current column index. */
-            private int cur;
+            private int cur = 0;
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                return cur < schemaDesc.length();
+                return cur < vals.size();
             }
 
             /** {@inheritDoc} */
             @Override public Object next() {
-                return hasNext() ? value(cur++) : null;
+                return hasNext() ? vals.get(cur++) : null;
             }
         };
-    }
-
-    /**
-     * @param schemaDesc New current schema descriptor.
-     */
-    protected void schema(SchemaDescriptor schemaDesc) {
-        this.schemaDesc = schemaDesc;
-    }
-
-    /**
-     * Gets column by name or throws an exception when not found.
-     *
-     * @param columnName Column name.
-     * @return Column.
-     * @throws ColumnNotFoundException when not found.
-     */
-    @NotNull private Column getColumnOrThrow(String columnName) {
-        Column col = schema().column(columnName);
-
-        if (col == null)
-            throw new ColumnNotFoundException("Column not found [col=" + columnName + "schema=" + schemaDesc + ']');
-
-        return col;
     }
 }

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.TestUtils;
 import org.apache.ignite.internal.schema.marshaller.asm.AsmSerializerGenerator;
 import org.apache.ignite.internal.schema.marshaller.reflection.JavaSerializerFactory;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.junit.jupiter.api.BeforeEach;
@@ -474,9 +475,9 @@ public class JavaSerializerTest {
 
             obj.nullBytesCol = null;
             obj.uuidCol = new UUID(rnd.nextLong(), rnd.nextLong());
-            obj.bitmaskCol = TestUtils.randomBitSet(rnd, 42);
-            obj.stringCol = TestUtils.randomString(rnd, rnd.nextInt(255));
-            obj.bytesCol = TestUtils.randomBytes(rnd, rnd.nextInt(255));
+            obj.bitmaskCol = IgniteTestUtils.randomBitSet(rnd, 42);
+            obj.stringCol = IgniteTestUtils.randomString(rnd, rnd.nextInt(255));
+            obj.bytesCol = IgniteTestUtils.randomBytes(rnd, rnd.nextInt(255));
             obj.numberCol = (BigInteger)TestUtils.generateRandomValue(rnd, NativeTypes.numberOf(12));
             obj.decimalCol = (BigDecimal)TestUtils.generateRandomValue(rnd, NativeTypes.decimalOf(19, 3));
 

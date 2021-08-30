@@ -23,16 +23,16 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Client tuple builder.
  */
-public final class ClientTupleBuilder implements TupleBuilder, Tuple {
+public final class ClientTuple implements Tuple {
     /** Null object to differentiate unset values and null values. */
     private static final Object NULL_OBJ = new Object();
 
@@ -47,7 +47,7 @@ public final class ClientTupleBuilder implements TupleBuilder, Tuple {
      *
      * @param schema Schema.
      */
-    public ClientTupleBuilder(ClientSchema schema) {
+    public ClientTuple(ClientSchema schema) {
         assert schema != null : "Schema can't be null.";
         assert schema.columns().length > 0 : "Schema can't be empty.";
 
@@ -56,17 +56,12 @@ public final class ClientTupleBuilder implements TupleBuilder, Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public TupleBuilder set(String columnName, Object value) {
+    @Override public Tuple set(String columnName, Object value) {
         // TODO: Live schema and schema evolution support IGNITE-15194
         var col = schema.column(columnName);
 
         vals[col.schemaIndex()] = value == null ? NULL_OBJ : value;
 
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tuple build() {
         return this;
     }
 
@@ -91,7 +86,7 @@ public final class ClientTupleBuilder implements TupleBuilder, Tuple {
 
     /** {@inheritDoc} */
     @Override public <T> T value(int columnIndex) {
-        validateColumnIndex(columnIndex);
+        Objects.checkIndex(columnIndex, vals.length);
 
         return getValue(columnIndex);
     }
@@ -103,16 +98,16 @@ public final class ClientTupleBuilder implements TupleBuilder, Tuple {
 
     /** {@inheritDoc} */
     @Override public String columnName(int columnIndex) {
-        validateColumnIndex(columnIndex);
+        Objects.checkIndex(columnIndex, vals.length);
 
         return schema.columns()[columnIndex].name();
     }
 
     /** {@inheritDoc} */
-    @Override public Integer columnIndex(String columnName) {
+    @Override public int columnIndex(String columnName) {
         var col = schema.columnSafe(columnName);
 
-        return col == null ? null : col.schemaIndex();
+        return col == null ? -1 : col.schemaIndex();
     }
 
     /** {@inheritDoc} */
@@ -291,14 +286,6 @@ public final class ClientTupleBuilder implements TupleBuilder, Tuple {
      */
     public ClientSchema schema() {
         return schema;
-    }
-
-    private void validateColumnIndex(int columnIndex) {
-        if (columnIndex < 0)
-            throw new IllegalArgumentException("Column index can't be negative");
-
-        if (columnIndex >= vals.length)
-            throw new IllegalArgumentException("Column index can't be greater than " + (vals.length - 1));
     }
 
     private <T> T getValue(int columnIndex) {

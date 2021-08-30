@@ -62,6 +62,13 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-configuration</artifactId>
             <scope>test</scope>
             <type>test-jar</type>

@@ -29,13 +29,12 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Dummy table storage implementation.
  */
-public class TestTupleBuilder implements TupleBuilder, Tuple {
+public class TestTupleBuilder implements Tuple {
     /** Columns values. */
     private final Map<String, Object> map = new HashMap<>();
 
@@ -43,11 +42,6 @@ public class TestTupleBuilder implements TupleBuilder, Tuple {
     @Override public TestTupleBuilder set(String columnName, Object value) {
         map.put(columnName, value);
 
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tuple build() {
         return this;
     }
 
@@ -77,7 +71,7 @@ public class TestTupleBuilder implements TupleBuilder, Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer columnIndex(String columnName) {
+    @Override public int columnIndex(String columnName) {
         throw new UnsupportedOperationException();
     }
 

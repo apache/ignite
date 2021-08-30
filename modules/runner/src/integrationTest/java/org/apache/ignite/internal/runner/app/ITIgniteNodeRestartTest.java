@@ -172,15 +172,10 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
             scmTbl1.canonicalName(), tbl -> SchemaConfigurationConverter.convert(scmTbl1, tbl).changePartitions(10));
 
         for (int i = 0; i < 100; i++) {
-            Tuple key = table.tupleBuilder()
-                .set("id", i)
-                .build();
+            Tuple key = Tuple.create().set("id", i);
+            Tuple val = Tuple.create().set("name", "name " + i);
 
-            Tuple vaul = table.tupleBuilder()
-                .set("name", "name " + i)
-                .build();
-
-            table.kvView().put(key, vaul);
+            table.kvView().put(key, val);
         }
 
         IgnitionManager.stop(NODE_NAME);
@@ -190,9 +185,8 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
         assertNotNull(ignite.tables().table(TABLE_NAME));
 
         for (int i = 0; i < 100; i++) {
-            assertEquals("name " + i, table.kvView().get(table.tupleBuilder()
-                .set("id", i)
-                .build())
+            assertEquals("name " + i, table.kvView().get(Tuple.create()
+                .set("id", i))
                 .stringValue("name"));
         }
 

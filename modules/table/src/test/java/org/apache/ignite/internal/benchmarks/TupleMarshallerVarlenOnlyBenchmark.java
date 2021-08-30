@@ -29,9 +29,9 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
 import org.apache.ignite.internal.schema.row.Row;
-import org.apache.ignite.internal.table.TupleBuilderImpl;
 import org.apache.ignite.internal.table.TupleMarshallerImpl;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.table.TupleImpl;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -121,7 +121,7 @@ public class TupleMarshallerVarlenOnlyBenchmark {
                 .toArray(Column[]::new)
         );
 
-        marshaller = new TupleMarshallerImpl(new SchemaRegistryImpl(v -> null) {
+        marshaller = new TupleMarshallerImpl(null, null, new SchemaRegistryImpl(v -> null) {
             @Override public SchemaDescriptor schema() {
                 return schema;
             }
@@ -156,14 +156,14 @@ public class TupleMarshallerVarlenOnlyBenchmark {
     public void measureTupleBuildAndMarshallerCost(Blackhole bh) {
         final Columns cols = schema.valueColumns();
 
-        final TupleBuilderImpl valBld = new TupleBuilderImpl(schema);
+        final TupleImpl valBld = new TupleImpl();
 
         for (int i = 0; i < cols.length(); i++)
             valBld.set(cols.column(i).name(), val);
 
-        Tuple keyTuple = new TupleBuilderImpl(schema).set("key", rnd.nextLong()).build();
+        Tuple keyTuple = new TupleImpl().set("key", rnd.nextLong());
 
-        final Row row = marshaller.marshal(keyTuple, valBld.build());
+        final Row row = marshaller.marshal(keyTuple, valBld);
 
         bh.consume(row);
     }

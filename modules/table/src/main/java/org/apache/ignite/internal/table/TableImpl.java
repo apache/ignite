@@ -37,7 +37,6 @@ import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleBuilder;
 import org.apache.ignite.table.mapper.KeyMapper;
 import org.apache.ignite.table.mapper.RecordMapper;
 import org.apache.ignite.table.mapper.ValueMapper;
@@ -66,7 +65,7 @@ public class TableImpl extends AbstractTableView implements Table {
     public TableImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr, @Nullable Transaction tx) {
         super(tbl, schemaReg, tx);
 
-        marsh = new TupleMarshallerImpl(schemaReg);
+        marsh = new TupleMarshallerImpl(tblMgr, tbl, schemaReg);
 
         this.tblMgr = tblMgr;
     }
@@ -123,7 +122,7 @@ public class TableImpl extends AbstractTableView implements Table {
     @Override public @NotNull CompletableFuture<Tuple> getAsync(@NotNull Tuple keyRec) {
         Objects.requireNonNull(keyRec);
 
-        final Row keyRow = marshaller().marshal(keyRec, null); // Convert to portable format to pass TX/storage layer.
+        final Row keyRow = marshaller().marshalKey(keyRec); // Convert to portable format to pass TX/storage layer.
 
         return tbl.get(keyRow, tx).thenApply(this::wrap);
     }
@@ -140,7 +139,7 @@ public class TableImpl extends AbstractTableView implements Table {
         HashSet<BinaryRow> keys = new HashSet<>(keyRecs.size());
 
         for (Tuple keyRec : keyRecs) {
-            final Row keyRow = marshaller().marshal(keyRec, null);
+            final Row keyRow = marshaller().marshalKey(keyRec);
 
             keys.add(keyRow);
         }
@@ -283,7 +282,7 @@ public class TableImpl extends AbstractTableView implements Table {
     @Override public @NotNull CompletableFuture<Boolean> deleteAsync(@NotNull Tuple keyRec) {
         Objects.requireNonNull(keyRec);
 
-        final Row keyRow = marshaller().marshal(keyRec, null);
+        final Row keyRow = marshaller().marshalKey(keyRec);
 
         return tbl.delete(keyRow, tx);
     }
@@ -311,7 +310,7 @@ public class TableImpl extends AbstractTableView implements Table {
     @Override public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
-        final Row row = marshaller().marshal(rec);
+        final Row row = marshaller().marshalKey(rec);
 
         return tbl.getAndDelete(row, tx).thenApply(this::wrap);
     }
@@ -328,7 +327,7 @@ public class TableImpl extends AbstractTableView implements Table {
         HashSet<BinaryRow> keys = new HashSet<>(recs.size());
 
         for (Tuple keyRec : recs) {
-            final Row keyRow = marshaller().marshal(keyRec, null);
+            final Row keyRow = marshaller().marshalKey(keyRec);
 
             keys.add(keyRow);
         }
@@ -390,17 +389,6 @@ public class TableImpl extends AbstractTableView implements Table {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    /** {@inheritDoc} */
-    @Override public TupleBuilder tupleBuilder() {
-        switch (tbl.schemaMode()) {
-            case STRICT_SCHEMA:
-                return new TupleBuilderImpl(schemaReg.schema());
-            case LIVE_SCHEMA:
-                return new LiveSchemaTupleBuilderImpl(schemaReg, tbl.tableName(), tblMgr);
-        }
-        throw new IllegalArgumentException("Unknown schema type: " + tbl.schemaMode());
-    }
-
     /**
      * @return Marshaller.
      */
@@ -410,15 +398,15 @@ public class TableImpl extends AbstractTableView implements Table {
 
     /**
      * @param row Binary row.
-     * @return Table row.
+     * @return Table row tuple.
      */
-    private TableRow wrap(BinaryRow row) {
+    private Tuple wrap(BinaryRow row) {
         if (row == null)
             return null;
 
         final Row wrapped = schemaReg.resolve(row);
 
-        return new TableRow(wrapped.rowSchema(), wrapped);
+        return TableRow.tuple(wrapped);
     }
 
     /**
@@ -429,7 +417,7 @@ public class TableImpl extends AbstractTableView implements Table {
         if (rows == null)
             return null;
 
-        return rows.stream().map(this::wrap).collect(Collectors.toSet());
+        return rows.stream().filter(Objects::nonNull).map(this::wrap).collect(Collectors.toSet());
     }
 
     /**

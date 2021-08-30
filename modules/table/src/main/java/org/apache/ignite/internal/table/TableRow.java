@@ -19,8 +19,6 @@ package org.apache.ignite.internal.table;
 
 import java.util.Objects;
 import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.SchemaAware;
-import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
@@ -31,109 +29,140 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Provides methods to access columns values by column names.
  */
-public class TableRow extends RowChunkAdapter implements SchemaAware {
-    /** Schema. */
-    private final SchemaDescriptor schema;
+public class TableRow extends MutableRowTupleAdapter {
+    /**
+     * Returns tuple for row key chunk.
+     *
+     * @param row Row.
+     * @return Tuple.
+     */
+    public static Tuple keyTuple(Row row) {
+        return new KeyRowChunk(row);
+    }
 
-    /** Row. */
-    private final Row row;
+    /**
+     * Returns tuple for row value chunk.
+     *
+     * @param row Row.
+     * @return Tuple.
+     */
+    public static @Nullable Tuple valueTuple(@Nullable Row row) {
+        return row != null && row.hasValue() ? new ValueRowChunk(row) : null;
+    }
+
+    /**
+     * Returns tuple for whole row.
+     *
+     * @param row Row.
+     * @return Tuple.
+     */
+    public static @Nullable Tuple tuple(Row row) {
+        return new TableRow(row);
+    }
 
     /**
      * Constructor.
      *
-     * @param schema Schema descriptor.
      * @param row Row.
      */
-    public TableRow(SchemaDescriptor schema, Row row) {
-        assert schema.version() == row.schemaVersion();
-
-        this.schema = schema;
-        this.row = row;
-    }
-
-    /** {@inheritDoc} */
-    @Override @NotNull protected final Column columnByName(@NotNull String colName) {
-        Objects.requireNonNull(colName);
-
-        final Column col = schema.column(colName);
-
-        if (col == null)
-            throw new ColumnNotFoundException("Invalid column name: columnName=" + colName + ", schemaVersion=" + schema.version());
-
-        return col;
+    private TableRow(Row row) {
+        super(row);
     }
 
     /**
-     * @return Key chunk.
+     * Key column chunk.
      */
-    public Tuple keyChunk() {
-        return new KeyRowChunk();
-    }
-
-    /**
-     * @return Value chunk.
-     */
-    public @Nullable Tuple valueChunk() {
-        return row.hasValue() ? new ValueRowChunk() : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Row row() {
-        return row;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema() {
-        return schema;
-    }
-
-    /** Key column chunk. */
-    private class KeyRowChunk extends RowChunkAdapter implements SchemaAware {
-        /** {@inheritDoc} */
-        @Override protected Row row() {
-            return row;
+    private static class KeyRowChunk extends MutableRowTupleAdapter {
+        /**
+         * Creates tuple for key chunk.
+         *
+         * @param row Row
+         */
+        KeyRowChunk(@NotNull Row row) {
+            super(row);
         }
 
         /** {@inheritDoc} */
-        @Override protected @NotNull Column columnByName(@NotNull String colName) {
-            Objects.requireNonNull(colName);
+        @Override public int columnCount() {
+            return tuple != null ? tuple.columnCount() : schema().keyColumns().length();
+        }
 
-            final Column col = schema.column(colName);
+        /** {@inheritDoc} */
+        @Override public int columnIndex(@NotNull String columnName) {
+            if (tuple != null)
+                return tuple.columnIndex(columnName);
 
-            if (col == null || !schema.isKeyColumn(col.schemaIndex()))
-                throw new ColumnNotFoundException("Invalid key column name: columnName=" + colName + ", schemaVersion=" + schema.version());
+            Objects.requireNonNull(columnName);
+
+            var col = schema().column(columnName);
+
+            return col == null || !schema().isKeyColumn(col.schemaIndex()) ? -1 : col.schemaIndex();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Column rowColumnByName(@NotNull String columnName) {
+            final Column col = super.rowColumnByName(columnName);
+
+            if (!schema().isKeyColumn(col.schemaIndex()))
+                throw new IllegalArgumentException("Invalid column name: columnName=" + columnName);
 
             return col;
         }
 
         /** {@inheritDoc} */
-        @Override public SchemaDescriptor schema() {
-            return schema;
+        @Override protected Column rowColumnByIndex(@NotNull int columnIndex) {
+            Objects.checkIndex(columnIndex, schema().keyColumns().length());
+
+            return schema().column(columnIndex);
         }
     }
 
-    /** Value column chunk. */
-    private class ValueRowChunk extends RowChunkAdapter {
-        /** {@inheritDoc} */
-        @Override protected Row row() {
-            return row;
+    /**
+     * Value column chunk.
+     */
+    private static class ValueRowChunk extends MutableRowTupleAdapter {
+        /**
+         * Creates tuple for value chunk.
+         *
+         * @param row Row.
+         */
+        ValueRowChunk(@NotNull Row row) {
+            super(row);
         }
 
         /** {@inheritDoc} */
-        @Override protected @NotNull Column columnByName(@NotNull String colName) {
-            Objects.requireNonNull(colName);
+        @Override public int columnCount() {
+            return tuple != null ? tuple.columnCount() : schema().valueColumns().length();
+        }
 
-            final Column col = schema.column(colName);
+        /** {@inheritDoc} */
+        @Override public int columnIndex(@NotNull String columnName) {
+            if (tuple != null)
+                return tuple.columnIndex(columnName);
 
-            if (col == null || schema.isKeyColumn(col.schemaIndex()))
-                throw new ColumnNotFoundException("Invalid value column name: columnName=" + colName + ", schemaVersion=" + schema.version());
+            Objects.requireNonNull(columnName);
+
+            var col = schema().column(columnName);
+
+            return col == null || schema().isKeyColumn(col.schemaIndex()) ? -1 :
+                    col.schemaIndex() - schema().keyColumns().length();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Column rowColumnByName(@NotNull String columnName) {
+            final Column col = super.rowColumnByName(columnName);
+
+            if (schema().isKeyColumn(col.schemaIndex()))
+                throw new IllegalArgumentException("Invalid column name: columnName=" + columnName);
 
             return col;
         }
 
         /** {@inheritDoc} */
-        @Override public SchemaDescriptor schema() {
-            return schema;
+        @Override protected Column rowColumnByIndex(@NotNull int columnIndex) {
+            Objects.checkIndex(columnIndex, schema().valueColumns().length());
+
+            return schema().column(columnIndex + schema().keyColumns().length());
         }
     }
 }

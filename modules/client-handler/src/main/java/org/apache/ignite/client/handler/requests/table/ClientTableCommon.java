@@ -37,7 +37,6 @@ import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleBuilder;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
 import org.msgpack.core.MessageFormat;
@@ -267,7 +266,7 @@ class ClientTableCommon {
         boolean keyOnly,
         SchemaDescriptor schema
     ) {
-        var builder = table.tupleBuilder();
+        var tuple = Tuple.create();
 
         var cnt = keyOnly ? schema.keyColumns().length() : schema.length();
 
@@ -277,10 +276,10 @@ class ClientTableCommon {
                 continue;
             }
 
-            readAndSetColumnValue(unpacker, builder, schema.column(i));
+            readAndSetColumnValue(unpacker, tuple, schema.column(i));
         }
 
-        return builder.build();
+        return tuple;
     }
 
     /**
@@ -292,16 +291,16 @@ class ClientTableCommon {
      */
     public static Tuple readTupleSchemaless(ClientMessageUnpacker unpacker, TableImpl table) {
         var cnt = unpacker.unpackMapHeader();
-        var builder = table.tupleBuilder();
+        var tuple = Tuple.create();
 
         for (int i = 0; i < cnt; i++) {
             var colName = unpacker.unpackString();
 
             // TODO: Unpack value as object IGNITE-15194.
-            builder.set(colName, unpacker.unpackValue());
+            tuple.set(colName, unpacker.unpackValue());
         }
 
-        return builder.build();
+        return tuple;
     }
 
     /**
@@ -334,8 +333,8 @@ class ClientTableCommon {
         return ((IgniteTablesInternal)tables).table(tableId);
     }
 
-    private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, TupleBuilder builder, Column col) {
-        builder.set(col.name(), unpacker.unpackObject(getClientDataType(col.type().spec())));
+    private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, Tuple tuple, Column col) {
+        tuple.set(col.name(), unpacker.unpackObject(getClientDataType(col.type().spec())));
     }
 
     private static int getClientDataType(NativeTypeSpec spec) {

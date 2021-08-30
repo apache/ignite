@@ -316,42 +316,33 @@ public class ITDistributedTableTest {
         LOG.info("Test for Table view [keys={}]", keysCnt);
 
         for (int i = 0; i < keysCnt; i++) {
-            view.insert(view.tupleBuilder()
+            view.insert(Tuple.create()
                 .set("key", Long.valueOf(i))
                 .set("value", Long.valueOf(i + 2))
-                .build()
             );
         }
 
         for (int i = 0; i < keysCnt; i++) {
-            Tuple entry = view.get(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertEquals(Long.valueOf(i + 2), entry.longValue("value"));
         }
 
         for (int i = 0; i < keysCnt; i++) {
-            view.upsert(view.tupleBuilder()
+            view.upsert(Tuple.create()
                 .set("key", Long.valueOf(i))
                 .set("value", Long.valueOf(i + 5))
-                .build()
             );
 
-            Tuple entry = view.get(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertEquals(Long.valueOf(i + 5), entry.longValue("value"));
         }
 
         HashSet<Tuple> keys = new HashSet<>();
 
-        for (int i = 0; i < keysCnt; i++) {
-            keys.add(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
-        }
+        for (int i = 0; i < keysCnt; i++)
+            keys.add(Tuple.create().set("key", Long.valueOf(i)));
 
         Collection<Tuple> entries = view.getAll(keys);
 
@@ -359,28 +350,23 @@ public class ITDistributedTableTest {
 
         for (int i = 0; i < keysCnt; i++) {
             boolean res = view.replace(
-                view.tupleBuilder()
+                Tuple.create()
                     .set("key", Long.valueOf(i))
-                    .set("value", Long.valueOf(i + 5))
-                    .build(),
-                view.tupleBuilder()
+                    .set("value", Long.valueOf(i + 5)),
+                Tuple.create()
                     .set("key", Long.valueOf(i))
                     .set("value", Long.valueOf(i + 2))
-                    .build());
+            );
 
             assertTrue(res);
         }
 
         for (int i = 0; i < keysCnt; i++) {
-            boolean res = view.delete(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
+            boolean res = view.delete(Tuple.create().set("key", Long.valueOf(i)));
 
             assertTrue(res);
 
-            Tuple entry = view.get(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertNull(entry);
         }
@@ -388,18 +374,16 @@ public class ITDistributedTableTest {
         ArrayList<Tuple> batch = new ArrayList<>(keysCnt);
 
         for (int i = 0; i < keysCnt; i++) {
-            batch.add(view.tupleBuilder()
+            batch.add(Tuple.create()
                 .set("key", Long.valueOf(i))
                 .set("value", Long.valueOf(i + 2))
-                .build());
+            );
         }
 
         view.upsertAll(batch);
 
         for (int i = 0; i < keysCnt; i++) {
-            Tuple entry = view.get(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertEquals(Long.valueOf(i + 2), entry.longValue("value"));
         }
@@ -424,47 +408,33 @@ public class ITDistributedTableTest {
 
         for (int i = 0; i < keysCnt; i++) {
             view.putIfAbsent(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build(),
-                view.tupleBuilder()
-                    .set("value", Long.valueOf(i + 2))
-                    .build());
+                Tuple.create().set("key", Long.valueOf(i)),
+                Tuple.create().set("value", Long.valueOf(i + 2))
+            );
         }
 
         for (int i = 0; i < keysCnt; i++) {
-            Tuple entry = view.get(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertEquals(Long.valueOf(i + 2), entry.longValue("value"));
         }
 
         for (int i = 0; i < keysCnt; i++) {
             view.put(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build(),
-                view.tupleBuilder()
-                    .set("value", Long.valueOf(i + 5))
-                    .build());
+                Tuple.create().set("key", Long.valueOf(i)),
+                Tuple.create().set("value", Long.valueOf(i + 5))
+            );
 
-            Tuple entry = view.get(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertEquals(Long.valueOf(i + 5), entry.longValue("value"));
         }
 
         HashSet<Tuple> keys = new HashSet<>();
 
-        for (int i = 0; i < keysCnt; i++) {
-            keys.add(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
-        }
+        for (int i = 0; i < keysCnt; i++)
+            keys.add(Tuple.create().set("key", Long.valueOf(i)));
+
 
         Map<Tuple, Tuple> entries = view.getAll(keys);
 
@@ -472,31 +442,23 @@ public class ITDistributedTableTest {
 
         for (int i = 0; i < keysCnt; i++) {
             boolean res = view.replace(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build(),
-                view.tupleBuilder()
-                    .set("value", Long.valueOf(i + 5))
-                    .build(),
-                view.tupleBuilder()
-                    .set("value", Long.valueOf(i + 2))
-                    .build());
+                Tuple.create().set("key", Long.valueOf(i)),
+                Tuple.create().set("value", Long.valueOf(i + 5)),
+                Tuple.create().set("value", Long.valueOf(i + 2))
+            );
 
             assertTrue(res);
         }
 
         for (int i = 0; i < keysCnt; i++) {
-            boolean res = view.remove(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build());
+            boolean res = view.remove(Tuple.create().set("key", Long.valueOf(i)));
 
             assertTrue(res);
 
             Tuple entry = view.get(
-                view.tupleBuilder()
+                Tuple.create()
                     .set("key", Long.valueOf(i))
-                    .build());
+            );
 
             assertNull(entry);
         }
@@ -505,20 +467,15 @@ public class ITDistributedTableTest {
 
         for (int i = 0; i < keysCnt; i++) {
             batch.put(
-                view.tupleBuilder()
-                    .set("key", Long.valueOf(i))
-                    .build(),
-                view.tupleBuilder()
-                    .set("value", Long.valueOf(i + 2))
-                    .build());
+                Tuple.create().set("key", Long.valueOf(i)),
+                Tuple.create().set("value", Long.valueOf(i + 2))
+            );
         }
 
         view.putAll(batch);
 
         for (int i = 0; i < keysCnt; i++) {
-            Tuple entry = view.get(view.tupleBuilder()
-                .set("key", Long.valueOf(i))
-                .build());
+            Tuple entry = view.get(Tuple.create().set("key", Long.valueOf(i)));
 
             assertEquals(Long.valueOf(i + 2), entry.longValue("value"));
         }

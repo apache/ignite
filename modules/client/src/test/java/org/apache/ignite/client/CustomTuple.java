@@ -64,7 +64,7 @@ public class CustomTuple implements Tuple {
         return null;
     }
 
-    @Override public Integer columnIndex(String columnName) {
+    @Override public int columnIndex(String columnName) {
         switch (columnName) {
             case "id":
                 return 0;
@@ -72,7 +72,7 @@ public class CustomTuple implements Tuple {
                 return 1;
         }
 
-        return null;
+        return -1;
     }
 
     @Override public <T> T valueOrDefault(String columnName, T def) {
@@ -84,6 +84,10 @@ public class CustomTuple implements Tuple {
         }
 
         return def;
+    }
+
+    @Override public Tuple set(String columnName, Object value) {
+        throw new UnsupportedOperationException("Tuple is immutable.");
     }
 
     @Override public <T> T value(String columnName) {

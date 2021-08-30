@@ -27,7 +27,7 @@ import java.util.UUID;
 import org.apache.ignite.client.proto.ClientDataType;
 import org.apache.ignite.internal.client.table.ClientColumn;
 import org.apache.ignite.internal.client.table.ClientSchema;
-import org.apache.ignite.internal.client.table.ClientTupleBuilder;
+import org.apache.ignite.internal.client.table.ClientTuple;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * Should be in sync with org.apache.ignite.internal.table.TupleBuilderImplTest.
  */
-public class ClientTupleBuilderTest {
+public class ClientTupleTest {
     private static final ClientSchema SCHEMA = new ClientSchema(1, new ClientColumn[] {
             new ClientColumn("id", ClientDataType.INT64, false, true, 0),
             new ClientColumn("name", ClientDataType.STRING, false, false, 1)
@@ -77,14 +77,14 @@ public class ClientTupleBuilderTest {
 
     @Test
     public void testValueOrDefaultReturnsNullWhenColumnIsSetToNull() {
-        var tuple = getBuilder().set("name", null).build();
+        var tuple = getBuilder().set("name", null);
 
         assertNull(tuple.valueOrDefault("name", "foo"));
     }
 
     @Test
     public void testEmptySchemaThrows() {
-        assertThrows(AssertionError.class, () -> new ClientTupleBuilder(new ClientSchema(1, new ClientColumn[0])));
+        assertThrows(AssertionError.class, () -> new ClientTuple(new ClientSchema(1, new ClientColumn[0])));
     }
 
     @Test
@@ -98,8 +98,8 @@ public class ClientTupleBuilderTest {
         var ex = assertThrows(IgniteException.class, () -> getBuilder().value("x"));
         assertEquals("Column is not present in schema: x", ex.getMessage());
 
-        var ex2 = assertThrows(IllegalArgumentException.class, () -> getBuilder().value(100));
-        assertEquals("Column index can't be greater than 1", ex2.getMessage());
+        var ex2 = assertThrows(IndexOutOfBoundsException.class, () -> getBuilder().value(100));
+        assertEquals("Index 100 out of bounds for length 2", ex2.getMessage());
     }
 
     @Test
@@ -115,8 +115,8 @@ public class ClientTupleBuilderTest {
 
     @Test
     public void testColumnNameThrowsOnInvalidIndex() {
-        var ex = assertThrows(IllegalArgumentException.class, () -> getTuple().columnName(-1));
-        assertEquals("Column index can't be negative", ex.getMessage());
+        var ex = assertThrows(IndexOutOfBoundsException.class, () -> getTuple().columnName(-1));
+        assertEquals("Index -1 out of bounds for length 2", ex.getMessage());
     }
 
     @Test
@@ -126,8 +126,8 @@ public class ClientTupleBuilderTest {
     }
 
     @Test
-    public void testColumnIndexReturnsNullForMissingColumns() {
-        assertNull(getTuple().columnIndex("foo"));
+    public void testColumnIndexForMissingColumns() {
+        assertEquals(-1, getTuple().columnIndex("foo"));
     }
 
     @Test
@@ -155,7 +155,7 @@ public class ClientTupleBuilderTest {
         var datetime = LocalDateTime.of(1995, Month.MAY, 23, 17, 0, 1, 222_333_444);
         var timestamp = Instant.now();
 
-        var builder = new ClientTupleBuilder(schema)
+        var tuple = new ClientTuple(schema)
                 .set("i8", (byte)1)
                 .set("i16", (short)2)
                 .set("i32", (int)3)
@@ -169,8 +169,6 @@ public class ClientTupleBuilderTest {
                 .set("time", time)
                 .set("datetime", datetime)
                 .set("timestamp", timestamp);
-
-        var tuple = builder.build();
 
         assertEquals(1, tuple.byteValue(0));
         assertEquals(1, tuple.byteValue("i8"));
@@ -205,14 +203,13 @@ public class ClientTupleBuilderTest {
         assertEquals(timestamp, tuple.timestampValue("timestamp"));
     }
 
-    private static ClientTupleBuilder getBuilder() {
-        return new ClientTupleBuilder(SCHEMA);
+    private static ClientTuple getBuilder() {
+        return new ClientTuple(SCHEMA);
     }
 
     private static Tuple getTuple() {
-        return new ClientTupleBuilder(SCHEMA)
+        return new ClientTuple(SCHEMA)
                 .set("id", 3L)
-                .set("name", "Shirt")
-                .build();
+                .set("name", "Shirt");
     }
 }

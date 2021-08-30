@@ -34,6 +34,7 @@ import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.DecimalNativeType;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
+import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.TemporalNativeType;
 
@@ -49,7 +50,7 @@ import org.apache.ignite.internal.schema.TemporalNativeType;
  *
  * @see TemporalTypesHelper
  */
-public class Row implements BinaryRow {
+public class Row implements BinaryRow, SchemaAware {
     /** Schema descriptor. */
     protected final SchemaDescriptor schema;
 
@@ -70,7 +71,7 @@ public class Row implements BinaryRow {
     /**
      * @return Row schema.
      */
-    public SchemaDescriptor rowSchema() {
+    @Override public SchemaDescriptor schema() {
         return schema;
     }
 

@@ -108,11 +108,4 @@ public interface Table extends TableView<Tuple> {
     default <K, V> KeyValueView<K, V> kvView(Class<K> keyCls, Class<V> valCls) {
         return kvView(Mappers.ofKeyClass(keyCls), Mappers.ofValueClass(valCls));
     }
-
-    /**
-     * Factory method shortcut.
-     *
-     * @return Tuple builder.
-     */
-    TupleBuilder tupleBuilder();
 }

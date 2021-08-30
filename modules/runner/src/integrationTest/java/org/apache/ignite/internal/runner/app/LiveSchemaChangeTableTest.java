@@ -17,20 +17,17 @@
 
 package org.apache.ignite.internal.runner.app;
 
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.table.ColumnNotFoundException;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleBuilder;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,7 +51,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         Table tbl = grid.get(1).tables().table(TABLE);
 
-        assertThrows(ColumnNotFoundException.class, () -> tbl.tupleBuilder().set("key", 1L).set("unknownColumn", 10).build());
+        assertThrows(IllegalArgumentException.class, () -> Tuple.create().set("key", 1L).set("unknownColumn", 10));
     }
 
     /**
@@ -70,7 +67,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         ((TableImpl)tbl).schemaType(SchemaMode.LIVE_SCHEMA);
 
-        Tuple row = tbl.tupleBuilder().set("key", 1L).set("valStrNew", "111").set("valIntNew", 333).build();
+        Tuple row = Tuple.create().set("key", 1L).set("valStrNew", "111").set("valIntNew", 333);
 
         tbl.insert(row);
 
@@ -91,13 +88,13 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         Table tbl = grid.get(1).tables().table(TABLE);
 
-        Tuple oldSchemaTuple = tbl.tupleBuilder().set("key", 32L).set("valInt", 111).set("valStr", "str").build();
+        Tuple oldSchemaTuple = Tuple.create().set("key", 32L).set("valInt", 111).set("valStr", "str");
 
         tbl.insert(oldSchemaTuple);
 
         ((TableImpl)tbl).schemaType(SchemaMode.LIVE_SCHEMA);
 
-        Tuple upsertOldSchemaTuple = tbl.tupleBuilder().set("key", 32L).set("valStrNew", "111").set("valIntNew", 333).build();
+        Tuple upsertOldSchemaTuple = Tuple.create().set("key", 32L).set("valStrNew", "111").set("valIntNew", 333);
 
         tbl.upsert(upsertOldSchemaTuple);
 
@@ -118,11 +115,11 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         Table tbl = grid.get(1).tables().table(TABLE);
 
-        Tuple oldSchemaTuple = tbl.tupleBuilder().set("key", 32L).set("valInt", 111).set("valStr", "str").build();
+        Tuple oldSchemaTuple = Tuple.create().set("key", 32L).set("valInt", 111).set("valStr", "str");
 
         ((TableImpl)tbl).schemaType(SchemaMode.LIVE_SCHEMA);
 
-        Tuple row = tbl.tupleBuilder().set("key", 1L).set("valStrNew", "111").set("valIntNew", 333).build();
+        Tuple row = Tuple.create().set("key", 1L).set("valStrNew", "111").set("valIntNew", 333);
 
         tbl.insert(row);
         tbl.insert(oldSchemaTuple);
@@ -132,7 +129,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
         assertEquals("111", res.value("valStrNew"));
         assertEquals(Integer.valueOf(333), res.value("valIntNew"));
 
-        TupleBuilder newVerBuilder = tbl.tupleBuilder();
+        Tuple newVerBuilder = Tuple.create();
 
         SchemaDescriptor schema = ((SchemaAware)newVerBuilder).schema();
 
@@ -153,7 +150,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         ((TableImpl)tbl).schemaType(SchemaMode.LIVE_SCHEMA);
 
-        Tuple val = tbl.tupleBuilder().set("key", 1L).set("valStrNew", "111").set("valIntNew", 333).build();
+        Tuple val = Tuple.create().set("key", 1L).set("valStrNew", "111").set("valIntNew", 333);
 
         tbl.insert(val);
 
@@ -164,7 +161,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         ((TableImpl)tbl).schemaType(SchemaMode.STRICT_SCHEMA);
 
-        Tuple anotherKey = tbl.tupleBuilder().set("key", 2L).set("valStrNew", "111").set("valIntNew", 333).build();
+        Tuple anotherKey = Tuple.create().set("key", 2L).set("valStrNew", "111").set("valIntNew", 333);
 
         tbl.insert(anotherKey);
 
@@ -173,7 +170,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
         assertEquals("111", newRes.value("valStrNew"));
         assertEquals(Integer.valueOf(333), newRes.value("valIntNew"));
 
-        assertThrows(ColumnNotFoundException.class, () -> tbl.tupleBuilder().set("key", 1L).set("unknownColumn", 10).build());
+        assertThrows(IllegalArgumentException.class, () -> Tuple.create().set("key", 1L).set("unknownColumn", 10));
     }
 
     /**
@@ -189,9 +186,9 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         ((TableImpl)tbl).schemaType(SchemaMode.LIVE_SCHEMA);
 
-        Tuple oldSchemaVal = tbl.tupleBuilder().set("key", 32L).set("valInt", 111).set("valStr", "str").build();
-        Tuple upsertOldSchemaVal = tbl.tupleBuilder().set("key", 32L).set("valStrNew", "111").set("valIntNew", 333).build();
-        Tuple secondUpsertOldSchemaVal = tbl.tupleBuilder().set("key", 32L).set("valStrNew", "111").set("valIntNew", 333).set("anotherNewVal", 48L).build();
+        Tuple oldSchemaVal = Tuple.create().set("key", 32L).set("valInt", 111).set("valStr", "str");
+        Tuple upsertOldSchemaVal = Tuple.create().set("key", 32L).set("valStrNew", "111").set("valIntNew", 333);
+        Tuple secondUpsertOldSchemaVal = Tuple.create().set("key", 32L).set("valStrNew", "111").set("valIntNew", 333).set("anotherNewVal", 48L);
 
         tbl.insert(oldSchemaVal);
         tbl.upsert(upsertOldSchemaVal);
@@ -219,7 +216,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         UUID uuid = UUID.randomUUID();
 
-        Tuple row = tbl.tupleBuilder()
+        Tuple row = Tuple.create()
             .set("key", 1L)
             .set("valByteNew", (byte)10)
             .set("valShortNew", (short)48)
@@ -228,8 +225,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
             .set("valFloatNew", 32.23f)
             .set("valDoubleNew", 100.101d)
             .set("valStrNew", "111")
-            .set("valUUIDNew", uuid)
-            .build();
+            .set("valUUIDNew", uuid);
 
         tbl.insert(row);
 
@@ -245,7 +241,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
         assertEquals("111", res.value("valStrNew"));
         assertEquals(uuid, res.value("valUUIDNew"));
 
-        Tuple secondRow = tbl.tupleBuilder().set("key", 2L).build();
+        Tuple secondRow = Tuple.create().set("key", 2L);
 
         tbl.insert(secondRow);
 
@@ -277,7 +273,7 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         UUID uuid = UUID.randomUUID();
 
-        Tuple row = tbl.tupleBuilder()
+        Tuple row = Tuple.create()
             .set("key", 1L)
             .set("valByteNew", (byte)10)
             .set("valShortNew", (short)48)
@@ -286,12 +282,11 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
             .set("valFloatNew", 32.23f)
             .set("valDoubleNew", 100.101d)
             .set("valStrNew", "111")
-            .set("valUUIDNew", uuid)
-            .build();
+            .set("valUUIDNew", uuid);
 
         tbl.insert(row);
 
-        TupleBuilder newVerBuilder = tbl.tupleBuilder();
+        Tuple newVerBuilder = Tuple.create();
 
         SchemaDescriptor schema = ((SchemaAware)newVerBuilder).schema();
 
@@ -311,16 +306,16 @@ class LiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         ((TableImpl)tbl).schemaType(SchemaMode.LIVE_SCHEMA);
 
-        assertDoesNotThrow(() -> tbl.tupleBuilder().set("newBrokenColumn", new Object()));
-        assertThrows(UnsupportedOperationException.class, () -> tbl.tupleBuilder().set("newBrokenColumn", new Object()).build());
+        assertDoesNotThrow(() -> Tuple.create().set("newBrokenColumn", new Object()));
+        assertThrows(UnsupportedOperationException.class, () -> Tuple.create().set("newBrokenColumn", new Object()));
 
-        Tuple row = tbl.tupleBuilder().set("key", 1L).set("valStrNew", null).set("valIntNew", 333).build();
+        Tuple row = Tuple.create().set("key", 1L).set("valStrNew", null).set("valIntNew", 333);
 
         tbl.insert(row);
 
-        Tuple res = tbl.get(tbl.tupleBuilder().set("key", 1L).build());
+        Tuple res = tbl.get(Tuple.create().set("key", 1L));
 
-        assertThrows(ColumnNotFoundException.class, () -> res.value("valStrNew"));
+        assertThrows(IllegalArgumentException.class, () -> res.value("valStrNew"));
         assertEquals(Integer.valueOf(333), res.value("valIntNew"));
     }
 }

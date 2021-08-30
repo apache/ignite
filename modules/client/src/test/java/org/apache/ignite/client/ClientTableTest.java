@@ -22,9 +22,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.fakes.FakeSchemaRegistry;
-import org.apache.ignite.internal.client.table.ClientTupleBuilder;
+import org.apache.ignite.internal.client.table.ClientTuple;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +47,7 @@ public class ClientTableTest extends AbstractClientTest {
     public void testGetWithNullInNotNullableKeyColumnThrowsException() {
         var table = defaultTable();
 
-        var key = table.tupleBuilder().set("name", "123").build();
+        var key = Tuple.create().set("name", "123");
 
         var ex = assertThrows(CompletionException.class, () -> table.get(key));
 
@@ -57,7 +58,7 @@ public class ClientTableTest extends AbstractClientTest {
     @Test
     public void testUpsertGet() {
         var table = defaultTable();
-        var tuple = tuple(table);
+        var tuple = tuple();
 
         table.upsert(tuple);
 
@@ -94,7 +95,7 @@ public class ClientTableTest extends AbstractClientTest {
         var table = defaultTable();
 
         var tuple = tuple(42L, "Jack");
-        var key = table.tupleBuilder().set("id", 42).build();
+        var key = Tuple.create().set("id", 42);
 
         var resTuple = table.upsertAsync(tuple).thenCompose(t -> table.getAsync(key)).join();
 
@@ -104,24 +105,23 @@ public class ClientTableTest extends AbstractClientTest {
     }
 
     @Test
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15194")
     public void testGetReturningTupleWithUnknownSchemaRequestsNewSchema() throws Exception {
         FakeSchemaRegistry.setLastVer(2);
 
         var table = defaultTable();
-        Tuple tuple = tuple(table);
+        Tuple tuple = tuple();
         table.upsert(tuple);
-
-        assertEquals(2, ((ClientTupleBuilder)tuple).schema().version());
 
         FakeSchemaRegistry.setLastVer(1);
 
         try (var client2 = startClient()) {
             Table table2 = client2.tables().table(table.tableName());
-            var tuple2 = tuple(table2);
+            var tuple2 = tuple();
             var resTuple = table2.get(tuple2);
 
-            assertEquals(1, ((ClientTupleBuilder)tuple2).schema().version());
-            assertEquals(2, ((ClientTupleBuilder)resTuple).schema().version());
+            assertEquals(1, ((ClientTuple)tuple2).schema().version());
+            assertEquals(2, ((ClientTuple)resTuple).schema().version());
 
             assertEquals(DEFAULT_NAME, resTuple.stringValue("name"));
             assertEquals(DEFAULT_ID, resTuple.longValue("id"));
@@ -139,7 +139,7 @@ public class ClientTableTest extends AbstractClientTest {
         assertFalse(table.insert(tuple));
         assertFalse(table.insert(tuple2));
 
-        var resTuple = table.get(defaultTupleKey(table));
+        var resTuple = table.get(defaultTupleKey());
         assertTupleEquals(tuple, resTuple);
     }
 
@@ -343,36 +343,25 @@ public class ClientTableTest extends AbstractClientTest {
     }
 
     private Tuple tuple() {
-        return defaultTable().tupleBuilder()
+        return Tuple.create()
                 .set("id", DEFAULT_ID)
-                .set("name", DEFAULT_NAME)
-                .build();
-    }
-
-    private Tuple tuple(Table table) {
-        return table.tupleBuilder()
-                .set("id", DEFAULT_ID)
-                .set("name", DEFAULT_NAME)
-                .build();
+                .set("name", DEFAULT_NAME);
     }
 
     private Tuple tuple(Long id) {
-        return defaultTable().tupleBuilder()
-                .set("id", id)
-                .build();
+        return Tuple.create()
+                .set("id", id);
     }
 
     private Tuple tuple(Long id, String name) {
-        return defaultTable().tupleBuilder()
+        return Tuple.create()
                 .set("id", id)
-                .set("name", name)
-                .build();
+                .set("name", name);
     }
 
-    private Tuple defaultTupleKey(Table table) {
-        return table.tupleBuilder()
-                .set("id", DEFAULT_ID)
-                .build();
+    private Tuple defaultTupleKey() {
+        return Tuple.create()
+                .set("id", DEFAULT_ID);
     }
 
     private Table defaultTable() {

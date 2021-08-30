@@ -84,12 +84,11 @@ public class TableExample {
         //
         //---------------------------------------------------------------------------------
 
-        Tuple newAccountTuple = accounts.tupleBuilder()
+        Tuple newAccountTuple = Tuple.create()
             .set("accountNumber", 123456)
             .set("firstName", "Val")
             .set("lastName", "Kulichenko")
-            .set("balance", 100.00d)
-            .build();
+            .set("balance", 100.00d);
 
         accounts.insert(newAccountTuple);
 
@@ -99,7 +98,7 @@ public class TableExample {
         //
         //---------------------------------------------------------------------------------
 
-        Tuple accountNumberTuple = accounts.tupleBuilder().set("accountNumber", 123456).build();
+        Tuple accountNumberTuple = Tuple.create().set("accountNumber", 123456);
 
         Tuple accountTuple = accounts.get(accountNumberTuple);
 

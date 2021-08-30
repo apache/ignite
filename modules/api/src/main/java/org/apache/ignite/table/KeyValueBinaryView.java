@@ -24,13 +24,6 @@ import org.apache.ignite.tx.Transaction;
  * regarding the binary object concept.
  */
 public interface KeyValueBinaryView extends KeyValueView<Tuple, Tuple> {
-    /**
-     * Factory method shortcut.
-     *
-     * @return Tuple builder.
-     */
-    TupleBuilder tupleBuilder();
-
     /** {@inheritDoc} */
     @Override KeyValueBinaryView withTransaction(Transaction tx);
 }
