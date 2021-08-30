@@ -43,10 +43,12 @@ import org.apache.calcite.rel.metadata.RelColumnMapping;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.BuiltInMethod;
@@ -257,26 +259,46 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         int iOutputColumn
     ) {
         if (rel.projects() != null) {
-            if (rel.getInputs().isEmpty() || rel.getInputs().size() > 1)
-                return null;
+            RexNode proj = rel.projects().get(iOutputColumn);
+            Set<RexSlot> sources = new HashSet<>();
 
-            RelNode input = rel.getInput(0);
-            RexNode rexNode = rel.projects().get(iOutputColumn);
+            getOperands(proj, RexSlot.class, sources);
 
-            if (rexNode instanceof RexInputRef) {
-                // Direct reference:  no derivation added.
-                RexInputRef inputRef = (RexInputRef) rexNode;
+            boolean derived = sources.size() > 1;
+            Set<RelColumnOrigin> res = new HashSet<>();
 
-                return mq.getColumnOrigins(input, inputRef.getIndex());
+            for (RexSlot slot : sources) {
+                if (slot instanceof RexLocalRef) {
+                    RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
+
+                    res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
+                        derived));
+                }
             }
 
-            return null;
+            return res;
         }
 
-        int originColIdx = (rel.requiredColumns() == null) ? iOutputColumn :
-            rel.requiredColumns().toArray()[iOutputColumn];
+        return Collections.singleton(rel.columnOriginsByRelLocalRef(iOutputColumn));
+    }
 
-        return Collections.singleton(new RelColumnOrigin(rel.getTable(), originColIdx, false));
+    /**
+     * Get operands of specified type from RexCall nodes.
+     *
+     * @param rn RexNode to get operands
+     * @param cls Target class.
+     * @param res Set to store results into.
+     */
+    private <T> void getOperands(RexNode rn, Class<T> cls, Set<T> res) {
+        if (cls.isAssignableFrom(rn.getClass()))
+            res.add((T)rn);
+
+        if (rn instanceof RexCall) {
+            List<RexNode> operands = ((RexCall)rn).getOperands();
+
+            for (RexNode op : operands)
+                getOperands(op, cls, res);
+        }
     }
 
     /**

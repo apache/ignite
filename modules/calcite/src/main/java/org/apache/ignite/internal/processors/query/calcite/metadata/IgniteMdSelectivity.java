@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +66,11 @@ import org.h2.value.Value;
 
 /** */
 public class IgniteMdSelectivity extends RelMdSelectivity {
-    /** Default selectivity for is null conditions. */
+    /** Default selectivity for IS NULL conditions. */
     private static final double IS_NULL_SELECTIVITY = 0.1;
 
-    /** Default selectivity for is not null confitions. */
-    private static final double NOT_NULL_SELECTIVITY = 0.9;
+    /** Default selectivity for IS NOT NULL conditions. */
+    private static final double NOT_NULL_SELECTIVITY = 1 - IS_NULL_SELECTIVITY;
 
     /** Default selectivity for equals conditions. */
     private static final double EQUALS_SELECTIVITY = 0.15;
@@ -267,7 +268,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
                 for (RexNode orPred : RelOptUtil.disjunctions(pred))
                     orSelTotal *= 1 - getTablePredicateBasedSelectivity(rel, tbl, mq, orPred);
-
 
                 sel *= 1 - orSelTotal;
             }
@@ -468,7 +468,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             predKind != SqlKind.NOT && !predKind.belongsTo(SqlKind.COMPARISON))
             return null;
 
-        RexLocalRef operand = getOperand(pred, RexLocalRef.class);
+        RexSlot operand = getOperand(pred, RexSlot.class);
 
         if (operand == null)
             return null;
@@ -486,9 +486,18 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @return ColumnStatistics or {@code null}.
      */
     private ColumnStatistics getColStatBySlot(RelNode rel, RelMetadataQuery mq, IgniteTable tbl, RexSlot pred) {
-        Set<RelColumnOrigin> origins = mq.getColumnOrigins(rel, pred.getIndex());
+        Set<RelColumnOrigin> origins = null;
 
-        if (origins == null || origins.isEmpty())
+        if (pred instanceof RexLocalRef) {
+            if (rel instanceof ProjectableFilterableTableScan) {
+                origins = Collections.singleton(
+                    ((ProjectableFilterableTableScan)rel).columnOriginsByRelLocalRef(pred.getIndex()));
+            }
+        }
+        else
+            origins = mq.getColumnOrigins(rel, pred.getIndex());
+
+        if (origins == null || origins.isEmpty() || origins.iterator().next().isDerived())
             return null;
 
         IgniteTypeFactory typeFactory = Commons.typeFactory(rel);
