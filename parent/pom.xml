@@ -54,7 +54,6 @@
         <aspectj.version>1.8.13</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
         <aws.sdk.version>1.11.75</aws.sdk.version>
-        <azure.sdk.version>12.13.0</azure.sdk.version>
         <netty.version>4.1.66.Final</netty.version>
         <camel.version>2.22.0</camel.version>
         <aws.encryption.sdk.version>1.3.2</aws.encryption.sdk.version>

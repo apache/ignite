@@ -15,7 +15,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -23,12 +22,16 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlockBlobClient;
@@ -42,6 +45,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+
 
 /**
  * Azure Blob Storage based IP Finder
@@ -90,7 +94,7 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
     private String containerName;
 
     /** Storage credential */
-    private StorageSharedKeyCredential credential;
+    StorageSharedKeyCredential credential;
 
     /** Blob service client */
     private BlobServiceClient blobServiceClient;
@@ -116,11 +120,23 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         init();
 
         Collection<InetSocketAddress> addrs = new ArrayList<>();
+        Set<String> seenBlobNames = new HashSet<>();
 
-        for (BlobItem blobItem : blobContainerClient.listBlobs()) {
+        Iterator<BlobItem> blobItemIterator = blobContainerClient.listBlobs().iterator();
+
+        while (blobItemIterator.hasNext()) {
+            BlobItem blobItem = blobItemIterator.next();
+
+            // https://github.com/Azure/azure-sdk-for-java/issues/20515
+            if (seenBlobNames.contains(blobItem.getName())) {
+                break;
+            }
+
             try {
-                if (!blobItem.isDeleted())
+                if (!blobItem.isDeleted()) {
                     addrs.add(addrFromString(blobItem.getName()));
+                    seenBlobNames.add(blobItem.getName());
+                }
             }
             catch (Exception e) {
                 throw new IgniteSpiException("Failed to get content from the container: " + containerName, e);
@@ -166,8 +182,12 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
             try {
                 blobContainerClient.getBlobClient(key).delete();
             } catch (Exception e) {
-                log.warning("Unable to unregister address [addr=" + addr + ", container=" + containerName +
-                    (e instanceof BlobStorageException ? ", err=" + ((BlobStorageException)e).getErrorCode() : "") + ']', e);
+                // https://github.com/Azure/azure-sdk-for-java/issues/20551
+                if ((!(e.getMessage().contains("InterruptedException"))) || (e instanceof BlobStorageException
+                    && (((BlobStorageException)e).getErrorCode() != BlobErrorCode.BLOB_NOT_FOUND))) {
+                    throw new IgniteSpiException("Failed to delete entry [containerName=" + containerName +
+                        ", entry=" + key + ']', e);
+                }
             }
         }
     }
