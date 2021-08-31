@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -49,7 +50,16 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /** Tests user error (not server node failure) in case compute task compiled in unsupported bytecode version. */
 public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
     /** */
-    private ListeningTestLogger lsnrLog;
+    public static final String ENTRY_PROC_CLS_NAME = "org.apache.ignite.tests.p2p.CacheDeploymentBinaryEntryProcessor";
+
+    /** */
+    private static ListeningTestLogger lsnrLog;
+
+    /** */
+    private static Ignite srv;
+
+    /** */
+    private static Ignite cli;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -60,56 +70,81 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
             .setGridLogger(lsnrLog);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        lsnrLog = new ListeningTestLogger(false, log);
+
+        srv = startGrid("server");
+        cli = startClientGrid("client");
+    }
+
+    /** */
+    @Test
+    public void testEntryProcessor() throws Exception {
+        IgniteCache<String, String> cache = cli.getOrCreateCache("my-cache");
+
+        cache.put("1", "1");
+
+        LogListener errMsgLsnr = errorMessageListener(ENTRY_PROC_CLS_NAME);
+
+        CacheEntryProcessor<String, String, Boolean> proc = (CacheEntryProcessor<String, String, Boolean>)
+            getExternalClassLoader().loadClass(ENTRY_PROC_CLS_NAME).newInstance();
+
+        Throwable err = assertThrowsWithCause(() -> cache.invoke("1", proc), IgniteCheckedException.class);
+
+        err.printStackTrace();
+
+        assertTrue(errMsgLsnr.check());
+
+        // Check node is alive.
+        cache.put("3", "3");
+    }
+
     /** */
     @Test
     public void testCompute() throws Exception {
-        lsnrLog = new ListeningTestLogger(false, log);
+        Class<?> lambdaFactoryCls = getExternalClassLoader().loadClass(RUN_LAMBDA);
 
-        try (Ignite ignored = startGrid("server"); Ignite client = startClientGrid("client")) {
-            Class<?> lambdaFactoryCls = getExternalClassLoader().loadClass(RUN_LAMBDA);
+        Method method = lambdaFactoryCls.getMethod("lambda");
 
-            Method method = lambdaFactoryCls.getMethod("lambda");
+        IgniteCallable<Integer> lambda = (IgniteCallable<Integer>)method.invoke(lambdaFactoryCls);
 
-            IgniteCallable<Integer> lambda = (IgniteCallable<Integer>)method.invoke(lambdaFactoryCls);
+        LogListener errMsgLsnr = errorMessageListener(RUN_LAMBDA);
 
-            LogListener errMsgLsnr = errorMessageListener(RUN_LAMBDA);
+        assertThrowsWithCause(
+            () -> cli.compute(cli.cluster().forServers()).broadcast(lambda),
+            IgniteDeploymentException.class
+        );
 
-            assertThrowsWithCause(
-                () -> client.compute(client.cluster().forServers()).broadcast(lambda),
-                IgniteDeploymentException.class
-            );
+        assertTrue(errMsgLsnr.check());
 
-            assertTrue(errMsgLsnr.check());
-
-            client.createCache("Can_create_cache_after_compute_fail");
-        }
+        // Check node is alive.
+        cli.createCache("Can_create_cache_after_compute_fail");
     }
 
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        lsnrLog = new ListeningTestLogger(false, log);
+        IgniteCache<String, String> cache = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        try (Ignite ignored = startGrid("server"); Ignite client = startClientGrid("client")) {
-            IgniteCache<Integer, Integer> cache = client.createCache(DEFAULT_CACHE_NAME);
+        cache.put("2", "2");
 
-            cache.put(1, 1);
+        LogListener errMsgLsnr = errorMessageListener(PREDICATE_CLASSNAME);
 
-            LogListener errMsgLsnr = errorMessageListener(PREDICATE_CLASSNAME);
+        assertThrowsWithCause(() -> {
+            try {
+                cache.query(new ScanQuery<>((IgniteBiPredicate<Integer, Integer>)
+                    getExternalClassLoader().loadClass(PREDICATE_CLASSNAME).newInstance()
+                )).getAll();
+            }
+            catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                throw new IgniteException(e);
+            }
+        }, IgniteCheckedException.class);
 
-            assertThrowsWithCause(() -> {
-                try {
-                    cache.query(new ScanQuery<>((IgniteBiPredicate<Integer, Integer>)
-                        getExternalClassLoader().loadClass(PREDICATE_CLASSNAME).newInstance()
-                    )).getAll();
-                }
-                catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    throw new IgniteException(e);
-                }
-            }, IgniteCheckedException.class);
-
-            assertTrue(errMsgLsnr.check());
-        }
+        assertTrue(errMsgLsnr.check());
     }
 
     /** Custom communication SPI for simulating {@link UnsupportedClassVersionError} on server node. */

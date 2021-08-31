@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -783,29 +784,35 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             IgniteUuid curLdrId = localLdrId.get();
 
+            IgniteBiTuple<Class<?>, Throwable> cls0 = null;
+
             if (curLdrId != null) {
                 CachedDeploymentInfo<K, V> t = deps.get(curLdrId);
 
                 if (t != null) {
-                    Class<?> cls = tryToloadClassFromCacheDep(name, t);
+                    cls0 = tryToloadClassFromCacheDep(name, t);
 
-                    if (cls != null)
-                        return cls;
+                    if (cls0 != null && cls0.get1() != null)
+                        return cls0.get1();
                 }
             }
 
             for (CachedDeploymentInfo<K, V> t : deps.values()) {
-                Class<?> cls = tryToloadClassFromCacheDep(name, t);
-                if (cls != null)
-                    return cls;
+                cls0 = tryToloadClassFromCacheDep(name, t);
+
+                if (cls0 != null && cls0.get1() != null)
+                    return cls0.get1();
             }
 
-            Class cls = getParent().loadClass(name);
+            try {
+                return getParent().loadClass(name);
+            }
+            catch (ClassNotFoundException e) {
+                if (cls0.get2() instanceof LinkageError)
+                    U.warn(log, "Failed to load class [name=" + name + ']', cls0.get2());
 
-            if (cls != null)
-                return cls;
-
-            throw new ClassNotFoundException("Failed to load class [name=" + name + ", ctx=" + deps + ']');
+                throw e;
+            }
         }
 
         /**
@@ -813,7 +820,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * @param deploymentInfo Grid cached deployment info.
          * @return Class if can to load resource with the <code>name</code> or {@code null} otherwise.
          */
-        @Nullable private Class<?> tryToloadClassFromCacheDep(String name, CachedDeploymentInfo<K, V> deploymentInfo) {
+        @Nullable private IgniteBiTuple<Class<?>, Throwable> tryToloadClassFromCacheDep(
+            String name,
+            CachedDeploymentInfo<K, V> deploymentInfo
+        ) {
             UUID sndId = deploymentInfo.senderId();
             IgniteUuid ldrId = deploymentInfo.loaderId();
             String userVer = deploymentInfo.userVersion();
@@ -830,9 +840,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 participants,
                 F.<ClusterNode>alwaysTrue());
 
-            Class cls = d != null ? d.deployedClass(name).get1() : null;
-
-            return cls;
+            return d != null ? d.deployedClass(name) : null;
         }
 
         /**
