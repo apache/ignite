@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRem
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
 import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.ClientReconnectTest;
 import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
@@ -83,6 +84,7 @@ import org.junit.runners.Suite;
     ThinClientPermissionCheckSecurityTest.class,
     ContinuousQueryPermissionCheckTest.class,
     IgniteClientContainSubjectAddressTest.class,
+    ClientReconnectTest.class,
     SnapshotPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,

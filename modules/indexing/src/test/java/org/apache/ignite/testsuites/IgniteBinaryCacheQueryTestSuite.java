@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistryTest;
+import org.apache.ignite.internal.cdc.SqlCdcTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
@@ -287,6 +288,7 @@ import org.apache.ignite.internal.sql.SqlParserSetStreamingSelfTest;
 import org.apache.ignite.internal.sql.SqlParserTransactionalKeywordsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
+import org.apache.ignite.sqltests.CheckWarnJoinPartitionedTables;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
@@ -311,6 +313,7 @@ import org.junit.runners.Suite;
     PartitionedSqlTest.class,
     ReplicatedSqlTest.class,
     ReplicatedSqlCustomPartitionsTest.class,
+    CheckWarnJoinPartitionedTables.class,
 
     SqlParserCreateIndexSelfTest.class,
     SqlParserDropIndexSelfTest.class,
@@ -666,7 +669,10 @@ import org.junit.runners.Suite;
 
     InlineIndexKeyTypeRegistryTest.class,
 
-    IgniteStatisticsTestSuite.class
+    IgniteStatisticsTestSuite.class,
+
+    // CDC tests.
+    SqlCdcTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

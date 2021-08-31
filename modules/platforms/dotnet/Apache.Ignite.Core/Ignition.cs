@@ -912,6 +912,7 @@ namespace Apache.Ignite.Core
             }
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "Not available on .NET FW")]
             public override int GetHashCode()
             {
                 return _name == null ? 0 : _name.GetHashCode();

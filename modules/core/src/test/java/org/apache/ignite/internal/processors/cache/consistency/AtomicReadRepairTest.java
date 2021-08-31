@@ -171,6 +171,8 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
                     GETALL_CHECK_AND_FAIL.accept(data);
                 else
                     GET_CHECK_AND_FAIL.accept(data);
+
+                check(data, true, false);
             });
     }
 
@@ -186,6 +188,8 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
                     CONTAINS_ALL_CHECK_AND_FAIL.accept(data);
                 else
                     CONTAINS_CHECK_AND_FAIL.accept(data);
+
+                check(data, true, false);
             });
     }
 }
