@@ -145,9 +145,9 @@ public class DateTimeTest extends GridCommonAbstractTest {
     public void testDstShift() throws Exception {
         TimeZone oldTz = TimeZone.getDefault();
 
-        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
-
         try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
+
             // Time zone change (EET->MSK) 1992-01-19 02:00:00 -> 1992-01-19 03:00:00
             checkQuery("select date '1992-01-19'").returns(sqlDate("1992-01-19")).check();
             checkQuery("select date '1992-01-18' + interval (1) days").returns(sqlDate("1992-01-19")).check();
@@ -180,6 +180,22 @@ public class DateTimeTest extends GridCommonAbstractTest {
                 .returns(sqlTimestamp("1992-09-27 01:30:00.000")).check();
             checkQuery("SELECT timestamp '1992-09-26 02:30:00' + interval (24) hours")
                 .returns(sqlTimestamp("1992-09-27 02:30:00.000")).check();
+
+            TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"));
+
+            // DST ended 2021-11-07 02:00:00 -> 2021-11-07 01:00:00
+            checkQuery("select date '2021-11-07'").returns(sqlDate("2021-11-07")).check();
+            checkQuery("select date '2021-11-06' + interval (1) days").returns(sqlDate("2021-11-07")).check();
+            checkQuery("select date '2021-11-06' + interval (24) hours").returns(sqlDate("2021-11-07")).check();
+            checkQuery("SELECT timestamp '2021-11-06 01:30:00' + interval (25) hours")
+                .returns(sqlTimestamp("2021-11-07 02:30:00.000")).check();
+            // Check string representation here, since after timestamp calculation we have '2021-11-07T01:30:00.000-0800'
+            // but Timestamp.valueOf method converts '2021-11-07 01:30:00' in 'America/Los_Angeles' time zone to
+            // '2021-11-07T01:30:00.000-0700' (we pass through '2021-11-07 01:30:00' twice after DST ended).
+            checkQuery("SELECT (timestamp '2021-11-06 02:30:00' + interval (23) hours)::varchar")
+                .returns("2021-11-07 01:30:00").check();
+            checkQuery("SELECT (timestamp '2021-11-06 01:30:00' + interval (24) hours)::varchar")
+                .returns("2021-11-07 01:30:00").check();
         }
         finally {
             TimeZone.setDefault(oldTz);
