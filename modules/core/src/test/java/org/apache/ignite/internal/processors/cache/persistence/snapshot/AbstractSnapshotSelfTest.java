@@ -253,9 +253,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
 
-            GridTestUtils.waitForCondition(
+            boolean success = GridTestUtils.waitForCondition(
                 () -> !kctx.cache().context().snapshotMgr().isRestoring(),
                 TIMEOUT);
+
+            assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
 
             File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
 
