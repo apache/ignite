@@ -87,7 +87,6 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         RelCollation collation = TraitUtils.collation(left);
 
         // If nulls are possible at left we has to check whether NullDirection.LAST flag is set on sorted fields.
-        // TODO set NullDirection.LAST for insufficient fields instead of erasing collation.
         if (joinType == RIGHT || joinType == JoinRelType.FULL) {
             for (RelFieldCollation field : collation.getFieldCollations()) {
                 if (RelFieldCollation.NullDirection.LAST.nullComparison != field.nullDirection.nullComparison) {
