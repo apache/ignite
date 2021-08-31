@@ -22,6 +22,9 @@ import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -63,6 +66,9 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderIm
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
@@ -111,6 +117,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         // Custom cost factory to use during optimization
         .costFactory(new IgniteCostFactory())
         .typeSystem(IgniteTypeSystem.INSTANCE)
+        .traitDefs(new RelTraitDef<?>[] {
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE,
+        })
         .build();
 
     /** */

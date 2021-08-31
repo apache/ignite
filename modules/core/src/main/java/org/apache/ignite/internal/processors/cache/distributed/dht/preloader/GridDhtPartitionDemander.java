@@ -347,7 +347,9 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) && assignments != null) {
+        if (delay == 0 || force) {
+            assert assignments != null;
+
             final RebalanceFuture oldFut = rebalanceFut;
 
             if (assignments.cancelled()) { // Pending exchange.
@@ -483,9 +485,9 @@ public class GridDhtPartitionDemander {
             }
 
             if (historical) // Can not be reordered.
-                ctx.kernalContext().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
+                ctx.kernalContext().pools().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
             else // Can be reordered.
-                ctx.kernalContext().getRebalanceExecutorService().execute(r);
+                ctx.kernalContext().pools().getRebalanceExecutorService().execute(r);
         }
     }
 
@@ -770,7 +772,7 @@ public class GridDhtPartitionDemander {
 
                 ctx.kernalContext().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(100) {
                     @Override public void onTimeout() {
-                        ctx.kernalContext().getRebalanceExecutorService().execute(() ->
+                        ctx.kernalContext().pools().getRebalanceExecutorService().execute(() ->
                             ownPartition(fut, p, nodeId, supplyMsg));
                     }
                 });

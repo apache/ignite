@@ -44,7 +44,6 @@ import org.apache.ignite.internal.GridJobMasterLeaveAwareSelfTest;
 import org.apache.ignite.internal.GridJobServicesAddNodeTest;
 import org.apache.ignite.internal.GridJobStealingSelfTest;
 import org.apache.ignite.internal.GridJobStealingZeroActiveJobsSelfTest;
-import org.apache.ignite.internal.GridJobSubjectIdSelfTest;
 import org.apache.ignite.internal.GridMultipleJobsSelfTest;
 import org.apache.ignite.internal.GridMultipleSpisSelfTest;
 import org.apache.ignite.internal.GridMultipleVersionsDeploymentSelfTest;
@@ -117,7 +116,6 @@ import org.junit.runners.Suite;
     GridJobContextSelfTest.class,
     GridJobMasterLeaveAwareSelfTest.class,
     GridJobStealingSelfTest.class,
-    GridJobSubjectIdSelfTest.class,
     GridMultithreadedJobStealingSelfTest.class,
     GridAlwaysFailoverSpiFailSelfTest.class,
     GridTaskInstanceExecutionSelfTest.class,

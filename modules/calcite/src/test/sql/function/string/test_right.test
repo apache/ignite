@@ -14,6 +14,17 @@ SELECT RIGHT('abcd', 0), RIGHT('abc', -1), RIGHT('abc', -2), RIGHT('abc', -3), R
 ----
 (empty)	(empty)	(empty)	(empty)	(empty)
 
+# test RIGHT on NULL values
+query TTT
+SELECT RIGHT(NULL, 0), RIGHT('abc', NULL), RIGHT(NULL, NULL)
+----
+NULL	NULL	NULL
+
+query TTT
+SELECT RIGHT(NULL, 0), RIGHT('🦆ab', NULL), RIGHT(NULL, NULL)
+----
+NULL	NULL	NULL
+
 # test on tables
 statement ok
 DROP TABLE IF EXISTS strings

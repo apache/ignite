@@ -71,6 +71,11 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return new TestSecurityContext(new TestSecuritySubject(subjId));
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
         return null;
     }

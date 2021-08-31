@@ -45,7 +45,7 @@ public class ReservationsOnDoneAfterTopologyUnlockFailTest extends GridCommonAbs
         IgniteEx grid0 = startGrid(getConfiguration(testNodeName(0))
                 .setFailureHandler(hnd));
 
-        ExecutorService mockMgmtExecSvc = spy(grid0.context().getManagementExecutorService());
+        ExecutorService mockMgmtExecSvc = spy(grid0.context().pools().getManagementExecutorService());
         doAnswer(invocationOnMock -> {
             Arrays.stream(Thread.currentThread().getStackTrace())
                     .map(StackTraceElement::getMethodName)
@@ -57,7 +57,7 @@ public class ReservationsOnDoneAfterTopologyUnlockFailTest extends GridCommonAbs
             return invocationOnMock.callRealMethod();
         }).when(mockMgmtExecSvc).execute(any(Runnable.class));
 
-        GridTestUtils.setFieldValue(grid(0).context(), "mgmtExecSvc", mockMgmtExecSvc);
+        GridTestUtils.setFieldValue(grid(0).context().pools(), "mgmtExecSvc", mockMgmtExecSvc);
 
         grid0.getOrCreateCache(new CacheConfiguration<>()
                 .setName(DEFAULT_CACHE_NAME))

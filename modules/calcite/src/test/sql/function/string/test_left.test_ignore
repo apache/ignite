@@ -2,7 +2,6 @@
 # description: LEFT test
 # group: [string]
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14677
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-15002
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-15003
 
 # test LEFT on positive positions
