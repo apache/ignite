@@ -50,7 +50,7 @@ public class VisorTxTaskTest {
         /**
          * Constructor with VisorTxTaskArg.
          *
-         * @param arg - task arguments
+         * @param arg - task arguments.
          */
         public VisorTxTestTask(VisorTxTaskArg arg) {
             taskArg = arg;
@@ -153,7 +153,7 @@ public class VisorTxTaskTest {
      * Generate {@link VisorTxTaskTest#results} with {@link VisorTxTaskTest#nodes}.
      * node2 (nodes[2]) is near node for one transaction only. No other near node for any transaction exists.
      *
-     * @param txInfoVolume - how much tx info will be generated
+     * @param txInfoVolume - how much tx info will be generated.
      */
     private void generateTxInfo(int txInfoVolume) {
         nodes = new ArrayList<>(3);
