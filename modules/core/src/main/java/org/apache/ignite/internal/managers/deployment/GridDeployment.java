@@ -451,6 +451,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param alias Optional array of aliases.
      * @return Class for given name.
      */
+    @SuppressWarnings({"StringEquality"})
     @Nullable public IgniteBiTuple<Class<?>, Throwable> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
 
@@ -483,8 +484,16 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
 
                 IgniteBiTuple<Class<?>, Throwable> res = deployedClass(a);
 
-                if (res.get1() != null)
+                if (res.get1() != null) {
+                    for (String a1 : alias) {
+                        // The original alias has already been put into the map,
+                        // so we don't try to put it again here.
+                        if (a1 != a)
+                            clss.putIfAbsent(a1, cls);
+                    }
+
                     return res;
+                }
             }
         }
         catch (IgniteException e) {
