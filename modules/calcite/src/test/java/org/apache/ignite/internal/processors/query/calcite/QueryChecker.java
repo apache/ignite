@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.core.SubstringMatcher;
 
@@ -87,6 +88,44 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsIndexScan(String schema, String tblName, String idxName) {
         return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']');
+    }
+
+    /**
+     * Ignite result row count matсher.
+     *
+     * @param rowCount Expected result row count.
+     * @return Mather.
+     */
+    public static Matcher<String> containsResultRowCount(double rowCount) {
+        String rowCountStr = String.format(".*rowcount = %s,.*", rowCount);
+
+        return new RegexpMather(rowCountStr);
+    }
+
+    /**
+     * Regexp string matсher.
+     */
+    private static class RegexpMather extends CustomTypeSafeMatcher<String> {
+        /** Compilled pathern. */
+        private Pattern pattern;
+
+        /**
+         * Constructor.
+         *
+         * @param regexp Regexp to search.
+         */
+        public RegexpMather(String regexp) {
+            super(regexp);
+
+            pattern = Pattern.compile(regexp, Pattern.DOTALL);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean matchesSafely(String item) {
+            java.util.regex.Matcher matcher = pattern.matcher(item);
+
+            return matcher.matches();
+        }
     }
 
     /**
@@ -315,7 +354,7 @@ public abstract class QueryChecker {
 
         if (!F.isEmpty(planMatchers)) {
             for (Matcher<String> matcher : planMatchers)
-                assertThat("Invalid plan:\n" + actualPlan, actualPlan, matcher);
+                assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
         }
 
         if (exactPlan != null)

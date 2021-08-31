@@ -128,7 +128,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         person.clear();
 
-        for (int gridIdx = 0; gridIdx < GRID_CNT; gridIdx++)
+        for (int gridIdx = 0; gridIdx < nodeCount(); gridIdx++)
             person.put(primaryKey(grid(gridIdx).cache(cacheName)), new Employer(gridIdx == 0 ? "Emp" : null, 0.0d));
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),

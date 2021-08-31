@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortedIndexSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.StatisticsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableDmlPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableFunctionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
@@ -59,6 +60,7 @@ import org.junit.runners.Suite;
     JoinCommutePlannerTest.class,
     LimitOffsetPlannerTest.class,
     MergeJoinPlannerTest.class,
+    StatisticsPlannerTest.class,
 })
 public class PlannerTestSuite {
 }

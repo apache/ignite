@@ -40,12 +40,9 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
     protected static IgniteEx client;
 
-    /** */
-    protected static final int GRID_CNT = 3;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(GRID_CNT);
+        startGrids(nodeCount());
 
         client = startClientGrid("client");
     }
@@ -58,6 +55,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         cleanQueryPlanCache();
+    }
+
+    /** */
+    protected int nodeCount() {
+        return 3;
     }
 
     /** */

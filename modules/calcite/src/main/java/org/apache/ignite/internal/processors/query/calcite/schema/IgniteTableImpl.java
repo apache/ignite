@@ -24,12 +24,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
@@ -48,6 +44,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,16 +57,13 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private final TableDescriptor desc;
 
     /** */
-    private final Statistic statistic;
-
-    /** */
     private final GridKernalContext ctx;
 
     /** */
-    private volatile GridH2Table tbl;
+    private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
     /** */
-    private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
+    private volatile GridH2Table tbl;
 
     /**
      * @param ctx Kernal context.
@@ -77,7 +72,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     public IgniteTableImpl(GridKernalContext ctx, TableDescriptor desc) {
         this.ctx = ctx;
         this.desc = desc;
-        statistic = new StatisticsImpl();
     }
 
     /** {@inheritDoc} */
@@ -87,16 +81,21 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
-        if (tbl == null) {
-            IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
+        IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
 
-            final String tblName = desc.typeDescription().tableName();
-            final String schemaName = desc.typeDescription().schemaName();
+        final String tblName = desc.typeDescription().tableName();
+        final String schemaName = desc.typeDescription().schemaName();
 
+        ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
+            new StatisticsKey(schemaName, tblName));
+
+        if (statistics != null)
+            return new IgniteStatisticsImpl(statistics);
+
+        if (tbl == null)
             tbl = idx.schemaManager().dataTable(schemaName, tblName);
-        }
 
-        return statistic;
+        return new IgniteStatisticsImpl(tbl);
     }
 
     /** {@inheritDoc} */
@@ -191,41 +190,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             catch (IgniteCheckedException ex) {
                 throw U.convertException(ex);
             }
-        }
-    }
-
-    /** */
-    private class StatisticsImpl implements Statistic {
-        /** {@inheritDoc} */
-        @Override public Double getRowCount() {
-            long rows = tbl.getRowCountApproximationNoCheck();
-
-            return (double)rows;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKey(ImmutableBitSet cols) {
-            return false; // TODO
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<ImmutableBitSet> getKeys() {
-            return null; // TODO
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-            return ImmutableList.of();
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelCollation> getCollations() {
-            return ImmutableList.of(); // The method isn't used
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteDistribution getDistribution() {
-            return distribution();
         }
     }
 }

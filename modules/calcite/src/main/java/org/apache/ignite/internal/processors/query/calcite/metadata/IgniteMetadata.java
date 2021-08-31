@@ -47,6 +47,7 @@ public class IgniteMetadata {
                 IgniteMdPredicates.SOURCE,
                 IgniteMdCollation.SOURCE,
                 IgniteMdSelectivity.SOURCE,
+                IgniteMdColumnOrigins.SOURCE,
                 IgniteMdDistinctRowCount.SOURCE,
 
                 // Basic providers
