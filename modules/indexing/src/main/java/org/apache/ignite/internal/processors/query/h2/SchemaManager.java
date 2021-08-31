@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -58,10 +57,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -204,9 +199,6 @@ public class SchemaManager {
         // Register PUBLIC schema which is always present.
         schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
 
-        // Create system views.
-        createSystemViews();
-
         // Create schemas listed in node's configuration.
         createPredefinedSchemas(schemaNames);
     }
@@ -252,29 +244,6 @@ public class SchemaManager {
         catch (IgniteCheckedException | SQLException e) {
             throw new IgniteException("Failed to register system view.", e);
         }
-    }
-
-    /**
-     * Create system views.
-     */
-    private void createSystemViews() throws IgniteCheckedException {
-        for (SqlSystemView view : systemViews(ctx))
-            createSystemView(QueryUtils.SCHEMA_SYS, view);
-    }
-
-    /**
-     * @param ctx Context.
-     * @return Predefined system views.
-     */
-    private Collection<SqlSystemView> systemViews(GridKernalContext ctx) {
-        Collection<SqlSystemView> views = new ArrayList<>();
-
-        views.add(new SqlSystemViewNodeAttributes(ctx));
-        views.add(new SqlSystemViewBaselineNodes(ctx));
-        views.add(new SqlSystemViewNodeMetrics(ctx));
-        views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
-
-        return views;
     }
 
     /**

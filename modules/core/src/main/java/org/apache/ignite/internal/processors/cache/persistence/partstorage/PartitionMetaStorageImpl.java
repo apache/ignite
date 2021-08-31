@@ -26,12 +26,13 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -44,25 +45,37 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
      * @param name Name.
      * @param memPlc Mem policy.
      * @param reuseList Reuse list.
-     * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
+     * @param ctx Context.
      * @param pageFlag Default flag value for allocated pages.
      */
     public PartitionMetaStorageImpl(
         int cacheGrpId,
         String name,
         DataRegion memPlc,
-        ReuseList reuseList,
-        IgniteWriteAheadLogManager wal,
+        @Nullable ReuseList reuseList,
+        @Nullable IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        PageLockListener lsnr,
+        PageLockTrackerManager pageLockTrackerManager,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit,
+        @Nullable AtomicLong pageListCacheLimit,
         byte pageFlag
     ) throws IgniteCheckedException {
-        super(cacheGrpId, name, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit, pageFlag);
+        super(
+            cacheGrpId,
+            name,
+            memPlc,
+            reuseList,
+            wal,
+            metaPageId,
+            initNew,
+            pageLockTrackerManager,
+            ctx,
+            pageListCacheLimit,
+            pageFlag
+        );
     }
 
     /**

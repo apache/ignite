@@ -28,7 +28,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -37,7 +36,6 @@
     <DocumentationFile>bin\Release\Apache.Ignite.Core.xml</DocumentationFile>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DebugType>none</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -626,7 +624,6 @@
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="IgniteClientConfigurationSection.xsd">

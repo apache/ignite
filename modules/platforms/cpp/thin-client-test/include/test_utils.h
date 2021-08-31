@@ -20,6 +20,9 @@
 
 #include <string>
 
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
+
 #include <ignite/ignition.h>
 
 #define MUTE_TEST_FOR_TEAMCITY \
@@ -83,6 +86,33 @@ namespace ignite_test
      * @return Number of occurrences.
      */
     size_t GetLineOccurrencesInFile(const std::string& filePath, const std::string& line);
+
+    /**
+     * Wait for condition.
+     * @tparam T Type of condition function.
+     * @param func Function that should check for condition and return true once it's performed.
+     * @param timeout Timeout to wait.
+     * @return True if condition was met, false if timeout has been reached.
+     */
+    template<typename F>
+    bool WaitForCondition(F func, int32_t timeout)
+    {
+        using namespace boost::chrono;
+
+        const int32_t span = 200;
+
+        steady_clock::time_point begin = steady_clock::now();
+
+        while (!func())
+        {
+            boost::this_thread::sleep_for(milliseconds(span));
+
+            if (timeout && duration_cast<milliseconds>(steady_clock::now() - begin).count() >= timeout)
+                return func();
+        }
+
+        return true;
+    }
 }
 
 #endif // _IGNITE_THIN_CLIENT_TEST_TEST_UTILS

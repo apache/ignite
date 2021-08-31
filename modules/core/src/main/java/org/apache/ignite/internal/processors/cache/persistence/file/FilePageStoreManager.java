@@ -231,7 +231,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-        storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+        storeWorkDir = folderSettings.persistentStoreNodePath();
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
 
@@ -586,12 +586,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionCreated(int grpId, int partId) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+    @Override public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException {
         assert partId <= MAX_PARTITION_ID;
 
         PageStore store = getStore(grpId, partId);
