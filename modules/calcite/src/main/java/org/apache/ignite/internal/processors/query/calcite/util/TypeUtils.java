@@ -279,17 +279,23 @@ public class TypeUtils {
     public static Object fromInternal(ExecutionContext<?> ectx, Object val, Type storageType) {
         if (val == null)
             return null;
-        else if (storageType == java.sql.Date.class && val instanceof Integer) {
-            final long t = (Integer)val * DateTimeUtils.MILLIS_PER_DAY;
-            return new java.sql.Date(t - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset(t));
-        }
+        else if (storageType == java.sql.Date.class && val instanceof Integer)
+            return new java.sql.Date(fromLocalTs(ectx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == java.sql.Time.class && val instanceof Integer)
-            return new java.sql.Time((Integer)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Integer)val));
+            return new java.sql.Time(fromLocalTs(ectx, (Integer)val));
         else if (storageType == Timestamp.class && val instanceof Long)
-            return new Timestamp((Long)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Long)val));
+            return new Timestamp(fromLocalTs(ectx, (Long)val));
         else if (storageType == java.util.Date.class && val instanceof Long)
-            return new java.util.Date((Long)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Long)val));
+            return new java.util.Date(fromLocalTs(ectx, (Long)val));
         else
             return val;
+    }
+
+    /** */
+    private static long fromLocalTs(ExecutionContext<?> ectx, long ts) {
+        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ectx);
+
+        // Taking into account DST, offset can be changed after converting from UTC to time-zone.
+        return ts - tz.getOffset(ts - tz.getOffset(ts));
     }
 }
