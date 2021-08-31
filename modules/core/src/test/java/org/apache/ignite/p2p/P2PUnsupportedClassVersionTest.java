@@ -99,7 +99,7 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
         assertTrue(errMsgLsnr.check());
 
         // Check node is alive.
-        cache.put("3", "3");
+        cache.put("2", "2");
     }
 
     /** */
@@ -129,7 +129,7 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
     public void testScanQuery() throws Exception {
         IgniteCache<String, String> cache = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        cache.put("2", "2");
+        cache.put("3", "3");
 
         LogListener errMsgLsnr = errorMessageListener(PREDICATE_CLASSNAME);
 
@@ -145,6 +145,9 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
         }, IgniteCheckedException.class);
 
         assertTrue(errMsgLsnr.check());
+
+        // Check node is alive.
+        cache.put("4", "4");
     }
 
     /** Custom communication SPI for simulating {@link UnsupportedClassVersionError} on server node. */

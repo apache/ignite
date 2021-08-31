@@ -558,11 +558,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean ignoreClassErrors() {
-        return true;
-    }
-
     /**
      * @return partition.
      */
