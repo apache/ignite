@@ -188,18 +188,12 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             enableOperations();
 
         ctx.timeout().schedule(() -> {
-            StatisticsUsageState state = usageState();
-            if (state == ON && !ctx.isStopping()) {
-                if (log.isTraceEnabled())
-                    log.trace("Processing statistics obsolescence...");
-
-                try {
-                    processObsolescence();
-                } catch (Throwable e) {
-                    log.warning("Error while processing statistics obsolescence", e);
-                }
+            try {
+                processObsolescence();
             }
-
+            catch (Throwable e) {
+                log.warning("Error while processing statistics obsolescence", e);
+            }
         }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
     }
 
@@ -328,6 +322,14 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * Save dirty obsolescence info to local metastore. Check if statistics need to be refreshed and schedule it.
      */
     public synchronized void processObsolescence() {
+        StatisticsUsageState state = usageState();
+
+        if (state != ON || ctx.isStopping())
+            return;
+
+        if (log.isTraceEnabled())
+            log.trace("Processing statistics obsolescence...");
+
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = statsRepos.saveObsolescenceInfo();
 
         Map<StatisticsKey, List<Integer>> tasks = calculateObsolescenceRefreshTasks(dirty);
@@ -349,8 +351,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             StatisticsObjectConfiguration objCfg;
             try {
                 objCfg = statCfgMgr.config(objTask.getKey());
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 log.warning("Unable to load statistics object configuration from global metastore", e);
+
                 continue;
             }
 
@@ -361,7 +365,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 continue;
             }
 
-            GridCacheContext cctx = tbl.cacheContext();
+            GridCacheContext<?, ?> cctx = tbl.cacheContext();
 
             Set<Integer> parts = cctx.affinity().primaryPartitions(
                 cctx.localNodeId(), cctx.affinity().affinityTopologyVersion());
