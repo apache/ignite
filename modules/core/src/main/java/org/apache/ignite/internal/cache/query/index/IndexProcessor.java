@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -343,10 +344,15 @@ public class IndexProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param force Force rebuild indexes.
+     * @param cancelTok Token for cancellation index rebuild or {@code null} to use default.
      * @return A future of rebuilding cache indexes.
      */
-    @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean force) {
-        return idxRebuild.rebuild(cctx, force);
+    @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(
+        GridCacheContext<?, ?> cctx,
+        boolean force,
+        @Nullable AtomicReference<Throwable> cancelTok
+    ) {
+        return idxRebuild.rebuild(cctx, force, cancelTok);
     }
 
     /** */

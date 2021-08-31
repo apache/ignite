@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -67,7 +68,7 @@ public class SchemaOperationWorker extends GridWorker {
     private final AtomicBoolean startGuard = new AtomicBoolean();
 
     /** Cancellation token. */
-    private final SchemaIndexOperationCancellationToken cancelToken = new SchemaIndexOperationCancellationToken();
+    private final AtomicReference<Throwable> cancelToken = new AtomicReference<>();
 
     /** Workers registry. */
     private final WorkersRegistry workersRegistry;
@@ -111,7 +112,7 @@ public class SchemaOperationWorker extends GridWorker {
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
         try {
             // Execute.
-            qryProc.processSchemaOperationLocal(op, type, depId, cancelToken);
+            qryProc.processSchemaOperationLocal(op, type, depId, cancelToken::get);
 
             fut.onDone();
         }
@@ -184,7 +185,7 @@ public class SchemaOperationWorker extends GridWorker {
      * Cancel operation.
      */
     @Override public void cancel() {
-        if (cancelToken.cancel()) {
+        if (cancelToken.compareAndSet(null, new SchemaIndexOperationCancellationException("Index creation was cancelled."))) {
             try {
                 fut.get(workersRegistry.getSystemWorkerBlockedTimeout());
             }

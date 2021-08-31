@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -395,10 +395,10 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override protected void startRebuild(
-            GridCacheContext cctx,
+            GridCacheContext<?, ?> cctx,
             GridFutureAdapter<Void> rebuildIdxFut,
             SchemaIndexCacheVisitorClosure clo,
-            SchemaIndexOperationCancellationToken cancel
+            Supplier<Throwable> cancel
         ) {
             if (!firstRbld) {
                 try {

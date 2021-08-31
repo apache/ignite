@@ -1519,8 +1519,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (rebuildCond.test(cacheCtx)) {
                 IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(
                     cacheCtx,
-                    force || !qryProc.rebuildIndexesCompleted(cacheCtx)
-                );
+                    force || !qryProc.rebuildIndexesCompleted(cacheCtx),
+                    null);
 
                 if (rebuildFut != null)
                     rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));

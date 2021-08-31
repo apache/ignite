@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -55,7 +55,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private final GridCacheContext cctx;
 
     /** Cancellation token. */
-    @Nullable private final SchemaIndexOperationCancellationToken cancel;
+    private final Supplier<Throwable> cancelTok;
 
     /** Future for create/rebuild index. */
     protected final GridFutureAdapter<Void> buildIdxFut;
@@ -67,12 +67,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param cancel Cancellation token.
+     * @param cancelTok Cancellation token.
      * @param buildIdxFut Future for create/rebuild index.
      */
     public SchemaIndexCacheVisitorImpl(
-        GridCacheContext cctx,
-        @Nullable SchemaIndexOperationCancellationToken cancel,
+        GridCacheContext<?, ?> cctx,
+        Supplier<Throwable> cancelTok,
         GridFutureAdapter<Void> buildIdxFut
     ) {
         assert nonNull(cctx);
@@ -84,7 +84,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         this.cctx = cctx;
         this.buildIdxFut = buildIdxFut;
 
-        this.cancel = cancel;
+        this.cancelTok = cancelTok;
 
         log = cctx.kernalContext().log(getClass());
     }
@@ -118,7 +118,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();
 
             GridWorker worker =
-                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, partsCnt);
+                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancelTok, clo, workerFut, partsCnt);
 
             workerFut.setWorker(worker);
             buildIdxCompoundFut.add(workerFut);

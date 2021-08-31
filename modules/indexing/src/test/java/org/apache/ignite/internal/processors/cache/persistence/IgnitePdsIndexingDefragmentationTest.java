@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -311,8 +312,12 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         private boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx, force);
+        @Override @Nullable public IgniteInternalFuture<?> rebuild(
+            GridCacheContext<?, ?> cctx,
+            boolean force,
+            @Nullable AtomicReference<Throwable> cancelTok
+        ) {
+            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
             rebuiltIndexes = future != null;
 
             return future;

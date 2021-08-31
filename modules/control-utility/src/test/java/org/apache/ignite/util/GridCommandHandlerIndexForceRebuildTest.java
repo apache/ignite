@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -432,7 +432,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
             assertNotNull(intlRebIdxFut);
 
-            assertTrue(waitForCondition(intlRebIdxFut.cancelToken()::isCancelled, getTestTimeout()));
+            assertTrue(waitForCondition(intlRebIdxFut::hasTokenException, getTestTimeout()));
 
             stopLoad.set(true);
 
@@ -705,8 +705,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
-        @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
-            SchemaIndexCacheVisitorClosure clo, SchemaIndexOperationCancellationToken cancel) {
+        @Override protected void startRebuild(
+            GridCacheContext<?, ?> cctx,
+            GridFutureAdapter<Void> fut,
+            SchemaIndexCacheVisitorClosure clo,
+            Supplier<Throwable> cancel
+        ) {
             super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
         }
     }

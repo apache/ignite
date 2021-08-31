@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.schema;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Exception occurred when canceling index rebuild via {@link SchemaIndexOperationCancellationToken}.
+ * Exception occurred when canceling index rebuild.
  */
 public class SchemaIndexOperationCancellationException extends IgniteCheckedException {
     /** Serial version uid. */
