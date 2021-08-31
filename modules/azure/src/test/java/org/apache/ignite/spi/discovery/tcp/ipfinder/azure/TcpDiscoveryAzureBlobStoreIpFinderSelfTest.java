@@ -45,7 +45,9 @@ public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         try {
             Method method = TcpDiscoveryAzureBlobStoreIpFinder.class.getDeclaredMethod("removeContainer", String.class);
 
