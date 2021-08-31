@@ -51,7 +51,7 @@ public class IgnitePrograms {
             builder.addRuleCollection(ruleList);
 
             final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
-                null, Commons.context(rel).config().getCostFactory());
+                null, Commons.context(rel).unwrap(QueryContextBase.class).config().getCostFactory());
 
             for (RelOptMaterialization materialization : materializations)
                 hepPlanner.addMaterialization(materialization);

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -37,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.OutboxCloseMe
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,6 +45,9 @@ import org.apache.ignite.internal.util.typedef.F;
  *
  */
 public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
+    /** */
+    private final UUID locaNodeId;
+
     /** */
     private QueryTaskExecutor taskExecutor;
 
@@ -60,6 +62,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      */
     public ExchangeServiceImpl(GridKernalContext ctx) {
         super(ctx);
+
+        locaNodeId = ctx.localNodeId();
     }
 
     /**
@@ -255,12 +259,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      */
     private ExecutionContext<?> baseInboxContext(UUID nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
+            QueryContextBase.builder().build(),
             taskExecutor(),
-            PlanningContext.builder()
-                .originatingNodeId(nodeId)
-                .logger(log)
-                .build(),
             qryId,
+            locaNodeId,
+            nodeId,
             new FragmentDescription(
                 fragmentId,
                 null,

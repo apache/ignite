@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -152,14 +153,14 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
     /** {@inheritDoc} */
     @Override protected void onErrorInternal(Throwable e) {
-        U.error(context().planningContext().logger(),
+        U.error(context().unwrap(QueryContextBase.class).logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
         try {
             sendError(e);
         }
         catch (IgniteCheckedException ex) {
-            U.error(context().planningContext().logger(),
+            U.error(context().unwrap(QueryContextBase.class).logger(),
                 "Error occurred during send error message: " + X.getFullStackTrace(e));
         }
         finally {
@@ -212,7 +213,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
             exchange.closeInbox(nodeId, queryId(), targetFragmentId, exchangeId);
         }
         catch (IgniteCheckedException e) {
-            U.warn(context().planningContext().logger(), "Failed to send cancel message.", e);
+            U.warn(context().unwrap(QueryContextBase.class).logger(), "Failed to send cancel message.", e);
         }
     }
 

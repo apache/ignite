@@ -28,17 +28,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -53,11 +60,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,10 +79,49 @@ import org.codehaus.commons.compiler.ICompilerFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+
 /**
  * Utility methods.
  */
 public final class Commons {
+    /** */
+    public static final CalciteConnectionConfig CALCITE_CONNECTION_CONFIG;
+
+    static {
+        Properties props = new Properties();
+
+        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
+            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().caseSensitive()));
+        props.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
+            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().conformance()));
+        props.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
+            String.valueOf(true));
+
+        CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props);
+    }
+
+    /** */
+    private static final IgniteCostFactory COST_FACTORY = new IgniteCostFactory();
+
+    /** */
+    private static final VolcanoPlanner EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, Contexts.empty());
+
+    /** */
+    private static final RexBuilder DFLT_REX_BUILDER;
+
+    /** */
+    private static final RelOptCluster CLUSTER;
+
+    static {
+        RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
+        IgniteTypeFactory typeFactory = new IgniteTypeFactory(typeSys);
+
+        DFLT_REX_BUILDER = new RexBuilder(typeFactory);
+
+        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
+    }
+
     /** */
     private Commons(){}
 
@@ -430,5 +479,15 @@ public final class Commons {
         }
 
         return res;
+    }
+
+    /** */
+    public static RelOptCluster cluster() {
+        return CLUSTER;
+    }
+
+    /** */
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
+        return new MappingQueryContext(CLUSTER, locNodeId, topVer);
     }
 }

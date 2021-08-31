@@ -57,7 +57,7 @@ public class QueryTemplate {
     }
 
     /** */
-    public ExecutionPlan map(PlanningContext ctx) {
+    public ExecutionPlan map(MappingQueryContext ctx) {
         ExecutionPlan executionPlan = this.executionPlan.get();
         if (executionPlan != null && Objects.equals(executionPlan.topologyVersion(), ctx.topologyVersion()))
             return executionPlan;
@@ -89,7 +89,7 @@ public class QueryTemplate {
     }
 
     /** */
-    @NotNull private List<Fragment> map(List<Fragment> fragments, PlanningContext ctx, RelMetadataQuery mq) {
+    @NotNull private List<Fragment> map(List<Fragment> fragments, MappingQueryContext ctx, RelMetadataQuery mq) {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
         for (Fragment fragment : fragments)
             b.add(fragment.map(mappingService, ctx, mq).detach());

@@ -29,10 +29,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -87,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -243,16 +242,20 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         };
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
+            .parentContext(QueryContextBase.builder()
+                .frameworkConfig(
+                    newConfigBuilder(FRAMEWORK_CONFIG)
+                        .defaultSchema(schema)
+                        .traitDefs(traitDefs)
+                        .build()
+                )
+                .logger(log)
+                .build()
+            )
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
                 .traitDefs(traitDefs)
                 .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgnitePlanner planner = ctx.planner();
@@ -300,29 +303,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected RelNode originalLogicalTree(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
+        PlanningContext ctx = plannerCtx(sql, publicSchema);
 
         RelRoot relRoot;
 
@@ -376,22 +357,28 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         };
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
+            .parentContext(QueryContextBase.builder()
+                .frameworkConfig(
+                    newConfigBuilder(FRAMEWORK_CONFIG)
+                        .defaultSchema(schema)
+                        .traitDefs(traitDefs)
+                        .build()
+                )
+                .logger(log)
+                .build()
+            )
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
                 .traitDefs(traitDefs)
                 .build())
-            .logger(log)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         List<RelNode> deserializedNodes = new ArrayList<>();
 
         try (IgnitePlanner ignored = ctx.planner()) {
             for (String s : serialized) {
-                RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
+                RelJsonReader reader = new RelJsonReader(ctx.unwrap(QueryContextBase.class).catalogReader());
+
                 deserializedNodes.add(reader.read(s));
             }
         }

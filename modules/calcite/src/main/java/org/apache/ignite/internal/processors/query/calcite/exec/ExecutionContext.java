@@ -25,17 +25,19 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -47,9 +49,12 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
 /**
  * Runtime context allowing access to the tables in a database.
  */
-public class ExecutionContext<Row> implements DataContext {
+public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
     /** */
     private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+
+    /** */
+    private static final SchemaPlus DFLT_SCHEMA = Frameworks.createRootSchema(false);
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-15276 Support other locales.
@@ -59,7 +64,10 @@ public class ExecutionContext<Row> implements DataContext {
     private final UUID qryId;
 
     /** */
-    private final PlanningContext ctx;
+    private final UUID locNodeId;
+
+    /** */
+    private final UUID originatingNodeId;
 
     /** */
     private final FragmentDescription fragmentDesc;
@@ -89,38 +97,39 @@ public class ExecutionContext<Row> implements DataContext {
     private Object[] correlations = new Object[16];
 
     /**
-     * @param ctx Parent context.
      * @param qryId Query ID.
      * @param fragmentDesc Partitions information.
      * @param params Parameters.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
+        QueryContextBase parentCtx,
         QueryTaskExecutor executor,
-        PlanningContext ctx,
         UUID qryId,
+        UUID locNodeId,
+        UUID originatingNodeId,
         FragmentDescription fragmentDesc,
         RowHandler<Row> handler,
         Map<String, Object> params
     ) {
+        super(parentCtx);
+
         this.executor = executor;
-        this.ctx = ctx;
         this.qryId = qryId;
+        this.locNodeId = locNodeId;
+        this.originatingNodeId = originatingNodeId;
         this.fragmentDesc = fragmentDesc;
         this.handler = handler;
         this.params = params;
 
-        expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
+        expressionFactory = new ExpressionFactoryImpl<>(
+            this,
+            parentCtx.typeFactory(),
+            parentCtx.config().getParserConfig().conformance()
+        );
 
         long ts = U.currentTimeMillis();
         startTs = ts + TIME_ZONE.getOffset(ts);
-    }
-
-    /**
-     * @return Parent context.
-     */
-    public PlanningContext planningContext() {
-        return ctx;
     }
 
     /**
@@ -183,20 +192,27 @@ public class ExecutionContext<Row> implements DataContext {
     }
 
     /**
-     * @return Originating node ID.
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return locNodeId;
+    }
+
+    /**
+     * @return Originating node ID (the node, who started the execution).
      */
     public UUID originatingNodeId() {
-        return planningContext().originatingNodeId();
+        return originatingNodeId == null ? locNodeId : originatingNodeId;
     }
 
     /** {@inheritDoc} */
     @Override public SchemaPlus getRootSchema() {
-        return ctx.schema();
+        return DFLT_SCHEMA;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTypeFactory getTypeFactory() {
-        return ctx.typeFactory();
+        return unwrap(QueryContextBase.class).typeFactory();
     }
 
     /** {@inheritDoc} */

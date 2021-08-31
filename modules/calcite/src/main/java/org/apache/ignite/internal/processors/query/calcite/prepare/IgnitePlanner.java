@@ -43,7 +43,6 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlKind;
@@ -101,9 +100,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final SqlRexConvertletTable convertletTbl;
 
     /** */
-    private final RexBuilder rexBuilder;
-
-    /** */
     private final RexExecutor rexExecutor;
 
     /** */
@@ -128,9 +124,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         this.ctx = ctx;
 
         typeFactory = ctx.typeFactory();
-        catalogReader = ctx.catalogReader();
+        catalogReader = ctx.unwrap(QueryContextBase.class).catalogReader();
         operatorTbl = ctx.opTable();
-        frameworkCfg = ctx.config();
+        frameworkCfg = ctx.unwrap(QueryContextBase.class).config();
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
@@ -139,8 +135,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();
         traitDefs = frameworkCfg.getTraitDefs();
-
-        rexBuilder = new RexBuilder(typeFactory);
     }
 
     /** {@inheritDoc} */
@@ -304,7 +298,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** Creates a cluster. */
     RelOptCluster cluster() {
         if (cluster == null) {
-            cluster = RelOptCluster.create(planner(), rexBuilder);
+            cluster = RelOptCluster.create(planner(), ctx.unwrap(QueryContextBase.class).rexBuilder());
             cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
             cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
         }

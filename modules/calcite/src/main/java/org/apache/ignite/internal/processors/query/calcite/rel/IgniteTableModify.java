@@ -25,6 +25,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
@@ -56,7 +57,8 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
         List<RexNode> sourceExpressionList,
         boolean flattened
     ) {
-        super(cluster, traitSet, table, Commons.context(cluster).catalogReader(), input, operation, updateColumnList,
+        super(cluster, traitSet, table, Commons.context(cluster).unwrap(QueryContextBase.class).catalogReader(),
+            input, operation, updateColumnList,
             sourceExpressionList, flattened);
     }
 

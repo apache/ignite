@@ -121,7 +121,7 @@ public class Fragment {
     }
 
     /** */
-    public Fragment attach(PlanningContext ctx) {
+    public Fragment attach(MappingQueryContext ctx) {
         RelOptCluster cluster = ctx.cluster();
 
         return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
@@ -139,7 +139,7 @@ public class Fragment {
      * @param ctx Planner context.
      * @param mq Metadata query.
      */
-    Fragment map(MappingService mappingSrvc, PlanningContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
+    Fragment map(MappingService mappingSrvc, MappingQueryContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
         assert root.getCluster() == ctx.cluster() : "Fragment is detached [fragment=" + this + "]";
 
         if (mapping != null)
@@ -149,7 +149,7 @@ public class Fragment {
     }
 
     /** */
-    private FragmentMapping mapping(PlanningContext ctx, RelMetadataQuery mq, Supplier<List<UUID>> nodesSource) {
+    private FragmentMapping mapping(MappingQueryContext ctx, RelMetadataQuery mq, Supplier<List<UUID>> nodesSource) {
         try {
             FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq);
 
@@ -175,7 +175,7 @@ public class Fragment {
     }
 
     /** */
-    @NotNull private Supplier<List<UUID>> nodesSource(MappingService mappingSrvc, PlanningContext ctx) {
+    @NotNull private Supplier<List<UUID>> nodesSource(MappingService mappingSrvc, MappingQueryContext ctx) {
         return () -> mappingSrvc.executionNodes(ctx.topologyVersion(), single(), null);
     }
 

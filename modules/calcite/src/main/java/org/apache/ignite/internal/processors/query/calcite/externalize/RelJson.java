@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -113,9 +112,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 class RelJson {
-    /** */
-    private final RelOptCluster cluster;
-
     /** */
     @SuppressWarnings("PublicInnerClass") @FunctionalInterface
     public static interface RelFactory extends Function<RelInput, RelNode> {
@@ -224,11 +220,6 @@ class RelJson {
             "org.apache.calcite.rel.logical.",
             "org.apache.calcite.adapter.jdbc.",
             "org.apache.calcite.adapter.jdbc.JdbcRules$");
-
-    /** */
-    RelJson(RelOptCluster cluster) {
-        this.cluster = cluster;
-    }
 
     /** */
     Function<RelInput, RelNode> factory(String type) {
@@ -728,7 +719,7 @@ class RelJson {
     /** */
     private Object toJson(RexNode node) {
         // removes calls to SEARCH and the included Sarg and converts them to comparisons
-        node = RexUtil.expandSearch(cluster.getRexBuilder(), null, node);
+        node = RexUtil.expandSearch(Commons.cluster().getRexBuilder(), null, node);
 
         Map<String, Object> map;
         switch (node.getKind()) {

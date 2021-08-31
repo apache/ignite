@@ -17,13 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.UUID;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+
 /**
- *
+ * Abstract query context.
  */
-public interface QueryPlanFactory {
-    /**
-     * @param ctx Planning context.
-     * @return Query plan.
-     */
-    QueryPlan create(PlanningContext ctx);
+public class MappingQueryContext {
+    /** */
+    private final RelOptCluster cluster;
+
+    /** */
+    private final UUID locNodeId;
+
+    /** */
+    private final AffinityTopologyVersion topVer;
+
+    /** */
+    public MappingQueryContext(RelOptCluster cluster, UUID locNodeId, AffinityTopologyVersion topVer) {
+        this.cluster = cluster;
+        this.locNodeId = locNodeId;
+        this.topVer = topVer;
+    }
+
+    /** */
+    public RelOptCluster cluster() {
+        return cluster;
+    }
+
+    /** */
+    public UUID localNodeId() {
+        return locNodeId;
+    }
+
+    /** */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
 }
