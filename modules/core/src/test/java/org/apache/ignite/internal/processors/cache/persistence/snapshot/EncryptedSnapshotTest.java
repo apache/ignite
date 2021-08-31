@@ -105,7 +105,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** Checks snapshot validati fails if different master key is used. */
     @Test
-    public void testSnapshotFailsWithOtherMasterKey() throws Exception {
+    public void testValidatingSnapshotFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         ig.snapshot().createSnapshot(SNAPSHOT_NAME).get();
@@ -128,6 +128,30 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         }
 
         throw new IllegalStateException("Snapshot validation must contain error due to different master key.");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testValidatingSnapshotFailsWithNoEncryption() throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false);
+
+        stopAllGrids();
+
+        encryption = false;
+        dfltCacheCfg = null;
+
+        cleanPersistenceDir(false);
+
+        IgniteEx ig = startGrids(3);
+
+        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
+
+        for (Exception e : snpCheckRes.exceptions().values()) {
+            if (e.getMessage().contains("has encrypted caches while encryption is disabled"))
+                return;
+        }
+
+        throw new IllegalStateException("Snapshot validation must contain error due to encryption is currently disabled.");
     }
 
     /** Checks re-encryption fails during snapshot restoration. */
@@ -395,7 +419,6 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         return cacheCfg;
     }
-
 
     /**
      * Starts 2 nodes, creates encrypted and plain caches, creates snapshot, destroes the caches.

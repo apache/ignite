@@ -57,7 +57,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -699,7 +698,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
                 }
 
-                return new SnapshotOperationResponse();
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode());
+
+                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IOException | IgniteCheckedException e) {
                 throw F.wrap(e);
@@ -1079,12 +1080,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
-
-        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-        kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
-
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, name).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
@@ -1092,14 +1087,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
+                byte[] currentMasterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
+
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
                     for (SnapshotMetadata meta : nodeMetas) {
-                        if (meta.masterKeyDigest() != null && !Arrays.equals(meta.masterKeyDigest(),
-                            kctx0.config().getEncryptionSpi().masterKeyDigest())) {
+                        if (meta.masterKeyDigest() == null)
+                            continue;
 
+                        if (currentMasterKeyDigest == null) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
-                                    "' has different signature of the master key.")))));
+                                    "' has encrypted caches while encryption is disabled. No keys exist to decrypt data to validate.")))));
+
+                            return;
+                        }
+
+                        if (!Arrays.equals(meta.masterKeyDigest(), currentMasterKeyDigest)) {
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
+                                    "' has different signature of the master key. Unable to decrypt data to validate.")))));
 
                             return;
                         }
@@ -1107,6 +1113,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         grpIds.keySet().removeAll(meta.partitions().keySet());
                     }
                 }
+
+                Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+                    (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
+
+                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+                kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
 
                 if (!grpIds.isEmpty()) {
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
@@ -2295,8 +2307,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
-                     .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {
-                     })
+                     .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
                 ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
                     .order(ByteOrder.nativeOrder());

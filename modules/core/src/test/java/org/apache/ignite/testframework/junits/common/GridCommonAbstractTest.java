@@ -1929,9 +1929,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     *
+     * Cleans persistence directory including snapshots.
      */
     protected void cleanPersistenceDir() throws Exception {
+        cleanPersistenceDir(true);
+    }
+
+    /**
+     * Cleans persistence directory.
+     *
+     * @param withSnapshots If {@code true}, cleans also snapshots.
+     */
+    protected void cleanPersistenceDir(boolean withSnapshots) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
@@ -1939,7 +1948,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
             false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+        if (withSnapshots)
+            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**

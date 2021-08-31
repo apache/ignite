@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,6 +62,7 @@ public class SnapshotMetadata implements Serializable {
     private final List<Integer> grpIds;
 
     /** Encrypted group ids. */
+    @GridToStringInclude
     private Set<Integer> encrGrpIds;
 
     /** The set of affected by snapshot baseline nodes. */
@@ -75,6 +77,7 @@ public class SnapshotMetadata implements Serializable {
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
     /** Master key digest for encrypted caches. */
+    @GridToStringInclude
     private byte[] masterKeyDigest;
 
     /**
@@ -217,7 +220,7 @@ public class SnapshotMetadata implements Serializable {
         if (this.encrGrpIds == null) {
             synchronized (this) {
                 if (this.encrGrpIds == null)
-                    this.encrGrpIds = new HashSet<>();
+                    this.encrGrpIds = ConcurrentHashMap.newKeySet();
             }
         }
 
