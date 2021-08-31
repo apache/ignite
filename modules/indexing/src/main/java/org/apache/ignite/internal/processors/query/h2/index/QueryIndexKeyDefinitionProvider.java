@@ -66,7 +66,7 @@ public class QueryIndexKeyDefinitionProvider {
     /** */
     private IndexKeyDefinition keyDefinition(IndexColumn c) {
         return new IndexKeyDefinition(
-            c.columnName, c.column.getType(), sortOrder(c.sortType));
+            c.columnName, c.column.getType(), sortOrder(c.sortType), c.column.getPrecision());
     }
 
     /** Maps H2 column order to Ignite index order. */

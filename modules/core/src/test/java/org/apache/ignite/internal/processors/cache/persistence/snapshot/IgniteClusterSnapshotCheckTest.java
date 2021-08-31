@@ -86,7 +86,7 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -382,7 +382,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryContext();
 
         GridCacheAdapter<?, ?> cache = ignite.context().cache().internalCache(dfltCacheCfg.getName());
-        long partCtr = cache.context().offheap().lastUpdatedPartitionCounter(PART_ID);
+        long partCtr = cache.context().topology().localPartition(PART_ID, NONE, false)
+            .dataStore()
+            .updateCounter();
         AtomicBoolean done = new AtomicBoolean();
 
         db.addCheckpointListener(new CheckpointListener() {
@@ -426,7 +428,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                     assertTrue(success);
 
-                    long newPartCtr = cache.context().offheap().lastUpdatedPartitionCounter(PART_ID);
+                    long newPartCtr = cache.context().topology().localPartition(PART_ID, NONE, false)
+                        .dataStore()
+                        .updateCounter();
 
                     assertEquals(newPartCtr, partCtr);
                 }
@@ -676,7 +680,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck, false).get(TIMEOUT);
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,9 +72,11 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_ST
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.TMP_CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -103,6 +106,29 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             cfg.setConsistentId(null);
 
         return cfg;
+    }
+
+    /**
+     * Ensures that system partition verification task is invoked before restoring the snapshot.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestoreWithMissedPart() throws Exception {
+        IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+            getPartitionFileName(0));
+
+        assertNotNull(part0);
+        assertTrue(part0.toString(), part0.toFile().exists());
+        assertTrue(part0.toFile().delete());
+
+        IgniteFuture<Void> fut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteException.class,
+            "Snapshot data doesn't contain required cache group partition");
+
+        ensureCacheAbsent(dfltCacheCfg);
     }
 
     /** @throws Exception If failed. */

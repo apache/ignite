@@ -41,7 +41,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLoc
 import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvationCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.EncryptedSnapshotTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.EncryptedSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotHandlerTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
@@ -104,6 +106,7 @@ import org.junit.runners.Suite;
     IgniteSnapshotWithMetastorageTest.class,
     IgniteSnapshotMXBeanTest.class,
     IgniteClusterSnapshotRestoreSelfTest.class,
+    IgniteClusterSnapshotHandlerTest.class,
     EncryptedSnapshotTest.class,
 
     IgniteClusterIdTagTest.class,
