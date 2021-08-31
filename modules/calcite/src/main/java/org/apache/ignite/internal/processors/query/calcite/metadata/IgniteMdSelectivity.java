@@ -120,6 +120,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /** */
     public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
         RelNode best = rel.getBest();
+
         if (best == null)
             return super.getSelectivity(rel, mq, predicate);
 
@@ -278,6 +279,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             }
 
             RexSlot op = null;
+
             if (pred instanceof RexCall)
                 op = getOperand((RexCall)pred);
             else if (pred instanceof RexSlot)
@@ -350,6 +352,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      */
     private @Nullable ColumnStatistics getColumnStatistics(RelMetadataQuery mq, ProjectableFilterableTableScan rel, RexSlot op) {
         RelColumnOrigin origin;
+
         if (op instanceof RexLocalRef)
             origin = rel.columnOriginsByRelLocalRef(op.getIndex());
         else if (op instanceof RexInputRef)
@@ -390,9 +393,11 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     private double estimateRefSelectivity(ProjectableFilterableTableScan rel, RelMetadataQuery mq, RexLocalRef ref) {
         ColumnStatistics colStat = getColumnStatistics(mq, rel, ref);
         double res = 0.33;
-        if (colStat == null)
+
+        if (colStat == null) {
             // true, false and null with equivalent probability
             return res;
+        }
 
         if (colStat.max() == null || colStat.max().getType() != Value.BOOLEAN)
             return res;
@@ -417,6 +422,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      */
     private double estimateRangeSelectivity(ColumnStatistics colStat, RexCall pred) {
         RexLiteral literal = null;
+
         if (pred.getOperands().get(1) instanceof RexLiteral)
             literal = (RexLiteral)pred.getOperands().get(1);
 
