@@ -784,32 +784,40 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             IgniteUuid curLdrId = localLdrId.get();
 
-            IgniteBiTuple<Class<?>, Throwable> cls0 = null;
+            Throwable err = null;
 
             if (curLdrId != null) {
                 CachedDeploymentInfo<K, V> t = deps.get(curLdrId);
 
                 if (t != null) {
-                    cls0 = tryToloadClassFromCacheDep(name, t);
+                    IgniteBiTuple<Class<?>, Throwable> cls = tryToloadClassFromCacheDep(name, t);
 
-                    if (cls0 != null && cls0.get1() != null)
-                        return cls0.get1();
+                    if (cls != null) {
+                        if (cls.get1() != null)
+                            return cls.get1();
+                        else
+                            err = cls.get2();
+                    }
                 }
             }
 
             for (CachedDeploymentInfo<K, V> t : deps.values()) {
-                cls0 = tryToloadClassFromCacheDep(name, t);
+                IgniteBiTuple<Class<?>, Throwable> cls = tryToloadClassFromCacheDep(name, t);
 
-                if (cls0 != null && cls0.get1() != null)
-                    return cls0.get1();
+                if (cls != null) {
+                    if (cls.get1() != null)
+                        return cls.get1();
+                    else if (err == null)
+                        err = cls.get2();
+                }
             }
 
             try {
                 return getParent().loadClass(name);
             }
             catch (ClassNotFoundException e) {
-                if (cls0.get2() instanceof LinkageError)
-                    U.warn(log, "Failed to load class [name=" + name + ']', cls0.get2());
+                if (err instanceof LinkageError)
+                    U.warn(log, "Failed to load class [name=" + name + ']', err);
 
                 throw e;
             }
