@@ -191,7 +191,6 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
             final UUID subjId = ctx.security().securityContext().subject().id();
 
             return new SecurityAwarePredicate<>(subjId, res);
-
         }
 
         return res;

@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -224,7 +223,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, cacheGrpNames).listen(f -> {
+        snpMgr.checkSnapshot(snpName, cacheGrpNames, true).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -287,18 +286,6 @@ public class SnapshotRestoreProcess {
             if (!snpBltNodes.isEmpty()) {
                 finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
                     "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
-
-                return;
-            }
-
-            IdleVerifyResultV2 res = f.result().idleVerifyResult();
-
-            if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
-                StringBuilder sb = new StringBuilder();
-
-                res.print(sb::append, true);
-
-                finishProcess(fut0.rqId, new IgniteException(sb.toString()));
 
                 return;
             }
