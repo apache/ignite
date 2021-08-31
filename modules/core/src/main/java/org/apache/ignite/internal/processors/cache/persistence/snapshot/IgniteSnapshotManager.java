@@ -958,13 +958,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return The request id of restoring snapshot operation.
-     */
-    public @Nullable UUID restoringId() {
-        return restoreCacheGrpProc.restoringId();
-    }
-
-    /**
      * @return {@code true} if partition states of given cache groups must be reset
      * to the initial {@link GridDhtPartitionState#MOVING} state.
      */

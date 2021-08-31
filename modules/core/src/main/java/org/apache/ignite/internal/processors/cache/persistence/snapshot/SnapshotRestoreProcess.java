@@ -390,17 +390,10 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
     }
 
     /**
-     * @return The request id of restoring snapshot operation.
-     */
-    public @Nullable UUID restoringId() {
-        return restoringId(opCtx);
-    }
-
-    /**
      * @param opCtx Restoring context.
      * @return The request id of restoring snapshot operation.
      */
-    private @Nullable UUID restoringId(SnapshotRestoreContext opCtx) {
+    private @Nullable UUID restoringId(@Nullable SnapshotRestoreContext opCtx) {
         return opCtx == null ? null : opCtx.reqId;
     }
 
@@ -440,7 +433,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
      * @param ccfg Cache configuration.
      * @return {@code True} if the cache or group with the specified name is currently being restored.
      */
-    private boolean isRestoring(CacheConfiguration<?, ?> ccfg, SnapshotRestoreContext opCtx) {
+    private boolean isRestoring(CacheConfiguration<?, ?> ccfg, @Nullable SnapshotRestoreContext opCtx) {
         assert ccfg != null;
 
         if (opCtx == null)
