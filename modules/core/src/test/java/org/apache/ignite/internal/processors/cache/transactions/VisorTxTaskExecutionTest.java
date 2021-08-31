@@ -130,7 +130,7 @@ public class VisorTxTaskExecutionTest extends GridCommonAbstractTest {
                         if (!(e.getCause() instanceof NodeStoppingException))
                             log.error("Error while transaction executing.", e);
 
-                        //NodeStoppingException expected
+                        //NodeStoppingException expected.
                     }
                 }
             }));
@@ -148,7 +148,7 @@ public class VisorTxTaskExecutionTest extends GridCommonAbstractTest {
         Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
             execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));
 
-        //transactions in prepared state
+        //All transactions are in PREPARED state.
         for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
             if (entry.getValue().getInfos().isEmpty())
                 fail("Every node should have transaction info.");

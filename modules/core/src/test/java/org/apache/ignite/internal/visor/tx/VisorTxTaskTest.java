@@ -183,7 +183,7 @@ public class VisorTxTaskTest {
 
             fromNode1.add(mockInfo(randomUuid(), randomUuid(), node1));
 
-            //every node shold have same number of displayed info
+            //Every node sould have same number of displayed info.
             if (i > 0)
                 fromNode2.add(mockInfo(randomUuid(), randomUuid(), node2));
 
