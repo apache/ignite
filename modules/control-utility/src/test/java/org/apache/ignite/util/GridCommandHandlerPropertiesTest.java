@@ -22,14 +22,18 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -127,6 +131,43 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
+     * Checks the set command for property 'checkpoint.deviation'.
+     */
+    @Test
+    public void testPropertyCheckpointDeviation() {
+        for (Ignite ign : G.allGrids()) {
+            if (ign.configuration().isClientMode())
+                continue;
+
+            SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ign).context().cache().context().database(),
+                "cpFreqDeviation");
+
+            assertNull(cpFreqDeviation.get());
+        }
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", "checkpoint.deviation",
+                "--val", "20"
+            )
+        );
+
+        for (Ignite ign : G.allGrids()) {
+            if (ign.configuration().isClientMode())
+                continue;
+
+            SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ign).context().cache().context().database(),
+                "cpFreqDeviation");
+
+            assertNotNull(cpFreqDeviation.get());
+
+            assertEquals(20, cpFreqDeviation.get().intValue());
+        }
+    }
+
+    /**
      * Check the set command fro property 'sql.defaultQueryTimeout'.
      * Steps:
      */
@@ -157,5 +198,50 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
                 "--val", "invalidVal"
             )
         );
+    }
+
+    /**
+     * Check the set command for property 'history.rebalance.threshold'.
+     */
+    @Test
+    public void testPropertyWalRebalanceThreshold() {
+        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
+
+        int newVal = DFLT_PDS_WAL_REBALANCE_THRESHOLD * 2;
+
+        assertEquals(
+                EXIT_CODE_OK,
+                execute(
+                        "--property", "set",
+                        "--name", HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY,
+                        "--val", Integer.toString(newVal)
+                )
+        );
+
+        assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, newVal);
+    }
+
+    /**
+     * Validates that distributed property has specified value across all nodes.
+     *
+     * @param propName Distributed property name.
+     * @param expected Expected property value.
+     * @param <T> Property type.
+     */
+    private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected) {
+        for (Ignite ign : G.allGrids()) {
+            IgniteEx ignEx = (IgniteEx) ign;
+
+            if (ign.configuration().isClientMode())
+                continue;
+
+            DistributedChangeableProperty<Serializable> prop =
+                    ignEx.context().distributedConfiguration().property(propName);
+
+            assertEquals(
+                "Validation has failed on the cluster node [name=" + ign.configuration().getIgniteInstanceName(),
+                prop.get(),
+                expected);
+        }
     }
 }

@@ -128,6 +128,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="asyncContinuationExecutor" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ThreadPool" />
+            <xs:enumeration value="UnsafeSynchronous" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -254,6 +261,18 @@
                             <xs:element name="serializer" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default serializer.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="timestampConverter" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default date time converter.</xs:documentation>
                                 </xs:annotation>
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required">
@@ -958,7 +977,7 @@
                 </xs:element>
                 <xs:element name="assemblies" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>List of additional .Net assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
+                        <xs:documentation>List of additional .NET assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
@@ -2041,6 +2060,11 @@
                                 <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="walForceArchiveTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Time interval (in milliseconds) for force archiving of incompletely WAL segment.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="checkpointReadLockTimeout" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>
@@ -2499,6 +2523,11 @@
             <xs:attribute name="redirectJavaConsoleOutput" type="xs:boolean">
               <xs:annotation>
                 <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="asyncContinuationExecutor" type="asyncContinuationExecutor">
+              <xs:annotation>
+                <xs:documentation>Async continuation behavior.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
         </xs:complexType>

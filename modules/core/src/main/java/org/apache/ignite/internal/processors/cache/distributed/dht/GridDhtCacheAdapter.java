@@ -586,6 +586,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         false,
                         topVer,
                         replicate ? DR_LOAD : DR_NONE,
+                        true,
                         false);
                 }
                 catch (IgniteCheckedException e) {
@@ -1093,7 +1094,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param incomingReq Original ttl request.
      */
     private void sendTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest incomingReq) {
-        ctx.closures().runLocalSafe(new Runnable() {
+        ctx.closures().runLocalSafe(new GridPlainRunnable() {
             @SuppressWarnings({"ForLoopReplaceableByForEach"})
             @Override public void run() {
                 Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();

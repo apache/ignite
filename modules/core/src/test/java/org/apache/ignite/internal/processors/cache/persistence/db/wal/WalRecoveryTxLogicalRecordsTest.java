@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
@@ -59,10 +61,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -73,7 +77,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus.NULL_PTR;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  *
@@ -372,7 +376,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(0, i, entries, PARTS);
 
-                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+                WALPointer ptr = reserveWalPointerForIterator(grp.shared());
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -391,13 +395,13 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+                    releaseWalPointerForIterator(grp.shared(), ptr);
                 }
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(1, i, entries, PARTS);
 
-                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+                ptr = reserveWalPointerForIterator(grp.shared());
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -416,7 +420,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+                    releaseWalPointerForIterator(grp.shared(), ptr);
                 }
             }
 
@@ -437,7 +441,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(0, i, entries, PARTS);
 
-                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+                WALPointer ptr = reserveWalPointerForIterator(grp.shared());
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     long end = System.currentTimeMillis();
@@ -466,13 +470,13 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+                    releaseWalPointerForIterator(grp.shared(), ptr);
                 }
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(1, i, entries, PARTS);
 
-                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+                ptr = reserveWalPointerForIterator(grp.shared());
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -491,7 +495,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+                    releaseWalPointerForIterator(grp.shared(), ptr);
                 }
             }
         }
@@ -543,6 +547,40 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * Reserves a WAL pointer for historical iterator.
+     *
+     * @param cctx Cache shared context.
+     * @return WAL pointer.
+     */
+    private WALPointer reserveWalPointerForIterator(GridCacheSharedContext cctx) {
+        final CheckpointHistory cpHist = ((GridCacheDatabaseSharedManager)cctx.database()).checkpointHistory();
+
+        WALPointer oldestPtr = cpHist.firstCheckpointPointer();
+
+        AtomicReference<WALPointer> preloading = getFieldValue(cctx.database(), "reservedForPreloading");
+
+        preloading.set(oldestPtr);
+
+        cctx.wal().reserve(oldestPtr);
+
+        return oldestPtr;
+    }
+
+    /**
+     * Releases a WAL pointer for historical iterator.
+     *
+     * @param cctx Cache shared context.
+     * @param ptr WAL pointer to release.
+     */
+    private void releaseWalPointerForIterator(GridCacheSharedContext cctx, WALPointer ptr) {
+        AtomicReference<WALPointer> preloading = getFieldValue(cctx.database(), "reservedForPreloading");
+
+        preloading.set(null);
+
+        cctx.wal().release(ptr);
     }
 
     /**
@@ -983,7 +1021,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         List<CacheDataRow> rows = new ArrayList<>();
 
-        GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+        WALPointer ptr = reserveWalPointerForIterator(grp.shared());
 
         try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
             assertNotNull(it);
@@ -992,7 +1030,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 rows.add(it.next());
         }
         finally {
-            GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+            releaseWalPointerForIterator(grp.shared(), ptr);
         }
 
         return rows;
@@ -1006,8 +1044,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     private T2<long[], Integer> getReuseListData(Ignite ignite, String cacheName) {
         GridCacheContext ctx = ((IgniteEx)ignite).context().cache().cache(cacheName).context();
 
-        ReuseListImpl reuseList = GridTestUtils.getFieldValue(ctx.offheap(), "reuseList");
-        PagesList.Stripe[] bucket = GridTestUtils.getFieldValue(reuseList, "bucket");
+        ReuseListImpl reuseList = getFieldValue(ctx.offheap(), "reuseList");
+        PagesList.Stripe[] bucket = getFieldValue(reuseList, "bucket");
 
         long[] ids = null;
 
@@ -1018,7 +1056,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 ids[i] = bucket[i].tailId;
         }
 
-        AtomicLongArray bucketsSize = GridTestUtils.getFieldValue(reuseList, PagesList.class, "bucketsSize");
+        AtomicLongArray bucketsSize = getFieldValue(reuseList, PagesList.class, "bucketsSize");
         assertEquals(1, bucketsSize.length());
 
         return new T2<>(ids, (int)bucketsSize.get(0));
@@ -1094,10 +1132,10 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 // Flush free-list onheap cache to page memory.
                 freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
 
-                AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
+                AtomicReferenceArray<PagesList.Stripe[]> buckets = getFieldValue(freeList,
                     AbstractFreeList.class, "buckets");
 
-                AtomicLongArray bucketsSize = GridTestUtils.getFieldValue(freeList, PagesList.class, "bucketsSize");
+                AtomicLongArray bucketsSize = getFieldValue(freeList, PagesList.class, "bucketsSize");
 
                 assertNotNull(buckets);
                 assertNotNull(bucketsSize);

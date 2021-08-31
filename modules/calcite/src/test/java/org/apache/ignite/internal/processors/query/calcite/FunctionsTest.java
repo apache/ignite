@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.function.LongFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -46,6 +52,57 @@ public class FunctionsTest extends GridCommonAbstractTest {
     public void testLength() {
         checkQuery("SELECT LENGTH('TEST')").returns(4).check();
         checkQuery("SELECT LENGTH(NULL)").returns(new Object[] { null }).check();
+    }
+
+    /** */
+    @Test
+    public void testCurrentDateTimeTimeStamp() {
+        checkDateTimeQuery("SELECT CURRENT_DATE", Date::new);
+        checkDateTimeQuery("SELECT CURRENT_TIME", Time::new);
+        checkDateTimeQuery("SELECT CURRENT_TIMESTAMP", Timestamp::new);
+        checkDateTimeQuery("SELECT LOCALTIME", Time::new);
+        checkDateTimeQuery("SELECT LOCALTIMESTAMP", Timestamp::new);
+        checkDateTimeQuery("SELECT {fn CURDATE()}", Date::new);
+        checkDateTimeQuery("SELECT {fn CURTIME()}", Time::new);
+        checkDateTimeQuery("SELECT {fn NOW()}", Timestamp::new);
+    }
+
+    /** */
+    private <T> void checkDateTimeQuery(String sql, LongFunction<T> func) {
+        while (true) {
+            long tsBeg = U.currentTimeMillis();
+
+            List<List<?>> res = qryEngine.query(null, "PUBLIC", sql).get(0).getAll();
+
+            long tsEnd = U.currentTimeMillis();
+
+            assertEquals(1, res.size());
+            assertEquals(1, res.get(0).size());
+
+            String strBeg = func.apply(tsBeg).toString();
+            String strEnd = func.apply(tsEnd).toString();
+
+            // Date changed, time comparison may return wrong result.
+            if (strBeg.compareTo(strEnd) > 0)
+                continue;
+
+            String strRes = res.get(0).get(0).toString();
+
+            assertTrue(strBeg.compareTo(strRes) <= 0);
+            assertTrue(strEnd.compareTo(strRes) >= 0);
+
+            return;
+        }
+    }
+
+    /** */
+    @Test
+    public void testReplace() {
+        checkQuery("SELECT REPLACE('12341234', '1', '55')").returns("5523455234").check();
+        checkQuery("SELECT REPLACE(NULL, '1', '5')").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE('1', NULL, '5')").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE('11', '1', NULL)").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE('11', '1', '')").returns("").check();
     }
 
     /** */
@@ -86,7 +143,10 @@ public class FunctionsTest extends GridCommonAbstractTest {
             "Increment can't be 0");
     }
 
-    /** */
+    /**
+     * Important! Don`t change query call sequence in this test. This also tests correctness of
+     * {@link org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl#SCALAR_CACHE} usage.
+     */
     @Test
     public void testRangeWithCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).getOrCreateCache(
@@ -137,6 +197,38 @@ public class FunctionsTest extends GridCommonAbstractTest {
             .returns(40)
             .returns(50)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testPercentRemainder() {
+        checkQuery("SELECT 3 % 2").returns(1).check();
+        checkQuery("SELECT 4 % 2").returns(0).check();
+        checkQuery("SELECT NULL % 2").returns(new Object[] { null }).check();
+        checkQuery("SELECT 3 % NULL::int").returns(new Object[] { null }).check();
+        checkQuery("SELECT 3 % NULL").returns(new Object[] { null }).check();
+    }
+
+    /** */
+    @Test
+    public void testNullFunctionArguments() {
+        // Don't infer result data type from arguments (result is always INTEGER_NULLABLE).
+        checkQuery("SELECT ASCII(NULL)").returns(new Object[] { null }).check();
+        // Inferring result data type from first STRING argument.
+        checkQuery("SELECT REPLACE(NULL, '1', '2')").returns(new Object[] { null }).check();
+        // Inferring result data type from both arguments.
+        checkQuery("SELECT MOD(1, null)").returns(new Object[] { null }).check();
+        // Inferring result data type from first NUMERIC argument.
+        checkQuery("SELECT TRUNCATE(NULL, 0)").returns(new Object[] { null }).check();
+        // Inferring arguments data types and then inferring result data type from all arguments.
+        checkQuery("SELECT FALSE AND NULL").returns(false).check();
+    }
+
+    /** */
+    @Test
+    public void testMonthnameDayname() {
+        checkQuery("SELECT MONTHNAME(DATE '2021-01-01')").returns("January").check();
+        checkQuery("SELECT DAYNAME(DATE '2021-01-01')").returns("Friday").check();
     }
 
     /** */

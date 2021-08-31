@@ -577,7 +577,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -596,6 +598,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -1044,7 +1049,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                                 if (cand != null) {
                                     if (tx == null && !cand.reentry())
-                                        cctx.mvcc().addExplicitLock(threadId,cand,topVer);
+                                        cctx.mvcc().addExplicitLock(threadId, cand, topVer);
 
                                     IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
 

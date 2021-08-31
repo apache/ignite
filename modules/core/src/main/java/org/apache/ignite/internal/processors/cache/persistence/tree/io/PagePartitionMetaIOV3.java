@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -26,10 +27,10 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  */
 public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     /** Last reencrypted page index offset. */
-    private static final int ENCRYPT_PAGE_IDX_OFF = END_OF_PARTITION_PAGE_META_V2;
+    private static final int ENCRYPT_PAGE_IDX_OFF = GAPS_LINK + 8;
 
     /** Total pages to be reencrypted offset. */
-    private static final int ENCRYPT_PAGE_MAX_OFF = ENCRYPT_PAGE_IDX_OFF + 4;
+    protected static final int ENCRYPT_PAGE_MAX_OFF = ENCRYPT_PAGE_IDX_OFF + 4;
 
     /**
      * @param ver Version.
@@ -39,8 +40,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setEncryptedPageIndex(pageAddr, 0);
         setEncryptedPageCount(pageAddr, 0);
@@ -50,7 +51,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      * @param pageAddr Page address.
      * @return Index of the last reencrypted page.
      */
-    public int getEncryptedPageIndex(long pageAddr) {
+    @Override public int getEncryptedPageIndex(long pageAddr) {
         return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_IDX_OFF);
     }
 
@@ -60,7 +61,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
+    @Override public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
         if (getEncryptedPageIndex(pageAddr) == pageIdx)
             return false;
 
@@ -73,7 +74,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      * @param pageAddr Page address.
      * @return Total pages to be reencrypted.
      */
-    public int getEncryptedPageCount(long pageAddr) {
+    @Override public int getEncryptedPageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_MAX_OFF);
     }
 
@@ -83,7 +84,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
+    @Override public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
         if (getEncryptedPageCount(pageAddr) == pagesCnt)
             return false;
 
@@ -96,8 +97,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     @Override protected void printFields(long pageAddr, GridStringBuilder sb) {
         super.printFields(pageAddr, sb);
 
-        sb.a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(pageAddr));
-        sb.a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(pageAddr));
+        sb.a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(pageAddr))
+            .a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(pageAddr));
     }
 
     /**

@@ -18,205 +18,65 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
-import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
-import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.SINGLE;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 
 /**
  * Test execution of MINUS (EXCEPT) operator.
  */
-public class MinusExecutionTest extends AbstractExecutionTest {
-    /**
-     * @throws Exception If failed.
-     */
-    @Before
-    @Override public void setup() throws Exception {
-        nodesCnt = 1;
-        super.setup();
+public class MinusExecutionTest extends AbstractSetOpExecutionTest {
+    /** {@inheritDoc} */
+    @Override protected AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx,
+        RelDataType rowType, AggregateType type, boolean all, int inputsCnt) {
+        return new MinusNode<>(ctx, rowType, type, all, rowFactory());
     }
 
-    /** */
-    @Test
-    public void testSingle() {
-        checkMinus(true, false);
-    }
-
-    /** */
-    @Test
-    public void testSingleAll() {
-        checkMinus(true, true);
-    }
-
-    /** */
-    @Test
-    public void testMapReduce() {
-        checkMinus(false, false);
-    }
-
-    /** */
-    @Test
-    public void testMapReduceAll() {
-        checkMinus(false, true);
-    }
-
-    /** */
-    @Test
-    public void testSingleWithEmptySet() {
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-
-        List<Object[]> data = Arrays.asList(
-            row("Igor", 1),
-            row("Roman", 1)
-        );
-
-        // For "single minus" operation, node should not request rows from the next source if result after the previous
-        // source is already empty.
-        ScanNode<Object[]> scan1 = new ScanNode<>(ctx, rowType, data);
-        ScanNode<Object[]> scan2 = new ScanNode<>(ctx, rowType, data);
-        Node<Object[]> node3 = new AbstractNode<Object[]>(ctx, rowType) {
-            @Override protected void rewindInternal() {
-                // No-op.
-            }
-
-            @Override protected Downstream<Object[]> requestDownstream(int idx) {
-                return null;
-            }
-
-            @Override public void request(int rowsCnt) throws Exception {
-                fail("Node should not be requested");
-            }
-        };
-
-        MinusNode<Object[]> minusNode = new MinusNode<>(ctx, rowType, SINGLE, false, rowFactory());
-        minusNode.register(Arrays.asList(scan1, scan2, node3));
-
-        RootNode<Object[]> root = new RootNode<>(ctx, rowType);
-        root.register(minusNode);
-
-        assertFalse(root.hasNext());
-    }
-
-    /**
-     * @param single Single.
-     * @param all All.
-     */
-    private void checkMinus(boolean single, boolean all) {
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-
-        ScanNode<Object[]> scan1 = new ScanNode<>(ctx, rowType, Arrays.asList(
+    /** {@inheritDoc} */
+    @Override protected void checkSetOp(boolean single, boolean all) {
+        List<Object[]> ds1 = Arrays.asList(
             row("Igor", 1),
             row("Roman", 1),
             row("Igor", 1),
             row("Roman", 2),
             row("Igor", 1),
             row("Igor", 1),
-            row("Igor", 2)
-        ));
+            row("Igor", 1),
+            row("Igor", 2),
+            row("Alexey", 2)
+        );
 
-        ScanNode<Object[]> scan2 = new ScanNode<>(ctx, rowType, Arrays.asList(
+        List<Object[]> ds2 = Arrays.asList(
             row("Igor", 1),
             row("Roman", 1),
             row("Igor", 1),
             row("Alexey", 1)
-        ));
+        );
 
-        MinusNode<Object[]> minusNode;
+        List<Object[]> ds3 = Arrays.asList(
+            row("Igor", 1),
+            row("Alexey", 1),
+            row("Alexey", 2)
+        );
 
-        if (single) {
-            minusNode = new MinusNode<>(
-                ctx,
-                rowType,
-                SINGLE,
-                all,
-                rowFactory()
+        List<Object[]> expectedResult;
+
+        if (all) {
+            expectedResult = Arrays.asList(
+                row("Igor", 1),
+                row("Igor", 1),
+                row("Igor", 2),
+                row("Roman", 2)
             );
         }
         else {
-            minusNode = new MinusNode<>(
-                ctx,
-                rowType,
-                MAP,
-                all,
-                rowFactory()
+            expectedResult = Arrays.asList(
+                row("Igor", 2),
+                row("Roman", 2)
             );
         }
 
-        minusNode.register(Arrays.asList(scan1, scan2));
-
-        if (!single) {
-            MinusNode<Object[]> reduceNode = new MinusNode<>(
-                ctx,
-                rowType,
-                REDUCE,
-                all,
-                rowFactory()
-            );
-
-            reduceNode.register(Collections.singletonList(minusNode));
-
-            minusNode = reduceNode;
-        }
-
-        Comparator<Object[]> cmp = ctx.expressionFactory().comparator(RelCollations.of(ImmutableIntList.of(0, 1)));
-
-        // Create sort node on the top to check sorted results.
-        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, cmp);
-        sortNode.register(minusNode);
-
-        RootNode<Object[]> root = new RootNode<>(ctx, rowType);
-        root.register(sortNode);
-
-        assertTrue(root.hasNext());
-
-        if (all) {
-            Assert.assertArrayEquals(row("Igor", 1), root.next());
-            Assert.assertArrayEquals(row("Igor", 1), root.next());
-        }
-
-        Assert.assertArrayEquals(row("Igor", 2), root.next());
-        Assert.assertArrayEquals(row("Roman", 2), root.next());
-
-        assertFalse(root.hasNext());
-    }
-
-    /** */
-    protected RowHandler.RowFactory<Object[]> rowFactory() {
-        return new RowHandler.RowFactory<Object[]>() {
-            /** */
-            @Override public RowHandler<Object[]> handler() {
-                return ArrayRowHandler.INSTANCE;
-            }
-
-            /** */
-            @Override public Object[] create() {
-                throw new AssertionError();
-            }
-
-            /** */
-            @Override public Object[] create(Object... fields) {
-                return fields;
-            }
-        };
+        checkSetOp(single, all, Arrays.asList(ds1, ds2, ds3), expectedResult);
     }
 }

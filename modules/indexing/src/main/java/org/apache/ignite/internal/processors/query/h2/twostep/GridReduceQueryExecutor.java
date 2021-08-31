@@ -145,7 +145,7 @@ public class GridReduceQueryExecutor {
     private final Lock fakeTblsLock = new ReentrantLock();
 
     /** */
-    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
+    private final CIX2<ClusterNode, Message> locNodeHnd = new CIX2<ClusterNode, Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
             assert msg instanceof GridQueryNextPageRequest || msg instanceof GridH2QueryRequest ||
                 msg instanceof GridH2DmlRequest || msg instanceof GridQueryCancelRequest : msg.getClass();
@@ -309,7 +309,7 @@ public class GridReduceQueryExecutor {
      * @param cacheId Cache ID.
      * @return Cache context.
      */
-    private GridCacheContext<?,?> cacheContext(Integer cacheId) {
+    private GridCacheContext<?, ?> cacheContext(Integer cacheId) {
         GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
 
         if (cctx == null)
@@ -381,7 +381,7 @@ public class GridReduceQueryExecutor {
 
         final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
-        final int segmentsPerIndex = qry.explain() || qry.isReplicatedOnly() ? 1 :
+        final int segmentsPerIdx = qry.explain() || qry.isReplicatedOnly() || singlePartMode ? 1 :
             mapper.findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
         final long retryTimeout = retryTimeout(timeoutMillis);
@@ -426,7 +426,7 @@ public class GridReduceQueryExecutor {
 
             try {
                 final ReduceQueryRun r = createReduceQueryRun(conn, mapQueries, nodes,
-                    pageSize, segmentsPerIndex, skipMergeTbl, qry.explain(), dataPageScanEnabled);
+                    pageSize, segmentsPerIdx, skipMergeTbl, qry.explain(), dataPageScanEnabled);
 
                 runs.put(qryReqId, r);
 
@@ -722,7 +722,7 @@ public class GridReduceQueryExecutor {
             Reducer reducer;
 
             if (skipMergeTbl)
-                reducer = UnsortedReducer.createDummy(ctx);
+                reducer = UnsortedOneWayReducer.createDummy(ctx);
             else {
                 ReduceTable tbl;
 
@@ -775,7 +775,7 @@ public class GridReduceQueryExecutor {
 
         return GridH2QueryRequest.queryFlags(qry.distributedJoins(),
             enforceJoinOrder, lazy, qry.isReplicatedOnly(),
-            qry.explain(), dataPageScanEnabled);
+            qry.explain(), dataPageScanEnabled, qry.treatReplicatedAsPartitioned());
     }
 
     /**
@@ -1176,7 +1176,7 @@ public class GridReduceQueryExecutor {
 
         Map<UUID, int[]> res = U.newHashMap(m.size());
 
-        for (Map.Entry<ClusterNode,IntArray> entry : m.entrySet())
+        for (Map.Entry<ClusterNode, IntArray> entry : m.entrySet())
             res.put(entry.getKey().id(), toArray(entry.getValue()));
 
         return res;
@@ -1202,13 +1202,13 @@ public class GridReduceQueryExecutor {
             data.create = true;
 
             if (!explain) {
-                LinkedHashMap<String,?> colsMap = qry.columns();
+                LinkedHashMap<String, ?> colsMap = qry.columns();
 
                 assert colsMap != null;
 
                 ArrayList<Column> cols = new ArrayList<>(colsMap.size());
 
-                for (Map.Entry<String,?> e : colsMap.entrySet()) {
+                for (Map.Entry<String, ?> e : colsMap.entrySet()) {
                     String alias = e.getKey();
                     GridSqlType type = (GridSqlType)e.getValue();
 

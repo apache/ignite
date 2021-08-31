@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSort
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -60,8 +61,11 @@ public class SortAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            // Applicable only for GROUP BY
+            // Applicable only for GROUP BY or SELECT DISTINCT
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
+                return null;
+
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -98,8 +102,11 @@ public class SortAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            // Applicable only for GROUP BY
+            // Applicable only for GROUP BY or SELECT DISTINCT
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
+                return null;
+
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -108,12 +115,11 @@ public class SortAggregateConverterRule {
             RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(agg.getGroupSet().asList()));
 
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
-            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(collation);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
 
             RelNode map = new IgniteMapSortAggregate(
                 cluster,
-                outTrait,
+                outTrait.replace(IgniteDistributions.random()),
                 convert(input, inTrait),
                 agg.getGroupSet(),
                 agg.getGroupSets(),

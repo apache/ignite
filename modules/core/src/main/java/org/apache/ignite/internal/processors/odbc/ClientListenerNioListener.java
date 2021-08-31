@@ -35,7 +35,6 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
@@ -85,10 +84,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private final IgniteLogger log;
 
     /** Client connection config. */
-    private ClientConnectorConfiguration cliConnCfg;
+    private final ClientConnectorConfiguration cliConnCfg;
 
     /** Thin client configuration. */
     private final ThinClientConfiguration thinCfg;
+
+    /** Metrics. */
+    private final ClientListenerMetrics metrics;
 
     /**
      * Constructor.
@@ -110,6 +112,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
+
+        metrics = new ClientListenerMetrics(ctx);
     }
 
     /** {@inheritDoc} */
@@ -127,8 +131,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-        if (connCtx != null)
+        if (connCtx != null) {
             connCtx.onDisconnected();
+
+            metrics.onDisconnect(connCtx.clientType());
+        }
 
         if (log.isDebugEnabled()) {
             if (e == null)
@@ -193,17 +200,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             ClientListenerResponse resp;
 
-            AuthorizationContext authCtx = connCtx.authorizationContext();
-
-            if (authCtx != null)
-                AuthorizationContext.context(authCtx);
-
             try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
                 resp = handler.handle(req);
-            }
-            finally {
-                if (authCtx != null)
-                    AuthorizationContext.clear();
             }
 
             if (resp != null) {
@@ -256,6 +254,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         Closeable timeoutTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
                 ses.close();
+
+                metrics.onHandshakeTimeout();
 
                 U.warn(log, "Unable to perform handshake within timeout " +
                     "[timeout=" + handshakeTimeout + ", remoteAddr=" + ses.remoteAddress() + ']');
@@ -321,7 +321,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(clientType);
+            connCtx = prepareContext(clientType, ses);
 
             ensureClientPermissions(clientType);
 
@@ -336,8 +336,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             cancelHandshakeTimeout(ses);
 
             connCtx.handler().writeHandshake(writer);
+
+            metrics.onHandshakeAccept(clientType);
         }
         catch (IgniteAccessControlException authEx) {
+            metrics.onFailedAuth();
+
             writer.writeBoolean(false);
 
             writer.writeShort((short)0);
@@ -351,6 +355,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         }
         catch (IgniteCheckedException e) {
             U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
+
+            metrics.onGeneralReject();
 
             ClientListenerProtocolVersion currVer;
 
@@ -377,22 +383,24 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /**
      * Prepare context.
      *
+     * @param ses Client's NIO session.
      * @param clientType Client type.
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(byte clientType, GridNioSession ses)
+        throws IgniteCheckedException {
         long connId = nextConnectionId();
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, busyLock, connId, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);
+                return new ClientConnectionContext(ctx, ses, connId, maxCursors, thinCfg);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);

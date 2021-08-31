@@ -72,7 +72,7 @@ public class RecoveryDebug implements AutoCloseable {
      * @param constId Consistent ID.
      * @param log Logger.
      */
-    public RecoveryDebug(Object constId,long time, @Nullable IgniteLogger log) {
+    public RecoveryDebug(Object constId, long time, @Nullable IgniteLogger log) {
         this.log = log;
 
         try {

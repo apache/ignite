@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.LinkedHashMap;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -46,7 +47,6 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.AFFINITY_KEY_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Table.generateProxyIdxName;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
 
 /**
@@ -171,6 +171,11 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
     /** */
     private CacheConfiguration cache(QueryEntity ent) {
         return new CacheConfiguration<>(ent.getTableName())
@@ -201,7 +206,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexLoopJoin() {
         assertQuery("" +
-            "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
+            "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ d1.name, d2.name " +
+            "FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
             .matches(containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")
@@ -233,7 +239,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testMergeJoin() {
         assertQuery("" +
-            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
+            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 " +
+            "WHERE d1.depId = d2.depId")
             .matches(containsSubPlan("IgniteMergeJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")
@@ -369,7 +376,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyColumnLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<?")
             .withParams(3)
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -379,7 +386,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<=2")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -767,12 +774,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition1() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR age=55")
-            .matches(containsUnion(true))
-            .matches(anyOf(
-                containsIndexScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX),
-                containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
-            )
-            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
+            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
@@ -840,7 +842,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByKeyAlias() {
-        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id")
+        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id nulls first")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER"))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(1, "Mozart", 3, "Vienna", 33)
@@ -854,7 +856,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByDepId() {
-        assertQuery("SELECT * FROM Developer ORDER BY depId")
+        assertQuery("SELECT * FROM Developer ORDER BY depId nulls first")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(3, "Bach", 1, "Leipzig", 55)
@@ -1001,6 +1003,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(2)
             .returns(3)
             .returns(5)
+            .check();
+    }
+
+    /**
+     * A test to verify that the planner is able to optimize such a query in
+     * a reasonable amount of time.
+     *
+     * A "reasonable" here is the time less than test's timeout. Despite
+     * timeout is too big, it's less than INF though.
+     */
+    @Test
+    public void testToPlanQueryWithAllOperator() {
+        assertQuery("SELECT name FROM Developer WHERE age > ALL ( SELECT 88 )")
+            .returns("Stravinsky")
             .check();
     }
 

@@ -65,6 +65,7 @@ Register name: `cache.{cache_name}.{near}`
 |CacheRemovals  | long|The total number of removals from the cache.
 |CacheTxCommits | long|Total number of transaction commits.
 |CacheTxRollbacks |long|Total number of transaction rollbacks.
+|CacheSize|long|Local cache size.
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
@@ -78,11 +79,16 @@ Register name: `cache.{cache_name}.{near}`
 |EstimatedRebalancingKeys|long|Number estimated to rebalance keys.
 |GetTime |histogram|   Get time in nanoseconds.
 |GetTimeTotal|long|The total time of cache gets, in nanoseconds.
-|IsIndexRebuildInProgress|boolean | True if index rebuild is in progress.
+|HeapEntriesCount|long|Onheap entries count.
+|IndexRebuildKeysProcessed|long | The number of keys with rebuilt indexes.
+|IsIndexRebuildInProgress|boolean | True if index build or rebuild is in progress.
+|OffHeapBackupEntriesCount|long|Offheap backup entries count.
+|OffHeapEntriesCount|long|Offheap entries count.
 |OffHeapEvictions|long|The total number of evictions from the off-heap memory.
 |OffHeapGets |long|The total number of get requests to the off-heap memory.
 |OffHeapHits |long|The number of get requests that were satisfied by the off-heap memory.
 |OffHeapMisses   |long|A miss is a get request that is not satisfied by off-heap memory.
+|OffHeapPrimaryEntriesCount|long|Offheap primary entries count.
 |OffHeapPuts |long|The total number of put requests to the off-heap memory.
 |OffHeapRemovals |long|The total number of removals from the off-heap memory.
 |PutTime | histogram|   Put time in nanoseconds.
@@ -129,6 +135,8 @@ Register name: `cacheGroups.{group_name}`
 |StorageSize |long|    Storage space allocated for group, in bytes.
 |TotalAllocatedPages |long|    Cache group total allocated pages.
 |TotalAllocatedSize  |long|    Total size of memory allocated for group, in bytes.
+|ReencryptionBytesLeft |long| The number of bytes left for re-encryption.
+|ReencryptionFinished |boolean| The flag indicates whether re-encryption is finished or not.
 |===
 
 
@@ -272,11 +280,76 @@ Register name: `io.communication`
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
+|ActiveSessionsCount|   integer|   Active TCP sessions count.
 |OutboundMessagesQueueSize|   integer| Outbound messages queue size.
 |SentMessagesCount  | integer| Sent messages count.
 |SentBytesCount | long  |  Sent bytes count.
 |ReceivedBytesCount|  long|    Received bytes count.
 |ReceivedMessagesCount|   integer| Received messages count.
+|RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
+|SslEnabled|   boolean|   Indicates whether SSL is enabled.
+|SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|===
+
+
+== Ignite Thin Client Connector
+
+Register name: `client.connector`
+
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|ActiveSessionsCount|   integer|   Active TCP sessions count.
+|ReceivedBytesCount|   long|   Received bytes count.
+|RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
+|RejectedSessionsTimeout|   integer|   TCP sessions count that were rejected due to handshake timeout.
+|RejectedSessionsAuthenticationFailed|   integer|   TCP sessions count that were rejected due to failed authentication.
+|RejectedSessionsTotal|   integer|   Total number of rejected TCP connections.
+|{clientType}.AcceptedSessions|   integer|   Number of successfully established sessions for the client type.
+|{clientType}.ActiveSessions|   integer|   Number of active sessions for the client type.
+|SentBytesCount|   long|   Sent bytes count.
+|SslEnabled|   boolean|   Indicates whether SSL is enabled.
+|SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|===
+
+
+== Ignite REST Client Connector
+
+Register name: `rest.client`
+
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|ActiveSessionsCount|   integer|   Active TCP sessions count.
+|ReceivedBytesCount|   long|    Received bytes count.
+|RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
+|SentBytesCount|   long|   Sent bytes count.
+|SslEnabled|   boolean|   Indicates whether SSL is enabled.
+|SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|===
+
+
+== Discovery IO
+
+Register name: `io.discovery`
+
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|CoordinatorSince|   long|   Timestamp since which the local node became the coordinator (metric is exported only from server nodes).
+|Coordinator|   UUID|   Coordinator ID (metric is exported only from server nodes).
+|CurrentTopologyVersion|   long|   Current topology version.
+|JoinedNodes|   integer|   Joined nodes count.
+|LeftNodes|   integer|   Left nodes count.
+|MessageWorkerQueueSize|   integer|   Current message worker queue size.
+|PendingMessagesRegistered|   integer|   Pending registered messages count.
+|RejectedSslConnectionsCount|   integer|   TCP discovery connections count that were rejected due to the SSL errors.
+|SslEnabled|   boolean|   Indicates whether SSL is enabled.
+|TotalProcessedMessages|   integer|   Total processed messages count.
+|TotalReceivedMessages|   integer|   Total received messages count.
 |===
 
 
@@ -320,15 +393,33 @@ Register name: `io.datastorage`
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
+|CheckpointBeforeLockHistogram| histogram |   Histogram of checkpoint action before taken write lock duration in milliseconds.
+|CheckpointFsyncHistogram| histogram |   Histogram of checkpoint fsync duration in milliseconds.
+|CheckpointHistogram| histogram |   Histogram of checkpoint duration in milliseconds.
+|CheckpointListenersExecuteHistogram| histogram |   Histogram of checkpoint execution listeners under write lock duration in milliseconds.
+|CheckpointLockHoldHistogram| histogram |   Histogram of checkpoint lock hold duration in milliseconds.
+|CheckpointLockWaitHistogram| histogram |   Histogram of checkpoint lock wait duration in milliseconds.
+|CheckpointMarkHistogram| histogram |   Histogram of checkpoint mark duration in milliseconds.
+|CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write duration in milliseconds.
+|CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages duration in milliseconds.
 |CheckpointTotalTime| long |   Total duration of checkpoint
+|CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging ChTotalNodeseckpointRecord on begin of checkpoint duration in milliseconds.
+|CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
+|LastCheckpointBeforeLockDuration|  long |   Duration of the checkpoint action before taken write lock in milliseconds.
 |LastCheckpointCopiedOnWritePagesNumber|  long |   Number of pages copied to a temporary checkpoint buffer during the last checkpoint.
 |LastCheckpointDataPagesNumber|   long  |  Total number of data pages written during the last checkpoint.
 |LastCheckpointDuration | long  |  Duration of the last checkpoint in milliseconds.
 |LastCheckpointFsyncDuration| long  |  Duration of the sync phase of the last checkpoint in milliseconds.
+|LastCheckpointListenersExecuteDuration|  long|    Duration of the checkpoint execution listeners under write lock in milliseconds.
+|LastCheckpointLockHoldDuration|  long|    Duration of the checkpoint lock hold in milliseconds.
 |LastCheckpointLockWaitDuration|  long|    Duration of the checkpoint lock wait in milliseconds.
-|LastCheckpointMarkDuration | long  |  Duration of the checkpoint lock wait in milliseconds.
+|LastCheckpointMarkDuration | long  |  Duration of the checkpoint mark in milliseconds.
 |LastCheckpointPagesWriteDuration|    long|    Duration of the checkpoint pages write in milliseconds.
 |LastCheckpointTotalPagesNumber|  long|    Total number of pages written during the last checkpoint.
+|LastCheckpointSplitAndSortPagesDuration|  long|    Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.
+|LastCheckpointStart|  long|    Start timestamp of the last checkpoint.
+|LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint in milliseconds.
+|LastCheckpointWriteEntryDuration|  long|    Duration of entry buffer writing to file of the last checkpoint in milliseconds.
 |SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
 |StorageSize | long|    Storage space allocated, in bytes.
 |WalArchiveSegments | integer| Current number of WAL segments in the WAL archive.
@@ -339,4 +430,22 @@ Register name: `io.datastorage`
 |WalLoggingRate | long|    Average number of WAL records per second written during the last time interval.
 |WalTotalSize|    long  |  Total size in bytes for storage wal files.
 |WalWritingRate|  long  |  Average number of bytes per second written during the last time interval.
+|===
+
+
+== Cluster
+
+Cluster metrics.
+
+Register name: `cluster`
+
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|ActiveBaselineNodes| integer | Active baseline nodes count.
+|Rebalanced| boolean | True if the cluster has fully achieved rebalanced state. Note that an inactive cluster always has this metric in False regardless of the real partitions state.
+|TotalBaselineNodes| integer | Total baseline nodes count.
+|TotalClientNodes| integer | Client nodes count.
+|TotalServerNodes| integer | Server nodes count.
 |===

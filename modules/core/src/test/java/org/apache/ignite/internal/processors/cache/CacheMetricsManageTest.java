@@ -173,7 +173,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache1 = ig1.cache(CACHE1);
 
-        CacheConfiguration<Object, Object> cacheCfg2 = new CacheConfiguration<Object, Object>(cache1.getConfiguration(CacheConfiguration.class));
+        CacheConfiguration<Object, Object> cacheCfg2 =
+            new CacheConfiguration<Object, Object>(cache1.getConfiguration(CacheConfiguration.class));
 
         cacheCfg2.setName(CACHE2);
         cacheCfg2.setStatisticsEnabled(true);
@@ -200,7 +201,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<?, ?> cache1 = grid(0).cache(CACHE1);
 
-        CacheConfiguration<Object, Object> cacheCfg2 = new CacheConfiguration<Object, Object>(cache1.getConfiguration(CacheConfiguration.class));
+        CacheConfiguration<Object, Object> cacheCfg2 =
+            new CacheConfiguration<Object, Object>(cache1.getConfiguration(CacheConfiguration.class));
 
         cacheCfg2.setName(CACHE2);
 

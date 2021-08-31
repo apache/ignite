@@ -64,12 +64,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Simple benchmarks, compatibility test and distribution check utils for affinity functions.
  * Needs to check changes at the {@link RendezvousAffinityFunction}.
  */
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstractTest {
     /** MAC prefix. */
     private static final String MAC_PREF = "MAC";

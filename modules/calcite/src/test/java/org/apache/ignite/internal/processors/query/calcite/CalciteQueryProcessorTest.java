@@ -26,13 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -63,8 +61,11 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -109,6 +110,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             qryProc.queryPlanCache().clear();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
     }
 
     /**
@@ -479,25 +485,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange(true, true, null);
     }
 
-    /** Copy cache with it's content to new replicated cache. */
-    private void copyCacheAsReplicated(String cacheName) throws InterruptedException {
-        IgniteCache<Object, Object> cache = client.cache(cacheName);
-
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<Object, Object>(
-            cache.getConfiguration(CacheConfiguration.class));
-
-        ccfg.setName(cacheName + "Replicated");
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-        ccfg.getQueryEntities().forEach(qe -> qe.setTableName(qe.getTableName() + "_repl"));
-
-        IgniteCache<Object, Object> replCache = client.getOrCreateCache(ccfg);
-
-        for (Cache.Entry<?, ?> entry : cache)
-            replCache.put(entry.getKey(), entry.getValue());
-
-        awaitPartitionMapExchange(true, true, null);
-    }
-
     /** */
     @Test
     public void testOrderingByColumnOutsideSelectList() throws InterruptedException {
@@ -653,215 +640,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(1, rows.size());
     }
 
-    /** */
-    @Test
-    public void testExcept() throws Exception {
-        populateTables();
-
-        List<List<?>> rows = sql("SELECT name FROM Orders EXCEPT SELECT name from Account");
-
-        assertEquals(1, rows.size());
-        assertEquals("Igor", rows.get(0).get(0));
-    }
-
-    /** */
-    @Test
-    public void testExceptFromEmpty() throws Exception {
-        populateTables();
-
-        copyCacheAsReplicated("orders");
-        copyCacheAsReplicated("account");
-
-        List<List<?>> rows = sql("SELECT name FROM Orders WHERE salary < 0 EXCEPT SELECT name FROM Account");
-
-        assertEquals(0, rows.size());
-
-        rows = sql("SELECT name FROM Orders_repl WHERE salary < 0 EXCEPT SELECT name FROM Account_repl");
-
-        assertEquals(0, rows.size());
-    }
-
-    /** */
-    @Test
-    public void testExceptSeveralColumns() throws Exception {
-        populateTables();
-
-        List<List<?>> rows = sql("SELECT name, salary FROM Orders EXCEPT SELECT name, salary from Account");
-
-        assertEquals(4, rows.size());
-        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
-    }
-
-    /** */
-    @Test
-    public void testExceptAll() throws Exception {
-        populateTables();
-
-        List<List<?>> rows = sql("SELECT name FROM Orders EXCEPT ALL SELECT name from Account");
-
-        assertEquals(4, rows.size());
-        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
-    }
-
-    /** */
-    @Test
-    public void testExceptNested() throws Exception {
-        populateTables();
-
-        List<List<?>> rows =
-            sql("SELECT name FROM Orders EXCEPT (SELECT name FROM Orders EXCEPT SELECT name from Account)");
-
-        assertEquals(2, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
-    }
-
-    /** */
-    @Test
-    public void testExceptReplicatedWithPartitioned() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("orders");
-
-        List<List<?>> rows = sql("SELECT name FROM Orders_repl EXCEPT ALL SELECT name from Account");
-
-        assertEquals(4, rows.size());
-        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
-    }
-
-    /** */
-    @Test
-    public void testExceptReplicated() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("orders");
-        copyCacheAsReplicated("account");
-
-        List<List<?>> rows = sql("SELECT name FROM Orders_repl EXCEPT ALL SELECT name from Account_repl");
-
-        assertEquals(4, rows.size());
-        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
-    }
-
-    /** */
-    @Test
-    public void testExceptMerge() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("orders");
-
-        List<List<?>> rows = sql("SELECT name FROM Orders_repl EXCEPT ALL SELECT name FROM Account EXCEPT ALL " +
-            "SELECT name FROM orders WHERE salary < 11");
-
-        assertEquals(3, rows.size());
-        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor")));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
-    }
-
-    /** */
-    @Test
-    public void testExceptBigBatch() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("cache1")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table1")))
-            .setBackups(2)
-        );
-
-        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("cache2")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table2")))
-            .setBackups(1)
-        );
-
-        copyCacheAsReplicated("cache1");
-        copyCacheAsReplicated("cache2");
-
-        try (IgniteDataStreamer<Integer, Integer> ds1 = client.dataStreamer("cache1");
-             IgniteDataStreamer<Integer, Integer> ds2 = client.dataStreamer("cache2");
-             IgniteDataStreamer<Integer, Integer> ds3 = client.dataStreamer("cache1Replicated");
-             IgniteDataStreamer<Integer, Integer> ds4 = client.dataStreamer("cache2Replicated")
-        ) {
-            int key = 0;
-
-            for (int i = 0; i < 5; i++) {
-                for (int j = 0; j < ((i == 0) ? 1 : (1 << (i * 4 - 1))); j++) {
-                    // Cache1 keys count: 1 of "0", 8 of "1", 128 of "2", 2048 of "3", 32768 of "4".
-                    ds1.addData(key++, i);
-                    ds3.addData(key++, i);
-
-                    // Cache2 keys count: 1 of "5", 128 of "3", 32768 of "1".
-                    if ((i & 1) == 0) {
-                        ds2.addData(key++, 5 - i);
-                        ds4.addData(key++, 5 - i);
-                    }
-                }
-            }
-        }
-
-        awaitPartitionMapExchange(true, true, null);
-
-        List<List<?>> rows;
-
-        // Check 2 partitioned caches.
-        rows = sql("SELECT _val FROM \"cache1\".table1 EXCEPT SELECT _val FROM \"cache2\".table2");
-
-        assertEquals(3, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
-
-        rows = sql("SELECT _val FROM \"cache1\".table1 EXCEPT ALL SELECT _val FROM \"cache2\".table2");
-
-        assertEquals(34817, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
-        assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
-        assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
-        assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
-
-        // Check 1 replicated and 1 partitioned caches.
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2\".table2");
-
-        assertEquals(3, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
-
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val FROM \"cache2\".table2");
-
-        assertEquals(34817, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
-        assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
-        assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
-        assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
-
-        // Check 2 replicated caches.
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2Replicated\"" +
-            ".table2_repl");
-
-        assertEquals(3, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
-
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val FROM \"cache2Replicated\"" +
-            ".table2_repl");
-
-        assertEquals(34817, rows.size());
-        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
-        assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
-        assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
-        assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
-    }
-
     /**
      * Execute SQL statement on given node.
      *
      * @param node Node.
      * @param sql Statement.
      */
-    protected List<List<?>> execute(IgniteEx node, String sql) {
-        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    protected List<List<?>> execute(IgniteEx node, String sql, Object... args) {
+        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
     }
 
     /** */
@@ -967,7 +753,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void query2() throws Exception {
+    public void query2() {
         IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
@@ -1030,123 +816,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
-                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0,1);
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = 10;" +
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0, 1);
 
-        assertEquals(2, query.size());
+        assertEquals(3, query.size());
 
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
-        assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(1).getAll()));
-    }
-
-    /** */
-    @Test
-    public void testInsertPrimitiveKey() throws Exception {
-        grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Integer.class, Developer.class)
-            .setBackups(2)
-        );
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
-            "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
-
-        assertEquals(1, query.size());
-
-        List<List<?>> rows = query.get(0).getAll();
-
-        assertEquals(1, rows.size());
-
-        List<?> row = rows.get(0);
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(Arrays.asList(0, "Igor", 1), row);
-    }
-
-    /** */
-    @Test
-    public void testInsertUpdateDeleteNonPrimitiveKey() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<Key, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Key.class, Developer.class)
-            .setBackups(2)
-        );
-
-        awaitPartitionMapExchange(true, true, null);
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
-
-        assertEquals(1, query.size());
-
-        List<?> row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
-
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = 'Roman' WHERE id = ?", 0);
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(0, 0, "Roman", 1), row);
-
-        query = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNull(row);
+        assertEquals(0, query.get(1).getAll().size());
+        assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(2).getAll()));
     }
 
     /**
@@ -1200,6 +877,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(ImmutableIntList.of(2, 3), tblMap.get("MY_TBL_1").descriptor().distribution().getKeys());
         assertEquals(ImmutableIntList.of(3), tblMap.get("MY_TBL_2").descriptor().distribution().getKeys());
+    }
+
+    /** */
+    @Test
+    public void testSequentialInserts() throws Exception {
+        sql("CREATE TABLE t(x INTEGER)", true);
+
+        for (int i = 0; i < 10_000; i++)
+            sql("INSERT INTO t VALUES (?)", true, i);
+
+        assertEquals(10_000L, sql("SELECT count(*) FROM t").get(0).get(0));
     }
 
     /**
@@ -1297,9 +985,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
      * Verifies infix cast operator.
      */
     @Test
-    public void testInfixTypeCast() {
+    public void testInfixTypeCast() throws Exception {
         execute(client, "drop table if exists test_tbl");
         execute(client, "create table test_tbl(id int primary key, val varchar)");
+
+        // Await for PME, see details here: https://issues.apache.org/jira/browse/IGNITE-14974
+        awaitPartitionMapExchange();
 
         QueryEngine engineSrv = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -1314,6 +1005,118 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertThat(qCur.fieldsMeta().get(1).fieldTypeName(), equalTo(Byte.class.getName()));
         assertThat(qCur.fieldsMeta().get(2).fieldTypeName(), equalTo(Short.class.getName()));
         assertThat(qCur.fieldsMeta().get(3).fieldTypeName(), equalTo(String.class.getName()));
+    }
+
+    /** Quantified predicates test. */
+    @Test
+    public void quantifiedCompTest() throws InterruptedException {
+        populateTables();
+
+        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary")
+            .returns(11d)
+            .returns(12d)
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary < SOME (12, 12) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary < ANY (11, 12) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary > ANY (12, 13) ORDER BY salary")
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary <> ALL (12, 13) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
+            .check();
+    }
+
+    /**
+     * Test verifies that 1) proper indexes will be chosen for queries with
+     * different kinds of ordering, and 2) result set returned will be
+     * sorted as expected.
+     *
+     * @throws IgniteInterruptedCheckedException If failed.
+     */
+    @Test
+    public void testSelectWithOrdering() throws IgniteInterruptedCheckedException {
+        sql( "drop table if exists test_tbl", true);
+
+        sql( "create table test_tbl (c1 int)", true);
+
+        sql( "insert into test_tbl values (1), (2), (3), (null)", true);
+
+        sql( "create index idx_asc on test_tbl (c1)", true);
+        sql( "create index idx_desc on test_tbl (c1 desc)", true);
+
+        assertQuery(client, "select c1 from test_tbl ORDER BY c1")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_ASC"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .ordered()
+            .returns(new Object[]{null})
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery(client, "select c1 from test_tbl ORDER BY c1 asc nulls first")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_ASC"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .ordered()
+            .returns(new Object[]{null})
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery(client, "select c1 from test_tbl ORDER BY c1 asc nulls last")
+            .matches(containsSubPlan("IgniteSort"))
+            .ordered()
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .returns(new Object[]{null})
+            .check();
+
+        assertQuery(client, "select c1 from test_tbl ORDER BY c1 desc")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_DESC"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .ordered()
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .returns(new Object[]{null})
+            .check();
+
+        assertQuery(client, "select c1 from test_tbl ORDER BY c1 desc nulls first")
+            .matches(containsSubPlan("IgniteSort"))
+            .ordered()
+            .returns(new Object[]{null})
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .check();
+
+        assertQuery(client, "select c1 from test_tbl ORDER BY c1 desc nulls last")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_DESC"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .ordered()
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .returns(new Object[]{null})
+            .check();
     }
 
     /** */
@@ -1366,13 +1169,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         // warmup
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+                new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
             query.get(0).getAll();
         }
 
         start = System.currentTimeMillis();
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+                new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
             query.get(0).getAll();
         }
         System.out.println("H2 duration = " + (System.currentTimeMillis() - start));
@@ -1384,14 +1189,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> sql(String sql, boolean noCheck) throws IgniteInterruptedCheckedException {
+    private List<List<?>> sql(String sql, boolean noCheck, Object...args) throws IgniteInterruptedCheckedException {
         QueryEngine engineSrv = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         assertTrue(client.configuration().isClientMode());
 
         QueryEngine engineCli = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql);
+        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql, args);
 
         List<List<?>> allSrv;
 

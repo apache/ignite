@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_distinct_string_agg.test
 # description: Test distinct STRING_AGG operator
 # group: [aggregates]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14544
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14636
 
 statement ok

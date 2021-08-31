@@ -234,7 +234,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
             if (ctx.kernalContext().query().moduleEnabled()) {
-                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query().getIndexing()
+                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().indexProcessor()
                     .rowCacheCleaner(grp.groupId());
 
                 if (store != null && cleaner != null)
@@ -1079,65 +1079,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         return cleared;
-    }
-
-    /**
-     * Removes all cache entries from specified {@code map}.
-     *
-     * @param map Map to clear.
-     * @param extras Obsolete extras.
-     * @param evt Unload event flag.
-     * @throws NodeStoppingException If current node is stopping.
-     */
-    private void clear(ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map,
-        GridCacheObsoleteEntryExtras extras,
-        boolean evt) throws NodeStoppingException {
-        Iterator<GridCacheMapEntry> it = map.values().iterator();
-
-        while (it.hasNext()) {
-            GridCacheMapEntry cached = null;
-
-            ctx.database().checkpointReadLock();
-
-            try {
-                cached = it.next();
-
-                if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(extras.obsoleteVersion(), extras)) {
-                    removeEntry(cached);
-
-                    if (!cached.isInternal()) {
-                        if (evt) {
-                            grp.addCacheEvent(cached.partition(),
-                                cached.key(),
-                                ctx.localNodeId(),
-                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                null,
-                                false,
-                                cached.rawGet(),
-                                cached.hasValue(),
-                                false);
-                        }
-                    }
-                }
-            }
-            catch (GridDhtInvalidPartitionException e) {
-                assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
-
-                break; // Partition is already concurrently cleared and evicted.
-            }
-            catch (NodeStoppingException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
-
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
     }
 
     /**

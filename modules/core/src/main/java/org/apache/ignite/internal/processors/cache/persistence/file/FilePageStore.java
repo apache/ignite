@@ -34,7 +34,6 @@ import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -85,11 +84,11 @@ public class FilePageStore implements PageStore {
      */
     private volatile Boolean fileExists;
 
-    /** */
+    /**
+     * The type of stored pages into given page storage. The field can take the following values:
+     * {@link PageStore#TYPE_DATA} for regular affinity partition files or {@link PageStore#TYPE_IDX} for index pages.
+     */
     private final byte type;
-
-    /** Database configuration. */
-    protected final DataStorageConfiguration dbCfg;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -119,25 +118,32 @@ public class FilePageStore implements PageStore {
     private volatile int tag;
 
     /** */
-    private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC);
+    private final boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC);
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** */
+    /**
+     * @param type Type of stored pages.
+     * @param pathProvider Store path.
+     * @param factory Factory producing an IO accessor.
+     * @param pageSize Page size.
+     * @param allocatedTracker Allocation tracker.
+     */
     public FilePageStore(
         byte type,
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
-        DataStorageConfiguration cfg,
+        int pageSize,
         LongConsumer allocatedTracker
     ) {
+        assert type == PageStore.TYPE_DATA || type == PageStore.TYPE_IDX : type;
+
         this.type = type;
         this.pathProvider = pathProvider;
-        this.dbCfg = cfg;
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
-        this.pageSize = dbCfg.getPageSize();
+        this.pageSize = pageSize;
         this.allocatedTracker = allocatedTracker;
     }
 
@@ -248,12 +254,12 @@ public class FilePageStore implements PageStore {
      */
     private long initFile(FileIO fileIO) throws IOException {
         try {
-            ByteBuffer hdr = header(type, dbCfg.getPageSize());
+            ByteBuffer hdr = header(type, pageSize);
 
             fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
-            return headerSize() + dbCfg.getPageSize();
+            return headerSize() + pageSize;
         }
         catch (ClosedByInterruptException e) {
             // If thread was interrupted written header can be inconsistent.
@@ -310,9 +316,9 @@ public class FilePageStore implements PageStore {
 
         int pageSize = hdr.getInt();
 
-        if (dbCfg.getPageSize() != pageSize)
+        if (this.pageSize != pageSize)
             throw new IOException(prefix + "(invalid page size)" +
-                " [expectedPageSize=" + dbCfg.getPageSize() +
+                " [expectedPageSize=" + this.pageSize +
                 ", filePageSize=" + pageSize + "]");
 
         long fileSize = cfgFile.length();
@@ -478,6 +484,18 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        return read(pageId, pageBuf, !skipCrc, keepCrc);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to read into.
+     * @param checkCrc Check CRC on page.
+     * @param keepCrc By default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
+     * @return {@code true} if page has been read successfully, {@code false} if page hasn't been written yet.
+     * @throws IgniteCheckedException If reading failed (IO error occurred).
+     */
+    public boolean read(long pageId, ByteBuffer pageBuf, boolean checkCrc, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -506,7 +524,7 @@ public class FilePageStore implements PageStore {
 
             pageBuf.position(0);
 
-            if (!skipCrc) {
+            if (checkCrc) {
                 int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageId, pageBuf));
 
                 if ((savedCrc32 ^ curCrc32) != 0)

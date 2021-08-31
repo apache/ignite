@@ -198,7 +198,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
-        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file::toPath, factory, dbCfg, val -> {});
+        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file::toPath, factory, dbCfg.getPageSize(), val -> {});
 
         int pageSize = dbCfg.getPageSize();
 
@@ -216,7 +216,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                 long pageAdr = ptr + i * pageSize;
 
-                pageIO.initNewPage(pageAdr, pageId, pageSize);
+                pageIO.initNewPage(pageAdr, pageId, pageSize, null);
 
                 ByteBuffer buf = GridUnsafe.wrapPointer(pageAdr, pageSize);
 

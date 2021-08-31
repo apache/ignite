@@ -11,6 +11,11 @@
 
     <OutputType>Exe</OutputType>
     <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
+
+    <!-- netcoreapp2.0 is out of support -->
+    <NoWarn>NETSDK1138</NoWarn>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -41,7 +46,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Deployment\**" />
-    <None Remove="Examples\**" />
 
     <None Update="Config\ignite-halthandler-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\native-client-test-cache-affinity.xml" CopyToOutputDirectory="PreserveNewest" />
@@ -97,18 +101,24 @@
     <None Update="Config\query-entity-metadata-registration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-
+    <None Update="Config\binary-custom-name-mapper.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\binary-custom-name-mapper2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Examples\ExpectedOutput\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Deployment\**" />
-    <Compile Remove="Examples\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="Deployment\**" />
-    <EmbeddedResource Remove="Examples\**" />
     <EmbeddedResource Remove="Compute\Forked\**" />
   </ItemGroup>
 

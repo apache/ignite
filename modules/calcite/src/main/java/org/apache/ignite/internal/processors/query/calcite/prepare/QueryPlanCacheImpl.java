@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -41,7 +39,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
-    private volatile Map<CacheKey, List<QueryPlan>> cache;
+    private volatile Map<CacheKey, QueryPlan> cache;
 
     /**
      * @param ctx Kernal context.
@@ -73,21 +71,17 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
-        Map<CacheKey, List<QueryPlan>> cache = this.cache;
+    @Override public QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
+        Map<CacheKey, QueryPlan> cache = this.cache;
+        QueryPlan plan = cache.computeIfAbsent(key, k -> factory.create(ctx));
+        return plan.copy();
+    }
 
-        List<QueryPlan> template = cache.get(key);
-
-        if (template != null)
-            return Commons.transform(template, QueryPlan::copy);
-        else {
-            List<QueryPlan> prepared = factory.create(ctx);
-
-            if (prepared.size() == 1) // do not cache multiline queries.
-                cache.putIfAbsent(key, prepared);
-
-            return Commons.transform(prepared, QueryPlan::copy);
-        }
+    /** {@inheritDoc} */
+    @Override public QueryPlan queryPlan(CacheKey key) {
+        Map<CacheKey, QueryPlan> cache = this.cache;
+        QueryPlan plan = cache.get(key);
+        return plan != null ? plan.copy() : null;
     }
 
     /** {@inheritDoc} */
@@ -107,7 +101,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
+        GridQueryIndexDescriptor idxDesc, Index idx) {
         clear();
     }
 

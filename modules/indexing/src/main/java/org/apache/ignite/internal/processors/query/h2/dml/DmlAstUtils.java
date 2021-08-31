@@ -114,7 +114,7 @@ public final class DmlAstUtils {
 
                 args[i] = arr;
 
-                GridSqlColumn newCol = new GridSqlColumn(null, from, null,"TABLE", colName);
+                GridSqlColumn newCol = new GridSqlColumn(null, from, null, "TABLE", colName);
 
                 newCol.resultType(cols[i].resultType());
 

@@ -280,7 +280,6 @@ public class GridDhtPartitionSupplier {
                 maxBatchesCnt = 1;
 
             if (sctx == null || sctx.iterator == null) {
-                iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
 
                 remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
 
@@ -291,6 +290,8 @@ public class GridDhtPartitionSupplier {
 
                     remainingParts.add(p);
                 }
+
+                iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
 
                 for (Integer part : demandMsg.partitions().fullSet()) {
                     if (iter.isPartitionMissing(part))
@@ -618,7 +619,10 @@ public class GridDhtPartitionSupplier {
      * @param demandMsg Demand message.
      */
     private String supplyRoutineInfo(int topicId, UUID demander, GridDhtPartitionDemandMessage demandMsg) {
-        return "grp=" + grp.cacheOrGroupName() + ", demander=" + demander + ", topVer=" + demandMsg.topologyVersion() + ", topic=" + topicId;
+        return "grp=" + grp.cacheOrGroupName() +
+            ", demander=" + demander +
+            ", topVer=" + demandMsg.topologyVersion() +
+            (topicId > 0 ? ", topic=" + topicId : "");
     }
 
     /**

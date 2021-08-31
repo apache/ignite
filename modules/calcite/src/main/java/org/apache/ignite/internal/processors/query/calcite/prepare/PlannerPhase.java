@@ -23,6 +23,7 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
@@ -47,9 +48,9 @@ import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMerge
 import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.MinusConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
@@ -69,13 +70,55 @@ import static org.apache.ignite.internal.processors.query.calcite.prepare.Ignite
  */
 public enum PlannerPhase {
     /** */
-    HEURISTIC_OPTIMIZATION("Heuristic optimization phase") {
+    HEP_DECORRELATE("Heuristic phase to decorrelate subqueries") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
                 CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                 CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE);
+                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    /** */
+    HEP_FILTER_PUSH_DOWN("Heuristic phase to push down filters") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return RuleSets.ofList(
+                CoreRules.FILTER_MERGE,
+                CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+                CoreRules.FILTER_SET_OP_TRANSPOSE,
+                CoreRules.JOIN_CONDITION_PUSH,
+                CoreRules.FILTER_INTO_JOIN,
+                CoreRules.FILTER_PROJECT_TRANSPOSE
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    /** */
+    HEP_PROJECT_PUSH_DOWN("Heuristic phase to push down and merge projects") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return RuleSets.ofList(
+                ProjectScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
+                ProjectScanMergeRule.INDEX_SCAN_SKIP_CORRELATED,
+
+                CoreRules.JOIN_PUSH_EXPRESSIONS,
+                CoreRules.PROJECT_MERGE,
+                CoreRules.PROJECT_REMOVE,
+                CoreRules.PROJECT_FILTER_TRANSPOSE
+            );
         }
 
         /** {@inheritDoc} */
@@ -134,6 +177,8 @@ public enum PlannerPhase {
                                         .predicate(Aggregate::isSimple)
                                         .anyInputs())).toRule(),
 
+                    AggregateExpandDistinctAggregatesRule.Config.JOIN.toRule(),
+
                     SortRemoveRule.Config.DEFAULT
                         .withOperandSupplier(b ->
                             b.operand(LogicalSort.class)
@@ -141,10 +186,14 @@ public enum PlannerPhase {
 
                     CoreRules.UNION_MERGE,
                     CoreRules.MINUS_MERGE,
+                    CoreRules.INTERSECT_MERGE,
                     CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
-                    CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+                    CoreRules.JOIN_COMMUTE_OUTER,
+
+                    // Useful of this rule is not clear now.
+                    // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
 
                     PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
                         .withOperandSupplier(b ->
@@ -158,6 +207,8 @@ public enum PlannerPhase {
                     ProjectScanMergeRule.INDEX_SCAN,
                     FilterScanMergeRule.TABLE_SCAN,
                     FilterScanMergeRule.INDEX_SCAN,
+                    FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
+                    FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
 
                     LogicalOrToUnionRule.INSTANCE,
 
@@ -173,17 +224,15 @@ public enum PlannerPhase {
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.SINGLE,
                     SortAggregateConverterRule.MAP_REDUCE,
-                    MinusConverterRule.SINGLE,
-                    MinusConverterRule.MAP_REDUCE,
-                    MergeJoinConverterRule.INSTANCE,
-                    NestedLoopJoinConverterRule.INSTANCE,
+                    SetOpConverterRule.SINGLE_MINUS,
+                    SetOpConverterRule.MAP_REDUCE_MINUS,
+                    SetOpConverterRule.SINGLE_INTERSECT,
+                    SetOpConverterRule.MAP_REDUCE_INTERSECT,
                     ProjectConverterRule.INSTANCE,
                     FilterConverterRule.INSTANCE,
                     TableModifyConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
-                    FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
-                    FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
                     TableFunctionScanConverterRule.INSTANCE
                 )
             );

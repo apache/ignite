@@ -92,7 +92,9 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
                 System.out.println("\n>>> Rmse = " + rmse);
 
                 System.out.println(">>> ---------------------------------");
-                System.out.println(">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed.");
+                System.out.println(
+                    ">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed."
+                );
             }
             finally {
                 if (dataCache != null)

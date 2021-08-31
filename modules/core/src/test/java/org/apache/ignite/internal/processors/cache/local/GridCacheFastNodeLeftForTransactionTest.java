@@ -241,7 +241,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         SB sb = new SB();
 
-        idleVerifyResV2.print(sb::a);
+        idleVerifyResV2.print(sb::a, true);
 
         assertContains(listeningLog, sb.toString(), "no conflicts have been found");
     }

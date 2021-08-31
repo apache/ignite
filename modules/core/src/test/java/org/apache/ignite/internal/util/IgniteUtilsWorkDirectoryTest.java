@@ -122,7 +122,8 @@ public class IgniteUtilsWorkDirectoryTest {
      * @param userWorkDirFlag need or not to pass userWorkDir to {@link IgniteUtils#workDirectory(java.lang.String, java.lang.String)}
      * @param userIgniteHomeFlag need or not to pass userIgniteHome to {@link IgniteUtils#workDirectory(java.lang.String, java.lang.String)}
      * @param userDirPropFlag need to set or clear "user.dir" system property
-     * @param expWorkDir expected Ignite work directory that will be returned by {@link IgniteUtils#workDirectory(java.lang.String, java.lang.String)}
+     * @param expWorkDir expected Ignite work directory that will be returned by
+     * {@link IgniteUtils#workDirectory(java.lang.String, java.lang.String)}
      */
     private void executeGenericTest(boolean userWorkDirFlag, boolean userIgniteHomeFlag,
         boolean userDirPropFlag, String expWorkDir) {

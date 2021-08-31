@@ -28,6 +28,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,6 +47,7 @@ import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getFieldFromBiRows;
 
 /**
  *
@@ -96,7 +98,10 @@ public class ExecutionTest extends AbstractExecutionTest {
         RelDataType leftType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
         RelDataType rightType = TypeUtils.createRowType(tf, int.class, int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, INNER, r -> r[0] == r[4]);
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, INNER,
+            (r1, r2) -> getFieldFromBiRows(hnd, 0, r1, r2) == getFieldFromBiRows(hnd, 4, r1, r2));
         join.register(F.asList(persons, projects));
 
         rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
@@ -196,11 +201,15 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[] {2, "SQL"}
         ));
 
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class,
+            int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT, r -> r[2] == r[3]);
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT,
+            (r1, r2) -> getFieldFromBiRows(hnd, 2, r1, r2) == getFieldFromBiRows(hnd, 3, r1, r2));
         join.register(F.asList(persons, deps));
 
         rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
@@ -253,11 +262,15 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[] {3, "QA"}
         ));
 
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class, String.class, Integer.class);
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class,
+            String.class, Integer.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, RIGHT, r -> r[0] == r[4]);
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, RIGHT,
+            (r1, r2) -> getFieldFromBiRows(hnd, 0, r1, r2) == getFieldFromBiRows(hnd, 4, r1, r2));
         join.register(F.asList(deps, persons));
 
         rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
@@ -310,11 +323,15 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[] {3, "QA"}
         ));
 
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class,
+            int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, FULL, r -> r[2] == r[3]);
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, FULL,
+            (r1, r2) -> getFieldFromBiRows(hnd, 2, r1, r2) == getFieldFromBiRows(hnd, 3, r1, r2));
         join.register(F.asList(persons, deps));
 
         rowType = TypeUtils.createRowType(tf, Integer.class, String.class, String.class);
@@ -372,7 +389,10 @@ public class ExecutionTest extends AbstractExecutionTest {
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, SEMI, r -> r[0] == r[4]);
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, SEMI,
+            (r1, r2) -> getFieldFromBiRows(hnd, 0, r1, r2) == getFieldFromBiRows(hnd, 4, r1, r2));
         join.register(F.asList(deps, persons));
 
         rowType = TypeUtils.createRowType(tf, String.class);
@@ -427,7 +447,10 @@ public class ExecutionTest extends AbstractExecutionTest {
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, ANTI, r -> r[0] == r[4]);
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, ANTI,
+            (r1, r2) -> getFieldFromBiRows(hnd, 0, r1, r2) == getFieldFromBiRows(hnd, 4, r1, r2));
         join.register(F.asList(deps, persons));
 
         rowType = TypeUtils.createRowType(tf, String.class);
@@ -478,10 +501,12 @@ public class ExecutionTest extends AbstractExecutionTest {
                             int.class, String.class, int.class,
                             int.class, String.class, int.class);
 
+                        RowHandler<Object[]> hnd = ctx.rowHandler();
+
                         CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
                             ctx,
                             joinRowType,
-                            r -> r[0].equals(r[3]),
+                            (r1, r2) -> getFieldFromBiRows(hnd, 0, r1, r2).equals(getFieldFromBiRows(hnd, 3, r1, r2)),
                             ImmutableSet.of(new CorrelationId(0)),
                             joinType
                         );
@@ -519,7 +544,8 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
-        int[] sizes = {1, max(inBufSize / 3, 1), max(inBufSize / 2, 1), max(inBufSize - 1, 1), inBufSize, inBufSize + 1, 2 * inBufSize - 1, 2 * inBufSize, 2 * inBufSize + 1};
+        int[] sizes = {1, max(inBufSize / 3, 1), max(inBufSize / 2, 1), max(inBufSize - 1, 1), inBufSize,
+            inBufSize + 1, 2 * inBufSize - 1, 2 * inBufSize, 2 * inBufSize + 1};
 
         for (int leftSize : sizes) {
             for (int rightSize : sizes) {

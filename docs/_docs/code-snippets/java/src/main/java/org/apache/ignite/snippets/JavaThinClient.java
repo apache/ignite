@@ -21,9 +21,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import javax.cache.Cache;
-
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.Ignition;
@@ -31,21 +32,25 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.cluster.ClusterState;
@@ -83,7 +88,7 @@ public class JavaThinClient {
         // Start a node
         Ignite ignite = Ignition.start(cfg);
         // end::clusterConfiguration[]
-        
+
         ignite.close();
     }
 
@@ -244,6 +249,7 @@ public class JavaThinClient {
     }
 
     public static final String KEYSTORE = "keystore/client.jks";
+
     public static final String TRUSTSTORE = "keystore/trust.jks";
 
     @Test
@@ -318,7 +324,6 @@ public class JavaThinClient {
         // end::results-to-map[]
     }
 
-    
     void veiwsystemview() {
         //tag::system-views[]
         ClientConfiguration cfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
@@ -360,6 +365,30 @@ public class JavaThinClient {
         //end::partition-awareness[]
     }
 
+    private String[] fetchServerAddresses() {
+        return null;
+    }
+
+    void clientAddressFinder() throws Exception {
+        //tag::client-address-finder[]
+        ClientAddressFinder finder = () -> {
+            String[] dynamicServerAddresses = fetchServerAddresses();
+
+            return dynamicServerAddresses;
+        };
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddressesFinder(finder)
+            .setPartitionAwarenessEnabled(true);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache("myCache");
+            // Put, get, or remove data from the cache...
+        } catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::client-address-finder[]
+    }
 
     @Test
     void cientCluster() throws Exception {
@@ -416,6 +445,47 @@ public class JavaThinClient {
                 "MyService", MyService.class).myServiceMethod();
         }
         //end::client-services[]
+    }
+
+    void asyncApi() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::async-api[]
+        IgniteClient client = Ignition.startClient(clientCfg);
+        ClientCache<Integer, String> cache = client.getOrCreateCache("cache");
+
+        IgniteClientFuture<Void> putFut = cache.putAsync(1, "hello");
+        putFut.get(); // Blocking wait.
+
+        IgniteClientFuture<String> getFut = cache.getAsync(1);
+        getFut.thenAccept(val -> System.out.println(val)); // Non-blocking continuation.
+        //end::async-api[]
+    }
+
+    void continuousQueries() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            //tag::continuous-queries[]
+            ClientCache<Integer, String> cache = client.getOrCreateCache("myCache");
+
+            ContinuousQuery<Integer, String> query = new ContinuousQuery<>();
+
+            query.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+                    throws CacheEntryListenerException {
+                    // react to the update events here
+                }
+            });
+
+            ClientDisconnectListener disconnectListener = new ClientDisconnectListener() {
+                @Override public void onDisconnected(Exception reason) {
+                    // react to the disconnect event here
+                }
+            };
+
+            cache.query(query, disconnectListener);
+            //end::continuous-queries[]
+        }
     }
 
     private static class MyTask {

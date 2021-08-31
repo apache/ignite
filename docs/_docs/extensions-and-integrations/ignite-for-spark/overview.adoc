@@ -14,7 +14,7 @@
 // limitations under the License.
 = Ignite for Spark
 
-Apache Ignite is a distributed memory-centric database and caching platform that is used by Apache Spark users to:
+Apache Ignite is a distributed database for high-performance computing with in-memory speed that is used by Apache Spark users to:
 
 * Achieve true in-memory performance at scale and avoid data movement from a data source to Spark workers and applications.
 * Boost DataFrame and SQL performance.

@@ -88,7 +88,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @param factory Type factory.
      * @return Row type for SELECT operation.
      */
-    default RelDataType selectRowType(IgniteTypeFactory factory) {
+    default RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
         return rowType(factory, null);
     }
 
@@ -146,7 +146,8 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     /**
      * Returns column descriptor for given field name.
      *
-     * @return Column descriptor
+     * @param fieldName Field name.
+     * @return Column descriptor.
      */
     ColumnDescriptor columnDescriptor(String fieldName);
 

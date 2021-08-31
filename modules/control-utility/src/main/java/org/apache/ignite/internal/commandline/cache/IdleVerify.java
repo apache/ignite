@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +31,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
@@ -41,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
@@ -67,6 +75,12 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
  *
  */
 public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
+    /** */
+    public static final String IDLE_VERIFY_FILE_PREFIX = "idle_verify-";
+
+    /** Time formatter for log file name. */
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
+
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
@@ -322,8 +336,32 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
         IdleVerifyResultV2 res = executeTask(client, VisorIdleVerifyTaskV2.class, taskArg, clientCfg);
 
         logParsedArgs(taskArg, System.out::print);
+        res.print(System.out::print, false);
 
-        res.print(System.out::print);
+        if (F.isEmpty(res.exceptions()))
+            return;
+
+        try {
+            File f = new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), "", false),
+                IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
+
+            try (PrintWriter pw = new PrintWriter(f)) {
+                res.print(pw::print, true);
+                pw.flush();
+
+                System.out.println("See log for additional information. " + f.getAbsolutePath());
+            }
+            catch (FileNotFoundException e) {
+                System.err.println("Can't write exceptions to file " + f.getAbsolutePath() + " " + e.getMessage());
+
+                e.printStackTrace();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            System.err.println("Can't find work directory. " + e.getMessage());
+
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -350,11 +388,11 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
 
         if (conflicts.isEmpty()) {
-            logger.info("idle_verify check has finished, no conflicts have been found.");
+            logger.info("The check procedure has finished, no conflicts have been found.");
             logger.info("");
         }
         else {
-            logger.info("idle_verify check has finished, found " + conflicts.size() + " conflict partitions.");
+            logger.info("The check procedure has finished, found " + conflicts.size() + " conflict partitions.");
             logger.info("");
 
             for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : conflicts.entrySet()) {

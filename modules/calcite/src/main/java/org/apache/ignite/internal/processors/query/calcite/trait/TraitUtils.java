@@ -43,6 +43,7 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -176,7 +177,7 @@ public class TraitUtils {
         RelTraitSet traits = rel.getTraitSet()
             .replace(toTrait);
 
-        return new IgniteTableSpool(rel.getCluster(), traits, rel);
+        return new IgniteTableSpool(rel.getCluster(), traits, Spool.Type.LAZY, rel);
     }
 
     /** */
@@ -366,7 +367,8 @@ public class TraitUtils {
     }
 
     /** */
-    public static IgniteDistribution projectDistribution(IgniteDistribution distribution, List<RexNode> projects, RelDataType inputRowType) {
+    public static IgniteDistribution projectDistribution(IgniteDistribution distribution, List<RexNode> projects,
+        RelDataType inputRowType) {
         if (distribution.getType() != HASH_DISTRIBUTED)
             return distribution;
 
@@ -423,7 +425,7 @@ public class TraitUtils {
     /** */
     private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits) {
         Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new HashSet<>();
-        fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()],0);
+        fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()], 0);
         return out;
     }
 

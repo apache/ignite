@@ -35,8 +35,14 @@ import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.managers.systemview.SystemViewMBean;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
+import org.apache.ignite.spi.systemview.view.BaselineNodeView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
+import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -46,6 +52,8 @@ import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
+import org.apache.ignite.spi.systemview.view.NodeAttributeView;
+import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
@@ -62,6 +70,15 @@ import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.TransactionView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicLongView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicSequenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicStampedView;
+import org.apache.ignite.spi.systemview.view.datastructures.CountDownLatchView;
+import org.apache.ignite.spi.systemview.view.datastructures.QueueView;
+import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
+import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
+import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
@@ -108,6 +125,20 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(PartitionStateView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(BinaryMetadataView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(MetastorageView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(QueueView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SetView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicLongView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicReferenceView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicSequenceView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(AtomicStampedView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CountDownLatchView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ReentrantLockView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SemaphoreView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineNodeAttributeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineNodeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(NodeAttributeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(NodeMetricsView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CacheGroupIoView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
@@ -115,6 +146,10 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableColumnView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlViewColumnView.class, INDEXING_SRC_DIR);
+
+        gen.generateAndWrite(StatisticsColumnConfigurationView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnLocalDataView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnPartitionDataView.class, INDEXING_SRC_DIR);
     }
 
     /**

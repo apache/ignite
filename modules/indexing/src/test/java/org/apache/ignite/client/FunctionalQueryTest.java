@@ -153,7 +153,8 @@ public class FunctionalQueryTest {
      */
     @Test
     public void testSql() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration()); Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
         ) {
             client.query(

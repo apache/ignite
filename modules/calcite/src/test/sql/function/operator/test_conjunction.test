@@ -2,9 +2,6 @@
 # description: Test conjunction statements
 # group: [operator]
 
-statement ok
-PRAGMA enable_verification
-
 # create table
 statement ok
 CREATE TABLE a (i integer, j integer);
@@ -21,32 +18,32 @@ SELECT * FROM a WHERE (i > 3 AND j < 5) OR (i > 3 AND j > 5)
 query T
 SELECT true AND true
 ----
-1
+true
 
 query T
 SELECT true AND false
 ----
-0
+false
 
 query T
 SELECT false AND true
 ----
-0
+false
 
 query T
 SELECT false AND false
 ----
-0
+false
 
 query T
 SELECT false AND NULL
 ----
-0
+false
 
 query T
 SELECT NULL AND false
 ----
-0
+false
 
 query T
 SELECT NULL AND true
@@ -61,17 +58,17 @@ NULL
 query T
 SELECT true OR true
 ----
-1
+true
 
 query T
 SELECT true OR NULL
 ----
-1
+true
 
 query T
 SELECT NULL OR true
 ----
-1
+true
 
 query T
 SELECT false OR NULL
@@ -86,107 +83,107 @@ NULL
 query T
 SELECT true OR false
 ----
-1
+true
 
 query T
 SELECT false OR true
 ----
-1
+true
 
 query T
 SELECT false OR false
 ----
-0
+false
 
 # test single constant in conjunctions
 query T
 SELECT true AND i>3 FROM a ORDER BY i
 ----
-0
-1
-1
+false
+true
+true
 
 query T
 SELECT i>3 AND true FROM a ORDER BY i
 ----
-0
-1
-1
+false
+true
+true
 
 query T
 SELECT 2>3 AND i>3 FROM a ORDER BY i
 ----
-0
-0
-0
+false
+false
+false
 
 query T
 SELECT false AND i>3 FROM a ORDER BY i
 ----
-0
-0
-0
+false
+false
+false
 
 query T
 SELECT i>3 AND false FROM a ORDER BY i
 ----
-0
-0
-0
+false
+false
+false
 
 query T
 SELECT false OR i>3 FROM a ORDER BY i
 ----
-0
-1
-1
+false
+true
+true
 
 query T
 SELECT i>3 OR false FROM a ORDER BY i
 ----
-0
-1
-1
+false
+true
+true
 
 query T
 SELECT true OR i>3 FROM a ORDER BY i
 ----
-1
-1
-1
+true
+true
+true
 
 query T
 SELECT i>3 OR true FROM a ORDER BY i
 ----
-1
-1
-1
+true
+true
+true
 
 query T
 SELECT NULL OR i>3 FROM a ORDER BY i
 ----
 NULL
-1
-1
+true
+true
 
 query T
 SELECT i>3 OR NULL FROM a ORDER BY i
 ----
 NULL
-1
-1
+true
+true
 
 query T
 SELECT NULL AND i>3 FROM a ORDER BY i
 ----
-0
+false
 NULL
 NULL
 
 query T
 SELECT i>3 AND NULL FROM a ORDER BY i
 ----
-0
+false
 NULL
 NULL
 

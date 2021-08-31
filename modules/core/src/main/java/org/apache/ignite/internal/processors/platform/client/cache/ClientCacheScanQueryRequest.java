@@ -108,7 +108,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
      * @return Filter.
      * @param ctx Context.
      */
-    public static IgniteBiPredicate createFilter(GridKernalContext ctx, Object filterObj, byte filterPlatform) {
+    private static IgniteBiPredicate createFilter(GridKernalContext ctx, Object filterObj, byte filterPlatform) {
         if (filterObj == null)
             return null;
 

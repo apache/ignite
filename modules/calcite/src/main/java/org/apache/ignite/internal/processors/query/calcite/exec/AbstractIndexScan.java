@@ -24,8 +24,7 @@ import java.util.function.Supplier;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.query.GridIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, AutoCloseable {
     /** */
-    private final GridIndex<IdxRow> idx;
+    private final TreeIndex<IdxRow> idx;
 
     /** Additional filters. */
     private final Predicate<Row> filters;
@@ -65,7 +64,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     protected AbstractIndexScan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
-        GridIndex<IdxRow> idx,
+        TreeIndex<IdxRow> idx,
         Predicate<Row> filters,
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound,
@@ -85,7 +84,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         IdxRow lower = lowerBound == null ? null : row2indexRow(lowerBound.get());
         IdxRow upper = upperBound == null ? null : row2indexRow(upperBound.get());
 
-        return new IteratorImpl(idx.find(lower, upper, filterClosure()));
+        return new IteratorImpl(idx.find(lower, upper, indexQueryContext()));
     }
 
     /** */
@@ -95,7 +94,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     protected abstract Row indexRow2Row(IdxRow idxRow) throws IgniteCheckedException;
 
     /** */
-    protected abstract BPlusTree.TreeRowClosure<IdxRow, IdxRow> filterClosure();
+    protected abstract IndexQueryContext indexQueryContext();
 
     /** {@inheritDoc} */
     @Override public void close() {

@@ -153,8 +153,8 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         List<GiniHistogram> partitions2 = new ArrayList<>();
         int cntOfPartitions = rnd.nextInt(1000);
         for (int i = 0; i < cntOfPartitions; i++) {
-            partitions1.add(new GiniHistogram(sampleId,lblMapping, bucketMeta1));
-            partitions2.add(new GiniHistogram(sampleId,lblMapping, bucketMeta2));
+            partitions1.add(new GiniHistogram(sampleId, lblMapping, bucketMeta1));
+            partitions2.add(new GiniHistogram(sampleId, lblMapping, bucketMeta2));
         }
 
         int datasetSize = rnd.nextInt(10000);

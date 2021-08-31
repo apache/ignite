@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
-
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -102,6 +104,23 @@ public interface ClientCache<K, V> {
      * Future result is <tt>true</tt> if this map contains a mapping for the specified key.
      */
     public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException;
+
+    /**
+     * Determines if the {@link ClientCache} contains entries for the specified keys.
+     *
+     * @param keys Keys whose presence in this cache is to be tested.
+     * @return {@code True} if this cache contains a mapping for the specified keys.
+     */
+    public boolean containsKeys(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Determines if the {@link ClientCache} contains entries for the specified keys asynchronously.
+     *
+     * @param keys Keys whose presence in this cache is to be tested.
+     * @return Future representing pending completion of the operation.
+     * Future result is {@code true} if this map contains a mapping for the specified keys.
+     */
+    public IgniteClientFuture<Boolean> containsKeysAsync(Set<? extends K> keys) throws ClientException;
 
     /**
      * @return The name of the cache.
@@ -524,7 +543,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return true;
      * } else {
@@ -543,7 +562,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return true;
      * } else {
@@ -559,6 +578,47 @@ public interface ClientCache<K, V> {
     public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException;
 
     /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (!cache.containsKey(key)) {
+     *   cache.put(key, value);
+     *   return null;
+     * } else {
+     *   return cache.get(key);
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return Value that is already associated with the specified key, or {@code null} if no value was associated
+     * with the specified key and a value was set.
+     */
+    public V getAndPutIfAbsent(K key, V val) throws ClientException;
+
+    /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (!cache.containsKey(key)) {
+     *   cache.put(key, value);
+     *   return null;
+     * } else {
+     *   return cache.get(key);
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return Future representing pending completion of the operation, which wraps the value that is already
+     * associated with the specified key, or {@code null} if no value was associated with the specified key and a
+     * value was set.
+     */
+    public IgniteClientFuture<V> getAndPutIfAbsentAsync(K key, V val) throws ClientException;
+
+    /**
      * Clears the contents of the cache.
      * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
      */
@@ -570,6 +630,32 @@ public interface ClientCache<K, V> {
      * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync() throws ClientException;
+
+    /**
+     * Clears entry with specified key from the cache.
+     * In contrast to {@link #remove(Object)}, this method does not notify event listeners and cache writers.
+     */
+    public void clear(K key) throws ClientException;
+
+    /**
+     * Clears entry with specified key from the cache asynchronously.
+     * In contrast to {@link #removeAsync(Object)}, this method does not notify event listeners and cache writers.
+     * @return Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> clearAsync(K key) throws ClientException;
+
+    /**
+     * Clears entries with specified keys from the cache.
+     * In contrast to {@link #removeAll(Set)}, this method does not notify event listeners and cache writers.
+     */
+    public void clearAll(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Clears entries with specified keys from the cache asynchronously.
+     * In contrast to {@link #removeAllAsync(Set)}, this method does not notify event listeners and cache writers.
+     * @return Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException;
 
     /**
      * Returns cache that will operate with binary objects.
@@ -619,13 +705,28 @@ public interface ClientCache<K, V> {
     public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc);
 
     /**
-     * Queries cache. Supports {@link ScanQuery} and {@link SqlFieldsQuery}.
+     * Queries cache. Supports {@link ScanQuery}, {@link SqlFieldsQuery} and {@link ContinuousQuery}.
+     * <p>
+     * NOTE: For continuous query listeners there is no failover in case of client channel failure, this event should
+     * be handled on the user's side. Use {@link #query(ContinuousQuery, ClientDisconnectListener)} method to get
+     * notified about client disconnected event via {@link ClientDisconnectListener} interface if you need it.
      *
      * @param qry Query.
      * @return Cursor.
-     *
      */
     public <R> QueryCursor<R> query(Query<R> qry);
+
+    /**
+     * Start {@link ContinuousQuery} on the cache.
+     * <p>
+     * NOTE: There is no failover in case of client channel failure, this event should be handled on the user's side.
+     * Use {@code disconnectListener} to handle this.
+     *
+     * @param qry Query.
+     * @param disconnectListener Listener of client disconnected event.
+     * @return Cursor.
+     */
+    public <R> QueryCursor<R> query(ContinuousQuery<K, V> qry, ClientDisconnectListener disconnectListener);
 
     /**
      * Convenience method to execute {@link SqlFieldsQuery}.
@@ -634,4 +735,43 @@ public interface ClientCache<K, V> {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
+
+    /**
+     * Registers a {@link CacheEntryListener}. The supplied {@link CacheEntryListenerConfiguration} is used to
+     * instantiate a listener and apply it to those events specified in the configuration.
+     * <p>
+     * NOTE: There is no failover in case of client channel failure, this event should be handled on the user's side.
+     * Use {@link #registerCacheEntryListener(CacheEntryListenerConfiguration, ClientDisconnectListener)} method to get
+     * notified about client disconnected event via {@link ClientDisconnectListener} interface if you need it.
+     *
+     * @param cacheEntryListenerConfiguration a factory and related configuration for creating the listener.
+     * @throws IllegalArgumentException is the same CacheEntryListenerConfiguration is used more than once or
+     *          if some unsupported by thin client properties are set.
+     * @see CacheEntryListener
+     */
+    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration);
+
+    /**
+     * Registers a {@link CacheEntryListener}. The supplied {@link CacheEntryListenerConfiguration} is used to
+     * instantiate a listener and apply it to those events specified in the configuration.
+     * <p>
+     * NOTE: There is no failover in case of client channel failure, this event should be handled on the user's side.
+     * Use {@code disconnectListener} to handle this.
+     *
+     * @param cacheEntryListenerConfiguration a factory and related configuration for creating the listener.
+     * @param disconnectListener Listener of client disconnected event.
+     * @throws IllegalArgumentException is the same CacheEntryListenerConfiguration is used more than once or
+     *          if some unsupported by thin client properties are set.
+     * @see CacheEntryListener
+     */
+    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration,
+        ClientDisconnectListener disconnectListener);
+
+    /**
+     * Deregisters a listener, using the {@link CacheEntryListenerConfiguration} that was used to register it.
+     *
+     * @param cacheEntryListenerConfiguration the factory and related configuration that was used to create the
+     *         listener.
+     */
+    public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration);
 }

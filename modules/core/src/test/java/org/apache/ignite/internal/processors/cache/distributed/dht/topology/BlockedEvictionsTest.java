@@ -422,7 +422,12 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id, boolean recovery) {
+                        @Override public GridDhtLocalPartition create(
+                            GridCacheSharedContext ctx,
+                            CacheGroupContext grp,
+                            int id,
+                            boolean recovery
+                        ) {
                             return new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, mode, l1, l2) {
                                 /** */
                                 @Override protected void sync() {

@@ -30,7 +30,7 @@ public class TestIoManager {
 
     /** */
     public void send(UUID senderId, UUID nodeId, CalciteMessage msg) {
-        srvcMap.get(nodeId).onMessage(senderId, msg, true);
+        srvcMap.get(nodeId).onMessage(senderId, msg);
     }
 
     /** */

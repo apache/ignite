@@ -67,13 +67,6 @@ SELECT b, SUM(a), COUNT(*), SUM(a+2) FROM test GROUP BY b ORDER BY b;
 21	12.000000	1	14.000000
 22	24.000000	2	28.000000
 
-# group by alias
-query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f;
-----
-0	24.000000
-1	12.000000
-
 # group by with filter
 query IRIR
 SELECT b, SUM(a), COUNT(*), SUM(a+2) FROM test WHERE a <= 12 GROUP BY b ORDER BY b;
@@ -113,31 +106,18 @@ SELECT i, i + 10 FROM integers GROUP BY i ORDER BY i
 statement error
 SELECT i, SUM(j), j FROM integers GROUP BY i ORDER BY i
 
-# but it works if we wrap it in FIRST()
+# but it works if we wrap it in ANY_VALUE()
 query IRI
-SELECT i, SUM(j), FIRST(j) FROM integers GROUP BY i ORDER BY i
+SELECT i, SUM(j), ANY_VALUE(j) FROM integers GROUP BY i ORDER BY i
 ----
 2	4.000000	4
 3	8.000000	4
-
-# group by constant alias
-query IR
-SELECT 1 AS k, SUM(i) FROM integers GROUP BY k ORDER BY 2;
-----
-1	8.000000
 
 # use an alias that is identical to a column name (should prioritize column name)
 query IR
 SELECT 1 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 2;
 ----
 1	2.000000
-1	6.000000
-
-# refer to the same alias twice
-query IR
-SELECT i % 2 AS k, SUM(i) FROM integers GROUP BY k, k ORDER BY 1;
-----
-0	2.000000
 1	6.000000
 
 statement ok
@@ -151,7 +131,7 @@ INSERT INTO integers VALUES (1), (2), (3), (NULL);
 
 # group by NULL
 query IR
-SELECT i, SUM(i) FROM integers GROUP BY i ORDER BY 1;
+SELECT i, SUM(i) FROM integers GROUP BY i ORDER BY 1 NULLS FIRST;
 ----
 NULL	NULL
 1	1.000000
@@ -160,7 +140,7 @@ NULL	NULL
 
 # column reference should have preference over alias reference in grouping
 query IIR
-SELECT i, i % 2 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 1;
+SELECT i, i % 2 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 1 NULLS FIRST;
 ----
 NULL	NULL	NULL
 1	1	1.000000

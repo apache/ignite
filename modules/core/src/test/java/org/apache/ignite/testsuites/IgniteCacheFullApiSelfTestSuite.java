@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicWit
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.extended.GridActivateExtensionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -175,7 +176,7 @@ import org.junit.runners.Suite;
     IgniteNearCacheInvokeClusterReadOnlyModeSelfTest.class,
     IgniteCacheStoreClusterReadOnlyModeSelfTest.class,
 
-    //suite.addTest(new JUnit4TestAdapter(GridActivateExtensionTest.class));
+    GridActivateExtensionTest.class
 })
 public class IgniteCacheFullApiSelfTestSuite {
 }

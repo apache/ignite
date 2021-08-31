@@ -43,7 +43,7 @@ public class NativeJavaApiPutRemoveBenchmark extends AbstractNativeBenchmark {
         try {
             tabCache.put(insertKey, insertVal);
             tabCache.remove(insertKey);
-        } catch (IgniteException ign){
+        } catch (IgniteException ignore){
             // Collision occurred, ignoring.
         }
 

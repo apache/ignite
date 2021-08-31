@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -30,8 +29,6 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
  * Relational operator that returns the contents of a table.
  */
@@ -40,9 +37,10 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
     public IgniteTableSpool(
         RelOptCluster cluster,
         RelTraitSet traits,
+        Spool.Type readType,
         RelNode input
     ) {
-        super(cluster, traits, input, Type.LAZY, Type.EAGER);
+        super(cluster, traits, input, readType, Type.EAGER);
     }
 
     /**
@@ -52,9 +50,10 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
      */
     public IgniteTableSpool(RelInput input) {
         this(
-            changeTraits(input, IgniteConvention.INSTANCE).getCluster(),
-            changeTraits(input, IgniteConvention.INSTANCE).getTraitSet(),
-            changeTraits(input, IgniteConvention.INSTANCE).getInput()
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getEnum("readType", Spool.Type.class),
+            input.getInput()
         );
     }
 
@@ -65,12 +64,12 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteTableSpool(cluster, getTraitSet(), inputs.get(0));
+        return new IgniteTableSpool(cluster, getTraitSet(), readType, inputs.get(0));
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteTableSpool(getCluster(), traitSet, input);
+        return new IgniteTableSpool(getCluster(), traitSet, readType, input);
     }
 
     /** {@inheritDoc} */

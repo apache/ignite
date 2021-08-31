@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Deque;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -37,7 +37,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     protected static final int NOT_WAITING = -1;
 
     /** */
-    protected final Predicate<Row> cond;
+    protected final BiPredicate<Row, Row> cond;
 
     /** */
     protected final RowHandler<Row> handler;
@@ -64,7 +64,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
      * @param ctx Execution context.
      * @param cond Join expression.
      */
-    private NestedLoopJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+    private NestedLoopJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
         super(ctx, rowType);
 
         this.cond = cond;
@@ -208,8 +208,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** */
-    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
-        RelDataType rightRowType, JoinRelType joinType, Predicate<Row> cond) {
+    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType,
+        RelDataType leftRowType, RelDataType rightRowType, JoinRelType joinType, BiPredicate<Row, Row> cond) {
         switch (joinType) {
             case INNER:
                 return new InnerJoin<>(ctx, outputRowType, cond);
@@ -256,7 +256,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
 
@@ -280,12 +280,11 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
                             checkState();
 
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
-
-                            if (!cond.test(row))
+                            if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                                 continue;
 
                             requested--;
+                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
 
@@ -331,7 +330,12 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public LeftJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, RowHandler.RowFactory<Row> rightRowFactory) {
+        public LeftJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            BiPredicate<Row, Row> cond,
+            RowHandler.RowFactory<Row> rightRowFactory
+        ) {
             super(ctx, rowType, cond);
 
             this.rightRowFactory = rightRowFactory;
@@ -361,13 +365,13 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
                             checkState();
 
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
-
-                            if (!cond.test(row))
+                            if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                                 continue;
 
                             requested--;
                             matched = true;
+
+                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
 
@@ -427,7 +431,12 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public RightJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory) {
+        public RightJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            BiPredicate<Row, Row> cond,
+            RowHandler.RowFactory<Row> leftRowFactory
+        ) {
             super(ctx, rowType, cond);
 
             this.leftRowFactory = leftRowFactory;
@@ -462,13 +471,14 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                             checkState();
 
                             Row right = rightMaterialized.get(rightIdx++);
-                            Row joined = handler.concat(left, right);
 
-                            if (!cond.test(joined))
+                            if (!cond.test(left, right))
                                 continue;
 
                             requested--;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
+
+                            Row joined = handler.concat(left, right);
                             downstream().push(joined);
                         }
 
@@ -553,8 +563,13 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public FullOuterJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory,
-            RowHandler.RowFactory<Row> rightRowFactory) {
+        public FullOuterJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            BiPredicate<Row, Row> cond,
+            RowHandler.RowFactory<Row> leftRowFactory,
+            RowHandler.RowFactory<Row> rightRowFactory
+        ) {
             super(ctx, rowType, cond);
 
             this.leftRowFactory = leftRowFactory;
@@ -594,14 +609,15 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                             checkState();
 
                             Row right = rightMaterialized.get(rightIdx++);
-                            Row joined = handler.concat(left, right);
 
-                            if (!cond.test(joined))
+                            if (!cond.test(left, right))
                                 continue;
 
                             requested--;
                             leftMatched = true;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
+
+                            Row joined = handler.concat(left, right);
                             downstream().push(joined);
                         }
 
@@ -682,7 +698,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
 
@@ -706,9 +722,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                     while (!matched && requested > 0 && rightIdx < rightMaterialized.size()) {
                         checkState();
 
-                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
-
-                        if (!cond.test(row))
+                        if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                             continue;
 
                         requested--;
@@ -750,7 +764,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
 
@@ -776,9 +790,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                         while (!matched && rightIdx < rightMaterialized.size()) {
                             checkState();
 
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
-
-                            if (cond.test(row))
+                            if (cond.test(left, rightMaterialized.get(rightIdx++)))
                                 matched = true;
                         }
 

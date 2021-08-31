@@ -92,11 +92,13 @@ public interface IgniteCacheOffheapManager {
     /**
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
-     * @param partitionRecoveryStates Partition recovery states.
-     * @return Number of processed partitions.
+     * @param partRecoveryStates Partition recovery states.
+     * @return Processed partitions: partition id -> processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
-    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
+    Map<Integer, Long> restorePartitionStates(
+        Map<GroupPartitionId, Integer> partRecoveryStates
+    ) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
@@ -558,7 +560,35 @@ public interface IgniteCacheOffheapManager {
      * @param idxName Index name.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+    public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
+     * Dropping the root page of the index tree.
+     *
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @param segment Segment index.
+     * @return Dropped root page of the index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable RootPage dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
+     * Renaming the root page of the index tree.
+     *
+     * @param cacheId Cache id.
+     * @param oldIdxName Old name of the index tree.
+     * @param newIdxName New name of the index tree.
+     * @param segment Segment index.
+     * @return Renamed root page of the index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable RootPage renameRootPageForIndex(
+        int cacheId,
+        String oldIdxName,
+        String newIdxName,
+        int segment
+    ) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.

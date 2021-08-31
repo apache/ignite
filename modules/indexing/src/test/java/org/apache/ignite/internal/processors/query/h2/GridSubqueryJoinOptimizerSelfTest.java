@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
@@ -33,6 +35,9 @@ import org.junit.Test;
  *
  */
 public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final Comparator<List<?>> ROW_COMPARATOR = new RowComparator();
+
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -641,9 +646,13 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         List<List<?>> exp = cache.query(new SqlFieldsQuery(sql)).getAll();
 
+        exp.sort(ROW_COMPARATOR);
+
         optimizationEnabled(true);
 
         List<List<?>> act = cache.query(new SqlFieldsQuery(sql).setEnforceJoinOrder(true)).getAll();
+
+        act.sort(ROW_COMPARATOR);
 
         Assert.assertEquals("Result set mismatch", exp, act);
 
@@ -695,5 +704,50 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION, String.valueOf(enabled));
 
         GridTestUtils.setFieldValue(GridSubqueryJoinOptimizer.class, "optimizationEnabled", null);
+    }
+
+    /** */
+    @SuppressWarnings("ComparatorNotSerializable")
+    private static class RowComparator implements Comparator<List<?>> {
+        /** {@inheritDoc} */
+        @Override public int compare(List<?> o1, List<?> o2) {
+            if (o1 == null && o2 == null)
+                return 0;
+
+            if (o1 == null)
+                return 1;
+
+            if (o2 == null)
+                return -1;
+
+            Iterator<?> i1 = o1.iterator(), i2 = o2.iterator();
+            while (i1.hasNext() && i2.hasNext()) {
+                Object e1 = i1.next(), e2 = i2.next();
+
+                if (e1 == null && e2 == null)
+                    continue;
+
+                if (e1 == null)
+                    return 1;
+
+                if (e2 == null)
+                    return -1;
+
+                checkComparable(e1);
+                checkComparable(e2);
+
+                int res = ((Comparable<Object>)e1).compareTo(e2);
+                if (res != 0)
+                    return res;
+            }
+
+            return Integer.signum(o1.size() - o2.size());
+        }
+
+        /** */
+        private void checkComparable(Object o) {
+            if (!(o instanceof Comparable))
+                throw new RuntimeException(o.getClass().getSimpleName() + " is not comparable");
+        }
     }
 }

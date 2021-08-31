@@ -17,19 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexLocalRef;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
@@ -43,9 +58,35 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 RelMetadataQuery mq,
                 IgniteLogicalIndexScan rel
             ) {
+                RelOptCluster cluster = rel.getCluster();
+                IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
+                IgniteIndex index = table.getIndex(rel.indexName());
+
+                RelDistribution distribution = table.distribution();
+                RelCollation collation = index.collation();
+                if (rel.projects() != null || rel.requiredColumns() != null) {
+                    Mappings.TargetMapping mapping = createMapping(
+                        rel.projects(),
+                        rel.requiredColumns(),
+                        table.getRowType(cluster.getTypeFactory()).getFieldCount()
+                    );
+
+                    distribution = distribution.apply(mapping);
+                    collation = collation.apply(mapping);
+                }
+
+                RelTraitSet traits = rel.getCluster().traitSetOf(IgniteConvention.INSTANCE)
+                    .replace(RewindabilityTrait.REWINDABLE)
+                    .replace(distribution)
+                    .replace(collation);
+
+                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+                if (!corrIds.isEmpty())
+                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+
                 return new IgniteIndexScan(
-                    rel.getCluster(),
-                    rel.getTraitSet().replace(IgniteConvention.INSTANCE),
+                    cluster,
+                    traits,
                     rel.getTable(),
                     rel.indexName(),
                     rel.projects(),
@@ -65,7 +106,23 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 RelMetadataQuery mq,
                 IgniteLogicalTableScan rel
             ) {
-                RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
+                RelOptCluster cluster = rel.getCluster();
+                IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
+
+                RelDistribution distribution = table.distribution();
+                if (rel.requiredColumns() != null) {
+                    Mappings.TargetMapping mapping = createMapping(
+                        rel.projects(),
+                        rel.requiredColumns(),
+                        table.getRowType(cluster.getTypeFactory()).getFieldCount()
+                    );
+
+                    distribution = distribution.apply(mapping);
+                }
+
+                RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                    .replace(RewindabilityTrait.REWINDABLE)
+                    .replace(distribution);
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
                 if (!corrIds.isEmpty())
@@ -79,5 +136,41 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
     /** */
     private LogicalScanConverterRule(Class<T> clazz, String descPrefix) {
         super(clazz, descPrefix);
+    }
+
+    /** */
+    private static Mappings.TargetMapping createMapping(
+        List<RexNode> projects,
+        ImmutableBitSet requiredColumns,
+        int tableRowSize
+    ) {
+        if (projects != null) {
+            Mapping trimmingMapping = requiredColumns != null
+                ? Mappings.invert(Mappings.source(requiredColumns.asList(), tableRowSize))
+                : Mappings.createIdentity(tableRowSize);
+
+            Map<Integer, Integer> mappingMap = new HashMap<>();
+
+            for (int i = 0; i < projects.size(); i++) {
+                RexNode rex = projects.get(i);
+                if (!(rex instanceof RexLocalRef))
+                    continue;
+
+                RexLocalRef ref = (RexLocalRef) rex;
+
+                mappingMap.put(trimmingMapping.getSource(ref.getIndex()), i);
+            }
+
+            return Mappings.target(
+                mappingMap,
+                tableRowSize,
+                projects.size()
+            );
+        }
+
+        if (requiredColumns != null)
+            return Mappings.target(requiredColumns.asList(), tableRowSize);
+
+        return Mappings.createIdentity(tableRowSize);
     }
 }

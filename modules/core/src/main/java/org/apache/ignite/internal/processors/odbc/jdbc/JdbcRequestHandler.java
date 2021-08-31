@@ -31,7 +31,6 @@ import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -116,7 +114,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.executeWithExperimentalEngine;
 
 /**
  * JDBC request handler.
@@ -168,9 +165,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Protocol version. */
     private final ClientListenerProtocolVersion protocolVer;
 
-    /** Authentication context */
-    private AuthorizationContext actx;
-
     /** Facade that hides transformations internal cache api entities -> jdbc metadata. */
     private final JdbcMetadataInfo meta;
 
@@ -195,7 +189,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param useExperimentalQueryEngine Enable experimental query engine.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
-     * @param actx Authentication context.
      * @param protocolVer Protocol version.
      * @param connCtx Jdbc connection context.
      */
@@ -214,7 +207,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
-        AuthorizationContext actx,
         ClientListenerProtocolVersion protocolVer,
         JdbcConnectionContext connCtx
     ) {
@@ -247,7 +239,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.autoCloseCursors = autoCloseCursors;
         this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
-        this.actx = actx;
 
         if (useExperimentalQueryEngine) {
             for (GridComponent cmp : connCtx.kernalContext().components()) {
@@ -331,9 +322,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
-
-        if (actx != null)
-            AuthorizationContext.context(actx);
 
         JdbcResponse resp;
         try {
@@ -425,8 +413,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return resp;
         }
         finally {
-            AuthorizationContext.clear();
-
             busyLock.leaveBusy();
         }
     }
@@ -787,8 +773,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         if (experimentalQueryEngine != null) {
-            if (executeWithExperimentalEngine(qry.getSql()))
-                return experimentalQueryEngine.query(QueryContext.of(qry, cancel), qry.getSchema(), qry.getSql(), qry.getArgs());
+            return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx, cancel), qry.getSchema(),
+                qry.getSql(), qry.getArgs());
         }
 
         return connCtx.kernalContext().query().querySqlFields(null, qry,
@@ -1043,6 +1029,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
+        qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
@@ -1066,7 +1053,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.getSchema(),
                     cliCtx,
                     qry.getSql(),
-                    qry.batchedArguments()
+                    qry.batchedArguments(),
+                    connCtx.clientDescriptor()
                 );
 
                 for (int i = 0; i < cnt.size(); i++)

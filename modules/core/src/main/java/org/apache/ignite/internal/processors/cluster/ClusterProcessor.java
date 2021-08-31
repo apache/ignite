@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -240,7 +241,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                             ", previous value was " +
                             oldVal.tag();
 
-                        ctx.closure().runLocalSafe(() -> ctx.event().record(
+                        ctx.closure().runLocalSafe((GridPlainRunnable)() -> ctx.event().record(
                             new ClusterTagUpdatedEvent(
                                 ctx.discovery().localNode(),
                                 msg,
@@ -278,7 +279,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         this.metastorage = metastorage;
 
         ctx.closure().runLocalSafe(
-            () -> {
+            (GridPlainRunnable)() -> {
                 try {
                     ClusterIdAndTag idAndTag = new ClusterIdAndTag(cluster.id(), cluster.tag());
 
@@ -854,6 +855,13 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Cluster name.
      * */
     public String clusterName() {
+        try {
+            ctx.cache().awaitStarted();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+
         return IgniteSystemProperties.getString(
             IGNITE_CLUSTER_NAME,
             ctx.cache().utilityCache().context().dynamicDeploymentId().toString()
@@ -1103,7 +1111,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            ctx.getSystemExecutorService().execute(this);
+            ctx.pools().getSystemExecutorService().execute(this);
         }
     }
 }

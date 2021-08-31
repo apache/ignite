@@ -39,7 +39,8 @@ public abstract class BinaryMemoryAllocator {
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
     /** */
-    private static final int POOL_SIZE = Integer.getInteger(IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE, DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE);
+    private static final int POOL_SIZE =
+        Integer.getInteger(IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE, DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE);
 
     /** Thread local allocator instance. */
     public static final BinaryMemoryAllocator THREAD_LOCAL = new ThreadLocalAllocator();

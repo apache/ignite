@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.client.suite;
 
+import org.apache.ignite.common.ClientSideCacheCreationDestructionWileTopologyChangeTest;
+import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
+import org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest;
+import org.apache.ignite.common.NodeSslConnectionMetricTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
-import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientSslParametersTest;
@@ -55,6 +58,7 @@ import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticatorUserManagementAuthorizationTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBeforeNodeStartSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
@@ -97,6 +101,7 @@ import org.junit.runners.Suite;
     JettyRestProcessorUnsignedSelfTest.class,
     JettyRestProcessorAuthenticationWithCredsSelfTest.class,
     JettyRestProcessorAuthenticationWithTokenSelfTest.class,
+    JettyRestProcessorAuthenticatorUserManagementAuthorizationTest.class,
     JettyRestProcessorGetAllAsArrayTest.class,
     JettyRestProcessorBaselineSelfTest.class,
     JettyRestProcessorBeforeNodeStartSelfTest.class,
@@ -151,7 +156,6 @@ import org.junit.runners.Suite;
     // Rest task command handler test.
     TaskCommandHandlerSelfTest.class,
     ChangeStateCommandHandlerTest.class,
-    TaskEventSubjectIdSelfTest.class,
 
     // Default cache only test.
     ClientDefaultCacheSelfTest.class,
@@ -175,7 +179,12 @@ import org.junit.runners.Suite;
     // SSL params.
     ClientSslParametersTest.class,
 
-    IgniteClientFailuresTest.class
+    IgniteClientFailuresTest.class,
+
+    ClientSizeCacheCreationDestructionTest.class,
+    ClientSideCacheCreationDestructionWileTopologyChangeTest.class,
+    NodeSslConnectionMetricTest.class,
+    ComputeTaskRemoteSecurityContextTest.class
 })
 public class IgniteClientTestSuite {
 }

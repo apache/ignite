@@ -32,13 +32,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -65,7 +62,6 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -91,8 +87,13 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
+import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
+import org.apache.ignite.internal.sql.SqlCommandProcessor;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
@@ -108,6 +110,7 @@ import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -143,18 +146,12 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryPar
 /**
  * Processor responsible for execution of all non-SELECT and non-DML commands.
  */
-public class CommandProcessor {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
-
+public class CommandProcessor extends SqlCommandProcessor {
     /** Schema manager. */
     private final SchemaManager schemaMgr;
 
     /** H2 Indexing. */
     private final IgniteH2Indexing idx;
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** Is backward compatible handling of UUID through DDL enabled. */
     private static final boolean handleUuidAsByte =
@@ -189,11 +186,10 @@ public class CommandProcessor {
      * @param schemaMgr Schema manager.
      */
     public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, IgniteH2Indexing idx) {
-        this.ctx = ctx;
+        super(ctx, schemaMgr);
+
         this.schemaMgr = schemaMgr;
         this.idx = idx;
-
-        log = ctx.log(CommandProcessor.class);
     }
 
     /**
@@ -385,7 +381,10 @@ public class CommandProcessor {
             || cmd instanceof SqlAlterTableCommand
             || cmd instanceof SqlCreateUserCommand
             || cmd instanceof SqlAlterUserCommand
-            || cmd instanceof SqlDropUserCommand;
+            || cmd instanceof SqlDropUserCommand
+            || cmd instanceof SqlAnalyzeCommand
+            || cmd instanceof SqlRefreshStatitsicsCommand
+            || cmd instanceof SqlDropStatisticsCommand;
     }
 
     /**
@@ -410,29 +409,16 @@ public class CommandProcessor {
         if (cmdNative != null) {
             assert cmdH2 == null;
 
-            if (isDdl(cmdNative))
-                runCommandNativeDdl(sql, cmdNative);
-            else if (cmdNative instanceof SqlBulkLoadCommand) {
-                res = processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
+            if (isCommandSupported(cmdNative)) {
+                FieldsQueryCursor<List<?>> resNative = runNativeCommand(sql, cmdNative, params, cliCtx, qryId);
 
-                unregister = false;
+                if (resNative != null) {
+                    res = resNative;
+                    unregister = true;
+                }
             }
-            else if (cmdNative instanceof SqlSetStreamingCommand)
-                processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
-            else if (cmdNative instanceof SqlKillQueryCommand)
-                processKillQueryCommand((SqlKillQueryCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillComputeTaskCommand)
-                processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillTransactionCommand)
-                processKillTxCommand((SqlKillTransactionCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillServiceCommand)
-                processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillScanQueryCommand)
-                processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillContinuousQueryCommand)
-                processKillContinuousQueryCommand((SqlKillContinuousQueryCommand) cmdNative);
             else
-                processTxCommand(cmdNative, params);
+                throw new UnsupportedOperationException("Unsupported command: " + cmdNative);
         }
         else {
             assert cmdH2 != null;
@@ -441,6 +427,44 @@ public class CommandProcessor {
         }
 
         return new CommandResult(res, unregister);
+    }
+
+    /**
+     * Execute native command.
+     *
+     * @param sql SQL.
+     * @param cmdNative Native command.
+     * @param params Parameters.
+     * @param cliCtx Client context.
+     * @param qryId Running query ID.
+     * @return Result.
+     */
+    public FieldsQueryCursor<List<?>> runNativeCommand(String sql, SqlCommand cmdNative,
+        QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
+        if (super.isCommandSupported(cmdNative))
+            return runCommand(sql, cmdNative, cliCtx);
+
+        if (cmdNative instanceof SqlBulkLoadCommand)
+            return processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
+        else if (cmdNative instanceof SqlSetStreamingCommand)
+            processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
+        else if (cmdNative instanceof SqlKillQueryCommand)
+            processKillQueryCommand((SqlKillQueryCommand) cmdNative);
+        else
+            processTxCommand(cmdNative, params);
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCommandSupported(SqlCommand cmd) {
+        return super.isCommandSupported(cmd)
+            || cmd instanceof SqlBeginTransactionCommand
+            || cmd instanceof SqlCommitTransactionCommand
+            || cmd instanceof SqlRollbackTransactionCommand
+            || cmd instanceof SqlBulkLoadCommand
+            || cmd instanceof SqlSetStreamingCommand
+            || cmd instanceof SqlKillQueryCommand;
     }
 
     /**
@@ -556,6 +580,64 @@ public class CommandProcessor {
     }
 
     /**
+     * Process analyze command.
+     *
+     * @param cmd Sql analyze command.
+     */
+    private void processAnalyzeCommand(SqlAnalyzeCommand cmd) throws IgniteCheckedException {
+        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
+
+        IgniteH2Indexing indexing = (IgniteH2Indexing)ctx.query().getIndexing();
+
+        StatisticsObjectConfiguration objCfgs[] = cmd.configurations().stream()
+            .map(t -> {
+                if (t.key().schema() == null) {
+                    StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+                    return new StatisticsObjectConfiguration(key, t.columns().values(),
+                        t.maxPartitionObsolescencePercent());
+                }
+                else
+                    return t;
+            }).toArray(StatisticsObjectConfiguration[]::new);
+
+        indexing.statsManager().collectStatistics(objCfgs);
+    }
+
+    /**
+     * Process refresh statistics command.
+     *
+     * @param cmd Refresh statistics command.
+     */
+    private void processRefreshStatisticsCommand(SqlRefreshStatitsicsCommand cmd) throws IgniteCheckedException {
+        ctx.security().authorize(SecurityPermission.REFRESH_STATISTICS);
+
+        IgniteH2Indexing indexing = (IgniteH2Indexing)ctx.query().getIndexing();
+
+        StatisticsTarget[] targets = cmd.targets().stream()
+            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
+            .toArray(StatisticsTarget[]::new);
+
+        indexing.statsManager().refreshStatistics(targets);
+    }
+
+    /**
+     * Process drop statistics command.
+     *
+     * @param cmd Drop statistics command.
+     */
+    private void processDropStatisticsCommand(SqlDropStatisticsCommand cmd) throws IgniteCheckedException {
+        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
+
+        IgniteH2Indexing indexing = (IgniteH2Indexing)ctx.query().getIndexing();
+
+        StatisticsTarget[] targets = cmd.targets().stream()
+            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
+            .toArray(StatisticsTarget[]::new);
+
+        indexing.statsManager().dropStatistics(targets);
+    }
+
+    /**
      * Run DDL statement.
      *
      * @param sql Original SQL.
@@ -579,7 +661,7 @@ public class CommandProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
-                ensureDdlSupported(tbl);
+                ensureDdlSupported(tbl.cacheInfo());
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -613,7 +695,7 @@ public class CommandProcessor {
                 GridH2Table tbl = schemaMgr.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
-                    ensureDdlSupported(tbl);
+                    ensureDdlSupported(tbl.cacheInfo());
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -660,18 +742,24 @@ public class CommandProcessor {
             else if (cmd instanceof SqlCreateUserCommand) {
                 SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
 
-                ctx.authentication().addUser(addCmd.userName(), addCmd.password());
+                ctx.security().createUser(addCmd.userName(), addCmd.password().toCharArray());
             }
             else if (cmd instanceof SqlAlterUserCommand) {
                 SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
 
-                ctx.authentication().updateUser(altCmd.userName(), altCmd.password());
+                ctx.security().alterUser(altCmd.userName(), altCmd.password().toCharArray());
             }
             else if (cmd instanceof SqlDropUserCommand) {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
 
-                ctx.authentication().removeUser(dropCmd.userName());
+                ctx.security().dropUser(dropCmd.userName());
             }
+            else if (cmd instanceof SqlAnalyzeCommand)
+                processAnalyzeCommand((SqlAnalyzeCommand) cmd);
+            else if (cmd instanceof SqlRefreshStatitsicsCommand)
+                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand) cmd);
+            else if (cmd instanceof SqlDropStatisticsCommand)
+                processDropStatisticsCommand((SqlDropStatisticsCommand) cmd);
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -714,7 +802,7 @@ public class CommandProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
-                ensureDdlSupported(tbl);
+                ensureDdlSupported(tbl.cacheInfo());
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -749,7 +837,7 @@ public class CommandProcessor {
                 GridH2Table tbl = schemaMgr.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
-                    ensureDdlSupported(tbl);
+                    ensureDdlSupported(tbl.cacheInfo());
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
@@ -969,40 +1057,11 @@ public class CommandProcessor {
     }
 
     /**
-     * Check if table supports DDL statement.
-     *
-     * @param tbl Table.
-     * @throws IgniteSQLException If failed.
-     */
-    private static void ensureDdlSupported(GridH2Table tbl) throws IgniteSQLException {
-        if (tbl.cacheInfo().config().getCacheMode() == CacheMode.LOCAL)
-            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-    }
-
-    /**
-     * Commits active transaction if exists.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
-            if (tx == null)
-                return;
-
-            if (!tx.isRollbackOnly())
-                tx.commit();
-            else
-                tx.rollback();
-        }
-    }
-
-    /**
      * Convert this statement to query entity and do Ignite specific sanity checks on the way.
      * @return Query entity mimicking this SQL statement.
      */
     private static QueryEntity toQueryEntity(GridSqlCreateTable createTbl) {
-        QueryEntity res = new QueryEntity();
+        QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(createTbl.tableName());
 
@@ -1075,8 +1134,11 @@ public class CommandProcessor {
 
             res.setKeyFieldName(pkCol.columnName());
         }
-        else
+        else {
             res.setKeyFields(createTbl.primaryKeyColumns());
+
+            res.setPreserveKeysOrder(true);
+        }
 
         if (!createTbl.wrapValue()) {
             GridSqlColumn valCol = null;
@@ -1099,13 +1161,8 @@ public class CommandProcessor {
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
 
-        if (!F.isEmpty(notNullFields)) {
-            QueryEntityEx res0 = new QueryEntityEx(res);
-
-            res0.setNotNullFields(notNullFields);
-
-            res = res0;
-        }
+        if (!F.isEmpty(notNullFields))
+            res.setNotNullFields(notNullFields);
 
         return res;
     }

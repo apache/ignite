@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private const string ClassPlatformThreadUtils = "org/apache/ignite/platform/PlatformThreadUtils";
 
+        /** */
+        private const string ClassPlatformStartIgniteUtils = "org/apache/ignite/platform/PlatformStartIgniteUtils";
+
         /// <summary>
         /// Suspend Ignite threads for the given grid.
         /// </summary>
@@ -95,6 +98,25 @@ namespace Apache.Ignite.Core.Tests
             CallVoidMethod(ClassPlatformProcessUtils, "destroyProcess", "()V");
         }
 
+        /// <summary>
+        /// Gets the Java thread name.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetJavaThreadName()
+        {
+            return CallStringMethod(ClassPlatformThreadUtils, "getThreadName", "()Ljava/lang/String;");
+        }
+
+        public static void StartIgnite(string name)
+        {
+            CallStringMethod(ClassPlatformStartIgniteUtils, "startWithSecurity", "(Ljava/lang/String;)V", name);
+        }
+
+        public static void StopIgnite(string name)
+        {
+            CallStringMethod(ClassPlatformStartIgniteUtils, "stop", "(Ljava/lang/String;)V", name);
+        }
+
         /** */
         private static unsafe void CallStringMethod(string className, string methodName, string methodSig, string arg)
         {
@@ -120,6 +142,18 @@ namespace Apache.Ignite.Core.Tests
             {
                 var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
                 env.CallStaticVoidMethod(cls, methodId);
+            }
+        }
+
+        /** */
+        private static unsafe string CallStringMethod(string className, string methodName, string methodSig)
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass(className))
+            {
+                var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
+                var res = env.CallStaticObjectMethod(cls, methodId);
+                return env.JStringToString(res.Target);
             }
         }
     }

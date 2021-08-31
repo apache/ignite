@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -252,16 +251,14 @@ public class OdbcUtils {
      * {@link OdbcColumnMeta}.
      *
      * @param meta Internal query field metadata.
-     * @param ver Client version.
      * @return Odbc query field metadata.
      */
-    public static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta,
-        ClientListenerProtocolVersion ver) {
+    public static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
         List<OdbcColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {
             for (GridQueryFieldMetadata info : meta)
-                res.add(new OdbcColumnMeta(info, ver));
+                res.add(new OdbcColumnMeta(info));
         }
 
         return res;

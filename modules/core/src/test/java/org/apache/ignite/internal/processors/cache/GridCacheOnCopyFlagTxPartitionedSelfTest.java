@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -26,6 +27,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheOnCopyFlagTxPartitionedSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

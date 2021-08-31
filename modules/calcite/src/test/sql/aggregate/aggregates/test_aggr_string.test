@@ -2,6 +2,12 @@
 # description: Test aggregations on strings
 # group: [aggregates]
 
+query TTTTI
+SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1 NULLS FIRST
+----
+NULL	NULL	NULL	NULL	1
+Кирилл	Müller	我是谁	ASCII	2
+
 statement ok
 CREATE TABLE test (a INTEGER, s VARCHAR);
 
@@ -32,6 +38,26 @@ NULL	11.000000
 # distinct aggregations on string
 statement ok
 INSERT INTO test VALUES (11, 'hello'), (12, 'world')
+
+# scalar distinct
+query III
+SELECT COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test;
+----
+5	4	2
+
+# grouped distinct
+query IIII
+SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY a ORDER BY a;
+----
+11	3	2	1
+12	2	2	1
+
+# now with WHERE clause
+query IIII
+SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test WHERE s IS NOT NULL GROUP BY a ORDER BY a;
+----
+11	2	2	1
+12	2	2	1
 
 # string min/max with long strings
 statement ok

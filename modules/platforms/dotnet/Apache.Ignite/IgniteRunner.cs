@@ -20,6 +20,7 @@ namespace Apache.Ignite
     using System;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Config;
@@ -35,17 +36,20 @@ namespace Apache.Ignite
         private static readonly IList<string> Help = new List<string> { "/help", "-help", "--help" };
 
         /** Argument meaning that this is service call. */
-        internal static readonly string Svc = "/service";
+        public const string Svc = "/service";
 
         /** Service install command. */
-        internal static readonly string SvcInstall = "/install";
+        public const string SvcInstall = "/install";
 
         /** Service uninstall command. */
-        internal static readonly string SvcUninstall = "/uninstall";
+        public const string SvcUninstall = "/uninstall";
 
         /// <summary>
         /// Application entry point.
         /// </summary>
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "Reviewed")]
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Main method catches all exceptions to report them.")]
         internal static void Main(string[] args)
         {
             bool svc = false;
@@ -64,21 +68,21 @@ namespace Apache.Ignite
 
                         return;
                     }
-                    
-                    if (Svc.Equals(first))
+
+                    if (Svc.Equals(first, StringComparison.Ordinal))
                     {
                         args = RemoveFirstArg(args);
 
                         svc = true;
                     }
 
-                    else if (SvcInstall.Equals(first))
+                    else if (SvcInstall.Equals(first, StringComparison.Ordinal))
                     {
                         args = RemoveFirstArg(args);
 
                         install = true;
                     }
-                    else if (SvcUninstall.Equals(first))
+                    else if (SvcUninstall.Equals(first, StringComparison.Ordinal))
                     {
                         IgniteService.Uninstall();
 
@@ -104,10 +108,12 @@ namespace Apache.Ignite
                         using (var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs)))
                         {
                             // Wait until stopped.
-                            var evt = new ManualResetEventSlim(false);
-                            ignite.Stopped += (s, a) => evt.Set();
-                            Console.CancelKeyPress += (s, a) => evt.Set();
-                            evt.Wait();
+                            using (var evt = new ManualResetEventSlim(false))
+                            {
+                                ignite.Stopped += (s, a) => evt.Set();
+                                Console.CancelKeyPress += (s, a) => evt.Set();
+                                evt.Wait();
+                            }
                         }
                     }
 

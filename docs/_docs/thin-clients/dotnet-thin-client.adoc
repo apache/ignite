@@ -69,12 +69,6 @@ Server nodes provide their addresses and ports to the client, but when the clien
 
 Partition awareness allows the thin client to send query requests directly to the node that owns the queried data.
 
-[WARNING]
-====
-[discrete]
-Partition awareness is an experimental feature whose API or design architecture might change before a GA version is released.
-====
-
 Without partition awareness, an application that is connected to the cluster via a thin client executes all queries and operations via a single server node that acts as a proxy for the incoming requests.
 These operations are then re-routed to the node that stores the data that is being requested.
 This results in a bottleneck that could prevent the application from scaling linearly.
@@ -235,6 +229,20 @@ task named `org.foo.bar.AddOneTask` passing `1` as an input parameter:
 include::{sourceCodeFile}[tag=client-compute-task,indent=0]
 -------------------------------------------------------------------------------
 
+== Executing Ignite Services
+
+You can use the `IServicesClient` API to invoke an link:services/services[Ignite Service] that
+is *already deployed* in the cluster. See link:services/services[Using Ignite Services] for more information on service deployment.
+
+The example below shows how to invoke the service named `MyService`:
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-services,indent=0]
+-------------------------------------------------------------------------------
+
+The thin client allows to execute services implemented in Java or .NET.
+
+
 == Security
 
 === SSL/TLS
@@ -257,4 +265,3 @@ Configure link:security/authentication[authentication on the cluster side] and p
 ----
 include::{sourceCodeFile}[tag=auth,indent=0]
 ----
-

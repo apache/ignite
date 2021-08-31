@@ -23,7 +23,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
@@ -41,7 +40,6 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -68,6 +66,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Query planer.
@@ -135,10 +134,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
-        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig()
-            .withHintStrategyTable(HintStrategyTable.builder()
-                .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
-                .build());
+        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig();
         validatorCfg = frameworkCfg.getSqlValidatorConfig();
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();
@@ -166,7 +162,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public SqlNode parse(Reader reader) throws SqlParseException {
-        SqlNodeList sqlNodes = SqlParser.create(reader, parserCfg).parseStmtList();
+        SqlNodeList sqlNodes = Commons.parse(reader, parserCfg);
 
         return sqlNodes.size() == 1 ? sqlNodes.get(0) : sqlNodes;
     }
@@ -188,7 +184,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return Pair.of(validatedNode, type);
     }
 
-    public RelDataType conver(SqlDataTypeSpec typeSpec) {
+    /**
+     * Converts a SQL data type specification to a relational data type.
+     *
+     * @param typeSpec Spec to convert from.
+     * @return Relational type representation of given SQL type.
+     */
+    public RelDataType convert(SqlDataTypeSpec typeSpec) {
         return typeSpec.deriveType(validator());
     }
 
@@ -215,10 +217,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
-        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
-        root = trimUnusedFields(root);
 
-        return root;
+        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
+
+        return trimUnusedFields(root);
     }
 
     /** {@inheritDoc} */
@@ -333,13 +335,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return Trimmed relational expression
      */
     protected RelRoot trimUnusedFields(RelRoot root) {
-        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-            .withConfig(sqlToRelConverterCfg)
-            // For now, don't trim if there are more than 3 joins. The projects
-            // near the leaves created by trim migrate past joins and seem to
-            // prevent join-reordering.
-            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
-            .build();
+        // For now, don't trim if there are more than 3 joins. The projects
+        // near the leaves created by trim migrate past joins and seem to
+        // prevent join-reordering.
+        final SqlToRelConverter.Config config = sqlToRelConverterCfg
+            .withExpand(false)
+            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2);
         SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();
         boolean dml = SqlKind.DML.contains(root.kind);

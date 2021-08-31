@@ -27,16 +27,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsOneProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest.Product;
 
 /**
@@ -103,7 +103,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
     @Test
     public void testProjects() {
         checkQuery("SELECT NAME FROM products d;")
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .matches(containsOneProject("PUBLIC", "PRODUCTS", 7))
             .returns("noname1")
             .returns("noname2")
@@ -112,7 +112,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .check();
 
         checkQuery("SELECT SUBCAT_ID, NAME FROM products d;")
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .matches(containsOneProject("PUBLIC", "PRODUCTS", 6, 7))
             .returns(11, "noname1")
             .returns(11, "noname2")
@@ -121,7 +121,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .check();
 
         checkQuery("SELECT NAME FROM products d WHERE CAT_ID > 1;")
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .matches(containsProject("PUBLIC", "PRODUCTS", 4, 7))
             .returns("noname2")
             .returns("noname3")
@@ -157,5 +157,17 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
             .returns("noname4")
             .check();
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 11)")
+                .check(), IllegalArgumentException.class);
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT 2 UNION ALL SELECT 1)")
+                .check(), IllegalArgumentException.class);
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT null UNION ALL SELECT 1)")
+                .check(), IllegalArgumentException.class);
     }
 }

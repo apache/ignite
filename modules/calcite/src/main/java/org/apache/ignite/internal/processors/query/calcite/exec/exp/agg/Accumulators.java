@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -40,6 +43,16 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 public class Accumulators {
     /** */
     public static Supplier<Accumulator> accumulatorFactory(AggregateCall call) {
+        if (!call.isDistinct())
+            return accumulatorFunctionFactory(call);
+
+        Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
+
+        return () -> new DistinctAccumulator(fac);
+    }
+
+    /** */
+    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call) {
         switch (call.getAggregation().getName()) {
             case "COUNT":
                 return LongCount.FACTORY;
@@ -55,6 +68,8 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
+            case "ANY_VALUE":
+                return AnyVal.FACTORY;
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -150,25 +165,56 @@ public class Accumulators {
     }
 
     /** */
-    private static class SingleVal implements Accumulator {
+    private static class SingleVal extends AnyVal {
         /** */
-        private Object holder;
+        private boolean touched;
 
         /** */
         public static final Supplier<Accumulator> FACTORY = SingleVal::new;
 
         /** */
         @Override public void add(Object... args) {
-            assert args.length == 1 : args.length;
+            if (touched)
+                throw new IllegalArgumentException("Subquery returned more than 1 value.");
 
-            holder = args[0];
+            touched = true;
+
+            super.add(args);
         }
 
         /** */
         @Override public void apply(Accumulator other) {
-            assert holder == null : "sudden apply for: " + other + " on SingleVal";
+            if (((SingleVal)other).touched) {
+                if (touched)
+                    throw new IllegalArgumentException("Subquery returned more than 1 value.");
+                else
+                    touched = true;
+            }
 
-            holder = ((SingleVal)other).holder;
+            super.apply(other);
+        }
+    }
+
+    /** */
+    private static class AnyVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = AnyVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            if (holder == null)
+                holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            if (holder == null)
+                holder = ((AnyVal)other).holder;
         }
 
         /** */
@@ -200,7 +246,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -211,7 +257,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalAvg other0 = (DecimalAvg) other;
+            DecimalAvg other0 = (DecimalAvg)other;
 
             sum = sum.add(other0.sum);
             cnt = cnt.add(other0.cnt);
@@ -246,7 +292,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -257,7 +303,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleAvg other0 = (DoubleAvg) other;
+            DoubleAvg other0 = (DoubleAvg)other;
 
             sum += other0.sum;
             cnt += other0.cnt;
@@ -297,7 +343,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongCount other0 = (LongCount) other;
+            LongCount other0 = (LongCount)other;
             cnt += other0.cnt;
         }
 
@@ -330,7 +376,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -341,7 +387,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleSum other0 = (DoubleSum) other;
+            DoubleSum other0 = (DoubleSum)other;
 
             if (other0.empty)
                 return;
@@ -379,7 +425,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Integer in = (Integer) args[0];
+            Integer in = (Integer)args[0];
 
             if (in == null)
                 return;
@@ -390,7 +436,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            IntSum other0 = (IntSum) other;
+            IntSum other0 = (IntSum)other;
 
             if (other0.empty)
                 return;
@@ -428,7 +474,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Long in = (Long) args[0];
+            Long in = (Long)args[0];
 
             if (in == null)
                 return;
@@ -439,7 +485,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongSum other0 = (LongSum) other;
+            LongSum other0 = (LongSum)other;
 
             if (other0.empty)
                 return;
@@ -474,7 +520,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -484,7 +530,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalSum other0 = (DecimalSum) other;
+            DecimalSum other0 = (DecimalSum)other;
 
             if (other0.sum == null)
                 return;
@@ -518,7 +564,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -528,7 +574,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleSumEmptyIsZero other0 = (DoubleSumEmptyIsZero) other;
+            DoubleSumEmptyIsZero other0 = (DoubleSumEmptyIsZero)other;
 
             sum += other0.sum;
         }
@@ -559,7 +605,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Integer in = (Integer) args[0];
+            Integer in = (Integer)args[0];
 
             if (in == null)
                 return;
@@ -569,7 +615,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            IntSumEmptyIsZero other0 = (IntSumEmptyIsZero) other;
+            IntSumEmptyIsZero other0 = (IntSumEmptyIsZero)other;
 
             sum += other0.sum;
         }
@@ -601,7 +647,7 @@ public class Accumulators {
         /** */
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Long in = (Long) args[0];
+            Long in = (Long)args[0];
 
             if (in == null)
                 return;
@@ -611,7 +657,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongSumEmptyIsZero other0 = (LongSumEmptyIsZero) other;
+            LongSumEmptyIsZero other0 = (LongSumEmptyIsZero)other;
 
             sum += other0.sum;
         }
@@ -642,7 +688,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -652,7 +698,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalSumEmptyIsZero other0 = (DecimalSumEmptyIsZero) other;
+            DecimalSumEmptyIsZero other0 = (DecimalSumEmptyIsZero)other;
 
             sum = sum == null ? other0.sum : sum.add(other0.sum);
         }
@@ -697,7 +743,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -708,7 +754,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleMinMax other0 = (DoubleMinMax) other;
+            DoubleMinMax other0 = (DoubleMinMax)other;
 
             if (other0.empty)
                 return;
@@ -845,7 +891,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Integer in = (Integer) args[0];
+            Integer in = (Integer)args[0];
 
             if (in == null)
                 return;
@@ -856,7 +902,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            IntMinMax other0 = (IntMinMax) other;
+            IntMinMax other0 = (IntMinMax)other;
 
             if (other0.empty)
                 return;
@@ -905,7 +951,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Long in = (Long) args[0];
+            Long in = (Long)args[0];
 
             if (in == null)
                 return;
@@ -916,7 +962,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongMinMax other0 = (LongMinMax) other;
+            LongMinMax other0 = (LongMinMax)other;
 
             if (other0.empty)
                 return;
@@ -962,7 +1008,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -972,7 +1018,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalMinMax other0 = (DecimalMinMax) other;
+            DecimalMinMax other0 = (DecimalMinMax)other;
 
             if (other0.val == null)
                 return;
@@ -993,6 +1039,55 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DECIMAL), true);
+        }
+    }
+
+    /** */
+    private static class DistinctAccumulator implements Accumulator {
+        /** */
+        private final Accumulator acc;
+
+        /** */
+        private final Set<Object> set = new HashSet<>();
+
+        /** */
+        private DistinctAccumulator(Supplier<Accumulator> accSup) {
+            this.acc = accSup.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            Object in = args[0];
+
+            if (in == null)
+                return;
+
+            set.add(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            DistinctAccumulator other0 = (DistinctAccumulator)other;
+
+            set.addAll(other0.set);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            for (Object o : set)
+                acc.add(o);
+
+            return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return acc.argumentTypes(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return acc.returnType(typeFactory);
         }
     }
 }

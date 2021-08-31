@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright 2020")]
+[assembly: AssemblyCopyright("Copyright 2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -45,6 +45,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.10.0.47753")]
-[assembly: AssemblyFileVersion("2.10.0.47753")]
-[assembly: AssemblyInformationalVersion("2.10.0")]
+[assembly: AssemblyVersion("2.12.0.56898")]
+[assembly: AssemblyFileVersion("2.12.0.56898")]
+[assembly: AssemblyInformationalVersion("2.12.0")]

@@ -66,11 +66,15 @@ public class NodeData {
      */
     public static DecisionTreeNode buildTree(Map<Integer, NodeData> nodes,
                                              NodeData rootNodeData) {
-        return rootNodeData.isLeafNode ? new DecisionTreeLeafNode(rootNodeData.prediction) : new DecisionTreeConditionalNode(rootNodeData.featureIdx,
+        return rootNodeData.isLeafNode
+            ? new DecisionTreeLeafNode(rootNodeData.prediction)
+            : new DecisionTreeConditionalNode(
+                rootNodeData.featureIdx,
                 rootNodeData.threshold,
                 buildTree(nodes, nodes.get(rootNodeData.rightChildId)),
                 buildTree(nodes, nodes.get(rootNodeData.leftChildId)),
-                null);
+                null
+            );
     }
 
     /**

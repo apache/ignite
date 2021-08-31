@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHash
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 
 /**
  *
@@ -56,6 +57,9 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
+            if (HintUtils.isExpandDistinctAggregate(agg))
+                return null;
+
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
@@ -82,6 +86,9 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
+            if (HintUtils.isExpandDistinctAggregate(agg))
+                return null;
+
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
@@ -89,7 +96,7 @@ public class HashAggregateConverterRule {
 
             RelNode map = new IgniteMapHashAggregate(
                 cluster,
-                outTrait,
+                outTrait.replace(IgniteDistributions.random()),
                 input,
                 agg.getGroupSet(),
                 agg.getGroupSets(),

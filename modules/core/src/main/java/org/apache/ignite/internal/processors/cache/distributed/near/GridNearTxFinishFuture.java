@@ -208,7 +208,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (!isDone()) {
             FinishMiniFuture finishFut = null;
 
-            synchronized (this) {
+            compoundsReadLock();
+
+            try {
                 int size = futuresCountNoLock();
 
                 for (int i = 0; i < size; i++) {
@@ -226,6 +228,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         }
                     }
                 }
+            }
+            finally {
+                compoundsReadUnlock();
             }
 
             if (finishFut != null)
@@ -990,7 +995,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         /** {@inheritDoc} */
         @Override boolean onNodeLeft(UUID nodeId, boolean discoThread) {
             if (tx.state() == COMMITTING || tx.state() == COMMITTED) {
-                if (concat(of(m.primary().id()), tx.transactionNodes().getOrDefault(nodeId, emptySet()).stream())
+                if (concat(of(m.primary().id()), tx.transactionNodes().getOrDefault(m.primary().id(), emptySet()).stream())
                     .noneMatch(uuid -> cctx.discovery().alive(uuid))) {
                     onDone(new CacheInvalidStateException(ALL_PARTITION_OWNERS_LEFT_GRID_MSG +
                         m.entries().stream().map(e -> " [cacheName=" + e.cached().context().name() +
@@ -1015,15 +1020,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         Collection<UUID> backups = txNodes.get(nodeId);
 
                         if (!F.isEmpty(backups)) {
-                            final CheckRemoteTxMiniFuture mini;
-
-                            synchronized (GridNearTxFinishFuture.this) {
+                            CheckRemoteTxMiniFuture mini = (CheckRemoteTxMiniFuture)compoundsLockedExclusively(() -> {
                                 int futId = Integer.MIN_VALUE + futuresCountNoLock();
 
-                                mini = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));
+                                CheckRemoteTxMiniFuture miniFut = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));
 
-                                add(mini);
-                            }
+                                add(miniFut);
+
+                                return miniFut;
+                            });
 
                             GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId(), true);
 

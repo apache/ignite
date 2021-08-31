@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.UUID;
@@ -32,6 +33,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -40,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PERFORMANCE_STATISTICS_ROTATE;
 
 /**
  * Performance statistics processor.
@@ -65,43 +69,59 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Performance statistics state listeners. */
     private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
+    /** Rotate performance statistics process. */
+    private DistributedProcess<Serializable, Serializable> rotateProc;
+
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
-            new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
-                    // Skip history on local join.
-                    if (!ctx.discovery().localJoinFuture().isDone())
-                        return;
-
-                    onMetastorageUpdate((boolean)newVal);
-                });
-            }
-
-            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                PerformanceStatisticsProcessor.this.metastorage = metastorage;
-
-                try {
-                    Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
-
-                    if (performanceStatsEnabled == null)
-                        return;
-
-                    onMetastorageUpdate(performanceStatsEnabled);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        });
 
         registerStateListener(() -> {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
+            new DistributedMetastorageLifecycleListener() {
+                @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                    metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
+                        // Skip history on local join.
+                        if (!ctx.discovery().localJoinFuture().isDone())
+                            return;
+
+                        onMetastorageUpdate((boolean)newVal);
+                    });
+                }
+
+                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                    PerformanceStatisticsProcessor.this.metastorage = metastorage;
+
+                    try {
+                        Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
+
+                        if (performanceStatsEnabled == null)
+                            return;
+
+                        onMetastorageUpdate(performanceStatsEnabled);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            });
+
+        rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
+            req -> ctx.closure().callLocalSafe(() -> {
+                rotateWriter();
+
+                return null;
+            }),
+            (id, res, err) -> {});
     }
 
     /** Registers state listener. */
@@ -183,6 +203,64 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param beforeLockDuration Before lock duration.
+     * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecDuration Listeners execute duration.
+     * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
+     * @param pagesWriteDuration Pages write duration.
+     * @param fsyncDuration Fsync duration.
+     * @param walCpRecordFsyncDuration Wal cp record fsync duration.
+     * @param writeCpEntryDuration Write checkpoint entry duration.
+     * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param totalDuration Total duration in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
+     * @param pagesSize Pages size.
+     * @param dataPagesWritten Data pages written.
+     * @param cowPagesWritten Cow pages written.
+     */
+    public void checkpoint(
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
+        write(writer -> writer.checkpoint(beforeLockDuration,
+            lockWaitDuration,
+            listenersExecDuration,
+            markDuration,
+            lockHoldDuration,
+            pagesWriteDuration, fsyncDuration,
+            walCpRecordFsyncDuration,
+            writeCpEntryDuration,
+            splitAndSortCpPagesDuration,
+            totalDuration,
+            cpStartTime,
+            pagesSize,
+            dataPagesWritten,
+            cowPagesWritten));
+    }
+
+    /**
+     * @param endTime End time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    public void pagesWriteThrottle(long endTime, long duration) {
+        write(writer -> writer.pagesWriteThrottle(endTime, duration));
+    }
+
+    /**
      * Starts collecting performance statistics.
      *
      * @throws IgniteCheckedException If starting failed.
@@ -213,6 +291,21 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         metastorage.write(PERF_STAT_KEY, false);
     }
 
+    /**
+     * Rotate collecting performance statistics.
+     *
+     * @throws IgniteCheckedException If rotation failed.
+     */
+    public void rotateCollectStatistics() throws IgniteCheckedException {
+        if (ctx.isStopping())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+        if (!enabled())
+            throw new IgniteCheckedException("Performance statistics collection not started.");
+
+        rotateProc.start(UUID.randomUUID(), null);
+    }
+
     /** @return {@code True} if collecting performance statistics is enabled. */
     public boolean enabled() {
         return writer != null;
@@ -232,7 +325,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Starts or stops collecting statistics on metastorage update. */
     private void onMetastorageUpdate(boolean start) {
-        ctx.closure().runLocalSafe(() -> {
+        ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
             if (start)
                 startWriter();
             else
@@ -275,6 +368,29 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         }
 
         log.info("Performance statistics writer stopped.");
+    }
+
+    /** Rotate performance statistics writer. */
+    private void rotateWriter() throws Exception {
+        FilePerformanceStatisticsWriter oldWriter = null;
+
+        synchronized (mux) {
+            if (writer == null)
+                return;
+
+            FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
+
+            newWriter.start();
+
+            oldWriter = writer;
+
+            writer = newWriter;
+
+            oldWriter.stop();
+        }
+
+        if (log.isInfoEnabled() && oldWriter != null)
+            log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
     }
 
     /** Writes statistics through passed writer. */

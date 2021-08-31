@@ -27,10 +27,12 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -91,7 +93,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+        QueryEngine engine = engine(grid(0));
 
         String bigInt = BigDecimal.valueOf(10000000000L).toString();
 
@@ -232,6 +234,26 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testLimitDistributed() throws Exception {
+        fillCache(cachePart, 10_000);
+
+        QueryEngine engine = engine(grid(0));
+
+        for (String order : F.asArray("id", "val")) { // Order by ID - without explicit IgniteSort node.
+            FieldsQueryCursor<List<?>> cur = engine.query(null, "PUBLIC",
+                "SELECT id FROM TEST_PART ORDER BY " + order + " LIMIT 1000 OFFSET 5000").get(0);
+
+            List<List<?>> res = cur.getAll();
+
+            assertEquals(1000, res.size());
+
+            for (int i = 0; i < 1000; i++)
+                assertEquals(i + 5000, res.get(i).get(0));
+        }
+    }
+
     /**
      * @param c Cache.
      * @param rows Rows count.
@@ -240,7 +262,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         c.clear();
 
         for (int i = 0; i < rows; ++i)
-            c.put(i, "val_" + i);
+            c.put(i, "val_" + String.format("%05d", i));
 
         awaitPartitionMapExchange();
     }
@@ -255,7 +277,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
      * @param sorted Use sorted query (adds ORDER BY).
      */
     void checkQuery(int rows, int lim, int off, boolean param, boolean sorted) {
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+        QueryEngine engine = engine(grid(0));
 
         String sql = createSql(lim, off, param, sorted);
 
@@ -318,5 +340,10 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             sb.append("FETCH FIRST ").append(param ? "?" : Integer.toString(lim)).append(" ROWS ONLY ");
 
         return sb.toString();
+    }
+
+    /** */
+    private QueryEngine engine(IgniteEx grid) {
+        return Commons.lookupComponent(grid.context(), QueryEngine.class);
     }
 }

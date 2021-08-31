@@ -46,45 +46,36 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             Debug.Assert(writer != null);
 
-            Marshaller.RegisterSameJavaType.Value = true;
+            writer.WriteString(methodName);
 
-            try
+            if (arguments != null)
             {
-                writer.WriteString(methodName);
+                writer.WriteBoolean(true);
+                writer.WriteInt(arguments.Length);
 
-                if (arguments != null)
+                if (platformType == PlatformType.DotNet)
                 {
-                    writer.WriteBoolean(true);
-                    writer.WriteInt(arguments.Length);
-
-                    if (platformType == PlatformType.DotNet)
+                    // Write as is for .NET.
+                    foreach (var arg in arguments)
                     {
-                        // Write as is for .NET.
-                        foreach (var arg in arguments)
-                        {
-                            writer.WriteObjectDetached(arg);
-                        }
-                    }
-                    else
-                    {
-                        // Other platforms do not support Serializable, need to convert arrays and collections
-                        var mParams = method != null ? method.GetParameters() : null;
-                        Debug.Assert(mParams == null || mParams.Length == arguments.Length);
-
-                        for (var i = 0; i < arguments.Length; i++)
-                        {
-                            WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null,
-                                arguments[i]);
-                        }
+                        writer.WriteObjectDetached(arg);
                     }
                 }
                 else
-                    writer.WriteBoolean(false);
+                {
+                    // Other platforms do not support Serializable, need to convert arrays and collections
+                    var mParams = method != null ? method.GetParameters() : null;
+                    Debug.Assert(mParams == null || mParams.Length == arguments.Length);
+
+                    for (var i = 0; i < arguments.Length; i++)
+                    {
+                        WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null,
+                            arguments[i]);
+                    }
+                }
             }
-            finally
-            {
-                Marshaller.RegisterSameJavaType.Value = false;
-            }
+            else
+                writer.WriteBoolean(false);
         }
 
         /// <summary>

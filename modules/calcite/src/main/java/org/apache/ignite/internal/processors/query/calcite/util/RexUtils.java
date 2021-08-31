@@ -382,7 +382,7 @@ public class RexUtils {
     }
 
     /** */
-    private static boolean isBinaryComparison(RexNode exp) {
+    public static boolean isBinaryComparison(RexNode exp) {
         return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
             (exp instanceof RexCall) &&
             ((RexCall)exp).getOperands().size() == 2;
@@ -409,7 +409,8 @@ public class RexUtils {
     }
 
     /** */
-    public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType, @Nullable Mappings.TargetMapping mapping) {
+    public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType,
+        @Nullable Mappings.TargetMapping mapping) {
         if (F.isEmpty(idxCond))
             return null;
 

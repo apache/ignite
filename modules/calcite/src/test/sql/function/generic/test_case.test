@@ -3,16 +3,13 @@
 # group: [generic]
 
 statement ok
-PRAGMA enable_verification
-
-statement ok
 CREATE TABLE test (a INTEGER, b INTEGER);
 
 statement ok
-INSERT INTO test VALUES (11, 22), (13, 22), (12, 21)
+INSERT INTO test VALUES (11, 22), (12, 21), (13, 22)
 
 query I
-SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test
+SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test ORDER BY a
 ----
 22
 NULL
@@ -81,14 +78,14 @@ SELECT CASE WHEN 'hello' THEN b ELSE a END FROM test
 
 # but only when cast cannot be performed
 query I
-SELECT CASE WHEN 'true' THEN NULL ELSE b+1 END FROM test ORDER BY b
+SELECT CASE WHEN true THEN NULL ELSE b+1 END FROM test ORDER BY b
 ----
 NULL
 NULL
 NULL
 
 query I
-SELECT CASE WHEN 'false' THEN NULL ELSE b+1 END FROM test ORDER BY b
+SELECT CASE WHEN false THEN NULL ELSE b+1 END FROM test ORDER BY b
 ----
 22
 23

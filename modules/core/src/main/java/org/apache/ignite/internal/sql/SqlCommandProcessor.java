@@ -1,0 +1,355 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.sql;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
+import org.apache.ignite.internal.TransactionsMXBeanImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
+import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
+import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
+
+/**
+ * Processor responsible for execution of native Ignite commands.
+ */
+public class SqlCommandProcessor {
+    /** Kernal context. */
+    protected final GridKernalContext ctx;
+
+    /** Logger. */
+    protected final IgniteLogger log;
+
+    /** Schema manager. */
+    protected final GridQuerySchemaManager schemaMgr;
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
+        this.ctx = ctx;
+        this.schemaMgr = schemaMgr;
+        log = ctx.log(getClass());
+    }
+
+    /**
+     * Execute command.
+     *
+     * @param sql SQL.
+     * @param cmdNative Native command.
+     * @param cliCtx Client context.
+     * @return Result.
+     */
+    @Nullable public FieldsQueryCursor<List<?>> runCommand(String sql, SqlCommand cmdNative,
+        @Nullable SqlClientContext cliCtx) {
+        assert cmdNative != null;
+
+        if (isDdl(cmdNative))
+            runCommandNativeDdl(sql, cmdNative);
+        else if (cmdNative instanceof SqlKillComputeTaskCommand)
+            processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
+        else if (cmdNative instanceof SqlKillTransactionCommand)
+            processKillTxCommand((SqlKillTransactionCommand) cmdNative);
+        else if (cmdNative instanceof SqlKillServiceCommand)
+            processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
+        else if (cmdNative instanceof SqlKillScanQueryCommand)
+            processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
+        else if (cmdNative instanceof SqlKillContinuousQueryCommand)
+            processKillContinuousQueryCommand((SqlKillContinuousQueryCommand) cmdNative);
+
+        return null;
+    }
+
+    /**
+     * @return {@code True} if command is supported by this command processor.
+     */
+    public boolean isCommandSupported(SqlCommand cmd) {
+        return cmd instanceof SqlCreateIndexCommand
+            || cmd instanceof SqlDropIndexCommand
+            || cmd instanceof SqlAlterTableCommand
+            || cmd instanceof SqlCreateUserCommand
+            || cmd instanceof SqlAlterUserCommand
+            || cmd instanceof SqlDropUserCommand
+            || cmd instanceof SqlKillComputeTaskCommand
+            || cmd instanceof SqlKillServiceCommand
+            || cmd instanceof SqlKillTransactionCommand
+            || cmd instanceof SqlKillScanQueryCommand
+            || cmd instanceof SqlKillContinuousQueryCommand;
+    }
+
+    /**
+     * @param cmd Command.
+     * @return {@code True} if this is supported DDL command.
+     */
+    private static boolean isDdl(SqlCommand cmd) {
+        return cmd instanceof SqlCreateIndexCommand
+            || cmd instanceof SqlDropIndexCommand
+            || cmd instanceof SqlAlterTableCommand
+            || cmd instanceof SqlCreateUserCommand
+            || cmd instanceof SqlAlterUserCommand
+            || cmd instanceof SqlDropUserCommand;
+    }
+
+    /**
+     * Process kill scan query cmd.
+     *
+     * @param cmd Command.
+     */
+    private void processKillScanQueryCommand(SqlKillScanQueryCommand cmd) {
+        new QueryMXBeanImpl(ctx)
+            .cancelScan(cmd.getOriginNodeId(), cmd.getCacheName(), cmd.getQryId());
+    }
+
+    /**
+     * Process kill compute task command.
+     *
+     * @param cmd Command.
+     */
+    private void processKillComputeTaskCommand(SqlKillComputeTaskCommand cmd) {
+        new ComputeMXBeanImpl(ctx).cancel(cmd.getSessionId());
+    }
+
+    /**
+     * Process kill transaction cmd.
+     *
+     * @param cmd Command.
+     */
+    private void processKillTxCommand(SqlKillTransactionCommand cmd) {
+        new TransactionsMXBeanImpl(ctx).cancel(cmd.getXid());
+    }
+
+    /**
+     * Process kill service command.
+     *
+     * @param cmd Command.
+     */
+    private void processKillServiceTaskCommand(SqlKillServiceCommand cmd) {
+        new ServiceMXBeanImpl(ctx).cancel(cmd.getName());
+    }
+
+    /**
+     * Process kill continuous query cmd.
+     *
+     * @param cmd Command.
+     */
+    private void processKillContinuousQueryCommand(SqlKillContinuousQueryCommand cmd) {
+        new QueryMXBeanImpl(ctx).cancelContinuous(cmd.getOriginNodeId(), cmd.getRoutineId());
+    }
+
+    /**
+     * Run DDL statement.
+     *
+     * @param sql Original SQL.
+     * @param cmd Command.
+     */
+    private void runCommandNativeDdl(String sql, SqlCommand cmd) {
+        IgniteInternalFuture<?> fut = null;
+
+        try {
+            isDdlOnSchemaSupported(cmd.schemaName());
+
+            finishActiveTxIfNecessary();
+
+            if (cmd instanceof SqlCreateIndexCommand) {
+                SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
+
+                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd0.schemaName(), cmd0.tableName());
+                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
+
+                if (typeDesc == null)
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
+
+                ensureDdlSupported(cacheInfo);
+
+                QueryIndex newIdx = new QueryIndex();
+
+                newIdx.setName(cmd0.indexName());
+
+                newIdx.setIndexType(cmd0.spatial() ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+
+                LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
+
+                for (SqlIndexColumn col : cmd0.columns()) {
+                    GridQueryProperty prop = typeDesc.property(col.name());
+
+                    if (prop == null)
+                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, col.name());
+
+                    flds.put(prop.name(), !col.descending());
+                }
+
+                newIdx.setFields(flds);
+                newIdx.setInlineSize(cmd0.inlineSize());
+
+                fut = ctx.query().dynamicIndexCreate(cacheInfo.name(), cmd.schemaName(), typeDesc.tableName(),
+                    newIdx, cmd0.ifNotExists(), cmd0.parallel());
+            }
+            else if (cmd instanceof SqlDropIndexCommand) {
+                SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
+
+                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForIndex(cmd0.schemaName(), cmd0.indexName());
+
+                if (typeDesc != null) {
+                    GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
+                        typeDesc.tableName());
+
+                    ensureDdlSupported(cacheInfo);
+
+                    fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
+                        cmd0.ifExists());
+                }
+                else {
+                    if (cmd0.ifExists())
+                        fut = new GridFinishedFuture<>();
+                    else
+                        throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
+                            cmd0.indexName());
+                }
+            }
+            else if (cmd instanceof SqlAlterTableCommand) {
+                SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
+
+                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
+
+                if (cacheInfo == null) {
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        cmd0.tableName());
+                }
+
+                Boolean logging = cmd0.logging();
+
+                assert logging != null : "Only LOGGING/NOLOGGING are supported at the moment.";
+
+                IgniteCluster cluster = ctx.grid().cluster();
+
+                if (logging) {
+                    boolean res = cluster.enableWal(cacheInfo.name());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already enabled for table: " + cmd0.tableName());
+                }
+                else {
+                    boolean res = cluster.disableWal(cacheInfo.name());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already disabled for table: " + cmd0.tableName());
+                }
+
+                fut = new GridFinishedFuture<>();
+            }
+            else if (cmd instanceof SqlCreateUserCommand) {
+                SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
+
+                ctx.security().createUser(addCmd.userName(), addCmd.password().toCharArray());
+            }
+            else if (cmd instanceof SqlAlterUserCommand) {
+                SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
+
+                ctx.security().alterUser(altCmd.userName(), altCmd.password().toCharArray());
+            }
+            else if (cmd instanceof SqlDropUserCommand) {
+                SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
+
+                ctx.security().dropUser(dropCmd.userName());
+            }
+            else
+                throw new IgniteSQLException("Unsupported DDL operation: " + sql,
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (fut != null)
+                fut.get();
+        }
+        catch (SchemaOperationException e) {
+            throw convert(e);
+        }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Commits active transaction if exists.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void finishActiveTxIfNecessary() throws IgniteCheckedException {
+        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
+            if (tx == null)
+                return;
+
+            if (!tx.isRollbackOnly())
+                tx.commit();
+            else
+                tx.rollback();
+        }
+    }
+
+    /**
+     * Check if cache supports DDL statement.
+     *
+     * @param cctxInfo Cache context info.
+     * @throws IgniteSQLException If failed.
+     */
+    protected static void ensureDdlSupported(GridCacheContextInfo<?, ?> cctxInfo) throws IgniteSQLException {
+        if (cctxInfo.config().getCacheMode() == CacheMode.LOCAL) {
+            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+    }
+}

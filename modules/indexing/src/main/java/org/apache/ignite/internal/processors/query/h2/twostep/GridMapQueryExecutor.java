@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +73,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanType;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -86,6 +86,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.calculateSegment;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
@@ -205,7 +206,7 @@ public class GridMapQueryExecutor {
     public void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
         int[] qryParts = req.queryPartitions();
 
-        final Map<UUID,int[]> partsMap = req.partitions();
+        final Map<UUID, int[]> partsMap = req.partitions();
 
         final int[] parts = qryParts == null ? (partsMap == null ? null : partsMap.get(ctx.localNodeId())) : qryParts;
 
@@ -214,13 +215,18 @@ public class GridMapQueryExecutor {
         boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        boolean treatReplicatedAsPartitioned = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED_AS_PARTITIONED);
 
         Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
         final List<Integer> cacheIds = req.caches();
 
-        int segments = explain || replicated || F.isEmpty(cacheIds) ? 1 :
+        final boolean singlePart = parts != null && parts.length == 1;
+        final int parallelism = explain || replicated || F.isEmpty(cacheIds) ? 1 :
             CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
+
+        final int segments = explain || replicated || singlePart ? 1 : parallelism;
+        final int singleSegment = singlePart ? calculateSegment(parallelism, parts[0]) : 0;
 
         final Object[] params = req.parameters();
 
@@ -236,36 +242,38 @@ public class GridMapQueryExecutor {
             Span span = MTC.span();
 
             ctx.closure().callLocal(
-                (Callable<Void>)() -> {
+                (GridPlainCallable<Void>)() -> {
                     try (TraceSurroundings ignored = MTC.supportContinual(span)) {
-                        onQueryRequest0(node,
-                            req.requestId(),
-                            segment,
-                            req.schemaName(),
-                            req.queries(),
-                            cacheIds,
-                            req.topologyVersion(),
-                            partsMap,
-                            parts,
-                            req.pageSize(),
-                            distributedJoins,
-                            enforceJoinOrder,
-                            false,
-                            timeout,
-                            params,
-                            lazy,
-                            req.mvccSnapshot(),
-                            dataPageScanEnabled);
+                            onQueryRequest0(node,
+                                req.requestId(),
+                                segment,
+                                req.schemaName(),
+                                req.queries(),
+                                cacheIds,
+                                req.topologyVersion(),
+                                partsMap,
+                                parts,
+                                req.pageSize(),
+                                distributedJoins,
+                                enforceJoinOrder,
+                                false,
+                                timeout,
+                                params,
+                                lazy,
+                                req.mvccSnapshot(),
+                                dataPageScanEnabled,
+                                treatReplicatedAsPartitioned
+                            );
 
-                        return null;
-                    }
-                },
+                            return null;
+                        }
+                    },
                 QUERY_POOL);
         }
 
         onQueryRequest0(node,
             req.requestId(),
-            0,
+            singleSegment,
             req.schemaName(),
             req.queries(),
             cacheIds,
@@ -280,7 +288,9 @@ public class GridMapQueryExecutor {
             params,
             lazy,
             req.mvccSnapshot(),
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            treatReplicatedAsPartitioned
+        );
     }
 
     /**
@@ -321,7 +331,8 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy,
         @Nullable final MvccSnapshot mvccSnapshot,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        boolean treatReplicatedAsPartitioned
     ) {
         boolean performanceStatsEnabled = ctx.performanceStatistics().enabled();
 
@@ -379,7 +390,7 @@ public class GridMapQueryExecutor {
 
             qctx = new QueryContext(
                 segmentId,
-                h2.backupFilter(topVer, parts),
+                h2.backupFilter(topVer, parts, treatReplicatedAsPartitioned),
                 distributedJoinCtx,
                 mvccSnapshot,
                 reserved,

@@ -1,0 +1,29 @@
+# name: test/sql/function/test/test_initcap.test
+# description: Just simple test to check support of INITCAP function
+# group: [string]
+
+
+query T
+SELECT initcap('just cHEck how iNItCap function is works! 22')
+----
+Just Check How Initcap Function Is Works! 22
+
+query T
+SELECT initcap('🦆just cHEck how iNItCap function is works! 22')
+----
+🦆Just Check How Initcap Function Is Works! 22
+
+query T
+SELECT initcap('🦆')
+----
+🦆
+
+query T
+SELECT initcap('')
+----
+(empty)
+
+query T
+SELECT initcap(null)
+----
+NULL

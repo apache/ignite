@@ -144,6 +144,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Cluster metrics prefix. */
     public static final String CLUSTER_METRICS = "cluster";
 
+    /** Client metrics prefix. */
+    public static final String CLIENT_CONNECTOR_METRICS = metricName("client", "connector");
+
     /** Transaction metrics prefix. */
     public static final String TX_METRICS = "tx";
 
@@ -410,10 +413,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
+        remove(regName, true);
+    }
+
+    /**
+     * Removes metric registry.
+     *
+     * @param regName Metric registry name.
+     * @param removeCfg {@code True} if remove metric configurations.
+     */
+    public void remove(String regName, boolean removeCfg) {
         GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
         registries.computeIfPresent(regName, (key, mreg) -> {
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
+
+            if (!removeCfg)
+                return null;
 
             DistributedMetaStorage metastorage0 = metastorage;
 
@@ -781,7 +797,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     private long totalSysMemory() {
         try {
-            return U.<Long>property(os, "totalPhysicalMemorySize");
+            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
+
+            return sunOs.getTotalPhysicalMemorySize();
         }
         catch (RuntimeException ignored) {
             return -1;
@@ -840,9 +858,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                cpuTime = U.<Long>property(os, "processCpuTime");
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
+
+                cpuTime = sunOs.getProcessCpuTime();
             }
-            catch (IgniteException ignored) {
+            catch (RuntimeException ignored) {
                 return -1;
             }
 

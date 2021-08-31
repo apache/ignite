@@ -18,14 +18,19 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
+import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.SqlOperatorTables;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -46,7 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.fun.IgniteSqlFunctions;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -58,35 +63,46 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.apache.ignite.internal.processors.query.calcite.validate.IgniteSqlConformance;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.calcite.rex.RexUtil.EXECUTOR;
 
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
-        .executor(EXECUTOR)
+        .executor(new RexExecutorImpl(DataContexts.EMPTY))
         .sqlToRelConverterConfig(SqlToRelConverter.config()
             .withTrimUnusedFields(true)
             // currently SqlToRelConverter creates not optimal plan for both optimization and execution
             // so it's better to disable such rewriting right now
             // TODO: remove this after IGNITE-14277
             .withInSubQueryThreshold(Integer.MAX_VALUE)
-            .withDecorrelationEnabled(true))
+            .withDecorrelationEnabled(true)
+            .withExpand(false)
+            .withHintStrategyTable(
+                HintStrategyTable.builder()
+                    .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
+                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
+                    .build()
+            )
+        )
         .parserConfig(
             SqlParser.config()
                 .withParserFactory(IgniteSqlParserImpl.FACTORY)
                 .withLex(Lex.ORACLE)
-                .withConformance(IgniteSqlConformance.DEFAULT))
+                .withConformance(IgniteSqlConformance.INSTANCE))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
-            .withSqlConformance(SqlConformanceEnum.DEFAULT))
+            .withDefaultNullCollation(NullCollation.LOW)
+            .withSqlConformance(IgniteSqlConformance.INSTANCE))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(
             SqlLibraryOperatorTableFactory.INSTANCE
@@ -95,12 +111,19 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     SqlLibrary.POSTGRESQL,
                     SqlLibrary.ORACLE,
                     SqlLibrary.MYSQL),
-            CalciteCatalogReader.operatorTable(IgniteSqlFunctions.class.getName())))
+            IgniteSqlOperatorTable.instance()))
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
         .context(Contexts.empty())
         // Custom cost factory to use during optimization
         .costFactory(new IgniteCostFactory())
         .typeSystem(IgniteTypeSystem.INSTANCE)
+        .traitDefs(new RelTraitDef<?>[] {
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE,
+        })
         .build();
 
     /** */

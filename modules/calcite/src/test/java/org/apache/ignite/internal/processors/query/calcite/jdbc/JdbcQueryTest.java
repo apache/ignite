@@ -99,7 +99,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void testSimpleQuery() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
-        grid(0).context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
+        grid(0).context().cache().context().exchange().affinityReadyFuture(
+            new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
 
         stmt.executeUpdate("INSERT INTO Person VALUES (10, 'Name')");
         try (ResultSet rs = stmt.executeQuery("select p.*, (1+1) as synthetic from Person p")) {
@@ -113,6 +114,31 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         stmt.execute("drop table Person");
 
+        stmt.close();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testMultilineQuery() throws Exception {
+        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+            "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
+            "ALTER TABLE test ADD COLUMN val2 int;" +
+            "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
+            "ALTER TABLE test DROP COLUMN val2;";
+        stmt.execute(multiLineQuery);
+
+        try (ResultSet rs = stmt.executeQuery("select * from test order by val0")) {
+            int i;
+            for (i = 0; rs.next(); i++) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("test" + i, rs.getString(2));
+            }
+            assertEquals(2, i);
+        }
+
+        stmt.execute("drop table test");
         stmt.close();
     }
 
@@ -161,11 +187,11 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertEquals(Types.VARCHAR, md.getColumnType(8));
             assertEquals(Types.FLOAT, md.getColumnType(9));
             assertEquals(Types.DOUBLE, md.getColumnType(10));
-            assertEquals(Types.INTEGER, md.getColumnType(11));
-            assertEquals(Types.BIGINT, md.getColumnType(12));
-            assertEquals(Types.BIGINT, md.getColumnType(13));
-            assertEquals(Types.BIGINT, md.getColumnType(14));
-            assertEquals(Types.INTEGER, md.getColumnType(15));
+            assertEquals(Types.TIME, md.getColumnType(11));
+            assertEquals(Types.TIMESTAMP, md.getColumnType(12));
+            assertEquals(Types.TIMESTAMP, md.getColumnType(13));
+            assertEquals(Types.TIMESTAMP, md.getColumnType(14));
+            assertEquals(Types.DATE, md.getColumnType(15));
         }
 
         stmt.execute("DROP TABLE t1");

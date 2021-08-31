@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -114,7 +111,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void acknowledge(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
+    @Override public void acknowledge(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId)
+        throws IgniteCheckedException {
         messageService().send(nodeId, new QueryBatchAcknowledgeMessage(qryId, fragmentId, exchangeId, batchId));
     }
 
@@ -180,19 +178,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
 
         if (!F.isEmpty(outboxes)) {
-            List<CompletableFuture<?>> futs = new ArrayList<>(outboxes.size());
+            for (Outbox<?> outbox : outboxes)
+                outbox.context().execute(outbox::close, outbox::onError);
 
-            Set<ExecutionContext<?>> ctxs = new HashSet<>();
-
-            for (Outbox<?> outbox : outboxes) {
-                CompletableFuture<?> fut = outbox.context().submit(outbox::close, outbox::onError);
-
-                futs.add(fut);
-
-                ctxs.add(outbox.context());
-            }
-
-            CompletableFuture.allOf(futs.toArray(new CompletableFuture<?>[0])).thenRun(() -> ctxs.forEach(ExecutionContext::cancel));
+            for (Outbox<?> outbox : outboxes)
+                outbox.context().execute(outbox.context()::cancel, outbox::onError);
         }
         else if (log.isDebugEnabled()) {
             log.debug("Stale oubox cancel message received: [" +
