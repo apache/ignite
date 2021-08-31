@@ -340,6 +340,15 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         U.clearClassCache(ldr);
     }
 
+    /**
+     * Clears the optimized class descriptors cache. This is essential for the clients
+     * on disconnect in order to make them register their user types again (server nodes may
+     * lose previously registered types).
+     */
+    public void clearClassDescriptorsCache() {
+        clsMap.clear();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(OptimizedMarshaller.class, this);
