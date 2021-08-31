@@ -24,12 +24,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -425,5 +425,36 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     public void testCompositeIndexAvoid() throws Exception {
         tbl4.setStatistics(tbl1stat);
         checkIdxUsed("select * from TBL4 where t1c7short > 1 and t1c8long > 80000", "TBL4_T1C8LONG");
+    }
+
+    /**
+     * Check that index over column of type SHORT will be chosen because
+     * it has better selectivity: need to scan only last 500 elements
+     * whereas index over column of type STRING has default range selectivity
+     * equals to 0.5.
+     *
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testIndexWithBetterSelectivityPreferred() throws Exception {
+        int rowCnt = 10_000;
+
+        HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
+        colStat1.put("T1C2STR", new ColumnStatistics(ValueString.get("A1"), ValueString.get("Z9"),
+            0, 1, rowCnt, 2, null, 1, 0));
+
+        colStat1.put("T1C7SHORT", new ColumnStatistics(ValueShort.get((short)1), ValueShort.get((short)5000),
+            0, rowCnt, rowCnt, 2, null, 1, 0));
+
+        IgniteStatisticsImpl stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(1000, colStat1));
+
+        tbl1.setStatistics(stat);
+
+        String sql = "select * from TBL1 where t1c7short > 4500 and T1C2STR > 'asd'";
+
+        IgniteRel phys = physicalPlan(sql, publicSchema);
+        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
+
+        assertEquals(getIdxName(1, "T1C7SHORT"), idxScan.indexName());
     }
 }

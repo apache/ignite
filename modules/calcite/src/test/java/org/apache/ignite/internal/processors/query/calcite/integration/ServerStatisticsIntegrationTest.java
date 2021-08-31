@@ -25,6 +25,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
@@ -314,8 +315,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
         Set<String> nonNullableFields = new HashSet<>(Arrays.asList(NON_NULLABLE_FIELDS));
 
-        double strRow = 4.6875;
-
         for (String numericField : NUMERIC_FIELDS) {
             double allRowCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
@@ -323,7 +322,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
                 "%s > %d and %s < %d", numericField, -1, numericField, 101))
                 .matches(QueryChecker.containsResultRowCount(allRowCnt)).check();
 
-            assertQuerySrv(String.format("select * from all_types where " +
+            assertQuerySrv(String.format("select /*+ DISABLE_RULE('LogicalOrToUnionRule') */ * from all_types where " +
                 "(%s > %d and %s < %d) or " +
                 "(int_field > -1 and int_field < 101)",
                 numericField, -1, numericField, 101))
