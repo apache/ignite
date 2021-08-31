@@ -1649,8 +1649,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cacheMsg.onClassError(new IgniteCheckedException(e));
         }
         catch (Error e) {
-            if (cacheMsg.ignoreClassErrors() && X.hasCause(e, NoClassDefFoundError.class,
-                UnsupportedClassVersionError.class))
+            if (cacheMsg.ignoreClassErrors() &&
+                X.hasCause(e, NoClassDefFoundError.class, UnsupportedClassVersionError.class))
                 cacheMsg.onClassError(new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e));
             else
                 throw e;

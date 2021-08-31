@@ -17,99 +17,152 @@
 
 package org.apache.ignite.p2p;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.p2p.P2PScanQueryUndeployTest.PREDICATE_CLASSNAME;
 import static org.apache.ignite.p2p.SharedDeploymentTest.RUN_LAMBDA;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** Tests user error (not server node failure) in case compute task compiled in unsupported bytecode version. */
 public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
+    /** */
+    private ListeningTestLogger lsnrLog;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setPeerClassLoadingEnabled(true)
-            .setCommunicationSpi(new SendComputeWithHigherClassVersionTcpCommunicationSpi())
-            .setFailureHandler(new StopNodeFailureHandler());
+            .setCommunicationSpi(new SendComputeWithHigherClassVersionSpi())
+            .setFailureHandler(new StopNodeFailureHandler())
+            .setGridLogger(lsnrLog);
     }
 
     /** */
     @Test
     public void testCompute() throws Exception {
-        try (Ignite server = startGrid("server"); Ignite client = startClientGrid("client")) {
-            ClassLoader ldr = getExternalClassLoader();
+        lsnrLog = new ListeningTestLogger(false, log);
 
-            Class<?> lambdaFactoryCls = ldr.loadClass(RUN_LAMBDA);
+        try (Ignite ignored = startGrid("server"); Ignite client = startClientGrid("client")) {
+            Class<?> lambdaFactoryCls = getExternalClassLoader().loadClass(RUN_LAMBDA);
+
             Method method = lambdaFactoryCls.getMethod("lambda");
 
             IgniteCallable<Integer> lambda = (IgniteCallable<Integer>)method.invoke(lambdaFactoryCls);
 
+            LogListener errMsgLsnr = errorMessageListener(RUN_LAMBDA);
+
             assertThrowsWithCause(
                 () -> client.compute(client.cluster().forServers()).broadcast(lambda),
-                UnsupportedClassVersionError.class
+                IgniteDeploymentException.class
             );
+
+            assertTrue(errMsgLsnr.check());
 
             client.createCache("Can_create_cache_after_compute_fail");
         }
     }
 
-    /**
-     * Custom communication SPI for simulating long running cache futures.
-     */
-    private static class SendComputeWithHigherClassVersionTcpCommunicationSpi extends TcpCommunicationSpi {
-        /** {@inheritDoc} */
-        public SendComputeWithHigherClassVersionTcpCommunicationSpi() {
-            // No-op.
-        }
+    /** */
+    @Test
+    public void testScanQuery() throws Exception {
+        lsnrLog = new ListeningTestLogger(false, log);
 
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg,
-            IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+        try (Ignite ignored = startGrid("server"); Ignite client = startClientGrid("client")) {
+            IgniteCache<Integer, Integer> cache = client.createCache(DEFAULT_CACHE_NAME);
 
-            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDeploymentResponse) {
-                GridDeploymentResponse resp = (GridDeploymentResponse)((GridIoMessage)msg).message();
+            cache.put(1, 1);
 
+            LogListener errMsgLsnr = errorMessageListener(PREDICATE_CLASSNAME);
+
+            assertThrowsWithCause(() -> {
                 try {
-                    Field byteSrcFld = resp.getClass().getDeclaredField("byteSrc");
-
-                    byteSrcFld.setAccessible(true);
-
-                    GridByteArrayList byteSrc = (GridByteArrayList)byteSrcFld.get(resp);
-
-                    assertEquals(0xCAFEBABE, byteSrc.getInt(0));
-
-                    // Assert minor version and first byte of major class version is zero.
-                    assertEquals(0, byteSrc.get(4));
-                    assertEquals(0, byteSrc.get(5));
-                    assertEquals(0, byteSrc.get(6));
-
-                    byte majorClassVersion = byteSrc.get(7);
-
-                    assertTrue(byteSrc.get(7) > 0);
-
-                    byteSrc.set(7, majorClassVersion + 1);
+                    cache.query(new ScanQuery<>((IgniteBiPredicate<Integer, Integer>)
+                        getExternalClassLoader().loadClass(PREDICATE_CLASSNAME).newInstance()
+                    )).getAll();
                 }
-                catch (IllegalAccessException | NoSuchFieldException e) {
+                catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                     throw new IgniteException(e);
                 }
+            }, IgniteCheckedException.class);
+
+            assertTrue(errMsgLsnr.check());
+        }
+    }
+
+    /** Custom communication SPI for simulating {@link UnsupportedClassVersionError} on server node. */
+    private static class SendComputeWithHigherClassVersionSpi extends TcpCommunicationSpi {
+        /** {@inheritDoc} */
+        @Override public void sendMessage(
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
+            try {
+                if (msg instanceof GridIoMessage) {
+                    Message msg0 = ((GridIoMessage)msg).message();
+
+                    if (msg0 instanceof GridDeploymentResponse)
+                        incComputeClassVersion((GridDeploymentResponse)msg0);
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
             }
 
             super.sendMessage(node, msg, ackC);
         }
+
+        /** */
+        private void incComputeClassVersion(GridDeploymentResponse resp) {
+            GridByteArrayList byteSrc = U.field(resp, "byteSrc");
+
+            // Assert byte array contains class file.
+            assertEquals(0xCAFEBABE, byteSrc.getInt(0));
+
+            // Assert minor version and first byte of major class version is zero.
+            assertEquals(0, byteSrc.get(4));
+            assertEquals(0, byteSrc.get(5));
+            assertEquals(0, byteSrc.get(6));
+
+            byte majorClsVer = byteSrc.get(7);
+
+            assertTrue(byteSrc.get(7) > 0);
+
+            byteSrc.set(7, (byte)(majorClsVer + 1));
+        }
+    }
+
+    /** */
+    private LogListener errorMessageListener(String clsName) {
+        LogListener errMsgLsnr = LogListener
+            .matches(UnsupportedClassVersionError.class.getName() + ": " + clsName.replace(".", "/"))
+            .build();
+
+        lsnrLog.registerListener(errMsgLsnr);
+
+        return errMsgLsnr;
     }
 }

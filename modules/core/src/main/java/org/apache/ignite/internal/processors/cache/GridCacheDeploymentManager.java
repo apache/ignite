@@ -556,7 +556,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
                     // If current deployment is either system loader or GG loader,
                     // then we don't check it, as new loader is most likely wider.
-                    if (!curLdr.equals(U.gridClassLoader()) && dep.deployedClass(cls.getName()) != null)
+                    if (!curLdr.equals(U.gridClassLoader()) && dep.deployedClass(cls.getName()).get1() != null)
                         // Local deployment can load this class already, so no reason
                         // to look for another class loader.
                         break;
@@ -567,7 +567,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (newDep != null) {
                     if (dep != null) {
                         // Check new deployment.
-                        if (newDep.deployedClass(dep.sampleClassName()) != null) {
+                        if (newDep.deployedClass(dep.sampleClassName()).get1() != null) {
                             if (locDep.compareAndSet(dep, newDep))
                                 break; // While loop.
                         }
@@ -774,7 +774,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 GridDeployment d = cctx.gridDeploy().getLocalDeployment(name);
 
                 if (d != null) {
-                    Class cls = d.deployedClass(name);
+                    Class cls = d.deployedClass(name).get1();
 
                     if (cls != null)
                         return cls;
@@ -830,7 +830,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 participants,
                 F.<ClusterNode>alwaysTrue());
 
-            Class cls = d != null ? d.deployedClass(name) : null;
+            Class cls = d != null ? d.deployedClass(name).get1() : null;
 
             return cls;
         }

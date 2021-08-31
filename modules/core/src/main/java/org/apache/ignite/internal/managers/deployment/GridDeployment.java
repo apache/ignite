@@ -451,63 +451,48 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param alias Optional array of aliases.
      * @return Class for given name.
      */
-    @SuppressWarnings({"StringEquality"})
-    @Nullable public Class<?> deployedClass(String clsName, String... alias) {
+    @Nullable public IgniteBiTuple<Class<?>, Throwable> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
 
-        if (cls == null) {
-            try {
-                cls = U.forName(clsName, clsLdr);
+        if (cls != null)
+            return F.t(cls, null);
 
-                Class<?> cur = clss.putIfAbsent(clsName, cls);
+        Throwable err = null;
 
-                if (cur == null) {
-                    for (String a : alias) {
-                        clss.putIfAbsent(a, cls);
-                    }
+        try {
+            cls = U.forName(clsName, clsLdr);
 
-                    onDeployed(cls);
-                }
+            Class<?> cur = clss.putIfAbsent(clsName, cls);
+
+            if (cur == null) {
+                for (String a : alias)
+                    clss.putIfAbsent(a, cls);
+
+                onDeployed(cls);
             }
-            catch (ClassNotFoundException ignored) {
-                // Check aliases.
-                for (String a : alias) {
-                    cls = clss.get(a);
 
-                    if (cls != null)
-                        return cls;
-                    else if (!a.equals(clsName)) {
-                        try {
-                            cls = U.forName(a, clsLdr);
-                        }
-                        catch (ClassNotFoundException ignored0) {
-                            continue;
-                        }
+            return F.t(cls, null);
+        }
+        catch (ClassNotFoundException | LinkageError e) {
+            err = e;
 
-                        Class<?> cur = clss.putIfAbsent(a, cls);
+            // Check aliases.
+            for (String a : alias) {
+                if (a.equals(clsName))
+                    continue;
 
-                        if (cur == null) {
-                            for (String a1 : alias) {
-                                // The original alias has already been put into the map,
-                                // so we don't try to put it again here.
-                                if (a1 != a)
-                                    clss.putIfAbsent(a1, cls);
-                            }
+                IgniteBiTuple<Class<?>, Throwable> res = deployedClass(a);
 
-                            onDeployed(cls);
-                        }
-
-                        return cls;
-                    }
-                }
-            }
-            catch (IgniteException e) {
-                if (!X.hasCause(e, TimeoutException.class))
-                    throw e;
+                if (res.get1() != null)
+                    return res;
             }
         }
+        catch (IgniteException e) {
+            if (!X.hasCause(e, TimeoutException.class))
+                throw e;
+        }
 
-        return cls;
+        return F.t(null, err);
     }
 
     /**
