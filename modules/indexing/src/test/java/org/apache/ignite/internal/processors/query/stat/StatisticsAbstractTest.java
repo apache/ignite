@@ -532,7 +532,6 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
 
-
         while (true) {
             try {
                 checkStatisticTasksEmpty(ign);
@@ -580,7 +579,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param ver Mininum allowed version.
      */
     private void checkStatisticsVersion(ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
-        assertFalse (stat == null || stat.columnsStatistics().isEmpty());
+        assertFalse(stat == null || stat.columnsStatistics().isEmpty());
 
         Set<String> cols;
 
@@ -592,7 +591,8 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         for (String col : cols) {
             ColumnStatistics colStat = stat.columnStatistics(col);
 
-            assertFalse (colStat == null || colStat.version() < ver);
+            assertFalse(String.format("Expect minVer %d but column %s has %s version.", ver, col, colStat.version()),
+                colStat == null || colStat.version() < ver);
         }
     }
 

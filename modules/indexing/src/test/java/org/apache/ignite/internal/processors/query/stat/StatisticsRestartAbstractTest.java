@@ -24,8 +24,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 /**
  * Test about statistics reload after restart.

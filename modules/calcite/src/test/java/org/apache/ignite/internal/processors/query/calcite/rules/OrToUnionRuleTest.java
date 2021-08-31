@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;

@@ -22,12 +22,7 @@ import java.util.Objects;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
@@ -77,9 +72,8 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
 
         assertTrue(globalStats.length > 1);
 
-        for (int i = 1;i < globalStats.length;i++)
+        for (int i = 1; i < globalStats.length; i++)
             testEquaData(globalStat, globalStats[i]);
-
     }
 
     /**

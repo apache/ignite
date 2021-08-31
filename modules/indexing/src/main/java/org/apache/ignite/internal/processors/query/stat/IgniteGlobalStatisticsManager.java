@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,18 +62,6 @@ import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnCon
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * TODO: TBD
@@ -435,7 +435,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
             addToRequests(inLocalRequests, key, new StatisticsAddressedRequest(req, nodeId));
 
-            if (checkStatisticsCfg(cfg, req.versions()) && topVer.compareTo(req.topVer()) >=0) {
+            if (checkStatisticsCfg(cfg, req.versions()) && topVer.compareTo(req.topVer()) >= 0) {
                 cfgMgr.checkLocalStatistics(cfg, topVer);
                 LocalStatisticsGatheringContext ctx = gatherer.gatheringInProgress(cfg.key());
 
@@ -468,7 +468,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             return false;
 
         for (Map.Entry<String, Long> version : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg =cfg.columns().get(version.getKey());
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
 
             if (colCfg == null || colCfg.version() < version.getValue())
                 return false;
@@ -492,7 +492,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             return false;
 
         for (Map.Entry<String, Long> version : versions.entrySet()) {
-            ColumnStatistics colStat =  stat.columnsStatistics().get(version.getKey());
+            ColumnStatistics colStat = stat.columnsStatistics().get(version.getKey());
 
             if (colStat == null || colStat.version() < version.getValue())
                 return false;
@@ -778,7 +778,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         List<StatisticsAddressedRequest> inReqs[] = new List[1];
 
-        inLocalRequests.computeIfPresent(key, (k,v) -> {
+        inLocalRequests.computeIfPresent(key, (k, v) -> {
             List<StatisticsAddressedRequest> left = new ArrayList<>();
             inReqs[0] = new ArrayList<>();
 
@@ -855,7 +855,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         else
             ioMgr.sendToGridTopic(nodeId, GridTopic.TOPIC_STATISTICS, msg, GridIoPolicy.MANAGEMENT_POOL);
     }
-
 
     /** Cache entry. */
     private static class CacheEntry<T> {
