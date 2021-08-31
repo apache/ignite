@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserIm
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.internal.processors.query.calcite.validate.IgniteSqlConformance;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rex.RexUtil.EXECUTOR;
@@ -82,7 +83,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             SqlParser.config()
                 .withParserFactory(IgniteSqlParserImpl.FACTORY)
                 .withLex(Lex.ORACLE)
-                .withConformance(SqlConformanceEnum.DEFAULT))
+                .withConformance(IgniteSqlConformance.DEFAULT))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
             .withSqlConformance(SqlConformanceEnum.DEFAULT))
