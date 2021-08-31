@@ -1070,11 +1070,9 @@ public class ClusterCachesInfo {
             req.encryptionKey(),
             req.cacheConfigurationEnrichment());
 
-        UUID restartId0 = req.restartId() == null ? null : req.restartId().globalId();
+        UUID ownerId = req.restartId() == null ? null : req.restartId().globalId();
 
-        exchangeActions.addCacheGroupToStart(grpDesc,
-            restartId0,
-            ctx.cache().context().snapshotMgr().resetAllPartitionStates(ccfg, restartId0));
+        exchangeActions.addCacheGroupToStart(grpDesc, ownerId);
 
         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
             ccfg,
@@ -1111,7 +1109,7 @@ public class ClusterCachesInfo {
 
         res.addedDescs.add(startDesc);
 
-        exchangeActions.addCacheToStart(req, startDesc);
+        exchangeActions.addCacheToStart(req, startDesc, ownerId);
 
         return true;
     }
@@ -1832,11 +1830,11 @@ public class ClusterCachesInfo {
                     req.locallyConfigured(true);
                 }
 
-                exchangeActions.addCacheToStart(req, desc);
+                exchangeActions.addCacheToStart(req, desc, null);
             }
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
-                exchangeActions.addCacheGroupToStart(grpDesc, null, false);
+                exchangeActions.addCacheGroupToStart(grpDesc, null);
 
             List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
 

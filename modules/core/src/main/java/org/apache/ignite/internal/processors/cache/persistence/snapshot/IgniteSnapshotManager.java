@@ -968,8 +968,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code true} if partition states of given cache groups must be reset
      * to the initial {@link GridDhtPartitionState#MOVING} state.
      */
-    public boolean resetAllPartitionStates(CacheConfiguration<?, ?> ccfg, UUID restoringId) {
-        return restoreCacheGrpProc.resetAllStates(ccfg, restoringId);
+    public boolean requirePartitionLoad(CacheConfiguration<?, ?> ccfg, UUID restoreId) {
+        return restoreCacheGrpProc.requirePartitionLoad(ccfg, restoreId);
     }
 
     /**

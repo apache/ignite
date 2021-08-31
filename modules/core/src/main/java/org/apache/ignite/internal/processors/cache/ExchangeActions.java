@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -100,7 +103,20 @@ public class ExchangeActions {
      * @return New caches start requests.
      */
     public Collection<CacheActionData> cacheStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.emptyList();
+        return cacheStartRequests((ccfg, uuid) -> true);
+    }
+
+    /**
+     * @param filter Cache start requests filtering predicate.
+     * @return New caches start requests.
+     */
+    public Collection<CacheActionData> cacheStartRequests(BiPredicate<CacheConfiguration<?, ?>, @Nullable UUID> filter) {
+        if (cachesToStart == null)
+            return Collections.emptyList();
+
+        return cachesToStart.values().stream()
+            .filter(cd -> filter.test(cd.desc.cacheConfiguration(), cd.ownerId))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -246,16 +262,19 @@ public class ExchangeActions {
      * @param desc Cache descriptor.
      * @return Actions map.
      */
-    private Map<String, CacheActionData> add(Map<String, CacheActionData> map,
+    private Map<String, CacheActionData> add(
+        Map<String, CacheActionData> map,
         DynamicCacheChangeRequest req,
-        DynamicCacheDescriptor desc) {
+        DynamicCacheDescriptor desc,
+        @Nullable UUID ownerId
+    ) {
         assert req != null;
         assert desc != null;
 
         if (map == null)
             map = new LinkedHashMap<>();
 
-        CacheActionData old = map.put(req.cacheName(), new CacheActionData(req, desc));
+        CacheActionData old = map.put(req.cacheName(), new CacheActionData(req, desc, ownerId));
 
         assert old == null : old;
 
@@ -266,10 +285,10 @@ public class ExchangeActions {
      * @param req Request.
      * @param desc Cache descriptor.
      */
-    void addCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    void addCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc, @Nullable UUID ownerId) {
         assert req.start() : req;
 
-        cachesToStart = add(cachesToStart, req, desc);
+        cachesToStart = add(cachesToStart, req, desc, ownerId);
     }
 
     /**
@@ -279,7 +298,7 @@ public class ExchangeActions {
     public void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
-        cachesToStop = add(cachesToStop, req, desc);
+        cachesToStop = add(cachesToStop, req, desc, null);
     }
 
     /**
@@ -289,26 +308,37 @@ public class ExchangeActions {
     void addCacheToResetLostPartitions(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.resetLostPartitions() : req;
 
-        cachesToResetLostParts = add(cachesToResetLostParts, req, desc);
+        cachesToResetLostParts = add(cachesToResetLostParts, req, desc, null);
     }
 
     /**
      * @param grpDesc Group descriptor.
      */
-    void addCacheGroupToStart(CacheGroupDescriptor grpDesc, @Nullable UUID restartId, boolean resetAllStates) {
+    void addCacheGroupToStart(CacheGroupDescriptor grpDesc, @Nullable UUID ownerId) {
         assert grpDesc != null;
 
         if (cacheGrpsToStart == null)
             cacheGrpsToStart = new ArrayList<>();
 
-        cacheGrpsToStart.add(new CacheGroupActionData(grpDesc, false, restartId, resetAllStates));
+        cacheGrpsToStart.add(new CacheGroupActionData(grpDesc, false, ownerId));
     }
 
     /**
      * @return Cache groups to start.
      */
     public List<CacheGroupActionData> cacheGroupsToStart() {
-        return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupActionData>emptyList();
+        return cacheGroupsToStart((ccfg, uuid) -> true);
+    }
+
+    /**
+     * @param filter Filtering predicate for starting cache groups.
+     * @return Cache groups to start.
+     */
+    public List<CacheGroupActionData> cacheGroupsToStart(BiPredicate<CacheConfiguration<?, ?>, @Nullable UUID> filter) {
+        if (cacheGrpsToStart == null)
+            return Collections.emptyList();
+
+        return cacheGrpsToStart.stream().filter(d -> filter.test(d.desc.config(), d.ownerId)).collect(Collectors.toList());
     }
 
     /**
@@ -353,7 +383,7 @@ public class ExchangeActions {
         if (cacheGrpsToStop == null)
             cacheGrpsToStop = new ArrayList<>();
 
-        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy, null, false));
+        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy, null));
     }
 
     /**
@@ -415,16 +445,20 @@ public class ExchangeActions {
         /** */
         private final DynamicCacheDescriptor desc;
 
+        /** The request id set by component which triggered the cache changes (it'll allow manage cache changes by him). */
+        private final UUID ownerId;
+
         /**
          * @param req Request.
          * @param desc Cache descriptor.
          */
-        CacheActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        CacheActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc, @Nullable UUID ownerId) {
             assert req != null;
             assert desc != null;
 
             this.req = req;
             this.desc = desc;
+            this.ownerId = ownerId;
         }
 
         /**
@@ -446,30 +480,26 @@ public class ExchangeActions {
      *
      */
     public static class CacheGroupActionData {
-        /** */
+        /** Cache group descriptor. */
         private final CacheGroupDescriptor desc;
 
-        /** */
+        /** Destroy flag. */
         private final boolean destroy;
 
-        /** Restart requester id (it'll allow to start this cache only him). */
-        private final UUID restartId;
-
-        /** {@code true} if starting cache must reset all partition states to MOVING. */
-        private final boolean resetAllStates;
+        /** The request id set by component which triggered the cache changes (it'll allow manage cache changes by him). */
+        private final UUID ownerId;
 
         /**
          * @param desc Group descriptor
          * @param destroy Destroy flag
-         * @param restartId Restart requester id (it'll allow to start this cache only him).
+         * @param ownerId The request id set by component which triggered the cache changes (it'll allow manage cache changes by him).
          */
-        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy, @Nullable UUID restartId, boolean resetAllStates) {
+        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy, @Nullable UUID ownerId) {
             assert desc != null;
 
             this.desc = desc;
             this.destroy = destroy;
-            this.restartId = restartId;
-            this.resetAllStates = resetAllStates;
+            this.ownerId = ownerId;
         }
 
         /**
@@ -484,20 +514,6 @@ public class ExchangeActions {
          */
         public boolean destroy() {
             return destroy;
-        }
-
-        /**
-         * @return Restart requester id (it'll allow to start this cache only him).
-         */
-        public @Nullable UUID restartId() {
-            return restartId;
-        }
-
-        /**
-         * @return {@code true} if starting cache must reset all partitions states to MOVING.
-         */
-        public boolean resetAllStates() {
-            return resetAllStates;
         }
     }
 

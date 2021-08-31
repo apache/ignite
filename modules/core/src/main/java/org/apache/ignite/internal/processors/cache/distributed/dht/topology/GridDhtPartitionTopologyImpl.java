@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -434,10 +432,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
 
                     boolean resetState = exchFut.exchangeActions() != null &&
-                        exchFut.exchangeActions().cacheGroupsToStart().stream()
-                            .filter(d -> Objects.nonNull(d.restartId()))
+                        exchFut.exchangeActions()
+                            .cacheGroupsToStart(ctx.snapshotMgr()::requirePartitionLoad)
+                            .stream()
                             .filter(d -> d.descriptor().groupId() == groupId())
-                            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
                             .map(g -> Boolean.TRUE)
                             .findFirst()
                             .orElse(false);

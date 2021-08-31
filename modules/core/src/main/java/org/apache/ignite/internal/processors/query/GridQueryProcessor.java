@@ -3883,8 +3883,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Set<Integer> cacheIds = emptySet();
 
         if (acts != null) {
-            if (!F.isEmpty(acts.cacheStartRequests())) {
-                cacheIds = acts.cacheStartRequests().stream()
+            // THe index rebuild for restoring caches will be explicitly completed under the restore manager,
+            // so there is no need to run the rebuild procedure for such caches from the exchange thread.
+            Collection<ExchangeActions.CacheActionData> cachesToStart = acts.cacheStartRequests((ccfg, uuid) ->
+                !ctx.cache().context().snapshotMgr().requirePartitionLoad(ccfg, uuid));
+            
+            if (!F.isEmpty(cachesToStart)) {
+                cacheIds = cachesToStart.stream()
                     .map(d -> CU.cacheId(d.request().cacheName()))
                     .collect(toSet());
             }

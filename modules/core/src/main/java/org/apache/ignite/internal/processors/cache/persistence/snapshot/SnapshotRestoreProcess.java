@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -128,6 +127,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  9. Add cache destroy rollback procedure if loading was unsuccessful.
  *  10. Crash-recovery when node crashes with started, but not loaded caches.
  *  11. Do not allow schema changes during the restore procedure.
+ *  12. Restore busy lock should throw exception if a lock acquire fails.
  *
  * Other strategies to be memento to:
  *
@@ -393,45 +393,60 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
      * @return The request id of restoring snapshot operation.
      */
     public @Nullable UUID restoringId() {
-        SnapshotRestoreContext opCtx0 = opCtx;
-
-        return opCtx0 == null ? null : opCtx0.reqId;
+        return restoringId(opCtx);
     }
 
     /**
+     * @param opCtx Restoring context.
+     * @return The request id of restoring snapshot operation.
+     */
+    private @Nullable UUID restoringId(SnapshotRestoreContext opCtx) {
+        return opCtx == null ? null : opCtx.reqId;
+    }
+
+    /**
+     * @param restoreId Process owner id.
      * @return {@code true} if partition states of given cache groups must be reset
      * to the initial {@link GridDhtPartitionState#MOVING} state.
      */
-    public boolean resetAllStates(CacheConfiguration<?, ?> ccfg, UUID restoringId) {
-        if (restoringId == null)
+    public boolean requirePartitionLoad(CacheConfiguration<?, ?> ccfg, UUID restoreId) {
+        if (restoreId == null)
             return false;
 
-        if (!restoringId.equals(restoringId()))
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (!restoreId.equals(restoringId(opCtx0)))
             return false;
 
-        if (!isRestoring(ccfg))
+        if (!isRestoring(ccfg, opCtx0))
             return false;
 
-        // Called from the discovery thread. It's safe to call all of the methods reading
+        // Called from the discovery thread. It's safe to call all the methods reading
         // the snapshot context, since the context changed only through the discovery thread also.
-        return !opCtx.sameTop;
+        return !opCtx0.sameTop;
     }
 
     /**
-     * Check if the cache or group with the specified name is currently being restored from the snapshot.
-     *
      * @param ccfg Cache configuration.
      * @return {@code True} if the cache or group with the specified name is currently being restored.
      */
     public boolean isRestoring(CacheConfiguration<?, ?> ccfg) {
+        return isRestoring(ccfg, opCtx);
+    }
+
+    /**
+     * Check if the cache or group with the specified name is currently being restored from the snapshot.
+     * @param opCtx Restoring context.
+     * @param ccfg Cache configuration.
+     * @return {@code True} if the cache or group with the specified name is currently being restored.
+     */
+    private boolean isRestoring(CacheConfiguration<?, ?> ccfg, SnapshotRestoreContext opCtx) {
         assert ccfg != null;
 
-        SnapshotRestoreContext opCtx0 = opCtx;
-
-        if (opCtx0 == null)
+        if (opCtx == null)
             return false;
 
-        Map<Integer, StoredCacheData> cacheCfgs = opCtx0.cfgs;
+        Map<Integer, StoredCacheData> cacheCfgs = opCtx.cfgs;
 
         String cacheName = ccfg.getName();
         String grpName = ccfg.getGroupName();
@@ -441,7 +456,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         if (cacheCfgs.containsKey(cacheId))
             return true;
 
-        for (File grpDir : opCtx0.dirs) {
+        for (File grpDir : opCtx.dirs) {
             String locGrpName = FilePageStoreManager.cacheGroupName(grpDir);
 
             if (grpName != null) {
@@ -1524,14 +1539,12 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
      * @param ctx Current snapshot restore context.
      * @return The set of cache groups needs to be processed.
      */
-    private static Set<Integer> getCachesLoadingFromSnapshot(GridDhtPartitionsExchangeFuture fut, SnapshotRestoreContext ctx) {
+    private Set<Integer> getCachesLoadingFromSnapshot(GridDhtPartitionsExchangeFuture fut, SnapshotRestoreContext ctx) {
         if (fut == null || fut.exchangeActions() == null || ctx == null)
             return Collections.emptySet();
 
-        return fut.exchangeActions().cacheGroupsToStart().stream()
-            .filter(d -> Objects.nonNull(d.restartId()))
-            .filter(d -> d.restartId().equals(ctx.reqId))
-            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
+        return fut.exchangeActions().cacheGroupsToStart(this::requirePartitionLoad)
+            .stream()
             .map(g -> g.descriptor().groupId())
             .collect(Collectors.toSet());
     }

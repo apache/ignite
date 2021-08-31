@@ -3993,18 +3993,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!F.isEmpty(caches))
                         resetLostPartitions(caches);
 
-                    Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
-                            .filter(d -> !d.resetAllStates())
+                    Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart()
+                            .stream()
                             .map(grp -> grp.descriptor().groupId()),
                         exchActions.cachesToResetLostPartitions().stream()
                             .map(CU::cacheId))
                         .collect(Collectors.toSet());
 
-                    assignPartitionsStates(cacheGroupsToResetOwners,
-                        exchActions.cacheGroupsToStart().stream()
-                            .filter(ExchangeActions.CacheGroupActionData::resetAllStates)
-                            .map(grp -> grp.descriptor().groupId())
-                            .collect(Collectors.toSet()));
+                    Set<Integer> cacheGroupsToResetAll = exchActions.cacheGroupsToStart(cctx.snapshotMgr()::requirePartitionLoad)
+                        .stream()
+                        .map(d -> d.descriptor().groupId())
+                        .collect(Collectors.toSet());
+
+                    cacheGroupsToResetOwners.removeAll(cacheGroupsToResetAll);
+
+                    assignPartitionsStates(cacheGroupsToResetOwners, cacheGroupsToResetAll);
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
                     && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions()) {
