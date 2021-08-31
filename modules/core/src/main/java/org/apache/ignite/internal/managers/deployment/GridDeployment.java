@@ -455,53 +455,63 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     @Nullable public IgniteBiTuple<Class<?>, Throwable> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
 
-        if (cls != null)
-            return F.t(cls, null);
-
         Throwable err = null;
 
-        try {
-            cls = U.forName(clsName, clsLdr);
+        if (cls == null) {
+            try {
+                cls = U.forName(clsName, clsLdr);
 
-            Class<?> cur = clss.putIfAbsent(clsName, cls);
+                Class<?> cur = clss.putIfAbsent(clsName, cls);
 
-            if (cur == null) {
-                for (String a : alias)
-                    clss.putIfAbsent(a, cls);
-
-                onDeployed(cls);
-            }
-
-            return F.t(cls, null);
-        }
-        catch (ClassNotFoundException | LinkageError e) {
-            err = e;
-
-            // Check aliases.
-            for (String a : alias) {
-                if (a.equals(clsName))
-                    continue;
-
-                IgniteBiTuple<Class<?>, Throwable> res = deployedClass(a);
-
-                if (res.get1() != null) {
-                    for (String a1 : alias) {
-                        // The original alias has already been put into the map,
-                        // so we don't try to put it again here.
-                        if (a1 != a)
-                            clss.putIfAbsent(a1, cls);
+                if (cur == null) {
+                    for (String a : alias) {
+                        clss.putIfAbsent(a, cls);
                     }
 
-                    return res;
+                    onDeployed(cls);
                 }
             }
-        }
-        catch (IgniteException e) {
-            if (!X.hasCause(e, TimeoutException.class))
-                throw e;
+            catch (ClassNotFoundException | LinkageError e) {
+                err = e;
+
+                // Check aliases.
+                for (String a : alias) {
+                    cls = clss.get(a);
+
+                    if (cls != null)
+                        return F.t(cls, null);
+                    else if (!a.equals(clsName)) {
+                        try {
+                            cls = U.forName(a, clsLdr);
+                        }
+                        catch (ClassNotFoundException ignored0) {
+                            continue;
+                        }
+
+                        Class<?> cur = clss.putIfAbsent(a, cls);
+
+                        if (cur == null) {
+                            for (String a1 : alias) {
+                                // The original alias has already been put into the map,
+                                // so we don't try to put it again here.
+                                if (a1 != a)
+                                    clss.putIfAbsent(a1, cls);
+                            }
+
+                            onDeployed(cls);
+                        }
+
+                        return F.t(cls, null);
+                    }
+                }
+            }
+            catch (IgniteException e) {
+                if (!X.hasCause(e, TimeoutException.class))
+                    throw e;
+            }
         }
 
-        return F.t(null, err);
+        return F.t(cls, err);
     }
 
     /**
