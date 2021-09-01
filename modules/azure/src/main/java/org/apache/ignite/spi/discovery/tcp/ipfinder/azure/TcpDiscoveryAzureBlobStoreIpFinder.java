@@ -337,22 +337,6 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         return addr.getAddress().getHostAddress() + "#" + addr.getPort();
     }
 
-    /**
-     * Used by TEST SUITES only. Called through reflection.
-     *
-     * @param containerName Container to delete
-     */
-    private void removeContainer(String containerName) {
-        init();
-
-        try {
-            blobServiceClient.getBlobContainerClient(containerName).delete();
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException("Failed to remove the container: " + containerName, e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public TcpDiscoveryAzureBlobStoreIpFinder setShared(boolean shared) {
         super.setShared(shared);
