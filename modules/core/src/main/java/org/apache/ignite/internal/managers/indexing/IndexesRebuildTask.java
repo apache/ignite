@@ -127,7 +127,7 @@ public class IndexesRebuildTask {
             outRebuildCacheIdxFut.onDone(err);
         });
 
-        startRebuild(cctx, rebuildCacheIdxFut, clo, cancelTok0::get);
+        startRebuild(cctx, rebuildCacheIdxFut, clo, cancelTok);
 
         return outRebuildCacheIdxFut;
     }
@@ -141,7 +141,7 @@ public class IndexesRebuildTask {
      * @param cancelTok Cancellation token.
      */
     protected void startRebuild(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         GridFutureAdapter<Void> fut,
         SchemaIndexCacheVisitorClosure clo,
         IndexRebuildCancelToken cancelTok

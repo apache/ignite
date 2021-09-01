@@ -57,7 +57,7 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
 
     /** {@inheritDoc} */
     @Override protected void startRebuild(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         GridFutureAdapter<Void> rebuildIdxFut,
         SchemaIndexCacheVisitorClosure clo,
         IndexRebuildCancelToken cancel
