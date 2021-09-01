@@ -30,6 +30,21 @@ namespace
     const std::string TEST_PUT_AFFINITY_KEY_TASK("org.apache.ignite.platform.PlatformComputePutAffinityKeyTask");
 }
 
+class InteropTestSuiteFixture
+{
+public:
+    InteropTestSuiteFixture()
+    {
+        // No-op.
+    }
+
+    ~InteropTestSuiteFixture()
+    {
+        ignite::Ignition::StopAll(false);
+    }
+};
+
+
 /**
  * Affinity key class.
  */
@@ -96,8 +111,8 @@ namespace ignite
     }
 }
 
-BOOST_AUTO_TEST_SUITE(InteropTestSuite)
-
+BOOST_FIXTURE_TEST_SUITE(InteropTestSuite, InteropTestSuiteFixture)
+    
 #ifdef ENABLE_STRING_SERIALIZATION_VER_2_TESTS
 
 BOOST_AUTO_TEST_CASE(StringUtfInvalidSequence)
