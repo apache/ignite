@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -108,7 +109,7 @@ public final class Commons {
     private static final IgniteCostFactory COST_FACTORY = new IgniteCostFactory();
 
     /** */
-    private static final VolcanoPlanner EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, Contexts.empty());
+    private static final VolcanoPlanner EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, BaseQueryContext.empty());
 
     /** */
     private static final RexBuilder DFLT_REX_BUILDER;
@@ -234,22 +235,15 @@ public final class Commons {
     /**
      * Extracts planner context.
      */
-    public static PlanningContext context(RelNode rel) {
+    public static BaseQueryContext context(RelNode rel) {
         return context(rel.getCluster());
     }
 
     /**
      * Extracts planner context.
      */
-    public static PlanningContext context(RelOptCluster cluster) {
-        return context(cluster.getPlanner().getContext());
-    }
-
-    /**
-     * Extracts planner context.
-     */
-    public static PlanningContext context(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
+    public static BaseQueryContext context(RelOptCluster cluster) {
+        return Objects.requireNonNull((cluster.getPlanner().getContext().unwrap(BaseQueryContext.class)));
     }
 
     /**

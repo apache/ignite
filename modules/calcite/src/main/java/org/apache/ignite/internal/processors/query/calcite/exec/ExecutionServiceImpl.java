@@ -87,7 +87,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlP
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
@@ -467,8 +467,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryContextBase createQueryContext(Context parent, @Nullable String schema) {
-        return QueryContextBase.builder()
+    private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
+        return BaseQueryContext.builder()
             .parentContext(parent)
             .frameworkConfig(
                 Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
@@ -495,7 +495,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareFragment(QueryContextBase ctx, String jsonFragment) {
+    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
         return new FragmentPlan(fromJson(ctx, jsonFragment));
     }
 
@@ -621,7 +621,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ListFieldsQueryCursor<?> cur = executePlan(
                     qryId,
                     (MultiStepPlan)plan,
-                    pctx.unwrap(QueryContextBase.class),
+                    pctx.unwrap(BaseQueryContext.class),
                     pctx.parameters()
                 );
 
@@ -633,7 +633,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return executePlan(
                     qryId,
                     (MultiStepPlan)plan,
-                    pctx.unwrap(QueryContextBase.class),
+                    pctx.unwrap(BaseQueryContext.class),
                     pctx.parameters()
                 );
 
@@ -662,7 +662,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, QueryContextBase qctx, Object[] params) {
+    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, BaseQueryContext qctx, Object[] params) {
         plan.init(Commons.mapContext(locNodeId, topologyVersion()));
 
         List<Fragment> fragments = plan.fragments();
@@ -781,7 +781,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         running.put(qryId, info);
 
-        GridQueryCancel qryCancel = info.ctx.unwrap(QueryContextBase.class).queryCancel();
+        GridQueryCancel qryCancel = info.ctx.unwrap(BaseQueryContext.class).queryCancel();
 
         if (qryCancel == null)
             return;
@@ -800,7 +800,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
         @Nullable List<List<String>> origins) {
         RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.unwrap(QueryContextBase.class).catalogReader(), sqlType, origins);
+            ctx.typeFactory(), ctx.unwrap(BaseQueryContext.class).catalogReader(), sqlType, origins);
         return new FieldsMetadataImpl(resultType, origins);
     }
 
@@ -814,7 +814,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            final QueryContextBase qctx = createQueryContext(Contexts.empty(), msg.schema());
+            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
                 new CacheKey(msg.schema(), msg.root()),

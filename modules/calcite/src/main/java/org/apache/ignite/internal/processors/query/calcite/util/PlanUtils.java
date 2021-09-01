@@ -21,7 +21,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 
 /** */
 public class PlanUtils {
@@ -42,7 +42,7 @@ public class PlanUtils {
             schemaName = schemaId.getSimple();
         }
 
-        ensureSchemaExists(ctx.unwrap(QueryContextBase.class), schemaName);
+        ensureSchemaExists(ctx.unwrap(BaseQueryContext.class), schemaName);
 
         return schemaName;
     }
@@ -64,7 +64,7 @@ public class PlanUtils {
     }
 
     /** */
-    private static void ensureSchemaExists(QueryContextBase ctx, String schemaName) {
+    private static void ensureSchemaExists(BaseQueryContext ctx, String schemaName) {
         if (ctx.catalogReader().getRootSchema().getSubSchema(schemaName, true) == null)
             throw new IgniteSQLException("Schema with name " + schemaName + " not found",
                 IgniteQueryErrorCode.SCHEMA_NOT_FOUND);

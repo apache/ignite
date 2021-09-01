@@ -43,9 +43,12 @@ import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
- * Planning context.
+ * Base query context.
  */
-public final class QueryContextBase extends AbstractQueryContext {
+public final class BaseQueryContext extends AbstractQueryContext {
+    /** */
+    private static final BaseQueryContext EMPTY = builder().build();
+
     /** */
     private final FrameworkConfig cfg;
 
@@ -67,7 +70,7 @@ public final class QueryContextBase extends AbstractQueryContext {
     /**
      * Private constructor, used by a builder.
      */
-    private QueryContextBase(
+    private BaseQueryContext(
         FrameworkConfig cfg,
         Context parentCtx,
         IgniteLogger log
@@ -159,6 +162,11 @@ public final class QueryContextBase extends AbstractQueryContext {
         return new Builder();
     }
 
+    /** */
+    public static BaseQueryContext empty() {
+        return EMPTY;
+    }
+
     /**
      * Planner context builder.
      */
@@ -221,8 +229,8 @@ public final class QueryContextBase extends AbstractQueryContext {
          *
          * @return Planner context.
          */
-        public QueryContextBase build() {
-            return new QueryContextBase(frameworkCfg, parentCtx, log);
+        public BaseQueryContext build() {
+            return new BaseQueryContext(frameworkCfg, parentCtx, log);
         }
     }
 }

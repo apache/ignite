@@ -31,8 +31,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -83,7 +81,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -231,7 +229,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(
                     newConfigBuilder(FRAMEWORK_CONFIG)
                         .defaultSchema(schema)
@@ -334,7 +332,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         assertNotNull(serialized);
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(
                     newConfigBuilder(FRAMEWORK_CONFIG)
                         .defaultSchema(schema)
@@ -349,7 +347,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         try (IgnitePlanner ignored = ctx.planner()) {
             for (String s : serialized) {
-                RelJsonReader reader = new RelJsonReader(ctx.unwrap(QueryContextBase.class).catalogReader());
+                RelJsonReader reader = new RelJsonReader(ctx.unwrap(BaseQueryContext.class).catalogReader());
 
                 deserializedNodes.add(reader.read(s));
             }

@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -152,7 +152,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.id = p.id0";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .logger(log)
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
@@ -260,7 +260,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        QueryContextBase qctx = QueryContextBase.builder()
+        BaseQueryContext qctx = BaseQueryContext.builder()
             .logger(log)
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
@@ -486,7 +486,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
-        QueryContextBase qctx = QueryContextBase.builder()
+        BaseQueryContext qctx = BaseQueryContext.builder()
             .logger(log)
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
@@ -707,7 +707,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
                     .build())
@@ -791,7 +791,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
                     .build())
@@ -872,7 +872,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
                     .build())
@@ -955,7 +955,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
                     .build())
@@ -1032,7 +1032,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .logger(log)
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
@@ -1156,7 +1156,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "where d.deptno + e.deptno = 2";
 
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(QueryContextBase.builder()
+            .parentContext(BaseQueryContext.builder()
                 .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(schema)
                     .costFactory(new IgniteCostFactory(1, 100, 1, 1))

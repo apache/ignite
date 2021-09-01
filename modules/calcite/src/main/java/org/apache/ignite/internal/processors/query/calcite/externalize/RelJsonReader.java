@@ -46,7 +46,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
@@ -73,7 +73,7 @@ public class RelJsonReader {
     private RelNode lastRel;
 
     /** */
-    public static <T extends RelNode> T fromJson(QueryContextBase ctx, String json) {
+    public static <T extends RelNode> T fromJson(BaseQueryContext ctx, String json) {
         RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
 
         return (T)reader.read(json);

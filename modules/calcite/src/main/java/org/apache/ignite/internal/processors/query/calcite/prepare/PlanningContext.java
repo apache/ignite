@@ -80,14 +80,14 @@ public final class PlanningContext implements Context {
      * @return Sql operators table.
      */
     public SqlOperatorTable opTable() {
-        return unwrap(QueryContextBase.class).config().getOperatorTable();
+        return unwrap(BaseQueryContext.class).config().getOperatorTable();
     }
 
     /**
      * @return Sql conformance.
      */
     public SqlConformance conformance() {
-        return unwrap(QueryContextBase.class).config().getParserConfig().conformance();
+        return unwrap(BaseQueryContext.class).config().getParserConfig().conformance();
     }
 
     /**
@@ -101,7 +101,7 @@ public final class PlanningContext implements Context {
      * @return Schema.
      */
     public SchemaPlus schema() {
-        return unwrap(QueryContextBase.class).config().getDefaultSchema();
+        return unwrap(BaseQueryContext.class).config().getDefaultSchema();
     }
 
     /**
@@ -118,7 +118,7 @@ public final class PlanningContext implements Context {
      * @return Type factory.
      */
     public IgniteTypeFactory typeFactory() {
-        return unwrap(QueryContextBase.class).typeFactory();
+        return unwrap(BaseQueryContext.class).typeFactory();
     }
 
     /**

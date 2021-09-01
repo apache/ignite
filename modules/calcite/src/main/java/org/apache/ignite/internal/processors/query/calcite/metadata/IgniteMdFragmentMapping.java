@@ -221,6 +221,6 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
     public static FragmentMapping _fragmentMapping(RelNode rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         assert mq instanceof RelMetadataQueryEx;
 
-        return ((RelMetadataQueryEx) mq).fragmentMapping(rel, ctx);
+        return ((RelMetadataQueryEx)mq).fragmentMapping(rel, ctx);
     }
 }

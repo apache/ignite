@@ -30,6 +30,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -37,7 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -106,7 +107,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
-        QueryContextBase parentCtx,
+        BaseQueryContext parentCtx,
         QueryTaskExecutor executor,
         UUID qryId,
         UUID locNodeId,
@@ -217,6 +218,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         return topVer;
     }
 
+    /** */
+    public IgniteLogger logger() {
+        return unwrap(BaseQueryContext.class).logger();
+    }
+
     /** {@inheritDoc} */
     @Override public SchemaPlus getRootSchema() {
         return DFLT_SCHEMA;
@@ -224,7 +230,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** {@inheritDoc} */
     @Override public IgniteTypeFactory getTypeFactory() {
-        return unwrap(QueryContextBase.class).typeFactory();
+        return unwrap(BaseQueryContext.class).typeFactory();
     }
 
     /** {@inheritDoc} */

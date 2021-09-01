@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.OutboxCloseMe
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -259,7 +259,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      */
     private ExecutionContext<?> baseInboxContext(UUID nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
-            QueryContextBase.builder().build(),
+            BaseQueryContext.builder().build(),
             taskExecutor(),
             qryId,
             locaNodeId,
