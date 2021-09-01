@@ -122,13 +122,18 @@ namespace ignite
                 dst.key = reader.ReadInt32("key");
                 dst.aff = reader.ReadInt32("aff");
             }
+
+            static void GetAffinityFieldName(std::string& dst)
+            {
+                dst = "aff";
+            }
         };
     }
 }
 
 BOOST_FIXTURE_TEST_SUITE(InteropTestSuite, InteropTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(PutObjectByJavaThenByCpp)
+BOOST_AUTO_TEST_CASE(PutObjectByCppThenByJava)
 {
     cache::CacheClient<AffinityKey, AffinityKey> cache = client.GetOrCreateCache<AffinityKey, AffinityKey>("default");
 
@@ -144,6 +149,30 @@ BOOST_AUTO_TEST_CASE(PutObjectByJavaThenByCpp)
 
     BOOST_CHECK_EQUAL(val.key, 1);
     BOOST_CHECK_EQUAL(val.aff, 2);
+}
+
+BOOST_AUTO_TEST_CASE(PutObjectPointerByCppThenByJava)
+{
+    cache::CacheClient<AffinityKey*, AffinityKey*> cache =
+        client.GetOrCreateCache<AffinityKey*, AffinityKey*>("default");
+
+    AffinityKey* key1 = new AffinityKey(2, 3);
+    cache.Put(key1, key1);
+
+    delete key1;
+
+    compute::ComputeClient compute = client.GetCompute();
+
+    compute.ExecuteJavaTask<int*>(TEST_PUT_AFFINITY_KEY_TASK);
+
+    AffinityKey* key2 = new AffinityKey(1, 2);
+    AffinityKey* val = cache.Get(key2);
+
+    BOOST_CHECK_EQUAL(val->key, 1);
+    BOOST_CHECK_EQUAL(val->aff, 2);
+
+    delete key2;
+    delete val;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
