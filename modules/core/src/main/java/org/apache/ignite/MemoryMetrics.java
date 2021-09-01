@@ -20,6 +20,7 @@ package org.apache.ignite;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
  * This interface provides page memory related metrics of a specific Apache Ignite node. The overall page memory
@@ -46,7 +47,7 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
  * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property or
  * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
  *
- * @deprecated Use {@link DataRegionMetrics} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  */
 @Deprecated
 public interface MemoryMetrics {

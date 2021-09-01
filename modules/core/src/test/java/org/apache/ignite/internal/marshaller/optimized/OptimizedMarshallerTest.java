@@ -213,15 +213,15 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         SomeSimpleSerializable newObj = new SomeSimpleSerializable();
 
-        assert(newObj.flag);
+        assert (newObj.flag);
 
         newObj.setFlagValue(false);
 
-        assert(! newObj.flag);
+        assert (!newObj.flag);
 
         SomeSimpleSerializable outObj = marsh.unmarshal(marsh.marshal(newObj), null);
 
-        assert (! outObj.flag);
+        assert !outObj.flag;
     }
 
     /**
@@ -303,8 +303,8 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(2);
 
-            String taskClsName = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
-            String jobClsName = "org.apache.ignite.tests.p2p.SingleSplitTestTask$SingleSplitTestJob";
+            String taskClsName = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask";
+            String jobClsName = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask$SingleSplitTestJob";
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -463,7 +463,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some non-serializable class.
      */
-    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","FieldMayBeStatic"})
+    @SuppressWarnings( {"PublicField", "TransientFieldInNonSerializableClass", "FieldMayBeStatic"})
     private static class NonSerializableA {
         /** */
         private final long longVal = 0x33445566778899AAL;
@@ -472,7 +472,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         protected Short shortVal = (short)0xAABB;
 
         /** */
-        public String[] strArr = {"AA","BB"};
+        public String[] strArr = {"AA", "BB"};
 
         /** */
         public boolean flag1 = true;
@@ -508,7 +508,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
             assertEquals(shortVal.shortValue(), (short)0xAABB);
 
-            assertTrue(Arrays.equals(strArr, new String[] {"AA","BB"}));
+            assertTrue(Arrays.equals(strArr, new String[] {"AA", "BB"}));
 
             assertEquals(intVal, 0);
 
@@ -523,7 +523,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some non-serializable class.
      */
-    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","PackageVisibleInnerClass"})
+    @SuppressWarnings( {"PublicField", "TransientFieldInNonSerializableClass", "PackageVisibleInnerClass"})
     static class NonSerializableB extends NonSerializableA {
         /** */
         public Short shortVal = 0x1122;
@@ -567,7 +567,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some non-serializable class.
      */
-    @SuppressWarnings( {"TransientFieldInNonSerializableClass","PublicField"})
+    @SuppressWarnings( {"TransientFieldInNonSerializableClass", "PublicField"})
     private static class NonSerializable extends NonSerializableB {
         /** */
         private int idVal = -17;
@@ -618,7 +618,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some serializable class.
      */
-    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","PackageVisibleInnerClass"})
+    @SuppressWarnings( {"PublicField", "TransientFieldInNonSerializableClass", "PackageVisibleInnerClass"})
     static class ForSerializableB {
         /** */
         public Short shortVal = 0x1122;

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
@@ -84,6 +84,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param rowStore Row store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param pageFlag Default flag value for allocated pages.
+     * @param pageLockTrackerManager Page lock tracker manager.
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataTree(
@@ -93,7 +95,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         CacheDataRowStore rowStore,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockTrackerManager pageLockTrackerManager,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             name,
@@ -106,8 +109,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             innerIO(grp),
             leafIO(grp),
+            pageFlag,
             grp.shared().kernalContext().failure(),
-            lockLsnr
+            pageLockTrackerManager
         );
 
         assert rowStore != null;
@@ -149,7 +153,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     @Override public GridCursor<CacheDataRow> find(
         CacheSearchRow lower,
         CacheSearchRow upper,
-        TreeRowClosure<CacheSearchRow,CacheDataRow> c,
+        TreeRowClosure<CacheSearchRow, CacheDataRow> c,
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.
@@ -289,7 +293,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                             pageMem.readUnlock(grpId, pageId, page);
                         }
                     }
-                    finally{
+                    finally {
                         pageMem.releasePage(grpId, pageId, page);
                     }
                 }

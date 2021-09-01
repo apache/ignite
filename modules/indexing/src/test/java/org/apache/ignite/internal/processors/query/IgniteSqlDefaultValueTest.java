@@ -214,7 +214,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
      * @param args Query parameters.
      * @return Results set.
      */
-    private List<List<?>> sql(String sql, Object ... args) {
+    private List<List<?>> sql(String sql, Object... args) {
         return grid(NODE_CLIENT).context().query().querySqlFields(
             new SqlFieldsQuery(sql).setArgs(args), false).getAll();
     }

@@ -55,7 +55,8 @@ public class LSQROnHeapTest extends TrainerTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.LAST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
         Preprocessor<Integer, Vector> prerocessor = new PatchedPreprocessor<>(func, vectorizer);
 
@@ -94,7 +95,8 @@ public class LSQROnHeapTest extends TrainerTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.LAST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
         Preprocessor<Integer, Vector> prerocessor = new PatchedPreprocessor<>(func, vectorizer);
 
@@ -133,7 +135,8 @@ public class LSQROnHeapTest extends TrainerTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.LAST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
         Preprocessor<Integer, Vector> prerocessor = new PatchedPreprocessor<>(func, vectorizer);
 
@@ -146,7 +149,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
             assertEquals(8, res.getIterations());
 
-            assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
+            assertArrayEquals(new double[]{72.26948107, 15.95144674, 24.07403921, 66.73038781}, res.getX(), 1e-6);
         }
     }
 }

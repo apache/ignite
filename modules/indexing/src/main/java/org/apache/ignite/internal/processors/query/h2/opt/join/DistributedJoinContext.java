@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Context for distributed joins.
@@ -101,7 +100,7 @@ public class DistributedJoinContext {
      * @return Partitions map.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public Map<UUID,int[]> partitionsMap() {
+    public Map<UUID, int[]> partitionsMap() {
         return partsMap;
     }
 

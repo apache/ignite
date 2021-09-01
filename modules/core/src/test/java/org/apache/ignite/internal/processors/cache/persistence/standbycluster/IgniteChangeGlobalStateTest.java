@@ -40,6 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9081")
 public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstractTest {
     /**
      * @throws Exception if fail.
@@ -482,7 +483,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @param ig Node.
      */
-    private void checkExceptionTryUseDataStructure(final Ignite ig){
+    private void checkExceptionTryUseDataStructure(final Ignite ig) {
         assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgniteAtomicSequence seq = ig.atomicSequence("seq", 0, true);

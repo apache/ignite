@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Binary;
@@ -198,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the specified config.
         /// </summary>
-        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer,
+        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientFeatures features,
             bool skipCodes = false)
         {
             Debug.Assert(stream != null);
@@ -306,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteCollectionRaw(cfg.KeyConfiguration);
             
             code(Op.QueryEntities);
-            writer.WriteCollectionRaw(cfg.QueryEntities, srvVer);
+            writer.WriteCollectionRaw(cfg.QueryEntities, (w, qe) => WriteQueryEntity(w, qe, features));
 
             code(Op.ExpiryPolicy);
             ExpiryPolicySerializer.WritePolicyFactory(writer, cfg.ExpiryPolicyFactory);
@@ -315,11 +316,89 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var len = writer.Stream.Position - pos - 4;
             writer.Stream.WriteInt(pos, len);
         }
-        
+
+        /// <summary>
+        /// Write query entity of the config.
+        /// </summary>
+        private static void WriteQueryEntity(BinaryWriter writer, QueryEntity entity, ClientFeatures features)
+        {
+            writer.WriteString(entity.KeyTypeName);
+            writer.WriteString(entity.ValueTypeName);
+            writer.WriteString(entity.TableName);
+            writer.WriteString(entity.KeyFieldName);
+            writer.WriteString(entity.ValueFieldName);
+
+            var entityFields = entity.Fields;
+
+            if (entityFields != null)
+            {
+                writer.WriteInt(entityFields.Count);
+
+                foreach (var field in entityFields)
+                {
+                    WriteQueryField(writer, field, features);
+                }
+            }
+            else
+                writer.WriteInt(0);
+
+            var entityAliases = entity.Aliases;
+
+            if (entityAliases != null)
+            {
+                writer.WriteInt(entityAliases.Count);
+
+                foreach (var queryAlias in entityAliases)
+                {
+                    writer.WriteString(queryAlias.FullName);
+                    writer.WriteString(queryAlias.Alias);
+                }
+            }
+            else
+                writer.WriteInt(0);
+
+            var entityIndexes = entity.Indexes;
+
+            if (entityIndexes != null)
+            {
+                writer.WriteInt(entityIndexes.Count);
+
+                foreach (var index in entityIndexes)
+                {
+                    if (index == null)
+                        throw new InvalidOperationException("Invalid cache configuration: QueryIndex can't be null.");
+
+                    index.Write(writer);
+                }
+            }
+            else
+                writer.WriteInt(0);
+        }
+
+        /// <summary>
+        /// Writes query field instance to the specified writer.
+        /// </summary>
+        private static void WriteQueryField(BinaryWriter writer, QueryField field, ClientFeatures features)
+        {
+            Debug.Assert(writer != null);
+
+            writer.WriteString(field.Name);
+            writer.WriteString(field.FieldTypeName);
+            writer.WriteBoolean(field.IsKeyField);
+            writer.WriteBoolean(field.NotNull);
+            writer.WriteObject(field.DefaultValue);
+
+            if (features.HasQueryFieldPrecisionAndScale())
+            {
+                writer.WriteInt(field.Precision);
+                writer.WriteInt(field.Scale);
+            }
+        }
+
         /// <summary>
         /// Reads the config.
         /// </summary>
-        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer)
+        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg, ClientFeatures features)
         {
             Debug.Assert(stream != null);
 
@@ -358,11 +437,70 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.SqlSchema = reader.ReadString();
             cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
             cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
-            cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
-            if (srvVer.CompareTo(ClientSocket.Ver160) >= 0)
+            cfg.QueryEntities = reader.ReadCollectionRaw(r => ReadQueryEntity(r, features));
+
+            if (features.HasCacheConfigurationExpiryPolicyFactory())
+            {
                 cfg.ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
+            }
 
             Debug.Assert(len == reader.Stream.Position - pos);
+        }
+
+        /// <summary>
+        /// Reads query entity of the config.
+        /// </summary>
+        private static QueryEntity ReadQueryEntity(BinaryReader reader, ClientFeatures features)
+        {
+            Debug.Assert(reader != null);
+
+            var value = new QueryEntity
+            {
+                KeyTypeName = reader.ReadString(),
+                ValueTypeName = reader.ReadString(),
+                TableName = reader.ReadString(),
+                KeyFieldName = reader.ReadString(),
+                ValueFieldName = reader.ReadString()
+            };
+
+            var count = reader.ReadInt();
+            value.Fields = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x => ReadQueryField(reader, features)).ToList();
+
+            count = reader.ReadInt();
+            value.Aliases = count == 0 ? null : Enumerable.Range(0, count)
+                .Select(x=> new QueryAlias(reader.ReadString(), reader.ReadString())).ToList();
+
+            count = reader.ReadInt();
+            value.Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
+
+            return value;
+        }
+
+        /// <summary>
+        /// Read query field.
+        /// </summary>
+        private static QueryField ReadQueryField(BinaryReader reader, ClientFeatures features)
+        {
+            Debug.Assert(reader != null);
+
+            var value = new QueryField
+            {
+                Name = reader.ReadString(),
+                FieldTypeName = reader.ReadString(),
+                IsKeyField = reader.ReadBoolean(),
+                NotNull = reader.ReadBoolean(),
+                DefaultValue = reader.ReadObject<object>()
+            };
+
+            if (features.HasQueryFieldPrecisionAndScale())
+            {
+                value.Precision = reader.ReadInt();
+                value.Scale = reader.ReadInt();
+            }
+
+            return value;
         }
 
         /// <summary>

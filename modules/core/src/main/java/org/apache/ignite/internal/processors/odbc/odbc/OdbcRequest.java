@@ -50,6 +50,9 @@ public class OdbcRequest extends ClientListenerRequestNoId {
     /** Process ordered streaming batch. */
     public static final byte STREAMING_BATCH = 10;
 
+    /** Get resultset columns meta. */
+    public static final byte META_RESULTSET = 11;
+
     /** Command. */
     private final byte cmd;
 

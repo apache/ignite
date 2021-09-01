@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Cache.Near;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
 
@@ -44,8 +44,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Grid. */
         private readonly Marshaller _marsh;
 
-        /** Near cache. When not null, only the key is passed to the filter. */
-        private INearCache _nearCache;
+        /** Platform cache. When not null, only the key is passed to the filter. */
+        private IPlatformCache _platformCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder" /> class.
@@ -88,12 +88,12 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
             else
             {
-                // Near cache on primary node is always up-to-date with actual cache entry in Java,
-                // so we can use value from near cache for filtering.
-                if (_nearCache == null || !_nearCache.TryGetValue(key, out val))
+                // Platform cache on primary node is always up-to-date with actual cache entry in Java,
+                // so we can use value from platform cache for filtering.
+                if (_platformCache == null || !_platformCache.TryGetValue(key, out val))
                 {
                     // Request value from Java.
-                    // This should be rare, because primary keys are always in .NET Near Cache.
+                    // This should be rare, because primary keys are always in platform cache.
                     val = _marsh.Ignite.GetJavaThreadLocal();
                 }
             }
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 if (stream.ReadBool())
                 {
                     var cacheId = stream.ReadInt();
-                    filterHolder._nearCache = grid.NearCacheManager.TryGetNearCache(cacheId);
+                    filterHolder._platformCache = grid.PlatformCacheManager.TryGetPlatformCache(cacheId);
                 }
 
                 return filterHolder;

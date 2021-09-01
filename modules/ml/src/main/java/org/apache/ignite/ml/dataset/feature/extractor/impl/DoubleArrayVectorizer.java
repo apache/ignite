@@ -37,7 +37,7 @@ public final class DoubleArrayVectorizer<K> extends ExtractionUtils.ArrayLikeVec
      *
      * @param coords Coordinates.
      */
-    public DoubleArrayVectorizer(Integer ... coords) {
+    public DoubleArrayVectorizer(Integer... coords) {
         super(coords);
     }
 

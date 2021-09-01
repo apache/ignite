@@ -32,13 +32,13 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
     public static final String MBEAN_GROUP = "Diagnostic";
 
     /** Page lock tracker manager */
-    private  PageLockTrackerManager pageLockTrackerManager;
+    private PageLockTrackerManager pageLockTrackerManager;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        String name = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
+        String name = U.maskForFileName(cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString());
 
         pageLockTrackerManager = new PageLockTrackerManager(log, name);
 
@@ -65,7 +65,7 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
     /**
      * Getter.
      *
-     * @return Page lock tracker mananger.
+     * @return Page lock tracker manager.
      */
     public PageLockTrackerManager pageLockTracker() {
         return pageLockTrackerManager;

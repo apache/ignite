@@ -24,7 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -43,6 +45,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for validation of inserts sql queries.
  */
 public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingCommonTest {
+    /** Name of the class that actually not in class path. */
+    private static final String TEST_CLASS_NAME = "MyClass";
+
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
 
@@ -101,9 +106,10 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
                         .addQueryField("fv2", "java.lang.Long", null)
                         .setTableName("INT_KEY_TAB"),
                     new QueryEntity(SuperKey.class, String.class)
-                        .setTableName("SUPER_TAB")
-                ))
-            , "testCache");
+                        .setTableName("SUPER_TAB"),
+                    new QueryEntity(String.class.getName(), TEST_CLASS_NAME)
+                        .setTableName("MY_CLASS")
+                )), "testCache");
     }
 
     /** {@inheritDoc} */
@@ -202,6 +208,44 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
         execute("CREATE TABLE PUBLIC.IMPLICIT_INS (id1 BIGINT, id2 BIGINT, val BIGINT, PRIMARY KEY(id1, id2))");
 
         execute("INSERT INTO PUBLIC.IMPLICIT_INS VALUES (1,2,3)");
+    }
+
+    /**
+     * Check we can't insert null as column value of a compound PK that has NOT NULL constraint.
+     */
+    @Test
+    public void testValidationOfCompoundKey() {
+        execute("CREATE TABLE PUBLIC.TBL (id1 BIGINT, id2 BIGINT NOT NULL, val BIGINT, PRIMARY KEY(id1, id2))");
+
+        GridTestUtils.assertThrows(log(),
+            () -> execute("INSERT INTO PUBLIC.TBL VALUES (1, null, 3)"),
+            IgniteSQLException.class,
+            "Null value is not allowed for column 'ID2'");
+    }
+
+    /**
+     * Check that raw _KEY and _VAL skipped on validation, hence exception
+     * is not thrown when their classes is not in class path.
+     */
+    @Test
+    public void testValidationSkippedForRawKeyVal() {
+        String key = "foo";
+
+        BinaryObject bo = grid(0).binary().builder(TEST_CLASS_NAME)
+            .setField(key, "bar")
+            .build();
+
+        IgniteCache<Object, Object> binCache = cache.withKeepBinary();
+
+        binCache.put(key, bo);
+
+        List<List<?>> res = binCache.query(new SqlFieldsQuery("SELECT _val FROM MY_CLASS WHERE _key = ?")
+            .setArgs(key)).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertTrue(res.get(0).get(0) instanceof BinaryObject);
+        assertEquals(bo.field(key), ((BinaryObject)res.get(0).get(0)).field(key));
     }
 
     /**

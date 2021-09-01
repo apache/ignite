@@ -84,7 +84,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore) {
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore, boolean primary) {
         assert false;
 
         return false;
@@ -711,6 +711,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         AffinityTopologyVersion topVer,
         GridDrType drType,
         boolean fromStore,
+        boolean primary,
         CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;
@@ -745,7 +746,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean lockedByThread()  {
+    @Override public boolean lockedByThread() {
         return lockedByThread(Thread.currentThread().getId());
     }
 
@@ -954,6 +955,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public void unlockEntry() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean tryLockEntry(long timeout) {
+        return false;
     }
 
     /** {@inheritDoc} */

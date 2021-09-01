@@ -441,7 +441,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 }
             }
 
-            assertTrue("Failed to find affinity key [gridIdx=" + idx +", cache=" + cacheName + ']',
+            assertTrue("Failed to find affinity key [gridIdx=" + idx + ", cache=" + cacheName + ']',
                 key != -1);
 
             IgniteCache<Object, Object> cache = g.cache(cacheName);

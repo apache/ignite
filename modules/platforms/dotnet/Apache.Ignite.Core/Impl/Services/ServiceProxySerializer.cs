@@ -40,9 +40,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="methodName">Name of the method.</param>
         /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
-        /// <param name="platform">The platform.</param>
+        /// <param name="platformType">The platform.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, Platform platform)
+            object[] arguments, PlatformType platformType)
         {
             Debug.Assert(writer != null);
 
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer.WriteBoolean(true);
                 writer.WriteInt(arguments.Length);
 
-                if (platform == Platform.DotNet)
+                if (platformType == PlatformType.DotNet)
                 {
                     // Write as is for .NET.
                     foreach (var arg in arguments)
@@ -69,7 +69,8 @@ namespace Apache.Ignite.Core.Impl.Services
 
                     for (var i = 0; i < arguments.Length; i++)
                     {
-                        WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null, arguments[i]);
+                        WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null,
+                            arguments[i]);
                     }
                 }
             }
@@ -257,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     return (writer, o) => writer.WriteTimestampArray((DateTime?[]) o);
             }
 
-            var handler = BinarySystemHandlers.GetWriteHandler(type);
+            var handler = BinarySystemHandlers.GetWriteHandler(type, true);
 
             if (handler != null)
                 return null;
@@ -265,11 +266,11 @@ namespace Apache.Ignite.Core.Impl.Services
             if (type.IsArray)
                 return (writer, o) => writer.WriteArrayInternal((Array) o);
 
+            if (arg is IDictionary)
+                return (writer, o) => writer.WriteDictionary((IDictionary) o);
+
             if (arg is ICollection)
                 return (writer, o) => writer.WriteCollection((ICollection) o);
-
-            if (arg is DateTime)
-                return (writer, o) => writer.WriteTimestamp((DateTime) o);
 
             return null;
         }

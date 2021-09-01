@@ -26,9 +26,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRES
  * Throttling policy, encapsulates logic of delaying write operations.
  */
 public interface PagesWriteThrottlePolicy {
+    /** @see IgniteSystemProperties#IGNITE_THROTTLE_LOG_THRESHOLD */
+    static int DFLT_THROTTLE_LOG_THRESHOLD = 10;
+
     /** Max park time. */
-    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(IgniteSystemProperties.getInteger
-            (IGNITE_THROTTLE_LOG_THRESHOLD, 10));
+    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, DFLT_THROTTLE_LOG_THRESHOLD));
 
     /**
      * Callback to apply throttling delay.

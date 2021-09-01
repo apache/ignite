@@ -171,7 +171,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             Integer val;
 
-            while((val = qryFut.next()) != null)
+            while ((val = qryFut.next()) != null)
                 sum += val;
 
             return sum;

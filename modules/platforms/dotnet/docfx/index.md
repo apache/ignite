@@ -1,10 +1,7 @@
 # Apache Ignite.NET
 
-<img src="https://ignite.apache.org/images/logo3.png" hspace="20" /><img src="https://ptupitsyn.github.io/images/net-framework.png" hspace="20" />
+Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
-Apache Ignite is a [memory-centric](https://ignite.apache.org/arch/memorycentric.html) distributed database, 
-[caching](https://ignite.apache.org/features/datagrid.html), and processing platform for transactional, analytical, 
-and streaming workloads, delivering in-memory speeds at petabyte scale.
+* [Gettting Started](https://ignite.apache.org/docs/latest/quick-start/dotnet)
+* [API Documentation](https://ignite.apache.org/releases/latest/dotnetdoc/api/)
 
-* [API Documentation](api/)
-* [Gettting Started](https://apacheignite-net.readme.io/docs/getting-started)

@@ -45,7 +45,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -93,7 +93,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -120,7 +120,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -147,7 +147,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -174,7 +174,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -201,7 +201,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -228,7 +228,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {

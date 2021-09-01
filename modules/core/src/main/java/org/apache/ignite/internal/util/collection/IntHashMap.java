@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -85,7 +88,7 @@ public class IntHashMap<V> implements IntMap<V> {
         n |= n >>> 8;
         n |= n >>> 16;
 
-        return  (n < INITIAL_CAPACITY) ? INITIAL_CAPACITY : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+        return (n < INITIAL_CAPACITY) ? INITIAL_CAPACITY : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
     }
 
     /** Default constructor. */
@@ -102,6 +105,15 @@ public class IntHashMap<V> implements IntMap<V> {
         scaleThreshold = (int)(entriesSize * SCALE_LOAD_FACTOR);
 
         entries = (Entry<V>[])new Entry[entriesSize];
+    }
+
+    /**
+     * Copy constructor.
+     */
+    public IntHashMap(IntMap<? extends V> other) {
+        this(other.size());
+
+        other.forEach(this::put);
     }
 
     /** {@inheritDoc} */
@@ -181,6 +193,30 @@ public class IntHashMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public int[] keys() {
+        int[] keys = new int[size];
+
+        int idx = 0;
+
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                keys[idx++] = entry.key;
+
+        return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<V> values() {
+        List<V> vals = new ArrayList<>(size);
+
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                vals.add(entry.val);
+
+        return vals;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
         return find(key) >= 0;
     }
@@ -190,6 +226,15 @@ public class IntHashMap<V> implements IntMap<V> {
         return Arrays.stream(entries)
             .filter(Objects::nonNull)
             .anyMatch(entry -> Objects.equals(val, entry.val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
+
+        compactThreshold = 0;
+        scaleThreshold = 0;
+        size = 0;
     }
 
     /** {@inheritDoc} */

@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var qry = new SqlQuery(typeof(Person),
                 string.Format("from \"{0}\".Person, \"{1}\".Person as p2 where Person.Id = 11 - p2.Id",
                     CacheName, CacheName2));
-            
+
             Assert.Greater(Count, cache.Query(qry).Count());
 
             // Distributed join fixes the problem.
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // Non-distributed join returns incomplete results.
             var qry = new SqlFieldsQuery(string.Format(
-                "select p2.Name from \"{0}\".Person, \"{1}\".Person as p2 where Person.Id = 11 - p2.Id", 
+                "select p2.Name from \"{0}\".Person, \"{1}\".Person as p2 where Person.Id = 11 - p2.Id",
                 CacheName, CacheName2));
 
             Assert.Greater(Count, cache.Query(qry).Count());
@@ -227,6 +227,36 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(1, res[0][0]);
             Assert.AreEqual("baz", cache[-10].Name);
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.Partitions"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestPartitionsValidation()
+        {
+            var cache = GetClientCache<Person>();
+            var qry = new SqlFieldsQuery("SELECT * FROM Person") { Partitions = new int[0] };
+
+            var ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("Partitions must not be empty.", ex.Message);
+
+            qry.Partitions = new[] {-1, -2};
+            ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("Illegal partition", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.UpdateBatchSize"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestUpdateBatchSizeValidation()
+        {
+            var cache = GetClientCache<Person>();
+            var qry = new SqlFieldsQuery("SELECT * FROM Person") { UpdateBatchSize = -1 };
+
+            var ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("updateBatchSize cannot be lower than 1", ex.Message);
         }
     }
 }

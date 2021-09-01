@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -44,9 +43,6 @@ public class AuthenticationContext {
 
     /** */
     private Map<String, Object> nodeAttrs;
-
-    /** Authorization context. */
-    private AuthorizationContext athrCtx;
 
     /** True if this is a client node context. */
     private boolean client;
@@ -142,23 +138,6 @@ public class AuthenticationContext {
      */
     public void nodeAttributes(Map<String, ?> nodeAttrs) {
         this.nodeAttrs = F.isEmpty(nodeAttrs) ? null : new HashMap<>(nodeAttrs);
-    }
-
-    /**
-     * @return Native Apache Ignite authorization context acquired after authentication or {@code null} if native
-     * Ignite authentication is not used.
-     */
-    public AuthorizationContext authorizationContext(){
-        return athrCtx;
-    }
-
-    /**
-     * Set authorization context acquired after native Apache Ignite authentication.
-     */
-    public AuthenticationContext authorizationContext(AuthorizationContext newVal) {
-        athrCtx = newVal;
-
-        return this;
     }
 
     /**

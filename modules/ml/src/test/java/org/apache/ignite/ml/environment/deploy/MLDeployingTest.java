@@ -161,7 +161,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
             body.accept(new CacheBasedDatasetBuilder<>(ignite1, cache)
                 .withRetriesNumber(NUMBER_OF_COMPUTE_RETRIES));
         } finally {
-            if(cache != null)
+            if (cache != null)
                 cache.destroy();
         }
     }
@@ -177,7 +177,9 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Vectorizer<Integer, Vector, Integer, Double> createVectorizer() throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException {
+    private Vectorizer<Integer, Vector, Integer, Double> createVectorizer()
+        throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException,
+        java.lang.reflect.InvocationTargetException {
         ClassLoader ldr = getExternalClassLoader();
         Class<?> clazz = ldr.loadClass(EXT_VECTORIZER);
 

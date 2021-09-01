@@ -24,7 +24,6 @@
 :: QUIET
 :: NO_PAUSE
 :: JVM_XOPTS
-:: NOJMX
 ::
 :: Script setups reasonable defaults (see below) for omitted arguments.
 ::

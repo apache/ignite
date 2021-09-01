@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.isolve.lsqr;
 
-import com.github.fommil.netlib.BLAS;
 import java.util.Arrays;
+import com.github.fommil.netlib.BLAS;
 
 /**
  * Basic implementation of the LSQR algorithm without assumptions about dataset storage format or data processing
@@ -79,7 +79,7 @@ public abstract class AbstractLSQR {
     public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar,
         double[] x0) {
         Integer n = getColumns();
-        if(n == null)
+        if (n == null)
             return null;
 
         if (iterLim < 0)

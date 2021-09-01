@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import com.google.common.collect.Iterables;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.google.common.collect.Iterables;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -54,7 +54,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     private static final int INVOKE_CNT = 50;
 
     /** Service name used in the tests. */
-    private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName()+"_service";
+    private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName() + "_service";
 
     /** Error message of created metrics. */
     private static final String METRICS_MUST_NOT_BE_CREATED = "Service metric registry must not be created.";

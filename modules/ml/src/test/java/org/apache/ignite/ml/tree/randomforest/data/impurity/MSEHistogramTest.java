@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
@@ -107,7 +106,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         }
 
         int datasetSize = rnd.nextInt(1000) + 1;
-        for(int i = 0; i < datasetSize; i++) {
+        for (int i = 0; i < datasetSize; i++) {
             BootstrappedVector vec = randomVector(false);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);
 

@@ -98,14 +98,14 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
 
         assertTrue(((IgniteCacheProxy)cache).context().isNear());
 
-        for (int i = 0 ; i < KEYS_COUNT; i++)
+        for (int i = 0; i < KEYS_COUNT; i++)
             cache.put(i, i);
 
         CreatedExpiryPolicy plc = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 500));
 
         IgniteCache<Object, Object> cacheWithExpiry = cache.withExpiryPolicy(plc);
 
-        for (int i = KEYS_COUNT ; i < KEYS_COUNT * 2; i++) {
+        for (int i = KEYS_COUNT; i < KEYS_COUNT * 2; i++) {
             cacheWithExpiry.put(i, i);
 
             assertEquals(i, cacheWithExpiry.localPeek(i));
@@ -119,10 +119,10 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
 
         assertEquals(KEYS_COUNT, cache.size());
 
-        for (int i = 0 ; i < KEYS_COUNT; i++)
+        for (int i = 0; i < KEYS_COUNT; i++)
             assertEquals(i, cacheWithExpiry.localPeek(i));
 
-        for (int i = KEYS_COUNT ; i < KEYS_COUNT * 2; i++)
+        for (int i = KEYS_COUNT; i < KEYS_COUNT * 2; i++)
             assertNull(cache.localPeek(i));
     }
 }

@@ -168,7 +168,7 @@ public class VectorUtils {
      *
      * @param values Values.
      */
-    public static Vector of(double ... values) {
+    public static Vector of(double... values) {
         A.notNull(values, "values");
 
         return new DenseVector(values);

@@ -129,7 +129,7 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
 
             IgniteInternalFuture[] futs = new IgniteInternalFuture[CACHES_COUNT];
 
-            for (int i = 0; i < CACHES_COUNT; i ++) {
+            for (int i = 0; i < CACHES_COUNT; i++) {
                 final int cacheIdx = i;
 
                 final int gridIdx = cacheIdx % gridCount();
@@ -147,7 +147,7 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
                 fut.get();
             }
 
-            for (int i = 0; i < CACHES_COUNT; i ++) {
+            for (int i = 0; i < CACHES_COUNT; i++) {
                 final int cacheIdx = i;
 
                 final int gridIdx = cacheIdx % gridCount();

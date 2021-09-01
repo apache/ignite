@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that .NET <see cref="CacheConfiguration"/> has all properties from Java configuration APIs.
     /// </summary>
-    [Ignore(ParityTest.IgnoreReason)]
+    [Explicit(ParityTest.IgnoreReason)]
     public class TcpCommunicationSpiParityTest
     {
         /** Known property name mappings. */
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         public void TestTcpCommunicationSpi()
         {
             ParityTest.CheckConfigurationParity(
-                @"modules\core\src\main\java\org\apache\ignite\spi\communication\tcp\TcpCommunicationSpi.java", 
+                @"modules\core\src\main\java\org\apache\ignite\spi\communication\tcp\TcpCommunicationSpi.java",
                 typeof(TcpCommunicationSpi),
                 UnneededProperties,
                 MissingProperties,

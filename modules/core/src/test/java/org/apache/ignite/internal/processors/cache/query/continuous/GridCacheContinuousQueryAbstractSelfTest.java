@@ -204,7 +204,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 for (int i = 0; i < gridCount(); i++) {
                     GridContinuousProcessor proc = grid(i).context().continuous();
 
-                    if(!((Map)U.field(proc, "rmtInfos")).isEmpty())
+                    if (!((Map)U.field(proc, "rmtInfos")).isEmpty())
                         return false;
                 }
 
@@ -340,9 +340,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            cachePut(cache,1, 1);
-            cachePut(cache,2, 2);
-            cachePut(cache,3, 3);
+            cachePut(cache, 1, 1);
+            cachePut(cache, 2, 2);
+            cachePut(cache, 3, 3);
 
             cacheRemove(cache, 2);
 
@@ -568,8 +568,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer,Integer>() {
-            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
+        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
         });
@@ -621,9 +621,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Integer,Integer>() {
-            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer,? extends Integer> e : evts) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -1229,7 +1229,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception if failed.
      */
     @Test
-    public void testQueryWithRemoteTransformer() throws Exception{
+    public void testQueryWithRemoteTransformer() throws Exception {
         doQueryWithRemoteTransformer(true, true);
         doQueryWithRemoteTransformer(true, false);
         doQueryWithRemoteTransformer(false, true);

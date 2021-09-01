@@ -29,8 +29,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /**
  *
@@ -181,7 +181,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {
-        for (int g = 0; g < nodesCnt ; g++)
+        for (int g = 0; g < nodesCnt; g++)
             assertEquals(grid(g).name(), state, grid(g).cluster().state());
     }
 

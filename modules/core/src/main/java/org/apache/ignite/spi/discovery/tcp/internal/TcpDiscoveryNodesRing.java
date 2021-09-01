@@ -173,6 +173,17 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * @return Server nodes.
+     */
+    public Collection<TcpDiscoveryNode> serverNodes() {
+        return nodes(new PN() {
+            @Override public boolean apply(ClusterNode node) {
+                return ((TcpDiscoveryNode)node).clientRouterNodeId() == null;
+            }
+        });
+    }
+
+    /**
      * Checks whether the topology has remote nodes in.
      *
      * @return {@code true} if the topology has remote nodes in.

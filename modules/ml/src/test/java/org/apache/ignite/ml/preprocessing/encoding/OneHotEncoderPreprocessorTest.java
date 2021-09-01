@@ -63,7 +63,7 @@ public class OneHotEncoderPreprocessorTest {
                     put("A", 0);
                     put("B", 1);
                 }
-            }},
+            } },
             vectorizer,
             new HashSet() {
                 {
@@ -101,7 +101,7 @@ public class OneHotEncoderPreprocessorTest {
                         put("42", 0);
                         put("43", 1);
                     }
-                }},
+                } },
             vectorizer,
             new HashSet() {
                 {
@@ -200,7 +200,7 @@ public class OneHotEncoderPreprocessorTest {
                     put("A", 0);
                     put("B", 1);
                 }
-            }},
+            } },
             vectorizer,
             new HashSet() {
                 {

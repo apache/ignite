@@ -115,7 +115,7 @@ public class InOperationExtractPartitionSelfTest extends AbstractIndexingCommonT
 
     /** */
     @Test
-    public void testAlternativeUsageOfIn(){
+    public void testAlternativeUsageOfIn() {
         try (FieldsQueryCursor<List<?>> cur = orgCache.query(new SqlFieldsQuery(
             "SELECT * FROM Organization org WHERE org._KEY IN (SELECT subOrg._KEY FROM Organization subOrg)"))) {
 

@@ -39,12 +39,12 @@ namespace Apache.Ignite.Core.Tests
 
             var allModes = Enum.GetValues(typeof(CachePeekMode)).Cast<CachePeekMode>().ToArray();
             var allModesExceptNative = allModes
-                .Where(m => m != CachePeekMode.PlatformNear).ToArray();
+                .Where(m => m != CachePeekMode.Platform).ToArray();
             
             foreach (var mode in allModesExceptNative)
             {
-                var hasNativeNear = mode == CachePeekMode.All;
-                Assert.AreEqual(Tuple.Create((int) mode, hasNativeNear), EncodePeekModes(mode), mode.ToString());
+                var hasPlatform = mode == CachePeekMode.All;
+                Assert.AreEqual(Tuple.Create((int) mode, hasPlatform), EncodePeekModes(mode), mode.ToString());
             }
             
             Assert.AreEqual(Tuple.Create(63, true), EncodePeekModes(allModes));
@@ -54,8 +54,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(Tuple.Create(12, false), EncodePeekModes(CachePeekMode.Backup, CachePeekMode.Primary));
             
             Assert.AreEqual(Tuple.Create(8, false), EncodePeekModes(CachePeekMode.Backup));
-            Assert.AreEqual(Tuple.Create(8, true), EncodePeekModes(CachePeekMode.Backup | CachePeekMode.PlatformNear));
-            Assert.AreEqual(Tuple.Create(8, true), EncodePeekModes(CachePeekMode.Backup, CachePeekMode.PlatformNear));
+            Assert.AreEqual(Tuple.Create(8, true), EncodePeekModes(CachePeekMode.Backup | CachePeekMode.Platform));
+            Assert.AreEqual(Tuple.Create(8, true), EncodePeekModes(CachePeekMode.Backup, CachePeekMode.Platform));
         }
 
         /// <summary>
@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static Tuple<int, bool> EncodePeekModes(params CachePeekMode[] modes)
         {
-            bool hasNativeNear;
-            var encoded = IgniteUtils.EncodePeekModes(modes, out hasNativeNear);
-            return Tuple.Create(encoded, hasNativeNear);
+            bool hasPlatform;
+            var encoded = IgniteUtils.EncodePeekModes(modes, out hasPlatform);
+            return Tuple.Create(encoded, hasPlatform);
         }
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.query;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -26,8 +27,6 @@ import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Collection;
 import org.junit.Test;
 
 /**
@@ -85,36 +84,6 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         Collection<GridRestCommand> commands = cmdHnd.supportedCommands();
 
         assertFalse(commands.contains(GridRestCommand.LOG));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNullCache() throws Exception {
-        QueryCommandHandler cmdHnd = new QueryCommandHandler(grid().context());
-
-        Integer arg1 = 1000;
-
-        Object[] arr = new Object[] {arg1, arg1};
-
-        RestQueryRequest req = new RestQueryRequest();
-
-        req.command(GridRestCommand.EXECUTE_SQL_QUERY);
-        req.queryType(RestQueryRequest.QueryType.SCAN);
-        req.typeName(Integer.class.getName());
-        req.pageSize(10);
-        req.sqlQuery("salary+>+%3F+and+salary+<%3D+%3F");
-        req.arguments(arr);
-        req.cacheName(null);
-
-        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
-        resp.get();
-
-        // If cache name is not set server uses name 'default'.
-        assertEquals("Failed to find cache with name: default", resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
-        assertNull(resp.result().getResponse());
     }
 
     /**

@@ -95,9 +95,7 @@ namespace ignite
                 outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
             if (!SQL_SUCCEEDED(ret))
-            {
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
-            }
 
             // Allocate a statement handle
             SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
@@ -184,13 +182,180 @@ namespace ignite
             Ignition::StopAll(true);
         }
 
-        std::string OdbcTestSuite::getTestString(int64_t ind)
+        int8_t OdbcTestSuite::GetTestI8Field(int64_t idx)
+        {
+            return static_cast<int8_t>(idx * 8);
+        }
+
+        void OdbcTestSuite::CheckTestI8Value(int idx, int8_t value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestI8Field(idx));
+        }
+
+        int16_t OdbcTestSuite::GetTestI16Field(int64_t idx)
+        {
+            return static_cast<int16_t>(idx * 16);
+        }
+
+        void OdbcTestSuite::CheckTestI16Value(int idx, int16_t value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestI16Field(idx));
+        }
+
+        int32_t OdbcTestSuite::GetTestI32Field(int64_t idx)
+        {
+            return static_cast<int32_t>(idx * 32);
+        }
+
+        void OdbcTestSuite::CheckTestI32Value(int idx, int32_t value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestI32Field(idx));
+        }
+
+        std::string OdbcTestSuite::GetTestString(int64_t idx)
         {
             std::stringstream builder;
 
-            builder << "String#" << ind;
+            builder << "String#" << idx;
 
             return builder.str();
+        }
+
+        void OdbcTestSuite::CheckTestStringValue(int idx, const std::string &value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestString(idx));
+        }
+
+        float OdbcTestSuite::GetTestFloatField(int64_t idx)
+        {
+            return static_cast<float>(idx * 0.5f);
+        }
+
+        void OdbcTestSuite::CheckTestFloatValue(int idx, float value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestFloatField(idx));
+        }
+
+        double OdbcTestSuite::GetTestDoubleField(int64_t idx)
+        {
+            return static_cast<double>(idx * 0.25f);
+        }
+
+        void OdbcTestSuite::CheckTestDoubleValue(int idx, double value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestDoubleField(idx));
+        }
+
+        bool OdbcTestSuite::GetTestBoolField(int64_t idx)
+        {
+            return static_cast<bool>(idx % 2 == 0);
+        }
+
+        void OdbcTestSuite::CheckTestBoolValue(int idx, bool value)
+        {
+            BOOST_TEST_INFO("Test index: " << idx);
+            BOOST_CHECK_EQUAL(value, GetTestBoolField(idx));
+        }
+
+        void OdbcTestSuite::GetTestDateField(int64_t idx, SQL_DATE_STRUCT& val)
+        {
+            val.year = static_cast<SQLSMALLINT>(2017 + idx / 365);
+            val.month = static_cast<SQLUSMALLINT>(((idx / 28) % 12) + 1);
+            val.day = static_cast<SQLUSMALLINT>((idx % 28) + 1);
+        }
+
+        void OdbcTestSuite::CheckTestDateValue(int idx, const SQL_DATE_STRUCT& val)
+        {
+            BOOST_TEST_CONTEXT("Test index: " << idx)
+            {
+                SQL_DATE_STRUCT expected;
+                GetTestDateField(idx, expected);
+
+                BOOST_CHECK_EQUAL(val.year, expected.year);
+                BOOST_CHECK_EQUAL(val.month, expected.month);
+                BOOST_CHECK_EQUAL(val.day, expected.day);
+            }
+        }
+
+        void OdbcTestSuite::GetTestTimeField(int64_t idx, SQL_TIME_STRUCT& val)
+        {
+            val.hour = (idx / 3600) % 24;
+            val.minute = (idx / 60) % 60;
+            val.second = idx % 60;
+        }
+
+        void OdbcTestSuite::CheckTestTimeValue(int idx, const SQL_TIME_STRUCT& val)
+        {
+            BOOST_TEST_CONTEXT("Test index: " << idx)
+            {
+                SQL_TIME_STRUCT expected;
+                GetTestTimeField(idx, expected);
+
+                BOOST_CHECK_EQUAL(val.hour, expected.hour);
+                BOOST_CHECK_EQUAL(val.minute, expected.minute);
+                BOOST_CHECK_EQUAL(val.second, expected.second);
+            }
+        }
+
+        void OdbcTestSuite::GetTestTimestampField(int64_t idx, SQL_TIMESTAMP_STRUCT& val)
+        {
+            SQL_DATE_STRUCT date;
+            GetTestDateField(idx, date);
+
+            SQL_TIME_STRUCT time;
+            GetTestTimeField(idx, time);
+
+            val.year = date.year;
+            val.month = date.month;
+            val.day = date.day;
+            val.hour = time.hour;
+            val.minute = time.minute;
+            val.second = time.second;
+            val.fraction = static_cast<uint64_t>(std::abs(idx * 914873)) % 1000000000;
+        }
+
+        void OdbcTestSuite::CheckTestTimestampValue(int idx, const SQL_TIMESTAMP_STRUCT& val)
+        {
+            BOOST_TEST_CONTEXT("Test index: " << idx)
+            {
+                SQL_TIMESTAMP_STRUCT expected;
+                GetTestTimestampField(idx, expected);
+
+                BOOST_CHECK_EQUAL(val.year, expected.year);
+                BOOST_CHECK_EQUAL(val.month, expected.month);
+                BOOST_CHECK_EQUAL(val.day, expected.day);
+                BOOST_CHECK_EQUAL(val.hour, expected.hour);
+                BOOST_CHECK_EQUAL(val.minute, expected.minute);
+                BOOST_CHECK_EQUAL(val.second, expected.second);
+                BOOST_CHECK_EQUAL(val.fraction, expected.fraction);
+            }
+        }
+
+        void OdbcTestSuite::GetTestI8ArrayField(int64_t idx, int8_t* val, size_t valLen)
+        {
+            for (size_t j = 0; j < valLen; ++j)
+                val[j] = static_cast<int8_t>(idx * valLen + j);
+        }
+
+        void OdbcTestSuite::CheckTestI8ArrayValue(int idx, const int8_t* val, size_t valLen)
+        {
+            BOOST_TEST_CONTEXT("Test index: " << idx)
+            {
+                common::FixedSizeArray<int8_t> expected(static_cast<int32_t>(valLen));
+                GetTestI8ArrayField(idx, expected.GetData(), expected.GetSize());
+
+                for (size_t j = 0; j < valLen; ++j)
+                {
+                    BOOST_TEST_INFO("Byte index: " << j);
+                    BOOST_CHECK_EQUAL(val[j], expected[(int32_t)j]);
+                }
+            }
         }
 
         void OdbcTestSuite::CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
@@ -227,7 +392,14 @@ namespace ignite
         {
             std::vector<SQLCHAR> sql = MakeQuery(qry);
 
-            return SQLExecDirect(stmt, &sql[0], static_cast<SQLINTEGER>(sql.size()));
+            return SQLExecDirect(stmt, sql.data(), static_cast<SQLINTEGER>(sql.size()));
+        }
+
+        SQLRETURN OdbcTestSuite::PrepareQuery(const std::string& qry)
+        {
+            std::vector<SQLCHAR> sql = MakeQuery(qry);
+
+            return SQLPrepare(stmt, sql.data(), static_cast<SQLINTEGER>(sql.size()));
         }
 
         void OdbcTestSuite::InsertTestStrings(int recordsNum, bool merge)
@@ -260,9 +432,9 @@ namespace ignite
             for (SQLSMALLINT i = 0; i < recordsNum; ++i)
             {
                 key = i + 1;
-                std::string val = getTestString(i);
+                std::string val = GetTestString(i);
 
-                strncpy(strField, val.c_str(), sizeof(strField));
+                CopyStringToBuffer(strField, val, sizeof(strField));
                 strFieldLen = SQL_NTS;
 
                 ret = SQLExecute(stmt);
@@ -305,7 +477,7 @@ namespace ignite
 
             SQLRETURN ret;
 
-            int recordsNum = to - from;
+            int32_t recordsNum = to - from;
 
             ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
@@ -335,36 +507,23 @@ namespace ignite
                 int seed = from + i;
 
                 keys[i] = seed;
-                i8Fields[i] = seed * 8;
-                i16Fields[i] = seed * 16;
-                i32Fields[i] = seed * 32;
+                i8Fields[i] = GetTestI8Field(seed);
+                i16Fields[i] = GetTestI16Field(seed);
+                i32Fields[i] = GetTestI32Field(seed);
 
-                std::string val = getTestString(seed);
-                strncpy(strFields.GetData() + 1024 * i, val.c_str(), 1023);
+                std::string val = GetTestString(seed);
+                CopyStringToBuffer(strFields.GetData() + 1024 * i, val, 1023);
                 strFieldsLen[i] = val.size();
 
-                floatFields[i] = seed * 0.5f;
-                doubleFields[i] = seed * 0.25f;
-                boolFields[i] = seed % 2 == 0;
+                floatFields[i] = GetTestFloatField(seed);
+                doubleFields[i] = GetTestDoubleField(seed);
+                boolFields[i] = GetTestBoolField(seed);
 
-                dateFields[i].year = 2017 + seed / 365;
-                dateFields[i].month = ((seed / 28) % 12) + 1;
-                dateFields[i].day = (seed % 28) + 1;
+                GetTestDateField(seed, dateFields[i]);
+                GetTestTimeField(seed, timeFields[i]);
+                GetTestTimestampField(seed, timestampFields[i]);
 
-                timeFields[i].hour = (seed / 3600) % 24;
-                timeFields[i].minute = (seed / 60) % 60;
-                timeFields[i].second = seed % 60;
-
-                timestampFields[i].year = dateFields[i].year;
-                timestampFields[i].month = dateFields[i].month;
-                timestampFields[i].day = dateFields[i].day;
-                timestampFields[i].hour = timeFields[i].hour;
-                timestampFields[i].minute = timeFields[i].minute;
-                timestampFields[i].second = timeFields[i].second;
-                timestampFields[i].fraction = static_cast<uint64_t>(std::abs(seed * 914873)) % 1000000000;
-
-                for (int j = 0; j < 42; ++j)
-                    i8ArrayFields[i * 42 + j] = seed * 42 + j;
+                GetTestI8ArrayField(seed, &i8ArrayFields[i*42], 42);
                 i8ArrayFieldsLen[i] = 42;
             }
 
@@ -425,19 +584,19 @@ namespace ignite
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Binding dateFields");
-            ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_DATE, SQL_DATE, 0, 0, dateFields.GetData(), 0, 0);
+            ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, SQL_TYPE_DATE, 0, 0, dateFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Binding timeFields");
-            ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, 0, 0, timeFields.GetData(), 0, 0);
+            ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TYPE_TIME, SQL_TYPE_TIME, 0, 0, timeFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Binding timestampFields");
-            ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TIMESTAMP, SQL_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
+            ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -449,7 +608,8 @@ namespace ignite
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Setting paramset size");
-            ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(recordsNum), 0);
+            ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE,
+                 reinterpret_cast<SQLPOINTER>(static_cast<ptrdiff_t>(recordsNum)), 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -545,7 +705,7 @@ namespace ignite
                 if (!SQL_SUCCEEDED(ret))
                     BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-                std::string expectedStr = getTestString(selectedRecordsNum);
+                std::string expectedStr = GetTestString(selectedRecordsNum);
                 int64_t expectedKey = selectedRecordsNum;
 
                 BOOST_CHECK_EQUAL(key, expectedKey);
@@ -626,7 +786,7 @@ namespace ignite
                 if (!SQL_SUCCEEDED(ret))
                     BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-                std::string expectedStr = getTestString(selectedRecordsNum);
+                std::string expectedStr = GetTestString(selectedRecordsNum);
                 int64_t expectedKey = selectedRecordsNum;
 
                 BOOST_CHECK_EQUAL(key, expectedKey);

@@ -22,12 +22,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -249,8 +252,20 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             // Checking that all our assignments was removed.
-            for (GridServiceAssignmentsKey key : zombieAssignmentsKeys)
-                assertNull("Found assignment for undeployed service " + key.name(), sysCache.get(key));
+            assertTrue("Found not empty assignments", GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        for (GridServiceAssignmentsKey key : zombieAssignmentsKeys) {
+                            if (sysCache.get(key) != null)
+                                return false;
+                        }
+                    } catch (IgniteCheckedException e) {
+                        fail(X.getFullStackTrace(e));
+                    }
+
+                    return true;
+                }
+            }, 5_000));
 
             for (IgniteLogger logger : strLoggers)
                 assertFalse(logger.toString().contains("Getting affinity for topology version earlier than affinity is " +

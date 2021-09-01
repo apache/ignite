@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -26,20 +25,24 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -55,6 +58,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -62,7 +66,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Testing corner cases in cache group functionality: -stopping cache in shared group and immediate node leaving;
  * -starting cache in shared group with the same name as destroyed one; -etc.
  */
-@WithSystemProperty(key=IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value="true")
+@WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /** Group name. */
@@ -261,14 +265,37 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
-        testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
+    public void testNodeRestartWith3rdPartyCacheStoreAndPersistenceEnabled() throws Exception {
+        IgniteEx crd = startGrid(0);
+
+        crd.cluster().state(ACTIVE);
+
+        String cacheName = "test-cache-3rd-party-write-behind-and-ignite-persistence";
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName)
+            .setWriteBehindEnabled(true)
+            .setWriteThrough(true)
+            .setReadThrough(true)
+            .setCacheStoreFactory(new StoreFactory());
+
+        IgniteCache cache = crd.getOrCreateCache(ccfg);
+
+        cache.put(12, 42);
+
+        stopGrid(0);
+
+        crd = startGrid(0);
+
+        crd.cluster().state(ACTIVE);
+
+        cache = crd.cache(cacheName);
+
+        assertEquals("Cache was not properly restored or required key is lost.", 42, cache.get(12));
     }
 
     /**
      * @param doFindAndRemove Do find and remove.
      */
-    private void testFindAndDeleteGarbage(
+    public void testFindAndDeleteGarbage(
         BiFunction<IgniteEx, Boolean, VisorFindAndDeleteGarbageInPersistenceTaskResult> doFindAndRemove
     ) throws Exception {
         IgniteEx ignite = startGrids(3);
@@ -286,6 +313,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         IgniteEx ex1 = startGrid(2);
 
         assertNull(ignite.cachex(getCacheName(0)));
+
+        ignite.resetLostPartitions(Arrays.asList(getCacheName(0), getCacheName(1), getCacheName(2)));
 
         awaitPartitionMapExchange();
 
@@ -329,28 +358,6 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
             ignite.compute().execute(VisorFindAndDeleteGarbageInPersistenceTask.class, arg);
 
         return result;
-    }
-
-    /**
-     * @param ignite Ignite to execute task on.
-     * @param delFoundGarbage If clearing mode should be used.
-     * @return Result of task run.
-     */
-    private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTaskViaControlConsoleUtil(
-        IgniteEx ignite,
-        boolean delFoundGarbage
-    ) {
-        CommandHandler hnd = new CommandHandler();
-
-        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
-            ignite.localNode().id().toString()));
-
-        if (delFoundGarbage)
-            args.add(FindAndDeleteGarbageArg.DELETE.argName());
-
-        hnd.execute(args);
-
-        return hnd.getLastOperationResult();
     }
 
     /**
@@ -398,6 +405,34 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Account.class, this);
+        }
+    }
+
+    /**
+     * Test store factory.
+     */
+    private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            return new TestStore();
+        }
+    }
+
+    /**
+     * Test store.
+     */
+    private static class TestStore extends CacheStoreAdapter {
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry entry) throws CacheWriterException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
         }
     }
 }

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.failure;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,11 +46,11 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestFailureHandler hnd = new TestFailureHandler(false);
 
-        testLog = new CustomTestLogger(false, log);
+        testLog = new CustomTestLogger(log);
 
         hnd.setIgnoredFailureTypes(ImmutableSet.of(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, FailureType.SYSTEM_WORKER_BLOCKED));
 
@@ -100,7 +100,9 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
 
         testLog.expectedWarnMessage(IGNORED_FAILURE_LOG_MSG);
 
-        ignite.context().failure().process(new FailureContext(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error")));
+        ignite.context().failure().process(
+            new FailureContext(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error"))
+        );
 
         assertTrue(testLog.warnFlag().get());
 
@@ -150,11 +152,10 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
         private String expThreadDumpMsg;
 
         /**
-         * @param dbg Dbg.
          * @param echo Echo.
          */
-        public CustomTestLogger(boolean dbg, @Nullable IgniteLogger echo) {
-            super(dbg, echo);
+        public CustomTestLogger(@Nullable IgniteLogger echo) {
+            super(echo);
         }
 
         /** {@inheritDoc} */

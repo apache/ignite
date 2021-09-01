@@ -38,7 +38,7 @@ namespace ignite
                  * @param diag Diagnostics collector.
                  * @param sqlType SQL type.
                  */
-                TypeInfoQuery(diagnostic::Diagnosable& diag, int16_t sqlType);
+                TypeInfoQuery(diagnostic::DiagnosableAdapter& diag, int16_t sqlType);
 
                 /**
                  * Destructor.
@@ -57,7 +57,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector* GetMeta();
 
                 /**
                  * Fetch next result row to application buffers.

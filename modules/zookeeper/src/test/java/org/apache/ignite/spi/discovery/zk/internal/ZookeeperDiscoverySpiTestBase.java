@@ -80,7 +80,10 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
+import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -344,7 +347,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
      * @return True if nodes equal by consistent id.
      */
     private boolean equalsTopologies(Collection<ClusterNode> nodes1, Collection<ClusterNode> nodes2) {
-        if(nodes1.size() != nodes2.size())
+        if (nodes1.size() != nodes2.size())
             return false;
 
         Set<Object> consistentIds1 = nodes1.stream()
@@ -564,6 +567,93 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
             zkCluster = null;
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void checkZkNodesCleanup() throws Exception {
+        final ZookeeperClient zkClient = new ZookeeperClient(getTestResources().getLogger(),
+            zkCluster.getConnectString(),
+            30_000,
+            null);
+
+        final String basePath = ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT + "/";
+
+        final String aliveDir = basePath + ZkIgnitePaths.ALIVE_NODES_DIR + "/";
+
+        try {
+            List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
+
+            boolean foundAlive = false;
+
+            for (String znode : znodes) {
+                if (znode.startsWith(aliveDir)) {
+                    foundAlive = true;
+
+                    break;
+                }
+            }
+
+            assertTrue(foundAlive); // Sanity check to make sure we check correct directory.
+
+            assertTrue("Failed to wait for unused znodes cleanup", GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
+
+                        for (String znode : znodes) {
+                            if (znode.startsWith(aliveDir) || znode.length() < basePath.length())
+                                continue;
+
+                            znode = znode.substring(basePath.length());
+
+                            if (!znode.contains("/")) // Ignore roots.
+                                continue;
+
+                            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8193
+                            if (znode.startsWith("jd/"))
+                                continue;
+
+                            log.info("Found unexpected znode: " + znode);
+
+                            return false;
+                        }
+
+                        return true;
+                    }
+                    catch (Exception e) {
+                        error("Unexpected error: " + e, e);
+
+                        fail("Unexpected error: " + e);
+                    }
+
+                    return false;
+                }
+            }, 10_000));
+        }
+        finally {
+            zkClient.close();
+        }
+    }
+
+    /**
+     * @param zk ZooKeeper client.
+     * @param root Root path.
+     * @return All children znodes for given path.
+     * @throws Exception If failed/
+     */
+    private List<String> listSubTree(ZooKeeper zk, String root) throws Exception {
+        for (int i = 0; i < 30; i++) {
+            try {
+                return ZKUtil.listSubTreeBFS(zk, root);
+            }
+            catch (KeeperException.NoNodeException e) {
+                info("NoNodeException when get znodes, will retry: " + e);
+            }
+        }
+
+        throw new Exception("Failed to get znodes: " + root);
     }
 
     /** */

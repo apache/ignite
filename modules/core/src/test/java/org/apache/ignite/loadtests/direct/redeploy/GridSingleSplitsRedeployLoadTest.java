@@ -41,7 +41,7 @@ import org.junit.Test;
 @GridCommonTest(group = "Load Test")
 public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /** Load test task type ID. */
-    public static final String TASK_NAME = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
+    public static final String TASK_NAME = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask";
 
     /** */
     public GridSingleSplitsRedeployLoadTest() {
@@ -127,7 +127,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
                 }
             }
 
-        },  "grid-notaop-deploy-load-test").start();
+        }, "grid-notaop-deploy-load-test").start();
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */

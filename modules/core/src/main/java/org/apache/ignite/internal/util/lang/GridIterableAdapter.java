@@ -86,7 +86,7 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
     /**
      *
      */
-    private static class IteratorWrapper<T> extends GridIteratorAdapter<T> {
+    public static class IteratorWrapper<T> extends GridIteratorAdapter<T> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -98,22 +98,22 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
          *
          * @param it Iterator to wrap.
          */
-        IteratorWrapper(Iterator<T> it) {
+        public IteratorWrapper(Iterator<T> it) {
             this.it = it;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNextX() {
+        @Override public boolean hasNextX() throws IgniteCheckedException {
             return it.hasNext();
         }
 
         /** {@inheritDoc} */
-        @Override public T nextX() {
+        @Override public T nextX() throws IgniteCheckedException {
             return it.next();
         }
 
         /** {@inheritDoc} */
-        @Override public void removeX() {
+        @Override public void removeX() throws IgniteCheckedException {
             it.remove();
         }
     }

@@ -145,8 +145,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     @Test
     public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  CUSTOM_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), CUSTOM_START_KEY);
         }
     }
 
@@ -349,7 +349,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                     log.info(stackTrace);
 
-                    assertTrue("DeadlockDetection hasn't executed at "+ (threadNum - 1) + " node.",
+                    assertTrue("DeadlockDetection hasn't executed at " + (threadNum - 1) + " node.",
                         stackTrace.contains(TxDeadlockDetection.class.getName()));
 
                     // At least one stack trace should contain TransactionDeadlockException.

@@ -23,8 +23,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.TraceableIterator;
+import org.apache.ignite.internal.processors.tracing.Tracing;
+
+import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CURSOR_CANCEL;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CURSOR_CLOSE;
 
 /**
  * Query cursor for registered as running queries.
@@ -44,15 +55,22 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** Exception caused query failed or {@code null} if it succeded. */
     private Exception failReason;
 
+    /** Tracing processor. */
+    private final Tracing tracing;
+
+    /** Span of the running query. */
+    private final Span qrySpan;
+
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
      * @param runningQryMgr Running query manager.
      * @param lazy Lazy mode flag.
      * @param qryId Registered running query id.
+     * @param tracing Tracing processor.
      */
     public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
-        boolean lazy, Long qryId) {
+        boolean lazy, Long qryId, Tracing tracing) {
         super(iterExec, cancel, true, lazy);
 
         assert runningQryMgr != null;
@@ -60,18 +78,24 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
         this.runningQryMgr = runningQryMgr;
         this.qryId = qryId;
+        this.tracing = tracing;
+
+        GridRunningQueryInfo qryInfo = runningQryMgr.runningQueryInfo(qryId);
+
+        qrySpan = qryInfo == null ? NoopSpan.INSTANCE : qryInfo.span();
     }
 
     /** {@inheritDoc} */
     @Override protected Iterator<T> iter() {
-        try {
-            if (lazy())
-                return new RegisteredIterator(super.iter());
-            else
-                return super.iter();
+        try (TraceSurroundings ignored = MTC.supportContinual(qrySpan)) {
+            Iterator<T> iter = lazy() ? new RegisteredIterator(super.iter()) : super.iter();
+
+            return qrySpan != NoopSpan.INSTANCE ? new TraceableIterator<>(iter) : iter;
         }
         catch (Exception e) {
             failReason = e;
+
+            qrySpan.addTag(ERROR, e::getMessage);
 
             if (QueryUtils.wasCancelled(failReason))
                 unregisterQuery();
@@ -82,25 +106,42 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        super.close();
+        Span span = MTC.span();
 
-        unregisterQuery();
+        try (
+            TraceSurroundings ignored = MTC.support(tracing.create(
+                SQL_CURSOR_CLOSE,
+                span != NoopSpan.INSTANCE ? span : qrySpan))
+        ) {
+            super.close();
+
+            unregisterQuery();
+        }
+        catch (Throwable th) {
+            qrySpan.addTag(ERROR, th::getMessage);
+
+            throw th;
+        }
     }
 
     /**
      * Cancels query.
      */
     public void cancel() {
-        if (failReason == null)
-            failReason = new QueryCancelledException();
+        try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_CURSOR_CANCEL, qrySpan))) {
+            if (failReason == null)
+                failReason = new QueryCancelledException();
 
-        close();
+            qrySpan.addTag(ERROR, failReason::getMessage);
+
+            close();
+        }
     }
 
     /**
      * Unregister query.
      */
-    private void unregisterQuery(){
+    private void unregisterQuery() {
         if (unregistered.compareAndSet(false, true))
             runningQryMgr.unregister(qryId, failReason);
     }

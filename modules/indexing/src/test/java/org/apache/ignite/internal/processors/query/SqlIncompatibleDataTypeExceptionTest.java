@@ -82,13 +82,13 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
         bob.setField("id0", 0);
         bob.setField("id1", 1);
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             execSql("INSERT INTO test (_key, val) VALUES (?, ?)", bob.build(), "asd");
 
             return null;
         }, IgniteSQLException.class, "Update of composite key column is not supported");
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             execSql("MERGE INTO test (_key, val) VALUES (?, ?)", bob.build(), "asd");
 
             return null;
@@ -112,19 +112,19 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
         final BinaryObjectBuilder bob = grid().binary().builder("val");
         bob.setField("val", "0");
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             execSql("INSERT INTO test (id, _val) VALUES (?, ?)", 0, bob.build());
 
             return null;
         }, IgniteSQLException.class, "Update of composite value column is not supported");
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             execSql("MERGE INTO test (id, _val) VALUES (?, ?)", 0, bob.build());
 
             return null;
         }, IgniteSQLException.class, "Update of composite value column is not supported");
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             execSql("UPDATE test SET _val=?", bob.build());
 
             return null;

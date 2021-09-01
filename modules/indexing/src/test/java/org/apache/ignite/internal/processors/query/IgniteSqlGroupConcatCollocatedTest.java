@@ -109,7 +109,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
                 String s = "" + (char)('A' + i + (grp - 1) * grp / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
     }
@@ -135,8 +135,13 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
 
         assertEquals(res.size(), expRes.size());
 
-        for (int i = 0; i < res.size(); i++)
-            assertEqualsCollections(expRes.get(i), res.get(i));
+        for (int i = 0; i < res.size(); i++) {
+            List<Object> row = res.get(i);
+
+            Integer idx = (Integer) row.get(0);
+
+            assertEqualsCollections(expRes.get(idx - 1), row);
+        }
     }
 
     /**
@@ -200,7 +205,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
         for (List<Object> row : res)
             map.put((Integer)row.get(0), (String)row.get(1));
 
-        return  map;
+        return map;
     }
 
     /**

@@ -258,7 +258,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
-            String colNamePtrn){
+            String colNamePtrn) {
             return null;
         }
     }

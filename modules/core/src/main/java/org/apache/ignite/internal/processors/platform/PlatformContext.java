@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.Collection;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -38,8 +40,6 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManag
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Platform context. Acts as an entry point for platform operations.
@@ -292,14 +292,14 @@ public interface PlatformContext {
     public String platform();
 
     /**
-     * Gets a value indicating whether current platform supports native near cache.
+     * Gets a value indicating whether current platform supports native cache.
      *
-     * @return True when native near caching is supported; false otherwise.
+     * @return True when native caching is supported; false otherwise.
      */
-    boolean isNativeNearCacheSupported();
+    boolean isPlatformCacheSupported();
 
     /**
-     * Updates the near cache.
+     * Updates the platform cache cache.
      *
      * @param cacheId Cache id.
      * @param keyBytes Serialized key to update.
@@ -307,15 +307,29 @@ public interface PlatformContext {
      * @param part Key partition.
      * @param ver Key version.
      */
-    public void updateNearCache(int cacheId, byte[] keyBytes, byte[] valBytes, int part, AffinityTopologyVersion ver);
+    public void updatePlatformCache(int cacheId, byte[] keyBytes, byte[] valBytes, int part, AffinityTopologyVersion ver);
 
     /**
-     * Enables thread-local optimization for near cache update.
+     * Enables thread-local optimization for platform cache update.
      */
-    void enableThreadLocalForNearUpdate();
+    void enableThreadLocalForPlatformCacheUpdate();
 
     /**
-     * Disables thread-local optimization for near cache update.
+     * Disables thread-local optimization for platform cache update.
      */
-    void disableThreadLocalForNearUpdate();
+    void disableThreadLocalForPlatformCacheUpdate();
+
+    /**
+     * Gets platform binary type metadata.
+     *
+     * @param typeName Type name.
+     * @return Metadata when type exists; null otherwise.
+     */
+    @Nullable BinaryMetadata getBinaryType(String typeName);
+
+    /**
+     * Gets marshaller platform id (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     * @return Marshaller platform id.
+     */
+    byte getMarshallerPlatformId();
 }

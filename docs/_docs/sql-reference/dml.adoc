@@ -1,0 +1,363 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Data Manipulation Language (DML)
+
+
+This page includes all data manipulation language (DML) commands supported by Ignite.
+
+== SELECT
+
+Retrieve data from a table or multiple tables.
+
+[source,sql]
+----
+SELECT
+    [TOP term] [DISTINCT | ALL] selectExpression [,...]
+    FROM tableExpression [,...] [WHERE expression]
+    [GROUP BY expression [,...]] [HAVING expression]
+    [{UNION [ALL] | MINUS | EXCEPT | INTERSECT} select]
+    [ORDER BY order [,...]]
+    [{ LIMIT expression [OFFSET expression]
+    [SAMPLE_SIZE rowCountInt]} | {[OFFSET expression {ROW | ROWS}]
+    [{FETCH {FIRST | NEXT} expression {ROW | ROWS} ONLY}]}]
+----
+
+=== Parameters
+- `DISTINCT` - removes duplicate rows from a result set.
+- `GROUP BY` - groups the result by the given expression(s).
+- `HAVING` - filters rows after grouping.
+- `ORDER BY` - sorts the result by the given column(s) or expression(s).
+- `LIMIT and FETCH FIRST/NEXT ROW(S) ONLY` - limits the number of rows returned by the query (no limit if null or smaller than zero).
+- `OFFSET` - specifies​ how many rows to skip.
+- `UNION, INTERSECT, MINUS, EXPECT` - combines the result of this query with the results of another query.
+- `tableExpression` - Joins a table. The join expression is not supported for cross and natural joins. A natural join is an inner join, where the condition is automatically on the columns with the same name.
+
+[source,sql]
+----
+tableExpression = [[LEFT | RIGHT]{OUTER}] | INNER | CROSS | NATURAL]
+JOIN tableExpression
+[ON expression]
+----
+
+- `LEFT` - LEFT JOIN performs a join starting with the first (left-most) table and then any matching second (right-most) table records.
+- `RIGHT` - RIGHT JOIN performs a join starting with the second (right-most) table and then any matching first (left-most) table records.
+- `OUTER` - Outer joins subdivide further into left outer joins, right outer joins, and full outer joins, depending on which table's rows are retained (left, right, or both).
+- `INNER` - An inner join requires each row in the two joined tables to have matching column values.
+- `CROSS` - CROSS JOIN returns the Cartesian product of rows from tables in the join.
+- `NATURAL` - The natural join is a special case of equi-join.
+- `ON` - Value or condition to join on.
+
+=== Description
+`SELECT` queries can be executed against both link:data-modeling/data-partitioning#replicated[replicated] and link:data-modeling/data-partitioning#partitioned[partitioned] data.
+
+When queries are executed against fully replicated data, Ignite sends a query to a single cluster node and run it over the local data there.
+
+On the other hand, if a query is executed over partitioned data, then the execution flow will be the following:
+
+- The query will be parsed and split into multiple map queries and a single reduce query.
+- All the map queries are executed on all the nodes where required data resides.
+- All the nodes provide result sets of local execution to the query initiator (reducer) that, in turn, will accomplish the reduce phase by properly merging provided result sets.
+
+=== JOINs
+Ignite supports colocated and non-colocated distributed SQL joins. Furthermore, if the data resides in different tables (aka. caches in Ignite), Ignite allows for cross-table joins as well.
+
+Joins between partitioned and replicated data sets always work without any limitations.
+
+However, if you join partitioned data sets, then you have to make sure that the keys you are joining on are either colocated or make sure you switched on the non-colocated joins parameter for a query.
+
+Refer to Distributed Joins page for more details.
+
+=== Group By and Order By Optimizations
+SQL queries with `ORDER BY` clauses do not require loading the whole result set to a query initiator (reducer) node in order to complete the sorting. Instead, every node to which a query will be mapped will sort its own part of the overall result set and the reducer will do the merge in a streaming fashion.
+
+The same optimization is implemented for sorted `GROUP BY` queries - there is no need to load the whole result set to the reducer in order to do the grouping before giving it to an application. In Ignite, partial result sets from the individual nodes can be streamed, merged, aggregated, and returned to the application gradually.
+
+[discrete]
+=== Examples
+
+Retrieve all rows from the `Person` table:
+
+[source,sql]
+----
+SELECT * FROM Person;
+----
+
+
+Get all rows in alphabetical order:
+
+[source,sql]
+----
+SELECT * FROM Person ORDER BY name;
+----
+
+
+Calculate the number of `Persons` from a specific city:
+
+
+[source,sql]
+----
+SELECT city_id, COUNT(*) FROM Person GROUP BY city_id;
+----
+
+
+
+Join data stored in the `Person` and `City` tables:
+
+
+[source,sql]
+----
+SELECT p.name, c.name
+	FROM Person p, City c
+	WHERE p.city_id = c.id;
+----
+
+
+
+== INSERT
+
+Inserts data into a table.
+
+
+[source,sql]
+----
+INSERT INTO tableName
+  {[( columnName [,...])]
+  {VALUES {({DEFAULT | expression} [,...])} [,...] | [DIRECT] [SORTED] select}}
+  | {SET {columnName = {DEFAULT | expression}} [,...]}
+----
+
+
+=== Parameters
+- `tableName` - name of the table to be updated.
+- `columnName` - name of a column to be initialized with a value from the VALUES clause.
+
+=== Description
+`INSERT` adds an entry or entries into a table.
+
+Since Ignite stores all the data in a form of key-value pairs, all the `INSERT` statements are finally transformed into a set of key-value operations.
+
+If a single key-value pair is being added into a cache then, eventually, an `INSERT` statement will be converted into a `cache.putIfAbsent(...)` operation. In other cases, when multiple key-value pairs are inserted, the DML engine creates an `EntryProcessor` for each pair and uses `cache.invokeAll(...)` to propagate the data into a cache.
+
+////
+Refer to the *TODO* link:https://apacheignite-sql.readme.io/docs/how-ignite-sql-works#section-concurrent-modifications[concurrent modifications, window=_blank] section, which explains how the SQL engine solves concurrency issues.
+////
+
+[discrete]
+=== Examples
+Insert a new Person into the table:
+
+
+[source,sql]
+----
+INSERT INTO Person (id, name, city_id) VALUES (1, 'John Doe', 3);
+----
+
+
+
+Fill in Person table with the data retrieved from Account table:
+
+
+[source,sql]
+----
+INSERT INTO Person(id, name, city_id)
+   (SELECT a.id + 1000, concat(a.firstName, a.secondName), a.city_id
+   FROM Account a WHERE a.id > 100 AND a.id < 1000);
+----
+
+
+== UPDATE
+
+Update data in a table.
+
+
+[source,sql]
+----
+UPDATE tableName [[AS] newTableAlias]
+  SET {{columnName = {DEFAULT | expression}} [,...]} |
+  {(columnName [,...]) = (select)}
+  [WHERE expression][LIMIT expression]
+----
+
+
+=== Parameters
+- `table` - the name of the table to be updated.
+- `columnName` - the name of a column to be updated with a value from a `SET` clause.
+
+=== Description
+`UPDATE` alters existing entries stored in a table.
+
+Since Ignite stores all the data in a form of key-value pairs, all the `UPDATE` statements are finally transformed into a set of key-value operations.
+
+Initially, the SQL engine generates and executes a `SELECT` query based on the `UPDATE WHERE` clause and only after that does it modify the existing values that satisfy the clause result.
+
+The modification is performed via a `cache.invokeAll(...)` operation. This means that once the result of the `SELECT` query is ready, the SQL engine will prepare a number of `EntryProcessors` and will execute all of them using a `cache.invokeAll(...)` operation. While the data is being modified using `EntryProcessors`, additional checks are performed to make sure that nobody has interfered between the `SELECT` and the actual update.
+
+////
+Refer to the *TODO* link:https://apacheignite-sql.readme.io/docs/how-ignite-sql-works#section-concurrent-modifications[concurrent modifications, window=_blank] section, which explains how the SQL engine solves concurrency issues.
+////
+
+=== Primary Keys Updates
+Ignite does not allow updating a primary key because the latter defines a partition the key and its value belong to statically. While the partition with all its data can change several cluster owners, the key always belongs to a single partition. The partition is calculated using a hash function applied to the key's value.
+
+Thus, if a key needs to be updated it has to be removed and then inserted.
+
+[discrete]
+=== Examples
+Update the `name` column of an entry:
+
+
+[source,sql]
+----
+UPDATE Person SET name = 'John Black' WHERE id = 2;
+----
+
+Update the `Person` table with the data taken from the `Account` table:
+
+[source,sql]
+----
+UPDATE Person p SET name = (SELECT a.first_name FROM Account a WHERE a.id = p.id)
+----
+
+
+== WITH
+
+Used to name a sub-query, can be referenced in other parts of the SQL statement.
+
+
+[source,sql]
+----
+WITH  { name [( columnName [,...] )] AS ( select ) [,...] }
+{ select | insert | update | merge | delete | createTable }
+----
+
+
+
+=== Parameters
+- `query_name` - the name of the sub-query to be created. The name assigned to the sub-query is treated as though it was an inline view or table.
+
+=== Description
+`WITH` creates a sub-query. One or more common table entries can be referred to by name. Column name declarations are optional - the column names will be inferred from the named select queries. The final action in a WITH statement can be a `select`, `insert`, `update`, `merge`, `delete`, or `create table`.
+
+[discrete]
+=== Example
+
+
+[source,sql]
+----
+WITH cte1 AS (
+        SELECT 1 AS FIRST_COLUMN
+), cte2 AS (
+        SELECT FIRST_COLUMN+1 AS FIRST_COLUMN FROM cte1
+)
+SELECT sum(FIRST_COLUMN) FROM cte2;
+----
+
+
+
+== MERGE
+
+Merge data into a table.
+
+
+[source,sql]
+----
+MERGE INTO tableName [(columnName [,...])]
+  [KEY (columnName [,...])]
+  {VALUES {({ DEFAULT | expression } [,...])} [,...] | select}
+----
+
+
+
+=== Parameters
+- `tableName` - the name of the table to be updated.
+- `columnName` - the name of a column to be initialized with a value from a `VALUES` clause.
+
+=== Description
+`MERGE` updates existing entries and inserts new entries.
+
+Because Ignite stores all the data in a form of key-value pairs, all the `MERGE` statements are transformed into a set of key-value operations.
+
+`MERGE` is one of the most straightforward operations because it is translated into `cache.put(...)` and `cache.putAll(...)` operations depending on the number of rows that need to be inserted or updated as part of the `MERGE` query.
+
+////
+Refer to the *TODO* link:https://apacheignite-sql.readme.io/docs/how-ignite-sql-works#section-concurrent-modifications[concurrent modifications, window=_blank] section, which explains how the SQL engine solves concurrency issues.
+////
+
+[discrete]
+=== Examples
+Merge some rows into the `Person` table:
+
+
+[source,sql]
+----
+MERGE INTO Person(id, name, city_id) VALUES
+	(1, 'John Smith', 5),
+        (2, 'Mary Jones', 5);
+----
+
+
+Fill in the `Person` table with the data retrieved from the `Account` table:
+
+
+[source,sql]
+----
+MERGE INTO Person(id, name, city_id)
+   (SELECT a.id + 1000, concat(a.firstName, a.secondName), a.city_id
+   FROM Account a WHERE a.id > 100 AND a.id < 1000);
+----
+
+
+
+== DELETE
+
+Delete data from a table.
+
+
+[source,sql]
+----
+DELETE
+  [TOP term] FROM tableName
+  [WHERE expression]
+  [LIMIT term]
+----
+
+
+=== Parameters
+- `tableName` - the name of the table to delete data from.
+- `TOP, LIMIT` - specifies the number​ of entries to be deleted (no limit if null or smaller than zero).
+
+=== Description
+`DELETE` removes data from a table.
+
+Because Ignite stores all the data in a form of key-value pairs, all the `DELETE` statements are transformed into a set of key-value operations.
+
+A `DELETE` statements' execution is split into two phases and is similar to the execution of `UPDATE` statements.
+
+First, using a `SELECT` query, the SQL engine gathers those keys that satisfy the `WHERE` clause in the `DELETE` statement. Next, after having all those keys in place, it creates a number of `EntryProcessors` and executes them with `cache.invokeAll(...)`. While the data is being deleted, additional checks are performed to make sure that nobody has interfered between the `SELECT` and the actual removal of the data.
+
+////
+Refer to the *TODO* link:https://apacheignite-sql.readme.io/docs/how-ignite-sql-works#section-concurrent-modifications[concurrent modifications, window=_blank] section, which explains how the SQL engine solves concurrency issues.
+////
+
+[discrete]
+=== Examples
+Delete all the `Persons` with a specific name:
+
+
+[source,sql]
+----
+DELETE FROM Person WHERE name = 'John Doe';
+----
+

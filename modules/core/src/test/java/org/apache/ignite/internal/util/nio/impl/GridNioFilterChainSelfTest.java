@@ -114,7 +114,12 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
                 proceedExceptionCaught(ses, ex);
             }
 
-            @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut, IgniteInClosure<IgniteException> ackC) {
+            @Override public GridNioFuture<?> onSessionWrite(
+                GridNioSession ses,
+                Object msg,
+                boolean fut,
+                IgniteInClosure<IgniteException> ackC
+            ) {
                 sndEvt.compareAndSet(null, ses.<String>meta(MESSAGE_WRITE_META_NAME));
 
                 sndMsgObj.compareAndSet(null, msg);
@@ -141,7 +146,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioFilterChain<Object> chain = new GridNioFilterChain<>(log,  testLsnr, testHead,
+        GridNioFilterChain<Object> chain = new GridNioFilterChain<>(log, testLsnr, testHead,
             new AppendingFilter("A"), new AppendingFilter("B"), new AppendingFilter("C"), new AppendingFilter("D"));
 
         GridNioSession ses = new MockNioSession();
@@ -210,7 +215,12 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(
+            GridNioSession ses,
+            Object msg,
+            boolean fut,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteCheckedException {
             chainMeta(ses, MESSAGE_WRITE_META_NAME);
 
             return proceedSessionWrite(ses, msg, fut, ackC);

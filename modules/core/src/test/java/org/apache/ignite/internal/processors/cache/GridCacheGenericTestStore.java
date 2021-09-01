@@ -269,7 +269,7 @@ public class GridCacheGenericTestStore<K, V> implements CacheStore<K, V> {
             try {
                 U.sleep(operationDelay);
             }
-            catch(IgniteInterruptedCheckedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteException(e);
             }
         }

@@ -48,11 +48,15 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.stream.IntStream.range;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
+    /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
+    public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
+
     /** Stripes. */
     private final Stripe[] stripes;
 
@@ -637,8 +641,8 @@ public class StripedExecutor implements ExecutorService {
     private static class StripeConcurrentQueue extends Stripe {
         /** */
         private static final int IGNITE_TASKS_STEALING_THRESHOLD =
-            IgniteSystemProperties.getInteger(
-                IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD, 4);
+            IgniteSystemProperties.getInteger(IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD,
+                DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD);
 
         /** Queue. */
         private final Queue<Runnable> queue;
@@ -719,16 +723,16 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
-                    if(others != null) {
+                    if (others != null) {
                         int len = others.length;
                         int init = ThreadLocalRandom.current().nextInt(len);
                         int cur = init;
 
                         while (true) {
-                            if(cur != idx) {
+                            if (cur != idx) {
                                 Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
 
-                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
+                                if (queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
                                     return r;
                             }
 
@@ -755,9 +759,9 @@ public class StripedExecutor implements ExecutorService {
             if (parked)
                 LockSupport.unpark(thread);
 
-            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
+            if (others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
                 for (Stripe other : others) {
-                    if(((StripeConcurrentQueue)other).parked)
+                    if (((StripeConcurrentQueue)other).parked)
                         LockSupport.unpark(other.thread);
                 }
             }

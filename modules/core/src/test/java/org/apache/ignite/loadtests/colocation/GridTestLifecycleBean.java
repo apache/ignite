@@ -17,8 +17,8 @@
 
 package org.apache.ignite.loadtests.colocation;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -29,7 +29,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 public class GridTestLifecycleBean implements LifecycleBean {
     /** */
     @IgniteInstanceResource
-    private Ignite g;
+    protected IgniteEx g;
 
     /** {@inheritDoc} */
     @Override public void onLifecycleEvent(LifecycleEventType type) {

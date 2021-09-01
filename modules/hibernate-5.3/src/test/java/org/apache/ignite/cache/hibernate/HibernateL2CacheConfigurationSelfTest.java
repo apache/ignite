@@ -161,8 +161,14 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
-        cfg.setProperty(REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME, DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME);
-        cfg.setProperty(REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME);
+        cfg.setProperty(
+            REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME
+        );
+        cfg.setProperty(
+            REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME
+        );
 
         return cfg;
     }
@@ -268,7 +274,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter){
+    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter) {
         Set<Cache.Entry<K, V>> set = new HashSet<>();
 
         while (iter.hasNext())

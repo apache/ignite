@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
 /**
@@ -41,7 +44,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDefaultIgniteInstanceGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration(null);
-        try(Ignite ignite = Ignition.getOrStart(cfg)) {
+        try (Ignite ignite = Ignition.getOrStart(cfg)) {
             try {
                 Ignition.start(cfg);
                 fail("Expected exception after grid started");
@@ -59,7 +62,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     @Test
     public void testNamedIgniteInstanceGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration("test");
-        try(Ignite ignite = Ignition.getOrStart(cfg)) {
+        try (Ignite ignite = Ignition.getOrStart(cfg)) {
             try {
                 Ignition.start(cfg);
                 fail("Expected exception after grid started");

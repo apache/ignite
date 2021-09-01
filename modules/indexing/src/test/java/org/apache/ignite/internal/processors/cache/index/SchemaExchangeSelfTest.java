@@ -362,11 +362,11 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node2, ValueClass.class);
 
         IgniteEx node3 = start(3);
-        IgniteEx node4 = start(4,  KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
+        IgniteEx node4 = start(4, KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
         IgniteEx node5 = startNoCache(5);
 
         IgniteEx node6 = startClient(6);
-        IgniteEx node7 = startClient(7,  KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
+        IgniteEx node7 = startClient(7, KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
         IgniteEx node8 = startClientNoCache(8);
 
         assertCacheStarted(CACHE_NAME, node1, node2, node3, node4, node5, node6, node7);

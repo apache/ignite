@@ -44,7 +44,7 @@ namespace Apache.Ignite.Benchmarks
 
             args = new[] {
                 //typeof(GetAllBenchmark).FullName,
-                typeof(PutNearBenchmark).FullName,
+                typeof(PutWithPlatformCacheBenchmark).FullName,
                 //typeof(ThinClientGetAllBenchmark).FullName,
                 //typeof(ThinClientGetAllBinaryBenchmark).FullName,
                 "-ConfigPath", GetConfigPath(),
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Benchmarks
             {
                 var arg = args[i];
 
-                if (arg.StartsWith("-"))
+                if (arg.StartsWith("-", StringComparison.Ordinal))
                     arg = arg.Substring(1);
                 else
                     continue;

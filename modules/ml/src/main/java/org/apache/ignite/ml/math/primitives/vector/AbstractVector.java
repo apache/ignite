@@ -879,7 +879,8 @@ public abstract class AbstractVector implements Vector {
             return nonZeroElements();
         else
             // Default case.
-            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power), 0d), 1.0 / power);
+            return Math.pow(foldMap(
+                Functions.PLUS, x -> Math.pow(Math.abs(x), power), 0d), 1.0 / power);
     }
 
     /** {@inheritDoc} */

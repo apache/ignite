@@ -156,18 +156,20 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
                 @Override public void onUpdated(Iterable<? extends Integer> evts) throws CacheEntryListenerException {
                     for (Integer evt : evts) {
-                        log.debug("" + evt);
+                        if (log.isDebugEnabled())
+                            log.debug("" + evt);
                     }
                 }
             });
 
-            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
-                @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
-                    latch.countDown();
+            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
+                new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
+                    @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                        latch.countDown();
 
-                    throw new RuntimeException("Test error.");
-                }
-            }));
+                        throw new RuntimeException("Test error.");
+                    }
+                }));
 
             qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Integer>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {

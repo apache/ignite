@@ -49,7 +49,7 @@ public class GridUriDeploymentDependency2 {
         catch (IOException e) {
             e.printStackTrace();
         }
-        finally{
+        finally {
             U.close(in, null);
         }
 

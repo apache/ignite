@@ -91,13 +91,13 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, setId);
+        U.writeIgniteUuid(out, setId);
         out.writeObject(item);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setId = U.readGridUuid(in);
+        setId = U.readIgniteUuid(in);
         item = in.readObject();
     }
 

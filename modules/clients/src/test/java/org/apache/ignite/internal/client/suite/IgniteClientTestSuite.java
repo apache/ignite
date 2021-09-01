@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.client.suite;
 
+import org.apache.ignite.common.ClientSideCacheCreationDestructionWileTopologyChangeTest;
+import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
+import org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest;
+import org.apache.ignite.common.NodeSslConnectionMetricTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
-import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientSslParametersTest;
@@ -42,6 +45,7 @@ import org.apache.ignite.internal.client.integration.ClientTcpSslDirectSelfTest;
 import org.apache.ignite.internal.client.integration.ClientTcpSslMultiNodeSelfTest;
 import org.apache.ignite.internal.client.integration.ClientTcpSslSelfTest;
 import org.apache.ignite.internal.client.integration.ClientTcpUnreachableMultiNodeSelfTest;
+import org.apache.ignite.internal.client.rest.GridProbeCommandTest;
 import org.apache.ignite.internal.client.router.ClientFailedInitSelfTest;
 import org.apache.ignite.internal.client.router.RouterFactorySelfTest;
 import org.apache.ignite.internal.client.router.TcpRouterMultiNodeSelfTest;
@@ -54,7 +58,9 @@ import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticatorUserManagementAuthorizationTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorBeforeNodeStartSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
@@ -95,8 +101,10 @@ import org.junit.runners.Suite;
     JettyRestProcessorUnsignedSelfTest.class,
     JettyRestProcessorAuthenticationWithCredsSelfTest.class,
     JettyRestProcessorAuthenticationWithTokenSelfTest.class,
+    JettyRestProcessorAuthenticatorUserManagementAuthorizationTest.class,
     JettyRestProcessorGetAllAsArrayTest.class,
     JettyRestProcessorBaselineSelfTest.class,
+    JettyRestProcessorBeforeNodeStartSelfTest.class,
 
     // Test TCP rest processor with original memcache client.
     ClientMemcachedProtocolSelfTest.class,
@@ -132,6 +140,9 @@ import org.junit.runners.Suite;
     ClientTcpUnreachableMultiNodeSelfTest.class,
     ClientPreferDirectSelfTest.class,
 
+    //Test REST probe cmd
+    GridProbeCommandTest.class,
+
     // Test client with many nodes and in multithreaded scenarios
     ClientTcpMultiThreadedSelfTest.class,
     ClientTcpSslMultiThreadedSelfTest.class,
@@ -145,7 +156,6 @@ import org.junit.runners.Suite;
     // Rest task command handler test.
     TaskCommandHandlerSelfTest.class,
     ChangeStateCommandHandlerTest.class,
-    TaskEventSubjectIdSelfTest.class,
 
     // Default cache only test.
     ClientDefaultCacheSelfTest.class,
@@ -169,7 +179,12 @@ import org.junit.runners.Suite;
     // SSL params.
     ClientSslParametersTest.class,
 
-    IgniteClientFailuresTest.class
+    IgniteClientFailuresTest.class,
+
+    ClientSizeCacheCreationDestructionTest.class,
+    ClientSideCacheCreationDestructionWileTopologyChangeTest.class,
+    NodeSslConnectionMetricTest.class,
+    ComputeTaskRemoteSecurityContextTest.class
 })
 public class IgniteClientTestSuite {
 }

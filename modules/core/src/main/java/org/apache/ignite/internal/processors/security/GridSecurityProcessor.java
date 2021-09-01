@@ -30,7 +30,19 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
- * This interface defines a grid authentication processor.
+ * This interface is responsible for:
+ * <ul>
+ *     <li>Node authentication;</li>
+ *     <li>Thin client authentication;</li>
+ *     <li>Providing configuration info whether global node authentication is enabled;</li>
+ *     <li>Keeping and propagating all authenticated security subjects;</li>
+ *     <li>Providing configuration info whether security mode is enabled at all;</li>
+ *     <li>Handling expired sessions;</li>
+ *     <li>Providing configuration info whether sandbox is enabled;</li>
+ *     <li>Keeping and propagating authenticated security subject for thin clients;</li>
+ *     <li>Keeping and propagating authenticated security contexts for nodes and thin clients;</li>
+ *     <li>Authorizing specific operations (cache put, task execute, so on) when session security context is set.</li>
+ * </ul>
  */
 public interface GridSecurityProcessor extends GridProcessor {
     /**
@@ -77,6 +89,16 @@ public interface GridSecurityProcessor extends GridProcessor {
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
+     * Gets security context for authenticated nodes and thin clients.
+     *
+     * @param subjId Security subject id.
+     * @return Security context or null if not found.
+     */
+    public default SecurityContext securityContext(UUID subjId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Authorizes grid operation.
      *
      * @param name Cache name or task class name.
@@ -110,5 +132,37 @@ public interface GridSecurityProcessor extends GridProcessor {
      */
     public default boolean sandboxEnabled() {
         return false;
+    }
+
+    /**
+     * Creates user with the specified login and password.
+     *
+     * @param login Login of the user to be created.
+     * @param pwd User password.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public default void createUser(String login, char[] pwd) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Alters password of user with the specified login.
+     *
+     * @param login Login of the user which password should be altered.
+     * @param pwd User password to alter.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public default void alterUser(String login, char[] pwd) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Drops user with the specified login.
+     *
+     * @param login Login of the user to be dropped.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public default void dropUser(String login) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
     }
 }

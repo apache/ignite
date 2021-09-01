@@ -33,6 +33,8 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// <see cref="CacheLinqExtensions.UpdateAll{TKey,TValue}" />.
     /// When user calls UpdateAll, this node is generated.
     /// </summary>
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
+        Justification = "Instantiated by framework")]
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
     {
         /// <summary>
@@ -84,13 +86,14 @@ namespace Apache.Ignite.Linq.Impl.Dml
             var querySourceAccessValue =
                 Expression.MakeMemberAccess(querySourceRefExpression, cacheEntryType.GetMember("Value").First());
 
-            if (!(_updateDescription.Body is MethodCallExpression))
+            var methodCall = _updateDescription.Body as MethodCallExpression;
+
+            if (methodCall == null)
                 throw new NotSupportedException("Expression is not supported for UpdateAll: " +
                                                 _updateDescription.Body);
 
             var updates = new List<MemberUpdateContainer>();
 
-            var methodCall = (MethodCallExpression) _updateDescription.Body;
             while (methodCall != null)
             {
                 if (methodCall.Arguments.Count != 2)

@@ -25,7 +25,7 @@ import java.io.Serializable;
  */
 public class Param implements Serializable {
     /** */
-    private static final long serialVersionUID =0L;
+    private static final long serialVersionUID = 0L;
 
     /** Just a value. */
     public static final int VALUE = 100;

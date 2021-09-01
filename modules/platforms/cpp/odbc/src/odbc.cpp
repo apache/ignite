@@ -255,6 +255,8 @@ namespace ignite
                                SQLSMALLINT* outConnectionStringLen,
                                SQLUSMALLINT driverCompletion)
     {
+        IGNITE_UNUSED(driverCompletion);
+
         using odbc::Connection;
         using odbc::diagnostic::DiagnosticRecordStorage;
         using utility::SqlStringToString;
@@ -301,6 +303,11 @@ namespace ignite
                          SQLCHAR*       auth,
                          SQLSMALLINT    authLen)
     {
+        IGNITE_UNUSED(userName);
+        IGNITE_UNUSED(userNameLen);
+        IGNITE_UNUSED(auth);
+        IGNITE_UNUSED(authLen);
+
         using odbc::Connection;
         using odbc::config::Configuration;
         using utility::SqlStringToString;
@@ -318,7 +325,7 @@ namespace ignite
 
         LOG_MSG("DSN: " << dsn);
 
-        odbc::ReadDsnConfiguration(dsn.c_str(), config);
+        odbc::ReadDsnConfiguration(dsn.c_str(), config, &connection->GetDiagnosticRecords());
 
         connection->Establish(config);
 
@@ -624,6 +631,8 @@ namespace ignite
                            SQLINTEGER   outQueryBufferLen,
                            SQLINTEGER*  outQueryLen)
     {
+        IGNITE_UNUSED(conn);
+
         using namespace utility;
 
         LOG_MSG("SQLNativeSql called");
@@ -1135,6 +1144,7 @@ namespace ignite
         using odbc::Environment;
 
         LOG_MSG("SQLSetEnvAttr called");
+        LOG_MSG("Attribute: " << attr << ", Value: " << (size_t)value);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 
@@ -1165,7 +1175,7 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_DEFAULT, valueBuf,
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_SIGNED_LONG, valueBuf,
             static_cast<int32_t>(valueBufLen), &outResLen);
 
         environment->GetAttribute(attr, outBuffer);

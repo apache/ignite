@@ -492,19 +492,19 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private void checkResultsRow(List<List<?>> results, int rowId, Object ... expected) throws Exception {
+    private void checkResultsRow(List<List<?>> results, int rowId, Object... expected) throws Exception {
         assertTrue(rowId < results.size());
 
         List<?> row = results.get(rowId);
 
         assertEquals(expected.length, row.size());
 
-        for(int col = 0; col < expected.length; ++col)
+        for (int col = 0; col < expected.length; ++col)
             assertEquals(expected[col], row.get(col));
     }
 
     /** Run query and check that only one node did generate 'query executed' event for it. */
-    private List<List<?>> runQueryEnsureUnicast(IgniteCache<?,?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
+    private List<List<?>> runQueryEnsureUnicast(IgniteCache<?, ?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
         try (EventCounter evtCounter = new EventCounter(nodeCnt)) {
             List<List<?>> result = cache.query(qry).getAll();
 

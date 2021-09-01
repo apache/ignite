@@ -121,7 +121,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
             assertEquals(ACTIVE, grid(g).cluster().state());
 
             for (int k = 0; k < ENTRY_CNT; k++)
-                assertEquals(k,  grid(g).cache(DEFAULT_CACHE_NAME).get(k));
+                assertEquals(k, grid(g).cache(DEFAULT_CACHE_NAME).get(k));
         }
 
         // Check that new node startup and shutdown works fine after activation.
@@ -144,7 +144,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
             IgniteCache<Object, Object> cache0 = grid(g).cache(DEFAULT_CACHE_NAME);
 
             for (int k = 0; k < ENTRY_CNT; k++)
-                assertEquals(k,  cache0.get(k));
+                assertEquals(k, cache0.get(k));
         }
 
         grid(0).cluster().state(INACTIVE);
@@ -179,7 +179,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
 
     /** */
     void checkInactive(int cnt) {
-        for (int g = 0; g < cnt ; g++)
+        for (int g = 0; g < cnt; g++)
             assertEquals(grid(g).name(), INACTIVE, grid(g).cluster().state());
     }
 

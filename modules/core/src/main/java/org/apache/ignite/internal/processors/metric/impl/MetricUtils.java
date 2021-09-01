@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
 
@@ -70,7 +71,7 @@ public class MetricUtils {
      * @return Array consist of registry name and metric name.
      */
     public static T2<String, String> fromFullName(String name) {
-        return new T2<> (
+        return new T2<>(
             name.substring(0, name.lastIndexOf(SEPARATOR)),
             name.substring(name.lastIndexOf(SEPARATOR) + 1)
         );
@@ -86,6 +87,14 @@ public class MetricUtils {
             return metricName(CACHE_METRICS, cacheName, "near");
 
         return metricName(CACHE_METRICS, cacheName);
+    }
+
+    /**
+     * @param cacheOrGroupName Cache or group name, depending whether group is implicit or not.
+     * @return Cache metrics registry name.
+     */
+    public static String cacheGroupMetricsRegistryName(String cacheOrGroupName) {
+        return metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGroupName);
     }
 
     /**
@@ -219,7 +228,7 @@ public class MetricUtils {
 
         for (int i = 0; i < pkgNameParts.length - 1; ++i) {
             // Add whole package part in case its length is exactly 3.
-            if( pkgNameParts[i].length() == 3 )
+            if (pkgNameParts[i].length() == 3)
                 sb.append(pkgNameParts[i]);
             else {
                 // Add first char.
@@ -269,5 +278,21 @@ public class MetricUtils {
             sum += histogram.value()[i];
 
         return sum;
+    }
+
+    /**
+     * Build SQL-like name from Java code style name.
+     * Some examples:
+     *
+     * cacheName -> CACHE_NAME.
+     * affinitiKeyName -> AFFINITY_KEY_NAME.
+     *
+     * @param name Name to convert.
+     * @return SQL compatible name.
+     */
+    public static String toSqlName(String name) {
+        return name
+            .replaceAll("([A-Z])", "_$1")
+            .replaceAll('\\' + SEPARATOR, "_").toUpperCase();
     }
 }

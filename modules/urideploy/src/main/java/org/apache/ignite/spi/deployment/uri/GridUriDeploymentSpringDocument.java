@@ -58,7 +58,7 @@ class GridUriDeploymentSpringDocument {
      */
     @SuppressWarnings({"unchecked"})
     List<Class<? extends ComputeTask<?, ?>>> getTasks(ClassLoader clsLdr) throws IgniteSpiException {
-        assert clsLdr!= null;
+        assert clsLdr != null;
 
         try {
             if (tasks == null) {

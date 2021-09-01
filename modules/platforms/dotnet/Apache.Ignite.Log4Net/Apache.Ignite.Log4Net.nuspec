@@ -39,7 +39,7 @@ Creating NuGet package:
         <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>log4net Logger for Apache Ignite</description>
-        <copyright>Copyright 2020</copyright>
+        <copyright>Copyright 2021</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache log4net logger</tags>
         <repository type="git" url="https://github.com/apache/ignite.git" />
         <dependencies>

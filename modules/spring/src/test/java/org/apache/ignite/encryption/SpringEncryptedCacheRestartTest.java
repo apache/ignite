@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -81,13 +82,21 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
             int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
 
-            KeystoreEncryptionKey key0 = (KeystoreEncryptionKey)g.get1().context().encryption().groupKey(grpId);
-            KeystoreEncryptionKey key1 = (KeystoreEncryptionKey)g.get2().context().encryption().groupKey(grpId);
-            KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)g2.context().encryption().groupKey(grpId);
+            GroupKey grpKey0 = g.get1().context().encryption().getActiveKey(grpId);
+            GroupKey grpKey1 = g.get2().context().encryption().getActiveKey(grpId);
+            GroupKey grpKey2 = g2.context().encryption().getActiveKey(grpId);
 
-            assertNotNull(cacheName, key0);
-            assertNotNull(cacheName, key1);
-            assertNotNull(cacheName, key2);
+            assertNotNull(cacheName, grpKey0);
+            assertNotNull(cacheName, grpKey1);
+            assertNotNull(cacheName, grpKey2);
+
+            KeystoreEncryptionKey key0 = (KeystoreEncryptionKey)grpKey0.key();
+            KeystoreEncryptionKey key1 = (KeystoreEncryptionKey)grpKey1.key();
+            KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)grpKey2.key();
+
+            assertNotNull(cacheName, key0.key());
+            assertNotNull(cacheName, key1.key());
+            assertNotNull(cacheName, key2.key());
 
             assertNotNull(cacheName, key0.key());
             assertNotNull(cacheName, key1.key());
@@ -121,14 +130,22 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         assertNotNull(encrypted2);
 
-        KeystoreEncryptionKey key = (KeystoreEncryptionKey)g0.context().encryption().groupKey(
+        GroupKey grpKey = g0.context().encryption().getActiveKey(
             CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
+
+        assertNotNull(grpKey);
+
+        KeystoreEncryptionKey key = (KeystoreEncryptionKey)grpKey.key();
 
         assertNotNull(key);
         assertNotNull(key.key());
 
-        KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)g0.context().encryption().groupKey(
+        GroupKey grpKey2 = g0.context().encryption().getActiveKey(
             CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
+
+        assertNotNull(grpKey2);
+
+        KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)grpKey2.key();
 
         assertNotNull(key2);
         assertNotNull(key2.key());

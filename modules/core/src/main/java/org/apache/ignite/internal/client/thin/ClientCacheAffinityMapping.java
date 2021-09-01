@@ -106,7 +106,7 @@ public class ClientCacheAffinityMapping {
     /**
      * Merge specified mappings into one instance.
      */
-    public static ClientCacheAffinityMapping merge(ClientCacheAffinityMapping ... mappings) {
+    public static ClientCacheAffinityMapping merge(ClientCacheAffinityMapping... mappings) {
         assert !F.isEmpty(mappings);
 
         ClientCacheAffinityMapping res = new ClientCacheAffinityMapping(mappings[0].topVer);
@@ -144,7 +144,7 @@ public class ClientCacheAffinityMapping {
      * @param ch Input channel.
      */
     public static ClientCacheAffinityMapping readResponse(PayloadInputChannel ch) {
-        try (BinaryReaderExImpl in = new BinaryReaderExImpl(null, ch.in(), null, true)) {
+        try (BinaryReaderExImpl in = ClientUtils.createBinaryReader(null, ch.in())) {
             long topVer = in.readLong();
             int minorTopVer = in.readInt();
 

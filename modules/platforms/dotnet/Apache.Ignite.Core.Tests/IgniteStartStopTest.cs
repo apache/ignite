@@ -20,11 +20,8 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.IO;
     using System.Linq;
-    using System.Threading;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -39,7 +36,6 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            TestUtils.KillProcesses();
             Ignition.StopAll(true);
         }
 
@@ -55,7 +51,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(grid);
 
-            Assert.AreEqual(1, grid.GetCluster().GetNodes().Count);
+            Assert.AreEqual(1, grid.GetCluster().GetNodes().Count, "Unexpected number of nodes in the cluster.");
         }
 
         /// <summary>
@@ -66,7 +62,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\spring-test.xml",
+                SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
@@ -183,7 +179,7 @@ namespace Apache.Ignite.Core.Tests
 
             grid.Dispose();
 
-            var ex = Assert.Throws<InvalidOperationException>(() => grid.GetCache<int, int>("cache1"));
+            var ex = Assert.Throws<IgniteIllegalStateException>(() => grid.GetCache<int, int>("cache1"));
             Assert.AreEqual("Grid is in invalid state to perform this operation. " +
                             "It either not started yet or has already being or have stopped " +
                             "[igniteInstanceName=null, state=STOPPED]", ex.Message);
@@ -274,73 +270,6 @@ namespace Apache.Ignite.Core.Tests
             cache.GetAndPut(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
-        }
-
-        /// <summary>
-        /// Tests the processor initialization and grid usage right after topology enter.
-        /// </summary>
-        [Test]
-        public void TestProcessorInit()
-        {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "Config\\spring-test.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            // Start local node
-            var grid = Ignition.Start(cfg);
-
-            // Start remote node in a separate process
-            // ReSharper disable once UnusedVariable
-            var proc = new IgniteProcess(
-                "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
-                "-J-Xms512m",
-                "-J-Xmx512m");
-
-            Assert.IsTrue(proc.Alive);
-
-            var cts = new CancellationTokenSource();
-            var token = cts.Token;
-
-            // Spam message subscriptions on a separate thread
-            // to test race conditions during processor init on remote node
-            var listenTask = TaskRunner.Run(() =>
-            {
-                var filter = new MessageListener();
-
-                while (!token.IsCancellationRequested)
-                {
-                    var listenId = grid.GetMessaging().RemoteListen(filter);
-
-                    grid.GetMessaging().StopRemoteListen(listenId);
-                }
-                // ReSharper disable once FunctionNeverReturns
-            });
-
-            // Wait for remote node to join
-            Assert.IsTrue(grid.WaitTopology(2));
-
-            // Wait some more for initialization
-            Thread.Sleep(1000);
-
-            // Cancel listen task and check that it finishes
-            cts.Cancel();
-            Assert.IsTrue(listenTask.Wait(5000));
-        }
-
-        /// <summary>
-        /// Noop message filter.
-        /// </summary>
-        [Serializable]
-        private class MessageListener : IMessageListener<int>
-        {
-            /** <inheritdoc /> */
-            public bool Invoke(Guid nodeId, int message)
-            {
-                return true;
-            }
         }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
@@ -34,11 +36,13 @@ import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
+import static org.apache.ignite.internal.sql.SqlKeyword.ANALYZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
@@ -53,6 +57,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
+import static org.apache.ignite.internal.sql.SqlKeyword.REFRESH;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
@@ -77,6 +82,9 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptiona
  * SQL parser.
  */
 public class SqlParser {
+    /** Lexema: STATISTICS. */
+    public static final String STATISTICS = "STATISTICS";
+
     /** Scheme name. */
     private final String schemaName;
 
@@ -217,6 +225,16 @@ public class SqlParser {
 
                         case REVOKE:
                             cmd = processRevoke();
+
+                            break;
+
+                        case ANALYZE:
+                            cmd = processAnalyze();
+
+                            break;
+
+                        case REFRESH:
+                            cmd = processRefresh();
 
                             break;
                     }
@@ -386,6 +404,11 @@ public class SqlParser {
                     cmd = new SqlDropUserCommand();
 
                     break;
+
+                case STATISTICS:
+                    cmd = new SqlDropStatisticsCommand();
+
+                    break;
             }
 
             if (cmd != null)
@@ -486,6 +509,34 @@ public class SqlParser {
     }
 
     /**
+     * Process ANALYZE keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processAnalyze() {
+        SqlCommand cmd = new SqlAnalyzeCommand();
+
+        return cmd.parse(lex);
+    }
+
+    /**
+     * Process REFRESH keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processRefresh() {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            if (STATISTICS.equals(lex.token())) {
+                SqlCommand cmd = new SqlRefreshStatitsicsCommand();
+
+                return cmd.parse(lex);
+            }
+        }
+
+        throw errorUnexpectedToken(lex, STATISTICS);
+    }
+
+    /**
      * Not yet parsed part of the sql query. Result is invalid if parsing error was thrown.
      */
     public String remainingSql() {
@@ -498,7 +549,7 @@ public class SqlParser {
     /**
      * Last successfully parsed sql statement. It corresponds to the last command returned by {@link #nextCommand()}.
      */
-    public String lastCommandSql(){
+    public String lastCommandSql() {
         if (lastCmdEndPos < 0)
             return null;
 

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
+@Deprecated
 public class VisorIgfsFormatTask extends VisorOneNodeTask<VisorIgfsFormatTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -55,14 +56,7 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<VisorIgfsFormatTaskArg
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorIgfsFormatTaskArg arg) {
-            try {
-                ignite.fileSystem(arg.getIgfsName()).clear();
-            }
-            catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to format IGFS: " + arg.getIgfsName(), iae);
-            }
-
-            return null;
+            throw new IgniteException("IGFS operations are not supported in current version of Ignite");
         }
 
         /** {@inheritDoc} */

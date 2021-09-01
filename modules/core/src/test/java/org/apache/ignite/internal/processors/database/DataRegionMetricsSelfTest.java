@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -37,19 +37,6 @@ import static java.lang.Thread.sleep;
  *
  */
 public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
-    /** For test purposes only. */
-    public static final DataRegionMetricsProvider NO_OP_METRICS = new DataRegionMetricsProvider() {
-        /** {@inheritDoc} */
-        @Override public long partiallyFilledPagesFreeSpace() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long emptyDataPages() {
-            return 0;
-        }
-    };
-
     /** */
     private DataRegionMetricsImpl memMetrics;
 
@@ -74,9 +61,12 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
-        memMetrics = new DataRegionMetricsImpl(plcCfg,
-            new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)),
-            NO_OP_METRICS);
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+
+        ctx.add(new GridMetricManager(ctx));
+        ctx.add(new PerformanceStatisticsProcessor(ctx));
+
+        memMetrics = new DataRegionMetricsImpl(plcCfg, ctx);
 
         memMetrics.enableMetrics();
     }
@@ -312,7 +302,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
                 startLatch.await();
 
                 for (int i = 0; i < iterationsCnt; i++) {
-                    memMetrics.totalAllocatedPages().increment();
+                    memMetrics.pageMetrics().totalPages().increment();
 
                     sleep(delay);
                 }

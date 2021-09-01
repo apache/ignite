@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -137,7 +138,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         boolean read,
         GridDhtTopologyFuture topFut
     ) {
-
         Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
 
         for (IgniteTxKey key : txMap.keySet()) {
@@ -149,8 +149,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             set.add(key.key());
         }
 
-        StringBuilder invalidCaches = null;
-
         for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
             int cacheId = e.getKey();
 
@@ -158,21 +156,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
+            CacheInvalidStateException err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
 
-            if (err != null) {
-                if (invalidCaches != null)
-                    invalidCaches.append(", ");
-                else
-                    invalidCaches = new StringBuilder();
-
-                invalidCaches.append(U.maskName(ctx.name()));
-            }
-        }
-
-        if (invalidCaches != null) {
-            return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                invalidCaches);
+            if (err != null)
+                return err;
         }
 
         for (int i = 0; i < activeCacheIds.size(); i++) {

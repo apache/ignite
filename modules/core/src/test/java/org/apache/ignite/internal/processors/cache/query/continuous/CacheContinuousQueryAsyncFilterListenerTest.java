@@ -516,7 +516,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                                             tx.commit();
 
-                                            committed =true;
+                                            committed = true;
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.getCause() instanceof TransactionSerializationException);
@@ -673,7 +673,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                                             tx.commit();
 
-                                            committed =true;
+                                            committed = true;
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -31,6 +32,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -157,15 +159,33 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestMultipleClients()
         {
-            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var client1 = StartClient();
-                var client2 = StartClient();
-                var client3 = StartClient();
+                Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
 
+                var client1 = StartClient();
+                var thinClientConnections = GetThinClientConnections(ignite);
+                Assert.AreEqual(1, thinClientConnections.Length);
+                StringAssert.Contains(
+                    "rmtAddr=" + client1.GetConnections().Single().LocalEndPoint,
+                    thinClientConnections.Single());
+
+                var client2 = StartClient();
+                Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
+
+                var client3 = StartClient();
+                Assert.AreEqual(3, GetThinClientConnections(ignite).Length);
+
+                // ReSharper disable AccessToDisposedClosure
                 client1.Dispose();
+                TestUtils.WaitForTrueCondition(() => 2 == GetThinClientConnections(ignite).Length);
+
                 client2.Dispose();
+                TestUtils.WaitForTrueCondition(() => 1 == GetThinClientConnections(ignite).Length);
+
                 client3.Dispose();
+                TestUtils.WaitForTrueCondition(() => 0 == GetThinClientConnections(ignite).Length);
+                // ReSharper restore AccessToDisposedClosure
             }
         }
 
@@ -200,6 +220,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreNotEqual(clientCfg, client.GetConfiguration());
                 Assert.AreNotEqual(client.GetConfiguration(), client.GetConfiguration());
                 Assert.AreEqual(clientCfg.ToXml(), client.GetConfiguration().ToXml());
+
+                var conn = client.GetConnections().Single();
+                Assert.AreEqual(servCfg.ClientConnectorConfiguration.Port, ((IPEndPoint) conn.RemoteEndPoint).Port);
             }
         }
 
@@ -236,7 +259,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Assert.AreEqual("foo", client.GetCacheNames().Single());
                 }
-                
+
                 // Port range.
                 cfg = new IgniteClientConfiguration("127.0.0.1:10798..10800");
 
@@ -256,9 +279,9 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10700");
 
             var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(cfg));
-            
+
             Assert.AreEqual(
-                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700", 
+                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700",
                 ex.Message);
         }
 
@@ -340,12 +363,13 @@ namespace Apache.Ignite.Core.Tests.Client
             ignite.Dispose();
 
             var ex = Assert.Throws<AggregateException>(() => putGetTask.Wait());
-            var baseEx = ex.GetBaseException();
-            var socketEx = baseEx as SocketException;
+            var socketEx = ex.GetInnermostException() as SocketException;
 
             if (socketEx != null)
             {
-                Assert.AreEqual(SocketError.ConnectionAborted, socketEx.SocketErrorCode);
+                Assert.Contains(
+                    socketEx.SocketErrorCode,
+                    new[] {SocketError.ConnectionAborted, SocketError.ConnectionReset});
             }
             else
             {
@@ -394,10 +418,15 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
 
-            const int count = 100000;
+            const int count = 10000;
             var ops = new Task[count];
 
-            using (var client = StartClient())
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                SocketTimeout = TimeSpan.FromSeconds(30)
+            };
+
+            using (var client = Ignition.StartClient(clientCfg))
             {
                 var cache = client.GetOrCreateCache<int, int>("foo");
                 Parallel.For(0, count, new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount},
@@ -407,11 +436,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     });
             }
 
-            var completed = ops.Count(x => x.Status == TaskStatus.RanToCompletion);
-            Assert.Greater(completed, 0, "Some tasks should have completed.");
-
-            var failed = ops.Where(x => x.Status == TaskStatus.Faulted).ToArray();
-            Assert.IsTrue(failed.Any(), "Some tasks should have failed.");
+            var failed = ops.Where(x => x.Status == TaskStatus.Faulted);
 
             foreach (var task in failed)
             {
@@ -591,6 +616,45 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that client stops it's receiver thread upon disposal.
+        /// </summary>
+        [Test]
+        public void TestClientDisposalStopsReceiverThread([Values(true, false)] bool async)
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Trace}};
+
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                Logger = logger
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                if (async)
+                {
+                    cache.PutAsync(1, 1);
+                }
+                else
+                {
+                    cache.Put(1, 1);
+                }
+            }
+
+            var threadId = logger.Entries
+                .Select(e => Regex.Match(e.Message, "Receiver thread #([0-9]+) started."))
+                .Where(m => m.Success)
+                .Select(m => int.Parse(m.Groups[1].Value))
+                .First();
+
+            TestUtils.WaitForTrueCondition(() => logger.Entries.Any(
+                e => e.Message == string.Format("Receiver thread #{0} stopped.", threadId)));
+        }
+
+        /// <summary>
         /// Starts the client.
         /// </summary>
         private static IIgniteClient StartClient()
@@ -661,8 +725,21 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteClientConfiguration("localhost")
             {
                 UserName = "ignite",
-                Password = "ignite"
+                Password = "ignite",
+                SocketTimeout = TimeSpan.FromSeconds(10),
+                EnablePartitionAwareness = false
             };
+        }
+
+        /// <summary>
+        /// Gets thin client connections for the given server node.
+        /// </summary>
+        /// <param name="ignite">Ignite server instance.</param>
+        /// <returns>Active thin client connections.</returns>
+        private static string[] GetThinClientConnections(IIgnite ignite)
+        {
+            return ignite.GetCompute().ExecuteJavaTask<string[]>(
+                "org.apache.ignite.platform.PlatformThinClientConnectionsTask", ignite.Name);
         }
 
         /// <summary>

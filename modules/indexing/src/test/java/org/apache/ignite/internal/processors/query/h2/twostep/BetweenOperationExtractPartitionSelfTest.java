@@ -444,7 +444,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     @Test
     public void testBetweenConstAgainstNonAffinityColumn() {
         testBetweenConstOperator("select * from Organization org where org.debtCapital between %d and %d",
-            1, 3,  3, EMPTY_PARTITIONS_ARRAY);
+            1, 3, 3, EMPTY_PARTITIONS_ARRAY);
     }
 
     /**
@@ -462,10 +462,10 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     @Test
     public void testBetweenPartitionsDefaultLimitExceeding() {
         // Default limit (16) not exceeded.
-        testBetweenConstOperator(BETWEEN_QRY, 1, 16,  16);
+        testBetweenConstOperator(BETWEEN_QRY, 1, 16, 16);
 
         // Default limit (16) exceeded.
-        testBetweenConstOperator(BETWEEN_QRY, 1, 17,  17, EMPTY_PARTITIONS_ARRAY);
+        testBetweenConstOperator(BETWEEN_QRY, 1, 17, 17, EMPTY_PARTITIONS_ARRAY);
     }
 
     /**

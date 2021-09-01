@@ -396,7 +396,8 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
                 String explanation = (String)res.get(0).get(0);
 
-                log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
+                if (log.isDebugEnabled())
+                    log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
             }
             catch (Exception exc) {
                 log.error("Ignoring exception gotten explaining query : " + qry, exc);

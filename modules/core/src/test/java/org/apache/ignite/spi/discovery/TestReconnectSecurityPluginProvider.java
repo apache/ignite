@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 
 /** */

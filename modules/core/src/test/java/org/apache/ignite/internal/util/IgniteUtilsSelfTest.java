@@ -25,6 +25,8 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -38,6 +40,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -63,7 +67,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -78,13 +81,19 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.nonNull;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -95,6 +104,9 @@ import static org.junit.Assert.assertArrayEquals;
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
 
     /**
      * @return 120 character length string.
@@ -312,7 +324,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
         System.out.println("Is Solaris x86: " + U.isSolarisX86());
         System.out.println("Is Windows7: " + U.isWindows7());
-        System.out.println("Is Sufficiently Tested OS: " + U.isSufficientlyTestedOs());
     }
 
     /**
@@ -794,7 +805,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     private static String composeString(int len) {
         StringBuilder sb = new StringBuilder();
 
-        for (int i=0; i<len; i++)
+        for (int i = 0; i < len; i++)
             sb.append((char)i);
 
         String x = sb.toString();
@@ -814,13 +825,73 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput dout = new DataOutputStream(baos);
 
-        IgfsUtils.writeUTF(dout, s0);
+        writeUTF(dout, s0);
 
         DataInput din = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
 
-        String s1 = IgfsUtils.readUTF(din);
+        String s1 = readUTF(din);
 
         assertEquals(s0, s1);
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
     }
 
     /**
@@ -909,7 +980,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
+        ExecutorService executorService = Executors.newFixedThreadPool(3,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(3,
@@ -917,7 +989,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 asList(1, 2, 3),
                 i -> {
                     try {
-                        barrier.await(1, TimeUnit.SECONDS);
+                        barrier.await(1, SECONDS);
                     }
                     catch (Exception e) {
                         throw new IgniteCheckedException(e);
@@ -938,7 +1010,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelBatch() {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
+        ExecutorService executorService = Executors.newFixedThreadPool(3,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(2,
@@ -1002,11 +1075,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        ExecutorService executorService = Executors.newFixedThreadPool(4,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
-            for(int parallelism = 1; parallelism < 16; parallelism++)
-                for(int size = 0; size < 10_000; size++)
+            for (int parallelism = 1; parallelism < 16; parallelism++)
+                for (int size = 0; size < 10_000; size++)
                     testOrder(executorService, size, parallelism);
         } finally {
             executorService.shutdownNow();
@@ -1019,15 +1093,15 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        ExecutorService executorService = Executors
+            .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         CountDownLatch mainThreadLatch = new CountDownLatch(1);
         CountDownLatch poolThreadLatch = new CountDownLatch(1);
 
         // Busy one thread from the pool.
         executorService.submit(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 try {
                     poolThreadLatch.await();
                 }
@@ -1092,11 +1166,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(2,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
-        Future<?> f1 = executorService.submit(()-> runTask(executorService));
-        Future<?> f2 = executorService.submit(()-> runTask(executorService));
-        Future<?> f3 = executorService.submit(()-> runTask(executorService));
+        Future<?> f1 = executorService.submit(() -> runTask(executorService));
+        Future<?> f2 = executorService.submit(() -> runTask(executorService));
+        Future<?> f3 = executorService.submit(() -> runTask(executorService));
 
         f1.get();
         f2.get();
@@ -1163,7 +1238,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     private void testOrder(ExecutorService executorService, int size, int parallelism) throws IgniteCheckedException {
         List<Integer> list = new ArrayList<>();
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
             list.add(i);
 
         Collection<Integer> results = IgniteUtils.doInParallel(
@@ -1191,7 +1266,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelException() {
         String expectedException = "ExpectedException";
 
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        ExecutorService executorService = Executors
+            .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(
@@ -1302,6 +1378,84 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test of {@link U#humanReadableDuration}.
+     */
+    @Test
+    public void testHumanReadableDuration() {
+        assertEquals("0ms", U.humanReadableDuration(0));
+        assertEquals("10ms", U.humanReadableDuration(10));
+
+        assertEquals("1s", U.humanReadableDuration(SECONDS.toMillis(1)));
+        assertEquals("1s", U.humanReadableDuration(SECONDS.toMillis(1) + 10));
+        assertEquals("12s", U.humanReadableDuration(SECONDS.toMillis(12)));
+
+        assertEquals("1m", U.humanReadableDuration(MINUTES.toMillis(1)));
+        assertEquals("2m", U.humanReadableDuration(MINUTES.toMillis(2)));
+        assertEquals("1m5s", U.humanReadableDuration(SECONDS.toMillis(65)));
+        assertEquals("1m5s", U.humanReadableDuration(SECONDS.toMillis(65) + 10));
+
+        assertEquals("1h", U.humanReadableDuration(HOURS.toMillis(1)));
+        assertEquals("3h", U.humanReadableDuration(HOURS.toMillis(3)));
+        assertEquals(
+            "1h5m12s",
+            U.humanReadableDuration(MINUTES.toMillis(65) + SECONDS.toMillis(12) + 10)
+        );
+
+        assertEquals("1d", U.humanReadableDuration(DAYS.toMillis(1)));
+        assertEquals("15d", U.humanReadableDuration(DAYS.toMillis(15)));
+        assertEquals("1d4h", U.humanReadableDuration(HOURS.toMillis(28)));
+        assertEquals(
+            "4d6h15m",
+            U.humanReadableDuration(DAYS.toMillis(4) + HOURS.toMillis(6) + MINUTES.toMillis(15))
+        );
+    }
+
+    /**
+     * Test of {@link U#humanReadableByteCount}.
+     */
+    @Test
+    public void testHumanReadableByteCount() {
+        assertEquals("0.0 B", U.humanReadableByteCount(0));
+        assertEquals("10.0 B", U.humanReadableByteCount(10));
+
+        assertEquals("1.0 KB", U.humanReadableByteCount(1024));
+        assertEquals("15.0 KB", U.humanReadableByteCount(15 * 1024));
+        assertEquals("15.0 KB", U.humanReadableByteCount(15 * 1024 + 10));
+
+        assertEquals("1.0 MB", U.humanReadableByteCount(1024 * 1024));
+        assertEquals("6.0 MB", U.humanReadableByteCount(6 * 1024 * 1024));
+        assertEquals("6.1 MB", U.humanReadableByteCount(6 * 1024 * 1024 + 130 * 1024));
+    }
+
+    /**
+     * Test to verify the {@link U#uncompressedSize}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUncompressedSize() throws Exception {
+        File zipFile = new File(System.getProperty("java.io.tmpdir"), "test.zip");
+
+        try {
+            assertThrows(log, () -> U.uncompressedSize(zipFile), IOException.class, null);
+
+            byte[] raw = IntStream.range(0, 10).mapToObj(i -> zipFile.getAbsolutePath() + i)
+                .collect(joining()).getBytes(StandardCharsets.UTF_8);
+
+            try (FileOutputStream fos = new FileOutputStream(zipFile)) {
+                fos.write(U.zip(raw));
+
+                fos.flush();
+            }
+
+            assertEquals(raw.length, U.uncompressedSize(zipFile));
+        }
+        finally {
+            assertTrue(U.delete(zipFile));
+        }
+    }
+
+    /**
      * Reading lines from a resource file and passing them to consumer.
      * If read string is {@code "null"}, it is converted to {@code null}.
      *
@@ -1373,4 +1527,32 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
          */
         void accept(@Nullable T t) throws Exception;
     }
+
+    /**
+     * Test to verify the {@link U#hashToIndex(int, int)}.
+     */
+    @Test
+    public void testHashToIndexDistribution() {
+        assertEquals(0, U.hashToIndex(1, 1));
+        assertEquals(0, U.hashToIndex(2, 1));
+        assertEquals(1, U.hashToIndex(1, 2));
+        assertEquals(0, U.hashToIndex(2, 2));
+
+        assertEquals(1, U.hashToIndex(1, 4));
+        assertEquals(2, U.hashToIndex(2, 4));
+        assertEquals(3, U.hashToIndex(3, 4));
+        assertEquals(0, U.hashToIndex(4, 4));
+        assertEquals(1, U.hashToIndex(5, 4));
+        assertEquals(0, U.hashToIndex(8, 4));
+        assertEquals(3, U.hashToIndex(15, 4));
+
+        assertEquals(1, U.hashToIndex(-1, 4));
+        assertEquals(2, U.hashToIndex(-2, 4));
+        assertEquals(3, U.hashToIndex(-3, 4));
+        assertEquals(0, U.hashToIndex(-4, 4));
+        assertEquals(1, U.hashToIndex(-5, 4));
+        assertEquals(0, U.hashToIndex(-8, 4));
+        assertEquals(3, U.hashToIndex(-15, 4));
+    }
+
 }

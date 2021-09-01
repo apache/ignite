@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// Test with simple name mapper.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class CacheDmlQueriesTestSimpleName : CacheDmlQueriesTest
     {
         /** <inheritdoc /> */

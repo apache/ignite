@@ -756,6 +756,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param drType DR type.
      * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -767,9 +768,10 @@ public interface GridCacheEntryEx {
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean fromStore,
+        boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
-            ttl, expireTime, preload, topVer, drType, fromStore);
+            ttl, expireTime, preload, topVer, drType, fromStore, primary);
     }
 
     /**
@@ -787,6 +789,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param drType DR type.
      * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -802,9 +805,10 @@ public interface GridCacheEntryEx {
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean fromStore,
+        boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
-            ttl, expireTime, preload, topVer, drType, fromStore, null);
+            ttl, expireTime, preload, topVer, drType, fromStore, primary, null);
     }
 
     /**
@@ -822,6 +826,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param drType DR type.
      * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
      * @param row Pre-created data row, associated with this cache entry.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
@@ -839,6 +844,7 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         GridDrType drType,
         boolean fromStore,
+        boolean primary,
         @Nullable CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -1202,6 +1208,17 @@ public interface GridCacheEntryEx {
      * Unlocks entry previously locked by {@link GridCacheEntryEx#lockEntry()}.
      */
     public void unlockEntry();
+
+    /**
+     * Locks entry to protect from concurrent access. Intended to be used instead of inherent java synchronization. This
+     * allows to separate locking from unlocking in time and/or code units.
+     *
+     * @param timeout period of waiting in millis;
+     * @return {@code true} if the lock was free and was acquired by the current thread, or the lock was already held by
+     * the current thread; and {@code false} if the waiting time elapsed before the lock could be acquired
+     * @see GridCacheEntryEx#unlockEntry().
+     */
+    public boolean tryLockEntry(long timeout);
 
     /**
      * Tests whether the entry is locked currently.

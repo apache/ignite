@@ -31,9 +31,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -61,6 +58,9 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     /** Cache names. */
     private static final String[] DEFAULT_CACHE_NAMES = {DEFAULT_CACHE_NAME + "0", DEFAULT_CACHE_NAME + "1"};
 
+    /** Cache's backups. */
+    public int backups = 0;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -82,13 +82,14 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setRebalanceThreadPoolSize(4)
             .setGridLogger(testLog)
             .setCacheConfiguration(
                 of(DEFAULT_CACHE_NAMES)
                     .map(cacheName ->
                         new CacheConfiguration<>(cacheName)
                             .setGroupName(cacheName)
-                            .setBackups(0)
+                            .setBackups(backups)
                             .setAffinity(new RendezvousAffinityFunction(false, 12))
                             .setIndexedTypes(Integer.class, Integer.class)
                     ).toArray(CacheConfiguration[]::new)
@@ -96,15 +97,13 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test checks the presence of evicted partitions (RENTING state) in log
-     * without duplicate partitions.
+     * Test checks the presence of evicted partitions (RENTING state) in log without duplicate partitions.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testEvictPartByRentingState() throws Exception {
-        IgniteEx node = startGrid(0);
-        awaitPartitionMapExchange();
+        IgniteEx node = startGrid();
 
         Map<Integer, Collection<Integer>> parseParts = new ConcurrentHashMap<>();
 
@@ -120,7 +119,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
 
         parts.subList(0, parts.size() - 1).forEach(GridDhtLocalPartition::clearAsync);
 
-        doSleep(100);
+        doSleep(500);
 
         parts.get(parts.size() - 1).clearAsync();
 
@@ -128,31 +127,20 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test checks the presence of evicted partitions (MOVING state) in log
-     * without duplicate partitions.
+     * Test checks the presence of evicted partitions (MOVING state) in log without duplicate partitions.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testEvictPartByMovingState() throws Exception {
-        IgniteEx node = startGrid(0);
-        awaitPartitionMapExchange();
+        backups = 1;
+
+        IgniteEx node = startGrid();
 
         Map<Integer, Collection<Integer>> parseParts = new ConcurrentHashMap<>();
 
         LogListener logLsnr = logListener("clearing", parseParts, DEFAULT_CACHE_NAMES);
         testLog.registerListener(logLsnr);
-
-        List<GridCacheAdapter<Object, Object>> internalCaches = of(DEFAULT_CACHE_NAMES)
-            .map(node::cache)
-            .map(GridCommonAbstractTest::internalCache0)
-            .collect(toList());
-
-        List<RebalanceFuture> rebFuts = internalCaches.stream()
-            .map(internalCache -> (RebalanceFuture)internalCache.context().preloader().rebalanceFuture())
-            .collect(toList());
-
-        rebFuts.forEach(GridFutureAdapter::reset);
 
         List<GridDhtLocalPartition> parts = of(DEFAULT_CACHE_NAMES)
             .map(node::cache)
@@ -162,13 +150,10 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
             .collect(toList());
 
         parts.subList(0, parts.size() - 1).forEach(GridDhtLocalPartition::clearAsync);
-        rebFuts.forEach(rebFut -> rebFut.onDone(Boolean.TRUE));
 
-        doSleep(100);
-        rebFuts.forEach(GridFutureAdapter::reset);
+        doSleep(500);
 
         parts.get(parts.size() - 1).clearAsync();
-        rebFuts.forEach(rebFut -> rebFut.onDone(Boolean.TRUE));
 
         check(logLsnr, parts, parseParts);
     }
@@ -227,24 +212,27 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
             .map(cacheName -> "grpId=" + CU.cacheId(cacheName) + ", grpName=" + cacheName)
             .collect(toList());
 
-        Pattern extractParts = Pattern.compile(reason + "=\\[([0-9\\-,]*)]]");
+        Pattern extractParts = Pattern.compile(reason + "=\\[([0-9\\-,]*)]");
         Pattern extractGrpId = Pattern.compile("grpId=([0-9]*)");
 
         LogListener.Builder builder = LogListener.matches(logStr -> {
-            if (logStr.contains("Partitions have been scheduled for eviction:")) {
-                Matcher grpIdMatcher = extractGrpId.matcher(logStr);
-                Matcher partsMatcher = extractParts.matcher(logStr);
+            String msgPrefix = "Partitions have been scheduled for eviction:";
+            if (!logStr.contains(msgPrefix))
+                return false;
+
+            of(logStr.replace(msgPrefix, "").split("], \\[")).forEach(s -> {
+
+                Matcher grpIdMatcher = extractGrpId.matcher(s);
+                Matcher partsMatcher = extractParts.matcher(s);
 
                 //find and parsing grpId and partitions
-                while (grpIdMatcher.find() && partsMatcher.find()) {
+                if (grpIdMatcher.find() && partsMatcher.find()) {
                     evictParts.computeIfAbsent(parseInt(grpIdMatcher.group(1)), i -> new ConcurrentLinkedQueue<>())
                         .addAll(parseContentCompactStr(partsMatcher.group(1)));
                 }
+            });
 
-                return cacheInfos.stream().allMatch(logStr::contains);
-            }
-            else
-                return false;
+            return cacheInfos.stream().allMatch(logStr::contains);
         });
 
         return builder.build();

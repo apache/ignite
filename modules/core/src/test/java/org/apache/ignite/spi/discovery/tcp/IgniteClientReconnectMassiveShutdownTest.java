@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -290,10 +291,9 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
             }
 
             // Clean up ignite instance from static map in IgnitionEx.grids
-            if (stopType == StopType.SIMULATE_FAIL){
-                for (int i = 0; i < srvsToKill; i++) {
+            if (stopType == StopType.SIMULATE_FAIL) {
+                for (int i = 0; i < srvsToKill; i++)
                     grid(i).close();
-                }
             }
 
             awaitPartitionMapExchange();
@@ -362,6 +362,10 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
             assertNotNull(cause);
 
             return cause.retryReadyFuture();
+        }
+        else if (X.hasCause(e, CacheInvalidStateException.class)) {
+            // All partition owners have left the cluster, partition data has been lost.
+            return new IgniteFinishedFutureImpl<>();
         }
         else
             throw e;

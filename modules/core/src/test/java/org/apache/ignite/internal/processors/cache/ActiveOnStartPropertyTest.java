@@ -129,7 +129,7 @@ public class ActiveOnStartPropertyTest extends GridCommonAbstractTest {
 
         startGrids(nodeCnt);
 
-        for (int i=0; i < nodeCnt; i++) {
+        for (int i = 0; i < nodeCnt; i++) {
             assertEquals(activeOnStart, grid(i).configuration().isActiveOnStart());
 
             assertNull(grid(i).configuration().getClusterStateOnStart());

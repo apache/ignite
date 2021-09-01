@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -45,6 +41,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -893,7 +893,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testEnumArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
-        obj.enumArr = new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B};
+        obj.enumArr =
+            new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B};
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
@@ -902,7 +903,10 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         GridBinaryTestClasses.TestObjectAllTypes res = mutObj.build().deserialize();
 
-        Assert.assertArrayEquals(new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B}, res.enumArr);
+        Assert.assertArrayEquals(
+            new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B},
+            res.enumArr
+        );
     }
 
     /**
@@ -1324,7 +1328,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testBinaryObjectField() {
-        GridBinaryTestClasses.TestObjectContainer container = new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
+        GridBinaryTestClasses.TestObjectContainer container =
+            new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
 
         BinaryObjectBuilderImpl wrapper = wrap(container);
 

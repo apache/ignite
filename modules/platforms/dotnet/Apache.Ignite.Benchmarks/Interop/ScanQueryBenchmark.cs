@@ -30,8 +30,8 @@ namespace Apache.Ignite.Benchmarks.Interop
         /** Cache. */
         private ICache<int, Employee> _cache;
 
-        /** Cache with near enabled. */
-        private ICache<int, Employee> _cacheWithNear;
+        /** Cache with platform cache enabled. */
+        private ICache<int, Employee> _cacheWithPlatform;
 
         /** <inheritDoc /> */
         protected override void OnStarted()
@@ -39,12 +39,12 @@ namespace Apache.Ignite.Benchmarks.Interop
             base.OnStarted();
 
             _cache = Node.GetCache<int, Employee>("cache");
-            _cacheWithNear = Node.GetCache<int, Employee>("cacheNear");
+            _cacheWithPlatform = Node.GetCache<int, Employee>("cachePlatform");
 
             for (var i = 0; i < Emps.Length; i++)
             {
                 _cache.Put(i, Emps[i]);
-                _cacheWithNear.Put(i, Emps[i]);
+                _cacheWithPlatform.Put(i, Emps[i]);
             }
         }
         
@@ -53,8 +53,8 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             descs.Add(BenchmarkOperationDescriptor.Create("ScanQueryMatchNone", _ => Scan(_cache, false), 1));
             descs.Add(BenchmarkOperationDescriptor.Create("ScanQueryMatchAll", _ => Scan(_cache, true), 1));
-            descs.Add(BenchmarkOperationDescriptor.Create("ScanQueryNearMatchNone", _ => Scan(_cacheWithNear, false), 1));
-            descs.Add(BenchmarkOperationDescriptor.Create("ScanQueryNearMatchAll", _ => Scan(_cacheWithNear, true), 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("ScanQueryPlatformMatchNone", _ => Scan(_cacheWithPlatform, false), 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("ScanQueryPlatformMatchAll", _ => Scan(_cacheWithPlatform, true), 1));
         }
 
         /// <summary>

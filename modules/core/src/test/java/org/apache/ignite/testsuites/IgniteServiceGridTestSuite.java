@@ -20,7 +20,9 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.ComputeJobCancelWithServiceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
+import org.apache.ignite.internal.processors.service.GridServiceClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeployTest;
+import org.apache.ignite.internal.processors.service.GridServiceDeployClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
 import org.apache.ignite.internal.processors.service.GridServiceMetricsTest;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessorSingleN
 import org.apache.ignite.internal.processors.service.GridServiceProcessorStopSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProxyClientReconnectSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProxyTopologyInitializationTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
@@ -60,6 +63,8 @@ import org.apache.ignite.internal.processors.service.ServicePredicateAccessCache
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -112,8 +117,15 @@ import org.junit.runners.Suite;
     ServiceInfoSelfTest.class,
     ServiceDeploymentProcessIdSelfTest.class,
     ServiceHotRedeploymentViaDeploymentSpiTest.class,
-
+    GridServiceProxyTopologyInitializationTest.class,
+    GridServiceDeployClusterReadOnlyModeTest.class,
+    GridServiceClusterReadOnlyModeTest.class,
     GridServiceMetricsTest.class
 })
 public class IgniteServiceGridTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        JUnitTeamcityReporter.suite = IgniteServiceGridTestSuite.class.getName();
+    }
 }

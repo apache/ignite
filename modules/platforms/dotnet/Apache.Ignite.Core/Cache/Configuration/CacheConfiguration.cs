@@ -34,13 +34,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin.Cache;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration : IBinaryRawWriteAwareEx<BinaryWriter>
+    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 4;
@@ -250,19 +250,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class,
         /// performing a deep copy of specified cache configuration.
         /// </summary>
-        /// <param name="other">The other configuration to perfrom deep copy from.</param>
+        /// <param name="other">The other configuration to perform deep copy from.</param>
         public CacheConfiguration(CacheConfiguration other)
         {
             if (other != null)
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
+                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
                 }
 
                 CopyLocalProperties(other);
@@ -273,18 +273,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal CacheConfiguration(BinaryReader reader, ClientProtocolVersion srvVer)
+        internal CacheConfiguration(BinaryReader reader)
         {
-            Read(reader, srvVer);
+            Read(reader);
         }
 
         /// <summary>
         /// Reads data into this instance from the specified reader.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        private void Read(BinaryReader reader, ClientProtocolVersion srvVer)
+        private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
             Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
@@ -335,7 +333,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             SqlSchema = reader.ReadString();
             EncryptionEnabled = reader.ReadBoolean();
 
-            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -343,11 +341,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
+            NodeFilter = reader.ReadBoolean() ? new AttributeNodeFilter(reader) : null;
+
             KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
             
             if (reader.ReadBoolean())
             {
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration(reader);
+                PlatformCacheConfiguration = new PlatformCacheConfiguration(reader);
             }
 
             var count = reader.ReadInt();
@@ -377,18 +377,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        void IBinaryRawWriteAwareEx<BinaryWriter>.Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
         {
-            Write(writer, srvVer);
+            Write(writer);
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(BinaryWriter writer)
         {
             // Make sure system marshaller is used.
             Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
@@ -439,7 +437,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(SqlSchema);
             writer.WriteBoolean(EncryptionEnabled);
 
-            writer.WriteCollectionRaw(QueryEntities, srvVer);
+            writer.WriteCollectionRaw(QueryEntities);
 
             if (NearConfiguration != null)
             {
@@ -453,12 +451,32 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
 
-            writer.WriteCollectionRaw(KeyConfiguration);
-            
-            if (PlatformNearConfiguration != null)
+            if (NodeFilter != null)
             {
                 writer.WriteBoolean(true);
-                PlatformNearConfiguration.Write(writer);
+
+                var attributeNodeFilter = NodeFilter as AttributeNodeFilter;
+                if (attributeNodeFilter == null)
+                {
+                    throw new NotSupportedException(string.Format(
+                        "Unsupported CacheConfiguration.NodeFilter: '{0}'. " +
+                        "Only predefined implementations are supported: '{1}'",
+                        NodeFilter.GetType().Name, typeof(AttributeNodeFilter).Name));
+                }
+
+                attributeNodeFilter.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            writer.WriteCollectionRaw(KeyConfiguration);
+            
+            if (PlatformCacheConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PlatformCacheConfiguration.Write(writer);
             }
             else
             {
@@ -949,19 +967,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool EncryptionEnabled { get; set; }
 
         /// <summary>
-        /// Gets or sets platform near cache configuration.
-        /// <para />
-        /// Enables native .NET near cache when not null. Cache entries will be stored in deserialized form in
-        /// CLR heap.
-        /// <para />
-        /// When enabled on server nodes, all primary keys will be stored in platform memory as well.
-        /// <para />
-        /// Same eviction policy applies to near cache entries for all keys on client nodes and
-        /// non-primary keys on server nodes.
-        /// <para />
-        /// Enabling this can greatly improve performance for key-value operations and scan queries,
-        /// at the expense of RAM usage.
+        /// Gets or sets platform cache configuration.
+        /// More details: <see cref="PlatformCacheConfiguration"/>. 
         /// </summary>
-        public PlatformNearCacheConfiguration PlatformNearConfiguration { get; set; }
+        [IgniteExperimental]
+        public PlatformCacheConfiguration PlatformCacheConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cluster node filter. Cache will be started only on nodes that match the filter.
+        /// <para />
+        /// Only predefined implementations are supported: <see cref="AttributeNodeFilter"/>.
+        /// </summary>
+        public IClusterNodeFilter NodeFilter { get; set; }
     }
 }

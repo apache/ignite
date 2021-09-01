@@ -111,6 +111,16 @@ namespace ignite
                             break;
                         }
                     }
+
+                    if (config.GetConnectionsLimit())
+                    {
+                        common::concurrent::CsLockGuard lock(channelsMutex);
+
+                        size_t connectionsNum = newLegacyChannels.size() + channels.size();
+
+                        if (connectionsNum >= config.GetConnectionsLimit())
+                            break;
+                    }
                 }
 
                 common::concurrent::CsLockGuard lock(channelsMutex);

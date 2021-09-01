@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +35,14 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
+
+        finder.setMulticastGroup(GridTestUtils.getNextMulticastGroup(getClass()));
+        finder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(finder));
 
         cfg.setCacheConfiguration();
 
@@ -66,7 +74,7 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentStartClients() throws Exception {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 10; i++) {
             try {
                 startGrid(0);
 

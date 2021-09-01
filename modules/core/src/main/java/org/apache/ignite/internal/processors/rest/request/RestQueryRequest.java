@@ -48,6 +48,9 @@ public class RestQueryRequest extends GridRestRequest {
     /** Query type. */
     private QueryType type;
 
+    /**  Keep binary flag. */
+    private boolean keepBinary;
+
     /**
      * @param sqlQry Sql query.
      */
@@ -158,6 +161,20 @@ public class RestQueryRequest extends GridRestRequest {
      */
     public void className(String className) {
         this.className = className;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /**
+     * @param keepBinary Keep binary flag.
+     */
+    public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
     }
 
     /**

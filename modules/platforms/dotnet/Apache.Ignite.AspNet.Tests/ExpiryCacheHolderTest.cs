@@ -107,7 +107,7 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public bool IsKeepBinary { get; private set; }
-            
+
             public bool IsAllowAtomicOpsInTx { get; private set; }
 
             public ICache<int, int> WithSkipStore()
@@ -467,6 +467,11 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public IContinuousQueryHandle<ICacheEntry<int, int>> QueryContinuous(ContinuousQuery<int, int> qry, QueryBase initialQry)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<int, int> qry, SqlFieldsQuery initialQry)
             {
                 throw new NotImplementedException();
             }

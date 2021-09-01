@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.TrackingPageIsCorruptedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
@@ -104,7 +105,7 @@ public class TrackingPageIO extends PageIO {
 
         int updateTemplate = 1 << (idxToUpdate & 0b111);
 
-        byte newVal =  (byte) (byteToUpdate | updateTemplate);
+        byte newVal = (byte)(byteToUpdate | updateTemplate);
 
         if (byteToUpdate == newVal)
             return tag;
@@ -173,7 +174,7 @@ public class TrackingPageIO extends PageIO {
                     buf.putLong(sizeOff2 + SIZE_FIELD_SIZE + i, newVal);
                 }
 
-                for (; i < len; i ++) {
+                for (; i < len; i++) {
                     byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
 
                     newSize += Integer.bitCount(newVal & 0xFF);
@@ -232,7 +233,7 @@ public class TrackingPageIO extends PageIO {
      * @return Saved value in {@link TrackingPageIO#LAST_SNAPSHOT_TAG_OFFSET}.
      */
     private long getLastSnapshotTag0(ByteBuffer buf) {
-        return buf.getLong(LAST_SNAPSHOT_TAG_OFFSET) ;
+        return buf.getLong(LAST_SNAPSHOT_TAG_OFFSET);
     }
 
     /**
@@ -356,7 +357,11 @@ public class TrackingPageIO extends PageIO {
         int pageIdx = ((PageIdUtils.pageIndex(pageId) - COUNT_OF_EXTRA_PAGE) /
             countOfPageToTrack(pageSize)) * countOfPageToTrack(pageSize) + COUNT_OF_EXTRA_PAGE;
 
-        long trackingPageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), PageIdUtils.flag(pageId), pageIdx);
+        byte flag = PageIdUtils.partId(pageId) == PageIdAllocator.INDEX_PARTITION ?
+            PageIdAllocator.FLAG_IDX :
+            PageIdAllocator.FLAG_DATA;
+
+        long trackingPageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), flag, pageIdx);
 
         assert PageIdUtils.pageIndex(trackingPageId) <= PageIdUtils.pageIndex(pageId);
 
@@ -369,7 +374,7 @@ public class TrackingPageIO extends PageIO {
      * @return How many page we can track with 1 page.
      */
     public int countOfPageToTrack(int pageSize) {
-        return ((pageSize - SIZE_FIELD_OFFSET) / 2 - SIZE_FIELD_SIZE)  << 3;
+        return ((pageSize - SIZE_FIELD_OFFSET) / 2 - SIZE_FIELD_SIZE) << 3;
     }
 
     /**
@@ -403,7 +408,7 @@ public class TrackingPageIO extends PageIO {
 
         int idxToStartTest = (PageIdUtils.pageIndex(start) - COUNT_OF_EXTRA_PAGE) % cntOfPage;
 
-        int zeroIdx = useLeftHalf(curSnapshotTag)? BITMAP_OFFSET : BITMAP_OFFSET + SIZE_FIELD_SIZE + (cntOfPage >> 3);
+        int zeroIdx = useLeftHalf(curSnapshotTag) ? BITMAP_OFFSET : BITMAP_OFFSET + SIZE_FIELD_SIZE + (cntOfPage >> 3);
 
         int startIdx = zeroIdx + (idxToStartTest >> 3);
 

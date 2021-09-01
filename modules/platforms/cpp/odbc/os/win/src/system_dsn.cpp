@@ -189,7 +189,7 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
             Configuration loaded(config);
 
-            ReadDsnConfiguration(dsn.c_str(), loaded);
+            ReadDsnConfiguration(dsn.c_str(), loaded, &diag);
 
             if (!DisplayConfigureDsnWindow(hwndParent, loaded))
                 return FALSE;

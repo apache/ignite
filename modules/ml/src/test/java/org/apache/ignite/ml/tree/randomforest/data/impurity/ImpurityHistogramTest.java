@@ -46,7 +46,7 @@ public class ImpurityHistogramTest {
     protected Random rnd = new Random();
 
     static {
-        for(int i = 0; i < COUNT_OF_CLASSES; i++)
+        for (int i = 0; i < COUNT_OF_CLASSES; i++)
             lblMapping.put((double)i, i);
     }
 
@@ -82,8 +82,8 @@ public class ImpurityHistogramTest {
      * @param partitions Partitions.
      */
     <T extends Histogram<BootstrappedVector, T>> void checkSums(T exp, List<T> partitions) {
-        T leftSum = partitions.stream().reduce((x,y) -> x.plus(y)).get();
-        T rightSum = partitions.stream().reduce((x,y) -> y.plus(x)).get();
+        T leftSum = partitions.stream().reduce((x, y) -> x.plus(y)).get();
+        T rightSum = partitions.stream().reduce((x, y) -> y.plus(x)).get();
         assertTrue(exp.isEqualTo(leftSum));
         assertTrue(exp.isEqualTo(rightSum));
     }

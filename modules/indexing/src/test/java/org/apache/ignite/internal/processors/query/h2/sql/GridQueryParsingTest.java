@@ -453,7 +453,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
             buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE,"name", true),
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
@@ -474,7 +474,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE,"name", false),
+            QueryIndex.DFLT_INLINE_SIZE, "name", false),
             "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
@@ -1042,7 +1042,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
-        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+        return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
     }
 
     /**

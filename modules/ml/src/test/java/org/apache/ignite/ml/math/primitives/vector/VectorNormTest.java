@@ -155,7 +155,8 @@ public class VectorNormTest {
             final double[] ref = new double[size];
             final boolean nonNegative = pow != (int)pow;
 
-            final VectorImplementationsTest.ElementsChecker checker = new VectorImplementationsTest.ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
+            final VectorImplementationsTest.ElementsChecker checker =
+                new VectorImplementationsTest.ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
             final double norm = new Norm(ref, pow).calculate();
 
             for (int idx = 0; idx < size; idx++)
@@ -203,7 +204,7 @@ public class VectorNormTest {
             double norm = 0;
 
             for (double val : arr)
-                norm += pow == 1 ? Math.abs(val) : Math.pow(val, pow);
+                norm += pow == 1 ? Math.abs(val) : Math.pow(Math.abs(val), pow);
 
             return norm;
         }

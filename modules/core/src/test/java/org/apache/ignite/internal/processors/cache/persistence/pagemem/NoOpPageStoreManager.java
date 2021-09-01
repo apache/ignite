@@ -30,11 +30,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -57,7 +57,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
 
     /** {@inheritDoc} */
     @Override public void initialize(int cacheId, int partitions, String workingDir,
-        LongAdderMetric tracker) throws IgniteCheckedException {
+        PageMetrics pageMetrics) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -78,18 +78,13 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException {
+    @Override public void truncate(int cacheId, int partId, int tag) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int cacheId, int partId, int tag) throws IgniteCheckedException {
+    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
-
     }
 
     /** {@inheritDoc} */
@@ -103,8 +98,15 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+    @Override public PageStore write(
+        int grpId,
+        long pageId,
+        ByteBuffer pageBuf,
+        int tag,
+        boolean calculateCrc
+    ) throws IgniteCheckedException {
         // No-op.
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -148,11 +150,6 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
             allocator = F.addIfAbsent(allocators, fullId, new AtomicInteger(2));
 
         return allocator.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long metaPageId(int grpId) {
-        return 1;
     }
 
     /** {@inheritDoc} */
@@ -208,11 +205,6 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

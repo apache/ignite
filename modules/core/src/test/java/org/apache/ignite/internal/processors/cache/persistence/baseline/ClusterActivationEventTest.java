@@ -288,6 +288,6 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
         /**
          * @param cluster Cluster
          */
-        void execute(IgniteCluster cluster) ;
+        void execute(IgniteCluster cluster);
     }
 }

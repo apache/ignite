@@ -71,7 +71,10 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
+    @Override protected IgniteInternalFuture createRestartAction(
+        final AtomicBoolean done,
+        final AtomicInteger restartCnt
+    ) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
             /** */
             private final long baselineTopChangeInterval = 10 * 1000;
@@ -97,11 +100,12 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
                         lastOpChangeUp = true;
                     }
 
-                    grid(0).cluster().setBaselineTopology(baselineNodes(grid(0).cluster().forServers().nodes()));
+                    resetBaselineTopology();
 
                     Thread.sleep(baselineTopChangeInterval);
 
-                    int c = restartCnt.incrementAndGet();
+                    //Only stopping node triggers Rebalance.
+                    int c = lastOpChangeUp ? restartCnt.get() : restartCnt.incrementAndGet();
 
                     if (c % logFreq == 0)
                         info("BaselineTopology changes: " + c);

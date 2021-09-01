@@ -1,0 +1,248 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Tracing
+
+:javaFile: {javaCodeDir}/Tracing.java
+
+WARNING: This feature is experimental.
+
+A number of APIs in Ignite are instrumented for tracing with OpenCensus.
+You can collect distributed traces of various tasks executed in your cluster and use this information to diagnose latency problems.
+
+We suggest you get familiar with OpenCensus tracing documentation before reading this chapter: https://opencensus.io/tracing/[^].
+
+The following Ignite APIs are instrumented for tracing:
+
+* Discovery
+* Communication
+* Exchange
+* Transactions
+* SQL queries
+
+
+To view traces, you must export them into an external system.
+You can use one of the OpenCensus exporters or write your own, but in any case, you will have to write code that registers an exporter in Ignite.
+Refer to <<Exporting Traces>> for details.
+
+
+== Configuring Tracing
+
+Enable OpenCensus tracing in the node configuration. All nodes in the cluster must use the same tracing configuration.
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/tracing.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=config, indent=0]
+----
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+
+== Enabling Trace Sampling
+
+When you start your cluster with the above configuration, Ignite does not collect traces.
+You have to enable trace sampling for a specific API at runtime.
+You can turn trace sampling on and off at will, for example, only for the period when you are troubleshooting a problem.
+
+You can do this in two ways:
+
+* via the control script from the command line
+* programmatically
+
+Traces are collected at a given probabilistic sampling rate.
+The rate is specified as a value between 0.0 and 1.0 inclusive: `0` means no sampling, `1` means always sampling.
+
+When the sampling rate is set to a value greater than 0, Ignite collects traces.
+To disable trace collection, set the sampling rate to 0.
+
+The following sections describe the two ways of enabling trace sampling.
+
+=== Using Control Script
+
+Go to the `{IGNITE_HOME}/bin` directory of your Ignite installation.
+Enable experimental commands in the control script:
+
+[source, shell]
+----
+export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
+----
+
+Enable tracing for a specific API:
+
+[source, shell]
+----
+./control.sh --tracing-configuration set --scope TX --sampling-rate 1
+----
+
+Refer to the link:control-script#tracing-configuration[Control Script] sections for the list of all parameters.
+
+=== Programmatically
+
+Once you start the node, you can enable trace sampling as follows:
+
+[source, java]
+----
+include::{javaFile}[tags=enable-sampling, indent=0]
+----
+
+
+The `--scope` parameter specifies the API you want to trace.
+The following APIs are instrumented for tracing:
+
+* `DISCOVERY` — discovery events
+* `EXCHANGE` —  exchange events
+* `COMMUNICATION` — communication events
+* `TX` — transactions
+* `SQL` — SQL queries
+
+The `--sampling-rate` is the probabilistic sampling rate, a number between `0` and `1`:
+
+* `0` means no sampling,
+* `1` means always sampling.
+
+
+== Exporting Traces
+
+To view traces, you need to export them to an external backend using one of the available exporters.
+OpenCensus supports a number of exporters out-of-the-box, and you can write a custom one.
+Refer to the link:https://opencensus.io/exporters/[OpenCensus Exporters^] for details.
+
+In this section, we will show how to export traces to link:https://zipkin.io[Zipkin^].
+
+. Follow link:https://zipkin.io/pages/quickstart.html[this guide^] to launch Zipkin on your machine.
+. Register `ZipkinTraceExporter` in the application where you start Ignite:
++
+--
+[source, java]
+----
+include::{javaFile}[tags=export-to-zipkin, indent=0]
+----
+--
+
+
+. Open http://localhost:9411/zipkin[^] in your browser and click the search icon.
++
+--
+This is what a trace of the transaction looks like:
+
+image::images/trace_in_zipkin.png[]
+--
+
+== Analyzing Trace Data
+
+A trace is recorded information about the execution of a specific event.
+Each trace consists of a tree of _spans_.
+A span is an individual unit of work performed by the system in order to process the event.
+
+Because of the distributed nature of Ignite, an operation usually involves multiple nodes.
+Therefore, a trace can include spans from multiple nodes.
+Each span always contains the information about the node where the corresponding operation was executed.
+
+In the image of the transaction trace presented above, you can see that the trace contains the spans associated with the following operations:
+
+* acquire locks (`transactions.colocated.lock.map`),
+* get (`transactions.near.enlist.read`),
+* put (`transactions.near.enlist.write`),
+* commit (`transactions.commit`), and
+* close (`transactions.close`).
+
+The commit operation, in turn, consists of two operations: prepare and finish.
+
+You can click on each span to view the annotations and tags attached to it.
+
+
+image::images/span.png[Span]
+
+
+== Tracing SQL Queries
+
+To enable SQL queries tracing, use `SQL` as a value of the `scope` parameter during the link:https://ignite.apache.org/docs/latest/monitoring-metrics/tracing#enabling-trace-sampling[trace sampling configuration, window=_blank].
+If tracing of SQL queries is enabled, execution of each SQL query on any cluster node will produce a separate trace.
+
+[IMPORTANT]
+====
+[discrete]
+Enabling tracing for SQL queries imposes a severe degradation on SQL engine performance.
+====
+
+The table below provides descriptions, a list of tags, and annotations for each span that can be a part of the SQL query trace tree.
+
+[NOTE]
+====
+[discrete]
+Depending on the SQL query type and its execution plan, some spans may not be present in the SQL query span tree.
+====
+
+[cols="2,5,5",opts="header"]
+|===
+|Span Name | Description | Tags and Annotations
+| sql.query | Execution of an SQL query from the moment of registration until the used resources on the query initiator node are released a|
+* sql.query.text - SQL query text
+* sql.schema - SQL schema
+| sql.cursor.open | SQL query cursor opening |
+| sql.cursor.close | SQL query cursor closure |
+| sql.cursor.cancel | SQL query cursor cancellation |
+| sql.query.parse | Parsing of SQL query a|
+* sql.parser.cache.hit - Whether parsing of the SQL query was skipped due to the cached result
+| sql.query.execute.request | Processing of SQL query execution request a|
+* sql.query.text - SQL query text
+| sql.next.page.request | Processing of the request for obtaining the next page of local SQL query execution result  |
+| sql.page.response | Processing of the message with a node local SQL query execution result page |
+| sql.query.execute | Execution of query by H2 SQL engine a|
+* sql.query.text - SQL query text
+| sql.page.prepare | Reading rows from the cursor and preparing a result page a|
+* sql.page.rows - Number of rows that a result page contains
+| sql.fail.response | Processing of a message that indicates failure of SQL query execution |
+| sql.dml.query.execute.request | Processing of SQL DML query execution request a|
+* sql.query.text - SQL query text
+| sql.dml.query.response | Processing of SQL DML query execution result by query initiator node |
+| sql.query.cancel.request | Processing of SQL query cancel request |
+| sql.iterator.open | SQL query iterator opening |
+| sql.iterator.close | SQL query iterator closure |
+| sql.page.fetch | Fetching SQL query result page a|
+* sql.page.rows - Number of rows that result page contains
+| sql.page.wait | Waiting for SQL query results page to be received from remote node |
+| sql.index.range.request | Processing SQL index range request a|
+* sql.index - SQL index name
+* sql.table - SQL table name
+* sql.index.range.rows - Number of rows that an index range request result contains
+| sql.index.range.response | Processing SQL index range responce |
+| sql.dml.query.execute |  Execution of SQL DML query |
+| sql.command.query.execute | Execution of an SQL command query, which is either a DDL query or an Ignite native command |
+| sql.partitions.reserve | Reservation of data partitions used to execute a query a|
+* Annotation message that indicates reservation of data partitions for a particular cache - `Cache partitions were reserved [cache=<name of the cache>, partitions=[<partitions numbers>]`
+| sql.cache.update | Cache update as a result of SQL DML query execution a|
+* sql.cache.updates - Number of cache entries to be updated as a result of DML query
+| sql.batch.process| Processing of SQL batch update |
+|===
+
+////
+TODO: describe annotations and tags
+=== Annotations
+
+=== Tags
+
+The `node.id` and `node.consistentId` are the ID and consistent ID of the node where the root operation started.
+////

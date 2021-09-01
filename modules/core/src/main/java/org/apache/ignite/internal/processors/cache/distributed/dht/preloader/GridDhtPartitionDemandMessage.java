@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,6 +45,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** */
     public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.4.4");
 
+    /** Cache rebalance topic. */
+    private static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
+
     /** Rebalance id. */
     private long rebalanceId;
 
@@ -56,7 +60,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
     /** Topic. */
     @GridDirectTransient
-    private Object topic;
+    private Object topic = REBALANCE_TOPIC;
 
     /** Serialized topic. */
     private byte[] topicBytes;
@@ -76,11 +80,21 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      * @param grpId Cache group ID.
      */
     GridDhtPartitionDemandMessage(long rebalanceId, @NotNull AffinityTopologyVersion topVer, int grpId) {
+        this(rebalanceId, topVer, grpId, new IgniteDhtDemandedPartitionsMap());
+    }
+
+    /**
+     * @param rebalanceId Rebalance id for this node.
+     * @param topVer Topology version.
+     * @param grpId Cache group ID.
+     * @param parts Demand partiton map.
+     */
+    GridDhtPartitionDemandMessage(long rebalanceId, @NotNull AffinityTopologyVersion topVer, int grpId,
+        IgniteDhtDemandedPartitionsMap parts) {
         this.grpId = grpId;
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
-
-        parts = new IgniteDhtDemandedPartitionsMap();
+        this.parts = parts;
     }
 
     /**
@@ -175,15 +189,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      */
     Object topic() {
         return topic;
-    }
-
-    /**
-     * @param topic Topic.
-     * @deprecated Obsolete (Kept to solve compatibility issues).
-     */
-    @Deprecated
-    void topic(Object topic) {
-        this.topic = topic;
     }
 
     /**

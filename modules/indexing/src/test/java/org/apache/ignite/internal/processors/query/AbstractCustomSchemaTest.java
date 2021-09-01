@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
@@ -68,7 +69,9 @@ public abstract class AbstractCustomSchemaTest extends AbstractIndexingCommonTes
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setSqlSchemas(SCHEMA_NAME_1, SCHEMA_NAME_2, q(SCHEMA_NAME_3))
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas(SCHEMA_NAME_1, SCHEMA_NAME_2, q(SCHEMA_NAME_3))
+            )
             .setCacheConfiguration(new CacheConfiguration(CACHE_NAME).setSqlSchema(SCHEMA_NAME_4));
     }
 

@@ -90,7 +90,8 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
     /**
      * Job that collects rebalance metrics.
      */
-    private static class VisorCacheRebalanceCollectorJob extends VisorJob<VisorCacheRebalanceCollectorTaskArg, VisorCacheRebalanceCollectorJobResult> {
+    private static class VisorCacheRebalanceCollectorJob
+        extends VisorJob<VisorCacheRebalanceCollectorTaskArg, VisorCacheRebalanceCollectorJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -147,7 +148,7 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
                         if (cm.getRebalancingPartitionsCount() > 0)
                             rebalanceInProgress = true;
                     }
-                    catch(IllegalStateException | IllegalArgumentException e) {
+                    catch (IllegalStateException | IllegalArgumentException e) {
                         if (debug && ignite.log() != null)
                             ignite.log().error("Ignored cache group: " + grp.cacheOrGroupName(), e);
                     }

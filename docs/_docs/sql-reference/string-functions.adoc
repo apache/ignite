@@ -1,0 +1,942 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= String Functions
+
+:toclevels:
+
+== ASCII
+
+Return the ASCII value of the first character in the string. This method returns an `int`.
+
+[source,sql]
+----
+ASCII(string)
+----
+
+
+Parameters:
+- `string` - an argument.
+
+
+Example:
+
+[source,sql]
+----
+select ASCII(name) FROM Players;
+----
+
+
+== BIT_LENGTH
+Returns the number of bits in a string. This method returns a `long`. For `BLOB`, `CLOB`, `BYTES`, and `JAVA_OBJECT`, the object's specified precision is used. Each character needs 16 bits.
+
+
+
+[source,sql]
+----
+BIT_LENGTH(string)
+----
+
+Parameters:
+- `string` - an argument.
+
+
+Example:
+
+[source,sql]
+----
+select BIT_LENGTH(name) FROM Players;
+----
+
+
+== LENGTH
+Returns the number of characters in a string. This method returns a `long`. For `BLOB`, `CLOB`, `BYTES`, and `JAVA_OBJECT`, the object's specified precision is used.
+
+
+
+[source,sql]
+----
+{LENGTH | CHAR_LENGTH | CHARACTER_LENGTH} (string)
+----
+
+
+Parameters:
+- `string` - an argument.
+
+
+Example:
+
+[source,sql]
+----
+SELECT LENGTH(name) FROM Players;
+----
+
+
+== OCTET_LENGTH
+Returns the number of bytes in a string. This method returns a `long`. For `BLOB`, `CLOB`, `BYTES` and `JAVA_OBJECT`, the object's specified precision is used. Each character needs 2 bytes.
+
+
+
+[source,sql]
+----
+OCTET_LENGTH(string)
+----
+
+
+Parameters:
+- `string` - an argument.
+
+
+Example:
+
+[source,sql]
+----
+SELECT OCTET_LENGTH(name) FROM Players;
+----
+
+
+== CHAR
+
+Returns the character that represents the ASCII value. This method returns a `string`.
+
+[source,sql]
+----
+{CHAR | CHR} (int)
+----
+
+
+Parameters:
+- `int` - an argument.
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT CHAR(65)||name FROM Players;
+----
+
+
+== CONCAT
+Combines strings. Unlike with the `||` operator, NULL parameters are ignored and do not cause the result to become NULL. This method returns a `string`.
+
+
+[source,sql]
+----
+CONCAT(string, string [,...])
+----
+
+
+Parameters:
+- `string` - an argument.
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT CONCAT(NAME, '!') FROM Players;
+----
+
+
+== CONCAT_WS
+Combines strings, dividing with a separator. Unlike with the `||` operator, NUL parameters are ignored, and do not cause the result to become NULL. This method returns a string.
+
+
+[source,sql]
+----
+CONCAT_WS(separatorString, string, string [,...])
+----
+
+
+Parameters:
+- `separatorString` - separator.
+- `string` - an argument.
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT CONCAT_WS(',', NAME, '!') FROM Players;
+----
+
+
+== DIFFERENCE
+
+Returns the difference between the `SOUNDEX()` values of two strings. This method returns an `int`.
+
+[source,sql]
+----
+DIFFERENCE(X, Y)
+----
+
+
+Parameters:
+- `X`, `Y` - strings to compare.
+
+
+
+Example:
+Calculates the SOUNDEX() difference for two Players' names:
+
+
+[source,sql]
+----
+select DIFFERENCE(T1.NAME, T2.NAME) FROM players T1, players T2
+   WHERE T1.ID = 10 AND T2.ID = 11;
+----
+
+
+== HEXTORAW
+
+Converts a hex representation of a string to a string. 4 hex characters per string character are used.
+
+[source,sql]
+----
+HEXTORAW(string)
+----
+
+
+Parameters:
+- `string` - a hex string to use for the conversion.
+
+
+
+Example:
+Calculate a harmony for Players' names:
+
+
+[source,sql]
+----
+SELECT HEXTORAW(DATA) FROM Players;
+----
+
+
+== RAWTOHEX
+
+Converts a string to the hex representation. 4 hex characters per string character are used. This method returns a `string`.
+
+[source,sql]
+----
+RAWTOHEX(string)
+----
+
+Parameters:
+- `string` - a string to convert to the hex representation.
+
+
+
+Example:
+Calculate a harmony for Players' names:
+
+
+[source,sql]
+----
+SELECT RAWTOHEX(DATA) FROM Players;
+----
+
+
+== INSTR
+
+Returns the location of a search string in a string. If a start position is used, the characters before it are ignored. If position is negative, the rightmost location is returned. 0 is returned if the search string is not found. Please note this function is case sensitive, even if the parameters are not.
+
+
+
+[source,sql]
+----
+INSTR(string, searchString, [, startInt])
+----
+
+
+Parameters:
+- `string` - any string.
+- `searchString` - any string to search for.
+- `startInt` - start position for the lookup.
+
+
+Example:
+Check if a string includes the "@" symbol:
+
+
+[source,sql]
+----
+SELECT INSTR(EMAIL,'@') FROM Players;
+----
+
+
+== INSERT
+
+Inserts a additional string into the original string at a specified start position. The length specifies the number of characters that are removed at the start position in the original string. This method returns a `string`.
+
+[source,sql]
+----
+INSERT(originalString, startInt, lengthInt, addString)
+----
+
+Parameters:
+
+* `originalString` - an original string.
+* `startInt` - start position.
+* `lengthInt` - the length.
+* `addString` - an additional string.
+
+
+Example:
+
+[source,sql]
+----
+SELECT INSERT(NAME, 1, 1, ' ') FROM Players;
+----
+
+
+== LOWER
+
+Converts a string to lowercase.
+
+[source,sql]
+----
+{LOWER | LCASE} (string)
+----
+
+
+Parameters:
+- `string` - an argument.
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT LOWER(NAME) FROM Players;
+----
+
+
+== UPPER
+
+Converts a string to uppercase.
+
+[source,sql]
+----
+{UPPER | UCASE} (string)
+----
+
+
+Parameters:
+- `string` - an argument.
+
+
+Example:
+The following example returns the last name in uppercase for each Player:
+
+
+[source,sql]
+----
+SELECT UPPER(last_name) "LastNameUpperCase" FROM Players;
+----
+
+
+== LEFT
+
+Returns the leftmost number of characters.
+
+[source,sql]
+----
+LEFT(string, int)
+----
+
+
+Parameters:
+- `string` - an argument.
+- `int` - a number of characters to extract.
+
+
+
+Example:
+Get 3 first letters of Players' names:
+
+
+[source,sql]
+----
+SELECT LEFT(NAME, 3) FROM Players;
+----
+
+
+== RIGHT
+
+Returns the rightmost number of characters.
+
+[source,sql]
+----
+RIGHT(string, int)
+----
+
+
+Parameters:
+- `string` - an argument.
+- `int` - a number of characters to extract.
+
+
+
+Example:
+Get the last 3 letters of Players' names:
+
+
+[source,sql]
+----
+SELECT RIGHT(NAME, 3) FROM Players;
+----
+
+
+== LOCATE
+
+Returns the location of a search string in a string. If a start position is used, the characters before it are ignored. If position is negative, the rightmost location is returned. 0 is returned if the search string is not found.
+
+[source,sql]
+----
+LOCATE(searchString, string [, startInt])
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT LOCATE('.', NAME) FROM Players;
+----
+
+
+== POSITION
+
+Returns the location of a search string in a string. See also <<LOCATE>>.
+
+[source,sql]
+----
+POSITION(searchString, string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT POSITION('.', NAME) FROM Players;
+----
+
+
+== LPAD
+
+Left pad the string to the specified length. If the length is shorter than the string, it will be truncated at the end. If the padding string is not set, spaces will be used.
+
+[source,sql]
+----
+LPAD(string, int[, paddingString])
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT LPAD(AMOUNT, 10, '*') FROM Players;
+----
+
+
+== RPAD
+
+Right pad the string to the specified length. If the length is shorter than the string, it will be truncated. If the padding string is not set, spaces will be used.
+
+[source,sql]
+----
+RPAD(string, int[, paddingString])
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT RPAD(TEXT, 10, '-') FROM Players;
+----
+
+
+== LTRIM
+
+Removes all leading spaces from a string.
+
+[source,sql]
+----
+LTRIM(string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT LTRIM(NAME) FROM Players;
+----
+
+
+== RTRIM
+
+Removes all trailing spaces from a string.
+
+[source,sql]
+----
+RTRIM(string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT RTRIM(NAME) FROM Players;
+----
+
+
+== TRIM
+
+Removes all leading spaces, trailing spaces, or spaces at both ends, from a string. Other characters can be removed as well.
+
+[source,sql]
+----
+TRIM ([{LEADING | TRAILING | BOTH} [string] FROM] string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT TRIM(BOTH '_' FROM NAME) FROM Players;
+----
+
+
+== REGEXP_REPLACE
+
+Replaces each substring that matches a regular expression. For details, see the Java `String.replaceAll()` method. If any parameter is null (except the optional flagsString parameter), the result is null.
+
+[source,sql]
+----
+REGEXP_REPLACE(inputString, regexString, replacementString [, flagsString])
+----
+
+
+Flags values are limited to 'i', 'c', 'n', 'm'. Other symbols cause an exception. Multiple symbols can be used in one `flagsString` parameter (for example: 'im'). Later flags override earlier ones, for example 'ic' is equivalent to case sensitive, matching 'c'.
+
+- 'i' enables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+- 'c' disables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+- 'n' allows the period to match the newline character (Pattern.DOTALL)
+
+- 'm' enables multiline mode (Pattern.MULTILINE)
+
+
+Example:
+
+[source,sql]
+----
+SELECT REGEXP_REPLACE(name, 'w+', 'W', 'i') FROM Players;
+----
+
+
+== REGEXP_LIKE
+
+Matches string to a regular expression. For details, see the Java `Matcher.find()` method. If any parameter is null (except the optional `flagsString` parameter), the result is null.
+
+[source,sql]
+----
+REGEXP_LIKE(inputString, regexString [, flagsString])
+----
+
+
+
+Flags values are limited to 'i', 'c', 'n', 'm'. Other symbols cause an exception. Multiple symbols can be used in one `flagsString` parameter (for example: 'im'). Later flags override earlier ones, for example 'ic' is equivalent to case sensitive, matching 'c'.
+
+- 'i' enables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+- 'c' disables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+- 'n' allows the period to match the newline character (Pattern.DOTALL)
+
+- 'm' enables multiline mode (Pattern.MULTILINE)
+
+
+Example:
+
+[source,sql]
+----
+SELECT REGEXP_LIKE(name, '[A-Z ]*', 'i') FROM Players;
+----
+
+
+== REPEAT
+
+Returns a string repeated some number of times.
+
+[source,sql]
+----
+REPEAT(string, int)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT REPEAT(NAME || ' ', 10) FROM Players;
+----
+
+
+== REPLACE
+
+Replaces all occurrences of a search string in specified text with another string. If no replacement is specified, the search string is removed from the original string. If any parameter is null, the result is null.
+
+[source,sql]
+----
+REPLACE(string, searchString [, replacementString])
+----
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT REPLACE(NAME, ' ') FROM Players;
+----
+
+
+== SOUNDEX
+
+Returns a four character code representing the SOUNDEX of a string. See also link:http://www.archives.gov/genealogy/census/soundex.html[http://www.archives.gov/genealogy/census/soundex.html]. This method returns a `string`.
+
+[source,sql]
+----
+SOUNDEX(string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT SOUNDEX(NAME) FROM Players;
+----
+
+
+== SPACE
+
+Returns a string consisting of the specified number of spaces.
+
+[source,sql]
+----
+SPACE(int)
+----
+
+
+
+
+Example:
+
+
+[source,sql]
+----
+SELECT name, SPACE(80) FROM Players;
+----
+
+
+== STRINGDECODE
+
+Converts an encoded string using the Java string literal encoding format. Special characters are `\b`, `\t`, `\n`, `\f`, `\r`, `\"`, `\`, `\<octal>`, `\u<unicode>`. This method returns a `string`.
+
+[source,sql]
+----
+STRINGDECODE(string)
+----
+
+Example:
+
+[source,sql]
+----
+STRINGENCODE(STRINGDECODE('Lines 1\nLine 2'));
+----
+
+
+== STRINGENCODE
+
+Encodes special characters in a string using the Java string literal encoding format. Special characters are `\b`, `\t`, `\n`, `\f`, `\r`, `\"`, `\`, `\<octal>`, `\u<unicode>`. This method returns a `string`.
+
+[source,sql]
+----
+STRINGENCODE(string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+STRINGENCODE(STRINGDECODE('Lines 1\nLine 2'))
+----
+
+
+== STRINGTOUTF8
+
+Encodes a string to a byte array using the UTF8 encoding format. This method returns `bytes`.
+
+[source,sql]
+----
+STRINGTOUTF8(string)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT UTF8TOSTRING(STRINGTOUTF8(name)) FROM Players;
+----
+
+
+== SUBSTRING
+
+Returns a substring of a string starting at the specified position. If the start index is negative, then the start index is relative to the end of the string. The length is optional. Also supported is: `SUBSTRING(string [FROM start] [FOR length])`.
+
+[source,sql]
+----
+{SUBSTRING | SUBSTR} (string, startInt [, lengthInt])
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT SUBSTR(name, 2, 5) FROM Players;
+----
+
+
+== UTF8TOSTRING
+
+Decodes a byte array in UTF8 format to a string.
+
+[source,sql]
+----
+UTF8TOSTRING(bytes)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+SELECT UTF8TOSTRING(STRINGTOUTF8(name)) FROM Players;
+----
+
+
+== XMLATTR
+
+Creates an XML attribute element of the form name=value. The value is encoded as XML text. This method returns a `string`.
+
+[source,sql]
+----
+XMLATTR(nameString, valueString)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+XMLNODE('a', XMLATTR('href', 'http://h2database.com'))
+----
+
+
+== XMLNODE
+
+Create an XML node element. An empty or null attribute string means no attributes are set. An empty or null content string means the node is empty. The content is indented by default if it contains a newline. This method returns a `string`.
+
+[source,sql]
+----
+XMLNODE(elementString [, attributesString [, contentString [, indentBoolean]]])
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+XMLNODE('a', XMLATTR('href', 'http://h2database.com'), 'H2')
+----
+
+
+== XMLCOMMENT
+
+Creates an XML comment. Two dashes (`--`) are converted to `- -`. This method returns a `string`.
+
+[source,sql]
+----
+XMLCOMMENT(commentString)
+----
+
+
+
+
+Example:
+
+[source,sql]
+----
+XMLCOMMENT('Test')
+----
+
+
+== XMLCDATA
+
+Creates an XML CDATA element. If the value contains `]]>`, an XML text element is created instead. This method returns a `string`.
+
+[source,sql]
+----
+XMLCDATA(valueString)
+----
+
+Example:
+
+[source,sql]
+----
+XMLCDATA('data')
+----
+
+
+== XMLSTARTDOC
+
+Returns the XML declaration. The result is always `<?xml version=1.0?>`.
+
+[source,sql]
+----
+XMLSTARTDOC()
+----
+
+
+
+
+
+Example:
+
+[source,sql]
+----
+XMLSTARTDOC()
+----
+
+
+== XMLTEXT
+
+
+Creates an XML text element. If enabled, newline and linefeed is converted to an XML entity (`&#`). This method returns a `string`.
+
+[source,sql]
+----
+XMLTEXT(valueString [, escapeNewlineBoolean])
+----
+
+
+
+
+
+Example:
+
+[source,sql]
+----
+XMLSTARTDOC()
+----
+
+
+== TO_CHAR
+
+Formats a timestamp, number, or text.
+
+[source,sql]
+----
+TO_CHAR(value [, formatString[, nlsParamString]])
+----
+
+
+
+
+
+Example:
+
+[source,sql]
+----
+TO_CHAR(TIMESTAMP '2010-01-01 00:00:00', 'DD MON, YYYY')
+----
+
+
+== TRANSLATE
+
+Replaces a sequence of characters in a string with another set of characters.
+
+[source,sql]
+----
+TRANSLATE(value , searchString, replacementString]])
+----
+
+
+
+
+
+Example:
+
+[source,sql]
+----
+TRANSLATE('Hello world', 'eo', 'EO')
+----
+

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -64,8 +63,10 @@ public class JdbcQuery implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) {
         writer.writeString(sql);
 
         if (args == null || args.length == 0)
@@ -74,13 +75,15 @@ public class JdbcQuery implements JdbcRawBinarylizable {
             writer.writeInt(args.length);
 
             for (Object arg : args)
-                SqlListenerUtils.writeObject(writer, arg, false);
+                SqlListenerUtils.writeObject(writer, arg, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) {
         sql = reader.readString();
 
         int argsNum = reader.readInt();
@@ -88,7 +91,8 @@ public class JdbcQuery implements JdbcRawBinarylizable {
         args = new Object[argsNum];
 
         for (int i = 0; i < argsNum; ++i)
-            args[i] = SqlListenerUtils.readObject(reader, false);
+            args[i] = SqlListenerUtils.readObject(reader, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT),
+                protoCtx.keepBinary());
     }
 
     /** {@inheritDoc} */

@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,12 +45,15 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 
@@ -63,6 +65,19 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final Method PLATFORM_SERVICE_INVOKE_METHOD;
+
+    static {
+        try {
+            PLATFORM_SERVICE_INVOKE_METHOD = PlatformService.class.getMethod("invokeMethod", String.class,
+                    boolean.class, Object[].class);
+        }
+        catch (NoSuchMethodException e) {
+            throw new ExceptionInInitializerError("'invokeMethod' is not defined in " + PlatformService.class.getName());
+        }
+    }
 
     /** Grid logger. */
     @GridToStringExclude
@@ -114,7 +129,8 @@ public class GridServiceProxy<T> implements Serializable {
         this.ctx = ctx;
         this.name = name;
         this.sticky = sticky;
-        this.waitTimeout = timeout;
+
+        waitTimeout = timeout;
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
@@ -176,11 +192,9 @@ public class GridServiceProxy<T> implements Serializable {
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
 
-                            if (svc != null) {
-                                return svcCtx.statisticsEnabled() ?
-                                    measureServiceMethod(ctx.service(), svc, name, mtd, args) :
-                                    mtd.invoke(svc, args);
-                            }
+                            if (svc != null)
+                                return svcCtx.statisticsEnabled() ? measureServiceMethod(ctx.service(), svcCtx.service(), name, mtd, args) :
+                                    mtd.invoke(svcCtx.service(), args);
                         }
                     }
                     else {
@@ -189,12 +203,16 @@ public class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
+                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
                             true).get();
                     }
+                }
+                catch (InvocationTargetException e) {
+                    // For local services rethrow original exception.
+                    throw e.getTargetException();
                 }
                 catch (RuntimeException | Error e) {
                     throw e;
@@ -359,26 +377,40 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
+     * @param mtd Method to invoke.
+     */
+    static String methodName(Method mtd) {
+        PlatformServiceMethod ann = mtd.getDeclaredAnnotation(PlatformServiceMethod.class);
+
+        return ann == null ? mtd.getName() : ann.value();
+    }
+
+    /**
      * Calls service method, measures and registers its duration.
      *
      * @param srvcProc Current service processor.
-     * @param srvc The service object.
+     * @param svc The service object.
      * @param srvcName The service name.
      * @param mtd Method to call.
      * @param args Arguments for {@code mtd}.
      */
     private static Object measureServiceMethod(
         ServiceProcessorAdapter srvcProc,
-        Service srvc,
+        Service svc,
         String srvcName,
         Method mtd,
         Object[] args
-    ) throws InvocationTargetException, IllegalAccessException {
+    ) throws InvocationTargetException, IllegalAccessException, IgniteCheckedException {
+        if (svc instanceof PlatformService && PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
+            return mtd.invoke(svc, args);
 
         long startTime = System.nanoTime();
 
         try {
-            return mtd.invoke(srvc, args);
+            if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
+                return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
+            else
+                return mtd.invoke(svc, args);
         }
         finally {
             if (srvcProc instanceof IgniteServiceProcessor) {
@@ -417,14 +449,14 @@ public class GridServiceProxy<T> implements Serializable {
         private String svcName;
 
         /** Argument types. */
-        private Class[] argTypes;
+        private Class<?>[] argTypes;
 
         /** Args. */
         private Object[] args;
 
         /** Grid instance. */
         @IgniteInstanceResource
-        private transient Ignite ignite;
+        private transient IgniteEx ignite;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -439,7 +471,7 @@ public class GridServiceProxy<T> implements Serializable {
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class[] argTypes, Object[] args) {
+        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;
@@ -448,22 +480,42 @@ public class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
+            ServiceContextImpl ctx = ignite.context().service().serviceContext(svcName);
 
-            if (svcCtx == null || svcCtx.service() == null)
+            if (ctx == null || ctx.service() == null)
                 throw new GridServiceNotFoundException(svcName);
 
             GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);
 
-            Method mtd = svcCtx.method(key);
+            Method mtd = ctx.method(key);
 
+            if (ctx.service() instanceof PlatformService && mtd == null)
+                return callPlatformService((PlatformService)ctx.service());
+            else
+                return callService(ctx, mtd);
+        }
+
+        /** */
+        private Object callPlatformService(PlatformService srv) {
+            try {
+                return srv.invokeMethod(mtdName, false, true, args);
+            }
+            catch (PlatformNativeException ne) {
+                throw new ServiceProxyException(U.convertException(ne));
+            }
+            catch (Exception e) {
+                throw new ServiceProxyException(e);
+            }
+        }
+
+        /** */
+        private Object callService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
                 if (svcCtx.statisticsEnabled())
-                    return measureServiceMethod(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(),
-                        mtd, args);
+                    return measureServiceMethod(ignite.context().service(), svcCtx.service(), svcCtx.name(), mtd, args);
                 else
                     return mtd.invoke(svcCtx.service(), args);
             }

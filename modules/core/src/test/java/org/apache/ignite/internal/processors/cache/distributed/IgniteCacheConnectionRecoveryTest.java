@@ -136,7 +136,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
                     catch (Exception e) {
                         synchronized (IgniteCacheConnectionRecoveryTest.class) {
                             log.error("Failed to execute update, will dump debug information" +
-                                " [err=" + e+ ", iter=" + iter + ']', e);
+                                " [err=" + e + ", iter=" + iter + ']', e);
 
                             List<Ignite> nodes = IgnitionEx.allGridsx();
 
@@ -154,7 +154,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
             }
         }, TEST_THREADS, "test-thread");
 
-        while  (System.currentTimeMillis() < stopTime) {
+        while (System.currentTimeMillis() < stopTime) {
             boolean closed = false;
 
             for (Ignite node : G.allGrids()) {

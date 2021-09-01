@@ -186,7 +186,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
             int i = 0;
 
-            while(i < GRIDS_CNT / 2) {
+            while (i < GRIDS_CNT / 2) {
                 stopGrid(GRIDS_CNT / 2 + i);
 
                 i++;

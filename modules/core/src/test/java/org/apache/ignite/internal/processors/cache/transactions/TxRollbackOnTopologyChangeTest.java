@@ -144,7 +144,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                     int nodeId;
 
-                    while(!reservedIdx.compareAndSet((nodeId = r.nextInt(TOTAL_CNT)), 0, 1))
+                    while (!reservedIdx.compareAndSet((nodeId = r.nextInt(TOTAL_CNT)), 0, 1))
                         doSleep(10);
 
                     U.awaitQuiet(b);
@@ -162,7 +162,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                         fail("Deadlock expected");
                     }
-                    catch (Throwable t) {
+                    catch (Throwable ignore) {
                         // Expected.
                     }
 
@@ -174,7 +174,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         final IgniteInternalFuture<?> restartFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                while(!stop.get()) {
+                while (!stop.get()) {
                     final int nodeId = r.nextInt(TOTAL_CNT);
 
                     if (!reservedIdx.compareAndSet(nodeId, 0, 1)) {

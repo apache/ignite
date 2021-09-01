@@ -29,20 +29,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
-public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
-
-    /** Signals that tests should start in partition awareness mode. */
+public class JdbcThinAbstractSelfTest extends AbstractIndexingCommonTest {
+    /** Signals that tests should start in Partition Awareness mode. */
     public static boolean partitionAwareness;
 
     /**

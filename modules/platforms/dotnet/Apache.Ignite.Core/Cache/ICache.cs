@@ -176,11 +176,11 @@ namespace Apache.Ignite.Core.Cache
         Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Loads the specified entries into the cache using the configured 
+        /// Loads the specified entries into the cache using the configured
         /// <see cref="ICacheStore"/>> for the given keys.
         /// <para />
-        /// If an entry for a key already exists in the cache, a value will be loaded if and only if 
-        /// <paramref name="replaceExistingValues" /> is true.   
+        /// If an entry for a key already exists in the cache, a value will be loaded if and only if
+        /// <paramref name="replaceExistingValues" /> is true.
         /// If no loader is configured for the cache, no objects will be loaded.
         /// </summary>
         /// <param name="keys">The keys to load.</param>
@@ -189,11 +189,11 @@ namespace Apache.Ignite.Core.Cache
         void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues);
 
         /// <summary>
-        /// Asynchronously loads the specified entries into the cache using the configured 
+        /// Asynchronously loads the specified entries into the cache using the configured
         /// <see cref="ICacheStore"/>> for the given keys.
         /// <para />
-        /// If an entry for a key already exists in the cache, a value will be loaded if and only if 
-        /// <paramref name="replaceExistingValues" /> is true.   
+        /// If an entry for a key already exists in the cache, a value will be loaded if and only if
+        /// <paramref name="replaceExistingValues" /> is true.
         /// If no loader is configured for the cache, no objects will be loaded.
         /// </summary>
         /// <param name="keys">The keys to load.</param>
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size across all nodes.</returns>
         long GetSizeLong(params CachePeekMode[] modes);
-        
+
         /// <summary>
         /// Gets the number of all entries in partition cached across all nodes as long value.
         /// <para />
@@ -750,7 +750,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size across all nodes.</returns>
         Task<long> GetSizeLongAsync(params CachePeekMode[] modes);
-        
+
         /// <summary>
         /// Gets the number of all entries in a partition cached across all nodes as long value.
         /// <para />
@@ -767,7 +767,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size on this node.</returns>
         long GetLocalSizeLong(params CachePeekMode[] modes);
-        
+
         /// <summary>
         /// Gets the number of all entries in a partition cached on this node as long value.
         /// </summary>
@@ -775,7 +775,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Partition cache size on this node.</returns>
         long GetLocalSizeLong(int partition, params CachePeekMode[] modes);
-        
+
         /// <summary>
         /// Queries cache.
         /// </summary>
@@ -817,6 +817,19 @@ namespace Apache.Ignite.Core.Cache
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
         IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry);
+
+        /// <summary>
+        /// Start continuous query execution.
+        /// </summary>
+        /// <param name="qry">Continuous query.</param>
+        /// <param name="initialQry">
+        /// The initial fields query. This query will be executed before continuous listener is registered which allows
+        /// to iterate through entries which have already existed at the time continuous query is executed.
+        /// </param>
+        /// <returns>
+        /// Handle to get initial query cursor or stop query execution.
+        /// </returns>
+        IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry);
 
         /// <summary>
         /// Get local cache entries.
@@ -880,7 +893,7 @@ namespace Apache.Ignite.Core.Cache
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+        ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -908,7 +921,7 @@ namespace Apache.Ignite.Core.Cache
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+        Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -965,7 +978,6 @@ namespace Apache.Ignite.Core.Cache
             Justification = "Expensive operation.")]
         ICacheMetrics GetLocalMetrics();
 
-        
         /// <summary>
         /// Sets statistics (metrics) enabled flag cluster wide for this cache.
         /// </summary>
@@ -1037,7 +1049,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="partition">Partition number.</param>
         void PreloadPartition(int partition);
-        
+
         /// <summary>
         /// Efficiently preloads cache partition into page memory asynchronously.
         /// <para/>
@@ -1052,7 +1064,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="partition">Partition number.</param>
         /// <returns>Task.</returns>
         Task PreloadPartitionAsync(int partition);
-        
+
         /// <summary>
         /// Efficiently preloads cache partition into page memory if it exists on the local node.
         /// <para/>

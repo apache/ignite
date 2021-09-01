@@ -24,11 +24,10 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Defines custom data region configuration for Apache Ignite page memory
-    /// (see <see cref="DataStorageConfiguration"/>). 
+    /// (see <see cref="DataStorageConfiguration"/>).
     /// <para />
     /// For each configured data region Apache Ignite instantiates respective memory regions with different
     /// parameters like maximum size, eviction policy, swapping options, etc.
@@ -61,7 +60,7 @@ namespace Apache.Ignite.Core.Configuration
         /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
         public static readonly long DefaultMaxSize =
-            (long)((long)MemoryInfo.GetTotalPhysicalMemory(2048L * 1024 * 1024) * 0.2);
+            (long)((long) (MemoryInfo.MemoryLimit ?? 2048L * 1024 * 1024) * 0.2);
 
         /// <summary>
         /// The default sub intervals.
@@ -99,8 +98,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Initializes a new instance of the <see cref="DataRegionConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal DataRegionConfiguration(IBinaryRawReader reader, ClientProtocolVersion srvVer)
+        internal DataRegionConfiguration(IBinaryRawReader reader)
         {
             Name = reader.ReadString();
             PersistenceEnabled = reader.ReadBoolean();
@@ -115,18 +113,14 @@ namespace Apache.Ignite.Core.Configuration
             MetricsRateTimeInterval = reader.ReadLongAsTimespan();
             CheckpointPageBufferSize = reader.ReadLong();
 
-            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
-            {
-                LazyMemoryAllocation = reader.ReadBoolean();
-            }
+            LazyMemoryAllocation = reader.ReadBoolean();
         }
 
         /// <summary>
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(IBinaryRawWriter writer)
         {
             writer.WriteString(Name);
             writer.WriteBoolean(PersistenceEnabled);
@@ -140,11 +134,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(MetricsSubIntervalCount);
             writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
             writer.WriteLong(CheckpointPageBufferSize);
-
-            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
-            {
-                writer.WriteBoolean(LazyMemoryAllocation);
-            }
+            writer.WriteBoolean(LazyMemoryAllocation);
         }
 
         /// <summary>
@@ -181,7 +171,7 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Gets or sets the page eviction mode. If <see cref="DataPageEvictionMode.Disabled"/> is used (default)
-        /// then an out of memory exception will be thrown if the memory region usage 
+        /// then an out of memory exception will be thrown if the memory region usage
         /// goes beyond <see cref="MaxSize"/>.
         /// </summary>
         public DataPageEvictionMode PageEvictionMode { get; set; }
@@ -222,7 +212,7 @@ namespace Apache.Ignite.Core.Configuration
         public TimeSpan MetricsRateTimeInterval { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of sub intervals to split <see cref="MetricsRateTimeInterval"/> into to calculate 
+        /// Gets or sets the number of sub intervals to split <see cref="MetricsRateTimeInterval"/> into to calculate
         /// <see cref="IDataRegionMetrics.AllocationRate"/> and <see cref="IDataRegionMetrics.EvictionRate"/>.
         /// <para />
         /// Bigger value results in more accurate metrics.
@@ -238,7 +228,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Default is <c>0</c>: Ignite will choose buffer size automatically.
         /// </summary>
         public long CheckpointPageBufferSize { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the lazy memory allocation flag.
         /// </summary>

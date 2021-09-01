@@ -25,10 +25,13 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorrupte
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsMarshallerMappingRestoreOnNodeStartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistoricalRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistenceSequentialCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
+import org.apache.ignite.internal.processors.cache.persistence.RestorePartitionStateDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryWithParamsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteSequentialNodeCrashRecoveryTest;
@@ -41,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalR
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryPPCTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalOnNodeStartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
@@ -57,11 +61,13 @@ import org.junit.runners.Suite;
     IgnitePdsPageEvictionTest.class,
     IgnitePdsMultiNodePutGetRestartTest.class,
     IgnitePersistentStoreCacheGroupsTest.class,
+    IgnitePersistenceSequentialCheckpointTest.class,
     PersistenceDirectoryWarningLoggingTest.class,
     WalPathsTest.class,
     WalRecoveryTxLogicalRecordsTest.class,
     WalRolloverRecordLoggingFsyncTest.class,
     WalRolloverRecordLoggingLogOnlyTest.class,
+    WalOnNodeStartTest.class,
 
     IgniteWalRecoveryTest.class,
     IgniteWalRecoveryWithCompactionTest.class,
@@ -89,10 +95,12 @@ import org.junit.runners.Suite;
     IgnitePdsCorruptedIndexTest.class,
 
     IgniteLogicalRecoveryTest.class,
+    IgniteLogicalRecoveryWithParamsTest.class,
 
     IgniteSequentialNodeCrashRecoveryTest.class,
 
-    IgniteCacheGroupsWithRestartsTest.class
+    IgniteCacheGroupsWithRestartsTest.class,
+    RestorePartitionStateDuringCheckpointTest.class
 })
 public class IgnitePdsWithIndexingCoreTestSuite {
 }

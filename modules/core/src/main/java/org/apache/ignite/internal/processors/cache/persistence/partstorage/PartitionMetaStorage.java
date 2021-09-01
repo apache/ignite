@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.partstorage;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
  * Provides a way to associate any {@link Storable} implementation as partition metadata.

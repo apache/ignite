@@ -38,7 +38,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, EmptyContext, BootstrappedDatasetPartition> {
+public class BootstrappedDatasetBuilder<K, V> implements PartitionDataBuilder<K, V, EmptyContext, BootstrappedDatasetPartition> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8146220902914010559L;
 
@@ -81,7 +81,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
             PoissonDistribution.DEFAULT_EPSILON,
             PoissonDistribution.DEFAULT_MAX_ITERATIONS);
 
-        while(upstreamData.hasNext()) {
+        while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
             LabeledVector<Double> vecAndLb = preprocessor.apply(nextRow.getKey(), nextRow.getValue());
             Vector features = vecAndLb.features();

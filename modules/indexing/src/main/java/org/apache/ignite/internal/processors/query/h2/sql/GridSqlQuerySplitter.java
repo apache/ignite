@@ -125,6 +125,12 @@ public class GridSqlQuerySplitter {
     /** Whether partition extraction is possible. */
     private final boolean canExtractPartitions;
 
+    /** Distributed joins flag. */
+    private final boolean distributedJoins;
+
+    /** Ignite logger. */
+    private final IgniteLogger log;
+
     /** */
     private final IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
@@ -144,11 +150,14 @@ public class GridSqlQuerySplitter {
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean locSplit,
-        PartitionExtractor extractor
+        PartitionExtractor extractor,
+        IgniteLogger log
     ) {
         this.paramsCnt = paramsCnt;
         this.collocatedGrpBy = collocatedGrpBy;
         this.extractor = extractor;
+        this.distributedJoins = distributedJoins;
+        this.log = log;
 
         // Partitions *CANNOT* be extracted if:
         // 1) Distributed joins are enabled (https://issues.apache.org/jira/browse/IGNITE-10971)
@@ -263,7 +272,8 @@ public class GridSqlQuerySplitter {
             collocatedGrpBy,
             distributedJoins,
             locSplit,
-            idx.partitionExtractor()
+            idx.partitionExtractor(),
+            log
         );
 
         // Normalization will generate unique aliases for all the table filters in FROM.
@@ -280,8 +290,8 @@ public class GridSqlQuerySplitter {
         // Do the actual query split. We will update the original query AST, need to be careful.
         splitter.splitQuery(qry);
 
-        assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
-        assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
+        assert !F.isEmpty(splitter.mapSqlQrys) : "map"; // We must have at least one map query.
+        assert splitter.rdcSqlQry != null : "rdc"; // We must have a reduce query.
 
         // If we have distributed joins, then we have to optimize all MAP side queries
         // to have a correct join order with respect to batched joins and check if we need
@@ -310,6 +320,7 @@ public class GridSqlQuerySplitter {
         List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
         boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
         boolean replicatedOnly = splitter.mapSqlQrys.stream().noneMatch(GridCacheSqlQuery::isPartitioned);
+        boolean treatReplicatedAsPartitioned = splitter.mapSqlQrys.stream().anyMatch(GridCacheSqlQuery::hasOuterJoinReplicatedPartitioned);
 
         H2Utils.checkQuery(idx, cacheIds, splitter.tbls);
 
@@ -327,7 +338,8 @@ public class GridSqlQuerySplitter {
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
             mvccEnabled,
-            locSplit
+            locSplit,
+            treatReplicatedAsPartitioned
         );
     }
 
@@ -695,13 +707,13 @@ public class GridSqlQuerySplitter {
         GridSqlSelect select = model.ast();
 
         Set<GridSqlAlias> tblAliases = U.newIdentityHashSet();
-        Map<String,GridSqlAlias> cols = new HashMap<>();
+        Map<String, GridSqlAlias> cols = new HashMap<>();
 
         // Collect all the tables for push down.
         for (int i = begin; i <= end; i++) {
             GridSqlAlias uniqueTblAlias = model.childModel(i).uniqueAlias();
 
-            assert uniqueTblAlias != null: select.getSQL();
+            assert uniqueTblAlias != null : select.getSQL();
 
             tblAliases.add(uniqueTblAlias);
         }
@@ -735,7 +747,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownJoins(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         SplitterQueryModel model,
         int begin,
         int end,
@@ -899,7 +911,7 @@ public class GridSqlQuerySplitter {
     @SuppressWarnings("IfMayBeConditional")
     private void pushDownSelectColumns(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlSelect select
     ) {
@@ -943,7 +955,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlAst parent,
         int childIdx
@@ -967,7 +979,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownColumn(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlAst parent,
         int childIdx
@@ -1048,7 +1060,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownWhereConditions(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlSelect select
     ) {
@@ -1261,10 +1273,14 @@ public class GridSqlQuerySplitter {
 
         setupParameters(map, mapQry, paramsCnt);
 
+        SqlAstTraverser traverser = new SqlAstTraverser(mapQry, distributedJoins, log);
+        traverser.traverse();
+
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
-        map.partitioned(SplitterUtils.hasPartitionedTables(mapQry));
-        map.hasSubQueries(SplitterUtils.hasSubQueries(mapQry));
+        map.partitioned(traverser.hasPartitionedTables());
+        map.hasSubQueries(traverser.hasSubQueries());
+        map.hasOuterJoinReplicatedPartitioned(traverser.hasOuterJoinReplicatedPartitioned());
 
         if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));
@@ -1321,7 +1337,7 @@ public class GridSqlQuerySplitter {
      * @return Map of columns with types.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private LinkedHashMap<String,?> collectColumns(List<GridSqlAst> cols) {
+    private LinkedHashMap<String, ?> collectColumns(List<GridSqlAst> cols) {
         LinkedHashMap<String, GridSqlType> res = new LinkedHashMap<>(cols.size(), 1f, false);
 
         for (int i = 0; i < cols.size(); i++) {
@@ -1392,7 +1408,7 @@ public class GridSqlQuerySplitter {
         GridSqlAst tbl = GridSqlAlias.unwrap(child);
 
         assert tbl instanceof GridSqlTable || tbl instanceof GridSqlSubquery ||
-            tbl instanceof GridSqlFunction: tbl.getClass();
+            tbl instanceof GridSqlFunction : tbl.getClass();
 
         String uniqueAlias = nextUniqueTableAlias(tbl != child ? ((GridSqlAlias)child).alias() : null);
 
@@ -1493,7 +1509,7 @@ public class GridSqlQuerySplitter {
             GridSqlAlias uniqueAlias = uniqueFromAliases.get(tbl);
 
             // Unique aliases must be generated for all the table filters already.
-            assert uniqueAlias != null: childIdx + "\n" + parent.getSQL();
+            assert uniqueAlias != null : childIdx + "\n" + parent.getSQL();
 
             col.tableAlias(uniqueAlias.alias());
             col.expressionInFrom(uniqueAlias);
@@ -1673,7 +1689,7 @@ public class GridSqlQuerySplitter {
                         SplitterUtils.aggregate(false, SUM).addChild(SplitterUtils.column(cntMapAggAlias));
 
                     if (!SplitterUtils.isFractionalType(agg.resultType().type())) {
-                        sumUpRdc =  new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
+                        sumUpRdc = new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
                         sumDownRdc = new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumDownRdc);
                     }
 

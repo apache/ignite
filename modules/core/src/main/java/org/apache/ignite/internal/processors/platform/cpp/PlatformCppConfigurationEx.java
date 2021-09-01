@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cpp;
 
+import java.util.Collection;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
@@ -25,8 +26,6 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManag
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Internal interop CPP configuration.

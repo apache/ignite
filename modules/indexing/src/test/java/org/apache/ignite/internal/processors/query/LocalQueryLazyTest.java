@@ -92,7 +92,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < QRY_CNT; ++i) {
             iters[i] = sql("SELECT * FROM test").iterator();
 
-            ResultInterface res = GridTestUtils.getFieldValueHierarchy(iters[i], "iter", "delegateIt", "iter", "res");
+            ResultInterface res = GridTestUtils.getFieldValueHierarchy(iters[i], "iter", "delegateIt", "delegate", "iter", "res");
 
             assertTrue("Unexpected result type " + res.getClass(), res instanceof LazyResult);
         }
@@ -136,7 +136,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        try (FieldsQueryCursor cur = sql(g0,"SELECT * FROM test")) {
+        try (FieldsQueryCursor cur = sql(g0, "SELECT * FROM test")) {
             Iterator<List<?>> it = cur.iterator();
 
             it.next();
@@ -199,7 +199,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return sql(grid(), sql, args);
     }
 
@@ -209,7 +209,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLocal(true)
             .setLazy(true)
@@ -223,7 +223,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sqlDistrubuted(IgniteEx ign, String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sqlDistrubuted(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLazy(true)
             .setSchema("TEST")

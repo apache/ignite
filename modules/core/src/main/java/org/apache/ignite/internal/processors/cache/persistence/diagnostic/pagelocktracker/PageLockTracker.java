@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.lang.IgniteFuture;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
@@ -177,7 +175,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
 
     /** {@inheritDoc} */
     @Override public void onReadLock(int structureId, long pageId, long page, long pageAddr) {
-        if (checkFailedLock(pageAddr) ||isInvalid())
+        if (checkFailedLock(pageAddr) || isInvalid())
             return;
 
         lock();
@@ -223,7 +221,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     }
 
     /** */
-    private boolean checkFailedLock(long pageAddr){
+    private boolean checkFailedLock(long pageAddr) {
         if (pageAddr == 0) {
             this.nextOp = 0;
             this.nextOpStructureId = 0;
@@ -240,8 +238,8 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
         return invalidCtx;
     }
 
-    /** */
-    protected void free(){
+    /** {@inheritDoc} */
+    @Override public void close() {
         pages.free();
     }
 
@@ -297,7 +295,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /**
      * @return Number of locks operations.
      */
-    public long operationsCounter(){
+    public long operationsCounter() {
         // Read  volatile for thread safety.
         boolean locked = this.locked;
 
@@ -341,7 +339,6 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /** {@inheritDoc} */
     @Override public synchronized boolean acquireSafePoint() {
         return dump ? false : (dump = true);
-
     }
 
     /** {@inheritDoc} */
@@ -361,11 +358,6 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
             releaseSafePoint();
 
         return dump0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<T> dumpSync() {
-        throw new UnsupportedOperationException();
     }
 
     /** */

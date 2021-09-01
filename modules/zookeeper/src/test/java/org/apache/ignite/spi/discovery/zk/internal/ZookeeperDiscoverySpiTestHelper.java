@@ -108,7 +108,7 @@ class ZookeeperDiscoverySpiTestHelper {
                             return false;
                         }
 
-                        Assert.assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() +//todo check
+                        Assert.assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() + //todo check
                             ", exp=" + U.gridEventName(expEvt.type()) +
                             ", evt=" + evt0 + ']', expEvt.type(), evt0.type());
                     }
@@ -135,8 +135,10 @@ class ZookeeperDiscoverySpiTestHelper {
      * @param topVer Topology version.
      * @return Expected event instance.
      */
-    static DiscoveryEvent failEvent(long topVer) {
-        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_FAILED, null);
+    static DiscoveryEvent leftEvent(long topVer, boolean fail) {
+        int eventType = fail ? EventType.EVT_NODE_FAILED : EventType.EVT_NODE_LEFT;
+
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, eventType, null);
 
         expEvt.topologySnapshot(topVer, null);
 
@@ -244,7 +246,7 @@ class ZookeeperDiscoverySpiTestHelper {
         final ZookeeperClient zkClient = new ZookeeperClient(log, connectStr, 10_000, null);
 
         try {
-            Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {//todo check
+            Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { //todo check
                 @Override public boolean apply() {
                     try {
                         List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/" + ZkIgnitePaths.ALIVE_NODES_DIR);

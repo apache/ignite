@@ -17,13 +17,12 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-
-import java.util.Collection;
-import java.util.List;
 
 /**
  * URI deployment test task with name.

@@ -41,7 +41,7 @@ public abstract class AbstractStorageTest {
         assertTrue(isNumericVector(storage));
         assertNotNull(storage.data());
 
-        for(int i = 0; i < storage.size(); i++) {
+        for (int i = 0; i < storage.size(); i++) {
             storage.set(i, i);
             assertTrue(isNumericVector(storage));
             assertEquals(i, storage.get(i), 0.0);
@@ -55,7 +55,7 @@ public abstract class AbstractStorageTest {
         assertTrue(isNumericVector(storage));
         assertNotNull(storage.data());
 
-        for(int i = 0; i < storage.size(); i++) {
+        for (int i = 0; i < storage.size(); i++) {
             storage.setRaw(i, i);
             assertTrue(isRaw(storage));
             assertTrue(storage.isNumeric());
@@ -86,7 +86,7 @@ public abstract class AbstractStorageTest {
     public void testToNumericConversion2() {
         VectorStorage storage = createStorage(10);
         double[] exp = new double[storage.size()];
-        for(int i = 0; i < storage.size(); i++) {
+        for (int i = 0; i < storage.size(); i++) {
             storage.setRaw(i, i);
             exp[i] = i;
         }

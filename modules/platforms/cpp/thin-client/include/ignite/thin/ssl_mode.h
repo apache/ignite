@@ -36,7 +36,7 @@ namespace ignite
                 DISABLE = 0,
 
                 /** Try to establish SSL/TLS connection. Fail if the server does not support SSL/TLS. */
-                REQUIRE = 1,
+                REQUIRE = 1
             };
         };
     }

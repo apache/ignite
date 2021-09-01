@@ -80,7 +80,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
      * @param ig Node.
      * @return Node caches.
      */
-    protected static Map<String, GridCacheAdapter> caches(IgniteEx ig){
+    protected static Map<String, GridCacheAdapter> caches(IgniteEx ig) {
         return field(ig.context().cache(), CACHES);
     }
 
@@ -510,7 +510,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param caches Callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder dynamicCacheStart(IgniteCallable<List<CacheConfiguration>> caches){
+        public JoinNodeTestPlanBuilder dynamicCacheStart(IgniteCallable<List<CacheConfiguration>> caches) {
             strPlanBuilder.append("Dynamic caches start")
                 .append("\n");
 
@@ -523,7 +523,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param r Cache start callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder afterDynamicCacheStarted(Runnable r){
+        public JoinNodeTestPlanBuilder afterDynamicCacheStarted(Runnable r) {
             strPlanBuilder.append("Check after dynamic caches start")
                 .append("\n");
 
@@ -536,7 +536,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param caches Callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder dynamicCacheStop(IgniteCallable<List<String>> caches){
+        public JoinNodeTestPlanBuilder dynamicCacheStop(IgniteCallable<List<String>> caches) {
             strPlanBuilder.append("Dynamic caches stop")
                 .append("\n");
 
@@ -549,7 +549,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param r Callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder afterDynamicCacheStopped(Runnable r){
+        public JoinNodeTestPlanBuilder afterDynamicCacheStopped(Runnable r) {
             strPlanBuilder.append("Check after dynamic caches stop")
                 .append("\n");
 
@@ -689,23 +689,23 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param ig Node.
          * @return Next minor version.
          */
-        private AffinityTopologyVersion nextMinorVersion(IgniteEx ig){
+        private AffinityTopologyVersion nextMinorVersion(IgniteEx ig) {
             AffinityTopologyVersion cur = ig.context().discovery().topologyVersionEx();
 
-           return cur.nextMinorVersion();
+            return cur.nextMinorVersion();
         }
 
         /**
          * @param ver Version.
          */
-        private void awaitTopologyVersion(final AffinityTopologyVersion ver){
+        private void awaitTopologyVersion(final AffinityTopologyVersion ver) {
             onAllNode(new CI1<IgniteEx>() {
                 @Override public void apply(IgniteEx ig) {
                     while (true) {
                         AffinityTopologyVersion locTopVer = ig.context().cache().context()
                             .exchange().readyAffinityVersion();
 
-                        if (locTopVer.compareTo(ver) < 0){
+                        if (locTopVer.compareTo(ver) < 0) {
                             System.out.println("Top ready " + locTopVer + " on " + ig.localNode().id());
 
                             try {

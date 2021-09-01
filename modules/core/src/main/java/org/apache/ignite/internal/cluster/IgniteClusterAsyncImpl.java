@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -364,6 +365,21 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public UUID id() {
+        return cluster.id();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() {
+        return cluster.tag();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tag(String tag) throws IgniteCheckedException {
+        cluster.tag(tag);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isBaselineAutoAdjustEnabled() {
         return cluster.isBaselineAutoAdjustEnabled();
     }
@@ -404,6 +420,16 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
      */
     public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
         return cluster.baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ShutdownPolicy shutdownPolicy() {
+        return cluster.shutdownPolicy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void shutdownPolicy(ShutdownPolicy policy) {
+        cluster.shutdownPolicy(policy);
     }
 
     /** {@inheritDoc} */
