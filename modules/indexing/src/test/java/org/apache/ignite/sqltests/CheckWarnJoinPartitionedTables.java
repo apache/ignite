@@ -17,8 +17,8 @@
 
 package org.apache.ignite.sqltests;
 
+import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,14 +27,27 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** Check that illegal joins of partitioned tables are warned. */
+@RunWith(Parameterized.class)
 public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     /** */
     private final ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** */
-    private Ignite crd;
+    private IgniteEx crd;
+
+    /** */
+    @Parameterized.Parameter
+    public String joinType;
+
+    /** */
+    @Parameterized.Parameters(name = "join={0}")
+    public static List<Object> params() {
+        return Arrays.asList("LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "JOIN");
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -46,41 +59,32 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         crd = startGrid();
     }
 
     /** */
     @Test
     public void joinSameTableWithPrimaryKey() {
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE A (ID INT PRIMARY KEY, TITLE VARCHAR);"));
 
-        checkSameTableWithJoinType("LEFT JOIN");
-        checkSameTableWithJoinType("RIGHT JOIN");
-        checkSameTableWithJoinType("INNER JOIN");
-        checkSameTableWithJoinType("JOIN");
+        checkSameTableWithJoinType();
     }
 
     /** */
     @Test
     public void joinSameTableWithPrimaryAffinityKey() {
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE A (ID INT PRIMARY KEY, TITLE VARCHAR) with \"AFFINITY_KEY=ID\";"));
 
-        checkSameTableWithJoinType("LEFT JOIN");
-        checkSameTableWithJoinType("RIGHT JOIN");
-        checkSameTableWithJoinType("INNER JOIN");
-        checkSameTableWithJoinType("JOIN");
+        checkSameTableWithJoinType();
     }
 
     /** */
-    private void checkSameTableWithJoinType(String joinType) {
+    private void checkSameTableWithJoinType() {
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID;");
 
@@ -192,17 +196,14 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     /** */
     @Test
     public void joinSameTableWithComplexPrimaryKey() {
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE A (ID INT, TITLE VARCHAR, PRICE INT, COMMENT VARCHAR, PRIMARY KEY (ID, TITLE, PRICE));"));
 
-        checkSameTableWithComplexPrimaryKeyWithJoinType("LEFT JOIN");
-        checkSameTableWithComplexPrimaryKeyWithJoinType("RIGHT JOIN");
-        checkSameTableWithComplexPrimaryKeyWithJoinType("INNER JOIN");
-        checkSameTableWithComplexPrimaryKeyWithJoinType("JOIN");
+        checkSameTableWithComplexPrimaryKeyWithJoinType();
     }
 
     /** */
-    private void checkSameTableWithComplexPrimaryKeyWithJoinType(String joinType) {
+    private void checkSameTableWithComplexPrimaryKeyWithJoinType() {
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1._KEY = a2._KEY;");
 
@@ -291,18 +292,15 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     /** */
     @Test
     public void joinSameTableWithComplexPrimaryKeySingleAffKey() {
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE A (ID INT, TITLE VARCHAR, PRICE INT, COMMENT VARCHAR, PRIMARY KEY (ID, TITLE, PRICE))" +
                 " with \"AFFINITY_KEY=ID\";"));
 
-        checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType("LEFT JOIN");
-        checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType("RIGHT JOIN");
-        checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType("INNER JOIN");
-        checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType("JOIN");
+        checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType();
     }
 
     /** */
-    private void checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType(String joinType) {
+    private void checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType() {
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID;");
 
@@ -373,20 +371,17 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     /** */
     @Test
     public void joinWithPrimaryKey() {
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE A (ID INT PRIMARY KEY, TITLE VARCHAR);"));
 
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE B (ID INT PRIMARY KEY, PRICE INT);"));
 
-        checkJoinPrimaryKeyWithJoinType("LEFT JOIN");
-        checkJoinPrimaryKeyWithJoinType("RIGHT JOIN");
-        checkJoinPrimaryKeyWithJoinType("INNER JOIN");
-        checkJoinPrimaryKeyWithJoinType("JOIN");
+        checkJoinPrimaryKeyWithJoinType();
     }
 
     /** */
-    private void checkJoinPrimaryKeyWithJoinType(String joinType) {
+    private void checkJoinPrimaryKeyWithJoinType() {
         checkLogListener(false,
             "SELECT a.* FROM A a " + joinType + " B b on a.ID = b.ID;");
 
@@ -432,12 +427,51 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
             "SELECT a.* FROM A a " + joinType + " B b where a.ID = b.PRICE;");
     }
 
+    /** */
+    @Test
+    public void joinPrimaryKeyAndAffinityKey() {
+        execute(new SqlFieldsQuery(
+            "CREATE TABLE A (k1 VARCHAR PRIMARY KEY, v2 VARCHAR);"));
+
+        execute(new SqlFieldsQuery(
+            "CREATE TABLE B (k1 VARCHAR, ak2 VARCHAR, v3 VARCHAR, PRIMARY KEY(k1, ak2)) with \"AFFINITY_KEY=ak2\";"));
+
+        // Correct joins.
+        checkLogListener(false,
+            "SELECT * FROM A a " + joinType + " B b on a.k1 = b.ak2");
+
+        checkLogListener(false,
+            "SELECT * FROM A a " + joinType + " B b on a.k1 = b.ak2 WHERE b.k1 = ?", "1");
+
+        checkLogListener(false,
+            "SELECT * FROM A a " + joinType + " B b where a.k1 = b.ak2");
+
+        checkLogListener(false,
+            "SELECT * FROM A a " + joinType + " B b where b.ak2 = a.k1");
+
+        checkLogListener(false,
+            "SELECT * FROM A a " + joinType + " B b on a.k1 = b.ak2 WHERE a.k1 < b.ak2");
+
+        // Wrong joins.
+
+        checkLogListener(true,
+            "SELECT * FROM A a " + joinType + " B b on a.k1 = b.k1");
+
+        checkLogListener(true,
+            "SELECT * FROM A a " + joinType + " B b on a.k1 = b.k1 and a.v2 = b.ak2");
+
+        checkLogListener(true,
+            "SELECT * FROM A a " + joinType + " B b on a.k1 > b.ak2");
+
+        checkLogListener(true,
+            "SELECT * FROM A a " + joinType + " B b where a.k1 = ? and b.ak2 = ?", "1", "1");
+    }
 
     /** */
     @Test
     // This test should not pass as it contains wrong query. But current check pass it.
     public void testWrongQueryButAllAffinityKeysAreUsed() {
-        execute(crd, new SqlFieldsQuery(
+        execute(new SqlFieldsQuery(
             "CREATE TABLE A (ID INT, TITLE VARCHAR, PRICE INT, COMMENT VARCHAR, PRIMARY KEY (ID, TITLE, PRICE));"));
 
         // PRICE = ID
@@ -446,14 +480,14 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkLogListener(boolean shouldFindMsg, String sql) {
+    private void checkLogListener(boolean shouldFindMsg, String sql, Object... args) {
         LogListener lsnr = LogListener.matches(
-            "For join two partitioned tables join condition should be the equality operation of affinity keys"
+            "For join two partitioned tables join condition should contain the equality operation of affinity keys"
         ).build();
 
         testLog.registerListener(lsnr);
 
-        execute(crd, new SqlFieldsQuery(sql));
+        execute(new SqlFieldsQuery(sql).setArgs(args));
 
         if (shouldFindMsg)
             assertTrue(sql, lsnr.check());
@@ -466,11 +500,10 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     /**
      * Execute query from node.
      *
-     * @param node node to use to perform query.
      * @param qry query.
      */
-    protected final void execute(Ignite node, SqlFieldsQuery qry) {
-        FieldsQueryCursor<List<?>> cursor = ((IgniteEx)node).context().query().querySqlFields(qry, false);
+    protected final void execute(SqlFieldsQuery qry) {
+        FieldsQueryCursor<List<?>> cursor = crd.context().query().querySqlFields(qry, false);
 
         cursor.getAll();
     }

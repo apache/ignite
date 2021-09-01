@@ -198,7 +198,7 @@ class SqlAstTraverser {
         if (!joinIsValid) {
             log.warning(
                 String.format(
-                    "For join two partitioned tables join condition should be the equality operation of affinity keys." +
+                    "For join two partitioned tables join condition should contain the equality operation of affinity keys." +
                         " Left side: %s; right side: %s", left.getName(), right.getName())
             );
         }
@@ -306,25 +306,32 @@ class SqlAstTraverser {
         Set<String> actLeftCols;
         Set<String> actRightCols;
 
+        boolean actPkLeft = pkLeft;
+        boolean actPkRight = pkRight;
+
         if (leftTbl.equals(leftTblAls))
             actLeftCols = leftCols;
-        else if (leftTbl.equals(rightTblAls))
+        else if (leftTbl.equals(rightTblAls)) {
             actLeftCols = rightCols;
+            actPkLeft = pkRight;
+        }
         else
             return;
 
         if (rightTbl.equals(rightTblAls))
             actRightCols = rightCols;
-        else if (rightTbl.equals(leftTblAls))
+        else if (rightTbl.equals(leftTblAls)) {
             actRightCols = leftCols;
+            actPkRight = pkLeft;
+        }
         else
             return;
 
         // This is part of the affinity join condition.
         if (actLeftCols.contains(leftCol) && actRightCols.contains(rightCol)) {
-            if (pkLeft && "_KEY".equals(leftCol))
+            if (actPkLeft && "_KEY".equals(leftCol))
                 actLeftCols.clear();
-            else if (pkLeft) {
+            else if (actPkLeft) {
                 actLeftCols.remove(leftCol);
                 // Only _KEY is there.
                 if (actLeftCols.size() == 1)
@@ -333,9 +340,9 @@ class SqlAstTraverser {
             else
                 actLeftCols.remove(leftCol);
 
-            if (pkRight && "_KEY".equals(rightCol))
+            if (actPkRight && "_KEY".equals(rightCol))
                 actRightCols.clear();
-            else if (pkRight) {
+            else if (actPkRight) {
                 actRightCols.remove(rightCol);
                 // Only _KEY is there.
                 if (actRightCols.size() == 1)
