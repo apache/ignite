@@ -207,7 +207,12 @@ namespace ignite
             {
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());
-                writer.WriteString(snapshot.GetAffinityFieldName());
+
+                const std::string& affFieldName = snapshot.GetAffinityFieldName();
+                if (affFieldName.empty())
+                    writer.WriteNull();
+                else
+                    writer.WriteString(affFieldName);
 
                 const binary::Snap::FieldMap& fields = snapshot.GetFieldMap();
 

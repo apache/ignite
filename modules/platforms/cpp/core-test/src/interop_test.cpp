@@ -112,7 +112,7 @@ namespace ignite
 }
 
 BOOST_FIXTURE_TEST_SUITE(InteropTestSuite, InteropTestSuiteFixture)
-    
+
 #ifdef ENABLE_STRING_SERIALIZATION_VER_2_TESTS
 
 BOOST_AUTO_TEST_CASE(StringUtfInvalidSequence)
