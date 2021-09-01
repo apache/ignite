@@ -92,9 +92,7 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
         CacheEntryProcessor<String, String, Boolean> proc = (CacheEntryProcessor<String, String, Boolean>)
             getExternalClassLoader().loadClass(ENTRY_PROC_CLS_NAME).newInstance();
 
-        Throwable err = assertThrowsWithCause(() -> cache.invoke("1", proc), IgniteCheckedException.class);
-
-        err.printStackTrace();
+        assertThrowsWithCause(() -> cache.invoke("1", proc), IgniteCheckedException.class);
 
         assertTrue(errMsgLsnr.check());
 
