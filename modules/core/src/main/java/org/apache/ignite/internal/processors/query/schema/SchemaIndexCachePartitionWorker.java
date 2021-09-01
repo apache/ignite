@@ -67,7 +67,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final AtomicBoolean stop;
 
     /** Cancellation token between all workers for all caches. */
-    @Nullable private final SchemaIndexOperationCancellationToken cancel;
+    private final IndexRebuildCancelToken cancelTok;
 
     /** Index closure. */
     private final SchemaIndexCacheVisitorClosureWrapper wrappedClo;
@@ -87,7 +87,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @param cctx Cache context.
      * @param locPart Partition.
      * @param stop Stop flag between all workers for one cache.
-     * @param cancel Cancellation token between all workers for all caches.
+     * @param cancelTok Cancellation token between all workers for all caches.
      * @param clo Index closure.
      * @param fut Worker future.
      * @param partsCnt Count of partitions to be processed.
@@ -96,7 +96,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         GridCacheContext cctx,
         GridDhtLocalPartition locPart,
         AtomicBoolean stop,
-        @Nullable SchemaIndexOperationCancellationToken cancel,
+        IndexRebuildCancelToken cancelTok,
         SchemaIndexCacheVisitorClosure clo,
         GridFutureAdapter<SchemaIndexCacheStat> fut,
         AtomicInteger partsCnt
@@ -109,7 +109,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
 
         this.cctx = cctx;
         this.locPart = locPart;
-        this.cancel = cancel;
+        this.cancelTok = cancelTok;
 
         assert nonNull(stop);
         assert nonNull(clo);
@@ -253,11 +253,15 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     /**
      * Check if visit process is not cancelled.
      *
-     * @throws SchemaIndexOperationCancellationException If cancelled.
+     * @throws IgniteCheckedException If cancelled.
      */
-    private void checkCancelled() throws SchemaIndexOperationCancellationException {
-        if (nonNull(cancel) && cancel.isCancelled())
-            throw new SchemaIndexOperationCancellationException("Index creation was cancelled.");
+    private void checkCancelled() throws IgniteCheckedException {
+        Throwable e = cancelTok.cancelled();
+
+        if (e instanceof SchemaIndexOperationCancellationException)
+            throw (SchemaIndexOperationCancellationException)e;
+        else if (e != null)
+            throw new IgniteCheckedException(e);
     }
 
     /**

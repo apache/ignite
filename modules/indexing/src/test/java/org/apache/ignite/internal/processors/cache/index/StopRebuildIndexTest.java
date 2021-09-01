@@ -163,14 +163,14 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(rebFut0.isDone());
 
         assertFalse(rebFut1.isDone());
-        assertFalse(rebFut1.cancelToken().isCancelled());
+        assertNull(rebFut1.cancelToken().cancelled());
 
         stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         rebFut0.get(getTestTimeout());
         rebFut1.get(getTestTimeout());
 
-        assertFalse(rebFut1.cancelToken().isCancelled());
+        assertNull(rebFut1.cancelToken().cancelled());
 
         assertNull(indexRebuildFuture(n, cacheCtx.cacheId()));
         assertNull(internalIndexRebuildFuture(n, cacheCtx.cacheId()));
@@ -212,14 +212,14 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(fut0.isDone());
 
         assertFalse(fut1.isDone());
-        assertFalse(fut1.cancelToken().isCancelled());
+        assertNull(fut1.cancelToken().cancelled());
 
         assertTrue(waitForCondition(() -> metrics0.getIndexRebuildKeysProcessed() >= keys / 100, getTestTimeout()));
         assertTrue(metrics0.isIndexRebuildInProgress());
         assertFalse(fut0.isDone());
 
         assertFalse(fut1.isDone());
-        assertFalse(fut1.cancelToken().isCancelled());
+        assertNull(fut1.cancelToken().cancelled());
 
         stopRebuildIndexes.accept(n);
 
@@ -230,13 +230,13 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
             assertThrows(log, () -> fut0.get(getTestTimeout()), SchemaIndexOperationCancellationException.class, null);
             assertThrows(log, () -> fut1.get(getTestTimeout()), SchemaIndexOperationCancellationException.class, null);
 
-            assertTrue(fut1.cancelToken().isCancelled());
+            assertNotNull(fut1.cancelToken().cancelled());
         }
         else {
             fut0.get(getTestTimeout());
 
             fut1.get(getTestTimeout());
-            assertFalse(fut1.cancelToken().isCancelled());
+            assertNull(fut1.cancelToken().cancelled());
         }
 
         assertNull(internalIndexRebuildFuture(n, cacheCtx.cacheId()));

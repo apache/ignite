@@ -34,9 +34,9 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -432,7 +432,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
             assertNotNull(intlRebIdxFut);
 
-            assertTrue(waitForCondition(intlRebIdxFut.cancelToken()::isCancelled, getTestTimeout()));
+            assertTrue(waitForCondition(() -> intlRebIdxFut.cancelToken().cancelled() != null, getTestTimeout()));
 
             stopLoad.set(true);
 
@@ -706,7 +706,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
         @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
-            SchemaIndexCacheVisitorClosure clo, SchemaIndexOperationCancellationToken cancel) {
+            SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
             super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
         }
     }
