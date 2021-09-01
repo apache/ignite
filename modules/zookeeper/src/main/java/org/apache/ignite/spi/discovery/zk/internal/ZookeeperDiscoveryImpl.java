@@ -1117,7 +1117,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             locNode.setAttributes(withSecurityContext(
                 authenticateLocalNode(locNode, locCred, nodeAuth),
-                locNode,
+                locNode.attributes(),
                 marsh
             ));
         }
@@ -2150,7 +2150,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             secSubjZipBytes = marshalZip(subj);
 
-            node.setAttributes(withSecurityContext(subj, node, marsh));
+            node.setAttributes(withSecurityContext(subj, node.getAttributes(), marsh));
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal node security subject: " + e, e);

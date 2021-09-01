@@ -209,7 +209,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                 SecurityCredentials locSecCred = (SecurityCredentials)locNode.attributes().get(ATTR_SECURITY_CREDENTIALS);
 
                 Map<String, Object> attrs = withSecurityContext(
-                    authenticateLocalNode(locNode, locSecCred, nodeAuth), locNode, marsh);
+                    authenticateLocalNode(locNode, locSecCred, nodeAuth), locNode.attributes(), marsh);
 
                 attrs.remove(ATTR_SECURITY_CREDENTIALS);
 

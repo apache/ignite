@@ -302,24 +302,24 @@ public class SecurityUtils {
      * Marshals specified security context and adds it to the node attributes.
      *
      * @param secCtx Security context to be added.
-     * @param node Cluster node to which attributes security context is to be added.
+     * @param nodeAttrs Cluster node attributes to which security context attribute is to be added.
      * @param marsh Marshaller.
-     * @return Updated node attributes.
+     * @return New copy of node attributes with security context attribute added.
      * @throws IgniteCheckedException If security context serialization exception occurs.
      */
     public static Map<String, Object> withSecurityContext(
         SecurityContext secCtx,
-        ClusterNode node,
+        Map<String, Object> nodeAttrs,
         Marshaller marsh
     ) throws IgniteCheckedException {
         if (!(secCtx instanceof Serializable))
             throw new IgniteSpiException("Authentication subject is not serializable.");
 
-        Map<String, Object> nodeAttrs = new HashMap<>(node.attributes());
+        Map<String, Object> res = new HashMap<>(nodeAttrs);
 
-        nodeAttrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, secCtx));
+        res.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, secCtx));
 
-        return nodeAttrs;
+        return res;
     }
 
     /**

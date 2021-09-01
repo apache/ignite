@@ -1259,7 +1259,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         try {
             locNode.setAttributes(withSecurityContext(
                 authenticateLocalNode(locNode, locCred, spi.nodeAuth),
-                locNode,
+                locNode.attributes(),
                 spi.marshaller()
             ));
         }
@@ -4359,7 +4359,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             // Stick in authentication subject to node (use security-safe attributes for copy).
-                            node.setAttributes(withSecurityContext(subj, node, spi.marshaller()));
+                            node.setAttributes(withSecurityContext(subj, node.getAttributes(), spi.marshaller()));
                         }
                     }
                     catch (IgniteException | IgniteCheckedException e) {
