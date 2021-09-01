@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -350,7 +350,7 @@ public class IndexProcessor extends GridProcessorAdapter {
     @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(
         GridCacheContext<?, ?> cctx,
         boolean force,
-        @Nullable AtomicReference<Throwable> cancelTok
+        IndexRebuildCancelToken cancelTok
     ) {
         return idxRebuild.rebuild(cctx, force, cancelTok);
     }

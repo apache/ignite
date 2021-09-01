@@ -14,23 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.platform;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
- * Exception occurred when canceling index rebuild via {@link IndexRebuildCancelToken}.
+ * Entry processor that adds argument to cache entry.
  */
-public class SchemaIndexOperationCancellationException extends IgniteCheckedException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+public class PlatformAddArgEntryProcessor implements CacheEntryProcessor<Object, Long, Long> {
+    @Override public Long process(MutableEntry<Object, Long> mutableEntry, Object... args)
+            throws EntryProcessorException {
+        Long val = (Long)args[0];
+        Long res = mutableEntry.getValue();
+        res = res == null ? val : res + val;
 
-    /**
-     * Constructor.
-     *
-     * @param msg Error message.
-     */
-    public SchemaIndexOperationCancellationException(String msg) {
-        super(msg);
+        mutableEntry.setValue(res);
+
+        return res;
     }
 }

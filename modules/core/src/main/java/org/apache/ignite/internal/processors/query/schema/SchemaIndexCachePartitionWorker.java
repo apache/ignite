@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -68,7 +67,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final AtomicBoolean stop;
 
     /** Cancellation token between all workers for all caches. */
-    private final Supplier<Throwable> cancelTok;
+    private final IndexRebuildCancelToken cancelTok;
 
     /** Index closure. */
     private final SchemaIndexCacheVisitorClosureWrapper wrappedClo;
@@ -97,7 +96,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         GridCacheContext<?, ?> cctx,
         GridDhtLocalPartition locPart,
         AtomicBoolean stop,
-        Supplier<Throwable> cancelTok,
+        IndexRebuildCancelToken cancelTok,
         SchemaIndexCacheVisitorClosure clo,
         GridFutureAdapter<SchemaIndexCacheStat> fut,
         AtomicInteger partsCnt
@@ -257,10 +256,10 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @throws IgniteCheckedException If cancelled.
      */
     private void checkCancelled() throws IgniteCheckedException {
-        Throwable e = cancelTok.get();
+        Throwable e = cancelTok.cancelled();
 
-        if (e instanceof IgniteCheckedException)
-            throw (IgniteCheckedException)e;
+        if (e instanceof SchemaIndexOperationCancellationException)
+            throw (SchemaIndexOperationCancellationException)e;
         else if (e != null)
             throw new IgniteCheckedException(e);
     }

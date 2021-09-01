@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -55,7 +54,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private final GridCacheContext cctx;
 
     /** Cancellation token. */
-    private final Supplier<Throwable> cancelTok;
+    private final IndexRebuildCancelToken cancelTok;
 
     /** Future for create/rebuild index. */
     protected final GridFutureAdapter<Void> buildIdxFut;
@@ -72,7 +71,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     public SchemaIndexCacheVisitorImpl(
         GridCacheContext<?, ?> cctx,
-        Supplier<Throwable> cancelTok,
+        IndexRebuildCancelToken cancelTok,
         GridFutureAdapter<Void> buildIdxFut
     ) {
         assert nonNull(cctx);

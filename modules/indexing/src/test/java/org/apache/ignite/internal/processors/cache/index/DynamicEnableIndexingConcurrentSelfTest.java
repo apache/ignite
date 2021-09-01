@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -53,6 +52,7 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -631,11 +631,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
         @Override public void startRebuild(
-            GridCacheContext<?, ?> cctx,
-            GridFutureAdapter<Void> fut,
-            SchemaIndexCacheVisitorClosure clo,
-            Supplier<Throwable> cancel
-        ) {
+            GridCacheContext cctx, GridFutureAdapter<Void> fut, SchemaIndexCacheVisitorClosure clo,
+            IndexRebuildCancelToken cancel) {
             awaitIndexing(cctx.localNodeId());
 
             super.startRebuild(cctx, fut, clo, cancel);

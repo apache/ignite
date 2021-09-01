@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
@@ -313,9 +313,9 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         /** {@inheritDoc} */
         @Override @Nullable public IgniteInternalFuture<?> rebuild(
-            GridCacheContext<?, ?> cctx,
+            GridCacheContext cctx,
             boolean force,
-            @Nullable AtomicReference<Throwable> cancelTok
+            IndexRebuildCancelToken cancelTok
         ) {
             IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
             rebuiltIndexes = future != null;

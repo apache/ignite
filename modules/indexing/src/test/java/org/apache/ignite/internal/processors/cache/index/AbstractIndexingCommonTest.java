@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -157,7 +157,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
             GridCacheContext<?, ?> cctx,
             GridFutureAdapter<Void> rebuildIdxFut,
             SchemaIndexCacheVisitorClosure clo,
-            Supplier<Throwable> cancel
+            IndexRebuildCancelToken cancel
         ) {
             CountDownLatch startThread = new CountDownLatch(1);
 

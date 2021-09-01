@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -432,7 +432,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
             assertNotNull(intlRebIdxFut);
 
-            assertTrue(waitForCondition(intlRebIdxFut::hasTokenException, getTestTimeout()));
+            assertTrue(waitForCondition(() -> intlRebIdxFut.cancelToken().cancelled() != null, getTestTimeout()));
 
             stopLoad.set(true);
 
@@ -705,12 +705,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
-        @Override protected void startRebuild(
-            GridCacheContext<?, ?> cctx,
-            GridFutureAdapter<Void> fut,
-            SchemaIndexCacheVisitorClosure clo,
-            Supplier<Throwable> cancel
-        ) {
+        @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
+            SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
             super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
         }
     }

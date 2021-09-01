@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -29,6 +27,7 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -61,7 +60,7 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
         GridCacheContext<?, ?> cctx,
         GridFutureAdapter<Void> rebuildIdxFut,
         SchemaIndexCacheVisitorClosure clo,
-        Supplier<Throwable> cancel
+        IndexRebuildCancelToken cancel
     ) {
         super.startRebuild(cctx, rebuildIdxFut, new SchemaIndexCacheVisitorClosure() {
             /** {@inheritDoc} */
@@ -78,9 +77,9 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
 
     /** {@inheritDoc} */
     @Override @Nullable public IgniteInternalFuture<?> rebuild(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         boolean force,
-        @Nullable AtomicReference<Throwable> cancelTok
+        IndexRebuildCancelToken cancelTok
     ) {
         cacheRebuildRunner.getOrDefault(nodeName(cctx), emptyMap()).getOrDefault(cctx.name(), () -> { }).run();
 

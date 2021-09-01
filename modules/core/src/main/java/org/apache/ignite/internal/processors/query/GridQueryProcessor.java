@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -92,6 +91,7 @@ import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.processors.query.aware.IndexRebuildFutureStorage;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -1857,7 +1857,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws SchemaOperationException If failed.
      */
     public void processSchemaOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
-        Supplier<Throwable> cancelTok) throws SchemaOperationException {
+        IndexRebuildCancelToken cancelTok) throws SchemaOperationException {
         if (log.isDebugEnabled())
             log.debug("Started local index operation [opId=" + op.id() + ']');
 
@@ -1970,7 +1970,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
 
                 if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
-                    rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, null);
+                    rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, cancelTok);
                 else {
                     if (log.isInfoEnabled())
                         log.info("Rebuilding indexes for the cache is already in progress: " + cacheInfo.name());
@@ -2374,7 +2374,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            return rebuildIndexesFromHash0(cctx, force, cancelTok);
+            return rebuildIndexesFromHash0(cctx, force, new IndexRebuildCancelToken());
         }
         finally {
             busyLock.leaveBusy();
@@ -2391,7 +2391,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(
         GridCacheContext<?, ?> cctx,
         boolean force,
-        @Nullable AtomicReference<Throwable> cancelTok
+        IndexRebuildCancelToken cancelTok
     ) {
         IgniteInternalFuture<?> idxFut = idxProc.rebuildIndexesForCache(cctx, force, cancelTok);
 
@@ -3887,7 +3887,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // so there is no need to run the rebuild procedure for such caches from the exchange thread.
             Collection<ExchangeActions.CacheActionData> cachesToStart = acts.cacheStartRequests((ccfg, uuid) ->
                 !ctx.cache().context().snapshotMgr().requirePartitionLoad(ccfg, uuid));
-            
+
             if (!F.isEmpty(cachesToStart)) {
                 cacheIds = cachesToStart.stream()
                     .map(d -> CU.cacheId(d.request().cacheName()))

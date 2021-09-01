@@ -17,37 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Extending {@link GridFutureAdapter} to rebuild indices.
  */
 public class SchemaIndexCacheFuture extends GridFutureAdapter<Void> {
-    /** Token for canceling index rebuilding.*/
-    private final AtomicReference<Throwable> cancelTok;
+    /** Token for canceling index rebuilding. */
+    private final IndexRebuildCancelToken cancelTok;
 
     /**
      * Constructor.
      *
      * @param cancelTok Token for canceling index rebuilding.
      */
-    public SchemaIndexCacheFuture(AtomicReference<Throwable> cancelTok) {
+    public SchemaIndexCacheFuture(IndexRebuildCancelToken cancelTok) {
         this.cancelTok = cancelTok;
     }
 
     /**
      * @return {@code true} if cancellation is in progress.
      */
-    public boolean hasTokenException() {
-        return cancelTok.get() != null;
-    }
-
-    /**
-     * @return {@code true} if token status set by this call.
-     */
-    public boolean setTokenException(IgniteCheckedException e) {
-        return cancelTok.compareAndSet(null, e);
+    public IndexRebuildCancelToken cancelToken() {
+        return cancelTok;
     }
 }
