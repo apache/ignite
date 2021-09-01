@@ -55,21 +55,27 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\auth-32.xml" />
-    <None Include="..\..\config\auth-default.xml" />
-    <None Include="..\..\config\auth.xml" />
-    <None Include="..\..\config\cache-32.xml" />
-    <None Include="..\..\config\cache-default.xml" />
-    <None Include="..\..\config\cache.xml" />
-    <None Include="..\..\config\non-ssl-32.xml" />
-    <None Include="..\..\config\non-ssl-default.xml" />
-    <None Include="..\..\config\non-ssl.xml" />
-    <None Include="..\..\config\ssl-32.xml" />
-    <None Include="..\..\config\ssl-default.xml" />
-    <None Include="..\..\config\ssl.xml" />
-    <None Include="..\..\config\sql-query-fields-32.xml" />
-    <None Include="..\..\config\sql-query-fields-default.xml" />
-    <None Include="..\..\config\sql-query-fields.xml" />
+    <Xml Include="..\..\config\auth-32.xml" />
+    <Xml Include="..\..\config\auth-default.xml" />
+    <Xml Include="..\..\config\auth.xml" />
+    <Xml Include="..\..\config\cache-32.xml" />
+    <Xml Include="..\..\config\cache-default.xml" />
+    <Xml Include="..\..\config\cache.xml" />
+    <Xml Include="..\..\config\compute-32.xml" />
+    <Xml Include="..\..\config\compute-default.xml" />
+    <Xml Include="..\..\config\compute.xml" />
+    <Xml Include="..\..\config\interop-32.xml" />
+    <Xml Include="..\..\config\interop-default.xml" />
+    <Xml Include="..\..\config\interop.xml" />
+    <Xml Include="..\..\config\non-ssl-32.xml" />
+    <Xml Include="..\..\config\non-ssl-default.xml" />
+    <Xml Include="..\..\config\non-ssl.xml" />
+    <Xml Include="..\..\config\ssl-32.xml" />
+    <Xml Include="..\..\config\ssl-default.xml" />
+    <Xml Include="..\..\config\ssl.xml" />
+    <Xml Include="..\..\config\sql-query-fields-32.xml" />
+    <Xml Include="..\..\config\sql-query-fields-default.xml" />
+    <Xml Include="..\..\config\sql-query-fields.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5662F10A-9C40-45D6-AFF8-E93573FEAABA}</ProjectGuid>

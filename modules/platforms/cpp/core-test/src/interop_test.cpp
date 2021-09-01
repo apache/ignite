@@ -24,6 +24,78 @@ using namespace ignite;
 using namespace cache;
 using namespace boost::unit_test;
 
+namespace
+{
+    /** Test put affinity key Java task. */
+    const std::string TEST_PUT_AFFINITY_KEY_TASK("org.apache.ignite.platform.PlatformComputePutAffinityKeyTask");
+}
+
+/**
+ * Affinity key class.
+ */
+struct AffinityKey
+{
+    /** Key */
+    int32_t key;
+
+    /** Affinity key */
+    int32_t aff;
+
+    /**
+     * Default constructor.
+     */
+    AffinityKey() :
+            key(0),
+            aff(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     * @param key Key.
+     * @param aff Affinity key.
+     */
+    AffinityKey(int32_t key, int32_t aff) :
+            key(key),
+            aff(aff)
+    {
+        // No-op.
+    }
+};
+
+namespace ignite
+{
+    namespace binary
+    {
+        template<>
+        struct BinaryType<AffinityKey> : BinaryTypeDefaultAll<AffinityKey>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "AffinityKey";
+            }
+
+            static void Write(BinaryWriter& writer, const AffinityKey& obj)
+            {
+                writer.WriteInt32("key", obj.key);
+                writer.WriteInt32("aff", obj.aff);
+            }
+
+            static void Read(BinaryReader& reader, AffinityKey& dst)
+            {
+                dst.key = reader.ReadInt32("key");
+                dst.aff = reader.ReadInt32("aff");
+            }
+
+            static void GetAffinityFieldName(std::string& dst)
+            {
+                dst = "aff";
+            }
+        };
+    }
+}
+
 BOOST_AUTO_TEST_SUITE(InteropTestSuite)
 
 #ifdef ENABLE_STRING_SERIALIZATION_VER_2_TESTS
@@ -85,11 +157,7 @@ BOOST_AUTO_TEST_CASE(StringUtfInvalidCodePoint)
 
 BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 {
-#ifdef IGNITE_TESTS_32
-    Ignite ignite = ignite_test::StartNode("cache-test-32.xml");
-#else
-    Ignite ignite = ignite_test::StartNode("cache-test.xml");
-#endif
+    Ignite ignite = ignite_test::StartPlatformNode("cache-test.xml", "ServerNode");
 
     Cache<std::string, std::string> cache = ignite.CreateCache<std::string, std::string>("Test");
 
@@ -111,6 +179,52 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
     BOOST_CHECK_EQUAL(initialValue, cachedValue);
 
     Ignition::StopAll(false);
+}
+
+BOOST_AUTO_TEST_CASE(PutObjectByCppThenByJava)
+{
+    Ignite ignite = ignite_test::StartPlatformNode("interop.xml", "ServerNode");
+
+    cache::Cache<AffinityKey, AffinityKey> cache = ignite.GetOrCreateCache<AffinityKey, AffinityKey>("default");
+
+    AffinityKey key1(2, 3);
+    cache.Put(key1, key1);
+
+    compute::Compute compute = ignite.GetCompute();
+
+    compute.ExecuteJavaTask<int*>(TEST_PUT_AFFINITY_KEY_TASK);
+
+    AffinityKey key2(1, 2);
+    AffinityKey val = cache.Get(key2);
+
+    BOOST_CHECK_EQUAL(val.key, 1);
+    BOOST_CHECK_EQUAL(val.aff, 2);
+}
+
+BOOST_AUTO_TEST_CASE(PutObjectPointerByCppThenByJava)
+{
+    Ignite ignite = ignite_test::StartPlatformNode("interop.xml", "ServerNode");
+
+    cache::Cache<AffinityKey*, AffinityKey*> cache =
+            ignite.GetOrCreateCache<AffinityKey*, AffinityKey*>("default");
+
+    AffinityKey* key1 = new AffinityKey(2, 3);
+    cache.Put(key1, key1);
+
+    delete key1;
+
+    compute::Compute compute = ignite.GetCompute();
+
+    compute.ExecuteJavaTask<int*>(TEST_PUT_AFFINITY_KEY_TASK);
+
+    AffinityKey* key2 = new AffinityKey(1, 2);
+    AffinityKey* val = cache.Get(key2);
+
+    BOOST_CHECK_EQUAL(val->key, 1);
+    BOOST_CHECK_EQUAL(val->aff, 2);
+
+    delete key2;
+    delete val;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
