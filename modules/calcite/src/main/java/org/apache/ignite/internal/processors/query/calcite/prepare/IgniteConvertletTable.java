@@ -39,7 +39,7 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- *
+ * Ignite convertlet table.
  */
 public class IgniteConvertletTable extends ReflectiveConvertletTable {
     /** Instance. */
@@ -47,13 +47,13 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
 
     /** */
     private IgniteConvertletTable() {
-        super();
-
+        // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable SqlRexConvertlet get(SqlCall call) {
+    @Nullable
+    @Override public SqlRexConvertlet get(SqlCall call) {
         SqlRexConvertlet res = super.get(call);
 
         return res == null ? StandardConvertletTable.INSTANCE.get(call) : res;
@@ -61,13 +61,13 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
 
     /** Convertlet that handles the {@code TIMESTAMPDIFF} function. */
     private static class TimestampDiffConvertlet implements SqlRexConvertlet {
+        /** {@inheritDoc} */
         @Override public RexNode convertCall(SqlRexContext cx, SqlCall call) {
             // TIMESTAMPDIFF(unit, t1, t2)
             //    => (t2 - t1) UNIT
             final RexBuilder rexBuilder = cx.getRexBuilder();
             final SqlLiteral unitLiteral = call.operand(0);
             TimeUnit unit = unitLiteral.getValueAs(TimeUnit.class);
-            //TimeUnit endUnit = null;
             BigDecimal multiplier = BigDecimal.ONE;
             BigDecimal divider = BigDecimal.ONE;
             SqlTypeName sqlTypeName = unit == TimeUnit.NANOSECOND
@@ -77,10 +77,8 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
                 case MICROSECOND:
                 case MILLISECOND:
                 case NANOSECOND:
-                    //multiplier = BigDecimal.valueOf(DateTimeUtils.MILLIS_PER_SECOND);
                     divider = unit.multiplier;
                     unit = TimeUnit.MILLISECOND;
-                    //endUnit = TimeUnit.MILLISECOND;
                     break;
                 case WEEK:
                     multiplier = BigDecimal.valueOf(DateTimeUtils.MILLIS_PER_SECOND);
@@ -109,8 +107,24 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
                 cx.getTypeFactory().createTypeWithNullability(
                     cx.getTypeFactory().createSqlType(sqlTypeName),
                     SqlTypeUtil.containsNullable(rexCall.getType()));
-            RexNode e = rexBuilder.makeCast(intType, rexCall);
+
+            RexNode e;
+
+            // Since Calcite converts internal time representation to seconds during cast we need our own cast
+            // method to keep fraction of seconds.
+            if (unit == TimeUnit.MILLISECOND)
+                e = makeCastMilliseconds(rexBuilder, intType, rexCall);
+            else
+                e = rexBuilder.makeCast(intType, rexCall);
+
             return rexBuilder.multiplyDivide(e, multiplier, divider);
+        }
+
+        /**
+         * Creates a call to cast milliseconds interval.
+         */
+        static RexNode makeCastMilliseconds(RexBuilder builder, RelDataType type, RexNode exp) {
+            return builder.ensureType(type, builder.decodeIntervalOrDecimal(exp), false);
         }
     }
 }
