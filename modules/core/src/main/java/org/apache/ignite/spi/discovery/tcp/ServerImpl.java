@@ -183,9 +183,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.addSecurityContextToNodeAttributes;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
@@ -1257,7 +1257,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private void localAuthentication(SecurityCredentials locCred) {
         try {
-            locNode.setAttributes(addSecurityContextToNodeAttributes(
+            locNode.setAttributes(withSecurityContext(
                 authenticateLocalNode(locNode, locCred, spi.nodeAuth),
                 locNode,
                 spi.marshaller()));
@@ -4358,7 +4358,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             // Stick in authentication subject to node (use security-safe attributes for copy).
-                            node.setAttributes(addSecurityContextToNodeAttributes(subj, node, spi.marshaller()));
+                            node.setAttributes(withSecurityContext(subj, node, spi.marshaller()));
                         }
                     }
                     catch (IgniteException | IgniteCheckedException e) {

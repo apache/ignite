@@ -65,7 +65,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -108,7 +107,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.addSecurityContextToNodeAttributes;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -1115,8 +1115,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred) {
         try {
-            locNode.setAttributes(addSecurityContextToNodeAttributes(
-                SecurityUtils.authenticateLocalNode(locNode, locCred, nodeAuth),
+            locNode.setAttributes(withSecurityContext(
+                authenticateLocalNode(locNode, locCred, nodeAuth),
                 locNode,
                 marsh));
         }
@@ -2149,7 +2149,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             secSubjZipBytes = marshalZip(subj);
 
-            node.setAttributes(addSecurityContextToNodeAttributes(subj, node, marsh));
+            node.setAttributes(withSecurityContext(subj, node, marsh));
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal node security subject: " + e, e);

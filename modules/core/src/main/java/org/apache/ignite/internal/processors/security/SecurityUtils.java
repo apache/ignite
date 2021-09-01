@@ -307,7 +307,7 @@ public class SecurityUtils {
      * @return Updated node attributes.
      * @throws IgniteCheckedException If security context serialization exception occurs.
      */
-    public static Map<String, Object> addSecurityContextToNodeAttributes(
+    public static Map<String, Object> withSecurityContext(
         SecurityContext secCtx,
         ClusterNode node,
         Marshaller marsh
