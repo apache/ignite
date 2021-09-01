@@ -1118,7 +1118,8 @@ public class ZookeeperDiscoveryImpl {
             locNode.setAttributes(withSecurityContext(
                 authenticateLocalNode(locNode, locCred, nodeAuth),
                 locNode,
-                marsh));
+                marsh
+            ));
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);

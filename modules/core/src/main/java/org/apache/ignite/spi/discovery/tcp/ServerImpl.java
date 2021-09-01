@@ -1260,7 +1260,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             locNode.setAttributes(withSecurityContext(
                 authenticateLocalNode(locNode, locCred, spi.nodeAuth),
                 locNode,
-                spi.marshaller()));
+                spi.marshaller()
+            ));
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
