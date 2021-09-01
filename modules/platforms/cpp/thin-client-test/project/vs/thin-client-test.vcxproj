@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\src\cache_client_test.cpp" />
     <ClCompile Include="..\..\src\compute_client_test.cpp" />
     <ClCompile Include="..\..\src\ignite_client_test.cpp" />
+    <ClCompile Include="..\..\src\interop_test.cpp" />
     <ClCompile Include="..\..\src\ssl_test.cpp" />
     <ClCompile Include="..\..\src\sql_fields_query_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
