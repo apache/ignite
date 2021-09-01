@@ -25,6 +25,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
@@ -127,7 +128,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),

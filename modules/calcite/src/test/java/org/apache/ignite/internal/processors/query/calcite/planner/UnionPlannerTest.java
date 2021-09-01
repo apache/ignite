@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
-
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -93,7 +92,7 @@ public class UnionPlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -115,7 +114,7 @@ public class UnionPlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -137,7 +136,7 @@ public class UnionPlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),

@@ -30,8 +30,8 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -68,6 +68,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     private final UUID originatingNodeId;
+
+    /** */
+    private final AffinityTopologyVersion topVer;
 
     /** */
     private final FragmentDescription fragmentDesc;
@@ -108,6 +111,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         UUID qryId,
         UUID locNodeId,
         UUID originatingNodeId,
+        AffinityTopologyVersion topVer,
         FragmentDescription fragmentDesc,
         RowHandler<Row> handler,
         Map<String, Object> params
@@ -118,6 +122,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.qryId = qryId;
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
+        this.topVer = topVer;
         this.fragmentDesc = fragmentDesc;
         this.handler = handler;
         this.params = params;
@@ -203,6 +208,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public UUID originatingNodeId() {
         return originatingNodeId == null ? locNodeId : originatingNodeId;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */

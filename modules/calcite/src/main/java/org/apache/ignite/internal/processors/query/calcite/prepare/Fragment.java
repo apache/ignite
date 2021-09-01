@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -129,7 +130,7 @@ public class Fragment {
 
     /** */
     public Fragment detach() {
-        RelOptCluster cluster = PlanningContext.empty().cluster();
+        RelOptCluster cluster = Commons.cluster();
 
         return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
     }
@@ -151,7 +152,7 @@ public class Fragment {
     /** */
     private FragmentMapping mapping(MappingQueryContext ctx, RelMetadataQuery mq, Supplier<List<UUID>> nodesSource) {
         try {
-            FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq);
+            FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq, ctx);
 
             if (rootFragment())
                 mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);

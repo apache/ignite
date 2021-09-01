@@ -264,6 +264,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             qryId,
             locaNodeId,
             nodeId,
+            null,
             new FragmentDescription(
                 fragmentId,
                 null,

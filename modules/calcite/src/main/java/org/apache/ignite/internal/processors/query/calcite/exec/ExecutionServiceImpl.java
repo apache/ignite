@@ -467,20 +467,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
+    private QueryContextBase createQueryContext(Context parent, @Nullable String schema) {
+        return QueryContextBase.builder()
+            .parentContext(parent)
+            .frameworkConfig(
+                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(getDefaultSchema(schema))
+                    .build()
+            )
+            .logger(log)
+            .build();
+    }
+
+    /** */
     private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer,
         @Nullable String schema, String qry, Object[] params) {
         return PlanningContext.builder()
-            .parentContext(
-                QueryContextBase.builder()
-                    .parentContext(parent)
-                    .frameworkConfig(
-                        Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                            .defaultSchema(getDefaultSchema(schema))
-                            .build()
-                    )
-                    .logger(log)
-                    .build()
-            )
+            .parentContext(createQueryContext(parent, schema))
             .query(qry)
             .parameters(params)
             .build();
@@ -615,13 +618,28 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         switch (plan.type()) {
             case DML:
-                ListFieldsQueryCursor<?> cur = executePlan(qryId, (MultiStepPlan)plan, pctx);
+                ListFieldsQueryCursor<?> cur = executePlan(
+                    qryId,
+                    (MultiStepPlan)plan,
+                    pctx.unwrap(QueryContextBase.class),
+                    pctx.parameters()
+                );
+
                 cur.iterator().hasNext();
+
                 return cur;
+
             case QUERY:
-                return executePlan(qryId, (MultiStepPlan) plan, pctx);
+                return executePlan(
+                    qryId,
+                    (MultiStepPlan)plan,
+                    pctx.unwrap(QueryContextBase.class),
+                    pctx.parameters()
+                );
+
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
+
             case DDL:
                 return executeDdl(qryId, (DdlPlan)plan, pctx);
 
@@ -644,7 +662,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, ExecutionContext<?> ectx) {
+    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, QueryContextBase qctx, Object[] params) {
         plan.init(Commons.mapContext(locNodeId, topologyVersion()));
 
         List<Fragment> fragments = plan.fragments();
@@ -661,7 +679,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(ectx.localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
         }
 
         FragmentDescription fragmentDesc = new FragmentDescription(
@@ -671,12 +689,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             plan.remotes(fragment));
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
+            qctx,
             taskExecutor(),
-            ectx,
             qryId,
+            locNodeId,
+            locNodeId,
+            topologyVersion(),
             fragmentDesc,
             handler,
-            Commons.parametersMap(ectx.parameters()));
+            Commons.parametersMap(params));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -703,11 +724,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     try {
                         QueryStartRequest req = new QueryStartRequest(
                             qryId,
-                            ectx.schemaName(),
+                            qctx.schemaName(),
                             fragment.serialized(),
                             ectx.topologyVersion(),
                             fragmentDesc,
-                            ectx.parameters());
+                            params);
 
                         messageService().send(nodeId, req);
                     }
@@ -779,7 +800,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
         @Nullable List<List<String>> origins) {
         RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
+            ctx.typeFactory(), ctx.unwrap(QueryContextBase.class).catalogReader(), sqlType, origins);
         return new FieldsMetadataImpl(resultType, origins);
     }
 
@@ -793,9 +814,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            // TODO: msg.schema()
-            final QueryContextBase qctx = QueryContextBase.builder().
-                build();
+            final QueryContextBase qctx = createQueryContext(Contexts.empty(), msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
                 new CacheKey(msg.schema(), msg.root()),
@@ -810,6 +829,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.queryId(),
                 locNodeId,
                 nodeId,
+                msg.topologyVersion(),
                 msg.fragmentDescription(),
                 handler,
                 Commons.parametersMap(msg.parameters())

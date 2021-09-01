@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.BiScalar;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.SingleScalar;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMappingMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 
 /**
  * Contains methods used in metadata definitions.
@@ -45,7 +46,7 @@ public enum IgniteMethod {
     /** See {@link BiScalar#execute(ExecutionContext, Object, Object, Object)} */
     BI_SCALAR_EXECUTE(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
     /** See {@link FragmentMappingMetadata#fragmentMapping()} */
-    FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
+    FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping", MappingQueryContext.class);
 
     /** */
     private final Method method;

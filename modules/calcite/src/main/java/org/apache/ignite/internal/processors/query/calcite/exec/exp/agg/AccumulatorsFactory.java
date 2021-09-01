@@ -89,7 +89,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
     /** */
     private static Function<Object, Object> cast0(Pair<RelDataType, RelDataType> types) {
-        IgniteTypeFactory typeFactory = PlanningContext.empty().typeFactory();
+        IgniteTypeFactory typeFactory = Commons.typeFactory();
 
         RelDataType from = types.left;
         RelDataType to = types.right;

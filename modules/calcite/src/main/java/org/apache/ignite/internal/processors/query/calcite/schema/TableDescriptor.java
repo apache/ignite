@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -65,7 +66,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @param ctx Planning context.
      * @return Nodes mapping.
      */
-    ColocationGroup colocationGroup(PlanningContext ctx);
+    ColocationGroup colocationGroup(MappingQueryContext ctx);
 
     /** {@inheritDoc} */
     @Override default RelDataType apply(RelDataTypeFactory factory) {

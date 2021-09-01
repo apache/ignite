@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryContextBase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
@@ -234,15 +235,12 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                 .frameworkConfig(
                     newConfigBuilder(FRAMEWORK_CONFIG)
                         .defaultSchema(schema)
-                        .traitDefs(traitDefs)
                         .build()
                 )
                 .logger(log)
                 .build()
             )
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
+            .query(sql)
             .build();
 
         IgnitePlanner planner = ctx.planner();
@@ -340,15 +338,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                 .frameworkConfig(
                     newConfigBuilder(FRAMEWORK_CONFIG)
                         .defaultSchema(schema)
-                        .traitDefs(traitDefs)
                         .build()
                 )
                 .logger(log)
                 .build()
             )
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
             .build();
 
         List<RelNode> deserializedNodes = new ArrayList<>();
@@ -428,7 +422,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected static void createTable(IgniteSchema schema, String name, RelDataType type, IgniteDistribution distr,
         List<List<UUID>> assignment) {
         TestTable table = new TestTable(type) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 if (F.isEmpty(assignment))
                     return super.colocationGroup(ctx);
                 else
@@ -744,7 +738,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+        @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
             throw new AssertionError();
         }
 
@@ -824,7 +818,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+        @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
             throw new AssertionError();
         }
 

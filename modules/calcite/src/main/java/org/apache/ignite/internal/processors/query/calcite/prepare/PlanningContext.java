@@ -18,29 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.function.Function;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.calcite.tools.Frameworks.createRootSchema;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * Planning context.
  */
 public final class PlanningContext implements Context {
-    /** */
-    private static final PlanningContext EMPTY = builder().build();
-
     /** */
     private final Context parentCtx;
 
@@ -55,9 +46,6 @@ public final class PlanningContext implements Context {
 
     /** */
     private IgnitePlanner planner;
-
-    /** */
-    private CalciteConnectionConfig connCfg;
 
     /**
      * Private constructor, used by a builder.
@@ -145,9 +133,6 @@ public final class PlanningContext implements Context {
         if (aCls == getClass())
             return aCls.cast(this);
 
-        if (aCls.isInstance(connCfg))
-            return aCls.cast(connCfg);
-
         return parentCtx.unwrap(aCls);
     }
 
@@ -156,13 +141,6 @@ public final class PlanningContext implements Context {
      */
     public static Builder builder() {
         return new Builder();
-    }
-
-    /**
-     * @return Empty context.
-     */
-    public static PlanningContext empty() {
-        return EMPTY;
     }
 
     /** */

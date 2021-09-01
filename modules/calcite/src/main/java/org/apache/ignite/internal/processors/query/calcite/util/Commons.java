@@ -44,6 +44,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlNodeList;
@@ -66,6 +67,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -113,13 +116,19 @@ public final class Commons {
     /** */
     private static final RelOptCluster CLUSTER;
 
+    /** */
+    private static final IgniteTypeFactory TYPE_FACTORY;
+
     static {
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
-        IgniteTypeFactory typeFactory = new IgniteTypeFactory(typeSys);
+        TYPE_FACTORY = new IgniteTypeFactory(typeSys);
 
-        DFLT_REX_BUILDER = new RexBuilder(typeFactory);
+        DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
 
         CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
+
+        CLUSTER.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, EMPTY_PLANNER));
+        CLUSTER.setMetadataQuerySupplier(RelMetadataQueryEx::create);
     }
 
     /** */
@@ -484,6 +493,11 @@ public final class Commons {
     /** */
     public static RelOptCluster cluster() {
         return CLUSTER;
+    }
+
+    /** */
+    public static IgniteTypeFactory typeFactory() {
+        return TYPE_FACTORY;
     }
 
     /** */
