@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -2340,13 +2339,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param force Force rebuild indexes.
+     * @return Future that will be completed when rebuilding is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean force) {
+        return rebuildIndexesFromHash(cctx, force, new IndexRebuildCancelToken());
+    }
+
+    /**
+     * Rebuilds indexes for provided caches from corresponding hash indexes.
+     *
+     * @param cctx Cache context.
+     * @param force Force rebuild indexes.
      * @param cancelTok Token for cancellation index rebuild or {@code null} to use default.
      * @return Future that will be completed when rebuilding is finished.
      */
     public IgniteInternalFuture<?> rebuildIndexesFromHash(
         GridCacheContext cctx,
         boolean force,
-        @Nullable AtomicReference<Throwable> cancelTok
+        IndexRebuildCancelToken cancelTok
     ) {
         assert nonNull(cctx);
 
@@ -2374,7 +2384,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            return rebuildIndexesFromHash0(cctx, force, new IndexRebuildCancelToken());
+            return rebuildIndexesFromHash0(cctx, force, cancelTok);
         }
         finally {
             busyLock.leaveBusy();

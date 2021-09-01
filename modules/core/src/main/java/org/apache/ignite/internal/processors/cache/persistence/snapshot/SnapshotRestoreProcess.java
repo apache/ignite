@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,9 +43,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -64,6 +67,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -74,10 +78,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -93,9 +99,11 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
@@ -1198,9 +1206,29 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                 });
             }
 
+            // TODO: IGNITE-11075 Rebuild index over a partition file.
+            Map<Integer, CompletableFuture<Void>> indexRebuildCaches = grp.caches().stream()
+                .collect(Collectors.toMap(GridCacheContext::cacheId, id -> new CompletableFuture<>()));
+
+            CompletableFuture<Void> indexCacheGroupRebFut = allOfFailFast(indexRebuildCaches.values())
+                .thenRunAsync(() -> {
+                    // Force new checkpoint to make sure owning state is captured.
+                    CheckpointProgress cp = ctx.cache().context().database().forceCheckpoint("Restore compete");
+
+                    cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, true));
+                });
+
+            // This will not be fired if partitions loading future completes with an exception.
+            CompletableFuture<Void> partsInited = allOfFailFast(partLfs)
+                .thenRunAsync(() -> scheduleIndexRebuild(grp.shared().kernalContext(),
+                    grp.caches(),
+                    opCtx0.err,
+                    indexRebuildCaches::get));
+
             opCtx0.locProgress.put(
                 CacheRestoreLifecycleFuture.create(grp,
-                    partLfs,
+                    partsInited,
+                    indexCacheGroupRebFut,
                     () -> {
                         // Initialization action when cache group partitions fully initialized.
                         // It is safe to own all persistence cache partitions here, since partitions state
@@ -1282,15 +1310,12 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         }
 
         // Complete cache future.
-        int futsSize = opCtx0.locProgress.size();
-
-        CompletableFuture.allOf(opCtx0.locProgress.keySet().toArray(new CompletableFuture[futsSize]))
-            .whenComplete((res, t) -> {
-                if (t == null)
-                    opCtx0.cacheRebalanceFut.onDone(true);
-                else
-                    opCtx0.cacheRebalanceFut.onDone(t);
-            });
+        allOfFailFast(opCtx0.locProgress.keySet()).whenComplete((res, t) -> {
+            if (t == null)
+                opCtx0.cacheRebalanceFut.onDone(true);
+            else
+                opCtx0.cacheRebalanceFut.onDone(t);
+        });
     }
 
     /**
@@ -1543,6 +1568,72 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
     }
 
     /**
+     * @param futs Collection of futures to chain.
+     * @param <T> Result type.
+     * @return Completable future waits for all of.
+     */
+    private static <T extends CompletableFuture<?>> CompletableFuture<Void> allOfFailFast(Collection<T> futs) {
+        CompletableFuture<?>[] out = new CompletableFuture[futs.size()];
+
+        CompletableFuture<Void> result = CompletableFuture.allOf(futs.toArray(out));
+
+        // This is a hybrid of a hybrid of allOf() and anyOf() where the returned future completes normally
+        // as soon as all the elements complete normally, or it completes exceptionally as soon as any of
+        // the elements complete exceptionally.
+        Stream.of(out).forEach(f -> f.exceptionally(e -> {
+            result.completeExceptionally(e);
+
+            return null;
+        }));
+
+        return result;
+    }
+
+    /**
+     * @param first Ignite internal future.
+     * @param second Completable future to chain.
+     */
+    private static void chain(@Nullable IgniteInternalFuture<?> first, CompletableFuture<?> second) {
+        if (first == null)
+            first = new GridFinishedFuture<>();
+
+        first.listen(f -> {
+            if (f.error() == null)
+                second.complete(null);
+            else
+                second.completeExceptionally(f.error());
+        });
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @param ctxs Cache contexts related to cache group.
+     * @param cancelTok Cancellation token.
+     * @param comFut Resolver for cache group future.
+     */
+    private void scheduleIndexRebuild(
+        GridKernalContext ctx,
+        Collection<GridCacheContext> ctxs,
+        AtomicReference<Throwable> cancelTok,
+        Function<Integer, CompletableFuture<Void>> comFut
+    ) {
+        Set<Integer> cacheIds = ctxs.stream().map(GridCacheContext::cacheId).collect(toSet());
+
+        Set<Integer> rejected = ctx.query().prepareRebuildIndexes(cacheIds);
+
+        assert F.isEmpty(rejected) : rejected;
+
+        for (GridCacheContext<?, ?> cacheCtx : ctxs) {
+            assert ctx.query().rebuildIndexesCompleted(cacheCtx) : cacheCtx;
+
+            chain(ctx.query().rebuildIndexesFromHash(cacheCtx,
+                    true,
+                    new IndexRebuildCancelToken(cancelTok)),
+                comFut.apply(cacheCtx.cacheId()));
+        }
+    }
+
+    /**
      * Cache group restore from snapshot operation context.
      */
     private static class SnapshotRestoreContext {
@@ -1644,70 +1735,58 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         private final CacheGroupContext grp;
 
         /** Future which will be completed when all related to cache group partitions are inited. */
-        private final CompletableFuture<Void> inited;
+        private final CompletableFuture<Void> partsInited;
 
         /** Future which will be completed when late affinity assignment on this cache group occurs. */
-        private final CompletableFuture<Void> rebalanced;
+        private final CompletableFuture<Void> rebalanced = new CompletableFuture<>();
 
-        /** The index rebuild future finishes when all indexes are rebuilt on local node for given cache group. */
-        private final CompletableFuture<Void> indexRebuild;
+        /** An index rebuild futures for each cache in given cache group. */
+        private final CompletableFuture<Void> indexCacheGroupRebFut;
 
         /**
          * @param grp Cache group context.
-         * @param inited Original future to listen to.
+         * @param partsInited Original future to listen to.
          */
         private CacheRestoreLifecycleFuture(
             CacheGroupContext grp,
-            CompletableFuture<Void> inited,
-            CompletableFuture<Void> rebalanced,
-            CompletableFuture<Void> indexRebuild
+            CompletableFuture<Void> partsInited,
+            CompletableFuture<Void> indexCacheGroupRebFut
         ) {
             this.grp = grp;
-            this.inited = inited;
-            this.rebalanced = rebalanced;
-            this.indexRebuild = indexRebuild;
+            this.partsInited = partsInited;
+            this.indexCacheGroupRebFut = indexCacheGroupRebFut;
         }
 
         /**
          * @param grp Cache group context.
-         * @param parts Future which
+         * @param partsInited Future which completes when partitions are inited.
          * @param resendAct Action to do cache group initialization.
          * @return Future which will be completed when cache group processing ends.
          */
         public static CacheRestoreLifecycleFuture create(
             CacheGroupContext grp,
-            Set<PartitionRestoreLifecycleFuture> parts,
+            CompletableFuture<Void> partsInited,
+            CompletableFuture<Void> indexCacheGroupRebFut,
             Runnable resendAct
         ) {
             assert !grp.isLocal();
             assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
             assert grp.topology() instanceof GridDhtPartitionTopologyImpl;
 
-            CompletableFuture<?>[] arr0 = new ArrayList<>(parts)
-                .toArray(new CompletableFuture[parts.size()]);
+            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, partsInited, indexCacheGroupRebFut);
 
-            CompletableFuture<Void> rebalanced = new CompletableFuture<>();
+            grp.shared().exchange().registerExchangeAwareComponent(cl);
 
-            // TODO: IGNITE-11075 Add rebuild index over a partition file.
-            CompletableFuture<Void> indexRebuild = grp.shared().kernalContext().query().moduleEnabled() ?
-                CompletableFuture.completedFuture(null) :
-                CompletableFuture.completedFuture(null);
+            partsInited.thenRun(resendAct);
 
-            CompletableFuture<Void> inited = CompletableFuture.allOf(arr0);
-            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, inited, rebalanced, indexRebuild);
-
-            // This will not be fired if partitions loading future completes with an exception.
-            inited.thenRun(() -> grp.shared().exchange().registerExchangeAwareComponent(cl))
-                .thenRun(resendAct);
-
-            rebalanced.whenComplete((r, t) -> grp.shared().exchange().unregisterExchangeAwareComponent(cl));
-
-            CompletableFuture.allOf(inited, rebalanced, indexRebuild)
+            allOfFailFast(Arrays.asList(partsInited, cl.rebalanced, indexCacheGroupRebFut))
                 .whenComplete((r, t) -> {
                    if (t == null)
                        cl.complete(r);
                    else
                        cl.completeExceptionally(t);
+
+                    grp.shared().exchange().unregisterExchangeAwareComponent(cl);
                 });
 
             return cl;
@@ -1716,7 +1795,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         /** {@inheritDoc} */
         @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
             // Handle for the late affinity assignment message on partitions load complete.
-            assert inited.isDone();
+            assert partsInited.isDone();
 
             CacheAffinityChangeMessage msg = fut.affinityChangeMessage();
 
@@ -1760,9 +1839,10 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         @Override public String toString() {
             return "CacheRestoreLifecycleFuture{" +
                 "grp=" + grp +
-                ", inited=" + inited +
-                ", rebalanced=" + rebalanced +
-                ", indexRebuild=" + indexRebuild +
+                ",\n inited=" + partsInited +
+                ",\n rebalanced=" + rebalanced +
+                ",\n indexRebuild=" + indexCacheGroupRebFut +
+                ",\n super=" + super.toString() +
                 '}';
         }
     }
