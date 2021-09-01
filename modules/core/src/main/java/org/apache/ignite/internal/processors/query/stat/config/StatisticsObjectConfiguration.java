@@ -75,6 +75,15 @@ public class StatisticsObjectConfiguration implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
+     * @param key Statistics key.
+     */
+    public StatisticsObjectConfiguration(StatisticsKey key) {
+        this(key, null, DEFAULT_OBSOLESCENCE_MAX_PERCENT);
+    }
+
+    /**
      * Merge configuration changes with existing configuration.
      *
      * @param oldCfg Previous configuration.

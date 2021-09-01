@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -30,6 +31,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
@@ -176,5 +178,17 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         }
 
         return RexUtil.composeConjunction(builder(getCluster()), conjunctions, true);
+    }
+
+    /**
+     * Get column origin by local ref idx (required column or base tables column idx).
+     *
+     * @param colIdx Column idx.
+     * @return Set of column origins for the given idx or {@code null} if unable to found it.
+     */
+    public RelColumnOrigin columnOriginsByRelLocalRef(int colIdx) {
+        int originColIdx = (requiredColumns() == null) ? colIdx : requiredColumns().toArray()[colIdx];
+
+        return new RelColumnOrigin(getTable(), originColIdx, false);
     }
 }

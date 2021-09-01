@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.LinkedHashMap;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -46,7 +47,6 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.AFFINITY_KEY_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Table.generateProxyIdxName;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
 
 /**
@@ -774,12 +774,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition1() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR age=55")
-            .matches(containsUnion(true))
-            .matches(anyOf(
-                containsIndexScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX),
-                containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
-            )
-            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
+            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
@@ -847,7 +842,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByKeyAlias() {
-        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id")
+        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id nulls first")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER"))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(1, "Mozart", 3, "Vienna", 33)
@@ -861,7 +856,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByDepId() {
-        assertQuery("SELECT * FROM Developer ORDER BY depId")
+        assertQuery("SELECT * FROM Developer ORDER BY depId nulls first")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(3, "Bach", 1, "Leipzig", 55)

@@ -79,14 +79,13 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
 
         int firstCol = F.first(collation.getKeys());
 
-        if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) != null)
-            return new Cursor(rows, lower, upper);
-        else if (ectx.rowHandler().get(firstCol, lower) == null && ectx.rowHandler().get(firstCol, upper) != null)
-            return new Cursor(rows, null, upper);
-        else if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) == null)
-            return new Cursor(rows, lower, null);
-        else
-            return new Cursor(rows, null, null);
+        Object lowerBound = (lower == null) ? null : ectx.rowHandler().get(firstCol, lower);
+        Object upperBound = (upper == null) ? null : ectx.rowHandler().get(firstCol, upper);
+
+        Row lowerRow = (lowerBound == null) ? null : lower;
+        Row upperRow = (upperBound == null) ? null : upper;
+
+        return new Cursor(rows, lowerRow, upperRow);
     }
 
     /**

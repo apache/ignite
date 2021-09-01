@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  */
 public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
     /** */
-    private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+    private final TimeZone timeZone = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
 
     /** */
     private static final SchemaPlus DFLT_SCHEMA = Frameworks.createRootSchema(false);
@@ -129,7 +129,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         );
 
         long ts = U.currentTimeMillis();
-        startTs = ts + TIME_ZONE.getOffset(ts);
+        startTs = ts + timeZone.getOffset(ts);
     }
 
     /**
@@ -225,7 +225,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
-            return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
+            return timeZone; // TODO DistributedSqlConfiguration#timeZone
         if (Variable.CURRENT_TIMESTAMP.camelName.equals(name))
             return startTs;
         if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))

@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -201,18 +202,14 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
 
             sql(client, "create table test (id integer primary key, val varchar)");
             sql(client, "create index test_id_idx on test (id)");
-            sql(client, "insert into test values (0, 'val_0');");
-            sql(client, "insert into test values (1, 'val_0');");
-            sql(client, "insert into test values (2, 'val_0');");
-            sql(client, "insert into test values (3, 'val_0');");
 
             awaitPartitionMapExchange(true, true, null);
 
             shouldThrow.set(true);
 
             List<String> sqls = F.asList(
-                "select id from test where id > -10",
-                "select max(id) from test where id > -10"
+                "select /*+ DISABLE_RULE('LogicalTableScanConverterRule') */ id from test where id > -10",
+                "select /*+ DISABLE_RULE('LogicalTableScanConverterRule') */ max(id) from test where id > -10"
             );
 
             for (String sql : sqls) {
