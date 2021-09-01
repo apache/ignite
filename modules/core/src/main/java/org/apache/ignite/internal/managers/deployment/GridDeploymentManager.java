@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.protocol.gg.GridProtocolHandler;
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -505,6 +506,20 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                             ", localVer=" + locDep.userVersion() + ", otherVer=" + meta.userVersion() + ']');
 
                         return null;
+                    }
+
+                    // If we use a security wrapper we need to use the p2p class loader,
+                    // because needed loaded the original class.
+                    if (ctx.security().enabled()) {
+                        try {
+                            Class<?> clazz = locDep.classLoader().loadClass(clsName);
+
+                            if (AbstractSecurityAwareExternalizable.class.isAssignableFrom(clazz))
+                                return verStore.getDeployment(meta);
+                        }
+                        catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
 
                     if (log.isDebugEnabled())
