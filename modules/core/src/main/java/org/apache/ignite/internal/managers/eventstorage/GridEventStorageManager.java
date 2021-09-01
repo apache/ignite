@@ -1223,7 +1223,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     filter = U.unmarshal(marsh, req.filter(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                     // Resource injection.
-                    ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()), filter);
+                    ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);
 
                     // Get local events.
                     evts = localEvents(filter);
