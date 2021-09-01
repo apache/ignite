@@ -35,6 +35,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedEnumProperty;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
@@ -91,6 +93,16 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Cluster wide statistics usage state. */
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state", StatisticsUsageState::fromOrdinal, StatisticsUsageState::index, StatisticsUsageState.class);
+
+    /** Started flag to prevent double start on change statistics usage state and activation and vice versa. */
+    private boolean started = false;
+
+    /** Exchange listener. */
+    private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
+        @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+            stateChanged();
+        }
+    };
 
     /**
      * Constructor.
@@ -167,52 +179,56 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 if (oldVal == newVal)
                     return;
 
-                switch (newVal) {
-                    case OFF:
-                        disableOperations();
-
-                        break;
-                    case ON:
-                    case NO_UPDATE:
-                        enableOperations();
-
-                        break;
-                }
+                stateChanged();
             });
 
             dispatcher.registerProperty(usageState);
         });
 
-        StatisticsUsageState currState = usageState();
-        if (currState == ON || currState == NO_UPDATE)
-            enableOperations();
+        stateChanged();
 
-        ctx.timeout().schedule(() -> {
-            try {
-                processObsolescence();
-            }
-            catch (Throwable e) {
-                log.warning("Error while processing statistics obsolescence", e);
-            }
-        }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
+        if (!ctx.clientNode()) {
+            ctx.timeout().schedule(() -> {
+                try {
+                    processObsolescence();
+                }
+                catch (Throwable e) {
+                    log.warning("Error while processing statistics obsolescence", e);
+                }
+            }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
+        }
+
+        ctx.cache().context().exchange().registerExchangeAwareComponent(exchAwareLsnr);
     }
 
-    /**
-     * Enable statistics operations.
-     */
-    private synchronized void enableOperations() {
-        statsRepos.start();
-        gatherer.start();
-        statCfgMgr.start();
-    }
+    private synchronized void stateChanged() {
+        StatisticsUsageState statUsageState = usageState();
+        if (ClusterState.ACTIVE == ctx.state().clusterState().state()
+            && !ctx.isStopping()
+            && (statUsageState == ON || statUsageState == NO_UPDATE)) {
+            if (!started) {
+                if (log.isDebugEnabled())
+                    log.debug("Starting statistics subsystem...");
 
-    /**
-     * Disable statistics operations.
-     */
-    private synchronized void disableOperations() {
-        statCfgMgr.stop();
-        gatherer.stop();
-        statsRepos.stop();
+                statsRepos.start();
+                gatherer.start();
+                statCfgMgr.start();
+
+                started = true;
+            }
+        }
+        else {
+            if (started) {
+                if (log.isDebugEnabled())
+                    log.debug("Stopping statistics subsystem");
+
+                statCfgMgr.stop();
+                gatherer.stop();
+                statsRepos.stop();
+
+                started = false;
+            }
+        }
     }
 
     /**
@@ -268,7 +284,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        disableOperations();
+        //disableOperations();
+        stateChanged();
 
         if (gatherPool != null) {
             List<Runnable> unfinishedTasks = gatherPool.shutdownNow();

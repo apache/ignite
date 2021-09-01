@@ -37,9 +37,13 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatisticsCollector;
 import org.apache.ignite.internal.processors.query.stat.GatherStatisticCancelException;
+import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper;
+import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsRepository;
 import org.apache.ignite.internal.processors.query.stat.LocalStatisticsGatheringContext;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.table.Column;
 
@@ -52,11 +56,20 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
     /** Canceled check interval. */
     private static final int CANCELLED_CHECK_INTERVAL = 100;
 
+    /** Statistics key. */
+    private final StatisticsKey key;
+
+    /** Statistics repository. */
+    private final IgniteStatisticsRepository statRepo;
+
     /** */
     private final GridH2Table tbl;
 
     /** */
-    private final Column[] cols;
+    private Column[] cols;
+
+    /** Configuration. */
+    private final StatisticsObjectConfiguration cfg;
 
     /** Column name to statistics column configuration map. */
     private final Map<String, StatisticsColumnConfiguration> colCfgs;
@@ -75,15 +88,21 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
 
     /** */
     public GatherPartitionStatistics(
+        StatisticsKey key,
+        IgniteStatisticsRepository statRepo,
         LocalStatisticsGatheringContext gathCtx,
         GridH2Table tbl,
         Column[] cols,
+        StatisticsObjectConfiguration cfg,
         Map<String, StatisticsColumnConfiguration> colCfgs,
         int partId,
         IgniteLogger log
     ) {
+        this.key = key;
+        this.statRepo = statRepo;
         this.tbl = tbl;
         this.cols = cols;
+        this.cfg = cfg;
         this.colCfgs = colCfgs;
         this.partId = partId;
         cancelled = () -> gathCtx.futureGather().isCancelled();
@@ -100,6 +119,12 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
     /** {@inheritDoc} */
     @Override public ObjectPartitionStatisticsImpl call() {
         time = U.currentTimeMillis();
+
+        if (cancelled.get())
+            throw new GatherStatisticCancelException();
+
+        getColumnsToCollect();
+
         CacheGroupContext grp = tbl.cacheContext().group();
 
         GridDhtPartitionTopology top = grp.topology();
@@ -182,6 +207,22 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
             if (reserved)
                 locPart.release();
         }
+    }
+
+    /**
+     * Get columns list to collect statistics by.
+     */
+    private void getColumnsToCollect() {
+        ObjectPartitionStatisticsImpl partStat = statRepo.getLocalPartitionStatistics(key, partId);
+
+        for (StatisticsColumnConfiguration colStatCfg : cfg.columns().values()) {
+            ColumnStatistics colStat = (partStat == null) ? null : partStat.columnStatistics(colStatCfg.name());
+
+            if (colStat == null || colStatCfg.version() > colStat.version())
+                colCfgs.put(colStatCfg.name(), colStatCfg);
+        }
+
+        cols = IgniteStatisticsHelper.filterColumns(tbl.getColumns(), colCfgs.keySet());
     }
 
     /**

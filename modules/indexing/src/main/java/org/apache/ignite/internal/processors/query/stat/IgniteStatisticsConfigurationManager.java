@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
@@ -68,7 +66,7 @@ import org.jetbrains.annotations.NotNull;
  * Holds statistic configuration objects at the distributed metastore
  * and match local statistics with target statistic configuration.
  */
-public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalStateSupport {
+public class IgniteStatisticsConfigurationManager {
     /** */
     private static final String STAT_OBJ_PREFIX = "sql.statobj.";
 
@@ -102,9 +100,6 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
     /** Started flag (used to skip updates of the distributed metastorage on start). */
     private volatile boolean started;
 
-    /** Active flag (used to skip commands in inactive cluster.) */
-    private volatile boolean active;
-
     /** Monitor to synchronize changes repository: aggregate after collects and drop statistics. */
     private final Object mux = new Object();
 
@@ -118,7 +113,8 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
     private final GridCachePartitionExchangeManager exchange;
 
     /** */
-    private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr = new DistributedMetastorageLifecycleListener() {
+    private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
+        new DistributedMetastorageLifecycleListener() {
         @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
             distrMetaStorage = (DistributedMetaStorage)metastorage;
 
@@ -158,7 +154,6 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
                 cluster.clusterState().lastState() != ClusterState.ACTIVE)
                 return;
 
-            active = true;
             DiscoveryEvent evt = fut.firstEvent();
 
             // Skip create/destroy caches.
@@ -229,7 +224,7 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         GridInternalSubscriptionProcessor subscriptionProcessor,
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
-        GridCachePartitionExchangeManager exchange,
+        GridCachePartitionExchangeManager<?, ?> exchange,
         IgniteStatisticsRepository repo,
         StatisticsGatherer gatherer,
         IgniteThreadPoolExecutor mgmtPool,
@@ -347,7 +342,7 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
             Map<StatisticsObjectConfiguration, Set<Integer>> res = new HashMap<>();
 
             try {
-                if (!active) {
+                if (!cluster.clusterState().state().active()) {
                     if (log.isDebugEnabled())
                         log.debug("Ignore statistics collection due to inactive cluster state.");
 
@@ -387,6 +382,7 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
             validate(target, tbl);
 
             List<StatisticsColumnConfiguration> colCfgs;
+
             if (F.isEmpty(target.columns()))
                 colCfgs = Arrays.stream(tbl.getColumns())
                     .filter(c -> c.getColumnId() >= QueryUtils.DEFAULT_COLUMNS_COUNT)
@@ -679,9 +675,10 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         StatisticsObjectConfiguration oldCfg,
         StatisticsObjectConfiguration newCfg
     ) {
-        if (!active) {
+        if (!cluster.clusterState().state().active()) {
             if (log.isDebugEnabled())
                 log.debug("Ignore statistics collection due to inactive cluster state.");
+
             return;
         }
 
@@ -835,16 +832,5 @@ public class IgniteStatisticsConfigurationManager implements IgniteChangeGlobalS
         sb.append(key.schema()).append('.').append(key.obj());
 
         return sb.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        active = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        active = false;
-        gatherer.cancelAllTasks();
     }
 }

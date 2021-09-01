@@ -127,13 +127,8 @@ public class IgniteStatisticsHelper {
             for (Column col : selectedCols) {
                 ColumnStatistics colPartStat = partStat.columnStatistics(col.getName());
 
-                if (colPartStat != null) {
-                    colPartStats.computeIfPresent(col, (k, v) -> {
-                        v.add(colPartStat);
-
-                        return v;
-                    });
-                }
+                if (colPartStat != null)
+                    colPartStats.get(col).add(colPartStat);
             }
 
             rowCnt += partStat.rowCount();
@@ -143,7 +138,8 @@ public class IgniteStatisticsHelper {
 
         for (Column col : selectedCols) {
             StatisticsColumnConfiguration colCfg = cfg.columns().get(col.getName());
-            ColumnStatistics stat = ColumnStatisticsCollector.aggregate(tbl::compareTypeSafe, colPartStats.get(col), colCfg.overrides());
+            ColumnStatistics stat = ColumnStatisticsCollector.aggregate(tbl::compareTypeSafe, colPartStats.get(col),
+                colCfg.overrides());
 
             if (log.isDebugEnabled())
                 log.debug("Aggregate column statistic done [col=" + col.getName() + ", stat=" + stat + ']');

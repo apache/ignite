@@ -508,6 +508,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         while (true) {
             try {
                 checkStatisticTasksEmpty(ign);
+
                 for (Map.Entry<StatisticsTarget, Long> targetVersionEntry : expectedVersions.entrySet()) {
                     StatisticsTarget target = targetVersionEntry.getKey();
                     Long ver = targetVersionEntry.getValue();
@@ -518,6 +519,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                     long minVer = Long.MAX_VALUE;
 
                     Set<String> cols;
+
                     if (F.isEmpty(target.columns()))
                         cols = s.columnsStatistics().keySet();
                     else

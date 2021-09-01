@@ -102,6 +102,14 @@ public class LocalStatisticsGatheringContext {
         return futAggregate;
     }
 
+    /**
+     * Cancel both futures, aggregate and cancel.
+     */
+    public void cancel() {
+        futGather.cancel(true);
+        futAggregate.cancel(true);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LocalStatisticsGatheringContext.class, this);

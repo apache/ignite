@@ -33,12 +33,18 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.task.GatherPartitionStatistics;
+import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.h2.table.Column;
 
 /**
  * Implementation of statistic collector.
+ *
+ * Manage gathering pool and it's jobs. To guarantee gracefull shutdown:
+ * 1) Any job can be added into gatheringInProgress only in active state (check after adding)
+ * 2) State can be disactivated only after cancelling all jobs and getting busyLock block
+ * 3) Each job should do it's work in busyLock with periodically checking of it's cancellation status.
  */
 public class StatisticsGatherer {
     /** Logger. */
@@ -51,7 +57,14 @@ public class StatisticsGatherer {
     private final IgniteThreadPoolExecutor gatherPool;
 
     /** (cacheGroupId -> gather context) */
-    private final ConcurrentMap<StatisticsKey, LocalStatisticsGatheringContext> gatheringInProgress = new ConcurrentHashMap<>();
+    private final ConcurrentMap<StatisticsKey, LocalStatisticsGatheringContext> gatheringInProgress =
+        new ConcurrentHashMap<>();
+
+    /** Active flag (used to skip commands in inactive cluster.) */
+    private volatile boolean active;
+
+    /* Lock protection of started gathering during deactivation. */
+    private static final GridBusyLock gatheringLock = new GridBusyLock();
 
     /**
      * Constructor.
@@ -88,8 +101,25 @@ public class StatisticsGatherer {
 
         LocalStatisticsGatheringContext inProgressCtx = gatheringInProgress.putIfAbsent(key, ctx);
 
+        if (!active) {
+            gatheringInProgress.remove(key, ctx);
+            ctx.cancel();
+
+            if (log.isDebugEnabled())
+                log.debug("Reject aggregation by key " + key + " due to inactive state.");
+
+            return inProgressCtx;
+        }
+
         if (inProgressCtx == null) {
-            CompletableFuture<ObjectStatisticsImpl> f = CompletableFuture.supplyAsync(aggregate, gatherPool);
+
+            CompletableFuture<ObjectStatisticsImpl> f = CompletableFuture.supplyAsync(
+                () -> {
+                    if (!gatheringLock.enterBusy())
+                        return null;
+
+                    return aggregate.get();
+            }, gatherPool);
 
             f.handle((stat, ex) -> {
                 if (ex == null)
@@ -98,6 +128,7 @@ public class StatisticsGatherer {
                     ctx.futureAggregate().completeExceptionally(ex);
 
                 gatheringInProgress.remove(key, ctx);
+                gatheringLock.leaveBusy();
 
                 return null;
             });
@@ -107,12 +138,26 @@ public class StatisticsGatherer {
         else {
             inProgressCtx.futureGather().thenAccept((complete) -> {
                 if (complete) {
-                    ObjectStatisticsImpl stat = aggregate.get();
+                    if (gatheringLock.enterBusy()) {
+                        try {
+                            ObjectStatisticsImpl stat = aggregate.get();
 
-                    inProgressCtx.futureAggregate().complete(stat);
+                            inProgressCtx.futureAggregate().complete(stat);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Local statistics for key " + key + " aggregated succesfully");
+                        }
+                        finally {
+                            gatheringLock.leaveBusy();
+                        }
+                    }
+                    else
+                        inProgressCtx.futureAggregate().cancel(true);
                 }
                 else
                     inProgressCtx.futureAggregate().complete(null);
+
+                gatheringInProgress.remove(key, inProgressCtx);
             });
 
             return inProgressCtx;
@@ -152,14 +197,25 @@ public class StatisticsGatherer {
             if (log.isDebugEnabled())
                 log.debug("Cancel previous statistic gathering for [key=" + key + ']');
 
-            oldCtx.futureGather().cancel(false);
+            oldCtx.cancel();
+        }
+
+        if (!active) {
+            newCtx.cancel();
+            gatheringInProgress.remove(key);
+
+            if (log.isDebugEnabled())
+                log.debug("Reject aggregation by key " + key + " due to inactive state.");
         }
 
         for (int part : parts) {
             final GatherPartitionStatistics task = new GatherPartitionStatistics(
+                key,
+                statRepo,
                 newCtx,
                 tbl,
                 cols,
+                cfg,
                 colCfgs,
                 part,
                 log
@@ -171,7 +227,15 @@ public class StatisticsGatherer {
         return newCtx;
     }
 
-    /** */
+    /**
+     * Submit partition gathering task.
+     *
+     * @param tbl Table to collect statistics by.
+     * @param cfg Configuration to collect statistics by.
+     * @param key Key for specified table.
+     * @param ctx Gathering context to track state.
+     * @param task Gathering task to proceed.
+     */
     private void submitTask(
         final GridH2Table tbl,
         final StatisticsObjectConfiguration cfg,
@@ -179,14 +243,32 @@ public class StatisticsGatherer {
         final LocalStatisticsGatheringContext ctx,
         final GatherPartitionStatistics task
     ) {
-        CompletableFuture<ObjectPartitionStatisticsImpl> f = CompletableFuture.supplyAsync(task::call, gatherPool);
+        CompletableFuture<ObjectPartitionStatisticsImpl> f = CompletableFuture.supplyAsync(() -> {
+            if (!gatheringLock.enterBusy())
+                return null;
+
+            try {
+                return task.call();
+            }
+            finally {
+                gatheringLock.leaveBusy();
+            }
+        }, gatherPool);
 
         f.thenAccept((partStat) -> {
-            completePartitionStatistic(tbl, cfg, key, ctx, task.partition(), partStat);
+            if (!gatheringLock.enterBusy())
+                return;
+
+            try {
+                completePartitionStatistic(tbl, cfg, key, ctx, task.partition(), partStat);
+            }
+            finally {
+                gatheringLock.leaveBusy();
+            }
         });
 
         f.exceptionally((ex) -> {
-            if (ex instanceof GatherStatisticCancelException) {
+            if (ex.getCause() instanceof GatherStatisticCancelException) {
                 if (log.isDebugEnabled()) {
                     log.debug("Collect statistics task was cancelled " +
                         "[key=" + key + ", part=" + task.partition() + ']');
@@ -220,6 +302,9 @@ public class StatisticsGatherer {
         int part,
         ObjectPartitionStatisticsImpl partStat
     ) {
+        if (ctx.futureAggregate().isCancelled())
+            return;
+
         try {
             if (partStat == null)
                 ctx.partitionNotAvailable(part);
@@ -236,10 +321,12 @@ public class StatisticsGatherer {
                     log.debug("Local partitioned statistic saved [stat=" + partStat + ']');
 
                 ctx.partitionDone(part);
-            }
 
-            if (ctx.futureGather().isDone())
-                gatheringInProgress.remove(key, ctx);
+                if (ctx.futureGather().isDone()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Local partitions statistics successfully gathered by key " + key);
+                }
+            }
         }
         catch (Throwable ex) {
             if (!X.hasCause(ex, NodeStoppingException.class))
@@ -263,6 +350,8 @@ public class StatisticsGatherer {
     public void start() {
         if (log.isDebugEnabled())
             log.debug("Statistics gathering started.");
+
+        active = true;
     }
 
     /**
@@ -271,6 +360,8 @@ public class StatisticsGatherer {
     public void stop() {
         if (log.isTraceEnabled())
             log.trace(String.format("Statistics gathering stopping %d task...", gatheringInProgress.size()));
+
+        active = false;
 
         cancelAllTasks();
 
@@ -282,8 +373,11 @@ public class StatisticsGatherer {
      * Cancel all currently running statistics gathering tasks.
      */
     public void cancelAllTasks() {
-        gatheringInProgress.values().forEach(ctx -> ctx.futureGather().cancel(true));
+        gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel);
 
         gatheringInProgress.clear();
+
+        gatheringLock.block();
+        gatheringLock.unblock();
     }
 }

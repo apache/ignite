@@ -114,6 +114,7 @@ public class IgniteStatisticsRepository {
         Map<String, Object> filter
     ) {
         String type = (String)filter.get(StatisticsColumnPartitionDataViewWalker.TYPE_FILTER);
+
         if (type != null && !StatisticsColumnConfigurationView.TABLE_TYPE.equalsIgnoreCase(type))
             return Collections.emptyList();
 
@@ -123,15 +124,18 @@ public class IgniteStatisticsRepository {
         String column = (String)filter.get(StatisticsColumnPartitionDataViewWalker.COLUMN_FILTER);
 
         Map<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> partsStatsMap;
+
         if (!F.isEmpty(schema) && !F.isEmpty(name)) {
             StatisticsKey key = new StatisticsKey(schema, name);
             Collection<ObjectPartitionStatisticsImpl> keyStat;
+
             if (partId == null)
                 keyStat = store.getLocalPartitionsStatistics(key);
             else {
                 ObjectPartitionStatisticsImpl partStat = store.getLocalPartitionStatistics(key, partId);
                 keyStat = (partStat == null) ? Collections.emptyList() : Collections.singletonList(partStat);
             }
+
             partsStatsMap = Collections.singletonMap(key, keyStat);
         }
         else
@@ -141,6 +145,7 @@ public class IgniteStatisticsRepository {
 
         for (Map.Entry<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> partsStatsEntry : partsStatsMap.entrySet()) {
             StatisticsKey key = partsStatsEntry.getKey();
+
             for (ObjectPartitionStatisticsImpl partStat : partsStatsEntry.getValue()) {
                 if (column == null) {
                     for (Map.Entry<String, ColumnStatistics> colStatEntry : partStat.columnsStatistics().entrySet())
@@ -148,6 +153,7 @@ public class IgniteStatisticsRepository {
                 }
                 else {
                     ColumnStatistics colStat = partStat.columnStatistics(column);
+
                     if (colStat != null)
                         res.add(new StatisticsColumnPartitionDataView(key, column, partStat));
                 }
@@ -165,6 +171,7 @@ public class IgniteStatisticsRepository {
      */
     private Iterable<StatisticsColumnLocalDataView> columnLocalStatisticsViewSupplier(Map<String, Object> filter) {
         String type = (String)filter.get(StatisticsColumnPartitionDataViewWalker.TYPE_FILTER);
+
         if (type != null && !StatisticsColumnConfigurationView.TABLE_TYPE.equalsIgnoreCase(type))
             return Collections.emptyList();
 
@@ -173,6 +180,7 @@ public class IgniteStatisticsRepository {
         String column = (String)filter.get(StatisticsColumnPartitionDataViewWalker.COLUMN_FILTER);
 
         Map<StatisticsKey, ObjectStatisticsImpl> localStatsMap;
+
         if (!F.isEmpty(schema) && !F.isEmpty(name)) {
             StatisticsKey key = new StatisticsKey(schema, name);
 
@@ -192,6 +200,7 @@ public class IgniteStatisticsRepository {
         for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> localStatsEntry : localStatsMap.entrySet()) {
             StatisticsKey key = localStatsEntry.getKey();
             ObjectStatisticsImpl stat = localStatsEntry.getValue();
+
             if (column == null) {
                 for (Map.Entry<String, ColumnStatistics> colStat : localStatsEntry.getValue().columnsStatistics()
                     .entrySet()) {
@@ -203,6 +212,7 @@ public class IgniteStatisticsRepository {
             }
             else {
                 ColumnStatistics colStat = localStatsEntry.getValue().columnStatistics(column);
+
                 if (colStat != null) {
                     StatisticsColumnLocalDataView colStatView = new StatisticsColumnLocalDataView(key, column, stat);
 
@@ -280,6 +290,7 @@ public class IgniteStatisticsRepository {
         ObjectPartitionStatisticsImpl statistics
     ) {
         ObjectPartitionStatisticsImpl oldPartStat = store.getLocalPartitionStatistics(key, statistics.partId());
+
         if (oldPartStat == null)
             store.saveLocalPartitionStatistics(key, statistics);
         else {
@@ -425,6 +436,7 @@ public class IgniteStatisticsRepository {
      */
     public static <T extends ObjectStatisticsImpl> T add(T base, T add) {
         T res = (T)add.clone();
+
         for (Map.Entry<String, ColumnStatistics> entry : base.columnsStatistics().entrySet())
             res.columnsStatistics().putIfAbsent(entry.getKey(), entry.getValue());
 
@@ -559,6 +571,7 @@ public class IgniteStatisticsRepository {
 
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : obsolescence.entrySet()) {
             StatisticsKey key = objObs.getKey();
+
             if (!keys.contains(key)) {
                 IntMap<ObjectPartitionStatisticsObsolescence> rmv = obsolescence.remove(key);
 
@@ -601,10 +614,12 @@ public class IgniteStatisticsRepository {
      */
     public void addRowsModified(StatisticsKey key, int partId, byte[] changedKey) {
         IntMap<ObjectPartitionStatisticsObsolescence> objObs = statObs.get(key);
+
         if (objObs == null)
             return;
 
         ObjectPartitionStatisticsObsolescence objPartObs = objObs.get(partId);
+
         if (objPartObs == null)
             return;
 
@@ -620,6 +635,7 @@ public class IgniteStatisticsRepository {
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirtyObs = new HashMap<>();
 
         boolean hasDirty[] = new boolean[1];
+
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : statObs.entrySet()) {
             hasDirty[0] = false;
 

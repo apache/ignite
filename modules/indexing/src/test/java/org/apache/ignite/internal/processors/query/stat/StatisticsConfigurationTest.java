@@ -179,6 +179,8 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         startGrid(0);
 
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
     }
 
