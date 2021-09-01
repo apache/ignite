@@ -160,13 +160,15 @@ public class TableManagerTest {
             nodeCfgMgr = new ConfigurationManager(
                 List.of(NodeConfiguration.KEY),
                 Map.of(),
-                new TestConfigurationStorage(LOCAL)
+                new TestConfigurationStorage(LOCAL),
+                List.of()
             );
 
             clusterCfgMgr = new ConfigurationManager(
                 List.of(ClusterConfiguration.KEY, TablesConfiguration.KEY),
                 Map.of(),
-                new TestConfigurationStorage(DISTRIBUTED)
+                new TestConfigurationStorage(DISTRIBUTED),
+                List.of()
             );
 
             nodeCfgMgr.start();

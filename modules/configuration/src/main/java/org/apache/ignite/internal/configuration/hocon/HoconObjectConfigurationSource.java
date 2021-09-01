@@ -83,14 +83,18 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
             try {
                 switch (hoconCfgValue.valueType()) {
                     case NULL:
-                        node.construct(key, null);
+                        node.construct(key, null, false);
 
                         break;
 
                     case OBJECT: {
                         List<String> path = appendKey(this.path, key);
 
-                        node.construct(key, new HoconObjectConfigurationSource(null, path, (ConfigObject)hoconCfgValue));
+                        node.construct(
+                            key,
+                            new HoconObjectConfigurationSource(null, path, (ConfigObject)hoconCfgValue),
+                            false
+                        );
 
                         break;
                     }
@@ -98,7 +102,7 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
                     case LIST: {
                         List<String> path = appendKey(this.path, key);
 
-                        node.construct(key, new HoconListConfigurationSource(path, (ConfigList)hoconCfgValue));
+                        node.construct(key, new HoconListConfigurationSource(path, (ConfigList)hoconCfgValue), false);
 
                         break;
                     }
@@ -106,7 +110,7 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
                     default: {
                         List<String> path = appendKey(this.path, key);
 
-                        node.construct(key, new HoconPrimitiveConfigurationSource(path, hoconCfgValue));
+                        node.construct(key, new HoconPrimitiveConfigurationSource(path, hoconCfgValue), false);
                     }
                 }
             }

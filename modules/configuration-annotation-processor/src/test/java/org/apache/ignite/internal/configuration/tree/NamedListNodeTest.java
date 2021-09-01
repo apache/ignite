@@ -90,7 +90,7 @@ public class NamedListNodeTest {
     public void before() {
         storage = new TestConfigurationStorage(LOCAL);
 
-        changer = new TestConfigurationChanger(cgen, List.of(AConfiguration.KEY), Map.of(), storage);
+        changer = new TestConfigurationChanger(cgen, List.of(AConfiguration.KEY), Map.of(), storage, List.of());
         changer.start();
     }
 

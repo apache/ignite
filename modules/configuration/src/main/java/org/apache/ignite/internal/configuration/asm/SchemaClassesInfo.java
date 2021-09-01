@@ -24,6 +24,15 @@ import org.apache.ignite.internal.configuration.tree.InnerNode;
  * Class to cache compiled classes and hold precalculated names to reference other existing classes.
  */
 class SchemaClassesInfo {
+    /** Configuration class name postfix. */
+    private static final String CONFIGURATION_CLASS_POSTFIX = "Configuration";
+
+    /** View class name postfix. */
+    private static final String VIEW_CLASS_POSTFIX = "View";
+
+    /** Change class name postfix. */
+    private static final String CHANGE_CLASS_POSTFIX = "Change";
+
     /** Configuration Schema class. */
     public final Class<?> schemaClass;
 
@@ -49,19 +58,64 @@ class SchemaClassesInfo {
     public Class<? extends DynamicConfiguration<?, ?>> cfgImplClass;
 
     /**
+     * Constructor.
+     *
      * @param schemaClass Configuration Schema class instance.
      */
     SchemaClassesInfo(Class<?> schemaClass) {
         this.schemaClass = schemaClass;
-        String schemaClassName = schemaClass.getPackageName() + "." + schemaClass.getSimpleName(); // Support inner classes.
 
-        String prefix = schemaClassName.replaceAll("ConfigurationSchema$", "");
+        String prefix = prefix(schemaClass);
 
-        viewClassName = prefix + "View";
-        changeClassName = prefix + "Change";
-        cfgClassName = prefix + "Configuration";
+        viewClassName = prefix + VIEW_CLASS_POSTFIX;
+        changeClassName = prefix + CHANGE_CLASS_POSTFIX;
+        cfgClassName = prefix + CONFIGURATION_CLASS_POSTFIX;
 
         nodeClassName = prefix + "Node";
         cfgImplClassName = prefix + "ConfigurationImpl";
+    }
+
+    /**
+     * Get the prefix for inner classes.
+     * <p/>
+     * Example: org.apache.ignite.NodeConfigurationSchema -> org.apache.ignite.Node
+     *
+     * @param schemaClass Configuration schema class.
+     * @return Prefix for inner classes.
+     */
+    static String prefix(Class<?> schemaClass) {
+        String schemaClassName = schemaClass.getPackageName() + "." + schemaClass.getSimpleName();
+
+        return schemaClassName.replaceAll("ConfigurationSchema$", "");
+    }
+
+    /**
+     * Get class name for the VIEW class.
+     *
+     * @param schemaClass Configuration schema class.
+     * @return Class name for the VIEW class.
+     */
+    static String viewClassName(Class<?> schemaClass) {
+        return prefix(schemaClass) + VIEW_CLASS_POSTFIX;
+    }
+
+    /**
+     * Get class name for the CHANGE class.
+     *
+     * @param schemaClass Configuration schema class.
+     * @return Class name for the CHANGE class.
+     */
+    static String changeClassName(Class<?> schemaClass) {
+        return prefix(schemaClass) + CHANGE_CLASS_POSTFIX;
+    }
+
+    /**
+     * Get class name for the Configuration class.
+     *
+     * @param schemaClass Configuration schema class.
+     * @return Class name for the Configuration class.
+     */
+    static String configurationClassName(Class<?> schemaClass) {
+        return prefix(schemaClass) + CONFIGURATION_CLASS_POSTFIX;
     }
 }

@@ -160,7 +160,8 @@ public class HoconConverterTest {
         registry = new ConfigurationRegistry(
             List.of(HoconRootConfiguration.KEY),
             Map.of(),
-            new TestConfigurationStorage(LOCAL)
+            new TestConfigurationStorage(LOCAL),
+            List.of()
         );
 
         registry.start();

@@ -70,7 +70,8 @@ public class ConfigurationPresentationTest {
         cfgRegistry = new ConfigurationRegistry(
             List.of(TestRootConfiguration.KEY),
             Map.of(Value.class, Set.of(validator)),
-            new TestConfigurationStorage(LOCAL)
+            new TestConfigurationStorage(LOCAL),
+            List.of()
         );
 
         cfgRegistry.start();

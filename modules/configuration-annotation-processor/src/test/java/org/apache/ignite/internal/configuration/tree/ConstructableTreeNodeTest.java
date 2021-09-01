@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.configuration.tree;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
 import org.junit.jupiter.api.AfterAll;
@@ -38,7 +39,7 @@ public class ConstructableTreeNodeTest {
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
 
-        cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class);
+        cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class, Map.of());
     }
 
     @AfterAll
@@ -59,7 +60,7 @@ public class ConstructableTreeNodeTest {
     public void noKey() {
         var childNode = newChildInstance();
 
-        assertThrows(NoSuchElementException.class, () -> childNode.construct("foo", null));
+        assertThrows(NoSuchElementException.class, () -> childNode.construct("foo", null, true));
     }
 
     /** */
@@ -77,7 +78,7 @@ public class ConstructableTreeNodeTest {
         // Named list node.
         var elements = parentNode.elements();
 
-        parentNode.construct("elements", null);
+        parentNode.construct("elements", null, true);
 
         assertNotNull(parentNode.elements());
         assertNotSame(elements, parentNode.elements());
@@ -86,12 +87,12 @@ public class ConstructableTreeNodeTest {
         // Inner node.
         NamedElementView element = elements.get("name");
 
-        ((ConstructableTreeNode)elements).construct("name", null);
+        ((ConstructableTreeNode)elements).construct("name", null, true);
 
         assertNull(elements.get("name"));
 
         // Leaf.
-        ((ConstructableTreeNode)element).construct("strCfg", null);
+        ((ConstructableTreeNode)element).construct("strCfg", null, true);
 
         assertNull(element.strCfg());
     }
@@ -119,16 +120,16 @@ public class ConstructableTreeNodeTest {
     public void unwrap() {
         var childNode = newChildInstance();
 
-        childNode.construct("strCfg", new ConstantConfigurationSource("value"));
+        childNode.construct("strCfg", new ConstantConfigurationSource("value"), true);
 
         assertEquals("value", childNode.strCfg());
 
-        childNode.construct("intCfg", new ConstantConfigurationSource(255));
+        childNode.construct("intCfg", new ConstantConfigurationSource(255), true);
 
         assertEquals(255, childNode.intCfg());
 
         assertThrows(ClassCastException.class, () ->
-            childNode.construct("intCfg", new ConstantConfigurationSource(new Object()))
+            childNode.construct("intCfg", new ConstantConfigurationSource(new Object()), true)
         );
     }
 
@@ -144,9 +145,9 @@ public class ConstructableTreeNodeTest {
             }
 
             @Override public void descend(ConstructableTreeNode node) {
-                node.construct("strCfg", new ConstantConfigurationSource("value"));
+                node.construct("strCfg", new ConstantConfigurationSource("value"), true);
             }
-        });
+        }, true);
 
         assertEquals("value", parentNode.child().strCfg());
 
@@ -159,9 +160,9 @@ public class ConstructableTreeNodeTest {
             }
 
             @Override public void descend(ConstructableTreeNode node) {
-                node.construct("strCfg", new ConstantConfigurationSource("value"));
+                node.construct("strCfg", new ConstantConfigurationSource("value"), true);
             }
-        });
+        }, true);
 
         assertEquals("value", elementsNode.get("name").strCfg());
     }

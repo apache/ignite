@@ -100,7 +100,8 @@ public abstract class AbstractClientTest {
         var cfg = new ConfigurationRegistry(
             List.of(ClientConnectorConfiguration.KEY),
             Map.of(),
-            new TestConfigurationStorage(LOCAL)
+            new TestConfigurationStorage(LOCAL),
+            List.of()
         );
 
         cfg.start();

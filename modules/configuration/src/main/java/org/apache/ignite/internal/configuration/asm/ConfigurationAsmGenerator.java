@@ -26,7 +26,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +40,9 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import com.facebook.presto.bytecode.BytecodeBlock;
+import com.facebook.presto.bytecode.BytecodeNode;
 import com.facebook.presto.bytecode.ClassDefinition;
 import com.facebook.presto.bytecode.ClassGenerator;
 import com.facebook.presto.bytecode.FieldDefinition;
@@ -55,8 +57,8 @@ import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.ConfigurationChanger;
@@ -74,6 +76,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import static com.facebook.presto.bytecode.Access.BRIDGE;
 import static com.facebook.presto.bytecode.Access.FINAL;
 import static com.facebook.presto.bytecode.Access.PRIVATE;
 import static com.facebook.presto.bytecode.Access.PUBLIC;
@@ -91,8 +94,19 @@ import static com.facebook.presto.bytecode.expression.BytecodeExpressions.invoke
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.isNull;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.newInstance;
 import static java.lang.invoke.MethodType.methodType;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.EnumSet.of;
+import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.changeClassName;
+import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.configurationClassName;
+import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.viewClassName;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.extensionsFields;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isConfigValue;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isNamedConfigValue;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isValue;
+import static org.apache.ignite.internal.util.CollectionUtils.concat;
+import static org.apache.ignite.internal.util.CollectionUtils.union;
 import static org.objectweb.asm.Opcodes.H_NEWINVOKESPECIAL;
 import static org.objectweb.asm.Type.getMethodDescriptor;
 import static org.objectweb.asm.Type.getMethodType;
@@ -241,10 +255,17 @@ public class ConfigurationAsmGenerator {
     }
 
     /**
-     * Generates, defines, loads and initializes all dynamic classes required for the given Configuration Schema.
-     * @param rootSchemaClass Class of the root Configuration Schema.
+     * Generates, defines, loads and initializes all dynamic classes required for the given configuration schema.
+     *
+     * @param rootSchemaClass Class of the root configuration schema.
+     * @param internalSchemaExtensions Internal extensions ({@link InternalConfiguration})
+     *      of configuration schemas ({@link ConfigurationRoot} and {@link Config}).
+     *      Mapping: original schema -> extensions.
      */
-    public synchronized void compileRootSchema(Class<?> rootSchemaClass) {
+    public synchronized void compileRootSchema(
+        Class<?> rootSchemaClass,
+        Map<Class<?>, Set<Class<?>>> internalSchemaExtensions
+    ) {
         if (schemasInfo.containsKey(rootSchemaClass))
             return; // Already compiled.
 
@@ -263,11 +284,16 @@ public class ConfigurationAsmGenerator {
                 || schemaClass.isAnnotationPresent(Config.class)
                 : schemaClass + " is not properly annotated";
 
-            assert schemasInfo.containsKey(schemaClass);
+            assert schemasInfo.containsKey(schemaClass) : schemaClass;
 
-            for (Field field : schemaClass.getDeclaredFields()) {
-                if (isConfigValue(field) || isNamedConfigValue(field)) {
-                    Class<?> subSchemaClass = field.getType();
+            Field[] schemaFields = schemaClass.getDeclaredFields();
+
+            Set<Class<?>> schemaExtensions = internalSchemaExtensions.getOrDefault(schemaClass, Set.of());
+            Set<Field> extensionsFields = extensionsFields(schemaExtensions);
+
+            for (Field schemaField : concat(asList(schemaFields), extensionsFields)) {
+                if (isConfigValue(schemaField) || isNamedConfigValue(schemaField)) {
+                    Class<?> subSchemaClass = schemaField.getType();
 
                     if (!schemasInfo.containsKey(subSchemaClass)) {
                         compileQueue.offer(subSchemaClass);
@@ -277,8 +303,8 @@ public class ConfigurationAsmGenerator {
             }
 
             schemas.add(schemaClass);
-            definitions.add(createNodeClass(schemaClass));
-            definitions.add(createCfgImplClass(schemaClass));
+            definitions.add(createNodeClass(schemaClass, schemaExtensions, schemaFields, extensionsFields));
+            definitions.add(createCfgImplClass(schemaClass, schemaExtensions, schemaFields, extensionsFields));
         }
 
         Map<String, Class<?>> definedClasses = generator.defineClasses(definitions);
@@ -291,7 +317,21 @@ public class ConfigurationAsmGenerator {
         }
     }
 
-    private ClassDefinition createNodeClass(Class<?> schemaClass) {
+    /**
+     * Construct a {@link InnerNode} definition for a configuration schema.
+     *
+     * @param schemaClass Configuration schema class.
+     * @param schemaExtensions Internal extensions of the configuration schema.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
+     * @return Constructed {@link InnerNode} definition for the configuration schema.
+     */
+    private ClassDefinition createNodeClass(
+        Class<?> schemaClass,
+        Set<Class<?>> schemaExtensions,
+        Field[] schemaFields,
+        Set<Field> extensionsFields
+    ) {
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
 
         // Node class definition.
@@ -299,80 +339,58 @@ public class ConfigurationAsmGenerator {
             of(PUBLIC, FINAL),
             internalName(schemaClassInfo.nodeClassName),
             type(InnerNode.class),
-            typeFromJavaClassName(schemaClassInfo.viewClassName),
-            typeFromJavaClassName(schemaClassInfo.changeClassName)
+            nodeClassInterfaces(schemaClass, schemaExtensions)
         );
 
-        // Spec field.
-        FieldDefinition specField = classDef.declareField(of(PRIVATE, FINAL), "_spec", schemaClass);
+        // Spec fields.
+        Map<Class<?>, FieldDefinition> specFields = new HashMap<>();
+
+        int i = 0;
+
+        for (Class<?> clazz : concat(List.of(schemaClass), schemaExtensions))
+            specFields.put(clazz, classDef.declareField(of(PRIVATE, FINAL), "_spec" + i++, clazz));
 
         // org.apache.ignite.internal.configuration.tree.InnerNode#schemaType
-        addNodeSchemaTypeMethod(classDef, specField);
-
-        // Cached array of reflected fields. Helps to avoid unnecessary clonings.
-        Field[] schemaFields = schemaClass.getDeclaredFields();
+        addNodeSchemaTypeMethod(classDef, specFields.get(schemaClass));
 
         // Define the rest of the fields.
         Map<String, FieldDefinition> fieldDefs = new HashMap<>();
 
-        for (Field schemaField : schemaFields) {
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields)) {
             assert isValue(schemaField) || isConfigValue(schemaField) || isNamedConfigValue(schemaField) : schemaField;
 
             fieldDefs.put(schemaField.getName(), addNodeField(classDef, schemaField));
         }
 
         // Constructor.
-        addNodeConstructor(classDef, schemaClass, specField, schemaFields, fieldDefs);
+        addNodeConstructor(classDef, specFields, fieldDefs, schemaFields, extensionsFields);
 
         // VIEW and CHANGE methods.
-        for (Field schemaField : schemaFields) {
-            FieldDefinition fieldDef = fieldDefs.get(schemaField.getName());
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields)) {
+            String fieldName = schemaField.getName();
+
+            FieldDefinition fieldDef = fieldDefs.get(fieldName);
 
             addNodeViewMethod(classDef, schemaField, fieldDef);
 
-            addNodeChangeMethod(classDef, schemaField, fieldDef, schemaClassInfo);
+            // Add change methods.
+            MethodDefinition changeMtd = addNodeChangeMethod(classDef, schemaField, fieldDef, schemaClassInfo.nodeClassName);
+            addNodeChangeBridgeMethod(classDef, changeClassName(schemaField.getDeclaringClass()), changeMtd);
         }
 
         // traverseChildren
-        addNodeTraverseChildrenMethod(classDef, schemaFields, fieldDefs);
+        addNodeTraverseChildrenMethod(classDef, fieldDefs, schemaFields, extensionsFields);
 
         // traverseChild
-        addNodeTraverseChildMethod(classDef, schemaFields, fieldDefs);
+        addNodeTraverseChildMethod(classDef, fieldDefs, schemaFields, extensionsFields);
 
         // construct
-        addNodeConstructMethod(classDef, schemaFields, fieldDefs);
+        addNodeConstructMethod(classDef, fieldDefs, schemaFields, extensionsFields);
 
         // constructDefault
-        addNodeConstructDefaultMethod(classDef, specField, schemaFields, fieldDefs);
+        addNodeConstructDefaultMethod(classDef, specFields, fieldDefs, schemaFields, extensionsFields);
 
         return classDef;
-    }
-
-    /**
-     * Checks whether configuration schema field represents primitive configuration value.
-     * @param schemaField Configuration Schema class field.
-     * @return {@code true} if field represents primitive configuration.
-     */
-    private static boolean isValue(Field schemaField) {
-        return schemaField.isAnnotationPresent(Value.class);
-    }
-
-    /**
-     * Checks whether configuration schema field represents regular configuration value.
-     * @param schemaField Configuration Schema class field.
-     * @return {@code true} if field represents regular configuration.
-     */
-    private static boolean isConfigValue(Field schemaField) {
-        return schemaField.isAnnotationPresent(ConfigValue.class);
-    }
-
-    /**
-     * Checks whether configuration schema field represents named list configuration value.
-     * @param schemaField Configuration Schema class field.
-     * @return {@code true} if field represents named list configuration.
-     */
-    private static boolean isNamedConfigValue(Field schemaField) {
-        return schemaField.isAnnotationPresent(NamedConfigValue.class);
     }
 
     /**
@@ -431,28 +449,31 @@ public class ConfigurationAsmGenerator {
     /**
      * Implements default constructor for the node class. It initializes {@code _spec} field and every other field
      * that represents named list configuration.
+     *
      * @param classDef Node class definition.
-     * @param schemaClass Configuration Schema class.
-     * @param specField Field definition for the {@code _spec} field of the node class.
-     * @param schemaFields Configuration Schema class fields.
+     * @param specFields Definition of fields for the {@code _spec#} fields of the node class.
+     *      Mapping: configuration schema class -> {@code _spec#} field.
      * @param fieldDefs Field definitions for all fields of node class excluding {@code _spec}.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
      */
     private void addNodeConstructor(
         ClassDefinition classDef,
-        Class<?> schemaClass,
-        FieldDefinition specField,
+        Map<Class<?>, FieldDefinition> specFields,
+        Map<String, FieldDefinition> fieldDefs,
         Field[] schemaFields,
-        Map<String, FieldDefinition> fieldDefs
+        Set<Field> extensionsFields
     ) {
         MethodDefinition ctor = classDef.declareConstructor(of(PUBLIC));
 
         // super();
         ctor.getBody().append(ctor.getThis()).invokeConstructor(InnerNode.class);
 
-        // this._spec = new MyConfigurationSchema();
-        ctor.getBody().append(ctor.getThis().setField(specField, newInstance(schemaClass)));
+        // this._spec# = new MyConfigurationSchema();
+        for (Map.Entry<Class<?>, FieldDefinition> e : specFields.entrySet())
+            ctor.getBody().append(ctor.getThis().setField(e.getValue(), newInstance(e.getKey())));
 
-        for (Field schemaField : schemaFields) {
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields)) {
             if (!isNamedConfigValue(schemaField))
                 continue;
 
@@ -480,7 +501,7 @@ public class ConfigurationAsmGenerator {
      * depending on type.
      * @param classDef Node class definition.
      * @param schemaField Configuration Schema class field.
-     * @param fieldDefs Field definition.
+     * @param fieldDef Field definition.
      */
     private void addNodeViewMethod(
         ClassDefinition classDef,
@@ -529,23 +550,25 @@ public class ConfigurationAsmGenerator {
 
     /**
      * Implements changer method from {@code CHANGE} interface.
+     *
      * @param classDef Node class definition.
      * @param schemaField Configuration Schema class field.
      * @param fieldDef Field definition.
-     * @param schemaClassInfo {@link SchemaClassesInfo} for Configuration Schema that contains original field.
+     * @param nodeClassName Class name for the Node class.
+     * @return Definition of change method.
      */
-    private void addNodeChangeMethod(
+    private MethodDefinition addNodeChangeMethod(
         ClassDefinition classDef,
         Field schemaField,
         FieldDefinition fieldDef,
-        SchemaClassesInfo schemaClassInfo
+        String nodeClassName
     ) {
         Class<?> schemaFieldType = schemaField.getType();
 
         MethodDefinition changeMtd = classDef.declareMethod(
             of(PUBLIC),
             "change" + capitalize(schemaField.getName()),
-            typeFromJavaClassName(schemaClassInfo.changeClassName),
+            typeFromJavaClassName(nodeClassName),
             // Change argument type is a Consumer for all inner or named fields.
             arg("change", isValue(schemaField) ? type(schemaFieldType) : type(Consumer.class))
         );
@@ -585,86 +608,123 @@ public class ConfigurationAsmGenerator {
 
         // return this;
         changeBody.append(changeMtd.getThis()).retObject();
+
+        return changeMtd;
     }
 
     /**
-     * Implements {@link InnerNode#traverseChildren(ConfigurationVisitor)} method.
+     * Implements changer bridge method from {@code CHANGE} interface.
+     *
+     * @param classDef Node class definition.
+     * @param changeClassName Class name for the CHANGE class.
+     * @param changeMtd Definition of change method.
+     */
+    private void addNodeChangeBridgeMethod(
+        ClassDefinition classDef,
+        String changeClassName,
+        MethodDefinition changeMtd
+    ) {
+        MethodDefinition bridgeMtd = classDef.declareMethod(
+            of(PUBLIC, SYNTHETIC, BRIDGE),
+            changeMtd.getName(),
+            typeFromJavaClassName(changeClassName),
+            changeMtd.getParameters()
+        );
+
+        Variable changeVar = bridgeMtd.getScope().getVariable("change");
+
+        // this.change*(change);
+        BytecodeExpression invokeChangeMtd = bridgeMtd.getThis().invoke(changeMtd, List.of(changeVar));
+
+        // return this.change*(change);
+        bridgeMtd.getBody().append(invokeChangeMtd).retObject();
+    }
+
+    /**
+     * Implements {@link InnerNode#traverseChildren(ConfigurationVisitor, boolean)} method.
+     *
      * @param classDef Class definition.
-     * @param schemaFields Array of all schema fields that represent configurations.
      * @param fieldDefs Definitions for all fields in {@code schemaFields}.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
      */
     private void addNodeTraverseChildrenMethod(
         ClassDefinition classDef,
+        Map<String, FieldDefinition> fieldDefs,
         Field[] schemaFields,
-        Map<String, FieldDefinition> fieldDefs
+        Set<Field> extensionsFields
     ) {
         MethodDefinition traverseChildrenMtd = classDef.declareMethod(
             of(PUBLIC),
             "traverseChildren",
             type(void.class),
-            arg("visitor", type(ConfigurationVisitor.class))
+            arg("visitor", type(ConfigurationVisitor.class)),
+            arg("includeInternal", type(boolean.class))
         ).addException(NoSuchElementException.class);
 
         BytecodeBlock mtdBody = traverseChildrenMtd.getBody();
 
-        for (Field schemaField : schemaFields) {
-            FieldDefinition fieldDef = fieldDefs.get(schemaField.getName());
+        invokeVisitForTraverseChildren(asList(schemaFields), fieldDefs, traverseChildrenMtd)
+            .forEach(mtdBody::append);
 
-            // Visit every field. Returned value isn't used so we pop it off the stack.
-            mtdBody.append(invokeVisit(traverseChildrenMtd, schemaField, fieldDef).pop());
+        if (!extensionsFields.isEmpty()) {
+            Variable includeInternalVar = traverseChildrenMtd.getScope().getVariable("includeInternal");
+
+            BytecodeBlock includeInternalBlock = new BytecodeBlock();
+
+            invokeVisitForTraverseChildren(extensionsFields, fieldDefs, traverseChildrenMtd)
+                .forEach(includeInternalBlock::append);
+
+            mtdBody.append(new IfStatement().condition(includeInternalVar).ifTrue(includeInternalBlock));
         }
 
         mtdBody.ret();
     }
 
     /**
-     * Implements {@link InnerNode#traverseChild(String, ConfigurationVisitor)} method.
+     * Implements {@link InnerNode#traverseChild(String, ConfigurationVisitor, boolean)} method.
+     *
      * @param classDef Class definition.
-     * @param schemaFields Array of all schema fields that represent configurations.
      * @param fieldDefs Definitions for all fields in {@code schemaFields}.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
      */
     private void addNodeTraverseChildMethod(
         ClassDefinition classDef,
+        Map<String, FieldDefinition> fieldDefs,
         Field[] schemaFields,
-        Map<String, FieldDefinition> fieldDefs
+        Set<Field> extensionsFields
     ) {
         MethodDefinition traverseChildMtd = classDef.declareMethod(
             of(PUBLIC),
             "traverseChild",
             type(Object.class),
             arg("key", type(String.class)),
-            arg("visitor", type(ConfigurationVisitor.class))
+            arg("visitor", type(ConfigurationVisitor.class)),
+            arg("includeInternal", type(boolean.class))
         ).addException(NoSuchElementException.class);
 
-        Variable keyVar = traverseChildMtd.getScope().getVariable("key");
+        BytecodeBlock mtdBody = traverseChildMtd.getBody();
 
-        // Here we have a switch by passed kay parameter.
-        StringSwitchBuilder switchBuilder = new StringSwitchBuilder(traverseChildMtd.getScope())
-            .expression(keyVar);
+        if (extensionsFields.isEmpty())
+            mtdBody.append(invokeVisitForTraverseChild(asList(schemaFields), fieldDefs, traverseChildMtd));
+        else {
+            Variable includeInternalVar = traverseChildMtd.getScope().getVariable("includeInternal");
 
-        for (Field schemaField : schemaFields) {
-            String fieldName = schemaField.getName();
-
-            FieldDefinition fieldDef = fieldDefs.get(fieldName);
-
-            // Visit result should be immediately returned.
-            switchBuilder.addCase(fieldName, invokeVisit(traverseChildMtd, schemaField, fieldDef).retObject());
+            mtdBody.append(
+                new IfStatement()
+                    .condition(includeInternalVar)
+                    .ifTrue(invokeVisitForTraverseChild(union(extensionsFields, schemaFields), fieldDefs, traverseChildMtd))
+                    .ifFalse(invokeVisitForTraverseChild(asList(schemaFields), fieldDefs, traverseChildMtd))
+            );
         }
-
-        // Default option is to throw "NoSuchElementException(key)".
-        switchBuilder.defaultCase(new BytecodeBlock()
-            .append(newInstance(NoSuchElementException.class, keyVar))
-            .throwObject()
-        );
-
-        // No default "return" statement required.
-        traverseChildMtd.getBody().append(switchBuilder.build());
     }
 
     /**
      * Creates bytecode block that invokes one of {@link ConfigurationVisitor}'s methods.
-     * @param mtd Method definition, either {@link InnerNode#traverseChildren(ConfigurationVisitor)} or
-     *      {@link InnerNode#traverseChild(String, ConfigurationVisitor)} defined in {@code *Node} class.
+     *
+     * @param mtd Method definition, either {@link InnerNode#traverseChildren(ConfigurationVisitor, boolean)} or
+     *      {@link InnerNode#traverseChild(String, ConfigurationVisitor, boolean)} defined in {@code *Node} class.
      * @param schemaField Configuration Schema field to visit.
      * @param fieldDef Field definition from current class.
      * @return Bytecode block that invokes "visit*" method.
@@ -687,104 +747,60 @@ public class ConfigurationAsmGenerator {
     }
 
     /**
-     * Implements {@link ConstructableTreeNode#construct(String, ConfigurationSource)} method.
+     * Implements {@link ConstructableTreeNode#construct(String, ConfigurationSource, boolean)} method.
+     *
      * @param classDef Class definition.
-     * @param schemaFields Array of all schema fields that represent configurations.
      * @param fieldDefs Definitions for all fields in {@code schemaFields}.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
      */
     private void addNodeConstructMethod(
         ClassDefinition classDef,
+        Map<String, FieldDefinition> fieldDefs,
         Field[] schemaFields,
-        Map<String, FieldDefinition> fieldDefs
+        Set<Field> extensionsFields
     ) {
         MethodDefinition constructMtd = classDef.declareMethod(
             of(PUBLIC),
             "construct",
             type(void.class),
-            arg("key", String.class),
-            arg("src", ConfigurationSource.class)
+            arg("key", type(String.class)),
+            arg("src", type(ConfigurationSource.class)),
+            arg("includeInternal", type(boolean.class))
         ).addException(NoSuchElementException.class);
 
-        Variable keyVar = constructMtd.getScope().getVariable("key");
-        Variable srcVar = constructMtd.getScope().getVariable("src");
+        BytecodeBlock mtdBody = constructMtd.getBody();
 
-        StringSwitchBuilder switchBuilder = new StringSwitchBuilder(constructMtd.getScope())
-            .expression(keyVar);
+        if (extensionsFields.isEmpty())
+            mtdBody.append(treatSourceForConstruct(asList(schemaFields), fieldDefs, constructMtd)).ret();
+        else {
+            Variable includeInternalVar = constructMtd.getScope().getVariable("includeInternal");
 
-        for (Field schemaField : schemaFields) {
-            FieldDefinition fieldDef = fieldDefs.get(schemaField.getName());
-
-            BytecodeBlock caseClause = new BytecodeBlock();
-
-            switchBuilder.addCase(schemaField.getName(), caseClause);
-
-            // this.field = src == null ? null : src.unwrap(FieldType.class);
-            if (isValue(schemaField)) {
-                caseClause.append(constructMtd.getThis().setField(fieldDef, inlineIf(
-                    isNull(srcVar),
-                    constantNull(fieldDef.getType()),
-                    srcVar.invoke(UNWRAP, constantClass(fieldDef.getType())).cast(fieldDef.getType())
-                )));
-            }
-            // this.field = src == null ? null : src.descend(field = (field == null ? new FieldType() : field.copy()));
-            else if (isConfigValue(schemaField)) {
-                caseClause.append(new IfStatement()
-                    .condition(isNull(srcVar))
-                    .ifTrue(constructMtd.getThis().setField(fieldDef, constantNull(fieldDef.getType())))
-                    .ifFalse(new BytecodeBlock()
-                        .append(copyNodeField(constructMtd, fieldDef))
-                        .append(srcVar.invoke(DESCEND, constructMtd.getThis().getField(fieldDef)))
-                    )
-                );
-            }
-            // this.field = src == null ? new NamedListNode<>(key, ValueNode::new) : src.descend(field = field.copy()));
-            else {
-                NamedConfigValue namedCfgAnnotation = schemaField.getAnnotation(NamedConfigValue.class);
-
-                String fieldNodeClassName = schemasInfo.get(schemaField.getType()).nodeClassName;
-
-                caseClause.append(new IfStatement()
-                    .condition(isNull(srcVar))
-                    .ifTrue(constructMtd.getThis().setField(
-                        fieldDef,
-                        newInstance(
-                            NamedListNode.class,
-                            constantString(namedCfgAnnotation.syntheticKeyName()),
-                            newNamedListElementLambda(fieldNodeClassName)
-                        )
-                    ))
-                    .ifFalse(new BytecodeBlock()
-                        .append(constructMtd.getThis().setField(
-                            fieldDef,
-                            constructMtd.getThis().getField(fieldDef).invoke(COPY).cast(fieldDef.getType())
-                        ))
-                        .append(srcVar.invoke(DESCEND, constructMtd.getThis().getField(fieldDef)))
-                    )
-                );
-            }
+            mtdBody.append(
+                new IfStatement()
+                    .condition(includeInternalVar)
+                    .ifTrue(treatSourceForConstruct(union(extensionsFields, schemaFields), fieldDefs, constructMtd))
+                    .ifFalse(treatSourceForConstruct(asList(schemaFields), fieldDefs, constructMtd))
+            ).ret();
         }
-
-        // Default option is to throw "NoSuchElementException(key)".
-        switchBuilder.defaultCase(new BytecodeBlock()
-            .append(newInstance(NoSuchElementException.class, keyVar))
-            .throwObject()
-        );
-
-        constructMtd.getBody().append(switchBuilder.build()).ret();
     }
 
     /**
      * Implements {@link InnerNode#constructDefault(String)} method.
+     *
      * @param classDef Node class definition.
-     * @param specField Field definition for the {@code _spec} field of the node class.
-     * @param schemaFields Configuration Schema class fields.
+     * @param specFields Definition of fields for the {@code _spec#} fields of the node class.
+     *      Mapping: configuration schema class -> {@code _spec#} field.
      * @param fieldDefs Field definitions for all fields of node class excluding {@code _spec}.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
      */
     private void addNodeConstructDefaultMethod(
         ClassDefinition classDef,
-        FieldDefinition specField,
+        Map<Class<?>, FieldDefinition> specFields,
+        Map<String, FieldDefinition> fieldDefs,
         Field[] schemaFields,
-        Map<String, FieldDefinition> fieldDefs
+        Set<Field> extensionsFields
     ) {
         MethodDefinition constructDfltMtd = classDef.declareMethod(
             of(PUBLIC),
@@ -798,7 +814,7 @@ public class ConfigurationAsmGenerator {
         StringSwitchBuilder switchBuilder = new StringSwitchBuilder(constructDfltMtd.getScope())
             .expression(keyVar);
 
-        for (Field schemaField : schemaFields) {
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields)) {
             if (!isValue(schemaField))
                 continue;
 
@@ -812,7 +828,8 @@ public class ConfigurationAsmGenerator {
 
             Class<?> schemaFieldType = schemaField.getType();
 
-            // defaultValue = _spec.field;
+            // defaultValue = _spec#.field;
+            FieldDefinition specField = specFields.get(schemaField.getDeclaringClass());
             BytecodeExpression defaultValue = constructDfltMtd.getThis().getField(specField).getField(schemaField);
 
             // defaultValue = Box.valueOf(defaultValue); // Boxing.
@@ -867,7 +884,7 @@ public class ConfigurationAsmGenerator {
     @NotNull private BytecodeExpression newNamedListElementLambda(String nodeClassName) {
         return invokeDynamic(
             LAMBDA_METAFACTORY,
-            Arrays.asList(
+            asList(
                 getMethodType(getType(Object.class)),
                 new Handle(
                     H_NEWINVOKESPECIAL,
@@ -883,7 +900,21 @@ public class ConfigurationAsmGenerator {
         );
     }
 
-    private ClassDefinition createCfgImplClass(Class<?> schemaClass) {
+    /**
+     * Construct a {@link DynamicConfiguration} definition for a configuration schema.
+     *
+     * @param schemaClass Configuration schema class.
+     * @param schemaExtensions Internal extensions of the configuration schema.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
+     * @return Constructed {@link DynamicConfiguration} definition for the configuration schema.
+     */
+    private ClassDefinition createCfgImplClass(
+        Class<?> schemaClass,
+        Set<Class<?>> schemaExtensions,
+        Field[] schemaFields,
+        Set<Field> extensionsFields
+    ) {
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
 
         // Configuration impl class definition.
@@ -891,24 +922,20 @@ public class ConfigurationAsmGenerator {
             of(PUBLIC, FINAL),
             internalName(schemaClassInfo.cfgImplClassName),
             type(DynamicConfiguration.class),
-            typeFromJavaClassName(schemaClassInfo.cfgClassName)
+            configClassInterfaces(schemaClass, schemaExtensions)
         );
-
-        // Cached array of reflected fields. Helps to avoid unnecessary clonings.
-        Field[] schemaFields = schemaClass.getDeclaredFields();
 
         // Fields.
         Map<String, FieldDefinition> fieldDefs = new HashMap<>();
 
-        for (Field schemaField : schemaFields)
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields))
             fieldDefs.put(schemaField.getName(), addConfigurationImplField(classDef, schemaField));
 
         // Constructor
-        addConfigurationImplConstructor(classDef, schemaClassInfo, schemaFields, fieldDefs);
+        addConfigurationImplConstructor(classDef, schemaClassInfo, fieldDefs, schemaFields, extensionsFields);
 
-        for (Field schemaField : schemaFields) {
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields))
             addConfigurationImplGetMethod(classDef, schemaClass, fieldDefs, schemaField);
-        }
 
         return classDef;
     }
@@ -951,14 +978,16 @@ public class ConfigurationAsmGenerator {
      * collection.
      * @param classDef Configuration impl class definition.
      * @param schemaClassInfo Configuration Schema class info.
-     * @param schemaFields Configuration Schema class fields.
      * @param fieldDefs Field definitions for all fields of configuration impl class.
+     * @param schemaFields Fields of the schema class.
+     * @param extensionsFields Fields of internal extensions of the configuration schema.
      */
     private void addConfigurationImplConstructor(
         ClassDefinition classDef,
         SchemaClassesInfo schemaClassInfo,
+        Map<String, FieldDefinition> fieldDefs,
         Field[] schemaFields,
-        Map<String, FieldDefinition> fieldDefs
+        Set<Field> extensionsFields
     ) {
         MethodDefinition ctor = classDef.declareConstructor(
             of(PUBLIC),
@@ -977,7 +1006,7 @@ public class ConfigurationAsmGenerator {
             .invokeConstructor(DYNAMIC_CONFIGURATION_CTOR);
 
         int newIdx = 0;
-        for (Field schemaField : schemaFields) {
+        for (Field schemaField : concat(asList(schemaFields), extensionsFields)) {
             FieldDefinition fieldDef = fieldDefs.get(schemaField.getName());
 
             BytecodeExpression newValue;
@@ -1031,7 +1060,7 @@ public class ConfigurationAsmGenerator {
                         ctor.getScope().getVariable("changer"),
                         invokeDynamic(
                             LAMBDA_METAFACTORY,
-                            Arrays.asList(
+                            asList(
                                 getMethodType(getType(Object.class), getType(Object.class), getType(Object.class)),
                                 new Handle(
                                     Opcodes.H_INVOKESTATIC,
@@ -1148,5 +1177,175 @@ public class ConfigurationAsmGenerator {
         Class<?> boxed = TypeUtils.boxed(clazz);
 
         return boxed == null ? clazz : boxed;
+    }
+
+    /**
+     * Create bytecode blocks that invokes of {@link ConfigurationVisitor}'s methods for
+     * {@link InnerNode#traverseChildren(ConfigurationVisitor, boolean)}.
+     *
+     * @param schemaFields Fields of the schema.
+     * @param fieldDefs Definitions for all fields in {@code schemaFields}.
+     * @param traverseChildrenMtd Method definition {@link InnerNode#traverseChildren(ConfigurationVisitor, boolean)}
+     *      defined in {@code *Node} class.
+     * @return Created bytecode blocks that invokes of {@link ConfigurationVisitor}'s methods for fields.
+     */
+    private Collection<BytecodeNode> invokeVisitForTraverseChildren(
+        Collection<Field> schemaFields,
+        Map<String, FieldDefinition> fieldDefs,
+        MethodDefinition traverseChildrenMtd
+    ) {
+        if (schemaFields.isEmpty())
+            return List.of();
+        else {
+            return schemaFields.stream()
+                .map(field -> invokeVisit(traverseChildrenMtd, field, fieldDefs.get(field.getName())).pop())
+                .collect(toList());
+        }
+    }
+
+    /**
+     * Created switch bytecode block that invokes of {@link ConfigurationVisitor}'s methods for
+     *     {@link InnerNode#traverseChild(String, ConfigurationVisitor, boolean)}.
+     *
+     * @param schemaFields Fields of the schema.
+     * @param fieldDefs Definitions for all fields in {@code schemaFields}.
+     * @param traverseChildMtd Method definition {@link InnerNode#traverseChild(String, ConfigurationVisitor, boolean)}}
+     *      defined in {@code *Node} class.
+     * @return Created switch bytecode block that invokes of {@link ConfigurationVisitor}'s methods for fields.
+     */
+    private BytecodeNode invokeVisitForTraverseChild(
+        Collection<Field> schemaFields,
+        Map<String, FieldDefinition> fieldDefs,
+        MethodDefinition traverseChildMtd
+    ) {
+        Variable keyVar = traverseChildMtd.getScope().getVariable("key");
+
+        StringSwitchBuilder switchBuilder = new StringSwitchBuilder(traverseChildMtd.getScope()).expression(keyVar);
+
+        for (Field schemaField : schemaFields) {
+            String fieldName = schemaField.getName();
+
+            FieldDefinition fieldDef = fieldDefs.get(fieldName);
+
+            // Visit result should be immediately returned.
+            switchBuilder.addCase(fieldName, invokeVisit(traverseChildMtd, schemaField, fieldDef).retObject());
+        }
+
+        // Default option is to throw "NoSuchElementException(key)".
+        switchBuilder.defaultCase(new BytecodeBlock()
+            .append(newInstance(NoSuchElementException.class, keyVar))
+            .throwObject()
+        );
+
+        return switchBuilder.build();
+    }
+
+    /**
+     * Created switch bytecode block that invokes of construct methods for
+     *     {@link InnerNode#construct(String, ConfigurationSource, boolean)}.
+     *
+     * @param schemaFields Fields of the schema.
+     * @param fieldDefs Definitions for all fields in {@code schemaFields}.
+     * @param constructMtd Method definition {@link InnerNode#construct(String, ConfigurationSource, boolean)}
+     *      defined in {@code *Node} class.
+     * @return Created switch bytecode block that invokes of construct methods for fields.
+     */
+    private BytecodeNode treatSourceForConstruct(
+        Collection<Field> schemaFields,
+        Map<String, FieldDefinition> fieldDefs,
+        MethodDefinition constructMtd
+    ) {
+        Variable keyVar = constructMtd.getScope().getVariable("key");
+        Variable srcVar = constructMtd.getScope().getVariable("src");
+
+        StringSwitchBuilder switchBuilder = new StringSwitchBuilder(constructMtd.getScope()).expression(keyVar);
+
+        for (Field schemaField : schemaFields) {
+            FieldDefinition fieldDef = fieldDefs.get(schemaField.getName());
+
+            BytecodeBlock caseClause = new BytecodeBlock();
+
+            switchBuilder.addCase(schemaField.getName(), caseClause);
+
+            // this.field = src == null ? null : src.unwrap(FieldType.class);
+            if (isValue(schemaField)) {
+                caseClause.append(constructMtd.getThis().setField(fieldDef, inlineIf(
+                    isNull(srcVar),
+                    constantNull(fieldDef.getType()),
+                    srcVar.invoke(UNWRAP, constantClass(fieldDef.getType())).cast(fieldDef.getType())
+                )));
+            }
+            // this.field = src == null ? null : src.descend(field = (field == null ? new FieldType() : field.copy()));
+            else if (isConfigValue(schemaField)) {
+                caseClause.append(new IfStatement()
+                    .condition(isNull(srcVar))
+                    .ifTrue(constructMtd.getThis().setField(fieldDef, constantNull(fieldDef.getType())))
+                    .ifFalse(new BytecodeBlock()
+                        .append(copyNodeField(constructMtd, fieldDef))
+                        .append(srcVar.invoke(DESCEND, constructMtd.getThis().getField(fieldDef)))
+                    )
+                );
+            }
+            // this.field = src == null ? new NamedListNode<>(key, ValueNode::new) : src.descend(field = field.copy()));
+            else {
+                NamedConfigValue namedCfgAnnotation = schemaField.getAnnotation(NamedConfigValue.class);
+
+                String fieldNodeClassName = schemasInfo.get(schemaField.getType()).nodeClassName;
+
+                caseClause.append(new IfStatement()
+                    .condition(isNull(srcVar))
+                    .ifTrue(constructMtd.getThis().setField(
+                        fieldDef,
+                        newInstance(
+                            NamedListNode.class,
+                            constantString(namedCfgAnnotation.syntheticKeyName()),
+                            newNamedListElementLambda(fieldNodeClassName)
+                        )
+                    ))
+                    .ifFalse(new BytecodeBlock()
+                        .append(constructMtd.getThis().setField(
+                            fieldDef,
+                            constructMtd.getThis().getField(fieldDef).invoke(COPY).cast(fieldDef.getType())
+                        ))
+                        .append(srcVar.invoke(DESCEND, constructMtd.getThis().getField(fieldDef)))
+                    )
+                );
+            }
+        }
+
+        // Default option is to throw "NoSuchElementException(key)".
+        switchBuilder.defaultCase(new BytecodeBlock()
+            .append(newInstance(NoSuchElementException.class, keyVar))
+            .throwObject()
+        );
+
+        return switchBuilder.build();
+    }
+
+    /**
+     * Get interfaces for {@link InnerNode} definition for a configuration schema.
+     *
+     * @param schemaClass Configuration schema class.
+     * @param schemaExtensions Internal extensions of the configuration schema.
+     * @return Interfaces for {@link InnerNode} definition for a configuration schema.
+     */
+    private static ParameterizedType[] nodeClassInterfaces(Class<?> schemaClass, Set<Class<?>> schemaExtensions) {
+        return Stream.concat(Stream.of(schemaClass), schemaExtensions.stream())
+            .flatMap(cls -> Stream.of(viewClassName(cls), changeClassName(cls)))
+            .map(ParameterizedType::typeFromJavaClassName)
+            .toArray(ParameterizedType[]::new);
+    }
+
+    /**
+     * Get interfaces for {@link DynamicConfiguration} definition for a configuration schema.
+     *
+     * @param schemaClass Configuration schema class.
+     * @param schemaExtensions Internal extensions of the configuration schema.
+     * @return Interfaces for {@link DynamicConfiguration} definition for a configuration schema.
+     */
+    private static ParameterizedType[] configClassInterfaces(Class<?> schemaClass, Set<Class<?>> schemaExtensions) {
+        return Stream.concat(Stream.of(schemaClass), schemaExtensions.stream())
+            .map(cls -> typeFromJavaClassName(configurationClassName(cls)))
+            .toArray(ParameterizedType[]::new);
     }
 }

@@ -177,9 +177,11 @@ public class ClientHandlerIntegrationTest {
 
     private ClientHandlerModule startServer() {
         configurationManager = new ConfigurationManager(
-                List.of(ClientConnectorConfiguration.KEY),
-                Map.of(),
-                new TestConfigurationStorage(LOCAL));
+            List.of(ClientConnectorConfiguration.KEY),
+            Map.of(),
+            new TestConfigurationStorage(LOCAL),
+            List.of()
+        );
 
         configurationManager.start();
 

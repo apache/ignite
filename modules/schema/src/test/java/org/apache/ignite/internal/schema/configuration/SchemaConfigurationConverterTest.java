@@ -73,7 +73,8 @@ public class SchemaConfigurationConverterTest {
         confRegistry = new ConfigurationRegistry(
             List.of(TablesConfiguration.KEY),
             Map.of(TableValidator.class, Set.of(SchemaTableValidatorImpl.INSTANCE)),
-            new TestConfigurationStorage(DISTRIBUTED)
+            new TestConfigurationStorage(DISTRIBUTED),
+            List.of()
         );
 
         confRegistry.start();

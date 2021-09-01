@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.configuration.tree;
 
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -84,7 +85,7 @@ public class ConfigurationArrayTest {
     /** */
     @BeforeAll
     public static void beforeAll() {
-        cgen.compileRootSchema(TestArrayConfigurationSchema.class);
+        cgen.compileRootSchema(TestArrayConfigurationSchema.class, Map.of());
     }
 
     /** */
@@ -145,7 +146,7 @@ public class ConfigurationArrayTest {
      * Gets an array field from the given {@code InnerNode}.
      */
     private static <T> T getArray(InnerNode arrayNode, Class<T> cls) {
-        return cls.cast(arrayNode.traverseChild(getFieldName(cls), leafNodeVisitor()));
+        return cls.cast(arrayNode.traverseChild(getFieldName(cls), leafNodeVisitor(), true));
     }
 
     /**

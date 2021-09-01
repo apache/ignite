@@ -336,7 +336,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public void construct(String key, ConfigurationSource src) {
+    @Override public void construct(String key, ConfigurationSource src, boolean includeInternal) {
         if (src == null)
             delete(key);
         else

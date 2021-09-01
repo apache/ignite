@@ -78,7 +78,12 @@ public class ConfigurationListenerTest {
     public void before() {
         var testConfigurationStorage = new TestConfigurationStorage(LOCAL);
 
-        registry = new ConfigurationRegistry(List.of(ParentConfiguration.KEY), Map.of(), testConfigurationStorage);
+        registry = new ConfigurationRegistry(
+            List.of(ParentConfiguration.KEY),
+            Map.of(),
+            testConfigurationStorage,
+            List.of()
+        );
 
         registry.start();
 

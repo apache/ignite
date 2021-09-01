@@ -89,7 +89,7 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
      * @return Anything that implementation decides to return.
      */
     protected T doVisitInnerNode(String key, InnerNode node) {
-        node.traverseChildren(this);
+        node.traverseChildren(this, true);
 
         return null;
     }

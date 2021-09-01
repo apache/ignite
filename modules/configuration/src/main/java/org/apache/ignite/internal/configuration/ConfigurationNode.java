@@ -106,7 +106,7 @@ public abstract class ConfigurationNode<VIEW, CHANGE> implements ConfigurationPr
             return val;
 
         try {
-            VIEW newVal = (VIEW)ConfigurationUtil.find(keys.subList(1, keys.size()), newRootNode);
+            VIEW newVal = (VIEW)ConfigurationUtil.find(keys.subList(1, keys.size()), newRootNode, true);
 
             synchronized (this) {
                 if (cachedRootNode == oldRootNode) {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration.hocon;
+package org.apache.ignite.internal.configuration.tree;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -29,18 +29,26 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import com.typesafe.config.ConfigValue;
-import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
-import org.apache.ignite.internal.configuration.tree.InnerNode;
-import org.apache.ignite.internal.configuration.tree.NamedListNode;
 
 /**
  * {@link ConfigurationVisitor} implementation that converts a configuration tree to a combination of {@link Map} and
- * {@link List} objects to convert the result into HOCON {@link ConfigValue} instance.
+ * {@link List} objects.
  */
-class HoconConfigurationVisitor implements ConfigurationVisitor<Object> {
+public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
+    /** Include internal configuration nodes (private configuration extensions). */
+    private final boolean includeInternal;
+
     /** Stack with intermediate results. Used to store values during recursive calls. */
-    private Deque<Object> deque = new ArrayDeque<>();
+    private final Deque<Object> deque = new ArrayDeque<>();
+
+    /**
+     * Constructor.
+     *
+     * @param includeInternal Include internal configuration nodes (private configuration extensions).
+     */
+    public ConverterToMapVisitor(boolean includeInternal) {
+        this.includeInternal = includeInternal;
+    }
 
     /** {@inheritDoc} */
     @Override public Object visitLeafNode(String key, Serializable val) {
@@ -62,7 +70,7 @@ class HoconConfigurationVisitor implements ConfigurationVisitor<Object> {
 
         deque.push(innerMap);
 
-        node.traverseChildren(this);
+        node.traverseChildren(this, includeInternal);
 
         deque.pop();
 

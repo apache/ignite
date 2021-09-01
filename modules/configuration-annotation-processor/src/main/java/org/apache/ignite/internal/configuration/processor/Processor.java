@@ -20,19 +20,20 @@ package org.apache.ignite.internal.configuration.processor;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -51,9 +52,13 @@ import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
+import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -84,37 +89,38 @@ public class Processor extends AbstractProcessor {
 
     /**
      * Processes a set of annotation types on type elements.
+     *
      * @param roundEnvironment Processing environment.
      * @return Whether or not the set of annotation types are claimed by this processor.
      */
     private boolean process0(RoundEnvironment roundEnvironment) {
         Elements elementUtils = processingEnv.getElementUtils();
 
-        // All classes annotated with @Config
+        // All classes annotated with @ConfigurationRoot, @Config, @InternalConfiguration.
         List<TypeElement> annotatedConfigs = roundEnvironment
-            .getElementsAnnotatedWithAny(Set.of(ConfigurationRoot.class, Config.class)).stream()
+            .getElementsAnnotatedWithAny(Set.of(ConfigurationRoot.class, Config.class, InternalConfiguration.class))
+            .stream()
             .filter(element -> element.getKind() == ElementKind.CLASS)
             .map(TypeElement.class::cast)
-            .collect(Collectors.toList());
+            .collect(toList());
 
         if (annotatedConfigs.isEmpty())
             return false;
 
         for (TypeElement clazz : annotatedConfigs) {
+            // Find all the fields of the schema.
+            Collection<VariableElement> fields = fields(clazz);
+
+            validate(clazz, fields);
+
+            // Is root of the configuration.
+            boolean isRootConfig = clazz.getAnnotation(ConfigurationRoot.class) != null;
+
+            // Is the internal configuration.
+            boolean isInternalConfig = clazz.getAnnotation(InternalConfiguration.class) != null;
+
             // Get package name of the schema class
-            PackageElement elementPackage = elementUtils.getPackageOf(clazz);
-            String packageName = elementPackage.getQualifiedName().toString();
-
-            // Find all the fields of the schema
-            List<VariableElement> fields = clazz.getEnclosedElements().stream()
-                .filter(el -> el.getKind() == ElementKind.FIELD)
-                .map(VariableElement.class::cast)
-                .collect(Collectors.toList());
-
-            ConfigurationRoot rootAnnotation = clazz.getAnnotation(ConfigurationRoot.class);
-
-            // Is root of the configuration
-            boolean isRoot = rootAnnotation != null;
+            String packageName = elementUtils.getPackageOf(clazz).getQualifiedName().toString();
 
             ClassName schemaClassName = ClassName.get(packageName, clazz.getSimpleName().toString());
 
@@ -173,10 +179,16 @@ public class Processor extends AbstractProcessor {
                 createGetters(configurationInterfaceBuilder, fieldName, interfaceGetMethodType);
             }
 
-            // Create VIEW and CHANGE classes
-            createPojoBindings(fields, schemaClassName, configurationInterfaceBuilder);
+            // Create VIEW and CHANGE classes.
+            createPojoBindings(
+                fields,
+                schemaClassName,
+                configurationInterfaceBuilder,
+                isInternalConfig && !isRootConfig,
+                clazz
+            );
 
-            if (isRoot)
+            if (isRootConfig)
                 createRootKeyField(configInterface, configurationInterfaceBuilder, schemaClassName, clazz);
 
             // Write configuration interface
@@ -273,35 +285,61 @@ public class Processor extends AbstractProcessor {
 
     /**
      * Create VIEW and CHANGE classes and methods.
+     *
      * @param fields List of configuration fields.
      * @param schemaClassName Class name of schema.
+     * @param configurationInterfaceBuilder Configuration interface builder.
+     * @param extendBaseSchema {@code true} if extending base schema interfaces.
+     * @param realSchemaClass Class descriptor.
      */
     private void createPojoBindings(
-        List<VariableElement> fields,
+        Collection<VariableElement> fields,
         ClassName schemaClassName,
-        TypeSpec.Builder configurationInterfaceBuilder
+        TypeSpec.Builder configurationInterfaceBuilder,
+        boolean extendBaseSchema,
+        TypeElement realSchemaClass
     ) {
-        ClassName viewClassTypeName = Utils.getViewName(schemaClassName);
-        ClassName changeClassName = Utils.getChangeName(schemaClassName);
+        ClassName viewClsName = Utils.getViewName(schemaClassName);
+        ClassName changeClsName = Utils.getChangeName(schemaClassName);
 
-        ClassName confTreeInterface = ClassName.get("org.apache.ignite.configuration", "ConfigurationTree");
-        TypeName confTreeParameterized = ParameterizedTypeName.get(confTreeInterface, viewClassTypeName, changeClassName);
+        TypeName configInterfaceType;
+        @Nullable TypeName viewBaseSchemaInterfaceType;
+        @Nullable TypeName changeBaseSchemaInterfaceType;
 
-        configurationInterfaceBuilder.addSuperinterface(confTreeParameterized);
+        if (extendBaseSchema) {
+            DeclaredType superClassType = (DeclaredType)realSchemaClass.getSuperclass();
+            ClassName superClassSchemaClassName = ClassName.get((TypeElement)superClassType.asElement());
+
+            configInterfaceType = Utils.getConfigurationInterfaceName(superClassSchemaClassName);
+            viewBaseSchemaInterfaceType = Utils.getViewName(superClassSchemaClassName);
+            changeBaseSchemaInterfaceType = Utils.getChangeName(superClassSchemaClassName);
+        }
+        else {
+            ClassName confTreeInterface = ClassName.get("org.apache.ignite.configuration", "ConfigurationTree");
+            configInterfaceType = ParameterizedTypeName.get(confTreeInterface, viewClsName, changeClsName);
+
+            viewBaseSchemaInterfaceType = null;
+            changeBaseSchemaInterfaceType = null;
+        }
+
+        configurationInterfaceBuilder.addSuperinterface(configInterfaceType);
 
         // This code will be refactored in the future. Right now I don't want to entangle it with existing code
         // generation. It has only a few considerable problems - hardcode and a lack of proper arrays handling.
         // Clone method should be used to guarantee data integrity.
-        ClassName viewClsName = Utils.getViewName(schemaClassName);
-
-        ClassName changeClsName = Utils.getChangeName(schemaClassName);
 
         TypeSpec.Builder viewClsBuilder = TypeSpec.interfaceBuilder(viewClsName)
             .addModifiers(PUBLIC);
 
+        if (viewBaseSchemaInterfaceType != null)
+            viewClsBuilder.addSuperinterface(viewBaseSchemaInterfaceType);
+
         TypeSpec.Builder changeClsBuilder = TypeSpec.interfaceBuilder(changeClsName)
             .addSuperinterface(viewClsName)
             .addModifiers(PUBLIC);
+
+        if (changeBaseSchemaInterfaceType != null)
+            changeClsBuilder.addSuperinterface(changeBaseSchemaInterfaceType);
 
         ClassName consumerClsName = ClassName.get(Consumer.class);
 
@@ -408,9 +446,119 @@ public class Processor extends AbstractProcessor {
         return processingEnv.getTypeUtils().isSameType(type, stringType);
     }
 
+    /**
+     * Check if a class type is {@link Object}.
+     *
+     * @param type Class type.
+     * @return {@code true} if class type is {@link Object}.
+     */
+    private boolean isObjectClass(TypeMirror type) {
+        TypeMirror objectType = processingEnv
+            .getElementUtils()
+            .getTypeElement(Object.class.getCanonicalName())
+            .asType();
+
+        return objectType.equals(type);
+    }
+
+    /**
+     * Get class fields.
+     *
+     * @param type Class type.
+     * @return Class fields.
+     */
+    private Collection<VariableElement> fields(TypeElement type) {
+        return type.getEnclosedElements().stream()
+            .filter(el -> el.getKind() == ElementKind.FIELD)
+            .map(VariableElement.class::cast)
+            .collect(toList());
+    }
+
+    /**
+     * Validate the class.
+     *
+     * @param clazz Class type.
+     * @param fields Class fields.
+     * @throws ProcessorException If the class validation fails.
+     */
+    private void validate(TypeElement clazz, Collection<VariableElement> fields) {
+        if (clazz.getAnnotation(InternalConfiguration.class) != null) {
+            if (clazz.getAnnotation(Config.class) != null) {
+                throw new ProcessorException(String.format(
+                    "Class with @%s is not allowed with @%s: %s",
+                    Config.class.getSimpleName(),
+                    InternalConfiguration.class.getSimpleName(),
+                    clazz.getQualifiedName()
+                ));
+            }
+            else if (clazz.getAnnotation(ConfigurationRoot.class) != null) {
+                if (!isObjectClass(clazz.getSuperclass())) {
+                    throw new ProcessorException(String.format(
+                        "Class with @%s and @%s should not have a superclass: %s",
+                        ConfigurationRoot.class.getSimpleName(),
+                        InternalConfiguration.class.getSimpleName(),
+                        clazz.getQualifiedName()
+                    ));
+                }
+            }
+            else if (isObjectClass(clazz.getSuperclass())) {
+                throw new ProcessorException(String.format(
+                    "Class with @%s must have a superclass: %s",
+                    InternalConfiguration.class.getSimpleName(),
+                    clazz.getQualifiedName()
+                ));
+            }
+            else {
+                TypeElement superClazz = processingEnv
+                    .getElementUtils()
+                    .getTypeElement(clazz.getSuperclass().toString());
+
+                if (superClazz.getAnnotation(InternalConfiguration.class) != null) {
+                    throw new ProcessorException(String.format(
+                        "Superclass must not have @%s: %s",
+                        InternalConfiguration.class.getSimpleName(),
+                        clazz.getQualifiedName()
+                    ));
+                }
+                else if (superClazz.getAnnotation(ConfigurationRoot.class) == null &&
+                    superClazz.getAnnotation(Config.class) == null) {
+                    throw new ProcessorException(String.format(
+                        "Superclass must have @%s or @%s: %s",
+                        ConfigurationRoot.class.getSimpleName(),
+                        Config.class.getSimpleName(),
+                        clazz.getQualifiedName()
+                    ));
+                }
+                else {
+                    Set<Name> superClazzFieldNames = fields(superClazz).stream()
+                        .map(VariableElement::getSimpleName)
+                        .collect(toSet());
+
+                    Collection<Name> duplicateFieldNames = fields.stream()
+                        .map(VariableElement::getSimpleName)
+                        .filter(superClazzFieldNames::contains)
+                        .collect(toList());
+
+                    if (!duplicateFieldNames.isEmpty()) {
+                        throw new ProcessorException(String.format(
+                            "Duplicate field names are not allowed [class=%s, superClass=%s, fields=%s]",
+                            clazz.getQualifiedName(),
+                            superClazz.getQualifiedName(),
+                            duplicateFieldNames
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public Set<String> getSupportedAnnotationTypes() {
-        return Set.of(Config.class.getCanonicalName(), ConfigurationRoot.class.getCanonicalName());
+        return Set.of(
+            Config.class.getCanonicalName(),
+            ConfigurationRoot.class.getCanonicalName(),
+            InternalConfiguration.class.getCanonicalName()
+        );
     }
 
     /** {@inheritDoc} */

@@ -101,7 +101,8 @@ public class ITDistributedConfigurationStorageTest {
             cfgManager = new ConfigurationManager(
                 rootKeys,
                 Map.of(),
-                new LocalConfigurationStorage(vaultManager)
+                new LocalConfigurationStorage(vaultManager),
+                List.of()
             );
 
             metaStorageManager = new MetaStorageManager(

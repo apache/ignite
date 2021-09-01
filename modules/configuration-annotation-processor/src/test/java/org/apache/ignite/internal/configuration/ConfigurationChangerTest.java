@@ -111,7 +111,7 @@ public class ConfigurationChangerTest {
     public void testSimpleConfigurationChange() throws Exception {
         var storage = new TestConfigurationStorage(LOCAL);
 
-        ConfigurationChanger changer = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage);
+        ConfigurationChanger changer = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage, List.of());
         changer.start();
 
         changer.change(source(KEY, (AChange parent) -> parent
@@ -133,10 +133,10 @@ public class ConfigurationChangerTest {
     public void testModifiedFromAnotherStorage() throws Exception {
         var storage = new TestConfigurationStorage(LOCAL);
 
-        ConfigurationChanger changer1 = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage);
+        ConfigurationChanger changer1 = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage, List.of());
         changer1.start();
 
-        ConfigurationChanger changer2 = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage);
+        ConfigurationChanger changer2 = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage, List.of());
         changer2.start();
 
         changer1.change(source(KEY, (AChange parent) -> parent
@@ -174,7 +174,7 @@ public class ConfigurationChangerTest {
     public void testModifiedFromAnotherStorageWithIncompatibleChanges() throws Exception {
         var storage = new TestConfigurationStorage(LOCAL);
 
-        ConfigurationChanger changer1 = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage);
+        ConfigurationChanger changer1 = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage, List.of());
         changer1.start();
 
         Validator<MaybeInvalid, Object> validator = new Validator<>() {
@@ -188,7 +188,8 @@ public class ConfigurationChangerTest {
             cgen,
             List.of(KEY),
             Map.of(MaybeInvalid.class, Set.of(validator)),
-            storage
+            storage,
+            List.of()
         );
 
         changer2.start();
@@ -220,7 +221,7 @@ public class ConfigurationChangerTest {
     public void testFailedToWrite() {
         var storage = new TestConfigurationStorage(LOCAL);
 
-        ConfigurationChanger changer = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage);
+        ConfigurationChanger changer = new TestConfigurationChanger(cgen, List.of(KEY), Map.of(), storage, List.of());
 
         storage.fail(true);
 
@@ -279,7 +280,13 @@ public class ConfigurationChangerTest {
     public void defaultsOnInit() throws Exception {
         var storage = new TestConfigurationStorage(LOCAL);
 
-        var changer = new TestConfigurationChanger(cgen, List.of(DefaultsConfiguration.KEY), Map.of(), storage);
+        var changer = new TestConfigurationChanger(
+            cgen,
+            List.of(DefaultsConfiguration.KEY),
+            Map.of(),
+            storage,
+            List.of()
+        );
 
         changer.start();
 
@@ -311,7 +318,7 @@ public class ConfigurationChangerTest {
                     }
                 };
 
-                node.construct(rootKey.key(), changerSrc);
+                node.construct(rootKey.key(), changerSrc, true);
             }
         };
     }

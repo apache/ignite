@@ -18,6 +18,7 @@
 package org.apache.ignite.utils;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
@@ -59,7 +60,8 @@ public class ClusterServiceTestUtils {
         ConfigurationManager nodeConfigurationMgr = new ConfigurationManager(
             Collections.singleton(NetworkConfiguration.KEY),
             Map.of(),
-            new TestConfigurationStorage(ConfigurationType.LOCAL)
+            new TestConfigurationStorage(ConfigurationType.LOCAL),
+            List.of()
         );
 
         var clusterSvc = clusterSvcFactory.createClusterService(

@@ -26,8 +26,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.objectweb.asm.ClassVisitor;
 
+import static com.facebook.presto.bytecode.Access.BRIDGE;
 import static com.facebook.presto.bytecode.Access.INTERFACE;
 import static com.facebook.presto.bytecode.Access.STATIC;
+import static com.facebook.presto.bytecode.Access.SYNTHETIC;
 import static com.facebook.presto.bytecode.Access.a;
 import static com.facebook.presto.bytecode.Access.toAccessModifier;
 import static java.util.Objects.requireNonNull;
@@ -246,11 +248,19 @@ public class ClassDefinition {
         EnumSet<Access> access,
         String name,
         ParameterizedType returnType,
-        Collection<Parameter> parameters) {
+        Collection<Parameter> parameters
+    ) {
         MethodDefinition methodDefinition = new MethodDefinition(this, access, name, returnType, parameters);
+
+        EnumSet<Access> bridgeAccess = EnumSet.of(SYNTHETIC, BRIDGE);
+
         for (MethodDefinition method : methods) {
             if (name.equals(method.getName()) && method.getParameterTypes().equals(methodDefinition.getParameterTypes())) {
-                throw new IllegalArgumentException("Method with same name and signature already exists: " + name);
+                boolean curBridge = method.getAccess().containsAll(bridgeAccess);
+                boolean newBridge = methodDefinition.getAccess().containsAll(bridgeAccess);
+
+                if ((!curBridge && !newBridge) || method.getReturnType().equals(methodDefinition.getReturnType()))
+                    throw new IllegalArgumentException("Method with same name and signature already exists: " + name);
             }
         }
         methods.add(methodDefinition);

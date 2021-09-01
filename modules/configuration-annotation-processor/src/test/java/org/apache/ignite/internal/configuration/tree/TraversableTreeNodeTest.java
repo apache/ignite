@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.configuration.tree;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.TreeSet;
 import org.apache.ignite.configuration.NamedListChange;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.annotation.Config;
@@ -52,7 +54,7 @@ public class TraversableTreeNodeTest {
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
 
-        cgen.compileRootSchema(ParentConfigurationSchema.class);
+        cgen.compileRootSchema(ParentConfigurationSchema.class, Map.of());
     }
 
     @AfterAll
@@ -277,7 +279,7 @@ public class TraversableTreeNodeTest {
     public void traverseChildren() {
         var parentNode = newParentInstance();
 
-        List<String> keys = new ArrayList<>(2);
+        Collection<String> keys = new TreeSet<>();
 
         parentNode.traverseChildren(new ConfigurationVisitor<Object>() {
             @Override public Object visitInnerNode(String key, InnerNode node) {
@@ -293,10 +295,10 @@ public class TraversableTreeNodeTest {
 
                 return keys.add(key);
             }
-        });
+        }, true);
 
         // Assert that updates happened in the same order as fields declaration in schema.
-        assertEquals(List.of("child", "elements"), keys);
+        assertEquals(new TreeSet<>(List.of("child", "elements")), keys);
 
         keys.clear();
 
@@ -306,10 +308,10 @@ public class TraversableTreeNodeTest {
             @Override public Object visitLeafNode(String key, Serializable val) {
                 return keys.add(key);
             }
-        });
+        }, true);
 
         // Assert that updates happened in the same order as fields declaration in schema.
-        assertEquals(List.of("intCfg", "strCfg"), keys);
+        assertEquals(new TreeSet<>(List.of("intCfg", "strCfg")), keys);
     }
 
     /**
@@ -327,7 +329,7 @@ public class TraversableTreeNodeTest {
 
                     throw new VisitException();
                 }
-            })
+            }, true)
         );
 
         // Assert that proper method has been invoked.
@@ -339,7 +341,7 @@ public class TraversableTreeNodeTest {
 
                     throw new VisitException();
                 }
-            })
+            }, true)
         );
 
         var childNode = newChildInstance();
@@ -352,12 +354,12 @@ public class TraversableTreeNodeTest {
 
                     throw new VisitException();
                 }
-            })
+            }, true)
         );
 
         // Assert that traversing inexistent field leads to exception.
         assertThrows(NoSuchElementException.class, () ->
-            childNode.traverseChild("foo", new ConfigurationVisitor<>() {})
+            childNode.traverseChild("foo", new ConfigurationVisitor<>() {}, true)
         );
     }
 }

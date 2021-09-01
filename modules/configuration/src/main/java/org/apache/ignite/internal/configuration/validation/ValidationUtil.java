@@ -70,7 +70,7 @@ public class ValidationUtil {
 
                         return null;
                     }
-                });
+                }, true);
 
                 return super.doVisitInnerNode(key, innerNode);
             }
@@ -135,7 +135,7 @@ public class ValidationUtil {
                     }
                 }
             }
-        });
+        }, true);
 
         return issues;
     }

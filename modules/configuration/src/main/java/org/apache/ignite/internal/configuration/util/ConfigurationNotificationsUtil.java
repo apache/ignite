@@ -78,7 +78,7 @@ public class ConfigurationNotificationsUtil {
         oldInnerNode.traverseChildren(new ConfigurationVisitor<Void>() {
             /** {@inheritDoc} */
             @Override public Void visitLeafNode(String key, Serializable oldLeaf) {
-                Serializable newLeaf = newInnerNode.traverseChild(key, leafNodeVisitor());
+                Serializable newLeaf = newInnerNode.traverseChild(key, leafNodeVisitor(), true);
 
                 if (newLeaf != oldLeaf) {
                     var dynProperty = (DynamicProperty<Serializable>)cfgNodeMembers.get(key);
@@ -98,7 +98,7 @@ public class ConfigurationNotificationsUtil {
 
             /** {@inheritDoc} */
             @Override public Void visitInnerNode(String key, InnerNode oldNode) {
-                InnerNode newNode = newInnerNode.traverseChild(key, innerNodeVisitor());
+                InnerNode newNode = newInnerNode.traverseChild(key, innerNodeVisitor(), true);
 
                 var dynCfg = (DynamicConfiguration<InnerNode, ?>)cfgNodeMembers.get(key);
 
@@ -109,7 +109,7 @@ public class ConfigurationNotificationsUtil {
 
             /** {@inheritDoc} */
             @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> oldNamedList) {
-                var newNamedList = (NamedListNode<InnerNode>)newInnerNode.traverseChild(key, namedListNodeVisitor());
+                var newNamedList = (NamedListNode<InnerNode>)newInnerNode.traverseChild(key, namedListNodeVisitor(), true);
 
                 if (newNamedList != oldNamedList) {
                     var namedListCfg = (NamedListConfiguration<?, InnerNode, ?>)cfgNodeMembers.get(key);
@@ -226,7 +226,7 @@ public class ConfigurationNotificationsUtil {
 
                 return null;
             }
-        });
+        }, true);
     }
 
     /**

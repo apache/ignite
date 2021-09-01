@@ -158,11 +158,11 @@ public abstract class ConfigurationChanger {
      *
      * @return Function that creates root node by root name or returns {@code null} if root name is not found.
      */
-    private Function<String, InnerNode> rootCreator() {
+    private Function<String, RootInnerNode> rootCreator() {
         return key -> {
             RootKey<?, ?> rootKey = rootKeys.get(key);
 
-            return rootKey == null ? null : createRootNode(rootKey);
+            return rootKey == null ? null : new RootInnerNode(rootKey, createRootNode(rootKey));
         };
     }
 

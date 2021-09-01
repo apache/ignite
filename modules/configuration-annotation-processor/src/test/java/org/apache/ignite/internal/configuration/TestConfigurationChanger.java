@@ -22,12 +22,16 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.internalSchemaExtensions;
 
 /** Implementation of {@link ConfigurationChanger} to be used in tests. Has no support of listeners. */
 public class TestConfigurationChanger extends ConfigurationChanger {
@@ -41,13 +45,16 @@ public class TestConfigurationChanger extends ConfigurationChanger {
      * @param rootKeys Configuration root keys.
      * @param validators Validators.
      * @param storage Configuration storage.
+     * @param internalSchemaExtensions Internal extensions ({@link InternalConfiguration})
+     *      of configuration schemas ({@link ConfigurationRoot} and {@link Config}).
      * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type.
      */
     public TestConfigurationChanger(
         ConfigurationAsmGenerator cgen,
         Collection<RootKey<?, ?>> rootKeys,
         Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators,
-        ConfigurationStorage storage
+        ConfigurationStorage storage,
+        Collection<Class<?>> internalSchemaExtensions
     ) {
         super(
             (oldRoot, newRoot, revision) -> completedFuture(null),
@@ -58,7 +65,9 @@ public class TestConfigurationChanger extends ConfigurationChanger {
 
         this.cgen = cgen;
 
-        rootKeys.forEach(key -> cgen.compileRootSchema(key.schemaClass()));
+        Map<Class<?>, Set<Class<?>>> extensions = internalSchemaExtensions(internalSchemaExtensions);
+
+        rootKeys.forEach(key -> cgen.compileRootSchema(key.schemaClass(), extensions));
     }
 
     /** {@inheritDoc} */

@@ -60,14 +60,17 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
         assert !keys.isEmpty();
 
         ConfigurationSource src = new ConfigurationSource() {
+            /** Current index in the {@code keys}. */
             private int level = 0;
 
+            /** {@inheritDoc} */
             @Override public void descend(ConstructableTreeNode node) {
                 assert level < keys.size();
 
-                node.construct(keys.get(level++), this);
+                node.construct(keys.get(level++), this, true);
             }
 
+            /** {@inheritDoc} */
             @Override public <T> T unwrap(Class<T> clazz) {
                 assert level == keys.size();
 
@@ -76,6 +79,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
                 return clazz.cast(newValue);
             }
 
+            /** {@inheritDoc} */
             @Override public void reset() {
                 level = 0;
             }

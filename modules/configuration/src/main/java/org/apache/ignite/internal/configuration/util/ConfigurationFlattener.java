@@ -49,7 +49,7 @@ public class ConfigurationFlattener {
 
         // Explicit access to the children of super root guarantees that "oldInnerNodesStack" is never empty and thus
         // we don't need null-checks when calling Deque#peek().
-        updates.traverseChildren(new FlattenerVisitor(oldInnerNodesStack, resMap));
+        updates.traverseChildren(new FlattenerVisitor(oldInnerNodesStack, resMap), true);
 
         assert oldInnerNodesStack.peek() == curRoot : oldInnerNodesStack;
 
@@ -100,7 +100,7 @@ public class ConfigurationFlattener {
         /** {@inheritDoc} */
         @Override public Void doVisitLeafNode(String key, Serializable newVal) {
             // Read same value from old tree.
-            Serializable oldVal = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.leafNodeVisitor());
+            Serializable oldVal = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.leafNodeVisitor(), true);
 
             // Do not put duplicates into the resulting map.
             if (singleTreeTraversal || !Objects.deepEquals(oldVal, newVal))
@@ -112,7 +112,7 @@ public class ConfigurationFlattener {
         /** {@inheritDoc} */
         @Override public Void doVisitInnerNode(String key, InnerNode newNode) {
             // Read same node from old tree.
-            InnerNode oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.innerNodeVisitor());
+            InnerNode oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.innerNodeVisitor(), true);
 
             // Skip subtree that has not changed.
             if (oldNode == newNode && !singleTreeTraversal)
@@ -123,7 +123,7 @@ public class ConfigurationFlattener {
             else {
                 oldInnerNodesStack.push(oldNode);
 
-                newNode.traverseChildren(this);
+                newNode.traverseChildren(this, true);
 
                 oldInnerNodesStack.pop();
             }
@@ -134,7 +134,7 @@ public class ConfigurationFlattener {
         /** {@inheritDoc} */
         @Override public <N extends InnerNode> Void doVisitNamedListNode(String key, NamedListNode<N> newNode) {
             // Read same named list node from old tree.
-            NamedListNode<?> oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.namedListNodeVisitor());
+            NamedListNode<?> oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.namedListNodeVisitor(), true);
 
             // Skip subtree that has not changed.
             if (oldNode == newNode && !singleTreeTraversal)
@@ -171,7 +171,7 @@ public class ConfigurationFlattener {
                         else {
                             oldInnerNodesStack.push(oldNamedElement);
 
-                            newNamedElement.traverseChildren(this);
+                            newNamedElement.traverseChildren(this, true);
 
                             oldInnerNodesStack.pop();
                         }
@@ -215,7 +215,7 @@ public class ConfigurationFlattener {
             singleTreeTraversal = true;
             deletion = delete;
 
-            node.traverseChildren(this);
+            node.traverseChildren(this, true);
 
             deletion = false;
             singleTreeTraversal = false;

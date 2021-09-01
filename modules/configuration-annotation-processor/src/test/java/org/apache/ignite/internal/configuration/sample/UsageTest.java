@@ -52,7 +52,8 @@ public class UsageTest {
         registry = new ConfigurationRegistry(
             List.of(LocalConfiguration.KEY),
             Map.of(),
-            new TestConfigurationStorage(LOCAL)
+            new TestConfigurationStorage(LOCAL),
+            List.of()
         );
 
         registry.start();
@@ -112,7 +113,8 @@ public class UsageTest {
         registry = new ConfigurationRegistry(
             List.of(NetworkConfiguration.KEY, LocalConfiguration.KEY),
             Map.of(),
-            new TestConfigurationStorage(LOCAL)
+            new TestConfigurationStorage(LOCAL),
+            List.of()
         );
 
         registry.start();

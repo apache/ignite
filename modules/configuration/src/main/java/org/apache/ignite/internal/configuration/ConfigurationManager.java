@@ -25,6 +25,9 @@ import java.util.concurrent.ExecutionException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.hocon.HoconConverter;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
@@ -45,16 +48,20 @@ public class ConfigurationManager implements IgniteComponent {
      * @param rootKeys Configuration root keys.
      * @param validators Validators.
      * @param storage Configuration storage.
-     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type.
+     * @param internalSchemaExtensions Internal extensions ({@link InternalConfiguration})
+     *      of configuration schemas ({@link ConfigurationRoot} and {@link Config}).
+     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type,
+     *      or if the schema or its extensions are not valid.
      */
     public ConfigurationManager(
         Collection<RootKey<?, ?>> rootKeys,
         Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
-        ConfigurationStorage storage
+        ConfigurationStorage storage,
+        Collection<Class<?>> internalSchemaExtensions
     ) {
         checkConfigurationType(rootKeys, storage);
 
-        registry = new ConfigurationRegistry(rootKeys, validators, storage);
+        registry = new ConfigurationRegistry(rootKeys, validators, storage, internalSchemaExtensions);
     }
 
     /** {@inheritDoc} */

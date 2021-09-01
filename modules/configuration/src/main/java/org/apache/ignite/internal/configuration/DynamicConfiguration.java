@@ -73,15 +73,18 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
         assert keys instanceof RandomAccess;
 
         ConfigurationSource src = new ConfigurationSource() {
+            /** Current index in the {@code keys}. */
             private int level = 0;
 
+            /** {@inheritDoc} */
             @Override public void descend(ConstructableTreeNode node) {
                 if (level == keys.size())
                     change.accept((CHANGE)node);
                 else
-                    node.construct(keys.get(level++), this);
+                    node.construct(keys.get(level++), this, true);
             }
 
+            /** {@inheritDoc} */
             @Override public void reset() {
                 level = 0;
             }

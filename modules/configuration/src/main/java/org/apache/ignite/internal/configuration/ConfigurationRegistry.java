@@ -30,6 +30,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
@@ -49,16 +52,20 @@ import org.apache.ignite.internal.configuration.validation.MinValidator;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteLogger;
 
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil.notifyListeners;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.collectSchemas;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.innerNodeVisitor;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.internalSchemaExtensions;
 
 /** */
 public class ConfigurationRegistry implements IgniteComponent {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ConfigurationRegistry.class);
 
-    /** */
+    /** Generated configuration implementations. Mapping: {@link RootKey#key} -> configuration implementation. */
     private final Map<String, DynamicConfiguration<?, ?>> configs = new HashMap<>();
 
     /** Root keys. */
@@ -76,14 +83,32 @@ public class ConfigurationRegistry implements IgniteComponent {
      * @param rootKeys Configuration root keys.
      * @param validators Validators.
      * @param storage Configuration storage.
-     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type.
+     * @param internalSchemaExtensions Internal extensions ({@link InternalConfiguration})
+     *      of configuration schemas ({@link ConfigurationRoot} and {@link Config}).
+     * @throws IllegalArgumentException If the configuration type of the root keys is not equal to the storage type,
+     *      or if the schema or its extensions are not valid.
      */
     public ConfigurationRegistry(
         Collection<RootKey<?, ?>> rootKeys,
         Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
-        ConfigurationStorage storage
+        ConfigurationStorage storage,
+        Collection<Class<?>> internalSchemaExtensions
     ) {
         checkConfigurationType(rootKeys, storage);
+
+        Set<Class<?>> allSchemas = collectSchemas(rootKeys.stream().map(RootKey::schemaClass).collect(toSet()));
+
+        Map<Class<?>, Set<Class<?>>> extensions = internalSchemaExtensions(internalSchemaExtensions);
+
+        if (!allSchemas.containsAll(extensions.keySet())) {
+            Set<Class<?>> notInAllSchemas = extensions.keySet().stream()
+                .filter(not(allSchemas::contains))
+                .collect(toSet());
+
+            throw new IllegalArgumentException(
+                "Internal extensions for which no parent configuration schemes were found: " + notInAllSchemas
+            );
+        }
 
         this.rootKeys = rootKeys;
 
@@ -99,25 +124,24 @@ public class ConfigurationRegistry implements IgniteComponent {
                 return cgen.instantiateNode(rootKey.schemaClass());
             }
         };
-    }
 
-    /** {@inheritDoc} */
-    @Override public void start() {
         rootKeys.forEach(rootKey -> {
-            cgen.compileRootSchema(rootKey.schemaClass());
+            cgen.compileRootSchema(rootKey.schemaClass(), extensions);
 
             DynamicConfiguration<?, ?> cfg = cgen.instantiateCfg(rootKey, changer);
 
             configs.put(rootKey.key(), cfg);
         });
+    }
 
+    /** {@inheritDoc} */
+    @Override public void start() {
         changer.start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        if (changer != null)
-            changer.stop();
+        changer.stop();
     }
 
     /**
@@ -160,7 +184,7 @@ public class ConfigurationRegistry implements IgniteComponent {
 
         Object node;
         try {
-            node = ConfigurationUtil.find(path, superRoot);
+            node = ConfigurationUtil.find(path, superRoot, false);
         }
         catch (KeyNotFoundException e) {
             throw new IllegalArgumentException(e.getMessage());
@@ -198,7 +222,7 @@ public class ConfigurationRegistry implements IgniteComponent {
         newSuperRoot.traverseChildren(new ConfigurationVisitor<Void>() {
             /** {@inheritDoc} */
             @Override public Void visitInnerNode(String key, InnerNode newRoot) {
-                InnerNode oldRoot = oldSuperRoot.traverseChild(key, innerNodeVisitor());
+                InnerNode oldRoot = oldSuperRoot.traverseChild(key, innerNodeVisitor(), true);
 
                 var cfg = (DynamicConfiguration<InnerNode, ?>)configs.get(key);
 
@@ -209,7 +233,7 @@ public class ConfigurationRegistry implements IgniteComponent {
 
                 return null;
             }
-        });
+        }, true);
 
         // Map futures is only for logging errors.
         Function<CompletableFuture<?>, CompletableFuture<?>> mapping = fut -> fut.whenComplete((res, throwable) -> {

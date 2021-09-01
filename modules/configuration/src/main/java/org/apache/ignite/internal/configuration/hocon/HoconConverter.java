@@ -23,6 +23,7 @@ import com.typesafe.config.ConfigValue;
 import com.typesafe.config.impl.ConfigImpl;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
+import org.apache.ignite.internal.configuration.tree.ConverterToMapVisitor;
 import org.jetbrains.annotations.NotNull;
 
 public class HoconConverter {
@@ -38,7 +39,7 @@ public class HoconConverter {
         ConfigurationRegistry registry,
         @NotNull List<String> path
     ) throws IllegalArgumentException {
-        Object res = registry.represent(path, new HoconConfigurationVisitor());
+        Object res = registry.represent(path, new ConverterToMapVisitor(false));
 
         return ConfigImpl.fromAnyRef(res, null);
     }

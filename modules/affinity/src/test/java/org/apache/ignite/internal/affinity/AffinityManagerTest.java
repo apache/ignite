@@ -84,7 +84,8 @@ public class AffinityManagerTest {
             cfrMgr = new ConfigurationManager(
                 rootConfigurationKeys(),
                 Map.of(),
-                new TestConfigurationStorage(DISTRIBUTED)
+                new TestConfigurationStorage(DISTRIBUTED),
+                List.of()
             );
 
             cfrMgr.start();

@@ -55,7 +55,7 @@ public class ValidationUtilTest {
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
 
-        cgen.compileRootSchema(ValidatedRootConfigurationSchema.class);
+        cgen.compileRootSchema(ValidatedRootConfigurationSchema.class, Map.of());
     }
 
     @AfterAll

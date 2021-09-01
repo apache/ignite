@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.internal.tostring.S;
 
 /**
@@ -37,6 +38,9 @@ public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
     /** Schema class for the root. */
     private final Class<?> schemaClass;
 
+    /** Marked with {@link InternalConfiguration}. */
+    private final boolean internal;
+
     /**
      * Constructor.
      *
@@ -51,6 +55,8 @@ public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
 
         this.rootName = rootAnnotation.rootName();
         this.storageType = rootAnnotation.type();
+
+        internal = schemaClass.isAnnotationPresent(InternalConfiguration.class);
     }
 
     /**
@@ -78,6 +84,15 @@ public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
      */
     public Class<?> schemaClass() {
         return schemaClass;
+    }
+
+    /**
+     * Check if the root configuration is marked with {@link InternalConfiguration}.
+     *
+     * @return {@code true} if the root configuration is internal.
+     */
+    public boolean internal() {
+        return internal;
     }
 
     /** {@inheritDoc} */
