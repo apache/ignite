@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal.visor.tx;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +17,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
