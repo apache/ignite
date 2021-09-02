@@ -17,22 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Index operation cancellation token.
  */
-public class SchemaIndexOperationCancellationToken {
+public class IndexRebuildCancelToken {
     /** Cancel flag. */
-    private final AtomicBoolean flag = new AtomicBoolean();
+    private final AtomicReference<Throwable> flag;
+
+    /** Default constructor. */
+    public IndexRebuildCancelToken() {
+        flag = new AtomicReference<>();
+    }
 
     /**
-     * Get cancel state.
-     *
-     * @return {@code True} if cancelled.
+     * @return Exception that causes cancellation action.
      */
-    public boolean isCancelled() {
+    public @Nullable Throwable cancelException() {
         return flag.get();
     }
 
@@ -41,12 +45,12 @@ public class SchemaIndexOperationCancellationToken {
      *
      * @return {@code True} if cancel flag was set by this call.
      */
-    public boolean cancel() {
-        return flag.compareAndSet(false, true);
+    public boolean cancel(Throwable e) {
+        return flag.compareAndSet(null, e);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaIndexOperationCancellationToken.class, this);
+        return S.toString(IndexRebuildCancelToken.class, this);
     }
 }
