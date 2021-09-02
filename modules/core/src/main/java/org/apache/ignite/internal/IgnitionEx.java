@@ -2350,7 +2350,7 @@ public class IgnitionEx {
                     if (safeToStop) {
                         try {
                             HashSet<UUID> newNodesToExclude = new HashSet<>(nodesToExclude);
-                            newNodesToExclude.add(grid.getLocalNodeId());
+                            newNodesToExclude.add(grid.localNodeId());
 
                             if (metaStorage.compareAndSet(GRACEFUL_SHUTDOWN_METASTORE_KEY, originalNodesToExclude,
                                 newNodesToExclude))
@@ -2421,7 +2421,7 @@ public class IgnitionEx {
             if (fullMap == null)
                 return false;
 
-            UUID localNodeId = grid.getLocalNodeId();
+            UUID localNodeId = grid.localNodeId();
 
             GridDhtPartitionMap localPartMap = fullMap.get(localNodeId);
 

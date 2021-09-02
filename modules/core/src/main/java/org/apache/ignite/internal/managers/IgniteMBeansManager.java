@@ -30,6 +30,7 @@ import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteMXBeanImpl;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
