@@ -299,6 +299,76 @@ public class SecurityUtils {
     }
 
     /**
+     * Runs passed {@code runnable} with the security context associated
+     * with passed {@code secSubjId} if security is enabled.
+     *
+     * @param secSubjId Security subject id.
+     * @param ctx Grid kernal context.
+     * @param r Runnable.
+     */
+    public static void withContextIfNeed(UUID secSubjId, GridKernalContext ctx, RunnableX r)
+        throws IgniteCheckedException {
+        withContextIfNeed(secSubjId, ctx, () -> {
+            r.run();
+
+            return null;
+        });
+    }
+
+    /**
+     * Calls passed {@code callable} with the security context associated
+     * with passed {@code secSubjId} if security is enabled.
+     *
+     * @param secSubjId Security subject id.
+     * @param ctx Grid kernal context.
+     * @param c Callable.
+     * @return Result of passed callable.
+     */
+    public static <T> T withContextIfNeed(UUID secSubjId, GridKernalContext ctx, Callable<T> c)
+        throws IgniteCheckedException {
+        IgniteSecurity security = ctx.security();
+
+        try {
+            if (security.enabled() && secSubjId != null) {
+                try (OperationSecurityContext s = security.withContext(secSubjId)) {
+                    return c.call();
+                }
+            }
+
+            return c.call();
+        }
+        catch (Exception e) {
+            if (e instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e;
+
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Runnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public static interface RunnableX extends Runnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritDoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
      * Marshals specified security context and adds it to the node attributes.
      *
      * @param secCtx Security context to be added.

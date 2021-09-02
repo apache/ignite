@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.security.client.AttributeSecurityCh
 import org.apache.ignite.internal.processors.security.client.ClientReconnectTest;
 import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityWith281CompatibilityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
@@ -45,7 +46,10 @@ import org.apache.ignite.internal.processors.security.compute.closure.Distribute
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.events.ActivateDeactivateClusterCacheEventTest;
+import org.apache.ignite.internal.processors.security.events.CacheCreateDestroyEventsTest;
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.events.ThinClientCacheCreateDestroyEventsTest;
 import org.apache.ignite.internal.processors.security.maintenance.MaintenanceModeNodeSecurityTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
@@ -83,6 +87,7 @@ import org.junit.runners.Suite;
     ComputePermissionCheckTest.class,
     ThinClientPermissionCheckTest.class,
     ThinClientPermissionCheckSecurityTest.class,
+    ThinClientPermissionCheckSecurityWith281CompatibilityTest.class,
     ContinuousQueryPermissionCheckTest.class,
     IgniteClientContainSubjectAddressTest.class,
     ClientReconnectTest.class,
@@ -126,6 +131,11 @@ import org.junit.runners.Suite;
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
+
+    CacheCreateDestroyEventsTest.class,
+    ActivateDeactivateClusterCacheEventTest.class,
+    ThinClientCacheCreateDestroyEventsTest.class,
+
     MaintenanceModeNodeSecurityTest.class
 })
 public class SecurityTestSuite {
