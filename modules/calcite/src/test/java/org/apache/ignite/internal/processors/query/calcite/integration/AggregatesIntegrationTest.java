@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import java.util.List;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import java.math.BigDecimal;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
