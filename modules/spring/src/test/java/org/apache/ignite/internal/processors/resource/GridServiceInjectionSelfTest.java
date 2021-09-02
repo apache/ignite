@@ -57,16 +57,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         assertEquals(2, grid(1).cluster().nodes().size());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureField() throws Exception {
+    public void testClosureField() {
         grid(0).compute().call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = SERVICE_NAME1)
             private DummyService svc;
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 assertNotNull(svc);
                 assertTrue(svc instanceof Service);
 
@@ -77,16 +75,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureFieldProxy() throws Exception {
+    public void testClosureFieldProxy() {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = SERVICE_NAME2, proxyInterface = DummyService.class)
             private DummyService svc;
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
@@ -99,20 +95,18 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureFieldLocalProxy() throws Exception {
+    public void testClosureFieldLocalProxy() {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = SERVICE_NAME1, proxyInterface = DummyService.class)
             private DummyService svc;
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(Proxy.isProxyClass(svc.getClass())
+                assertTrue("Service must be a proxy.", Proxy.isProxyClass(svc.getClass())
                     && Arrays.asList(svc.getClass().getInterfaces()).contains(DummyService.class));
 
                 svc.noop();
@@ -122,18 +116,16 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureFieldWithIncorrectType() throws Exception {
+    public void testClosureFieldWithIncorrectType() {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {
                 grid(0).compute().call(new IgniteCallable<Object>() {
                     @ServiceResource(serviceName = SERVICE_NAME1)
                     private String svcName;
 
-                    @Override public Object call() throws Exception {
+                    @Override public Object call() {
                         fail();
 
                         return null;
@@ -145,11 +137,9 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }, IgniteCheckedException.class, "Resource field is not assignable from the resource");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureMethod() throws Exception {
+    public void testClosureMethod() {
         grid(0).compute().call(new IgniteCallable<Object>() {
             private DummyService svc;
 
@@ -162,7 +152,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 this.svc = svc;
             }
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 svc.noop();
 
                 return null;
@@ -170,11 +160,9 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureMethodProxy() throws Exception {
+    public void testClosureMethodProxy() {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             private DummyService svc;
 
@@ -188,7 +176,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 this.svc = svc;
             }
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 svc.noop();
 
                 return null;
@@ -196,11 +184,9 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureMethodLocalProxy() throws Exception {
+    public void testClosureMethodLocalProxy() {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             private DummyService svc;
 
@@ -209,13 +195,13 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(Proxy.isProxyClass(svc.getClass()) &&
+                assertTrue("Service must be a proxy.", Proxy.isProxyClass(svc.getClass()) &&
                     Arrays.asList(svc.getClass().getInterfaces()).contains(DummyService.class));
 
                 this.svc = svc;
             }
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 svc.noop();
 
                 return null;
@@ -223,11 +209,9 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureMethodWithIncorrectType() throws Exception {
+    public void testClosureMethodWithIncorrectType() {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {
                 grid(0).compute().call(new IgniteCallable<Object>() {
@@ -236,7 +220,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                         fail();
                     }
 
-                    @Override public Object call() throws Exception {
+                    @Override public Object call() {
                         return null;
                     }
                 });
@@ -246,16 +230,14 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }, IgniteCheckedException.class, "Setter does not have single parameter of required type");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureFieldWithNonExistentService() throws Exception {
+    public void testClosureFieldWithNonExistentService() {
         grid(0).compute().call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = "nonExistentService")
             private DummyService svc;
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 assertNull(svc);
 
                 return null;
@@ -263,18 +245,16 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testClosureMethodWithNonExistentService() throws Exception {
+    public void testClosureMethodWithNonExistentService() {
         grid(0).compute().call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = "nonExistentService")
             private void service(DummyService svc) {
                 assertNull(svc);
             }
 
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 return null;
             }
         });
@@ -305,7 +285,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) {
             System.out.println("Initializing service: " + ctx.name());
         }
 
