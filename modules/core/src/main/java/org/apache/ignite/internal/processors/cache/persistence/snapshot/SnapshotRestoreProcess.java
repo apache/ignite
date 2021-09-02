@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -371,9 +372,12 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
 
                 return;
             }
+            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+                F.node2id(),
+                (node) -> CU.baselineNode(node, ctx.state().clusterState()));
 
             SnapshotOperationRequest req =
-                new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+                new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, new HashSet<>(bltNodes));
 
             prepareRestoreProc.start(req.requestId(), req);
         });
@@ -881,8 +885,10 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
+                            SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+
                             File binDir = binaryWorkDir(snpMgr.snapshotLocalDir(opCtx0.snpName).getAbsolutePath(),
-                                ctx.pdsFolderResolver().resolveFolders().folderName());
+                                meta.folderName());
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
                         }
@@ -1213,7 +1219,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
             CompletableFuture<Void> indexCacheGroupRebFut = allOfFailFast(indexRebuildCaches.values())
                 .thenRunAsync(() -> {
                     // Force new checkpoint to make sure owning state is captured.
-                    CheckpointProgress cp = ctx.cache().context().database().forceCheckpoint("Restore compete");
+                    CheckpointProgress cp = ctx.cache().context().database()
+                        .forceCheckpoint("Snapshot restore procedure triggered WAL enabling: " + grp.cacheOrGroupName());
 
                     cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, true));
                 });
@@ -1673,7 +1680,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
 
-        // TODO check the interrupt future assignment.
+        // TODO check the stopFut setting in case of some operation require cancellation performs.
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
 
