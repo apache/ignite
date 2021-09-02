@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1227,13 +1228,13 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                     // It is safe to own all persistence cache partitions here, since partitions state
                     // are already located on the disk.
                     grp.topology().ownMoving();
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Partitions have been scheduled to resend [reason=" +
-                            "Group durability restored, name=" + grp.cacheOrGroupName() + ']');
-                    }
-
                     grp.shared().exchange().refreshPartitions(Collections.singleton(grp));
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Partitions have been scheduled to resend. Partitions initialization completed successfully " +
+                            "[cacheOrGroupName=" + grp.cacheOrGroupName() +
+                            ", parts=" + S.compact(partLfs.stream().map(f -> f.partId).collect(Collectors.toList())) + ']');
+                    }
                 });
 
             CompletableFuture<Void> indexCacheGroupRebFut =
