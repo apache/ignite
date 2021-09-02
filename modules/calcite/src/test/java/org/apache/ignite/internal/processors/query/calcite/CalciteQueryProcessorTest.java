@@ -273,15 +273,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> res = engine.query(null, "PUBLIC",
-            "SELECT * FROM Person WHERE id != ?", 1);
-
-        assertEquals(1, res.size());
-
-        List<List<?>> rows = res.get(0).getAll();
-        assertEquals(2, rows.size());
+        assertEquals(2, sql("SELECT * FROM Person WHERE id != ?", false, 1).size());
     }
 
     /**
@@ -1231,7 +1223,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<List<?>> allSrv;
 
         if (!noCheck) {
-            List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql);
+            List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql, args);
 
             try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
                 allSrv = srvCursor.getAll();
