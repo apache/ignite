@@ -75,9 +75,9 @@ public class TransferableObjectProcessor extends AbstractProcessor {
             if (messages.isEmpty())
                 return true;
 
-            validateMessages(messages);
-
             MessageGroupWrapper messageGroup = getMessageGroup(roundEnv);
+
+            validateMessages(messages);
 
             generateMessageImpls(messages, messageGroup);
 
@@ -228,16 +228,25 @@ public class TransferableObjectProcessor extends AbstractProcessor {
      * annotation.
      */
     private static MessageGroupWrapper getMessageGroup(RoundEnvironment roundEnv) {
-        Set<? extends Element> messagemessageGroupSet = roundEnv.getElementsAnnotatedWith(MessageGroup.class);
+        Set<? extends Element> messageGroupSet = roundEnv.getElementsAnnotatedWith(MessageGroup.class);
 
-        if (messagemessageGroupSet.size() != 1) {
-            var errorMsg = "Invalid number of message groups (classes annotated with @MessageGroup): " +
-                messagemessageGroupSet.size();
+        if (messageGroupSet.isEmpty())
+            throw new ProcessingException("No message groups (classes annotated with @MessageGroup) found");
 
-            throw new ProcessingException(errorMsg);
+        if (messageGroupSet.size() != 1) {
+            List<String> sortedNames = messageGroupSet.stream()
+                .map(Object::toString)
+                .sorted()
+                .collect(Collectors.toList());
+
+            throw new ProcessingException(
+                "Invalid number of message groups (classes annotated with @MessageGroup), " +
+                    "only one can be present in a compilation unit: " + sortedNames
+            );
         }
 
-        Element singleElement = messagemessageGroupSet.iterator().next();
+        Element singleElement = messageGroupSet.iterator().next();
+
         return new MessageGroupWrapper((TypeElement) singleElement);
     }
 

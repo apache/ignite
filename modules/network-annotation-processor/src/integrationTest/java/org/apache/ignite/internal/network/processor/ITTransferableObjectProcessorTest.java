@@ -172,7 +172,7 @@ public class ITTransferableObjectProcessorTest {
         Compilation compilation = compiler.compile(sources("AllTypesMessage"));
 
         assertThat(compilation).hadErrorContaining(
-            "Invalid number of message groups (classes annotated with @MessageGroup): 0"
+            "No message groups (classes annotated with @MessageGroup) found"
         );
     }
 
@@ -182,11 +182,14 @@ public class ITTransferableObjectProcessorTest {
     @Test
     void testMultipleMessageGroups() {
         Compilation compilation = compiler.compile(
-            sources("AllTypesMessage", "ITTestMessageGroup", "SecondGroup")
+            sources("AllTypesMessage", "ConflictingTypeMessage", "ITTestMessageGroup", "SecondGroup")
         );
 
         assertThat(compilation).hadErrorContaining(
-            "Invalid number of message groups (classes annotated with @MessageGroup): 2"
+            "Invalid number of message groups (classes annotated with @MessageGroup), " +
+                "only one can be present in a compilation unit: " +
+                "[org.apache.ignite.internal.network.processor.ITTestMessageGroup, " +
+                "org.apache.ignite.internal.network.processor.SecondGroup]"
         );
     }
 
