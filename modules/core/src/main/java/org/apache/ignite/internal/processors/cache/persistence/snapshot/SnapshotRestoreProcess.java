@@ -1583,9 +1583,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         CompletableFuture<?>[] out = new CompletableFuture[futs.size()];
         CompletableFuture<Void> result = CompletableFuture.allOf(futs.toArray(out));
 
-        // This is a hybrid of a hybrid of allOf() and anyOf() where the returned future completes normally
-        // as soon as all the elements complete normally, or it completes exceptionally as soon as any of
-        // the elements complete exceptionally.
+        // This is a mix of allOf() and anyOf() where the returned future completes normally as soon as all the elements
+        // complete normally, or it completes exceptionally as soon as any of the elements complete exceptionally.
         Stream.of(out)
             .forEach(f -> f.exceptionally(e -> {
                 result.completeExceptionally(e);
