@@ -19,13 +19,12 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptRunnerTestsEnvironment;
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptTestRunner;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 /**
  * Test suite to run SQL test scripts.
  *
- * By default only "*.test" and "*.test_slow" scripts are run.
+ * By default, only "*.test" and "*.test_slow" scripts are run.
  * Other files are ignored.
  *
  * Use {@link ScriptRunnerTestsEnvironment#regex()} property to specify regular expression for filter
