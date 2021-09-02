@@ -1581,17 +1581,17 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
      */
     private static <T extends CompletableFuture<?>> CompletableFuture<Void> allOfFailFast(Collection<T> futs) {
         CompletableFuture<?>[] out = new CompletableFuture[futs.size()];
-
         CompletableFuture<Void> result = CompletableFuture.allOf(futs.toArray(out));
 
         // This is a hybrid of a hybrid of allOf() and anyOf() where the returned future completes normally
         // as soon as all the elements complete normally, or it completes exceptionally as soon as any of
         // the elements complete exceptionally.
-        Stream.of(out).forEach(f -> f.exceptionally(e -> {
-            result.completeExceptionally(e);
+        Stream.of(out)
+            .forEach(f -> f.exceptionally(e -> {
+                result.completeExceptionally(e);
 
-            return null;
-        }));
+                return null;
+            }));
 
         return result;
     }
@@ -1874,7 +1874,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         /** PageMemory will be invalidated and PageStore will be truncated with this tag. */
         private final AtomicReference<Integer> truncatedTag = new AtomicReference<>();
 
-        /** Partition high water mark counter to ensure the absence of update on partition being switching. */
+        /** Partition high watermark counter to ensure the absence of update on partition being switching. */
         private final AtomicReference<Long> partHwm = new AtomicReference<>();
 
         /**
@@ -2089,6 +2089,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                 "\n, loaded=" + loaded +
                 "\n, inited=" + inited +
                 "\n, truncatedTag=" + truncatedTag +
+                "\n, super=" + super.toString() +
                 '}';
         }
     }
