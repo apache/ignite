@@ -3670,7 +3670,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Resource injection.
                     if (dep != null)
-                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()), msgBody);
+                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()).get1(), msgBody);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal user message [node=" + nodeId + ", message=" +
