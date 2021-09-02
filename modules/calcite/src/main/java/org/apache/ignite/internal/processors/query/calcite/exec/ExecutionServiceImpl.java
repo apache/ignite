@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadat
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -621,12 +619,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         switch (plan.type()) {
             case DML:
-                ListFieldsQueryCursor<?> cur = executePlan(
+                ListFieldsQueryCursor<?> cur = mapAndExecutePlan(
                     qryId,
                     (MultiStepPlan)plan,
                     pctx.unwrap(BaseQueryContext.class),
-                    pctx.parameters(),
-                    pctx.cluster()
+                    pctx.parameters()
                 );
 
                 cur.iterator().hasNext();
@@ -634,12 +631,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return cur;
 
             case QUERY:
-                return executePlan(
+                return mapAndExecutePlan(
                     qryId,
                     (MultiStepPlan)plan,
                     pctx.unwrap(BaseQueryContext.class),
-                    pctx.parameters(),
-                    pctx.cluster()
+                    pctx.parameters()
                 );
 
             case EXPLAIN:
@@ -667,9 +663,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, BaseQueryContext qctx,
-        Object[] params, RelOptCluster cluster) {
-        plan.init(new MappingQueryContext(cluster, locNodeId, topologyVersion()));
+    private ListFieldsQueryCursor<?> mapAndExecutePlan(UUID qryId, MultiStepPlan plan, BaseQueryContext qctx,
+        Object[] params) {
+        plan.init(Commons.mapContext(locNodeId, topologyVersion()));
 
         List<Fragment> fragments = plan.fragments();
 

@@ -122,14 +122,7 @@ public class Fragment {
     }
 
     /** */
-    public Fragment attach(MappingQueryContext ctx) {
-        RelOptCluster cluster = ctx.cluster();
-
-        return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
-    }
-
-    /** */
-    public Fragment detach() {
+    public Fragment copy() {
         RelOptCluster cluster = Commons.cluster();
 
         return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
