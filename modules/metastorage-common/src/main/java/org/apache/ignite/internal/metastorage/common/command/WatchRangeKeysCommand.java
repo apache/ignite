@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.metastorage.common.command;
 
 import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,17 +39,22 @@ public final class WatchRangeKeysCommand implements WriteCommand {
     /** Id of the node that requests watch. */
     @NotNull private final String requesterNodeId;
 
+    /** Id of cursor that is associated with the current command. */
+    @NotNull private final IgniteUuid cursorId;
+
     /**
      * @param keyFrom Start key of range (inclusive).
      * @param keyTo End key of range (exclusive).
      * @param requesterNodeId Id of the node that requests watch.
+     * @param cursorId Id of cursor that is associated with the current command.*
      */
     public WatchRangeKeysCommand(
         @Nullable ByteArray keyFrom,
         @Nullable ByteArray keyTo,
-        @NotNull String requesterNodeId
+        @NotNull String requesterNodeId,
+        @NotNull IgniteUuid cursorId
     ) {
-        this(keyFrom, keyTo, 0L, requesterNodeId);
+        this(keyFrom, keyTo, 0L, requesterNodeId, cursorId);
     }
 
     /**
@@ -56,17 +62,20 @@ public final class WatchRangeKeysCommand implements WriteCommand {
      * @param keyTo End key of range (exclusive).
      * @param revision Start revision inclusive. {@code 0} - all revisions.
      * @param requesterNodeId Id of the node that requests watch.
+     * @param cursorId Id of cursor that is associated with the current command.
      */
     public WatchRangeKeysCommand(
         @Nullable ByteArray keyFrom,
         @Nullable ByteArray keyTo,
         long revision,
-        @NotNull String requesterNodeId
+        @NotNull String requesterNodeId,
+        @NotNull IgniteUuid cursorId
     ) {
         this.keyFrom = keyFrom == null ? null : keyFrom.bytes();
         this.keyTo = keyTo == null ? null : keyTo.bytes();
         this.revision = revision;
         this.requesterNodeId = requesterNodeId;
+        this.cursorId = cursorId;
     }
 
     /**
@@ -95,5 +104,12 @@ public final class WatchRangeKeysCommand implements WriteCommand {
      */
     public @NotNull String requesterNodeId() {
         return requesterNodeId;
+    }
+
+    /**
+     * @return Id of cursor that is associated with the current command.
+     */
+    public IgniteUuid getCursorId() {
+        return cursorId;
     }
 }

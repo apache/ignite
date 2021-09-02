@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.metastorage.common.OperationType;
@@ -51,6 +52,7 @@ import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.IgniteUuidGenerator;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.jetbrains.annotations.NotNull;
@@ -62,6 +64,9 @@ import org.jetbrains.annotations.Nullable;
 public class MetaStorageServiceImpl implements MetaStorageService {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(MetaStorageServiceImpl.class);
+
+    /** IgniteUuid generator. */
+    private static final IgniteUuidGenerator uuidGenerator = new IgniteUuidGenerator(UUID.randomUUID(), 0);
 
     /** Meta storage raft group service. */
     private final RaftGroupService metaStorageRaftGrpSvc;
@@ -177,7 +182,8 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     @Override public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) {
         return new CursorImpl<>(
                 metaStorageRaftGrpSvc,
-                metaStorageRaftGrpSvc.run(new RangeCommand(keyFrom, keyTo, revUpperBound, localNodeId)),
+                metaStorageRaftGrpSvc.run(
+                    new RangeCommand(keyFrom, keyTo, revUpperBound, localNodeId, uuidGenerator.randomUuid())),
                 MetaStorageServiceImpl::singleEntryResult
         );
     }
@@ -186,7 +192,8 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     @Override public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         return new CursorImpl<>(
                 metaStorageRaftGrpSvc,
-                metaStorageRaftGrpSvc.run(new RangeCommand(keyFrom, keyTo, localNodeId)),
+                metaStorageRaftGrpSvc.run(
+                    new RangeCommand(keyFrom, keyTo, localNodeId, uuidGenerator.randomUuid())),
                 MetaStorageServiceImpl::singleEntryResult
         );
     }
@@ -199,7 +206,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         @NotNull WatchListener lsnr
     ) {
         CompletableFuture<IgniteUuid> watchRes =
-            metaStorageRaftGrpSvc.run(new WatchRangeKeysCommand(keyFrom, keyTo, revision, localNodeId));
+            metaStorageRaftGrpSvc.run(new WatchRangeKeysCommand(keyFrom, keyTo, revision, localNodeId, uuidGenerator.randomUuid()));
 
         watchRes.thenAccept(
             watchId -> watchProcessor.addWatch(
@@ -228,7 +235,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         @NotNull WatchListener lsnr
     ) {
         CompletableFuture<IgniteUuid> watchRes =
-            metaStorageRaftGrpSvc.run(new WatchExactKeysCommand(keys, revision, localNodeId));
+            metaStorageRaftGrpSvc.run(new WatchExactKeysCommand(keys, revision, localNodeId, uuidGenerator.randomUuid()));
 
         watchRes.thenAccept(
             watchId -> watchProcessor.addWatch(
