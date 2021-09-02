@@ -30,7 +30,14 @@ public class IndexRebuildCancelToken {
 
     /** Default constructor. */
     public IndexRebuildCancelToken() {
-        flag = new AtomicReference<>();
+        this(new AtomicReference<>());
+    }
+
+    /**
+     * @param flag External cancellation token.
+     */
+    public IndexRebuildCancelToken(AtomicReference<Throwable> flag) {
+        this.flag = flag;
     }
 
     /**
