@@ -44,6 +44,7 @@ import org.apache.ignite.internal.client.util.GridClientUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
@@ -366,15 +367,31 @@ public class GridClientTopology {
         lock.readLock().lock();
 
         try {
-            if (lastError != null)
-                throw new GridClientDisconnectedException(
-                    "Latest topology update failed.", lastError);
+            @Nullable GridClientException e = lastError();
+
+            if (e != null)
+                throw e;
 
             return Collections.unmodifiableCollection(nodes.values());
         }
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    public @Nullable GridClientException lastError() {
+        lock.readLock().lock();
+
+        try {
+            if (lastError != null)
+                return new GridClientDisconnectedException(
+                    "Latest topology update failed.", lastError);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        return null;
     }
 
     /**

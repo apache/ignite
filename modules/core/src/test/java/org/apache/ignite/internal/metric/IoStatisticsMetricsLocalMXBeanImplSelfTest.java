@@ -123,7 +123,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         long cacheLogicalReadsCnt = mreg.<LongMetric>findMetric(LOGICAL_READS).value();
 
-        assertEquals(cnt, cacheLogicalReadsCnt);
+        assertEquals(cnt - 1, cacheLogicalReadsCnt); // 1 is for reuse bucket stripe.
 
         long cachePhysicalReadsCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
 

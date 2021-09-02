@@ -17,29 +17,29 @@
 
 package org.apache.ignite.tests.utils;
 
-import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.tests.load.Generator;
-import org.springframework.core.io.ClassPathResource;
-
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.Calendar;
-import java.util.Date;
-
+import java.util.Set;
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.tests.load.Generator;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.Product;
 import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.SimplePerson;
-import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.SimplePersonId;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Helper class for all tests
@@ -117,16 +117,16 @@ public class TestsHelper {
 
             HOST_PREFIX = prefix;
 
-            Calendar cl = Calendar.getInstance();
+            LocalDate date = LocalDate.now();
 
             String year = TESTS_SETTINGS.getString("orders.year");
-            ORDERS_YEAR = !year.trim().isEmpty() ? Integer.parseInt(year) : cl.get(Calendar.YEAR);
+            ORDERS_YEAR = !year.trim().isEmpty() ? Integer.parseInt(year) : date.getYear();
 
             String month = TESTS_SETTINGS.getString("orders.month");
-            ORDERS_MONTH = !month.trim().isEmpty() ? Integer.parseInt(month) : cl.get(Calendar.MONTH);
+            ORDERS_MONTH = !month.trim().isEmpty() ? (Integer.parseInt(month) + 1) : date.getMonthValue();
 
             String day = TESTS_SETTINGS.getString("orders.day");
-            ORDERS_DAY = !day.trim().isEmpty() ? Integer.parseInt(day) : cl.get(Calendar.DAY_OF_MONTH);
+            ORDERS_DAY = !day.trim().isEmpty() ? Integer.parseInt(day) : date.getDayOfMonth();
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize TestsHelper", e);
@@ -528,18 +528,15 @@ public class TestsHelper {
 
     /** */
     private static ProductOrder generateRandomOrder(long productId, int saltedNumber) {
-        Calendar cl = Calendar.getInstance();
-        cl.set(Calendar.YEAR, ORDERS_YEAR);
-        cl.set(Calendar.MONTH, ORDERS_MONTH);
-        cl.set(Calendar.DAY_OF_MONTH, ORDERS_DAY);
+        LocalDate date = LocalDate.of(ORDERS_YEAR, ORDERS_MONTH, ORDERS_DAY);
 
         long id = Long.parseLong(productId + System.currentTimeMillis() + HOST_PREFIX + saltedNumber);
 
-        return generateRandomOrder(id, productId, cl.getTime());
+        return generateRandomOrder(id, productId, date.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     /** */
-    public static ProductOrder generateRandomOrder(long id, long productId, Date date) {
+    public static ProductOrder generateRandomOrder(long id, long productId, Instant date) {
         return new ProductOrder(id, productId, generateProductPrice(productId), date, 1 + RANDOM.nextInt(20));
     }
 

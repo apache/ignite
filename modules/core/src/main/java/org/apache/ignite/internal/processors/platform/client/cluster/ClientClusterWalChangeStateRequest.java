@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -47,9 +48,9 @@ public class ClientClusterWalChangeStateRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteCluster cluster = ctx.kernalContext().grid().cluster();
-        boolean res = shouldBeActive
-            ? cluster.enableWal(cacheName)
-            : cluster.disableWal(cacheName);
-        return new ClientClusterWalChangeStateResponse(requestId(), res);
+
+        boolean res = shouldBeActive ? cluster.enableWal(cacheName) : cluster.disableWal(cacheName);
+
+        return new ClientBooleanResponse(requestId(), res);
     }
 }

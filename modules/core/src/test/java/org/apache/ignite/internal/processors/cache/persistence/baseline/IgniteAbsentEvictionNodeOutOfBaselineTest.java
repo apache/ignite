@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -91,7 +92,7 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
 
         IgniteCache<Object, Object> cache = ignite0.getOrCreateCache(TEST_CACHE_NAME);
 
-        for(int i = 0; i< 100; i++)
+        for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
         //when: stop one node and reset baseline topology
@@ -99,9 +100,11 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
 
         resetBaselineTopology();
 
+        ignite0.resetLostPartitions(Collections.singleton(TEST_CACHE_NAME));
+
         awaitPartitionMapExchange();
 
-        for(int i = 0; i< 200; i++)
+        for (int i = 0; i < 200; i++)
             cache.put(i, i);
 
         //then: after returning stopped node to grid its partitions should be removed

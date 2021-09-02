@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.security.AccessControlException;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  *  Security aware transformer factory.
@@ -52,14 +54,19 @@ public class SecurityAwareTransformerFactory<E, R> extends
         final IgniteClosure<E, R> cl = original.create();
 
         return new IgniteClosure<E, R>() {
-            /** Ignite. */
-            @IgniteInstanceResource
-            private IgniteEx ignite;
-
             /** {@inheritDoc} */
             @Override public R apply(E e) {
-                try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-                    return cl.apply(e);
+                IgniteSecurity security = ignite.context().security();
+
+                try (OperationSecurityContext c = security.withContext(subjectId)) {
+                    IgniteSandbox sandbox = security.sandbox();
+
+                    return sandbox.enabled() ? sandbox.execute(() -> cl.apply(e)) : cl.apply(e);
+                }
+                catch (AccessControlException ace) {
+                    logAccessDeniedMessage(ace);
+
+                    throw ace;
                 }
             }
         };

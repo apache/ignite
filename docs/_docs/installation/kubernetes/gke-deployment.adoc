@@ -1,0 +1,78 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Google Kubernetes Engine Deployment
+
+:serviceName: GKE
+:soft_name: Kubernetes
+:command: kubectl
+:configDir: ../../code-snippets/k8s
+:script: ../../code-snippets/k8s/setup.sh
+:javaFile: ../../{javaCodeDir}/k8s/K8s.java
+
+
+This page explains how to deploy an Ignite  cluster on Google Kubernetes Engine.
+
+include::installation/kubernetes/generic-configuration.adoc[tag=intro]
+
+include::installation/kubernetes/generic-configuration.adoc[tag=kube-version]
+
+== Creating a GKE Cluster
+A cluster in GKE is a set of nodes that provision resources for the applications that are deployed in the cluster.
+You must create a GKE cluster with enough resources (CPU, RAM, and storage) for your use case.
+
+* link:https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster[Create a cluster,window=_blank]
+* link:https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl[Configure _kubectl_,window=_blank]
+
+The easiest way to create a cluster is to use the `gcloud` command line tool:
+
+[source, txt]
+----
+$ gcloud container clusters create my-cluster --zone us-west1
+...
+Creating cluster my-cluster in us-west1... Cluster is being health-checked (master is healthy)...done.
+Created [https://container.googleapis.com/v1/projects/gmc-development/zones/us-west1/clusters/my-cluster].
+To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/us-west1/my-cluster?project=my-project
+kubeconfig entry generated for my-cluster.
+NAME        LOCATION  MASTER_VERSION  MASTER_IP       MACHINE_TYPE   NODE_VERSION    NUM_NODES  STATUS
+my-cluster  us-west1  1.14.10-gke.27  35.230.126.102  n1-standard-1  1.14.10-gke.27  9          RUNNING
+----
+
+Verify that your `kubectl` is configured correctly:
+
+
+[source, shell]
+----
+$ kubectl get nodes
+NAME                                        STATUS   ROLES    AGE   VERSION
+gke-my-cluster-default-pool-6e9f3e45-8k0w   Ready    <none>   73s   v1.14.10-gke.27
+gke-my-cluster-default-pool-6e9f3e45-b7lb   Ready    <none>   72s   v1.14.10-gke.27
+gke-my-cluster-default-pool-6e9f3e45-cmzc   Ready    <none>   74s   v1.14.10-gke.27
+gke-my-cluster-default-pool-a2556b36-85z6   Ready    <none>   73s   v1.14.10-gke.27
+gke-my-cluster-default-pool-a2556b36-xlbj   Ready    <none>   72s   v1.14.10-gke.27
+gke-my-cluster-default-pool-a2556b36-z8fp   Ready    <none>   74s   v1.14.10-gke.27
+gke-my-cluster-default-pool-e93974f2-hwkj   Ready    <none>   72s   v1.14.10-gke.27
+gke-my-cluster-default-pool-e93974f2-jqj3   Ready    <none>   72s   v1.14.10-gke.27
+gke-my-cluster-default-pool-e93974f2-v8xv   Ready    <none>   74s   v1.14.10-gke.27
+----
+
+Now you are ready to create Kubernetes resources.
+
+== Kubernetes Configuration
+
+include::installation/kubernetes/generic-configuration.adoc[tag=kubernetes-config]
+
+
+
+

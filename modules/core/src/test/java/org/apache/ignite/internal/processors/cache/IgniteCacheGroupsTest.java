@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,6 +99,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -658,7 +659,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             cache2 = ignite.cache(CACHE2);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                for (int i = 0; i < keys ; i++) {
+                for (int i = 0; i < keys; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
                 }
@@ -672,7 +673,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
-            for (int i = 0; i < ldrs ; i++) {
+            for (int i = 0; i < ldrs; i++) {
                 cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
                 cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
             }
@@ -755,7 +756,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE2);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                for (int i = 0; i < keys ; i++) {
+                for (int i = 0; i < keys; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
                 }
@@ -768,7 +769,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
-            for (int i = 0; i < ldrs ; i++) {
+            for (int i = 0; i < ldrs; i++) {
                 cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
                 cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
             }
@@ -839,7 +840,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             cache2 = ignite.cache(CACHE2);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                for (int i = 0; i < keys ; i++) {
+                for (int i = 0; i < keys; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
                 }
@@ -853,7 +854,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
-            for (int i = 0; i < ldrs ; i++) {
+            for (int i = 0; i < ldrs; i++) {
                 cls.add(putOperation(1, ldrs, i, CACHE1, data1));
                 cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
@@ -871,7 +872,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Affinity<Integer> aff = affinity(cache1);
 
-        for(int i = 0; i < keys; i++) {
+        for (int i = 0; i < keys; i++) {
             if (aff.partition(i) == p)
                 keysSet.add(i);
         }
@@ -891,7 +892,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         aff = affinity(cache2);
 
-        for(int i = 0; i < keys; i++) {
+        for (int i = 0; i < keys; i++) {
             if (aff.partition(i) == p)
                 keysSet.add(i);
         }
@@ -927,7 +928,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
         srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
 
-        if(!loc)
+        if (!loc)
             awaitPartitionMapExchange();
 
         if (atomicityMode == TRANSACTIONAL) {
@@ -937,7 +938,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             IgniteCache cache2 = ignite.cache(CACHE2);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                for (int i = 0; i < keys ; i++) {
+                for (int i = 0; i < keys; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
                 }
@@ -951,7 +952,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
-            for (int i = 0; i < ldrs ; i++) {
+            for (int i = 0; i < ldrs; i++) {
                 cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
                 cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
             }
@@ -1021,7 +1022,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             IgniteCache cache2 = ignite.cache(CACHE2);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                for (int i = 0; i < keys ; i++) {
+                for (int i = 0; i < keys; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
                 }
@@ -1035,7 +1036,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
-            for (int i = 0; i < ldrs ; i++) {
+            for (int i = 0; i < ldrs; i++) {
                 cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
                 cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
             }
@@ -1084,7 +1085,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             IgniteCache cache2 = ignite.cache(CACHE2);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                for (int i = 0; i < keys ; i++) {
+                for (int i = 0; i < keys; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
                 }
@@ -1097,7 +1098,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
-            for (int i = 0; i < ldrs ; i++) {
+            for (int i = 0; i < ldrs; i++) {
                 cls.add(putOperation(1, ldrs, i, CACHE1, data1));
                 cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
@@ -1143,7 +1144,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 IgniteCache cache = ignite(idx).cache(cacheName);
 
-                for (int j = 0, size = data.length; j < size ; j++) {
+                for (int j = 0, size = data.length; j < size; j++) {
                     if (j % ldrs == ldrIdx)
                         cache.put(j, data[j]);
                 }
@@ -1247,7 +1248,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Set<Integer> locKeys = new TreeSet<>();
 
         for (int key = 0; key < data.length; key++) {
-            if(aff.isPrimaryOrBackup(node, key))
+            if (aff.isPrimaryOrBackup(node, key))
                 locKeys.add(key);
         }
 
@@ -1452,7 +1453,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStartManyCaches() throws Exception {
-        final int CACHES =  SF.apply(5_000);
+        final int CACHES = SF.apply(5_000);
 
         final int NODES = 4;
 
@@ -1782,7 +1783,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, atomicityMode, 1, heapCache));
 
             assertEquals(30, cache1.size());
-            assertEquals(0 , cache2.size());
+            assertEquals(0, cache2.size());
 
             for (Integer key : keys) {
                 assertNull(cache2.get(key));
@@ -2294,7 +2295,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                         if (j % loaders == i)
                             futs.add(ldr.addData(j, data[j]));
 
-                        if(j % (100 * loaders) == 0)
+                        if (j % (100 * loaders) == 0)
                             ldr.flush();
                     }
 
@@ -4044,7 +4045,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 }
                             }
                         }
-                        catch (Exception e){
+                        catch (Exception e) {
                             log.error("Unexpected error: " + e, e);
 
                             err.set(e);
@@ -4080,7 +4081,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 }
                             }
                         }
-                        catch (Exception e){
+                        catch (Exception e) {
                             log.error("Unexpected error: " + e, e);
 
                             err.set(e);
@@ -4106,10 +4107,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             cacheOperation(rnd, cache);
                                     }
                                     catch (Exception e) {
-                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                        if (X.hasCause(e, CacheStoppedException.class) ||
+                                            (X.hasCause(e, CacheInvalidStateException.class) &&
+                                                X.hasCause(e, TransactionRollbackException.class))
+                                        ) {
                                             // Cache operation can be blocked on
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
-
+                                            // Cache operation can failed
+                                            // if a node was stopped during transaction.
                                             continue;
                                         }
 
@@ -4629,7 +4634,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class MapBasedStore<K,V> implements CacheStore<K,V>, Serializable {
+    static class MapBasedStore<K, V> implements CacheStore<K, V>, Serializable {
         /** */
         private final Map<K, V> src;
 

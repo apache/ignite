@@ -47,6 +47,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.TransientSerializable;
@@ -196,6 +197,34 @@ class OptimizedClassDescriptor {
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper)
         throws IOException {
+        this(
+            cls,
+            typeId,
+            clsMap,
+            ctx,
+            mapper,
+            MarshallerExclusions.isExcluded(cls)
+        );
+    }
+
+    /**
+     * Creates descriptor for class.
+     *
+     * @param typeId Type ID.
+     * @param clsMap Class descriptors by class map.
+     * @param cls Class.
+     * @param ctx Context.
+     * @param mapper ID mapper.
+     * @throws IOException In case of error.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    OptimizedClassDescriptor(Class<?> cls,
+        int typeId,
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        boolean excluded)
+        throws IOException {
         this.cls = cls;
         this.typeId = typeId;
         this.clsMap = clsMap;
@@ -204,7 +233,7 @@ class OptimizedClassDescriptor {
 
         name = cls.getName();
 
-        excluded = MarshallerExclusions.isExcluded(cls);
+        this.excluded = excluded;
 
         if (!excluded) {
             Class<?> parent;
@@ -502,7 +531,7 @@ class OptimizedClassDescriptor {
 
                         List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
 
-                        boolean hasSerialPersistentFields  = false;
+                        boolean hasSerialPersistentFields = false;
 
                         try {
                             Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
@@ -741,6 +770,7 @@ class OptimizedClassDescriptor {
             case OBJ_ARR:
                 OptimizedClassDescriptor compDesc = OptimizedMarshallerUtils.classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
+                    GridBinaryMarshaller.USE_CACHE.get(),
                     ctx,
                     mapper);
 
@@ -801,7 +831,8 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(
+                    clsMap, (Class<?>)obj, GridBinaryMarshaller.USE_CACHE.get(), ctx, mapper);
 
                 clsDesc.writeTypeData(out);
 
@@ -811,7 +842,8 @@ class OptimizedClassDescriptor {
                 out.writeInt(proxyIntfs.length);
 
                 for (Class<?> intf : proxyIntfs) {
-                    OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, intf, ctx, mapper);
+                    OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(
+                        clsMap, intf, GridBinaryMarshaller.USE_CACHE.get(), ctx, mapper);
 
                     intfDesc.writeTypeData(out);
                 }

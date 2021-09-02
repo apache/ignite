@@ -200,7 +200,7 @@ class GmmPartitionData implements AutoCloseable {
         for (int i = 0; i < data.size(); i++) {
             Vector x = data.getX(i);
             double xProb = model.prob(x);
-            if(xProb > maxProb)
+            if (xProb > maxProb)
                 maxProb = xProb;
 
             double normalizer = 0.0;

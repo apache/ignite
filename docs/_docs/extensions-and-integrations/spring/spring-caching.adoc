@@ -1,0 +1,232 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Using Spring Cache With Apache Ignite
+
+== Overview
+
+Ignite is shipped with `SpringCacheManager` - an implementation of http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html[Spring Cache Abstraction, window=_blank].
+It provides an annotation-based way to enable caching for Java methods so that the result of a method execution is stored
+in an Ignite cache. Later, if the same method is called with the same set of parameter values, the result will be retrieved
+from the cache instead of actually executing the method.
+
+== Enabling Ignite for Spring Caching
+
+Only two simple steps are required to plug in an Ignite cache into your Spring-based application:
+
+* Start an Ignite node with proper configuration in embedded mode (i.e., in the same JVM where the application is running). It can already have predefined caches, but it's not required - caches will be created automatically on first access if needed.
+* Configure `SpringCacheManager` as the cache manager in the Spring application context.
+
+The embedded node can be started by `SpringCacheManager` itself. In this case you will need to provide a path to either
+the Ignite configuration XML file or `IgniteConfiguration` bean via `configurationPath` or `configuration`
+properties respectively (see examples below). Note that setting both is illegal and results in `IllegalArgumentException`.
+
+[tabs]
+--
+tab:configuration path[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/cache
+         http://www.springframework.org/schema/cache/spring-cache.xsd">
+    <!-- Provide configuration file path. -->
+    <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
+        <property name="configurationPath" value="examples/config/spring-cache.xml"/>
+    </bean>
+
+    <!-- Enable annotation-driven caching. -->
+    <cache:annotation-driven/>
+</beans>
+----
+tab:configuration bean[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/cache
+         http://www.springframework.org/schema/cache/spring-cache.xsd">
+    <-- Provide configuration bean. -->
+    <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
+        <property name="configuration">
+            <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+                 ...
+            </bean>
+        </property>
+    </bean>
+
+    <-- Enable annotation-driven caching. -->
+    <cache:annotation-driven/>
+</beans>
+----
+
+--
+
+It's possible that you already have an Ignite node running when the cache manager is initialized (e.g., it was started using
+`ServletContextListenerStartup`). In this case you should simply provide the grid name via `gridName` property.
+Note that if you don't set the grid name as well, the cache manager will try to use the default Ignite instance
+(the one with the `null` name). Here is an example:
+
+[tabs]
+--
+tab:Using an already started Ignite instance[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/cache
+         http://www.springframework.org/schema/cache/spring-cache.xsd">
+    <!-- Provide grid name. -->
+    <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
+        <property name="gridName" value="myGrid"/>
+    </bean>
+
+    <!-- Enable annotation-driven caching. -->
+    <cache:annotation-driven/>
+</beans>
+----
+--
+
+[NOTE]
+====
+[discrete]
+Keep in mind that the node started inside your application is an entry point to the whole topology it connects to.
+You can start as many remote standalone nodes as you need and all these nodes will participate in caching the data.
+====
+
+== Dynamic Caches
+
+While you can have all required caches predefined in Ignite configuration, it's not required. If Spring wants to use a
+cache that doesn't exist, the `SpringCacheManager` will automatically create it.
+
+If otherwise not specified, a new cache will be created will all defaults. To customize it, you can provide a configuration
+template via `dynamicCacheConfiguration` property. For example, if you want to use `REPLICATED` caches instead of
+`PARTITIONED`, you should configure `SpringCacheManager` like this:
+
+[tabs]
+--
+tab:Dynamic cache configuration[]
+[source,xml]
+----
+<bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
+    ...
+
+    <property name="dynamicCacheConfiguration">
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+            <property name="cacheMode" value="REPLICATED"/>
+        </bean>
+    </property>
+</bean>
+----
+--
+
+You can also utilize near caches on client side. To achieve this, simply provide near cache configuration via the
+`dynamicNearCacheConfiguration` property. By default, near cache is not created. Here is an example:
+
+[tabs]
+--
+tab:Dynamic near cache configuration[]
+[source,xml]
+----
+<bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
+    ...
+
+    <property name="dynamicNearCacheConfiguration">
+        <bean class="org.apache.ignite.configuration.NearCacheConfiguration">
+            <property name="nearStartSize" value="1000"/>
+        </bean>
+    </property>
+</bean>
+----
+--
+
+== Example
+
+Once you have added `SpringCacheManager` to your Spring application context, you can enable caching for any Java method by simply attaching an annotation to it.
+
+Usually, you would use caching for heavy operations, like database access. For example, let's assume you have a DAO class with
+`averageSalary(...)` method that calculates the average salary of all employees in an organization. You can use `@Cacheable`
+annotation to enable caching for this method:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+private JdbcTemplate jdbc;
+
+@Cacheable("averageSalary")
+public long averageSalary(int organizationId) {
+    String sql =
+        "SELECT AVG(e.salary) " +
+        "FROM Employee e " +
+        "WHERE e.organizationId = ?";
+
+    return jdbc.queryForObject(sql, Long.class, organizationId);
+}
+----
+--
+
+When this method is called for the first time, `SpringCacheManager` will automatically create a `averageSalary` cache.
+It will also lookup the pre-calculated average value in this cache and return it right away if it's there. If the average
+for this organization is not calculated yet, the method will be called and the result will be stored in cache. So next
+time you request the average salary for this organization, you will not need to query the database.
+
+If the salary of one of the employees is changed, you may want to remove the average value for the organization this
+employee belongs to, because otherwise the `averageSalary(...)` method will return obsolete cached result. This can be
+achieved by attaching `@CacheEvict` annotation to a method that updates employee's salary:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+private JdbcTemplate jdbc;
+
+@CacheEvict(value = "averageSalary", key = "#e.organizationId")
+public void updateSalary(Employee e) {
+    String sql =
+        "UPDATE Employee " +
+        "SET salary = ? " +
+        "WHERE id = ?";
+
+    jdbc.update(sql, e.getSalary(), e.getId());
+}
+----
+--
+
+After this method is called, average value for the provided employee's organization will be evicted from the `averageSalary` cache.
+This will force `averageSalary(...)` to recalculate the value next time it's called.
+
+[NOTE]
+====
+[discrete]
+Note that this method receives employee as a parameter, while average values are saved in cache by `organizationID`.
+To explicitly specify what is used as a cache key, we used key parameter of the annotation and Spring Expression Language.
+
+The `#e.organizationId` expression means that we need to extract the value of `organizationId` property from `e` variable.
+Essentially, `getOrganizationId()` method will be called on provided employee object and the returned value will be used as the cache key.
+====

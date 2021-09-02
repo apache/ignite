@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -75,7 +74,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testPutAllGetAll_ClientServer_Backups0_RestartCoordinator_ScanDml() throws Exception {
-        putAllGetAll(RestartMode.RESTART_CRD  , 2, 1, 0, 64,
+        putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 0, 64,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 
@@ -87,7 +86,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     public void testPutAllGetAll_SingleNode_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
 
-        putAllGetAll(RestartMode.RESTART_CRD  , 1, 0, 0, 1,
+        putAllGetAll(RestartMode.RESTART_CRD, 1, 0, 0, 1,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 
@@ -203,7 +202,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
-        cache.put(1,1);
+        cache.put(1, 1);
 
         Semaphore sem = new Semaphore(0);
 
@@ -241,8 +240,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         assert crd.local() && crd.initialized();
 
-        cache.put(1,2);
-        cache.put(1,3);
+        cache.put(1, 2);
+        cache.put(1, 3);
 
         sem.release(2);
 
@@ -282,8 +281,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
                 return null;
             }
         }, "start-cache");
-
-        U.sleep(1000);
 
         assertFalse(fut.isDone());
 
@@ -354,7 +351,9 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    clientCache.query(new SqlFieldsQuery("UPDATE Integer SET _val=42 WHERE _key IN (SELECT DISTINCT _val FROM INTEGER)")).getAll();
+                    clientCache.query(
+                        new SqlFieldsQuery("UPDATE Integer SET _val=42 WHERE _key IN (SELECT DISTINCT _val FROM INTEGER)")
+                    ).getAll();
 
                     return null;
                 }

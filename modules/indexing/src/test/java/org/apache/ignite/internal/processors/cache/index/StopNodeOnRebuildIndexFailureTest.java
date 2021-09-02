@@ -90,7 +90,7 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
         exceptionWasThrown.set(false);
 
         BPlusTree.testHndWrapper = (tree, hnd) -> {
-            if (tree.getName().toUpperCase().contains(INDEX_NAME)) {
+            if (tree.name().toUpperCase().contains(INDEX_NAME)) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
                 return new PageHandler<Object, BPlusTree.Result>() {
@@ -112,10 +112,10 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
                             if (t instanceof Error)
                                 throw (Error)t;
 
-                            if(t instanceof RuntimeException)
+                            if (t instanceof RuntimeException)
                                 throw (RuntimeException) t;
 
-                            if(t instanceof IgniteCheckedException)
+                            if (t instanceof IgniteCheckedException)
                                 throw (IgniteCheckedException) t;
                         }
                         catch (Throwable t) {
@@ -204,7 +204,7 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
 
         Throwable t = throwableSupplier.get();
 
-        if(t instanceof Exception && !(t instanceof RuntimeException || t instanceof IgniteCheckedException))
+        if (t instanceof Exception && !(t instanceof RuntimeException || t instanceof IgniteCheckedException))
             throw new IllegalArgumentException("Invalid throwable class " + t.getClass());
 
         IgniteEx ignite = startGrid(0);

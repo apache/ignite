@@ -63,8 +63,8 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         startClientGrid(configuration(2));
         startClientGrid(configuration(3));
 
-        assertEquals(5, joinSrvCnt);
-        assertEquals(4, joinCliCnt);
+        assertEquals(3, joinSrvCnt);
+        assertEquals(6, joinCliCnt);
     }
 
     /**
@@ -77,7 +77,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         startClientGrid(configuration(2));
         startClientGrid(configuration(3));
 
-        final boolean [] recvMsg = new boolean[4];
+        final boolean[] recvMsg = new boolean[4];
 
         for (int i = 0; i < 4; ++i) {
             final int idx0 = i;
@@ -196,11 +196,6 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean stopProcess() {
             return false;
         }
 

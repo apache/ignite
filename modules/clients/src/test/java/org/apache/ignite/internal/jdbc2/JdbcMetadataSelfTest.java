@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -98,7 +99,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        cfg.setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+        cfg.setSqlConfiguration(new SqlConfiguration().setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
         return cfg;
     }
@@ -108,7 +109,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(@NotNull String name) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(PARTITIONED);
@@ -320,6 +321,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testGetAllView() throws Exception {
         Set<String> expViews = new HashSet<>(Arrays.asList(
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "CACHES",
             "CACHE_GROUPS",
             "INDEXES",
@@ -343,7 +345,23 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "CONTINUOUS_QUERIES",
             "STRIPED_THREADPOOL_QUEUE",
             "DATASTREAM_THREADPOOL_QUEUE",
-            "CACHE_GROUP_PAGE_LISTS"
+            "CACHE_GROUP_PAGE_LISTS",
+            "PARTITION_STATES",
+            "BINARY_METADATA",
+            "DISTRIBUTED_METASTORAGE",
+            "METRICS",
+            "DS_QUEUES",
+            "DS_SETS",
+            "DS_ATOMICSEQUENCES",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_COUNTDOWNLATCHES",
+            "DS_SEMAPHORES",
+            "DS_REENTRANTLOCKS",
+            "STATISTICS_CONFIGURATION",
+            "STATISTICS_PARTITION_DATA",
+            "STATISTICS_LOCAL_DATA"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -443,6 +461,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
             assertIsEmpty(meta.getSchemas(invalidCat, null));
             assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 
@@ -631,7 +664,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualPks.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
                     '.' + rs.getString("PK_NAME") +
@@ -650,7 +683,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
             // No parameters statement.
-            try(Connection conn = DriverManager.getConnection(BASE_URL)) {
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 conn.setSchema("\"pers\"");
 
                 PreparedStatement noParams = conn.prepareStatement("select * from Person;");
@@ -724,7 +757,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "SYS", "PREDEFINED_CLIENT_SCHEMA"));
+            Set<String> expectedSchemas =
+                new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "SYS", "PREDEFINED_CLIENT_SCHEMA"));
 
             Set<String> schemas = new HashSet<>();
 

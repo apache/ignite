@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * IGFS endpoint descriptor.
  */
+@Deprecated
 public class VisorIgfsEndpoint extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

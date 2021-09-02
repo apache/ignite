@@ -27,7 +27,14 @@ import java.util.stream.Stream;
 /**
  * Some {@link Map} related utils.
  */
-public class MapUtil {
+public final class MapUtil {
+    /**
+     *
+     */
+    private MapUtil(){
+        // No-op.
+    }
+
     /** */
     public static <K, V, M extends Map<K, V>> M mergeMaps(M m1, M m2, BinaryOperator<V> op, Supplier<M> mapSupplier) {
         return Stream.of(m1, m2)

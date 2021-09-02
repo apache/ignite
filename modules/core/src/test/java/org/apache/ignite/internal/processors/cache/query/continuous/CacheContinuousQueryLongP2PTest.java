@@ -90,7 +90,7 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
             }
         });
 
-        startFut.get(1, TimeUnit.SECONDS);
+        startFut.get(5, TimeUnit.SECONDS);
 
         assertNull("Error occurred when starting a node: " + err.get(), err.get());
     }

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -38,8 +39,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
         public AffinityFunctionSpringTest() : base(6,
-            "config\\cache\\affinity\\affinity-function.xml",
-            "config\\cache\\affinity\\affinity-function2.xml")
+            Path.Combine("Config", "Cache", "Affinity", "affinity-function.xml"),
+            Path.Combine("Config", "Cache", "Affinity", "affinity-function2.xml"))
         {
             // No-op.
         }
@@ -73,6 +74,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             ValidateAffinityFunction(Grid2.CreateCache<long, int>("dyn-cache2-2"));
             ValidateAffinityFunction(Grid.GetCache<long, int>("dyn-cache2-2"));
+        }
+
+        /// <summary>
+        /// Tests that config is propagated from Spring XML to .NET object model.
+        /// </summary>
+        [Test]
+        public void TestSpringConfigPropagation()
+        {
+            var cfg = Grid.GetCache<int, int>("cache-with-backup-filter").GetConfiguration();
+            var aff = cfg.AffinityFunction as RendezvousAffinityFunction;
+
+            Assert.IsNotNull(aff);
+            Assert.AreEqual(256, aff.Partitions);
+
+            var filter = aff.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+
+            Assert.IsNotNull(filter);
+            Assert.AreEqual(new[]{"AVAILABILITY_ZONE", "REGION"}, filter.AttributeNames);
         }
 
         /// <summary>

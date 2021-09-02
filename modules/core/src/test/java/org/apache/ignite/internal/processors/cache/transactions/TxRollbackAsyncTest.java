@@ -249,7 +249,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -258,7 +258,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -267,7 +267,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -281,7 +281,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -290,7 +290,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -299,7 +299,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -387,7 +387,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         assertNull(o); // If rolled back by close, previous get will return null.
                     }
-                    catch (Exception e) {
+                    catch (Exception ignore) {
                         // If rolled back by rollback, previous get will throw an exception.
                     }
                 }
@@ -678,7 +678,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
                 TransactionConcurrency conc = mvcc ? PESSIMISTIC : TC_VALS[r.nextInt(TC_VALS.length)];
-                TransactionIsolation isolation = mvcc ? REPEATABLE_READ :TI_VALS[r.nextInt(TI_VALS.length)];
+                TransactionIsolation isolation = mvcc ? REPEATABLE_READ : TI_VALS[r.nextInt(TI_VALS.length)];
 
                 // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
                 long timeout = r.nextInt(50) + 50;

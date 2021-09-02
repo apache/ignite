@@ -477,7 +477,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                             INTERCEPTED_PARTS.add(part);
                     }
                 }
-                else if(msg0.message() instanceof GridNearTxQueryEnlistRequest) {
+                else if (msg0.message() instanceof GridNearTxQueryEnlistRequest) {
                     INTERCEPTED_NODES.add(node);
                     INTERCEPTED_REQS.incrementAndGet();
 

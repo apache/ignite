@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -28,6 +33,7 @@ import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -36,13 +42,9 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests service proxy timeouts.
@@ -137,6 +139,36 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
         finally {
             latch2.countDown();
         }
+    }
+
+    /**
+     * Checks that the service invocation is waiting for the registered service to be initialized.
+     *
+     * @throws Exception If fail.
+     */
+    @Test
+    public void testInitializationWaiting() throws Exception {
+        srvc = new TestWaitServiceImpl();
+
+        latch1 = new CountDownLatch(1);
+        latch2 = new CountDownLatch(1);
+
+        IgniteEx srv = startGrid(0);
+
+        assertTrue(latch1.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        IgniteInternalFuture<?> srvcFut = runAsync(() ->
+            srv.services().serviceProxy("testService", TestService.class, false).test());
+
+        U.sleep(500);
+
+        assertEquals(1, latch2.getCount());
+
+        assertFalse(srvcFut.isDone());
+
+        latch2.countDown();
+
+        srvcFut.get();
     }
 
     /**

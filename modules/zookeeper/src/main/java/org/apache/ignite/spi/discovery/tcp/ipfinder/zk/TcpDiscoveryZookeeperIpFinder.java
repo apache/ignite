@@ -37,6 +37,8 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.UriSpec;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -72,6 +74,7 @@ import org.codehaus.jackson.map.annotate.JsonRootName;
  */
 public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** System property name to provide the ZK Connection String. */
+    @SystemProperty(value = "Zookeeper connection string", type = String.class)
     public static final String PROP_ZK_CONNECTION_STRING = "IGNITE_ZK_CONNECTION_STRING";
 
     /** Default base path for service registrations. */
@@ -129,7 +132,7 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (!initGuard.compareAndSet(false, true))
             return;
 
-        String sysPropZkConnString = System.getProperty(PROP_ZK_CONNECTION_STRING);
+        String sysPropZkConnString = IgniteSystemProperties.getString(PROP_ZK_CONNECTION_STRING);
 
         if (sysPropZkConnString != null && !sysPropZkConnString.trim().isEmpty())
             zkConnectionString = sysPropZkConnString;

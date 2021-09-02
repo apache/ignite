@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets node that caused this event to be generated. It is potentially different from the node on which this 
         /// event was recorded. For example, node A locally recorded the event that a remote node B joined the topology. 
-        /// In this case this method will return ID of B. 
+        /// In this case this property will return node B. 
         /// </summary>
         public IClusterNode EventNode { get { return _eventNode; } }
 

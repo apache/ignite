@@ -58,7 +58,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
 
             cnt.incrementAndGet();
 
-            jcache().putAsync("key" + i, i).listen(new CI1<IgniteFuture<?>>() {
+            jcache().putAsync("key" + i, i).listenAsync(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> t) {
                     cnt.decrementAndGet();
 
@@ -67,9 +67,9 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
                     if (i0 > 0 && i0 % 100 == 0)
                         info("cnt: " + cnt.get());
                 }
-            });
+            }, Runnable::run);
 
-            assertTrue("Maximum number of permits exceeded: " + max.get(),  max.get() <= 51);
+            assertTrue("Maximum number of permits exceeded: " + max.get(), max.get() <= 51);
         }
     }
 }

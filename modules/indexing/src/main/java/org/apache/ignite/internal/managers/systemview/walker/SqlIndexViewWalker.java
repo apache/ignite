@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
-import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -30,34 +29,38 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlIndexViewWalker implements SystemViewRowAttributeWalker<SqlIndexView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "indexName", String.class);
-        v.accept(1, "indexType", H2IndexType.class);
-        v.accept(2, "columns", String.class);
-        v.accept(3, "schemaName", String.class);
-        v.accept(4, "tableName", String.class);
-        v.accept(5, "cacheName", String.class);
-        v.accept(6, "cacheId", int.class);
-        v.accept(7, "inlineSize", int.class);
-        v.accept(8, "isPk", boolean.class);
-        v.accept(9, "isUnique", boolean.class);
+        v.accept(0, "cacheGroupId", int.class);
+        v.accept(1, "cacheGroupName", String.class);
+        v.accept(2, "cacheId", int.class);
+        v.accept(3, "cacheName", String.class);
+        v.accept(4, "schemaName", String.class);
+        v.accept(5, "tableName", String.class);
+        v.accept(6, "indexName", String.class);
+        v.accept(7, "indexType", String.class);
+        v.accept(8, "columns", String.class);
+        v.accept(9, "isPk", boolean.class);
+        v.accept(10, "isUnique", boolean.class);
+        v.accept(11, "inlineSize", Integer.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(SqlIndexView row, AttributeWithValueVisitor v) {
-        v.accept(0, "indexName", String.class, row.indexName());
-        v.accept(1, "indexType", H2IndexType.class, row.indexType());
-        v.accept(2, "columns", String.class, row.columns());
-        v.accept(3, "schemaName", String.class, row.schemaName());
-        v.accept(4, "tableName", String.class, row.tableName());
-        v.accept(5, "cacheName", String.class, row.cacheName());
-        v.acceptInt(6, "cacheId", row.cacheId());
-        v.acceptInt(7, "inlineSize", row.inlineSize());
-        v.acceptBoolean(8, "isPk", row.isPk());
-        v.acceptBoolean(9, "isUnique", row.isUnique());
+        v.acceptInt(0, "cacheGroupId", row.cacheGroupId());
+        v.accept(1, "cacheGroupName", String.class, row.cacheGroupName());
+        v.acceptInt(2, "cacheId", row.cacheId());
+        v.accept(3, "cacheName", String.class, row.cacheName());
+        v.accept(4, "schemaName", String.class, row.schemaName());
+        v.accept(5, "tableName", String.class, row.tableName());
+        v.accept(6, "indexName", String.class, row.indexName());
+        v.accept(7, "indexType", String.class, row.indexType());
+        v.accept(8, "columns", String.class, row.columns());
+        v.acceptBoolean(9, "isPk", row.isPk());
+        v.acceptBoolean(10, "isUnique", row.isUnique());
+        v.accept(11, "inlineSize", Integer.class, row.inlineSize());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 10;
+        return 12;
     }
 }

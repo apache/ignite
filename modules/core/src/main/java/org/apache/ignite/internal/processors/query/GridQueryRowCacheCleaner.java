@@ -26,5 +26,5 @@ public interface GridQueryRowCacheCleaner {
      *
      * @param link Link to remove.
      */
-    void remove(long link);
+    public void remove(long link);
 }

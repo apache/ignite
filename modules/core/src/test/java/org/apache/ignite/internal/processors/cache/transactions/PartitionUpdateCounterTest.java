@@ -40,9 +40,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterVolatileImpl;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterErrorWrapper;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterVolatileImpl;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -158,7 +159,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         LongAdder reserveCntr = new LongAdder();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            while(!stop.get() || !reservations.isEmpty()) {
+            while (!stop.get() || !reservations.isEmpty()) {
                 if (!stop.get() && ThreadLocalRandom.current().nextBoolean()) {
                     int size = ThreadLocalRandom.current().nextInt(9) + 1;
 
@@ -314,7 +315,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             @Override public void run() {
                 int val;
 
-                while((val = id.incrementAndGet()) <= max) {
+                while ((val = id.incrementAndGet()) <= max) {
                     try {
                         cntr.update(val);
                     }
@@ -404,7 +405,14 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
             PartitionUpdateCounter cntr = counter(0, grid0.name());
 
-            assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
+            assertTrue(cntr instanceof PartitionUpdateCounterErrorWrapper);
+
+            PartitionUpdateCounter delegate = U.field(cntr, "delegate");
+
+            if (mode == CacheAtomicityMode.TRANSACTIONAL)
+                assertTrue(delegate instanceof PartitionUpdateCounterTrackingImpl);
+            else if (mode == CacheAtomicityMode.ATOMIC)
+                assertTrue(delegate instanceof PartitionUpdateCounterVolatileImpl);
 
             assertEquals(cntr.initial(), cntr.get());
         }

@@ -893,13 +893,11 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void close() {
+        @Override public void close() {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void flush() {
+        @Override public void flush() {
         }
 
         /**

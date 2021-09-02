@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
+
 /** Operation codes. */
 enum ClientOperation {
     /** Resource close. */RESOURCE_CLOSE(0),
+
     /** Cache get or create with name. */CACHE_GET_OR_CREATE_WITH_NAME(1052),
     /** Cache put. */CACHE_PUT(1001),
     /** Cache get. */CACHE_GET(1000),
@@ -29,6 +34,7 @@ enum ClientOperation {
     /** Cache get or create with configuration. */CACHE_GET_OR_CREATE_WITH_CONFIGURATION(1054),
     /** Cache create with name. */CACHE_CREATE_WITH_NAME(1051),
     /** Cache contains key. */CACHE_CONTAINS_KEY(1011),
+    /** Cache contains keys. */CACHE_CONTAINS_KEYS(1012),
     /** Cache get configuration. */CACHE_GET_CONFIGURATION(1055),
     /** Get size. */CACHE_GET_SIZE(1020),
     /** Put all. */CACHE_PUT_ALL(1004),
@@ -43,27 +49,57 @@ enum ClientOperation {
     /** Cache get and remove. */CACHE_GET_AND_REMOVE(1007),
     /** Cache get and replace. */CACHE_GET_AND_REPLACE(1006),
     /** Cache put if absent. */CACHE_PUT_IF_ABSENT(1002),
+    /** Cache get and put if absent. */CACHE_GET_AND_PUT_IF_ABSENT(1008),
     /** Cache clear. */CACHE_CLEAR(1013),
+    /** Cache clear key. */CACHE_CLEAR_KEY(1014),
+    /** Cache clear keys. */CACHE_CLEAR_KEYS(1015),
     /** Cache partitions. */CACHE_PARTITIONS(1101),
+
     /** Query scan. */QUERY_SCAN(2000),
     /** Query scan cursor get page. */QUERY_SCAN_CURSOR_GET_PAGE(2001),
     /** Query sql. */QUERY_SQL(2002),
     /** Query sql cursor get page. */QUERY_SQL_CURSOR_GET_PAGE(2003),
     /** Query sql fields. */QUERY_SQL_FIELDS(2004),
     /** Query sql fields cursor get page. */QUERY_SQL_FIELDS_CURSOR_GET_PAGE(2005),
+    /** Continuous query. */QUERY_CONTINUOUS(2006),
+    /** Continuous query event. */QUERY_CONTINUOUS_EVENT(2007, ClientNotificationType.CONTINUOUS_QUERY_EVENT),
+
     /** Get binary type. */GET_BINARY_TYPE(3002),
     /** Register binary type name. */REGISTER_BINARY_TYPE_NAME(3001),
     /** Put binary type. */PUT_BINARY_TYPE(3003),
     /** Get binary type name. */GET_BINARY_TYPE_NAME(3000),
+
     /** Start new transaction. */TX_START(4000),
-    /** End the transaction (commit or rollback). */TX_END(4001);
+    /** End the transaction (commit or rollback). */TX_END(4001),
+
+    /** Get cluster state. */CLUSTER_GET_STATE(5000),
+    /** Change cluster state. */CLUSTER_CHANGE_STATE(5001),
+    /** Get WAL state. */CLUSTER_GET_WAL_STATE(5003),
+    /** Change WAL state. */CLUSTER_CHANGE_WAL_STATE(5002),
+    /** Get nodes IDs by filter. */CLUSTER_GROUP_GET_NODE_IDS(5100),
+    /** Get nodes info by IDs. */CLUSTER_GROUP_GET_NODE_INFO(5101),
+
+    /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
+    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001,
+        ClientNotificationType.COMPUTE_TASK_FINISHED),
+
+    /** Invoke service. */SERVICE_INVOKE(7000);
 
     /** Code. */
     private final int code;
 
+    /** Type of notification. */
+    private final ClientNotificationType notificationType;
+
     /** Constructor. */
     ClientOperation(int code) {
+        this(code, null);
+    }
+
+    /** Constructor. */
+    ClientOperation(int code, ClientNotificationType notificationType) {
         this.code = code;
+        this.notificationType = notificationType;
     }
 
     /**
@@ -71,5 +107,30 @@ enum ClientOperation {
      */
     public short code() {
         return (short)code;
+    }
+
+    /**
+     * @return Type of notification.
+     */
+    public ClientNotificationType notificationType() {
+        return notificationType;
+    }
+
+    /** Enum mapping from code to values. */
+    private static final Map<Short, ClientOperation> map;
+
+    static {
+        map = new HashMap<>();
+
+        for (ClientOperation op : values())
+            map.put(op.code(), op);
+    }
+
+    /**
+     * @param code Code to convert to enum.
+     * @return Enum.
+     */
+    @Nullable public static ClientOperation fromCode(short code) {
+        return map.get(code);
     }
 }

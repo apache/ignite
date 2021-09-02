@@ -30,6 +30,9 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -45,6 +48,11 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -62,9 +70,6 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
 
     /** */
     private static final long MB = 1024 * 1024;
-
-    /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
 
     /** */
     static int MAX_PER_PAGE = 0;
@@ -89,7 +94,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         private final ConcurrentLinkedDeque<Long> deque = new ConcurrentLinkedDeque<>();
 
         /** {@inheritDoc} */
-        @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
+        @Override public void addForRecycle(ReuseBag bag) {
             long pageId;
 
             while ((pageId = bag.pollFreePage()) != 0L)
@@ -97,14 +102,19 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public long takeRecycledPage() throws IgniteCheckedException {
+        @Override public long takeRecycledPage() {
             Long pageId = deque.pollFirst();
 
             return pageId == null ? 0L : pageId;
         }
 
         /** {@inheritDoc} */
-        @Override public long recycledPagesCount() throws IgniteCheckedException {
+        @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) {
+            return pageId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long recycledPagesCount() {
             return deque.size();
         }
     }
@@ -186,8 +196,9 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
                 reuseList,
                 new IOVersions<>(new LongInnerIO()),
                 new IOVersions<>(new LongLeafIO()),
+                PageIdAllocator.FLAG_IDX,
                 null,
-                null
+                mockPageLockTrackerManager()
             );
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
@@ -210,26 +221,39 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
 
             return io.getLookupRow(this, pageAddr, idx);
         }
+
+        /** */
+        private static PageLockTrackerManager mockPageLockTrackerManager() {
+            PageLockTrackerManager manager = mock(PageLockTrackerManager.class);
+
+            when(manager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+
+            return manager;
+        }
     }
 
     /**
      * @return Page memory.
-     * @throws Exception If failed.
      */
-    private PageMemory createPageMemory() throws Exception {
-        long[] sizes = new long[CPUS];
+    private PageMemory createPageMemory() {
+        DataRegionConfiguration dataRegionConfiguration = new DataRegionConfiguration().setMaxSize(1024 * MB);
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        DataRegionMetricsImpl dataRegionMetrics = mock(DataRegionMetricsImpl.class);
+        PageMetrics pageMetrics = mock(PageMetrics.class);
+        LongAdderMetric noOpMetric = new LongAdderMetric("foobar", null);
 
-        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setMaxSize(1024 * MB);
+        when(dataRegionMetrics.cacheGrpPageMetrics(anyInt())).thenReturn(pageMetrics);
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
+        when(pageMetrics.totalPages()).thenReturn(noOpMetric);
+        when(pageMetrics.indexPages()).thenReturn(noOpMetric);
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(
+            new JavaLogger(),
             new UnsafeMemoryProvider(new JavaLogger()),
             null,
             PAGE_SIZE,
-            plcCfg,
-            new LongAdderMetric("NO_OP", null),
+            dataRegionConfiguration,
+            dataRegionMetrics,
             false);
 
         pageMem.start();
@@ -296,7 +320,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
@@ -332,7 +356,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }

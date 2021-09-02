@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -91,8 +94,40 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 String s = "" + (char)('A' + i + (grp - 1) * grp / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGroupConcatSeparator() {
+        IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
+
+        List<List<Object>> res = c.query(
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0 SEPARATOR '.') from Value group by grp")).getAll();
+
+        List<List<Object>> expRes = Arrays.asList(
+            Arrays.asList(1, "A"),
+            Arrays.asList(2, "B.C"),
+            Arrays.asList(3, "D.E.F"),
+            Arrays.asList(4, "G.H.I.J"),
+            Arrays.asList(5, "K.L.M.N.O"),
+            Arrays.asList(6, "P.Q.R.S.T.U"));
+
+        assertEquals(res.size(), expRes.size());
+
+        // Join order is not guaranteed.
+        for (int i = 0; i < res.size(); i++) {
+            List<Object> row = res.get(i);
+
+            Integer idx = (Integer) row.get(0);
+            String s0 = (String) row.get(1);
+            String s1 = Stream.of(s0.split("\\.")).sorted().collect(Collectors.joining("."));
+
+            assertEqualsCollections(expRes.get(idx - 1), Arrays.asList(idx, s1));
         }
     }
 
@@ -115,7 +150,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 String s = "" + (char)('A' + i + (cnt - 1) * cnt / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
     }

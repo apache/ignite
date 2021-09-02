@@ -42,6 +42,27 @@ public class BinaryBasicNameMapperSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testSimpleNameDotNet() throws Exception {
+        BinaryBasicNameMapper mapper = new BinaryBasicNameMapper(true);
+
+        assertEquals("Baz", mapper.typeName("Foo.Bar.Baz"));
+
+        assertEquals("Bar`1[[Qux]]", mapper.typeName("Foo.Bar`1[[Baz.Qux]]"));
+
+        assertEquals("List`1[[Int32[]]]",
+                mapper.typeName("System.Collections.Generic.List`1[[System.Int32[]]]"));
+
+        assertEquals("Bar`1[[Qux`2[[String],[Int32]]]]",
+                mapper.typeName("Foo.Bar`1[[Baz.Qux`2[[System.String],[System.Int32]]]]"));
+
+        assertEquals("Bar`1[[Qux`2[[C],[Int32]]]]",
+                mapper.typeName("Foo.Outer+Bar`1[[Baz.Outer2+Qux`2[[A.B+C],[System.Int32]]]]"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testFullName() throws Exception {
         BinaryBasicNameMapper mapper = new BinaryBasicNameMapper(false);
 

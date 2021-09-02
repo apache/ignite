@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,6 +81,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.jetbrains.annotations.Nullable;
 
 import static javax.cache.event.EventType.CREATED;
@@ -89,6 +92,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.IgniteFeatures.CONT_QRY_SECURITY_AWARE;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 
 /**
  * Continuous queries manager.
@@ -165,7 +169,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
 
                         if (lsnr != null)
-                            lsnr.cleanupBackupQueue(msg.updateCntrs());
+                            lsnr.cleanupOnAck(msg.updateCntrs());
                     }
                 });
 
@@ -685,9 +689,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
     /**
      * @param topVer Finished exchange topology version.
      */
-    public void flushBackupQueue(AffinityTopologyVersion topVer) {
+    public void flushOnExchangeDone(AffinityTopologyVersion topVer) {
         for (CacheContinuousQueryListener lsnr : lsnrs.values())
-            lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
+            lsnr.flushOnExchangeDone(cctx.kernalContext(), topVer);
     }
 
     /**
@@ -746,8 +750,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         hnd.keepBinary(keepBinary);
         hnd.localOnly(locOnly);
 
-        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
-            F.nodeForNodeId(cctx.localNodeId()) : cctx.group().nodeFilter();
+        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL)
+            ? F.nodeForNodeId(cctx.localNodeId())
+            : new IsAllPredicate<>(cctx.group().nodeFilter(), new AttributeNodeFilter(ATTR_CLIENT_MODE, false));
 
         assert pred != null : cctx.config();
 
@@ -982,24 +987,33 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 intLsnrCnt.incrementAndGet();
         }
         else {
-            cctx.group().listenerLock().writeLock().lock();
+            lsnr.onBeforeRegister();
 
             try {
-                added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
+                CacheGroupContext grp = cctx.group();
 
-                if (added) {
-                    lsnrCnt.incrementAndGet();
+                grp.listenerLock().writeLock().lock();
 
-                    lsnr.onRegister();
+                try {
+                    added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
 
-                    if (lsnrCnt.get() == 1) {
-                        if (cctx.group().sharedGroup() && !cctx.isLocal())
-                            cctx.group().addCacheWithContinuousQuery(cctx);
+                    if (added) {
+                        lsnrCnt.incrementAndGet();
+
+                        lsnr.onRegister();
+
+                        if (lsnrCnt.get() == 1) {
+                            if (grp.sharedGroup() && !cctx.isLocal())
+                                grp.addCacheWithContinuousQuery(cctx);
+                        }
                     }
+                }
+                finally {
+                    grp.listenerLock().writeLock().unlock();
                 }
             }
             finally {
-                cctx.group().listenerLock().writeLock().unlock();
+                lsnr.onAfterRegister();
             }
         }
 

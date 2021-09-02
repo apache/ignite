@@ -1,0 +1,47 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Running Client Nodes Behind NAT
+
+If your client nodes are deployed behind a NAT, the server nodes won't be able to establish connection with the clients because of the limitations of the communication protocol.
+This includes deployment cases when client nodes are running in virtual environments (like Kubernetes) and the server nodes are deployed elsewhere.
+
+For cases like this, you need to enable a special mode of communication:
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/client-behind-nat.xml[tags=ignite-config;!discovery,indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javaCodeDir}/Discovery.java[tags=client-behind-nat,indent=0]
+----
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+== Limitations
+
+* This mode cannot be used when `TcpCommunicationSpi.usePairedConnections = true` on both server and client nodes.
+
+* Peer class loading for link:key-value-api/continuous-queries[continuous queries (transformers and filters)] does not work when a continuous query is started from a client node `forceClientToServerConnections = true`.
+You will need to add the corresponding classes to the classpath of every server node.
+
+* This property can only be used on client nodes. This limitation will be addressed in the future releases.

@@ -28,8 +28,14 @@ public class ThinClientConfiguration {
     /** Default limit of active transactions count per connection. */
     public static final int DFLT_MAX_ACTIVE_TX_PER_CONNECTION = 100;
 
+    /** Default limit of active compute tasks per connection. */
+    public static final int DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION = 0;
+
     /** Active transactions count per connection limit. */
     private int maxActiveTxPerConn = DFLT_MAX_ACTIVE_TX_PER_CONNECTION;
+
+    /** Active compute tasks per connection limit. */
+    private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
     /**
      * Creates thin-client configuration with all default values.
@@ -47,6 +53,7 @@ public class ThinClientConfiguration {
         assert cfg != null;
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
+        maxActiveComputeTasksPerConn = cfg.maxActiveComputeTasksPerConn;
     }
 
     /**
@@ -63,6 +70,27 @@ public class ThinClientConfiguration {
      */
     public ThinClientConfiguration setMaxActiveTxPerConnection(int maxActiveTxPerConn) {
         this.maxActiveTxPerConn = maxActiveTxPerConn;
+
+        return this;
+    }
+
+    /**
+     * Gets active compute tasks per connection limit.
+     *
+     * @return {@code True} if compute is enabled for thin client.
+     */
+    public int getMaxActiveComputeTasksPerConnection() {
+        return maxActiveComputeTasksPerConn;
+    }
+
+    /**
+     * Sets active compute tasks per connection limit.
+     * Value {@code 0} means that compute grid functionality is disabled for thin clients.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ThinClientConfiguration setMaxActiveComputeTasksPerConnection(int maxActiveComputeTasksPerConn) {
+        this.maxActiveComputeTasksPerConn = maxActiveComputeTasksPerConn;
 
         return this;
     }

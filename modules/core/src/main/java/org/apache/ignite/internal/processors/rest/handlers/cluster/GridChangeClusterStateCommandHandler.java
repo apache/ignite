@@ -74,7 +74,7 @@ public class GridChangeClusterStateCommandHandler extends GridRestCommandHandler
                         " state from client node with ID: " + req.clientId());
 
                     ctx.state().changeGlobalState(req.state(), req.forceDeactivation(),
-                        ctx.cluster().get().forServers().nodes(), false, false).get();
+                        ctx.cluster().get().forServers().nodes(), false).get();
 
                     res.setResponse(req.command().key() + " done");
 

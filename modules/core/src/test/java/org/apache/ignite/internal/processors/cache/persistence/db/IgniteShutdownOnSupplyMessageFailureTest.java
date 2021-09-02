@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
@@ -44,9 +45,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 
 /** */
 public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstractTest {
@@ -83,6 +87,8 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
 
         if (name.equals(getTestIgniteInstanceName(NODE_NAME_WITH_TEST_FILE_FACTORY))) {
             conf.setFileIOFactory(new FailingFileIOFactory(canFailFirstNode));
+
+            cfg.setIncludeEventTypes(EVT_CACHE_REBALANCE_PART_SUPPLIED);
 
             cfg.setFailureHandler(new TestFailureHandler());
         }
@@ -132,7 +138,18 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
 
         populateCache(ig, TEST_REBALANCE_CACHE, 3_000, 6_000);
 
+        // Breaks historical rebalance. The second node will try to switch to full rebalance.
         canFailFirstNode.set(true);
+
+        // Break full rebalance.
+        IgnitePredicate<CacheRebalancingEvent> locLsnr = evt -> {
+            if (TEST_REBALANCE_CACHE.equals(evt.cacheName()))
+                throw new AssertionError(new IOException("Test crash"));
+
+            return true;
+        };
+
+        ig.events().localListen(locLsnr, EVT_CACHE_REBALANCE_PART_SUPPLIED);
 
         startGrid(1);
 

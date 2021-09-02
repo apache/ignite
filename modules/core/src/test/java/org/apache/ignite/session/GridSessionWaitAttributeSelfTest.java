@@ -269,7 +269,10 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                         assert val.equals(obj) :
                             "Failed to wait for attribute [key=" + key + ", val=" + val + ", receivedVal=" + obj + ']';
 
-                        //System.out.println(Thread.currentThread().getName() + ":: Waited for attribute [key=" + key + ", val=" + obj + ", ses=" + ses + ']');
+                        //System.out.println(
+                        //    Thread.currentThread().getName() +
+                        //        ":: Waited for attribute [key=" + key + ", val=" + obj + ", ses=" + ses + ']'
+                        //);
                     }
 
                     break;
@@ -449,7 +452,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
             IgniteUuid jobId = jobCtx.getJobId();
 
-            for (int i = 0; i < ATTR_NUM; i ++) {
+            for (int i = 0; i < ATTR_NUM; i++) {
                 String key = createKey(jobId.toString(), m, i);
                 String val = createValue(jobId.toString(), m, i);
 

@@ -82,7 +82,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -136,7 +136,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         checkNodesUsage(null, stmt, "select * from Person where _key = 1", 1, 1,
             false);
 
-        checkNodesUsage(null, stmt,  "select * from Person where _key = 1 or _key = 2", 2,
+        checkNodesUsage(null, stmt, "select * from Person where _key = 1 or _key = 2", 2,
             2, false);
 
         checkNodesUsage(null, stmt, "select * from Person where _key in (1, 2)", 2,
@@ -186,7 +186,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         checkNodesUsage(null, stmt, "update Person set firstName = 'TestFirstName' where _key = 1",
             1, 1, true);
 
-        checkNodesUsage(null, stmt,  "update Person set firstName = 'TestFirstName' where _key = 1 or _key = 2",
+        checkNodesUsage(null, stmt, "update Person set firstName = 'TestFirstName' where _key = 1 or _key = 2",
             2, 2, true);
 
         checkNodesUsage(null, stmt, "update Person set firstName = 'TestFirstName' where _key in (1, 2)",
@@ -619,7 +619,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration<Object, Object> prepareCacheConfig(String cacheName) {
-        CacheConfiguration<Object,Object> cache = defaultCacheConfiguration();
+        CacheConfiguration<Object, Object> cache = defaultCacheConfiguration();
 
         cache.setName(cacheName);
         cache.setCacheMode(PARTITIONED);
@@ -743,7 +743,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         }
 
         assertTrue("Unexpected amount of used nodes: expected [0 < nodesCnt <= " + maxNodesUsedCnt +
-                "], got [" +  nonEmptyMetricsCntr + "]",
+                "], got [" + nonEmptyMetricsCntr + "]",
             nonEmptyMetricsCntr > 0 && nonEmptyMetricsCntr <= maxNodesUsedCnt);
 
         assertEquals("Executions count doesn't match expected value: expected [" +

@@ -536,7 +536,8 @@ public final class MultilayerPerceptron implements SmoothParametrized<Multilayer
         Matrix diff = groundTruth.like(groundTruth.rowSize(), groundTruth.columnSize());
 
         for (int col = 0; col < groundTruth.columnSize(); col++) {
-            // TODO: IGNITE-7155 Couldn't use views here because copy on views doesn't do actual copy and all changes are propagated to original.
+            // TODO: IGNITE-7155 Couldn't use views here because
+            //  copy on views doesn't do actual copy and all changes are propagated to original.
             Vector gtCol = groundTruth.getCol(col);
             Vector predCol = lastLayerOutput.getCol(col);
             diff.assignColumn(col, loss.apply(gtCol).differential(predCol));
@@ -569,13 +570,13 @@ public final class MultilayerPerceptron implements SmoothParametrized<Multilayer
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         StringBuilder builder = new StringBuilder("MultilayerPerceptron [\n");
-        if(below != null)
+        if (below != null)
             builder.append("below = \n").append(below.toString(pretty)).append("\n\n");
         builder.append("layers = [").append(pretty ? "\n" : "");
-        for(int i = 0; i < layers.size(); i++) {
+        for (int i = 0; i < layers.size(); i++) {
             MLPLayer layer = layers.get(i);
             builder.append("\tlayer").append(i).append(" = [\n");
-            if(layer.biases != null)
+            if (layer.biases != null)
                 builder.append("\t\tbias = ").append(Tracer.asAscii(layer.biases, "%.4f", false)).append("\n");
             String matrix = Tracer.asAscii(layer.weights, "%.4f").replaceAll("\n", "\n\t\t\t");
             builder.append("\t\tweights = [\n\t\t\t").append(matrix).append("\n\t\t]");

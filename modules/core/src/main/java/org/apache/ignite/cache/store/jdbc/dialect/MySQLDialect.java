@@ -28,6 +28,13 @@ public class MySQLDialect extends BasicJdbcDialect {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public MySQLDialect() {
+        // Workaround for known issue with MySQL large result set.
+        // See: http://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-implementation-notes.html
+        fetchSize = Integer.MIN_VALUE;
+    }
+
     /** {@inheritDoc} */
     @Override public String escape(String ident) {
         return '`' + ident + '`';
@@ -59,12 +66,5 @@ public class MySQLDialect extends BasicJdbcDialect {
 
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s", fullTblName,
             mkString(cols, ", "), repeat("?", cols.size(), "", ",", ""), updPart);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getFetchSize() {
-        // Workaround for known issue with MySQL large result set.
-        // See: http://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-implementation-notes.html
-        return Integer.MIN_VALUE;
     }
 }

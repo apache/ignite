@@ -66,7 +66,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
-        if(secEnabled)
+        if (secEnabled)
             cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;

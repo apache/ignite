@@ -29,11 +29,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.StripedExecutor.Stripe;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
@@ -53,6 +57,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
+    /** Class name for a SQL view exporter of system views. */
+    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
+
     /** Name of the system view for a system {@link StripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
 
@@ -75,7 +82,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param ctx Kernal context.
      */
     public GridSystemViewManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getSystemViewExporterSpi());
+        super(ctx, addStandardExporters(ctx.config().getSystemViewExporterSpi()));
     }
 
     /** {@inheritDoc} */
@@ -255,5 +262,38 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<SystemView<?>> iterator() {
         return systemViews.values().iterator();
+    }
+
+    /**
+     * Adds SQL and JMX view exporter to the spis array.
+     *
+     * @param spis Spis from config.
+     * @return Spis array with the SQL view exporter in it.
+     */
+    private static SystemViewExporterSpi[] addStandardExporters(SystemViewExporterSpi[] spis) {
+        int newSz = F.isEmpty(spis) ? 1 : spis.length + 1;
+
+        boolean addSql = IgniteComponentType.INDEXING.inClassPath();
+
+        if (addSql)
+            newSz += 1;
+
+        SystemViewExporterSpi[] newSpis = new SystemViewExporterSpi[newSz];
+
+        if (!F.isEmpty(spis))
+            System.arraycopy(spis, 0, newSpis, 0, spis.length);
+
+        if (addSql) {
+            try {
+                newSpis[newSpis.length - 2] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        newSpis[newSpis.length - 1] = new JmxSystemViewExporterSpi();
+
+        return newSpis;
     }
 }

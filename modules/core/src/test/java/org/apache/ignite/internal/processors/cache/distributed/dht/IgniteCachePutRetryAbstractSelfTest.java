@@ -440,7 +440,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    private void checkInternalCleanup() throws Exception{
+    private void checkInternalCleanup() throws Exception {
         checkNoAtomicFutures();
 
         checkOnePhaseCommitReturnValuesCleaned(GRID_CNT);

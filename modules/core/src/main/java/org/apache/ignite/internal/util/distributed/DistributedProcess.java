@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -31,8 +32,10 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
@@ -80,17 +83,41 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Factory which creates custom {@link InitMessage} for distributed process initialization. */
+    private BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory;
+
     /**
      * @param ctx Kernal context.
      * @param type Process type.
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
-    public DistributedProcess(GridKernalContext ctx, DistributedProcessType type,
+    public DistributedProcess(
+        GridKernalContext ctx,
+        DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
+        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
+    ) {
+        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param type Process type.
+     * @param exec Execute action and returns future with the single node result to send to the coordinator.
+     * @param finish Finish process closure. Called on each node when all single nodes results received.
+     * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
+     */
+    public DistributedProcess(
+        GridKernalContext ctx,
+        DistributedProcessType type,
+        Function<I, IgniteInternalFuture<R>> exec,
+        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
+        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
+    ) {
         this.ctx = ctx;
         this.type = type;
+        this.initMsgFactory = initMsgFactory;
 
         log = ctx.log(getClass());
 
@@ -153,7 +180,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id,msg.result(), msg.error());
+            finish.apply(p.id, msg.result(), msg.error());
 
             processes.remove(msg.processId());
         });
@@ -218,9 +245,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     public void start(UUID id, I req) {
         try {
-            InitMessage<I> msg = new InitMessage<>(id, type, req);
-
-            ctx.discovery().sendCustomEvent(msg);
+            ctx.discovery().sendCustomEvent(initMsgFactory.apply(id, req));
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to start process.", e);
@@ -257,11 +282,20 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
             (Exception)p.resFut.error());
 
-        if (F.eq(ctx.localNodeId(), p.crdId))
-            onSingleNodeMessageReceived(singleMsg, p.crdId);
+        UUID crdId = p.crdId;
+
+        if (F.eq(ctx.localNodeId(), crdId))
+            onSingleNodeMessageReceived(singleMsg, crdId);
         else {
             try {
-                ctx.io().sendToGridTopic(p.crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+                ctx.io().sendToGridTopic(crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                // The coordinator has failed. The single message will be sent when a new coordinator initialized.
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
+                        ", processId=" + p.id + ", error=" + e.getMessage() + ']');
+                }
             }
             catch (IgniteCheckedException e) {
                 log.error("Unable to send message to coordinator.", e);
@@ -367,6 +401,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /** Defines distributed processes. */
     public enum DistributedProcessType {
+        /** For test purposes only. */
+        TEST_PROCESS,
+
         /**
          * Master key change prepare process.
          *
@@ -379,6 +416,50 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see GridEncryptionManager
          */
-        MASTER_KEY_CHANGE_FINISH
+        MASTER_KEY_CHANGE_FINISH,
+
+        /**
+         * Start snapshot procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        START_SNAPSHOT,
+
+        /**
+         * End snapshot procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        END_SNAPSHOT,
+
+        /**
+         * Cache group encyption key change prepare phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_PREPARE,
+
+        /**
+         * Cache group encyption key change perform phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_FINISH,
+
+        /**
+         * Rotate performance statistics.
+         */
+        PERFORMANCE_STATISTICS_ROTATE,
+
+        /**
+         * Cache group restore prepare phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+
+        /**
+         * Cache group restore cache start phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_START,
+
+        /**
+         * Cache group restore rollback phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
     }
 }

@@ -181,7 +181,7 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
      * @return update count.
      */
     private int insertWithStreaming(Integer id, String name) {
-        try (Connection conn= GridTestUtils.connect(grid(REDUCER_IDX), null)) {
+        try (Connection conn = GridTestUtils.connect(grid(REDUCER_IDX), null)) {
             conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
             try (Statement stat = conn.createStatement()) {
@@ -225,7 +225,7 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
      * @param pathToCsv Path to csv file to upload.
      */
     private int doCopyCommand(String pathToCsv) {
-        try (Connection conn= GridTestUtils.connect(grid(REDUCER_IDX), null)) {
+        try (Connection conn = GridTestUtils.connect(grid(REDUCER_IDX), null)) {
             conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
             try (Statement copy = conn.createStatement()) {
@@ -301,6 +301,7 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
     public void testLocalSelectCanceled() {
         assertMetricsIncrementedOnlyOnReducer(() ->
                 startAndKillQuery(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID <> suspendHook(ID)").setLocal(true)),
+            2,
             "success",
             "failed",
             "canceled");

@@ -18,11 +18,15 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+import java.util.Collection;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -95,8 +99,50 @@ public enum IgniteFeatures {
      */
     SAFE_CLUSTER_DEACTIVATION(22),
 
-    /** Long operations dump timeout. */
-    LONG_OPERATIONS_DUMP_TIMEOUT(30);
+    /** Persistence caches can be snapshot.  */
+    PERSISTENCE_CACHE_SNAPSHOT(23),
+
+    /** Tracing. */
+    TRACING(26),
+
+    /** Distributed change timeout for dump long operations. */
+    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
+
+    /** New region for volatile data. */
+    VOLATILE_DATA_STRUCTURES_REGION(33),
+
+    /** Check secondary indexes inline size on join/by control utility request. */
+    CHECK_INDEX_INLINE_SIZES(36),
+
+    /** Distributed propagation of tx collisions dump interval. */
+    DISTRIBUTED_TX_COLLISIONS_DUMP(37),
+
+    /** Remove metadata from cluster for specified type. */
+    REMOVE_METADATA(39),
+
+    /** Support policy of shutdown. */
+    SHUTDOWN_POLICY(40),
+
+    /** Force rebuild, list or request indexes rebuild status from control script. */
+    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
+
+    /** Optimization of recovery protocol for cluster which doesn't contain MVCC caches. */
+    MVCC_TX_RECOVERY_PROTOCOL_V2(44),
+
+    /** Pk index keys are applied in correct order. */
+    SPECIFIED_SEQ_PK_KEYS(45),
+
+    /** Compatibility support for new fields which are configured split. */
+    SPLITTED_CACHE_CONFIGURATIONS_V2(46),
+
+    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
+    CACHE_GROUP_KEY_CHANGE(47),
+
+    /** Collecting performance statistics. */
+    PERFORMANCE_STATISTICS(48),
+
+    /** Restore cache group from the snapshot. */
+    SNAPSHOT_RESTORE_CACHE_GROUP(49);
 
     /**
      * Unique feature identifier.
@@ -168,6 +214,23 @@ public enum IgniteFeatures {
         }
 
         return true;
+    }
+
+    /**
+     * Check that feature is supported by all remote nodes.
+     *
+     * @param discoSpi Discovery SPI implementation.
+     * @param feature Feature to check.
+     * @return {@code True} if all remote nodes support the feature.
+     */
+    public static boolean allNodesSupport(
+        DiscoverySpi discoSpi,
+        IgniteFeatures feature
+    ) {
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(feature);
+        else
+            return allNodesSupports(discoSpi.getRemoteNodes(), feature);
     }
 
     /**

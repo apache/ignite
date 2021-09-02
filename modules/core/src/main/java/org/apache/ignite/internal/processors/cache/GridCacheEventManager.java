@@ -313,9 +313,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             Object oldVal0;
 
             try {
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false, null);
             }
             catch (Exception e) {
                 if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
@@ -330,9 +330,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
 
                 forceKeepBinary = true;
 
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false, null);
             }
 
             IgniteUuid xid = tx == null ? null : tx.xid();

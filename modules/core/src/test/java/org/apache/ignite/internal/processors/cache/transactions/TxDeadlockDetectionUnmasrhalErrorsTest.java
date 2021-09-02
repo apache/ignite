@@ -170,7 +170,7 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
             assertTrue(deadlock.get());
 
-            for (int i = 0; i < NODES_CNT ; i++) {
+            for (int i = 0; i < NODES_CNT; i++) {
                 Ignite ignite = ignite(i);
 
                 IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();

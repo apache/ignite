@@ -29,6 +29,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.BYTE_ARR;
+
 /**
  *
  */
@@ -91,7 +93,7 @@ public class ClusterMetricsUpdateMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("allNodesMetrics", allNodesMetrics, MessageCollectionItemType.UUID, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeMap("allNodesMetrics", allNodesMetrics, MessageCollectionItemType.UUID, BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -116,7 +118,7 @@ public class ClusterMetricsUpdateMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                allNodesMetrics = reader.readMap("allNodesMetrics", MessageCollectionItemType.UUID, MessageCollectionItemType.BYTE_ARR, false);
+                allNodesMetrics = reader.readMap("allNodesMetrics", MessageCollectionItemType.UUID, BYTE_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;

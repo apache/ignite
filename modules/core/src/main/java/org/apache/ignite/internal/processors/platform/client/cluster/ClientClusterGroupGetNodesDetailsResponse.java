@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-
-import java.util.Collection;
 
 /**
  * Cluster group get nodes details response.
@@ -48,7 +47,7 @@ public class ClientClusterGroupGetNodesDetailsResponse extends ClientResponse {
 
         writer.writeInt(nodes.size());
 
-        for (ClusterNode node: nodes){
+        for (ClusterNode node: nodes) {
             writer.writeUuid(node.id());
             PlatformUtils.writeNodeAttributes(writer, node.attributes());
             writer.writeCollection(node.addresses());

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.text.DateFormat;
 import java.time.LocalTime;
@@ -42,6 +43,7 @@ import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
+import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -60,13 +62,19 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -84,6 +92,8 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
+import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.FILTER_OPERATION;
+import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.VIEWS;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
@@ -92,8 +102,11 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
@@ -106,8 +119,6 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
-import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.FILTER_OPERATION;
-import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -120,6 +131,9 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
+
+    /** */
+    private static final String REGISTRY_NAME = "test_registry";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -207,6 +221,12 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String metricName : res)
             assertNotNull(metricName, dataRegionMBean.getAttribute(metricName));
+
+        DataRegionConfiguration cfg =
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+        assertEquals(cfg.getInitialSize(), dataRegionMBean.getAttribute("InitialSize"));
+        assertEquals(cfg.getMaxSize(), dataRegionMBean.getAttribute("MaxSize"));
     }
 
     /** */
@@ -244,6 +264,26 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         DynamicMBean bean2 = metricRegistry(ignite.name(), "other", "prefix2");
 
         assertEquals(44L, bean2.getAttribute("test3"));
+    }
+
+    /** */
+    @Test
+    public void testRemoveFilteredRegistry() {
+        String regName = MetricUtils.metricName(FILTERED_PREFIX, "registry-for-remove");
+
+        GridMetricManager mmgr = ignite.context().metric();
+
+        mmgr.registry(regName);
+
+        assertTrue(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
+
+        mmgr.remove(regName);
+
+        assertFalse(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
     }
 
     /** */
@@ -363,7 +403,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 Consumer<CompositeData> checkThin = c -> {
                     assertEquals("THIN", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
-                    assertEquals(c.get("version"), ProtocolVersion.CURRENT_VER.toString());
+                    assertEquals(c.get("version"), ProtocolVersion.LATEST_VER.toString());
                 };
 
                 Consumer<CompositeData> checkJdbc = c -> {
@@ -419,7 +459,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             }
 
             assertEquals(0, systemView(CQ_SYS_VIEW).size());
-            assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
+            assertTrue(waitForCondition(() -> systemView(remoteNode, CQ_SYS_VIEW).isEmpty(), getTestTimeout()));
         }
     }
 
@@ -508,6 +548,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(Long.valueOf(2), searchHistogram("histogram_50_500", mreg));
         assertEquals(Long.valueOf(3), searchHistogram("histogram_500_inf", mreg));
 
+        assertEquals(Long.valueOf(1), searchHistogram("histogram_with_underscore_0_50", mreg));
+        assertEquals(Long.valueOf(2), searchHistogram("histogram_with_underscore_50_500", mreg));
+        assertEquals(Long.valueOf(3), searchHistogram("histogram_with_underscore_500_inf", mreg));
+
         assertNull(searchHistogram("unknown", mreg));
         assertNull(searchHistogram("unknown_0", mreg));
         assertNull(searchHistogram("unknown_0_50", mreg));
@@ -520,6 +564,12 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertNull(searchHistogram("histogram_0_100", mreg));
         assertNull(searchHistogram("histogram_0_inf", mreg));
         assertNull(searchHistogram("histogram_0_500", mreg));
+
+        assertNull(searchHistogram("histogram_with_underscore", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_100", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_inf", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_500", mreg));
     }
 
     /** */
@@ -533,11 +583,38 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         MBeanAttributeInfo[] attrs = bean.getMBeanInfo().getAttributes();
 
-        assertEquals(3, attrs.length);
+        assertEquals(6, attrs.length);
 
         assertEquals(1L, bean.getAttribute("histogram_0_50"));
         assertEquals(2L, bean.getAttribute("histogram_50_500"));
         assertEquals(3L, bean.getAttribute("histogram_500_inf"));
+
+        assertEquals(1L, bean.getAttribute("histogram_with_underscore_0_50"));
+        assertEquals(2L, bean.getAttribute("histogram_with_underscore_50_500"));
+        assertEquals(3L, bean.getAttribute("histogram_with_underscore_500_inf"));
+    }
+
+    /** */
+    @Test
+    public void testJmxHistogramNamesExport() throws Exception {
+        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
+
+        String simpleName = "testhist";
+        String nameWithUnderscore = "test_hist";
+
+        reg.histogram(simpleName, new long[] {10, 100}, null);
+        reg.histogram(nameWithUnderscore, new long[] {10, 100}, null);
+
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, REGISTRY_NAME);
+
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 0 + '_' + 10));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 0 + '_' + 10));
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(nameWithUnderscore + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(nameWithUnderscore + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 100 + "_inf"));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 100 + "_inf"));
     }
 
     /** */
@@ -590,7 +667,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertTrue(((long)txv.get("startTime")) <= System.currentTimeMillis());
 
             //Only pessimistic transactions are supported when MVCC is enabled.
-            if(Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
+            if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
                 return;
 
             GridTestUtils.runMultiThreadedAsync(() -> {
@@ -609,7 +686,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             assertTrue(res);
 
-            for (int i=0; i<9; i++) {
+            for (int i = 0; i < 9; i++) {
                 txv = systemView(TXS_MON_LIST).get(new Object[] {i});
 
                 if (PESSIMISTIC.name().equals(txv.get("concurrency")))
@@ -707,7 +784,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startClientGrid("client-1");
+        try (IgniteEx client1 = startClientGrid("client-1");
             IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
@@ -761,7 +838,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(36, mbn.getMBeanInfo().getAttributes().length);
 
-        assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a-> F.isEmpty(a.getDescription())));
+        assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a -> F.isEmpty(a.getDescription())));
 
         assertFalse(F.isEmpty((String)mbn.getAttribute("fullVersion")));
         assertFalse(F.isEmpty((String)mbn.getAttribute("copyright")));
@@ -877,7 +954,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         TabularDataSupport qrySysView = systemView(server, SCAN_QRY_SYS_VIEW);
 
-        for (int i=0; i < qrySysView.size(); i++) {
+        for (int i = 0; i < qrySysView.size(); i++) {
             CompositeData view = systemView(SCAN_QRY_SYS_VIEW).get(new Object[] {i});
 
             if ("cache2".equals(view.get("cacheName"))) {
@@ -896,7 +973,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSysStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite.context().pools().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
     }
@@ -904,7 +981,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStreamerStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
     }
@@ -979,10 +1056,131 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
+    @Test
+    public void testBinaryMeta() {
+        IgniteCache<Integer, TestObjectAllTypes> c1 = ignite.createCache("test-all-types-cache");
+        IgniteCache<Integer, TestObjectEnum> c2 = ignite.createCache("test-enum-cache");
+
+        c1.put(1, new TestObjectAllTypes());
+        c2.put(1, TestObjectEnum.A);
+
+        TabularDataSupport view = systemView(BINARY_METADATA_VIEW);
+
+        assertNotNull(view);
+        assertEquals(2, view.size());
+
+        for (int i = 0; i < 2; i++) {
+            CompositeData meta = view.get(new Object[] {i});
+
+            if (Objects.equals(TestObjectEnum.class.getName(), meta.get("typeName"))) {
+                assertTrue((Boolean)meta.get("isEnum"));
+
+                assertEquals(0, meta.get("fieldsCount"));
+            }
+            else {
+                assertFalse((Boolean)meta.get("isEnum"));
+
+                Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
+
+                assertEquals(fields.length, meta.get("fieldsCount"));
+
+                for (Field field : fields)
+                    assertTrue(meta.get("fields").toString().contains(field.getName()));
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
+
+        String name = "test-key";
+        String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
+
+        db.checkpointReadLock();
+
+        try {
+            db.metaStorage().write(name, val);
+            db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
+        } finally {
+            db.checkpointReadUnlock();
+        }
+
+        TabularDataSupport view = systemView(METASTORE_VIEW);
+
+        boolean found = false;
+        boolean foundUnmarshalled = false;
+
+        for (int i = 0; i < view.size(); i++) {
+            CompositeData row = view.get(new Object[] {i});
+
+            if (row.get("name").equals(name) && val.equals(row.get("value")))
+                found = true;
+            else if (row.get("name").equals(unmarshalledName) && row.get("value").equals(unmarshalledVal))
+                foundUnmarshalled = true;
+        }
+
+        assertTrue(found && foundUnmarshalled);
+    }
+
+    /** */
+    @Test
+    public void testDistributedMetastorage() throws Exception {
+        try (IgniteEx ignite1 = startGrid(1)) {
+            DistributedMetaStorage dms = ignite.context().distributedMetastorage();
+
+            String name = "test-distributed-key";
+            String val = "test-distributed-value";
+
+            dms.write(name, val);
+
+            TabularDataSupport view = systemView(DISTRIBUTED_METASTORE_VIEW);
+
+            boolean found = false;
+
+            for (int i = 0; i < view.size(); i++) {
+                CompositeData row = view.get(new Object[] {i});
+
+                if (row.get("name").equals(name) && row.get("value").equals(val)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            assertTrue(found);
+
+            assertTrue(waitForCondition(() -> {
+                TabularDataSupport view1 = systemView(ignite1, DISTRIBUTED_METASTORE_VIEW);
+
+                for (int i = 0; i < view1.size(); i++) {
+                    CompositeData row = view1.get(new Object[] {i});
+
+                    if (row.get("name").equals(name) && row.get("value").equals(val))
+                        return true;
+                }
+
+                return false;
+            }, getTestTimeout()));
+        }
+    }
+
+    /** */
     private void createTestHistogram(MetricRegistry mreg) {
         long[] bounds = new long[] {50, 500};
 
         HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
+
+        histogram.value(10);
+        histogram.value(51);
+        histogram.value(60);
+        histogram.value(600);
+        histogram.value(600);
+        histogram.value(600);
+
+        histogram = mreg.histogram("histogram_with_underscore", bounds, null);
 
         histogram.value(10);
         histogram.value(51);

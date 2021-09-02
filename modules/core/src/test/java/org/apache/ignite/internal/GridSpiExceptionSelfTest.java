@@ -87,7 +87,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
                 assert false : "Exception should be thrown";
             }
             catch (IgniteException e) {
-                assertTrue(e.getCause() instanceof  IgniteCheckedException);
+                assertTrue(e.getCause() instanceof IgniteCheckedException);
 
                 Throwable err = e.getCause().getCause();
 
@@ -143,8 +143,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public DeploymentResource findResource(String rsrcName) {
-            // No-op.
+        @Override public DeploymentResource findResource(String rsrcName) {
             return null;
         }
 

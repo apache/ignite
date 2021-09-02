@@ -62,7 +62,10 @@ public class BPlusMetaIO extends PageIO {
     private static final long FLAG_INLINE_OBJECT_SUPPORTED = 2L;
 
     /** */
-    public static final long DEFAULT_FLAGS = FLAG_UNWRAPPED_PK | FLAG_INLINE_OBJECT_SUPPORTED ;
+    private static final long FLAG_INLINE_OBJECT_HASH = 4L;
+
+    /** */
+    public static final long DEFAULT_FLAGS = FLAG_UNWRAPPED_PK | FLAG_INLINE_OBJECT_SUPPORTED | FLAG_INLINE_OBJECT_HASH;
 
     /** */
     private final int refsOff;
@@ -234,6 +237,17 @@ public class BPlusMetaIO extends PageIO {
     }
 
     /**
+     * Whether Java objects should be inlined as hash or as bytes array.
+     *
+     * @param pageAddr Page address.
+     */
+    public boolean inlineObjectHash(long pageAddr) {
+        assert supportFlags();
+
+        return (flags(pageAddr) & FLAG_INLINE_OBJECT_HASH) != 0L;
+    }
+
+    /**
      * @return {@code true} If flags are supported.
      */
     public boolean supportFlags() {
@@ -295,12 +309,18 @@ public class BPlusMetaIO extends PageIO {
      * @param pageAddr Page address.
      * @param unwrappedPk unwrapped primary key of this tree flag.
      * @param inlineObjSupported inline POJO by created tree flag.
+     * @param inlineObjHash Whether Java objects should be inlined as hash or as bytes array.
      */
-    public void setFlags(long pageAddr, boolean unwrappedPk, boolean inlineObjSupported) {
+    public void setFlags(
+        long pageAddr,
+        boolean unwrappedPk,
+        boolean inlineObjSupported,
+        boolean inlineObjHash) {
         assert supportFlags();
 
         long flags = unwrappedPk ? FLAG_UNWRAPPED_PK : 0;
         flags |= inlineObjSupported ? FLAG_INLINE_OBJECT_SUPPORTED : 0;
+        flags |= inlineObjHash ? FLAG_INLINE_OBJECT_HASH : 0;
 
         PageUtils.putLong(pageAddr, FLAGS_OFFSET, flags);
     }
@@ -310,8 +330,7 @@ public class BPlusMetaIO extends PageIO {
         sb.a("BPlusMeta [\n\tlevelsCnt=").a(getLevelsCount(addr))
             .a(",\n\trootLvl=").a(getRootLevel(addr))
             .a(",\n\tinlineSize=").a(getInlineSize(addr))
-            .a("\n]")
-        ;
+            .a("\n]");
             //TODO print firstPageIds by level
     }
 
@@ -342,6 +361,27 @@ public class BPlusMetaIO extends PageIO {
 
         ioNew.setInlineSize(pageAddr, inlineSize);
         ioNew.setCreatedVersion(pageAddr, IgniteVersionUtils.VER);
-        ioNew.setFlags(pageAddr, unwrappedPk, inlineObjSupported);
+        ioNew.setFlags(pageAddr, unwrappedPk, inlineObjSupported, false);
+    }
+
+    /**
+     * Set meta page values.
+     * @param pageAddr Page address.
+     * @param inlineSize Inline size.
+     * @param unwrappedPk Unwrap PK flag.
+     * @param inlineObjSupported Supports inline object flag.
+     * @param inlineObjHash Supports inline object hash flag.
+     */
+    public static void setValues(
+        long pageAddr,
+        int inlineSize,
+        boolean unwrappedPk,
+        boolean inlineObjSupported,
+        boolean inlineObjHash
+    ) {
+        BPlusMetaIO ioNew = VERSIONS.latest();
+
+        ioNew.setInlineSize(pageAddr, inlineSize);
+        ioNew.setFlags(pageAddr, unwrappedPk, inlineObjSupported, inlineObjHash);
     }
 }

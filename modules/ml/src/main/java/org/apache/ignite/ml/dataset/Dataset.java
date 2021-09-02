@@ -210,7 +210,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <I> Type of a new wrapped dataset.
      * @return New wrapped dataset.
      */
-    public default <I extends Dataset<C ,D>> I wrap(IgniteFunction<Dataset<C, D>, I> wrapper) {
+    public default <I extends Dataset<C, D>> I wrap(IgniteFunction<Dataset<C, D>, I> wrapper) {
         return wrapper.apply(this);
     }
 }

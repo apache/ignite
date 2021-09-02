@@ -94,7 +94,9 @@ public class HibernateL2CacheExample {
 
     /** Caches' names. */
     private static final String USER_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User";
+
     private static final String USER_POSTS_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User.posts";
+
     private static final String POST_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.Post";
 
     /**
@@ -265,7 +267,7 @@ public class HibernateL2CacheExample {
     private static String timestampsCacheName() {
         return isIgniteHibernate51orBelowEnabled() ?
             // Represents the name of timestamps region specific to hibernate 5.1 {@see HibernateTimestampsRegion}.
-            "org.hibernate.cache.spi.UpdateTimestampsCache":
+            "org.hibernate.cache.spi.UpdateTimestampsCache" :
             // Represents the name of timestamps region specific to hibernate 5.3 {@see IgniteTimestampsRegion}.
             "default-update-timestamps-region";
     }
@@ -278,7 +280,7 @@ public class HibernateL2CacheExample {
     private static String queryResultsCacheName() {
         return isIgniteHibernate51orBelowEnabled() ?
             // Represents the name of query results region specific to hibernate 5.1 {@see HibernateQueryResultsRegion}.
-            "org.hibernate.cache.internal.StandardQueryCache":
+            "org.hibernate.cache.internal.StandardQueryCache" :
             // Represents the name of query results region specific to hibernate 5.3 {@see IgniteQueryResultsRegion}.
             "default-query-results-region";
     }

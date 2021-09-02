@@ -20,6 +20,7 @@
 
 #include "impl/ignite_client_impl.h"
 #include "impl/cache/cache_client_impl.h"
+#include "impl/compute/compute_client_impl.h"
 
 using namespace ignite::impl::thin;
 using namespace cache;
@@ -30,21 +31,6 @@ namespace
     IgniteClientImpl& GetClientImpl(SharedPointer<void>& ptr)
     {
         return *reinterpret_cast<IgniteClientImpl*>(ptr.Get());
-    }
-
-    const IgniteClientImpl& GetClientImpl(const SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<const IgniteClientImpl*>(ptr.Get());
-    }
-
-    CacheClientImpl& GetCacheImpl(SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<CacheClientImpl*>(ptr.Get());
-    }
-
-    const CacheClientImpl& GetCacheImpl(const SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<const CacheClientImpl*>(ptr.Get());
     }
 }
 
@@ -75,6 +61,16 @@ namespace ignite
         IgniteClient::SP_Void IgniteClient::InternalCreateCache(const char* name)
         {
             return static_cast<SP_Void>(GetClientImpl(impl).CreateCache(name));
+        }
+
+        IgniteClient::SP_Void IgniteClient::InternalTransactions()
+        {
+            return static_cast<SP_Void>(GetClientImpl(impl).ClientTransactions());
+        }
+
+        IgniteClient::SP_Void IgniteClient::InternalCompute()
+        {
+            return static_cast<SP_Void>(GetClientImpl(impl).GetCompute());
         }
 
         IgniteClient::IgniteClient(SP_Void& impl)

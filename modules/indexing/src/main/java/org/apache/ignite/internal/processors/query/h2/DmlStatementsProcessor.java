@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * Contains entry processors for DML. Should be modified very carefully to maintain binary compatibility due to
- * seializable anonymous classes.
+ * serializable anonymous classes.
  */
 @SuppressWarnings({"Anonymous2MethodRef", "PublicInnerClass", "unused"})
 public class DmlStatementsProcessor {

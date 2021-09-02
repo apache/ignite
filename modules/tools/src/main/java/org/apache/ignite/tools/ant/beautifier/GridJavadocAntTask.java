@@ -166,6 +166,7 @@ public class GridJavadocAntTask extends MatchingTask {
             // Parse HTML.
             Jerry doc = Jerry.jerry(fileContent);
 
+            // TODO https://issues.apache.org/jira/browse/IGNITE-13202 Check also index.html file.
             if (file.endsWith("overview-summary.html")) {
                 // Try to find Other Packages section.
                 Jerry otherPackages =
@@ -176,12 +177,13 @@ public class GridJavadocAntTask extends MatchingTask {
                         doc.html());
                     throw new IllegalArgumentException("'Other Packages' section should not be present, " +
                         "all packages should have corresponding documentation groups: " + file + ";" +
-                        "Please add packages description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
+                        "Please add packages description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / " +
+                        "<configuration> / <groups>");
                 }
             }
             else if (!isViewHtml(file)) {
                 // Try to find a class description block.
-                Jerry descBlock = doc.find("div.contentContainer div.description ul.blockList li.blockList div.block");
+                Jerry descBlock = doc.find("div.contentContainer .description");
 
                 if (descBlock.size() == 0)
                     throw new IllegalArgumentException("Class doesn't have description in file: " + file);
@@ -198,7 +200,7 @@ public class GridJavadocAntTask extends MatchingTask {
 
         while ((ch = lexer.read()) != GridJavadocCharArrayLexReader.EOF) {
             // Instruction, tag or comment.
-            if (ch =='<') {
+            if (ch == '<') {
                 if (tokBuf.length() > 0) {
                     toks.add(new GridJavadocToken(GridJavadocTokenType.TOKEN_TEXT, tokBuf.toString()));
 
@@ -372,7 +374,7 @@ public class GridJavadocAntTask extends MatchingTask {
     private boolean isViewHtml(String fileName) {
         String baseName = new File(fileName).getName();
 
-        return "index.html".equals(baseName) || baseName.contains("-");
+        return "index.html".equals(baseName) || baseName.contains("-") || "allclasses.html".equals(baseName);
     }
 
     /**

@@ -114,7 +114,7 @@ public class SecuritySubjectPermissionsTest extends AbstractSandboxTest {
     }
 
     /** */
-    private SecurityManager securityManager(){
+    private SecurityManager securityManager() {
         SecurityManager sm = System.getSecurityManager();
 
         assertNotNull(sm);

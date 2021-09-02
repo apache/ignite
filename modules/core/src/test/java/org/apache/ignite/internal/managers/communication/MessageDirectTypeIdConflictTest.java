@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
-
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -73,7 +73,7 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
     @Test
     @SuppressWarnings({"RedundantThrows", "ThrowableNotThrown"})
     public void testRegisterMessageFactoryWithConflictDirectTypeId() throws Exception {
-        assertThrows(log, this::startGrid, IgniteCheckedException.class,
+        assertThrows(log, (Callable<Object>)this::startGrid, IgniteCheckedException.class,
                 "Message factory is already registered for direct type: " + MSG_DIRECT_TYPE);
     }
 

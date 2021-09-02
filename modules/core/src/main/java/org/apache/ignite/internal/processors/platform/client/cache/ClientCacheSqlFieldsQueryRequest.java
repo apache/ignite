@@ -26,7 +26,9 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
@@ -46,12 +48,20 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
     /** Include field names flag. */
     private final boolean includeFieldNames;
 
+    /** Partitions. */
+    private final int[] partitions;
+
+    /** Update batch size. */
+    private final Integer updateBatchSize;
+
     /**
      * Ctor.
      *
      * @param reader Reader.
+     * @param protocolCtx Protocol context.
      */
-    public ClientCacheSqlFieldsQueryRequest(BinaryRawReaderEx reader) {
+    public ClientCacheSqlFieldsQueryRequest(BinaryRawReaderEx reader,
+        ClientProtocolContext protocolCtx) {
         super(reader);
 
         // Same request format as in JdbcQueryExecuteRequest.
@@ -72,7 +82,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
                 ? new SqlFieldsQuery(sql)
-                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
+                : new SqlFieldsQueryEx(sql, stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
 
         qry.setSchema(schema)
                 .setPageSize(pageSize)
@@ -84,17 +94,45 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
                 .setCollocated(collocated)
                 .setLazy(lazy);
 
-        if (timeout >= 0)
-            qry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+        // Zero value of the timeout from the old client is interpreted as a 'default'.
+        // So, old clients cannot disable default timeout by explicit set timeout to 0.
+        // they must use Integer.MAX_VALUE constant.
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.DEFAULT_QRY_TIMEOUT) || timeout > 0)
+            QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.MILLISECONDS);
 
         this.qry = qry;
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)) {
+            // Set qry values in process method so that validation errors are reported to the client.
+            int partCnt = reader.readInt();
+
+            if (partCnt >= 0) {
+                partitions = new int[partCnt];
+
+                for (int i = 0; i < partCnt; i++)
+                    partitions[i] = reader.readInt();
+            } else
+                partitions = null;
+
+            updateBatchSize = reader.readInt();
+        } else {
+            partitions = null;
+            updateBatchSize = null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        qry.setPartitions(partitions);
+
+        if (updateBatchSize != null)
+            qry.setUpdateBatchSize(updateBatchSize);
+
         ctx.incrementCursors();
 
         try {
+            qry.setQueryInitiatorId(ctx.clientDescriptor());
+
             // If cacheId is provided, we must check the cache for existence.
             if (cacheId() != 0) {
                 DynamicCacheDescriptor desc = cacheDescriptor(ctx);

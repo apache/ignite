@@ -86,7 +86,7 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
         int cnt = 0;
 
         // Wait for all driver processes to start.
-        while(!checkIfAllClientsStarted(hostList) && cnt++ < 600)
+        while (!checkIfAllClientsStarted(hostList) && cnt++ < 600)
             Thread.sleep(500L);
     }
 
@@ -94,7 +94,7 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
      *
      * @param cfg
      */
-    private synchronized void setServHosts(BenchmarkConfiguration cfg){
+    private synchronized void setServHosts(BenchmarkConfiguration cfg) {
         BenchmarkUtils.println("Setting serv host queue");
 
         String[] servHostArr = IgniteThinBenchmarkUtils.servHostArr(cfg);
@@ -108,11 +108,11 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
      * @param hostList List of driver host addresses.
      * @return {@code true} if all driver processes had been started or {@code false} if not.
      */
-    private boolean checkIfAllClientsStarted(List<String> hostList){
+    private boolean checkIfAllClientsStarted(List<String> hostList) {
         ClientCache<String, String> utilCache = client().getOrCreateCache("start-util-cache");
 
-        for(String host : hostList){
-            if(host.equals("localhost"))
+        for (String host : hostList) {
+            if (host.equals("localhost"))
                 host = "127.0.0.1";
 
             String res = utilCache.get(host);

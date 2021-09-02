@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -36,8 +35,12 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot manager stub.
+ *
+ * @deprecated Use {@link IgniteSnapshotManager}.
  */
-public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
+@Deprecated
+public class IgniteCacheSnapshotManager<T extends SnapshotOperation>
+    extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** Snapshot started lock filename. */
     public static final String SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME = "snapshot-started.loc";
 
@@ -93,7 +96,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /**
      *
      */
-    public boolean snapshotOperationInProgress(){
+    public boolean snapshotOperationInProgress() {
         return false;
     }
 
@@ -122,7 +125,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      * @param cctx Cctx.
      * @param destroy Destroy flag.
      */
-    public void onCacheStop(GridCacheContext cctx, boolean destroy) {
+    public void onCacheStop(GridCacheContext<?, ?> cctx, boolean destroy) {
         // No-op.
     }
 

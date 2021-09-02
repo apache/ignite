@@ -75,7 +75,7 @@ public class ParameterSetGenerator {
     private void traverseTree(Map<Integer, Double[]> map, Double[] nextPnt, int dimensionNum) {
         dimensionNum++;
 
-        if (dimensionNum == sizeOfParamVector){
+        if (dimensionNum == sizeOfParamVector) {
             Double[] paramSet = Arrays.copyOf(nextPnt, sizeOfParamVector);
             params.add(paramSet);
             return;

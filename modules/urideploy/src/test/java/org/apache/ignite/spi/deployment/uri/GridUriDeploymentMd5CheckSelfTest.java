@@ -124,7 +124,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     private File getDeployDir() {
         File tmpDir = new File(GridTestProperties.getProperty("deploy.uri.file2.path"));
 
-        if (! tmpDir.exists())
+        if (!tmpDir.exists())
             tmpDir.mkdirs();
 
         assert tmpDir.isDirectory();

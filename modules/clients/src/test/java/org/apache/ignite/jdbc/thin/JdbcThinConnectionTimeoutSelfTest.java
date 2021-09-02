@@ -159,7 +159,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
     public void testNegativeConnectionTimeout() {
         GridTestUtils.assertThrows(log,
             () -> {
-                try(final Connection conn = DriverManager.getConnection(URL+"?connectionTimeout=-1")) {
+                try (final Connection conn = DriverManager.getConnection(URL + "?connectionTimeout=-1")) {
                     return null;
                 }
             },
@@ -243,7 +243,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
             stmt.executeQuery("select sleep_func(3) from Integer;");
 
             return null;
-        }, SQLTimeoutException.class, "The query was cancelled while executing.");
+        }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
 
         stmt.execute("select 1");
     }
@@ -262,7 +262,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
                 stmt.executeQuery("select sleep_func(3) from Integer;");
 
                 return null;
-            }, SQLTimeoutException.class, "The query was cancelled while executing.");
+            }, SQLTimeoutException.class, "The query was cancelled while executing due to timeout");
 
             stmt.execute("select 1");
         }

@@ -311,7 +311,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
 
             if (log.isDebugEnabled())
                 log.debug(S.toString("Loading value from store for key",
@@ -446,7 +446,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Collection<Object> keys0 = F.viewReadOnly(keys,
                 new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+                        return cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
                     }
                 });
 
@@ -568,8 +568,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
-            Object val0 = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
+            Object val0 = cctx.unwrapBinaryIfNeeded(val, !convertBinary(), null);
 
             if (log.isDebugEnabled()) {
                 log.debug(S.toString("Storing value in cache store",
@@ -680,7 +680,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
 
             if (log.isDebugEnabled())
                 log.debug(S.toString("Removing value from cache store", "key", key0, true));
@@ -788,7 +788,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         boolean storeSessionEnded) throws IgniteCheckedException {
         assert store != null;
 
-        sessionInit0(tx, commit? StoreOperation.COMMIT: StoreOperation.ROLLBACK, false);
+        sessionInit0(tx, commit ? StoreOperation.COMMIT : StoreOperation.ROLLBACK, false);
 
         try {
             if (sesLsnrs != null && sesHolder.get().contains(store)) {
@@ -834,7 +834,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBehindCacheStoreSessionListenerStart()  throws IgniteCheckedException {
+    @Override public void writeBehindCacheStoreSessionListenerStart() throws IgniteCheckedException {
         assert sesHolder.get() != null;
 
         notifyCacheStoreSessionListeners(sesHolder.get(), null, true);
@@ -1200,8 +1200,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        k = cctx.unwrapBinaryIfNeeded(k, !convertBinary());
-                        v = cctx.unwrapBinaryIfNeeded(v, !convertBinary());
+                        k = cctx.unwrapBinaryIfNeeded(k, !convertBinary(), null);
+                        v = cctx.unwrapBinaryIfNeeded(v, !convertBinary(), null);
 
                         if (rmvd != null && rmvd.contains(k))
                             continue;

@@ -40,7 +40,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default:distributedJoins=true@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL =
+        CFG_URL_PREFIX + "cache=default:distributedJoins=true@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Statement. */
     private Statement stmt;
@@ -49,7 +50,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

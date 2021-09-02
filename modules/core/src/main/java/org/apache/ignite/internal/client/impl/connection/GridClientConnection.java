@@ -332,16 +332,6 @@ public abstract class GridClientConnection {
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Get current grid state.
-     *
-     * @param destNodeId Destination node id.
-     * @deprecated Use {@link #state(UUID)} instead.
-     */
-    @Deprecated
-    public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
      * Gets current grid global state.
      *
      * @param destNodeId Destination node id.
@@ -413,6 +403,15 @@ public abstract class GridClientConnection {
      * @throws GridClientException If message forwarding failed.
      */
     public abstract GridClientFutureAdapter<?> forwardMessage(Object body) throws GridClientException;
+
+    /**
+     * Sending messages before node starts and getting a response to it.
+     *
+     * @param msg A raw message to send.
+     * @return Future holding server's response.
+     * @throws GridClientException In case of error.
+     */
+    public abstract GridClientFutureAdapter<?> messageBeforeStart(Object msg) throws GridClientException;
 
     /**
      * @return {@code True} if connection is closed.

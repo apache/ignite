@@ -51,7 +51,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
 
     /** {@inheritDoc} */
     @Override public Connection getConnection(String username, String pwd) throws SQLException {
-        Properties props =  this.props.storeToProperties();
+        Properties props = this.props.storeToProperties();
 
         if (!F.isEmpty(username))
             props.put("user", username);
@@ -126,7 +126,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
         if (addrs == null)
             return null;
 
-        String [] addrsStr = new String[addrs.length];
+        String[] addrsStr = new String[addrs.length];
 
         for (int i = 0; i < addrs.length; ++i)
             addrsStr[i] = addrs[i].toString();

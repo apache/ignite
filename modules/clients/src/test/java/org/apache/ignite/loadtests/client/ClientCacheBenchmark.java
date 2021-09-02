@@ -18,10 +18,10 @@
 package org.apache.ignite.loadtests.client;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Random;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
@@ -31,6 +31,7 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientPartitionAffinity;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridFileLock;
@@ -45,7 +46,7 @@ public class ClientCacheBenchmark {
     private static final int KEY_COUNT = 1000;
 
     /** Size of arrays used as stored values. */
-    private static final int VALUE_LENGTH = 1024*4;
+    private static final int VALUE_LENGTH = 1024 * 4;
 
     /** Cached values for store. */
     private static final byte[][] values = new byte[KEY_COUNT][];
@@ -103,7 +104,7 @@ public class ClientCacheBenchmark {
 
         long startTime = System.currentTimeMillis();
 
-        for(int i = 0; i < threadCnt; i++) {
+        for (int i = 0; i < threadCnt; i++) {
             TestThread th = new TestThread();
             workers.add(th);
             th.start();
@@ -139,9 +140,9 @@ public class ClientCacheBenchmark {
 
         double timeSpent = ((double)(System.currentTimeMillis() - startTime)) / 1000;
 
-        itersPerSec = total/timeSpent;
+        itersPerSec = total / timeSpent;
 
-        System.out.printf("%8s, %12.0f, %12.0f, %12s\n", thCnt, itersPerSec, total/timeSpent/thCnt, total);
+        System.out.printf("%8s, %12.0f, %12.0f, %12s\n", thCnt, itersPerSec, total / timeSpent / thCnt, total);
     }
 
     /**
@@ -252,7 +253,7 @@ public class ClientCacheBenchmark {
                         GridLoadTestUtils.appendLineToFile(
                             outputFileName,
                             "%s,%d",
-                            GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                            IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                             Math.round(benchmark.getItersPerSec()));
                     }
                     catch (IOException e) {

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.spark;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -39,10 +42,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.junit.Test;
 import scala.Tuple2;
-
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * Tests for {@link JavaIgniteRDD} (standalone mode).
@@ -268,7 +267,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
             cache.savePairs(sc.parallelize(F.range(0, cnt), 2).mapToPair(INT_TO_ENTITY_ALL_FIELDS_F));
 
             EntityTestAllTypeFields e = new EntityTestAllTypeFields(cnt / 2);
-            for(Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {
+            for (Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {
                 String fieldName = f.getName();
 
                 Object val = GridTestUtils.getFieldValue(e, fieldName);

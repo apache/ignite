@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.StreamSupport;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -36,14 +36,20 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +57,8 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -72,7 +80,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(l::increment, 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -86,7 +94,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(l::increment, 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -100,7 +108,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(() -> l.add(1), 100);
 
-        assertEquals(100*100f, l.value(), .000001);
+        assertEquals(100 * 100f, l.value(), .000001);
 
         l.reset();
 
@@ -114,7 +122,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(() -> l.add(1), 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -124,15 +132,23 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        AtomicLongMetric l = new AtomicLongMetric("rtest", "test");
+        String mName = "rtest";
+
+        AtomicLongMetric l = new AtomicLongMetric(metricName(mreg.name(), mName), "test");
 
         mreg.register(l);
 
-        assertEquals(l, mreg.findMetric("rtest"));
+        assertEquals(l, mreg.findMetric(mName));
 
         l.reset();
 
         assertEquals(0, l.value());
+
+        assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(mName, "")),
+            StringIndexOutOfBoundsException.class);
+
+        assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(metricName("mreg", mName), "")),
+            AssertionError.class);
     }
 
     /** */
@@ -244,17 +260,17 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*2; i++)
+            for (int i = 0; i < cnt * 2; i++)
                 h.value(99);
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*3; i++)
+            for (int i = 0; i < cnt * 3; i++)
                 h.value(500);
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*4; i++)
+            for (int i = 0; i < cnt * 4; i++)
                 h.value(501);
         }));
 
@@ -264,9 +280,9 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         long[] res = h.value();
 
         assertEquals(cnt, res[0]);
-        assertEquals(cnt*2, res[1]);
-        assertEquals(cnt*3, res[2]);
-        assertEquals(cnt*4, res[3]);
+        assertEquals(cnt * 2, res[1]);
+        assertEquals(cnt * 3, res[2]);
+        assertEquals(cnt * 4, res[3]);
     }
 
     /** */
@@ -345,9 +361,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testHistogramNames() throws Exception {
         HistogramMetricImpl h = new HistogramMetricImpl("test", null, new long[]{10, 50, 500});
 
-        Map<String, T2<long[], String[]>> cache = new HashMap<>();
-
-        String[] names = histogramBucketNames(h, cache);
+        String[] names = histogramBucketNames(h);
 
         assertArrayEquals(new String[] {
             "test_0_10",
@@ -355,8 +369,6 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
             "test_50_500",
             "test_500_inf"
         }, names);
-
-        assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
     /** */
@@ -368,10 +380,91 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testAddBeforeRemoveCompletes() throws Exception {
+        MetricExporterSpi checkSpi = new NoopMetricExporterSpi() {
+            private ReadOnlyMetricManager registry;
+
+            private Set<String> names = new HashSet<>();
+
+            @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+                registry.addMetricRegistryCreationListener(mreg -> {
+                    assertFalse(mreg.name() + " should be unique", names.contains(mreg.name()));
+
+                    names.add(mreg.name());
+                });
+
+                registry.addMetricRegistryRemoveListener(mreg -> names.remove(mreg.name()));
+            }
+
+            @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
+                this.registry = registry;
+            }
+        };
+
+        CountDownLatch rmvStarted = new CountDownLatch(1);
+        CountDownLatch rmvCompleted = new CountDownLatch(1);
+
+        MetricExporterSpi blockingSpi = new NoopMetricExporterSpi() {
+            private ReadOnlyMetricManager registry;
+
+            @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+                registry.addMetricRegistryRemoveListener(mreg -> {
+                    rmvStarted.countDown();
+                    try {
+                        rmvCompleted.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
+                this.registry = registry;
+            }
+        };
+
+        IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(blockingSpi, checkSpi);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log(), cfg);
+
+        ctx.start();
+
+        // Add metric registry.
+        ctx.metric().registry("test");
+
+        // Removes it async, blockingSpi will block remove procedure.
+        IgniteInternalFuture rmvFut = runAsync(() -> ctx.metric().remove("test"));
+
+        rmvStarted.await();
+
+        CountDownLatch addStarted = new CountDownLatch(1);
+
+        IgniteInternalFuture addFut = runAsync(() -> {
+            addStarted.countDown();
+
+            ctx.metric().registry("test");
+        });
+
+        // Waiting for creation to start.
+        addStarted.await();
+
+        Thread.sleep(100);
+
+        // Complete removal.
+        rmvCompleted.countDown();
+
+        rmvFut.get(getTestTimeout());
+
+        addFut.get(getTestTimeout());
+    }
+
+    /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
-        for (int i=0; i<cnt; i++) {
+        for (int i = 0; i < cnt; i++) {
             futs.add(runAsync(() -> {
                 for (int j = 0; j < cnt; j++)
                     r.run();

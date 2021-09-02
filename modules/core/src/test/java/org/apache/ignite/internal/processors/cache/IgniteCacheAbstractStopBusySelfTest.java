@@ -80,14 +80,14 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @return Cache mode.
      */
-    protected CacheMode cacheMode(){
+    protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
     /**
      * @return Cache atomicity mode.
      */
-    protected CacheAtomicityMode atomicityMode(){
+    protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
@@ -281,7 +281,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         try {
             fut.get();
         }
-        catch (IgniteCheckedException gridException){
+        catch (IgniteCheckedException gridException) {
             e = gridException;
         }
 
@@ -327,7 +327,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         try {
             fut.get();
         }
-        catch (IgniteCheckedException gridException){
+        catch (IgniteCheckedException gridException) {
             e = gridException;
         }
 

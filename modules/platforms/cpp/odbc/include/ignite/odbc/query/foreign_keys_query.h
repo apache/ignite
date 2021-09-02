@@ -45,7 +45,7 @@ namespace ignite
                  * @param foreignSchema Foreign key schema name.
                  * @param foreignTable Foreign key table name.
                  */
-                ForeignKeysQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                ForeignKeysQuery(diagnostic::DiagnosableAdapter& diag, Connection& connection,
                     const std::string& primaryCatalog, const std::string& primarySchema,
                     const std::string& primaryTable, const std::string& foreignCatalog,
                     const std::string& foreignSchema, const std::string& foreignTable);
@@ -67,7 +67,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector* GetMeta();
 
                 /**
                  * Fetch next result row to application buffers.

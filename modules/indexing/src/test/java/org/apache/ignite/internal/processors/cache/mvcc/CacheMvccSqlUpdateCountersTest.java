@@ -270,7 +270,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         checkUpdateCounters(DEFAULT_CACHE_NAME, part1, 2);
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            SqlFieldsQuery qry  = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (" + key1 + ", 2)");
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (" + key1 + ", 2)");
 
             cache.query(qry).getAll();
 
@@ -278,7 +278,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ", 3)");
+            qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ", 3)");
 
             cache.query(qry).getAll();
 
@@ -292,7 +292,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",5)");
+            qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",5)");
 
             cache.query(qry).getAll();
 
@@ -306,7 +306,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         checkUpdateCounters(DEFAULT_CACHE_NAME, part1, 4);
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            SqlFieldsQuery qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",6)");
+            SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",6)");
 
             cache.query(qry).getAll();
 
@@ -320,7 +320,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",7)");
+            qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",7)");
 
             cache.query(qry).getAll();
 
@@ -345,7 +345,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
         final Map<Integer, AtomicLong> tracker = new ConcurrentHashMap<>();
 
-        for (int i = 0; i< keys; i++)
+        for (int i = 0; i < keys; i++)
             tracker.put(i, new AtomicLong(1));
 
         final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
@@ -456,7 +456,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
                             success = false;
 
-                            int r= 0;
+                            int r = 0;
 
                             for (Map.Entry<Integer, AtomicLong> en : acc.entrySet()) {
                                 if (((IgniteCacheProxy)cache.cache).context().affinity().partition(en.getKey()) == 0)
@@ -476,7 +476,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
                                     tracker.get(k).addAndGet(updCntr);
                                 }
 
-                                int r= 0;
+                                int r = 0;
 
                                 for (Map.Entry<Integer, AtomicLong> en : acc.entrySet()) {
                                     if (((IgniteCacheProxy)cache.cache).context().affinity().partition(en.getKey()) == 0)

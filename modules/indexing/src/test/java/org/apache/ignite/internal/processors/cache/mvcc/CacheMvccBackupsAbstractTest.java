@@ -303,9 +303,9 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
 
         awaitPartitionMapExchange();
 
-        IgniteCache<?,?> clientCache = client.cache(DEFAULT_CACHE_NAME);
-        IgniteCache<?,?> cache1 = node1.cache(DEFAULT_CACHE_NAME);
-        IgniteCache<?,?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache1 = node1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
 
         AtomicInteger keyGen = new AtomicInteger();
         Affinity affinity = affinity(clientCache);
@@ -807,7 +807,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
                 List<?> l1 = (List<?>)o1;
                 List<?> l2 = (List<?>)o2;
 
-                int res =  ((Comparable)l1.get(0)).compareTo((Comparable)l2.get(0));
+                int res = ((Comparable)l1.get(0)).compareTo((Comparable)l2.get(0));
 
                 if (res == 0 && l1.size() > 1)
                     return ((Comparable)l1.get(1)).compareTo((Comparable)l2.get(1));

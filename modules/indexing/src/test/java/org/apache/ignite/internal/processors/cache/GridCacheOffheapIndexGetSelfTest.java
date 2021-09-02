@@ -77,7 +77,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for(String cacheName : grid(0).cacheNames()) {
+        for (String cacheName : grid(0).cacheNames()) {
             info("Clear cache: " + cacheName);
 
             grid(0).cache(cacheName).clear();

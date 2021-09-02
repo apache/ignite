@@ -267,7 +267,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
     protected void injectResources(Ignite ignite) {
         this.ignite = ignite;
 
-        if (ignite != null)
+        if (ignite != null && igniteInstanceName == null)
             igniteInstanceName = ignite.name();
     }
 
@@ -407,7 +407,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     protected final <T extends IgniteSpiManagementMBean> void registerMBean(String igniteInstanceName, T impl, Class<T> mbeanItf
        ) throws IgniteSpiException {
-        if(ignite == null || U.IGNITE_MBEANS_DISABLED)
+        if (ignite == null || U.IGNITE_MBEANS_DISABLED)
             return;
 
         MBeanServer jmx = ignite.configuration().getMBeanServer();
@@ -565,11 +565,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         else
             isSpiConsistent = true;
 
-        if (optional && !isSpiConsistent)
-            return;
-
         // It makes no sense to compare inconsistent SPIs attributes.
-        if (isSpiConsistent) {
+        if (!optional && isSpiConsistent) {
             List<String> attrs = getConsistentAttributeNames();
 
             // Process all SPI specific attributes.
@@ -844,7 +841,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> nodes() {
-            return  locNode == null  ? Collections.emptyList() : Collections.singletonList(locNode);
+            return locNode == null ? Collections.emptyList() : Collections.singletonList(locNode);
         }
 
         /** {@inheritDoc} */

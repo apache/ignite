@@ -43,16 +43,16 @@ import org.junit.Test;
  */
 public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /** Non-Ignite Server port #1. */
-    private static final int SERVER_PORT = 47500;
+    protected static final int SERVER_PORT = 47500;
 
     /** Non-Ignite Server port #2. */
-    private static final int LAST_SERVER_PORT = SERVER_PORT + 5;
+    protected static final int LAST_SERVER_PORT = SERVER_PORT + 5;
 
     /** Non-Ignite Server sockets. */
-    private List<ServerSocket> srvSocks = new ArrayList<>();
+    protected List<ServerSocket> srvSocks = new ArrayList<>();
 
     /** Count of accepted connections to non-Ignite Server. */
-    private AtomicInteger connCnt = new AtomicInteger(0);
+    protected AtomicInteger connCnt = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,7 +81,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * Starts tcp test thread
      * @param workerFactory one of WorkerFactory
      */
-    private void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
+     protected void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
         final ServerSocket srvSock = new ServerSocket(port, 10, InetAddress.getByName("127.0.0.1"));
 
         srvSocks.add(srvSock);
@@ -89,7 +89,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         new GridTestThread(new Runnable() {
             @Override public void run() {
                 try {
-                    while(!Thread.currentThread().isInterrupted()) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         Socket clientSock = srvSock.accept();
 
                         connCnt.getAndIncrement();
@@ -173,7 +173,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * It is expected that both client and server could successfully perform Discovery Procedure when there is
      * unknown (test) server in the ipFinder list.
      */
-    private void simpleTest() {
+    protected void simpleTest() {
         try {
             Ignite srv = startGrid("server");
             Ignite client = startClientGrid("client");
@@ -196,7 +196,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /**
      * Just a factory for runnable workers
      */
-    private interface WorkerFactory {
+    protected interface WorkerFactory {
         /**
          * Creates a new worker for socket
          * @param clientSock socket for worker
@@ -248,7 +248,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /**
      * SomeResponseWorker.
      */
-    private class SomeResponseWorker implements WorkerFactory {
+    protected class SomeResponseWorker implements WorkerFactory {
         /** {@inheritDoc} */
         @Override public Runnable newWorker(Socket clientSock) {
             return new SocketWorker(clientSock) {
@@ -264,7 +264,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /**
      * NoResponseWorker.
      */
-    private class NoResponseWorker implements WorkerFactory {
+    protected class NoResponseWorker implements WorkerFactory {
         /** {@inheritDoc} */
         @Override public Runnable newWorker(Socket clientSock) {
             return new SocketWorker(clientSock) {
@@ -320,7 +320,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * TcpDiscoverySpi with non-shuffled resolved IP addresses. We should ensure that in this test non-Ignite server
      * is the first element of the addresses list
      */
-    class TcpDiscoverySpiWithOrderedIps extends TcpDiscoverySpi {
+    protected class TcpDiscoverySpiWithOrderedIps extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
             Collection<InetSocketAddress> shuffled = super.resolvedAddresses();

@@ -27,8 +27,10 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 
@@ -37,6 +39,17 @@ import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatur
  */
 public class GridClientClusterStateImpl extends GridClientAbstractProjection<GridClientClusterStateImpl>
     implements GridClientClusterState {
+    /**
+     * Closure to execute Cluster ID and Tag view action on cluster.
+     */
+    private static final ClientProjectionClosure<VisorIdAndTagViewTaskResult> ID_AND_TAG_VIEW_CL = (conn, nodeId) ->
+        conn.execute(
+            VisorIdAndTagViewTask.class.getName(),
+            new VisorTaskArgument<>(nodeId, null, false),
+            nodeId,
+            false
+        );
+
     /**
      * Creates projection with specified client.
      *
@@ -52,16 +65,6 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
         GridClientLoadBalancer balancer
     ) {
         super(client, nodes, filter, balancer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void active(final boolean active) throws GridClientException {
-        state(active ? ACTIVE : INACTIVE, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean active() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::currentState).get();
     }
 
     /** {@inheritDoc} */
@@ -86,6 +89,16 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
             withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID id() throws GridClientException {
+        return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().id();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() throws GridClientException {
+        return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().tag();
     }
 
     /** {@inheritDoc} */

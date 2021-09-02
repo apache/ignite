@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -52,6 +53,9 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** Sandbox permissions. */
     private static final Map<SecurityCredentials, Permissions> SANDBOX_PERMS = new ConcurrentHashMap<>();
+
+    /** */
+    private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
@@ -82,7 +86,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         if (!PERMS.containsKey(cred))
             return null;
 
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
                 .setId(node.id())
@@ -91,6 +95,10 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setPerms(PERMS.get(cred))
                 .sandboxPermissions(SANDBOX_PERMS.get(cred))
         );
+
+        SECURITY_CONTEXTS.put(res.subject().id(), res);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -110,7 +118,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
             ((SecurityBasicPermissionSet) perms).setDefaultAllowAll(true);
         }
 
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
                 .setId(ctx.subjectId())
@@ -120,16 +128,25 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setCerts(ctx.certificates())
                 .sandboxPermissions(SANDBOX_PERMS.get(ctx.credentials()))
         );
+
+        SECURITY_CONTEXTS.put(res.subject().id(), res);
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() {
-        return Collections.emptyList();
+        return SECURITY_CONTEXTS.values().stream().map(SecurityContext::subject).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
-        return null;
+        return securityContext(subjId).subject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return SECURITY_CONTEXTS.get(subjId);
     }
 
     /** {@inheritDoc} */

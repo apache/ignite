@@ -113,7 +113,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         for (String msg : msgs)
             info(msg);
 
-        info(">>> t2/t1: " + (t2/t1));
+        info(">>> t2/t1: " + (t2 / t1));
     }
 
     /**
@@ -195,7 +195,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         for (String msg : msgs)
             info(msg);
 
-        info(">>> cnt1/cnt2=" + (cnt1/cnt2));
+        info(">>> cnt1/cnt2=" + (cnt1 / cnt2));
     }
 
     /**

@@ -102,7 +102,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+    @Override public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer0() {
         if (rmtTrans == null && rmtTransFactory != null)
             rmtTrans = rmtTransFactory.create();
 
@@ -125,11 +125,6 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     /** {@inheritDoc} */
     @Override public RegisterStatus register(UUID nodeId, UUID routineId,
         GridKernalContext ctx) throws IgniteCheckedException {
-        final IgniteClosure trans = getTransformer();
-
-        if (trans != null)
-            ctx.resource().injectGeneric(trans);
-
         if (locTransLsnr != null) {
             ctx.resource().injectGeneric(locTransLsnr);
 

@@ -188,7 +188,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         try (PreparedStatement expStat = conn0.prepareStatement(explainSql);) {
             fillTestedQueryParams(expStat);
 
-            try(ResultSet explain = expStat.executeQuery()) {
+            try (ResultSet explain = expStat.executeQuery()) {
                 println(cfg, "Explain query " + explainSql + " result:");
 
                 println(cfg, tableToString(explain));

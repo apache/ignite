@@ -75,7 +75,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /**
      * @param in Input.
      */
-    public MetaPageUpdatePartitionDataRecord(DataInput in) throws IOException{
+    public MetaPageUpdatePartitionDataRecord(DataInput in) throws IOException {
         super(in.readInt(), in.readLong());
 
         this.updateCntr = in.readLong();

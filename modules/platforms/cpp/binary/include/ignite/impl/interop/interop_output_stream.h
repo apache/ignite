@@ -234,7 +234,7 @@ namespace ignite
                 /** Current position. */
                 int pos;            
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropOutputStream)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropOutputStream);
 
                 /**
                  * Ensure that stream enough capacity optionally extending it.

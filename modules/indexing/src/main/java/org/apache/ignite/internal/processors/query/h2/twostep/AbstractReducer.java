@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Cursor;
@@ -45,6 +47,9 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_PAGE_FETCH;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_PAGE_WAIT;
 
 /**
  * Base class for reducer of remote index lookup results.
@@ -54,16 +59,16 @@ public abstract class AbstractReducer implements Reducer {
     static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
     /** */
-    static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
+    static int prefetchSize = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
 
     static {
-        if (!U.isPow2(PREFETCH_SIZE)) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+        if (!U.isPow2(prefetchSize)) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + prefetchSize +
                 ") must be positive and a power of 2.");
         }
 
-        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+        if (prefetchSize >= MAX_FETCH_SIZE) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + prefetchSize +
                 ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
         }
     }
@@ -102,7 +107,7 @@ public abstract class AbstractReducer implements Reducer {
     AbstractReducer(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        fetched = new ReduceBlockList<>(PREFETCH_SIZE);
+        fetched = new ReduceBlockList<>(prefetchSize);
     }
 
     /** {@inheritDoc} */
@@ -183,14 +188,15 @@ public abstract class AbstractReducer implements Reducer {
      */
     protected void checkBounds(Row lastEvictedRow, SearchRow first, SearchRow last) {
         if (lastEvictedRow != null)
-            throw new IgniteException("Fetched result set was too large.");
+            throw new IgniteException("Fetched result set was too large. " +
+                    IGNITE_SQL_MERGE_TABLE_MAX_SIZE + "(" + MAX_FETCH_SIZE + ") should be increased.");
     }
 
     /**
      * @param evictedBlock Evicted block.
      */
     protected void onBlockEvict(@NotNull List<Row> evictedBlock) {
-        assert evictedBlock.size() == PREFETCH_SIZE;
+        assert evictedBlock.size() == prefetchSize;
 
         // Remember the last row (it will be max row) from the evicted block.
         lastEvictedRow = requireNonNull(last(evictedBlock));
@@ -248,7 +254,7 @@ public abstract class AbstractReducer implements Reducer {
 
             initLastPages(nodeId, res);
 
-            ConcurrentMap<ReduceSourceKey,Integer> lp = lastPages;
+            ConcurrentMap<ReduceSourceKey, Integer> lp = lastPages;
 
             if (lp == null)
                 return; // It was not initialized --> wait for last page flag.
@@ -282,16 +288,16 @@ public abstract class AbstractReducer implements Reducer {
         if (allRows < 0 || res.page() != 0)
             return;
 
-        ConcurrentMap<ReduceSourceKey,Integer> lp = lastPages;
+        ConcurrentMap<ReduceSourceKey, Integer> lp = lastPages;
 
         if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;
 
-        assert pageSize > 0: pageSize;
+        assert pageSize > 0 : pageSize;
 
         int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
 
-        assert lastPage >= 0: lastPage;
+        assert lastPage >= 0 : lastPage;
 
         if (lp.put(new ReduceSourceKey(nodeId, res.segmentId()), lastPage) != null)
             throw new IllegalStateException();
@@ -314,15 +320,19 @@ public abstract class AbstractReducer implements Reducer {
      */
     protected final Iterator<Value[]> pollNextIterator(Pollable<ReduceResultPage> queue, Iterator<Value[]> iter) {
         if (!iter.hasNext()) {
-            ReduceResultPage page = takeNextPage(queue);
+            try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PAGE_FETCH, MTC.span()))) {
+                ReduceResultPage page = takeNextPage(queue);
 
-            if (!page.isLast())
-                page.fetchNextPage(); // Failed will throw an exception here.
+                if (!page.isLast())
+                    page.fetchNextPage(); // Failed will throw an exception here.
 
-            iter = page.rows();
+                iter = page.rows();
 
-            // The received iterator must be empty in the dummy last page or on failure.
-            assert iter.hasNext() || page.isDummyLast() || page.isFail();
+                MTC.span().addTag(SQL_PAGE_ROWS, () -> Integer.toString(page.rowsInPage()));
+
+                // The received iterator must be empty in the dummy last page or on failure.
+                assert iter.hasNext() || page.isDummyLast() || page.isFail();
+            }
         }
 
         return iter;
@@ -333,23 +343,25 @@ public abstract class AbstractReducer implements Reducer {
      * @return Next page.
      */
     private ReduceResultPage takeNextPage(Pollable<ReduceResultPage> queue) {
-        ReduceResultPage page;
+        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PAGE_WAIT, MTC.span()))) {
+            ReduceResultPage page;
 
-        for (;;) {
-            try {
-                page = queue.poll(500, TimeUnit.MILLISECONDS);
+            for (;;) {
+                try {
+                    page = queue.poll(500, TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new CacheException("Query execution was interrupted.", e);
+                }
+
+                if (page != null)
+                    break;
+
+                checkSourceNodesAlive();
             }
-            catch (InterruptedException e) {
-                throw new CacheException("Query execution was interrupted.", e);
-            }
 
-            if (page != null)
-                break;
-
-            checkSourceNodesAlive();
+            return page;
         }
-
-        return page;
     }
 
     /**

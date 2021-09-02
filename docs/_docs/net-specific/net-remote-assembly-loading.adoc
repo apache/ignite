@@ -1,0 +1,154 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Remote Assembly Loading
+
+== Overview
+
+Many Ignite APIs involve remote code execution. For example, Ignite compute tasks are serialized, sent to remote nodes, and executed there.
+However, by default, .NET assemblies (DLL files) with those tasks in, must be loaded on remote nodes in order to instantiate
+and deserialize tasks' instances.
+
+Before version 2.1 you had to manually load assemblies (using `-assembly` swith with `Apache.Ignite.exe` or some other ways).
+Starting Ignite 2.1 you can take advantage of the remote assembly loading feature, that can be enabled with the
+`IgniteConfiguration.PeerAssemblyLoadingMode` flag. This configuration property needs to have the same value on all nodes
+in the cluster. Another available mode is `CurrentAppDomain`.
+
+== CurrentAppDomain Mode
+
+`PeerAssemblyLoadingMode.CurrentAppDomain` enables automatic on-demand assembly requests to other nodes in cluster,
+loading assemblies into https://msdn.microsoft.com/en-us/library/system.appdomain.aspx[AppDomain, window=_blank] where Ignite node runs.
+
+Consider the following code:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+// Print Hello World on all cluster nodes.
+ignite.GetCompute().Broadcast(new HelloAction());
+
+class HelloAction : IComputeAction
+{
+  public void Invoke()
+  {
+    Console.WriteLine("Hello World!");
+  }
+}
+----
+--
+* Ignite serializes the `HelloAction` instance and broadcasts to every node in the cluster.
+* Remote nodes attempt to deserialize the `HelloAction` instance. If there is no such class in the currently loaded or referenced assemblies,
+the nodes request an assembly with the class from the node that initiated the compute task or from other nodes (if necessary).
+* The assembly file is sent from the originating or other node as a byte array and loaded with the `Assembly.Load(byte[])` method.
+
+=== Versioning
+
+https://msdn.microsoft.com/en-us/library/system.type.assemblyqualifiedname.aspx[Assembly-qualified type name, window=_blank]
+includes the assembly version and is used to resolve types.
+
+If you keep the cluster running, do this change in the logic and see how the assembly gets reloaded automatically:
+
+* Modify `HelloAction` intance to print something else
+* Change https://msdn.microsoft.com/en-us/library/system.reflection.assemblyversionattribute.aspx[AssemblyVersion, window=_blank]
+* Recompile and run the application code
+* The new version of the assembly will be deployed and executed on other nodes.
+
+Note, if you keep the `AssemblyVersion` unchanged, Ignite will use existing assembly that was previously loaded, since
+there are no changes in the type name.
+
+Assemblies with different versions can co-exist and be used side by side. Some nodes can continue running old code, while
+other nodes can execute computations with a newer version of the same class.
+
+The `AssemblyVersion` attribute can include asterisk (`*`) to enable the auto-increment on build: `[assembly: AssemblyVersion("1.0.*")]`.
+This way you can keep the cluster running, repeatedly modify and run computations, and new assembly versions will be deployed every time.
+
+=== Dependencies
+
+Dependent assemblies are also loaded automatically, e.g. when `ComputeAction` calls some code from a different assembly.
+Keep that in mind when using heavy frameworks and libraries: single compute call can cause lots of assemblies to be sent over the network.
+
+=== Unloading
+
+.NET does not allow assembly unloading. Instead, only the entire `AppDomain` can be unloaded with all assemblies.
+Currently available `CurrentAppDomain` mode uses existing `AppDomain`, which means all peer-deployed assemblies will stay
+loaded while current `AppDomain` lives. This may cause increased memory usage.
+
+== Example
+
+https://github.com/apache/ignite/blob/56975c266e7019f307bb9da42333a6db4e47365e/modules/platforms/dotnet/examples/Apache.Ignite.Examples/Compute/PeerAssemblyLoadingExample.cs[PeerAssemblyLoadingExample, window=_blank] can be used
+to try out the remote assembly loading feature in practice:
+
+* Create a new Console Application in Visual Studio
+* Install the Ignite.NET NuGet package `Install-Package Apache.Ignite`
+* Open the `packages\Apache.Ignite.2.1\lib\net40` folder
+* Add the `peerAssemblyLoadingMode='CurrentAppDomain'` attribute to `<igniteConfiguration>` element
+* Run `Apache.Ignite.exe` (one or more times), leave the processes running
+* Change `[AssemblyVersion]` in `AssemblyInfo.cs` to `1.0.*`
+* Modify `Program.cs` in Visual Studio as shown below
++
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+using System;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Compute;
+using Apache.Ignite.Core.Deployment;
+
+namespace ConsoleApp
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            var cfg = new IgniteConfiguration
+            {
+                PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.GetCompute().Broadcast(new HelloAction());
+            }
+        }
+
+        class HelloAction : IComputeAction
+        {
+            public void Invoke()
+            {
+                Console.WriteLine("Hello, World!");
+            }
+        }
+    }
+}
+----
+tab:Apache.Ignite.exe.config[]
+[source,xml]
+----
+<igniteConfiguration peerAssemblyLoadingMode='CurrentAppDomain' />
+----
+tab:AssemblyInfo.cs[]
+[source,csharp]
+----
+...
+[assembly: AssemblyVersion("1.0.*")]
+...
+----
+--
+* Run the project and observe the `"Hello, World!"` output in the console of all `Apache.Ignite.exe` windows.
+* Change the `"Hello, World!"` text to something else and run the program again
+* Observe different output on the nodes started with `Apache.Ignite.exe` earlier.

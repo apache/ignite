@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -154,6 +156,29 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     }
 
     /**
+     * @return Public properties.
+     */
+    public List<DistributedChangeableProperty<Serializable>> properties() {
+        return props.values().stream()
+            .filter(p -> p instanceof DistributedChangeableProperty)
+            .map(p -> (DistributedChangeableProperty<Serializable>)p)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param name Property name.
+     * @return Public property.
+     */
+    public DistributedChangeableProperty<Serializable> property(String name) {
+        DistributedChangeableProperty<?> p = props.get(name);
+
+        if (!(p instanceof DistributedChangeableProperty))
+            return null;
+        else
+            return (DistributedChangeableProperty<Serializable>)p;
+    }
+
+    /**
      * Execute all allowable actions until current action on given property.
      *
      * @param prop Property which action should be executed on.
@@ -236,9 +261,11 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 return distributedMetastorage.writeAsync(toMetaStorageKey(key), newValue);
             }
 
-            @Override
-            public GridFutureAdapter<?> casUpdate(String key, Serializable expectedValue, Serializable newValue)
-                throws IgniteCheckedException {
+            @Override public GridFutureAdapter<?> casUpdate(
+                String key,
+                Serializable expectedValue,
+                Serializable newValue
+            ) throws IgniteCheckedException {
                 return distributedMetastorage.compareAndSetAsync(toMetaStorageKey(key), expectedValue, newValue);
             }
         });

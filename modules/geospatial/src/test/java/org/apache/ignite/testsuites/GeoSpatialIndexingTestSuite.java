@@ -17,9 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.h2.H2IndexesSystemViewTest;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.H2IndexesSystemViewTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

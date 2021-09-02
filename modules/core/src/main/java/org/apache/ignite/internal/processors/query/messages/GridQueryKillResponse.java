@@ -66,7 +66,7 @@ public class GridQueryKillResponse implements Message {
     /**
      * @return Error text or {@code null} if no error.
      */
-    public String error(){
+    public String error() {
         return errMsg;
     }
 

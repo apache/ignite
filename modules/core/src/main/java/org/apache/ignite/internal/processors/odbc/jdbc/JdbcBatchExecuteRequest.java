@@ -22,14 +22,10 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 
 /**
  * JDBC batch execute request.
@@ -134,8 +130,11 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         writer.writeString(schemaName);
 
@@ -143,22 +142,25 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
             writer.writeInt(queries.size());
 
             for (JdbcQuery q : queries)
-                q.writeBinary(writer, ver);
+                q.writeBinary(writer, protoCtx);
 
         }
         else
             writer.writeInt(0);
 
-        if (ver.compareTo(VER_2_4_0) >= 0)
+        if (protoCtx.isStreamingSupported())
             writer.writeBoolean(lastStreamBatch);
 
-        if (ver.compareTo(VER_2_7_0) >= 0)
+        if (protoCtx.isAutoCommitSupported())
             writer.writeBoolean(autoCommit);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.readBinary(reader, ver);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         schemaName = reader.readString();
 
@@ -169,15 +171,15 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         for (int i = 0; i < n; ++i) {
             JdbcQuery qry = new JdbcQuery();
 
-            qry.readBinary(reader, ver);
+            qry.readBinary(reader, protoCtx);
 
             queries.add(qry);
         }
 
-        if (ver.compareTo(VER_2_4_0) >= 0)
+        if (protoCtx.isStreamingSupported())
             lastStreamBatch = reader.readBoolean();
 
-        if (ver.compareTo(VER_2_7_0) >= 0)
+        if (protoCtx.isAutoCommitSupported())
             autoCommit = reader.readBoolean();
     }
 

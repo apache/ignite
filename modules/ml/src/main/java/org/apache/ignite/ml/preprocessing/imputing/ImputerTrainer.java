@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -163,7 +164,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 .stream()
                 .max(Comparator.comparingInt(Map.Entry::getValue));
 
-            if(max.isPresent())
+            if (max.isPresent())
                 res[i] = max.get().getKey();
         }
 
@@ -187,7 +188,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 .stream()
                 .min(Comparator.comparingInt(Map.Entry::getValue));
 
-            if(max.isPresent())
+            if (max.isPresent())
                 res[i] = max.get().getKey();
         }
 
@@ -352,7 +353,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
         double[] means = new double[sums.length];
 
         for (int i = 0; i < means.length; i++)
-            means[i] = sums[i]/counts[i];
+            means[i] = sums[i] / counts[i];
 
         return means;
     }
@@ -376,7 +377,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
         for (int i = 0; i < valuesByFreq.length; i++) {
             double v = row.get(i);
 
-            if(!Double.valueOf(v).equals(Double.NaN)) {
+            if (!Double.valueOf(v).equals(Double.NaN)) {
                 Map<Double, Integer> map = valuesByFreq[i];
 
                 if (map.containsKey(v))
@@ -402,8 +403,8 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
             assert sums.length == row.size() : "Base preprocessor must return exactly " + sums.length
                 + " features";
 
-        for (int i = 0; i < sums.length; i++){
-            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+        for (int i = 0; i < sums.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
                 sums[i] += row.get(i);
         }
 
@@ -424,8 +425,8 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
             assert counts.length == row.size() : "Base preprocessor must return exactly " + counts.length
                 + " features";
 
-        for (int i = 0; i < counts.length; i++){
-            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+        for (int i = 0; i < counts.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
                 counts[i]++;
         }
 
@@ -442,16 +443,15 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     private double[] updateTheMins(LabeledVector row, double[] mins) {
         if (mins == null) {
             mins = new double[row.size()];
-            for (int i = 0; i < mins.length; i++)
-                mins[i] = Double.POSITIVE_INFINITY;
+            Arrays.fill(mins, Double.POSITIVE_INFINITY);
         }
 
         else
             assert mins.length == row.size() : "Base preprocessor must return exactly " + mins.length
                 + " features";
 
-        for (int i = 0; i < mins.length; i++){
-            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+        for (int i = 0; i < mins.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
                 mins[i] = Math.min(mins[i], row.get(i));
         }
 
@@ -468,16 +468,15 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     private double[] updateTheMaxs(LabeledVector row, double[] maxs) {
         if (maxs == null) {
             maxs = new double[row.size()];
-            for (int i = 0; i < maxs.length; i++)
-                maxs[i] = Double.NEGATIVE_INFINITY;
+            Arrays.fill(maxs, Double.NEGATIVE_INFINITY);
         }
 
         else
             assert maxs.length == row.size() : "Base preprocessor must return exactly " + maxs.length
                 + " features";
 
-        for (int i = 0; i < maxs.length; i++){
-            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+        for (int i = 0; i < maxs.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
                 maxs[i] = Math.max(maxs[i], row.get(i));
         }
 
@@ -490,7 +489,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @param imputingStgy The given value.
      * @return The updated imputing trainer.
      */
-    public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStgy){
+    public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStgy) {
         this.imputingStgy = imputingStgy;
         return this;
     }

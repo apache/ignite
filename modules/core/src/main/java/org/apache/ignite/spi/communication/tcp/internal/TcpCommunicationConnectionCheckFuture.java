@@ -50,7 +50,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tcp Communication Connection Check Future.
  */
-public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<BitSet> implements IgniteSpiTimeoutObject, GridLocalEventListener {
+public class TcpCommunicationConnectionCheckFuture
+    extends GridFutureAdapter<BitSet> implements IgniteSpiTimeoutObject, GridLocalEventListener {
     /** Session future. */
     public static final int SES_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -208,7 +209,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
             return;
 
         assert evt instanceof DiscoveryEvent : evt;
-        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
+        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
         UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 

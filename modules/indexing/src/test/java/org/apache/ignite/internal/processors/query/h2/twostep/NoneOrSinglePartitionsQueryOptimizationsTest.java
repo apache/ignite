@@ -324,10 +324,10 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithMixedPartitionsAndParams() throws Exception {
         runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
-            1, false, true, 1,  1, 1);
+            1, false, true, 1, 1, 1);
 
         runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
-            2, true, false, 2,  1, 2);
+            2, true, false, 2, 1, 2);
     }
 
     /**
@@ -343,7 +343,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
 
         runQuery("select org._KEY from Organization org where org._KEY = ? or org._KEY = ? union " +
                 "select org._KEY from Organization org where org._KEY = ? or org._KEY = ?",
-            4, true, false, 3,  1, 2, 3, 4);
+            4, true, false, 3, 1, 2, 3, 4);
     }
 
     /**
@@ -356,11 +356,11 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     public void testJoinQueriesWithMixedMapQueriesAndMixedPartitionsAndParams() throws Exception {
         runQuery("select o.id, sum(o._KEY) FROM Organization o LEFT JOIN (select distinct orgId from " +
                 "pers.Person where _KEY = ? or _KEY = ?) as p on p.orgId=o.id where o._KEY = 1 GROUP BY o.id",
-            1, false, true, 1, 1 , 1);
+            1, false, true, 1, 1, 1);
 
         runQuery("select o.id, sum(o._KEY) FROM Organization o LEFT JOIN (select distinct orgId from " +
                 "pers.Person where _KEY = ? or _KEY = ?) as p on p.orgId=o.id where o._KEY = 1 GROUP BY o.id",
-            1, true, false, 3, 1 , 2);
+            1, true, false, 3, 1, 2);
     }
 
     /**
@@ -452,9 +452,9 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         IgniteInternalFuture res = GridTestUtils.runAsync(() -> {
             QueryCursor cursor = orgCache.query(new SqlFieldsQuery(sqlQry).setArgs(args));
 
-            Iterable iter = U.field(cursor,"iterExec");
+            Iterable iter = U.field(cursor, "iterExec");
 
-            Iterator innerIter = U.field(iter.iterator(),"iter");
+            Iterator innerIter = U.field(iter.iterator(), "iter");
 
             if (expMergeTbl)
                 assertTrue(innerIter instanceof H2ResultSetIterator);

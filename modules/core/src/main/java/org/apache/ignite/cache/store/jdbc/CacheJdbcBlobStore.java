@@ -322,7 +322,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable Transaction tx) throws SQLException  {
+    private Connection connection(@Nullable Transaction tx) throws SQLException {
         if (tx != null) {
             Map<String, Connection> props = session().properties();
 

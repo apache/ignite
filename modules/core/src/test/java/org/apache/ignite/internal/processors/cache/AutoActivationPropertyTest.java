@@ -107,7 +107,7 @@ public class AutoActivationPropertyTest extends GridCommonAbstractTest {
 
         IgniteEx crd = startGrids(nodeCnt);
 
-        for (int i=0; i < nodeCnt; i++) {
+        for (int i = 0; i < nodeCnt; i++) {
             assertEquals(autoActivation, grid(i).configuration().isAutoActivationEnabled());
 
             assertNull(grid(i).configuration().getClusterStateOnStart());
@@ -119,7 +119,7 @@ public class AutoActivationPropertyTest extends GridCommonAbstractTest {
 
         crd = startGrids(nodeCnt);
 
-        for (int i=0; i < nodeCnt; i++)
+        for (int i = 0; i < nodeCnt; i++)
             assertEquals(autoActivation ? ACTIVE : INACTIVE, crd.cluster().state());
 
         for (String name : logListeners.keySet())

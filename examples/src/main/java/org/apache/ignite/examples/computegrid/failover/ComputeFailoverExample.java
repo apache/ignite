@@ -47,7 +47,7 @@ public class ComputeFailoverExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteException{
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;

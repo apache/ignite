@@ -60,7 +60,7 @@ class JdbcQueryCursor extends JdbcCursor {
     /**
      * Open iterator;
      */
-    void openIterator(){
+    void openIterator() {
         iter = cur.iterator();
     }
 

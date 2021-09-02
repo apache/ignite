@@ -110,7 +110,7 @@ public class LabeledDatasetLoader {
                 else
                     vec.set(j, missedData);
             }
-            catch (ArrayIndexOutOfBoundsException e){
+            catch (ArrayIndexOutOfBoundsException e) {
                 vec.set(j, missedData);
             }
         }

@@ -42,7 +42,7 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * To choose the best hyper-parameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -123,14 +123,18 @@ public class Step_16_Genetic_Programming_Search {
 
                 DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
-                CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
+                CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
                     .withParameterSearchStrategy(new EvolutionOptimizationStrategy())
                     .addHyperParam("p", normalizationTrainer::withP, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
                     .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0});
+                    .addHyperParam(
+                        "minImpurityDecrease",
+                        trainerCV::withMinImpurityDecrease,
+                        new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}
+                    );
 
                 scoreCalculator
                     .withIgnite(ignite)
@@ -162,7 +166,7 @@ public class Step_16_Genetic_Programming_Search {
                     -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
                 // Train decision tree model.
-                DecisionTreeNode bestMdl = trainer.fit(
+                DecisionTreeModel bestMdl = trainer.fit(
                     ignite,
                     dataCache,
                     split.getTrainFilter(),

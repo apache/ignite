@@ -25,8 +25,9 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -35,14 +36,17 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Base class for exporters that pushes metrics to the external system.
  */
 public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implements MetricExporterSpi {
+    /** Default export period in milliseconds. */
+    public static final long DFLT_EXPORT_PERIOD = 60_000L;
+
     /** Metric registry. */
     protected ReadOnlyMetricManager mreg;
 
     /** Metric filter. */
-    protected  @Nullable Predicate<ReadOnlyMetricRegistry> filter;
+    protected @Nullable Predicate<ReadOnlyMetricRegistry> filter;
 
     /** Export period. */
-    private long period;
+    private long period = DFLT_EXPORT_PERIOD;
 
     /** Push spi executor. */
     private ScheduledExecutorService execSvc;
@@ -96,7 +100,8 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
-        execSvc = Executors.newScheduledThreadPool(1);
+        execSvc = Executors.newSingleThreadScheduledExecutor(new IgniteThreadFactory(igniteInstanceName,
+            "push-metrics-exporter"));
 
         fut = execSvc.scheduleWithFixedDelay(() -> {
             try {

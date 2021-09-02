@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
     internal class Endpoint
     {
         /** */
-        private static readonly string[] HostSeparators = {":"};
+        private const char HostSeparator = ':';
 
         /** */
         private static readonly string[] PortsSeparators = {".."};
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Parses the endpoint string.
         /// </summary>
-        private static Endpoint ParseEndpoint(string endpoint)
+        public static Endpoint ParseEndpoint(string endpoint)
         {
             if (string.IsNullOrWhiteSpace(endpoint))
             {
@@ -92,38 +92,35 @@ namespace Apache.Ignite.Core.Impl.Client
                     "IgniteClientConfiguration.Endpoints[...] can't be null or whitespace.");
             }
 
-            var parts = endpoint.Split(HostSeparators, StringSplitOptions.None);
+            var idx = endpoint.LastIndexOf(HostSeparator);
 
-            if (parts.Length == 1)
+            if (idx == -1)
             {
                 return new Endpoint(endpoint);
             }
 
-            if (parts.Length == 2)
+            var host = endpoint.Substring(0, idx);
+            var port = endpoint.Substring(idx + 1);
+
+            var ports = port.Split(PortsSeparators, StringSplitOptions.None);
+
+            if (ports.Length == 1)
             {
-                var host = parts[0];
-                var port = parts[1];
+                return new Endpoint(host, ParsePort(endpoint, port));
+            }
 
-                var ports = port.Split(PortsSeparators, StringSplitOptions.None);
+            if (ports.Length == 2)
+            {
+                var minPort = ParsePort(endpoint, ports[0]);
+                var maxPort = ParsePort(endpoint, ports[1]);
 
-                if (ports.Length == 1)
+                if (maxPort < minPort)
                 {
-                    return new Endpoint(host, ParsePort(endpoint, port));
+                    throw new IgniteClientException(
+                        "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: " + endpoint);
                 }
 
-                if (ports.Length == 2)
-                {
-                    var minPort = ParsePort(endpoint, ports[0]);
-                    var maxPort = ParsePort(endpoint, ports[1]);
-
-                    if (maxPort < minPort)
-                    {
-                        throw new IgniteClientException(
-                            "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: " + endpoint);
-                    }
-
-                    return new Endpoint(host, minPort, maxPort - minPort);
-                }
+                return new Endpoint(host, minPort, maxPort - minPort);
             }
 
             throw new IgniteClientException("Unrecognized format of IgniteClientConfiguration.Endpoint: " + endpoint);

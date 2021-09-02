@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import javax.cache.Cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CyclicBarrier;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -226,7 +226,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * @param contains Expect whether or not messages are in log.
      * @throws Exception If failed.
      */
-    private void checkStarvationQryPoolInLog(long checkTimeout, String findLogMsg ,boolean contains) throws Exception {
+    private void checkStarvationQryPoolInLog(long checkTimeout, String findLogMsg, boolean contains) throws Exception {
         assertNotNull(findLogMsg);
 
         qryPoolSize = 1;

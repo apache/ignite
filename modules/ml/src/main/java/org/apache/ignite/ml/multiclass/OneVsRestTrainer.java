@@ -76,7 +76,8 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
         classes.forEach(clsLb -> {
             IgniteFunction<Double, Double> lbTransformer = lb -> lb.equals(clsLb) ? 1.0 : 0.0;
 
-            IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func = lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
+            IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func =
+                lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
 
             PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 

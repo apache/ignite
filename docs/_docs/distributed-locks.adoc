@@ -1,0 +1,59 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Distributed Locks
+
+== Overview
+
+Ignite transactions acquire distributed locks implicitly. However, there are certain use cases when you might need to
+acquire the locks explicitly. The `lock()` method of the `IgniteCache` API returns an instance of `java.util.concurrent.locks.Lock`
+that lets you define explicit distributed locks for any given key. Locks can also be acquired on a collection of objects using the
+`IgniteCache.lockAll()` method.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+IgniteCache<String, Integer> cache = ignite.cache("myCache");
+
+// Create a lock for the given key
+Lock lock = cache.lock("keyLock");
+try {
+    // Acquire the lock
+    lock.lock();
+
+    cache.put("Hello", 11);
+    cache.put("World", 22);
+}
+finally {
+    // Release the lock
+    lock.unlock();
+}
+----
+--
+
+[NOTE]
+====
+[discrete]
+=== Atomicity Mode
+In Ignite, locks are supported only for the `TRANSACTIONAL` atomicity mode, which can be set via the
+`CacheConfiguration.atomicityMode` parameter.
+====
+
+== Locks and Transactions
+
+Explicit locks are not transactional and cannot not be used from within transactions (exception will be thrown).
+If you do need explicit locking within transactions, then you should use the `TransactionConcurrency.PESSIMISTIC` concurrency
+control for transactions which will acquire explicit locks for relevant cluster data requests.

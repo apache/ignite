@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.transactions;
 
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -34,11 +38,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
-
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Native transaction wrapper implementation.
@@ -83,6 +82,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_LOCAL_ACTIVE_TX = 13;
+
+    /** */
+    public static final int OP_LOCAL_ACTIVE_REMOVE = 14;
 
     /** */
     private final IgniteTransactions txs;
@@ -205,6 +207,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 txs.resetMetrics();
 
                 return TRUE;
+
+            case OP_LOCAL_ACTIVE_REMOVE:
+                unregisterTx(val);
+
+                return TRUE;
         }
 
         return super.processInLongOutLong(type, val);
@@ -246,7 +253,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInStreamOutStream(
+        int type,
+        BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer
+    ) throws IgniteCheckedException {
         switch (type) {
             case OP_START: {
                 TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());

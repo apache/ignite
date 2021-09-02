@@ -164,7 +164,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
 
         List<Integer> list = new ArrayList<>();
 
-        for(Integer i : bitSet)
+        for (Integer i : bitSet)
             list.add(i);
 
         assertEquals(5, list.size());

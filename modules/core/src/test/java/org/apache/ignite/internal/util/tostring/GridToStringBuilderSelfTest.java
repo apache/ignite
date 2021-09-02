@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import com.sun.management.ThreadMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
+import com.sun.management.ThreadMXBean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -67,7 +67,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         log.info(obj.toStringManual());
         log.info(obj.toStringAutomatic());
 
-        assertEquals (obj.toStringManual(), obj.toStringAutomatic());
+        assertEquals(obj.toStringManual(), obj.toStringAutomatic());
     }
 
     /**
@@ -327,8 +327,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         // Simulate overflow
         StringBuilder resultSB = new StringBuilder(arrStr);
-            resultSB.deleteCharAt(resultSB.length()-1);
-            resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
+        resultSB.deleteCharAt(resultSB.length() - 1);
+        resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
 
         arrStr = resultSB.toString();
 
@@ -429,7 +429,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             GridToStringBuilder.arrayToString(cArr).contains("... and 1 more"));
 
         Map<String, String> strMap = new TreeMap<>();
-        List<String> strList = new ArrayList<>(limit+1);
+        List<String> strList = new ArrayList<>(limit + 1);
 
         TestClass1 testCls = new TestClass1();
 
@@ -451,7 +451,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToStringColAndMapLimitWithRecursion() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
         Map strMap = new TreeMap<>();
-        List strList = new ArrayList<>(limit+1);
+        List strList = new ArrayList<>(limit + 1);
 
         TestClass1 testClass = new TestClass1();
         testClass.strMap = strMap;
@@ -485,7 +485,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         String testClsStrOf = GridToStringBuilder.toString(TestClass1.class, testCls);
 
-        String testClsStrOfR = testClsStrOf.replaceAll("... and 1 more","");
+        String testClsStrOfR = testClsStrOf.replaceAll("... and 1 more", "");
 
         info(testClsStr);
         info(testClsStrOf);
@@ -795,7 +795,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestClass2{
+    private static class TestClass2 {
         /** */
         @SuppressWarnings("unused")
         @GridToStringInclude

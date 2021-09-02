@@ -20,20 +20,25 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
 public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
+    /** */
+    private static final int DFLT_QRY_TIMEOUT = 100;
+
     /** */
     public static final int ROW_COUNT = 200;
 
@@ -42,11 +47,11 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setIndexedTypes(Integer.class, Integer.class)
             .setSqlSchema("PUBLIC")
-            .setSqlFunctionClasses(TestSQLFunctions.class);
+            .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(ccfg)
-            .setDefaultQueryTimeout(100);
+            .setSqlConfiguration(new SqlConfiguration().setDefaultQueryTimeout(DFLT_QRY_TIMEOUT));
     }
 
     /** {@inheritDoc} */
@@ -71,13 +76,21 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
     }
 
-    /** */
+    /**
+     * Check JDBC query timeout.
+     * Steps:
+     *  - execute query with implicit default timeout {@link #DFLT_QRY_TIMEOUT};
+     *  - check that query fails by timeout.
+     */
     @Test
     public void testDefaultTimeoutIgnored() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://localhost")) {
             Statement stmt = conn.createStatement();
 
-            ResultSet rs = stmt.executeQuery("select _key, _val, sleepFunc(5) from Integer");
+            // Set infinite timeout explicitly.
+            stmt.setQueryTimeout(0);
+
+            ResultSet rs = stmt.executeQuery("select _key, _val, delay(5) from Integer");
 
             int cnt = 0;
             while (rs.next())
@@ -90,20 +103,27 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Utility class with custom SQL functions.
+     * Check JDBC query timeout.
+     * Steps:
+     * - set default timeout to 100 ms;
+     * - execute query without explicit timeout;
+     * - check that query fails by timeout.
      */
-    public static class TestSQLFunctions {
-        /** */
-        @QuerySqlFunction
-        public static int sleepFunc(int v) {
-            try {
-                Thread.sleep(v);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    @Test
+    public void testDefaultTimeout() throws Exception {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://localhost")) {
+            Statement stmt = conn.createStatement();
 
-            return v;
+            GridTestUtils.assertThrows(log, () -> {
+                    ResultSet rs = stmt.executeQuery("select _key, _val, delay(5) from Integer");
+
+                    int cnt = 0;
+                    while (rs.next())
+                        cnt++;
+
+                    return null;
+                },
+                SQLException.class, "The query was cancelled while executing");
         }
     }
 }
