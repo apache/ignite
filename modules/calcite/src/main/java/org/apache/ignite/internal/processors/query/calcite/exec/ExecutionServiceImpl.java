@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadat
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -622,7 +624,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     qryId,
                     (MultiStepPlan)plan,
                     pctx.unwrap(BaseQueryContext.class),
-                    pctx.parameters()
+                    pctx.parameters(),
+                    pctx.cluster()
                 );
 
                 cur.iterator().hasNext();
@@ -634,7 +637,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     qryId,
                     (MultiStepPlan)plan,
                     pctx.unwrap(BaseQueryContext.class),
-                    pctx.parameters()
+                    pctx.parameters(),
+                    pctx.cluster()
                 );
 
             case EXPLAIN:
@@ -662,8 +666,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, BaseQueryContext qctx, Object[] params) {
-        plan.init(Commons.mapContext(locNodeId, topologyVersion()));
+    private ListFieldsQueryCursor<?> executePlan(UUID qryId, MultiStepPlan plan, BaseQueryContext qctx,
+        Object[] params, RelOptCluster cluster) {
+        plan.init(new MappingQueryContext(cluster, locNodeId, topologyVersion()));
 
         List<Fragment> fragments = plan.fragments();
 
@@ -781,7 +786,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         running.put(qryId, info);
 
-        GridQueryCancel qryCancel = info.ctx.unwrap(BaseQueryContext.class).queryCancel();
+        GridQueryCancel qryCancel = info.ctx.queryCancel();
 
         if (qryCancel == null)
             return;
@@ -800,7 +805,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
         @Nullable List<List<String>> origins) {
         RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.unwrap(BaseQueryContext.class).catalogReader(), sqlType, origins);
+            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
         return new FieldsMetadataImpl(resultType, origins);
     }
 

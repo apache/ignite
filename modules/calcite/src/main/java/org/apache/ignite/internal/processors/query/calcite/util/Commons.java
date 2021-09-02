@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQ
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -89,49 +88,6 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
  * Utility methods.
  */
 public final class Commons {
-    /** */
-    public static final CalciteConnectionConfig CALCITE_CONNECTION_CONFIG;
-
-    static {
-        Properties props = new Properties();
-
-        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
-            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().caseSensitive()));
-        props.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
-            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().conformance()));
-        props.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
-            String.valueOf(true));
-
-        CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props);
-    }
-
-    /** */
-    private static final IgniteCostFactory COST_FACTORY = new IgniteCostFactory();
-
-    /** */
-    private static final VolcanoPlanner EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, BaseQueryContext.empty());
-
-    /** */
-    private static final RexBuilder DFLT_REX_BUILDER;
-
-    /** */
-    private static final RelOptCluster CLUSTER;
-
-    /** */
-    private static final IgniteTypeFactory TYPE_FACTORY;
-
-    static {
-        RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
-        TYPE_FACTORY = new IgniteTypeFactory(typeSys);
-
-        DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
-
-        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
-
-        CLUSTER.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, EMPTY_PLANNER));
-        CLUSTER.setMetadataQuerySupplier(RelMetadataQueryEx::create);
-    }
-
     /** */
     private Commons(){}
 
@@ -243,7 +199,12 @@ public final class Commons {
      * Extracts planner context.
      */
     public static BaseQueryContext context(RelOptCluster cluster) {
-        return Objects.requireNonNull((cluster.getPlanner().getContext().unwrap(BaseQueryContext.class)));
+        try {
+            return Objects.requireNonNull((cluster.getPlanner().getContext().unwrap(BaseQueryContext.class)));
+        }
+        catch (NullPointerException e) {
+            throw e;
+        }
     }
 
     /**
@@ -486,16 +447,16 @@ public final class Commons {
 
     /** */
     public static RelOptCluster cluster() {
-        return CLUSTER;
+        return BaseQueryContext.CLUSTER;
     }
 
     /** */
     public static IgniteTypeFactory typeFactory() {
-        return TYPE_FACTORY;
+        return BaseQueryContext.TYPE_FACTORY;
     }
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return new MappingQueryContext(CLUSTER, locNodeId, topVer);
+        return new MappingQueryContext(cluster(), locNodeId, topVer);
     }
 }

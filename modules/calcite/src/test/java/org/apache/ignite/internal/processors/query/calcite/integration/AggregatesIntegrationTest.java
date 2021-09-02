@@ -31,7 +31,7 @@ import org.junit.Test;
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
-    public void countOfNonNumericField() {
+    public void countOfNonNumericField() throws InterruptedException {
         createAndPopulateTable();
 
         assertQuery("select count(name) from person").returns(4L).check();
@@ -139,7 +139,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testAnyValAggr() {
+    public void testAnyValAggr() throws InterruptedException {
         createAndPopulateTable();
 
         List<List<?>> res = execute("select any_value(name) from person");

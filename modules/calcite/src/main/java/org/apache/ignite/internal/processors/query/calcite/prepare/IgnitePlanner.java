@@ -124,9 +124,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         this.ctx = ctx;
 
         typeFactory = ctx.typeFactory();
-        catalogReader = ctx.unwrap(BaseQueryContext.class).catalogReader();
+        catalogReader = ctx.catalogReader();
         operatorTbl = ctx.opTable();
-        frameworkCfg = ctx.unwrap(BaseQueryContext.class).config();
+        frameworkCfg = ctx.config();
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
@@ -298,7 +298,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** Creates a cluster. */
     RelOptCluster cluster() {
         if (cluster == null) {
-            cluster = RelOptCluster.create(planner(), ctx.unwrap(BaseQueryContext.class).rexBuilder());
+            cluster = RelOptCluster.create(planner(), ctx.rexBuilder());
             cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
             cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
         }

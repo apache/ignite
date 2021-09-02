@@ -21,9 +21,12 @@ import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.NotNull;
@@ -80,14 +83,14 @@ public final class PlanningContext implements Context {
      * @return Sql operators table.
      */
     public SqlOperatorTable opTable() {
-        return unwrap(BaseQueryContext.class).config().getOperatorTable();
+        return config().getOperatorTable();
     }
 
     /**
      * @return Sql conformance.
      */
     public SqlConformance conformance() {
-        return unwrap(BaseQueryContext.class).config().getParserConfig().conformance();
+        return config().getParserConfig().conformance();
     }
 
     /**
@@ -101,7 +104,7 @@ public final class PlanningContext implements Context {
      * @return Schema.
      */
     public SchemaPlus schema() {
-        return unwrap(BaseQueryContext.class).config().getDefaultSchema();
+        return config().getDefaultSchema();
     }
 
     /**
@@ -119,6 +122,13 @@ public final class PlanningContext implements Context {
      */
     public IgniteTypeFactory typeFactory() {
         return unwrap(BaseQueryContext.class).typeFactory();
+    }
+
+    /**
+     * @return New catalog reader.
+     */
+    public CalciteCatalogReader catalogReader() {
+        return unwrap(BaseQueryContext.class).catalogReader();
     }
 
     /**
@@ -153,6 +163,18 @@ public final class PlanningContext implements Context {
      */
     public void rulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
         this.rulesFilter = rulesFilter;
+    }
+
+    /**
+     * @return Framework config.
+     */
+    public FrameworkConfig config() {
+        return unwrap(BaseQueryContext.class).config();
+    }
+
+    /** */
+    public RexBuilder rexBuilder() {
+        return unwrap(BaseQueryContext.class).rexBuilder();
     }
 
     /**

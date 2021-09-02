@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Properties;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
@@ -31,11 +38,13 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +56,52 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
  */
 public final class BaseQueryContext extends AbstractQueryContext {
     /** */
-    private static final BaseQueryContext EMPTY = builder().build();
+    private static final IgniteCostFactory COST_FACTORY = new IgniteCostFactory();
+
+    /** */
+    public static final CalciteConnectionConfig CALCITE_CONNECTION_CONFIG;
+
+    /** */
+    private static final BaseQueryContext EMPTY_CONTEXT;
+
+    /** */
+    private static final VolcanoPlanner EMPTY_PLANNER;
+
+    /** */
+    private static final RexBuilder DFLT_REX_BUILDER;
+
+    /** */
+    public static final RelOptCluster CLUSTER;
+
+    /** */
+    public static final IgniteTypeFactory TYPE_FACTORY;
+
+    static {
+        Properties props = new Properties();
+
+        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
+            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().caseSensitive()));
+        props.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
+            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().conformance()));
+        props.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
+            String.valueOf(true));
+
+        CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props);
+
+        EMPTY_CONTEXT = builder().build();
+
+        EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT);
+
+        RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
+        TYPE_FACTORY = new IgniteTypeFactory(typeSys);
+
+        DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
+
+        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
+
+        CLUSTER.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, EMPTY_PLANNER));
+        CLUSTER.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+    }
 
     /** */
     private final FrameworkConfig cfg;
@@ -82,7 +136,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         this.log = log;
 
-        RelDataTypeSystem typeSys = Commons.CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
+        RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
+
         typeFactory = new IgniteTypeFactory(typeSys);
 
         qryCancel = unwrap(GridQueryCancel.class);
@@ -145,7 +200,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return catalogReader = new CalciteCatalogReader(
             CalciteSchema.from(rootSchema),
             CalciteSchema.from(dfltSchema).path(null),
-            typeFactory(), Commons.CALCITE_CONNECTION_CONFIG);
+            typeFactory(), CALCITE_CONNECTION_CONFIG);
     }
 
     /**
@@ -164,7 +219,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
     /** */
     public static BaseQueryContext empty() {
-        return EMPTY;
+        return EMPTY_CONTEXT;
     }
 
     /**

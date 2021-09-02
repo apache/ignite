@@ -82,13 +82,15 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable() {
+    protected IgniteCache<Integer, Employer> createAndPopulateTable() throws InterruptedException {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("person")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("person")))
             .setBackups(2)
         );
+
+        awaitPartitionMapExchange();
 
         int idx = 0;
         person.put(idx++, new Employer("Igor", 10d));

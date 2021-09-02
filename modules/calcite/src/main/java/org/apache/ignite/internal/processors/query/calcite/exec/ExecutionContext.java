@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -99,6 +100,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     private Object[] correlations = new Object[16];
+
+    /** */
+    private IgniteLogger log;
 
     /**
      * @param qryId Query ID.
@@ -231,6 +235,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** {@inheritDoc} */
     @Override public IgniteTypeFactory getTypeFactory() {
         return unwrap(BaseQueryContext.class).typeFactory();
+    }
+
+    /**
+     * @return Query cancel.
+     */
+    public GridQueryCancel queryCancel() {
+        return unwrap(BaseQueryContext.class).queryCancel();
     }
 
     /** {@inheritDoc} */
