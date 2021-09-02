@@ -38,7 +38,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -53,7 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
+    import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -260,20 +259,20 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBangEqual() throws Exception {
-        IgniteCache<Integer, Person> person = grid(1).createCache(new CacheConfiguration<Integer, Person>()
-            .setName("person")
+        IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
+            .setName("developer")
             .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Integer.class, Person.class)
+            .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        person.put(1, new Person(1, "Test1"));
-        person.put(10, new Person(10, "Test2"));
-        person.put(100, new Person(100, "Test3"));
+        developer.put(1, new Developer("Name1", 1));
+        developer.put(10, new Developer("Name10", 10));
+        developer.put(100, new Developer("Name100", 100));
 
         awaitPartitionMapExchange(true, true, null);
 
-        assertEquals(2, sql("SELECT * FROM Person WHERE id != ?", false, 1).size());
+        assertEquals(2, sql("SELECT * FROM Developer WHERE projectId != ?", false, 1).size());
     }
 
     /**
