@@ -60,9 +60,12 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
         crd = startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /** */
