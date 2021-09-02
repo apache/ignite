@@ -256,7 +256,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @throws IgniteCheckedException If cancelled.
      */
     private void checkCancelled() throws IgniteCheckedException {
-        Throwable e = cancelTok.cancelled();
+        Throwable e = cancelTok.cancelException();
 
         if (e instanceof SchemaIndexOperationCancellationException)
             throw (SchemaIndexOperationCancellationException)e;

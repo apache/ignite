@@ -432,7 +432,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
             assertNotNull(intlRebIdxFut);
 
-            assertTrue(waitForCondition(() -> intlRebIdxFut.cancelToken().cancelled() != null, getTestTimeout()));
+            assertTrue(waitForCondition(() -> intlRebIdxFut.cancelToken().cancelException() != null, getTestTimeout()));
 
             stopLoad.set(true);
 
