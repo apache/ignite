@@ -75,24 +75,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks bang equal is allowed and works.
-     */
-    @Test
-    public void testBangEqual() throws Exception {
-        stmt.execute("CREATE TABLE Person(id INT, salary INT, name VARCHAR, PRIMARY KEY(id))");
-
-        stmt.executeUpdate("INSERT INTO Person VALUES (1, 1, 'test1')");
-        stmt.executeUpdate("INSERT INTO Person VALUES (10, 10, 'test10')");
-        stmt.executeUpdate("INSERT INTO Person VALUES (100, 100, 'test100')");
-
-        try (ResultSet rs = stmt.executeQuery("SELECT * FROM Person WHERE id != 1")) {
-            assertTrue(rs.next());
-            assertTrue(rs.next());
-            assertFalse(rs.next());
-        }
-    }
-
-    /**
      * @throws SQLException If failed.
      */
     @Test

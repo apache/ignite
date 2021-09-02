@@ -38,6 +38,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -252,6 +253,35 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         awaitReservationsRelease("RISK");
         awaitReservationsRelease("TRADE");
         awaitReservationsRelease("BATCH");
+    }
+
+    /**
+     * Checks bang equal is allowed and works.
+     */
+    @Test
+    public void testBangEqual() throws Exception {
+        IgniteCache<Integer, Person> person = grid(1).createCache(new CacheConfiguration<Integer, Person>()
+            .setName("person")
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Person.class)
+            .setBackups(2)
+        );
+
+        person.put(1, new Person(1, "Test1"));
+        person.put(10, new Person(10, "Test2"));
+        person.put(100, new Person(100, "Test3"));
+
+        awaitPartitionMapExchange(true, true, null);
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> res = engine.query(null, "PUBLIC",
+            "SELECT * FROM Person WHERE id != ?", 1);
+
+        assertEquals(1, res.size());
+
+        List<List<?>> rows = res.get(0).getAll();
+        assertEquals(2, rows.size());
     }
 
     /**
