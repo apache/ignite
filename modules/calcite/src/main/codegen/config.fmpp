@@ -56,6 +56,7 @@ data: {
       "INLINE_SIZE"
       "LOGGING"
       "NOLOGGING"
+      "PASSWORD"
     ]
 
     # List of non-reserved keywords to add;
@@ -77,6 +78,7 @@ data: {
       "INLINE_SIZE"
       "LOGGING"
       "NOLOGGING"
+      "PASSWORD"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -587,7 +589,8 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
-      "SqlAlterTable()"
+      "SqlAlterTable()",
+      "SqlAlterUser()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
@@ -595,7 +598,8 @@ data: {
     # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
       "SqlCreateTable",
-      "SqlCreateIndex"
+      "SqlCreateIndex",
+      "SqlCreateUser"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -603,7 +607,8 @@ data: {
     # Example: "SqlDropSchema".
     dropStatementParserMethods: [
       "SqlDropTable",
-      "SqlDropIndex"
+      "SqlDropIndex",
+      "SqlDropUser"
     ]
 
     # List of methods for parsing extensions to "ALTER <scope>" calls.

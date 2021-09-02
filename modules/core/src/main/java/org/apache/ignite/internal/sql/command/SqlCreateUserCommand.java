@@ -36,6 +36,22 @@ public class SqlCreateUserCommand implements SqlCommand {
     /** User's password. */
     private String passwd;
 
+    /**
+     * Default constructor.
+     */
+    public SqlCreateUserCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param userName User name.
+     * @param passwd Passwd.
+     */
+    public SqlCreateUserCommand(String userName, String passwd) {
+        this.userName = userName;
+        this.passwd = passwd;
+    }
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return null;

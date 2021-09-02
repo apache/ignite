@@ -36,6 +36,22 @@ public class SqlAlterUserCommand implements SqlCommand {
     /** User's password. */
     private String passwd;
 
+    /**
+     * Default constructor.
+     */
+    public SqlAlterUserCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param userName User name.
+     * @param passwd Passwd.
+     */
+    public SqlAlterUserCommand(String userName, String passwd) {
+        this.userName = userName;
+        this.passwd = passwd;
+    }
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return null;

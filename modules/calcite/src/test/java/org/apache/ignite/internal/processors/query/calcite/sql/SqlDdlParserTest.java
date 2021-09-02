@@ -510,6 +510,70 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertParserThrows("alter table my_table drop column (a.b)", SqlParseException.class);
     }
 
+    /**
+     * Test parsing of CREATE USER command
+     */
+    @Test
+    public void createUser() throws Exception {
+        IgniteSqlCreateUser createUser;
+
+        createUser = parse("create user test with password 'asd'");
+
+        assertEquals("TEST", createUser.user().getSimple());
+        assertEquals("asd", createUser.password());
+
+        createUser = parse("create user \"test\" with password 'asd'");
+
+        assertEquals("test", createUser.user().getSimple());
+        assertEquals("asd", createUser.password());
+
+        assertParserThrows("create user test", SqlParseException.class);
+        assertParserThrows("create user test with password", SqlParseException.class);
+        assertParserThrows("create user test with password asd", SqlParseException.class);
+        assertParserThrows("create user 'test' with password 'asd'", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing of ALTER USER command
+     */
+    @Test
+    public void alterUser() throws Exception {
+        IgniteSqlAlterUser alterUser;
+
+        alterUser = parse("alter user test with password 'asd'");
+
+        assertEquals("TEST", alterUser.user().getSimple());
+        assertEquals("asd", alterUser.password());
+
+        alterUser = parse("alter user \"test\" with password 'asd'");
+
+        assertEquals("test", alterUser.user().getSimple());
+        assertEquals("asd", alterUser.password());
+
+        assertParserThrows("alter user test", SqlParseException.class);
+        assertParserThrows("alter user test with password", SqlParseException.class);
+        assertParserThrows("alter user test with password asd", SqlParseException.class);
+        assertParserThrows("alter user 'test' with password 'asd'", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing of DROP USER command
+     */
+    @Test
+    public void dropUser() throws Exception {
+        IgniteSqlDropUser dropUser;
+
+        dropUser = parse("drop user test");
+
+        assertEquals("TEST", dropUser.user().getSimple());
+
+        dropUser = parse("drop user \"test\"");
+
+        assertEquals("test", dropUser.user().getSimple());
+
+        assertParserThrows("drop user test with password 'asd'", SqlParseException.class);
+    }
+
     /** */
     private void assertParserThrows(String sql, Class<? extends Exception> cls) {
         assertParserThrows(sql, cls, "");
