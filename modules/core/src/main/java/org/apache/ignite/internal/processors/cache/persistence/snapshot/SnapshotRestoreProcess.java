@@ -1216,39 +1216,41 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
             Map<Integer, CompletableFuture<Void>> indexRebuildCaches = grp.caches().stream()
                 .collect(Collectors.toMap(GridCacheContext::cacheId, id -> new CompletableFuture<>()));
 
-            CompletableFuture<Void> indexCacheGroupRebFut = allOfFailFast(indexRebuildCaches.values())
-                .thenRunAsync(() -> {
-                    // Force new checkpoint to make sure owning state is captured.
-                    CheckpointProgress cp = ctx.cache().context().database()
-                        .forceCheckpoint("Snapshot restore procedure triggered WAL enabling: " + grp.cacheOrGroupName());
-
-                    cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, true));
-                });
-
             // This will not be fired if partitions loading future completes with an exception.
             CompletableFuture<Void> partsInited = allOfFailFast(partLfs)
                 .thenRunAsync(() -> scheduleIndexRebuild(grp.shared().kernalContext(),
                     grp.caches(),
                     opCtx0.err,
-                    indexRebuildCaches::get));
+                    indexRebuildCaches::get))
+                .thenRunAsync(() -> {
+                    // Initialization action when cache group partitions fully initialized.
+                    // It is safe to own all persistence cache partitions here, since partitions state
+                    // are already located on the disk.
+                    grp.topology().ownMoving();
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Partitions have been scheduled to resend [reason=" +
+                            "Group durability restored, name=" + grp.cacheOrGroupName() + ']');
+                    }
+
+                    grp.shared().exchange().refreshPartitions(Collections.singleton(grp));
+                });
+
+            CompletableFuture<Void> indexCacheGroupRebFut =
+                allOfFailFast(indexRebuildCaches.values())
+                    .thenRunAsync(() -> {
+                        // Force new checkpoint to make sure owning state is captured.
+                        CheckpointProgress cp = ctx.cache().context().database()
+                            .forceCheckpoint("Snapshot restore procedure triggered WAL enabling: " + grp.cacheOrGroupName());
+
+                        cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, true));
+                    });
 
             opCtx0.locProgress.put(
                 CacheRestoreLifecycleFuture.create(grp,
                     partsInited,
-                    indexCacheGroupRebFut,
-                    () -> {
-                        // Initialization action when cache group partitions fully initialized.
-                        // It is safe to own all persistence cache partitions here, since partitions state
-                        // are already located on the disk.
-                        grp.topology().ownMoving();
-
-                        if (log.isDebugEnabled()) {
-                            log.debug("Partitions have been scheduled to resend [reason=" +
-                                "Group durability restored, name=" + grp.cacheOrGroupName() + ']');
-                        }
-
-                        grp.shared().exchange().refreshPartitions(Collections.singleton(grp));
-                    }),
+                    LateAffinityCompletableFuture.createAndInit(grp),
+                    indexCacheGroupRebFut),
                 partLfs);
         }
 
@@ -1736,7 +1738,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
     }
 
     /** */
-    private static class CacheRestoreLifecycleFuture extends CompletableFuture<Void> implements PartitionsExchangeAware {
+    private static class CacheRestoreLifecycleFuture extends CompletableFuture<Void> {
         /** Cache group context. */
         private final CacheGroupContext grp;
 
@@ -1744,7 +1746,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         private final CompletableFuture<Void> partsInited;
 
         /** Future which will be completed when late affinity assignment on this cache group occurs. */
-        private final CompletableFuture<Void> rebalanced = new CompletableFuture<>();
+        private final CompletableFuture<Void> rebalanced;
 
         /** An index rebuild futures for each cache in given cache group. */
         private final CompletableFuture<Void> indexCacheGroupRebFut;
@@ -1756,71 +1758,41 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         private CacheRestoreLifecycleFuture(
             CacheGroupContext grp,
             CompletableFuture<Void> partsInited,
+            CompletableFuture<Void> rebalanced,
             CompletableFuture<Void> indexCacheGroupRebFut
         ) {
             this.grp = grp;
             this.partsInited = partsInited;
+            this.rebalanced = rebalanced;
             this.indexCacheGroupRebFut = indexCacheGroupRebFut;
         }
 
         /**
          * @param grp Cache group context.
          * @param partsInited Future which completes when partitions are inited.
-         * @param resendAct Action to do cache group initialization.
          * @return Future which will be completed when cache group processing ends.
          */
         public static CacheRestoreLifecycleFuture create(
             CacheGroupContext grp,
             CompletableFuture<Void> partsInited,
-            CompletableFuture<Void> indexCacheGroupRebFut,
-            Runnable resendAct
+            CompletableFuture<Void> rebalanced,
+            CompletableFuture<Void> indexCacheGroupRebFut
         ) {
             assert !grp.isLocal();
             assert grp.shared().database() instanceof GridCacheDatabaseSharedManager;
             assert grp.topology() instanceof GridDhtPartitionTopologyImpl;
 
-            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, partsInited, indexCacheGroupRebFut);
+            CacheRestoreLifecycleFuture cl = new CacheRestoreLifecycleFuture(grp, partsInited, rebalanced, indexCacheGroupRebFut);
 
-            grp.shared().exchange().registerExchangeAwareComponent(cl);
-
-            partsInited.thenRun(resendAct);
-
-            allOfFailFast(Arrays.asList(partsInited, cl.rebalanced, indexCacheGroupRebFut))
+            allOfFailFast(Arrays.asList(partsInited, rebalanced, indexCacheGroupRebFut))
                 .whenComplete((r, t) -> {
                    if (t == null)
                        cl.complete(r);
                    else
                        cl.completeExceptionally(t);
-
-                    grp.shared().exchange().unregisterExchangeAwareComponent(cl);
                 });
 
             return cl;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-            // Handle for the late affinity assignment message on partitions load complete.
-            assert partsInited.isDone();
-
-            CacheAffinityChangeMessage msg = fut.affinityChangeMessage();
-
-            if (msg == null || F.isEmpty(msg.cacheDeploymentIds()))
-                return;
-
-            IgniteUuid deploymentId = msg.cacheDeploymentIds().get(grp.groupId());
-            CacheGroupDescriptor desc = grp.shared().affinity().cacheGroups().get(grp.groupId());
-
-            if (deploymentId == null || desc == null)
-                return;
-
-            if (deploymentId.equals(desc.deploymentId())) {
-                if (fut.rebalanced())
-                    rebalanced.complete(null);
-                else
-                    rebalanced.completeExceptionally(new IgniteException("Unable to complete late affinity assignment switch: " +
-                        grp.groupId()));
-            }
         }
 
         /** {@inheritDoc} */
@@ -1850,6 +1822,54 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                 ",\n indexRebuild=" + indexCacheGroupRebFut +
                 ",\n super=" + super.toString() +
                 '}';
+        }
+    }
+
+    /** */
+    private static class LateAffinityCompletableFuture extends CompletableFuture<Void> implements PartitionsExchangeAware {
+        /** Cache group context. */
+        private final CacheGroupContext grp;
+
+        /**
+         * @param grp Cache group context.
+         */
+        private LateAffinityCompletableFuture(CacheGroupContext grp) {
+            this.grp = grp;
+        }
+
+        /**
+         * @param grp Cache group context.
+         * @return Future which will be completed when late affinity assignment occurs.
+         */
+        public static CompletableFuture<Void> createAndInit(CacheGroupContext grp) {
+            LateAffinityCompletableFuture rebalanced = new LateAffinityCompletableFuture(grp);
+
+            grp.shared().exchange().registerExchangeAwareComponent(rebalanced);
+            rebalanced.whenComplete((r, t) -> grp.shared().exchange().unregisterExchangeAwareComponent(rebalanced));
+
+            return rebalanced;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+            CacheAffinityChangeMessage msg = fut.affinityChangeMessage();
+
+            if (msg == null || F.isEmpty(msg.cacheDeploymentIds()))
+                return;
+
+            IgniteUuid deploymentId = msg.cacheDeploymentIds().get(grp.groupId());
+            CacheGroupDescriptor desc = grp.shared().affinity().cacheGroups().get(grp.groupId());
+
+            if (deploymentId == null || desc == null)
+                return;
+
+            if (deploymentId.equals(desc.deploymentId())) {
+                if (fut.rebalanced())
+                    complete(null);
+                else
+                    completeExceptionally(new IgniteException("Unable to complete late affinity assignment switch: " +
+                        grp.groupId()));
+            }
         }
     }
 
