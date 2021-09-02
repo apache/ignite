@@ -31,8 +31,9 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMinusBase;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -118,9 +119,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /**
-     * Estimation of row count for MINUS (EXCEPT) operator.
+     * Estimation of row count for set op (MINUS, INTERSECT).
      */
-    public double getRowCount(IgniteMinusBase rel, RelMetadataQuery mq) {
+    public double getRowCount(IgniteSetOp rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 
@@ -128,6 +129,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * Estimation of row count for Aggregate operator.
      */
     public double getRowCount(IgniteAggregate rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /**
+     * Estimation of row count for Limit operator.
+     */
+    public double getRowCount(IgniteLimit rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 }

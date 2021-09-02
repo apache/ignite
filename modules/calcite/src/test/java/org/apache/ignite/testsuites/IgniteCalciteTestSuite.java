@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlDdlParserTest;
 import org.junit.runner.RunWith;
@@ -37,6 +38,7 @@ import org.junit.runners.Suite;
     ContinuousExecutionTest.class,
     QueryCheckerTest.class,
     SqlDdlParserTest.class,
+    IgniteSqlFunctionsTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

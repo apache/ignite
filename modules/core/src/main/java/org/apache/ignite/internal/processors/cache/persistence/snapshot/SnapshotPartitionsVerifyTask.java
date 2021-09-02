@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -37,6 +40,8 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -44,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
@@ -69,6 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
+import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2.reduce0;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
@@ -77,9 +82,12 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 @GridInternal
 public class SnapshotPartitionsVerifyTask
-    extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
+    extends ComputeTaskAdapter<SnapshotPartitionsVerifyTaskArg, SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** Task argument. */
+    private final Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -88,8 +96,10 @@ public class SnapshotPartitionsVerifyTask
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
+        @Nullable SnapshotPartitionsVerifyTaskArg arg
     ) throws IgniteException {
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = arg.clusterMetadata();
+
         if (!subgrid.containsAll(clusterMetas.keySet())) {
             throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
                 new IgniteException("Some of Ignite nodes left the cluster during the snapshot verification " +
@@ -118,6 +128,8 @@ public class SnapshotPartitionsVerifyTask
                 new IgniteException("Some metadata is missing from the snapshot: " + missed)));
         }
 
+        metas.putAll(clusterMetas);
+
         while (!allMetas.isEmpty()) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
                 SnapshotMetadata meta = F.find(e.getValue(), null, allMetas::remove);
@@ -125,7 +137,8 @@ public class SnapshotPartitionsVerifyTask
                 if (meta == null)
                     continue;
 
-                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId()), e.getKey());
+                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId(), arg.cacheGroupNames()),
+                    e.getKey());
 
                 if (allMetas.isEmpty())
                     break;
@@ -136,8 +149,8 @@ public class SnapshotPartitionsVerifyTask
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-        return VerifyBackupPartitionsTaskV2.reduce0(results);
+    @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+        return new SnapshotPartitionsVerifyTaskResult(metas, reduce0(results));
     }
 
     /** {@inheritDoc} */
@@ -165,13 +178,19 @@ public class SnapshotPartitionsVerifyTask
         /** Consistent snapshot metadata file name. */
         private final String consId;
 
+        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
+        private final Set<String> rqGrps;
+
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
+         * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          */
-        public VisorVerifySnapshotPartitionsJob(String snpName, String consId) {
+        public VisorVerifySnapshotPartitionsJob(String snpName, String consId, Collection<String> rqGrps) {
             this.snpName = snpName;
             this.consId = consId;
+
+            this.rqGrps = rqGrps == null ? Collections.emptySet() : new HashSet<>(rqGrps);
         }
 
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
@@ -183,7 +202,8 @@ public class SnapshotPartitionsVerifyTask
             }
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
-            Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
+            Set<Integer> grps = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
+                rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
@@ -221,17 +241,22 @@ public class SnapshotPartitionsVerifyTask
                 .order(ByteOrder.nativeOrder()));
 
             try {
-                U.doInParallel(
-                    ignite.context().getSystemExecutorService(),
-                    partFiles,
-                    part -> {
-                        String grpName = cacheGroupName(part.getParentFile());
-                        int grpId = CU.cacheId(grpName);
-                        int partId = partId(part.getName());
+                GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(snpName, meta.folderName());
 
-                        FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+                for (GridComponent comp : snpCtx)
+                    comp.start();
 
-                        try {
+                try {
+                    U.doInParallel(
+                        snpMgr.snapshotExecutorService(),
+                        partFiles,
+                        part -> {
+                            String grpName = cacheGroupName(part.getParentFile());
+                            int grpId = CU.cacheId(grpName);
+                            int partId = partId(part.getName());
+
+                            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
                             try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
                                 .createPageStore(getTypeByPartId(partId),
                                     part::toPath,
@@ -284,20 +309,24 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+                                    snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
 
                                 assert hash != null : "OWNING must have hash: " + key;
 
                                 res.put(key, hash);
                             }
-                        }
-                        catch (IOException e) {
-                            throw new IgniteCheckedException(e);
-                        }
+                            catch (IOException e) {
+                                throw new IgniteCheckedException(e);
+                            }
 
-                        return null;
-                    }
-                );
+                            return null;
+                        }
+                    );
+                }
+                finally {
+                    for (GridComponent comp : snpCtx)
+                        comp.stop(true);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

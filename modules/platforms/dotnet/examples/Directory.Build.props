@@ -16,6 +16,10 @@
 -->
 
 <Project>
+    <PropertyGroup>
+        <RunAnalyzers>false</RunAnalyzers>
+    </PropertyGroup>
+
     <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll')">
         <IgniteBinaryDistro>true</IgniteBinaryDistro>
     </PropertyGroup>

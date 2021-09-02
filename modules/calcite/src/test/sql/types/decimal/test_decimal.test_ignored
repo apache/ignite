@@ -2,7 +2,6 @@
 # description: Test basic decimals
 # group: [decimal]
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14596
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14589
 
 statement ok
 PRAGMA enable_verification
@@ -17,25 +16,25 @@ DECIMAL(18,3)
 query II
 SELECT '0.1'::DECIMAL::VARCHAR, '922337203685478.758'::DECIMAL::VARCHAR;
 ----
-0.100	922337203685478.758
+0.1	922337203685478.758
 
 # negative values
 query II
 SELECT '-0.1'::DECIMAL::VARCHAR, '-922337203685478.758'::DECIMAL::VARCHAR;
 ----
--0.100	-922337203685478.758
+-0.1	-922337203685478.758
 
 # some more difficult string conversions
 query III
 SELECT '   7   '::DECIMAL::VARCHAR, '9.'::DECIMAL::VARCHAR, '.1'::DECIMAL::VARCHAR;
 ----
-7.000	9.000	0.100
+7	9	0.1
 
 # trailing decimals get truncated
 query II
 SELECT '0.123456789'::DECIMAL::VARCHAR, '-0.123456789'::DECIMAL::VARCHAR;
 ----
-0.123	-0.123
+0.123456789	-0.123456789
 
 # overflow in conversion
 statement error
@@ -112,6 +111,22 @@ query I
 select '0.00003'::DECIMAL(38,10)::VARCHAR
 ----
 0.0000300000
+
+# varchar
+query R
+SELECT '100.100'::DECIMAL(10,0)::VARCHAR
+----
+100
+
+query R
+SELECT '100.100'::DECIMAL::VARCHAR
+----
+100.100
+
+query R
+SELECT '100.100'::DECIMAL(10)::VARCHAR
+----
+100
 
 # various error conditions
 # scale must be bigger than or equal to width

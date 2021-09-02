@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -30,6 +31,8 @@ import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
@@ -238,15 +241,295 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Create index with list of indexed columns.
+     */
+    @Test
+    public void createIndexColumns() throws SqlParseException {
+        String qry = "create index my_index on my_table(id, val1 asc, val2 desc)";
+
+        IgniteSqlCreateIndex createIdx = parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createIdx.ifNotExists, is(false));
+        assertThat(createIdx.columnList(), hasItem(indexedColumn("ID", false)));
+        assertThat(createIdx.columnList(), hasItem(indexedColumn("VAL1", false)));
+        assertThat(createIdx.columnList(), hasItem(indexedColumn("VAL2", true)));
+    }
+
+    /**
+     * Create index on table with schema.
+     */
+    @Test
+    public void createIndexOnTableWithSchema() throws SqlParseException {
+        String qry = "create index my_index on my_schema.my_table(id)";
+
+        IgniteSqlCreateIndex createIdx = parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+    }
+
+    /**
+     * Create index with "if not exists" clause"
+     */
+    @Test
+    public void createIndexIfNotExists() throws SqlParseException {
+        String qry = "create index if not exists my_index on my_table(id)";
+
+        IgniteSqlCreateIndex createIdx = parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createIdx.ifNotExists, is(true));
+    }
+
+    /**
+     * Create index with parallel and inline_size options"
+     */
+    @Test
+    public void createIndexWithOptions() throws SqlParseException {
+        String qry = "create index my_index on my_table(id) parallel 10 inline_size 20";
+
+        IgniteSqlCreateIndex createIdx = parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(10, createIdx.parallel().intValue(true));
+        assertEquals(20, createIdx.inlineSize().intValue(true));
+
+        qry = "create index my_index on my_table(id) parallel 10";
+
+        createIdx = parse(qry);
+
+        assertEquals(10, createIdx.parallel().intValue(true));
+        assertNull(createIdx.inlineSize());
+
+        qry = "create index my_index on my_table(id) inline_size 20";
+
+        createIdx = parse(qry);
+
+        assertNull(createIdx.parallel());
+        assertEquals(20, createIdx.inlineSize().intValue(true));
+
+        qry = "create index my_index on my_table(id) inline_size 20 parallel 10";
+
+        createIdx = parse(qry);
+
+        assertEquals(20, createIdx.inlineSize().intValue(true));
+        assertEquals(10, createIdx.parallel().intValue(true));
+    }
+
+    /**
+     * Create index with malformed statements.
+     */
+    @Test
+    public void createIndexMalformed() {
+        assertParserThrows("create index my_index on my_table(id) parallel 10 inline_size 20 parallel 10",
+            SqlValidatorException.class, "Option 'PARALLEL' has already been defined");
+
+        assertParserThrows("create index my_index on my_table(id) inline_size -1", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id) inline_size = 1", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id) inline_size", SqlParseException.class);
+
+        assertParserThrows("create index if exists my_index on my_table(id)", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id asc desc)", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id nulls first)", SqlParseException.class);
+
+        assertParserThrows("create index my_scheme.my_index on my_table(id)", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id.id2)", SqlParseException.class);
+    }
+
+    /**
+     * Alter table with LOGGING/NOLOGING clause.
+     */
+    @Test
+    public void alterTableLoggingNologging() throws SqlParseException {
+        IgniteSqlAlterTable alterTbl = parse("alter table my_table logging");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(false, alterTbl.ifExists());
+        assertEquals(true, alterTbl.logging());
+
+        alterTbl = parse("alter table if exists my_table nologging");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(true, alterTbl.ifExists());
+        assertEquals(false, alterTbl.logging());
+    }
+
+    /**
+     * Alter table with schema.
+     */
+    @Test
+    public void alterTableWithSchema() throws SqlParseException {
+        IgniteSqlAlterTable alterTbl1 = parse("alter table my_schema.my_table logging");
+        assertThat(alterTbl1.name().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+
+        IgniteSqlAlterTableAddColumn alterTbl2 = parse("alter table my_schema.my_table add column a int");
+
+        assertThat(alterTbl2.name().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+
+        IgniteSqlAlterTableDropColumn alterTbl3 = parse("alter table my_schema.my_table drop column a");
+
+        assertThat(alterTbl3.name().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+    }
+
+    /**
+     * Alter table add column.
+     */
+    @Test
+    public void alterTableAddColumn() throws SqlParseException {
+        IgniteSqlAlterTableAddColumn alterTbl;
+
+        alterTbl = parse("alter table my_table add column a int");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column if not exists a int");
+
+        assertEquals(true, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add a int");
+
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add if not exists a int");
+
+        assertEquals(true, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column (a int)");
+
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column if not exists (a int)");
+
+        assertEquals(true, alterTbl.ifNotExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnWithName("A")));
+
+        alterTbl = parse("alter table my_table add column (a int, \"b\" varchar, c date not null)");
+
+        assertEquals(false, alterTbl.ifNotExistsColumn());
+        assertEquals(3, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(columnDeclaration("A", "INTEGER", true)));
+        assertThat(alterTbl.columns(), hasItem(columnDeclaration("b", "VARCHAR", true)));
+        assertThat(alterTbl.columns(), hasItem(columnDeclaration("C", "DATE", false)));
+    }
+
+    /**
+     * Alter table drop column.
+     */
+    @Test
+    public void alterTableDropColumn() throws SqlParseException {
+        IgniteSqlAlterTableDropColumn alterTbl;
+
+        alterTbl = parse("alter table my_table drop column a");
+
+        assertThat(alterTbl.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column if exists a");
+
+        assertEquals(true, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop a");
+
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop if exists a");
+
+        assertEquals(true, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column (a)");
+
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column if exists (a)");
+
+        assertEquals(true, alterTbl.ifExistsColumn());
+        assertEquals(1, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+
+        alterTbl = parse("alter table my_table drop column (a, \"b\", c)");
+
+        assertEquals(false, alterTbl.ifExistsColumn());
+        assertEquals(3, alterTbl.columns().size());
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("A")));
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("b")));
+        assertThat(alterTbl.columns(), hasItem(identifierWithName("C")));
+    }
+
+    /**
+     * Malformed alter table statements.
+     */
+    @Test
+    public void alterTableMalformed() {
+        assertParserThrows("alter table my_table logging nologging", SqlParseException.class);
+
+        assertParserThrows("alter table my_table logging add column a int", SqlParseException.class);
+
+        assertParserThrows("alter table if not exists my_table logging", SqlParseException.class);
+
+        assertParserThrows("alter table my_table add column if exists (a int)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table add column (a)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table drop column if not exists (a)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table drop column (a int)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table add column (a.b int)", SqlParseException.class);
+
+        assertParserThrows("alter table my_table drop column (a.b)", SqlParseException.class);
+    }
+
+    /** */
+    private void assertParserThrows(String sql, Class<? extends Exception> cls) {
+        assertParserThrows(sql, cls, "");
+    }
+
+    /** */
+    private void assertParserThrows(String sql, Class<? extends Exception> cls, String msg) {
+        GridTestUtils.assertThrowsAnyCause(log, () -> parse(sql), cls, msg);
+    }
+
+    /**
      * Parses a given statement and returns a resulting AST.
      *
      * @param stmt Statement to parse.
      * @return An AST.
      */
-    private static SqlNode parse(String stmt) throws SqlParseException {
+    private static <T extends SqlNode> T parse(String stmt) throws SqlParseException {
         SqlParser parser = SqlParser.create(stmt, SqlParser.config().withParserFactory(IgniteSqlParserImpl.FACTORY));
 
-        return parser.parseStmt();
+        return (T)parser.parseStmt();
     }
 
     /**
@@ -308,6 +591,33 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Matcher to verify identifier.
+     */
+    private static <T extends SqlIdentifier> Matcher<T> identifierWithName(String name) {
+        return new CustomMatcher<T>("identifier with name=" + name) {
+            @Override public boolean matches(Object item) {
+                return item instanceof SqlIdentifier
+                    && ((SqlIdentifier)item).names.get(0).equals(name);
+            }
+        };
+    }
+
+    /**
+     * Matcher to verify column declaration.
+     */
+    private static <T extends SqlColumnDeclaration> Matcher<T> columnDeclaration(String name, String type,
+        boolean nullable) {
+        return new CustomMatcher<T>("column declaration [name=" + name + ", type=" + type + ']') {
+            @Override public boolean matches(Object item) {
+                return item instanceof SqlColumnDeclaration
+                    && ((SqlColumnDeclaration)item).name.names.get(0).equals(name)
+                    && ((SqlColumnDeclaration)item).dataType.getTypeName().names.get(0).equals(type)
+                    && ((SqlColumnDeclaration)item).dataType.getNullable() == nullable;
+            }
+        };
+    }
+
+    /**
      * Matcher to verify that an object of the expected type and matches the given predicat.
      *
      * @param desc Description for this matcher.
@@ -319,6 +629,32 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         return new CustomMatcher<T>(desc) {
             @Override public boolean matches(Object item) {
                 return item != null && cls.isAssignableFrom(item.getClass()) && pred.test((T)item);
+            }
+        };
+    }
+
+    /**
+     * Matcher to verify name and direction of indexed column.
+     *
+     * @param name Expected name.
+     * @param desc Descending order.
+     * @return {@code true} in case name and order of the indexed column equal to expected values.
+     */
+    private static <T extends SqlColumnDeclaration> Matcher<T> indexedColumn(String name, boolean desc) {
+        return new CustomMatcher<T>("column with name=" + name) {
+            @Override public boolean matches(Object item) {
+                SqlNode node = (SqlNode)item;
+
+                if (desc) {
+                    if (node.getKind() != SqlKind.DESCENDING)
+                        return false;
+
+                    SqlIdentifier ident = ((SqlIdentifier)((SqlCall)node).getOperandList().get(0));
+
+                    return ident.names.get(0).equals(name);
+                }
+                else
+                    return item instanceof SqlIdentifier && ((SqlIdentifier)node).names.get(0).equals(name);
             }
         };
     }

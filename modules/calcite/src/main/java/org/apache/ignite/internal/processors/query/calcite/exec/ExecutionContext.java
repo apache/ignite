@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -47,7 +49,11 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  */
 public class ExecutionContext<Row> implements DataContext {
     /** */
-    private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+    private final TimeZone timeZone = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+
+    /** */
+    // TODO https://issues.apache.org/jira/browse/IGNITE-15276 Support other locales.
+    private static final Locale LOCALE = Locale.ENGLISH;
 
     /** */
     private final UUID qryId;
@@ -72,6 +78,12 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** */
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
+
+    /**
+     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value
+     * throughout the query.
+     */
+    private final long startTs;
 
     /** */
     private Object[] correlations = new Object[16];
@@ -99,6 +111,9 @@ public class ExecutionContext<Row> implements DataContext {
         this.params = params;
 
         expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
+
+        long ts = U.currentTimeMillis();
+        startTs = ts + timeZone.getOffset(ts);
     }
 
     /**
@@ -194,7 +209,13 @@ public class ExecutionContext<Row> implements DataContext {
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
-            return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
+            return timeZone; // TODO DistributedSqlConfiguration#timeZone
+        if (Variable.CURRENT_TIMESTAMP.camelName.equals(name))
+            return startTs;
+        if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))
+            return startTs;
+        if (Variable.LOCALE.camelName.equals(name))
+            return LOCALE;
         if (name.startsWith("?"))
             return TypeUtils.toInternal(this, params.get(name));
 

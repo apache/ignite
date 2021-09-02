@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,10 +70,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_
  * </pre>
  */
 public class DataStorageConfiguration implements Serializable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Value used for making WAL archive size unlimited */
+    /** Value used for making WAL archive size unlimited. */
     public static final long UNLIMITED_WAL_ARCHIVE = -1;
 
     /** Default data region start size (256 MB). */
@@ -128,7 +129,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
-    /** Default max size of WAL archive files, in bytes */
+    /** Default max size of WAL archive files, in bytes. */
     public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
 
     /** */
@@ -164,6 +165,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default change data capture directory. */
+    public static final String DFLT_WAL_CDC_PATH = "db/wal/cdc";
+
     /** Default path (relative to working directory) of binary metadata folder */
     public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
 
@@ -187,6 +191,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** @see IgniteSystemProperties#IGNITE_USE_ASYNC_FILE_IO_FACTORY */
     public static final boolean DFLT_USE_ASYNC_FILE_IO_FACTORY = true;
+
+    /** Value used to indicate the use of half of the {@link #getMaxWalArchiveSize}. */
+    public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
 
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
@@ -226,7 +233,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
 
-    /** Maximum size of wal archive folder, in bytes */
+    /** Maximum size of wal archive folder, in bytes. */
     private long maxWalArchiveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
 
     /** Number of work WAL segments. */
@@ -240,6 +247,14 @@ public class DataStorageConfiguration implements Serializable {
 
     /** WAL archive path. */
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
+
+    /** Change Data Capture path. */
+    @IgniteExperimental
+    private String cdcWalPath = DFLT_WAL_CDC_PATH;
+
+    /** Change Data Capture enabled flag. */
+    @IgniteExperimental
+    private boolean cdcEnabled;
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
@@ -288,6 +303,10 @@ public class DataStorageConfiguration implements Serializable {
      */
     private long walAutoArchiveAfterInactivity = -1;
 
+    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    @IgniteExperimental
+    private long walForceArchiveTimeout = -1;
+
     /**
      * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
      */
@@ -325,6 +344,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Maximum number of partitions which can be defragmented at the same time. */
     private int defragmentationThreadPoolSize = DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE;
+
+    /** Minimum size of wal archive folder, in bytes. */
+    private long minWalArchiveSize = HALF_MAX_WAL_ARCHIVE_SIZE;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -723,6 +745,54 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Gets a path to the CDC directory.
+     * If this path is relative, it will be resolved relatively to Ignite work directory.
+     *
+     * @return CDC directory.
+     */
+    @IgniteExperimental
+    public String getCdcWalPath() {
+        return cdcWalPath;
+    }
+
+    /**
+     * Sets a path for the CDC directory.
+     * Hard link to every WAL Archive segment will be created in it for CDC processing purpose.
+     *
+     * @param cdcWalPath CDC directory.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
+        this.cdcWalPath = cdcWalPath;
+
+        return this;
+    }
+
+    /**
+     * Sets flag indicating whether CDC enabled.
+     *
+     * @param cdcEnabled CDC enabled flag.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
+        this.cdcEnabled = cdcEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether CDC is enabled.
+     * Default value is {@code false}.
+     *
+     * @return Metrics enabled flag.
+     */
+    @IgniteExperimental
+    public boolean isCdcEnabled() {
+        return cdcEnabled;
+    }
+
+    /**
      * Gets flag indicating whether persistence metrics collection is enabled.
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
@@ -1016,6 +1086,27 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
+     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
+     * negative  value disables auto archiving.
+     * @return current configuration instance for chaining
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
+        this.walForceArchiveTimeout = walForceArchiveTimeout;
+
+        return this;
+    }
+
+    /**
+     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     */
+    @IgniteExperimental
+    public long getWalForceArchiveTimeout() {
+        return walForceArchiveTimeout;
+    }
+
+    /**
      * This property defines order of writing pages to disk storage during checkpoint.
      *
      * @return Checkpoint write order.
@@ -1201,6 +1292,34 @@ public class DataStorageConfiguration implements Serializable {
      */
     public int getDefragmentationThreadPoolSize() {
         return defragmentationThreadPoolSize;
+    }
+
+    /**
+     * Gets a min allowed size(in bytes) of WAL archives.
+     *
+     * @return min size(in bytes) of WAL archive directory(greater than 0, or {@link #HALF_MAX_WAL_ARCHIVE_SIZE}).
+     */
+    public long getMinWalArchiveSize() {
+        return minWalArchiveSize;
+    }
+
+    /**
+     * Sets a min allowed size(in bytes) of WAL archives.
+     *
+     * If value is not positive, {@link #HALF_MAX_WAL_ARCHIVE_SIZE} will be used.
+     *
+     * @param walArchiveMinSize min size(in bytes) of WAL archive directory.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMinWalArchiveSize(long walArchiveMinSize) {
+        if (walArchiveMinSize != HALF_MAX_WAL_ARCHIVE_SIZE) {
+            A.ensure(walArchiveMinSize > 0, "Min WAL archive size can be only greater than 0 " +
+                "or must be equal to " + HALF_MAX_WAL_ARCHIVE_SIZE + " (to be half of max WAL archive size)");
+        }
+
+        this.minWalArchiveSize = walArchiveMinSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -2,9 +2,6 @@
 # description: Test NULL IF statement
 # group: [generic]
 
-statement ok
-PRAGMA enable_verification
-
 # NULL IF
 query T
 SELECT NULLIF(NULLIF ('hello', 'world'), 'blabla');
@@ -13,23 +10,23 @@ hello
 
 # NULL IF with subquery
 statement ok
-CREATE TABLE test (a STRING);
+CREATE TABLE test (a VARCHAR);
 
 statement ok
-INSERT INTO test VALUES ('hello'), ('world'), ('test')
+INSERT INTO test VALUES ('aaa'), ('bbb'), ('ccc')
 
 statement ok
-CREATE TABLE test2 (a STRING, b STRING);
+CREATE TABLE test2 (a VARCHAR, b VARCHAR);
 
 statement ok
 INSERT INTO test2 VALUES ('blabla', 'b'), ('blabla2', 'c'), ('blabla3', 'd')
 
 query T
-SELECT NULLIF(NULLIF ((SELECT a FROM test LIMIT 1 offset 1), a), b) FROM test2
+SELECT NULLIF(NULLIF((SELECT MIN(a) FROM test), a), b) FROM test2
 ----
-world
-world
-world
+aaa
+aaa
+aaa
 
 statement ok
 DROP TABLE test;
@@ -39,14 +36,14 @@ statement ok
 CREATE TABLE test3 (a INTEGER, b INTEGER);
 
 statement ok
-INSERT INTO test3 VALUES (11, 22), (13, 22), (12, 21)
+INSERT INTO test3 VALUES (11, 22), (12, 21), (13, 22)
 
 query T
-SELECT NULLIF(CAST(a AS VARCHAR), 11) FROM test3;
+SELECT NULLIF(CAST(a AS VARCHAR), 11) FROM test3 ORDER BY a;
 ----
 NULL
-13
 12
+13
 
 query IT
 SELECT a, CASE WHEN a>11 THEN CAST(a AS VARCHAR) ELSE CAST(b AS VARCHAR) END FROM test3 ORDER BY 1;

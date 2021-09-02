@@ -133,7 +133,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testEqualityOrToUnionAllRewrite() throws Exception {
+    public void testEqualityOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Video' " +
@@ -156,7 +156,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
-    public void testNonDistinctOrToUnionAllRewrite() throws Exception {
+    public void testNonDistinctOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE subcategory = 'Camera Lens' " +
@@ -177,7 +177,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testMixedOrToUnionAllRewrite() throws Exception {
+    public void testMixedOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Photo' " +
@@ -195,15 +195,13 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /**
      * Check 'OR -> UNION' rule is not applied for range conditions on indexed columns.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testRangeOrToUnionAllRewrite() throws Exception {
+    public void testRangeOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE cat_id > 1 " +
-            "OR subcat_id < 10")
+            "OR subcat_id < 10 ")
             .matches(not(containsUnion(true)))
             .matches(containsTableScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
@@ -215,17 +213,15 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /**
      * Check 'OR -> UNION' rule is not applied if (at least) one of column is not indexed.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testNonIndexedOrToUnionAllRewrite() throws Exception {
+    public void testNonIndexedOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
             "OR category = 'Video'")
-            .matches(containsUnion(true))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(not(containsUnion(true)))
+            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -238,7 +234,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testAllNonIndexedOrToUnionAllRewrite() throws Exception {
+    public void testAllNonIndexedOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +

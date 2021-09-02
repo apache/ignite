@@ -265,6 +265,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
 
+        forceCheckpoint();
+
         // Restart first time.
         stopGrid(0);
 

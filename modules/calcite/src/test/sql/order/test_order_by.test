@@ -106,13 +106,6 @@ SELECT b, a FROM test WHERE a < 13 ORDER BY b DESC;
 22	11
 21	12
 
-# order by expression
-query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER BY b % 2;
-----
-0	24.000000
-1	12.000000
-
 # order by expression that is not in SELECT
 query II
 SELECT b % 2 AS f, a FROM test ORDER BY b % 4;
@@ -120,19 +113,6 @@ SELECT b % 2 AS f, a FROM test ORDER BY b % 4;
 1	12
 0	11
 0	13
-
-# ORDER BY alias
-query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER BY f;
-----
-0	24.000000
-1	12.000000
-
-query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER BY 1;
-----
-0	24.000000
-1	12.000000
 
 # ORDER BY after union
 query I
@@ -142,32 +122,7 @@ SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY k;
 2
 3
 
-# ORDER BY on alias in right-most query
-# CONTROVERSIAL: SQLite allows both "k" and "l" to be referenced here, Postgres and MonetDB give an error.
-query I
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY l;
-----
-1
-2
-3
-
 # computations with aliases are not allowed though
 statement error
 SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY 1-k;
-
-# but ordering on computation elements should work
-query I
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY a-10;
-----
-1
-2
-3
-
-query I
-SELECT a-10 AS k FROM test UNION SELECT a-11 AS l FROM test ORDER BY a-11;
-----
-0
-1
-2
-3
 

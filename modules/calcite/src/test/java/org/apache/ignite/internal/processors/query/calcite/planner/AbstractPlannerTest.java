@@ -29,23 +29,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.TableModify;
@@ -65,6 +58,7 @@ import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -95,15 +89,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -231,17 +223,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
+    protected PlanningContext plannerCtx(String sql, IgniteSchema publicSchema, String... disabledRules) {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
 
         PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
@@ -249,17 +233,29 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .parentContext(Contexts.empty())
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
-                .traitDefs(traitDefs)
                 .build())
             .logger(log)
             .query(sql)
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
+        IgnitePlanner planner = ctx.planner();
+
+        assertNotNull(planner);
+
+        planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
+
+        return ctx;
+    }
+
+    /** */
+    protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
+        return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+    }
+
+    protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
-
-            planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
             String qry = ctx.query();
 
@@ -291,21 +287,12 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
         PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
-                .traitDefs(traitDefs)
                 .build())
             .logger(log)
             .query(sql)
@@ -355,21 +342,12 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(serialized);
 
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
         PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
-                .traitDefs(traitDefs)
                 .build())
             .logger(log)
             .topologyVersion(AffinityTopologyVersion.NONE)
@@ -475,6 +453,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         String... disabledRules) throws Exception {
         IgniteRel plan = physicalPlan(sql, schema, disabledRules);
 
+        checkSplitAndSerialization(plan, schema);
+
         if (!predicate.test((T)plan)) {
             String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +
                 RelOptUtil.toString(plan, SqlExplainLevel.ALL_ATTRIBUTES);
@@ -503,7 +483,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected <T extends RelNode> Predicate<IgniteTableScan> isTableScan(String tableName) {
         return isInstanceOf(IgniteTableScan.class).and(
             n -> {
-                String scanTableName = n.getTable().unwrap(TestTable.class).name();
+                String scanTableName = Util.last(n.getTable().getQualifiedName());
 
                 if (tableName.equalsIgnoreCase(scanTableName))
                     return true;
@@ -567,6 +547,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "First input satisfies predicate" condition.
+     */
+    protected <T extends RelNode> Predicate<RelNode> input(Predicate<T> predicate) {
+        return input(0, predicate);
+    }
+
+    /**
      * Creates test table with given params.
      *
      * @param name Name of the table.
@@ -600,7 +587,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         for (int i = 0; i < fields.length; i += 2)
             b.add((String)fields[i], TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]));
 
-        return new TestTable(name, b.build(), RewindabilityTrait.REWINDABLE, size) {
+        return new TestTable(name, b.build(), size) {
             @Override public IgniteDistribution distribution() {
                 return distr;
             }
@@ -623,7 +610,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    abstract static class TestTable implements IgniteTable {
+    protected static class TestTable implements IgniteTable {
         /** */
         private final String name;
 
@@ -634,56 +621,78 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
         /** */
-        private final RewindabilityTrait rewindable;
+        private IgniteDistribution distribution;
 
         /** */
-        private final double rowCnt;
+        private IgniteStatisticsImpl statistics;
 
         /** */
         private final TableDescriptor desc;
 
         /** */
         TestTable(RelDataType type) {
-            this(type, RewindabilityTrait.REWINDABLE);
+            this(type, 100.0);
         }
 
         /** */
-        TestTable(RelDataType type, RewindabilityTrait rewindable) {
-            this(type, rewindable, 100.0);
+        TestTable(RelDataType type, double rowCnt) {
+            this(UUID.randomUUID().toString(), type, rowCnt);
         }
 
         /** */
-        TestTable(RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
-            this(UUID.randomUUID().toString(), type, rewindable, rowCnt);
-        }
-
-        /** */
-        TestTable(String name, RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
+        TestTable(String name, RelDataType type, double rowCnt) {
             protoType = RelDataTypeImpl.proto(type);
-            this.rewindable = rewindable;
-            this.rowCnt = rowCnt;
+            statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
             this.name = name;
 
             desc = new TestTableDescriptor(this::distribution, type);
         }
 
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
-            RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+        /**
+         * Set table distribution.
+         *
+         * @param distribution Table distribution to set.
+         * @return TestTable for chaining.
+         */
+        public TestTable setDistribution(IgniteDistribution distribution) {
+            this.distribution = distribution;
 
-            return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
+            return this;
+        }
+
+        /**
+         * Set table statistics;
+         *
+         * @param statistics Statistics to set.
+         * @return TestTable for chaining.
+         */
+        public TestTable setStatistics(IgniteStatisticsImpl statistics) {
+            this.statistics = statistics;
+
+            return this;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
-            RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
-                .replaceIf(RelCollationTraitDef.INSTANCE, getIndex(idxName)::collation);
+        @Override public IgniteLogicalTableScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        }
 
-            return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
+        /** {@inheritDoc} */
+        @Override public IgniteLogicalIndexScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            String idxName,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */
@@ -702,37 +711,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Statistic getStatistic() {
-            return new Statistic() {
-                /** {@inheritDoc */
-                @Override public Double getRowCount() {
-                    return rowCnt;
-                }
-
-                /** {@inheritDoc */
-                @Override public boolean isKey(ImmutableBitSet cols) {
-                    return false;
-                }
-
-                /** {@inheritDoc */
-                @Override public List<ImmutableBitSet> getKeys() {
-                    throw new AssertionError();
-                }
-
-                /** {@inheritDoc */
-                @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-                    throw new AssertionError();
-                }
-
-                /** {@inheritDoc */
-                @Override public List<RelCollation> getCollations() {
-                    return Collections.emptyList();
-                }
-
-                /** {@inheritDoc */
-                @Override public RelDistribution getDistribution() {
-                    throw new AssertionError();
-                }
-            };
+            return statistics;
         }
 
         /** {@inheritDoc} */
@@ -772,6 +751,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public IgniteDistribution distribution() {
+            if (distribution != null)
+                return distribution;
+
             throw new AssertionError();
         }
 

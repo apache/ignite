@@ -273,10 +273,17 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    private synchronized MiniFuture miniFuture(int miniId) {
-        IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
+    private MiniFuture miniFuture(int miniId) {
+        compoundsReadLock();
 
-        return !fut.isDone() ? (MiniFuture)fut : null;
+        try {
+            IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
+
+            return !fut.isDone() ? (MiniFuture)fut : null;
+        }
+        finally {
+            compoundsReadUnlock();
+        }
     }
 
     /**

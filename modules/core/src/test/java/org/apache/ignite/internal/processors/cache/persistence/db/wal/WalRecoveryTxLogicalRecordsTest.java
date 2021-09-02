@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -75,6 +76,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  *
@@ -557,7 +560,9 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         WALPointer oldestPtr = cpHist.firstCheckpointPointer();
 
-        GridTestUtils.setFieldValue(cctx.database(), "reservedForPreloading", oldestPtr);
+        AtomicReference<WALPointer> preloading = getFieldValue(cctx.database(), "reservedForPreloading");
+
+        preloading.set(oldestPtr);
 
         cctx.wal().reserve(oldestPtr);
 
@@ -569,10 +574,11 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      *
      * @param cctx Cache shared context.
      * @param ptr WAL pointer to release.
-     * @throws IgniteCheckedException If the release failed.
      */
-    private void releaseWalPointerForIterator(GridCacheSharedContext cctx, WALPointer ptr) throws IgniteCheckedException {
-        GridTestUtils.setFieldValue(cctx.database(), "reservedForPreloading", null);
+    private void releaseWalPointerForIterator(GridCacheSharedContext cctx, WALPointer ptr) {
+        AtomicReference<WALPointer> preloading = getFieldValue(cctx.database(), "reservedForPreloading");
+
+        preloading.set(null);
 
         cctx.wal().release(ptr);
     }
@@ -1038,8 +1044,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     private T2<long[], Integer> getReuseListData(Ignite ignite, String cacheName) {
         GridCacheContext ctx = ((IgniteEx)ignite).context().cache().cache(cacheName).context();
 
-        ReuseListImpl reuseList = GridTestUtils.getFieldValue(ctx.offheap(), "reuseList");
-        PagesList.Stripe[] bucket = GridTestUtils.getFieldValue(reuseList, "bucket");
+        ReuseListImpl reuseList = getFieldValue(ctx.offheap(), "reuseList");
+        PagesList.Stripe[] bucket = getFieldValue(reuseList, "bucket");
 
         long[] ids = null;
 
@@ -1050,7 +1056,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 ids[i] = bucket[i].tailId;
         }
 
-        AtomicLongArray bucketsSize = GridTestUtils.getFieldValue(reuseList, PagesList.class, "bucketsSize");
+        AtomicLongArray bucketsSize = getFieldValue(reuseList, PagesList.class, "bucketsSize");
         assertEquals(1, bucketsSize.length());
 
         return new T2<>(ids, (int)bucketsSize.get(0));
@@ -1126,10 +1132,10 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 // Flush free-list onheap cache to page memory.
                 freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
 
-                AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
+                AtomicReferenceArray<PagesList.Stripe[]> buckets = getFieldValue(freeList,
                     AbstractFreeList.class, "buckets");
 
-                AtomicLongArray bucketsSize = GridTestUtils.getFieldValue(freeList, PagesList.class, "bucketsSize");
+                AtomicLongArray bucketsSize = getFieldValue(freeList, PagesList.class, "bucketsSize");
 
                 assertNotNull(buckets);
                 assertNotNull(bucketsSize);

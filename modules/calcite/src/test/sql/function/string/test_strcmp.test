@@ -1,0 +1,18 @@
+# name: test/sql/function/string/test_strcmp.test
+# description: Test the STRCMP function
+# group: [string]
+
+query I
+select strcmp('abba', 'baba')
+----
+1
+
+query I
+select strcmp('abba', 'abba')
+----
+0
+
+query I
+select strcmp('abba', 'abb')
+----
+-1

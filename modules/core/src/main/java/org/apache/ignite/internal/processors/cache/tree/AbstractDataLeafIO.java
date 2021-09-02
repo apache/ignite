@@ -188,7 +188,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /**
      * @return {@code True} if cache ID has to be stored.
      */
-    protected boolean storeCacheId() {
+    public boolean storeCacheId() {
         return false;
     }
 

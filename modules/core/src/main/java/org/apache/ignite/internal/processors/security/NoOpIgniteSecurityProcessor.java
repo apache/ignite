@@ -165,4 +165,9 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     @Override public void dropUser(String login) throws IgniteCheckedException {
         throw new IgniteException(SECURITY_DISABLED_ERROR_MSG);
     }
+
+    /** {@inheritDoc} */
+    @Override public void onLocalJoin() {
+        // No-op.
+    }
 }

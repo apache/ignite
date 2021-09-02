@@ -25,14 +25,20 @@ import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
+import org.apache.ignite.internal.processors.query.calcite.UnstableTopologyTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.junit.runner.RunWith;
@@ -57,10 +63,16 @@ import org.junit.runners.Suite;
     MetadataIntegrationTest.class,
     SortAggregateIntegrationTest.class,
     TableDdlIntegrationTest.class,
+    IndexDdlIntegrationTest.class,
     FunctionsTest.class,
     TableDmlIntegrationTest.class,
     DataTypesTest.class,
     IndexSpoolIntegrationTest.class,
+    SetOpIntegrationTest.class,
+    UnstableTopologyTest.class,
+    JoinCommuteRulesTest.class,
+    ServerStatisticsIntegrationTest.class,
+    JoinIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

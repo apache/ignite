@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -23,33 +27,23 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.map;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -57,47 +51,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /** */
-public class TableDdlIntegrationTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CLIENT_NODE_NAME = "client";
-
-    /** */
-    private static final String DATA_REGION_NAME = "test_data_region";
-
-    /** */
-    private IgniteEx client;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
-
-        client = startClientGrid(CLIENT_NODE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(
-                new SqlConfiguration().setSqlSchemas("MY_SCHEMA")
-            )
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME))
-            );
-    }
-
-    /** */
-    @Before
-    public void init() {
-        client = grid(CLIENT_NODE_NAME);
-    }
-
-    /** */
-    @After
-    public void cleanUp() {
-        client.destroyCaches(client.cacheNames());
-    }
-
+public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /**
      * Creates table with two columns, where the first column is PK,
      * and verifies created cache.
@@ -130,6 +84,64 @@ public class TableDdlIntegrationTest extends GridCommonAbstractTest {
                 )
             ))
         );
+    }
+
+    /**
+     * Creates table with columns of different data types and check DML on these columns.
+     */
+    @Test
+    public void createTableDifferentDataTypes() {
+        executeSql("create table my_table (" +
+            "id int primary key, " +
+            "c1 varchar, " +
+            "c2 date, " +
+            "c3 time, " +
+            "c4 timestamp, " +
+            "c5 integer, " +
+            "c6 bigint, " +
+            "c7 smallint, " +
+            "c8 tinyint, " +
+            "c9 boolean, " +
+            "c10 double, " +
+            "c11 float, " +
+            "c12 decimal(20, 10) " +
+            ")");
+
+        executeSql("insert into my_table values (" +
+            "0, " +
+            "'test', " +
+            "date '2021-01-01', " +
+            "time '12:34:56', " +
+            "timestamp '2021-01-01 12:34:56', " +
+            "1, " +
+            "9876543210, " +
+            "3, " +
+            "4, " +
+            "true, " +
+            "123.456, " +
+            "654.321, " +
+            "1234567890.1234567890" +
+            ")");
+
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(0, row.get(0));
+        assertEquals("test", row.get(1));
+        assertEquals(Date.valueOf("2021-01-01"), row.get(2));
+        assertEquals(Time.valueOf("12:34:56"), row.get(3));
+        assertEquals(Timestamp.valueOf("2021-01-01 12:34:56"), row.get(4));
+        assertEquals(1, row.get(5));
+        assertEquals(9876543210L, row.get(6));
+        assertEquals((short)3, row.get(7));
+        assertEquals((byte)4, row.get(8));
+        assertEquals(Boolean.TRUE, row.get(9));
+        assertEquals(123.456d, row.get(10));
+        assertEquals(654.321f, row.get(11));
+        assertEquals(new BigDecimal("1234567890.1234567890"), row.get(12));
     }
 
     /**
@@ -248,6 +260,22 @@ public class TableDdlIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Creates a table for already existing cache.
+     */
+    @Test
+    public void createTableOnExistingCache() {
+        IgniteCache<Object, Object> cache = client.getOrCreateCache("my_cache");
+
+        executeSql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache\"");
+
+        executeSql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
+
+        assertThat(executeSql("select * from my_schema.my_table"), hasSize(2));
+
+        assertEquals(2, cache.size(CachePeekMode.PRIMARY));
+    }
+
+    /**
      * Drops a table created in a default schema.
      */
     @Test
@@ -310,29 +338,358 @@ public class TableDdlIntegrationTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log,
             () -> executeSql("drop table my_table"),
-            IgniteSQLException.class, "Table doesn't exist: MY_TABLE]");
+            IgniteSQLException.class, "Table doesn't exist: MY_TABLE");
 
         executeSql("drop table my_schema.my_table");
 
         GridTestUtils.assertThrows(log,
             () -> executeSql("drop table my_schema.my_table"),
-            IgniteSQLException.class, "Table doesn't exist: MY_TABLE]");
+            IgniteSQLException.class, "Table doesn't exist: MY_TABLE");
 
         executeSql("drop table if exists my_schema.my_table");
     }
 
-    /** */
-    private List<List<?>> executeSql(String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql);
+    /**
+     * Add/drop column simple case.
+     */
+    @Test
+    public void alterTableAddDropSimpleCase() {
+        executeSql("create table my_table (id int primary key, val varchar)");
 
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
+        executeSql("alter table my_table add column val2 varchar");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+
+        executeSql("alter table my_table drop column val2");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop two columns at the same time.
+     */
+    @Test
+    public void alterTableAddDropTwoColumns() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column (val2 varchar, val3 int)");
+
+        executeSql("insert into my_table (id, val, val2, val3) values (0, '1', '2', 3)");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+        assertEquals(3, res.get(0).get(3));
+
+        executeSql("alter table my_table drop column (val2, val3)");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop column for table in custom schema.
+     */
+    @Test
+    public void alterTableAddDropCustomSchema() {
+        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_schema.my_table add column val2 varchar");
+
+        executeSql("insert into my_schema.my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_schema.my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+
+        executeSql("alter table my_schema.my_table drop column val2");
+
+        res = executeSql("select * from my_schema.my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop column if table exists.
+     */
+    @Test
+    public void alterTableAddDropIfTableExists() {
+        assertThrows("alter table my_table add val2 varchar", IgniteSQLException.class, "Table doesn't exist");
+
+        executeSql("alter table if exists my_table add column val2 varchar");
+
+        assertThrows("alter table my_table drop column val2", IgniteSQLException.class, "Table doesn't exist");
+
+        executeSql("alter table if exists my_table drop column val2");
+
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table if exists my_table add column val3 varchar");
+
+        executeSql("insert into my_table (id, val, val3) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+
+        executeSql("alter table if exists my_table drop column val3");
+
+        assertThrows("alter table if exists my_table drop column val3", IgniteSQLException.class,
+            "Column doesn't exist");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add/drop column if column not exists/exists.
+     */
+    @Test
+    public void alterTableAddDropIfColumnExists() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("insert into my_table (id, val) values (0, '1')");
+
+        assertThrows("alter table my_table add column val varchar", IgniteSQLException.class,
+            "Column already exist");
+
+        executeSql("alter table my_table add column if not exists val varchar");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        assertThrows("alter table my_table drop column val2", IgniteSQLException.class,
+            "Column doesn't exist");
+
+        executeSql("alter table my_table drop column if exists val2");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        executeSql("alter table my_table add column if not exists val3 varchar");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql("alter table my_table drop column if exists val3");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        // Mixing existsing and not existsing columns
+        executeSql("alter table my_table add column if not exists (val varchar, val4 varchar)");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql("alter table my_table drop column if exists (val4, val5)");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Add not null column.
+     */
+    @Test
+    public void alterTableAddNotNullColumn() {
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column val2 varchar not null");
+
+        assertThrows("insert into my_table (id, val, val2) values (0, '1', null)", IgniteSQLException.class,
+            "Null value is not allowed");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(2));
+    }
+
+    /**
+     * Drop forbidden column.
+     */
+    @Test
+    public void alterTableDropForbiddenColumn() {
+        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+
+        executeSql("create index my_index on my_table(val)");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        assertThrows("alter table my_table drop column id", IgniteSQLException.class,
+            "Cannot drop column");
+
+        assertThrows("alter table my_table drop column val", IgniteSQLException.class,
+            "Cannot drop column");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql("alter table my_table drop column val2");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Alter table from server and client nodes.
+     */
+    @Test
+    public void alterTableServerAndClient() throws Exception {
+        executeSql(grid(0), "create table my_table (id int primary key, val varchar)");
+
+        executeSql(grid(0), "alter table my_table add column val2 varchar");
+
+        executeSql(grid(0), "insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        List<List<?>> res = executeSql(grid(0), "select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        executeSql(grid(0), "drop table my_table");
+
+        awaitPartitionMapExchange();
+
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        executeSql("alter table my_table add column val2 varchar");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        awaitPartitionMapExchange();
+
+        executeSql(grid(0), "alter table my_table drop column val2");
+
+        awaitPartitionMapExchange();
+
+        res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
+     * Drop and add the same column with different NOT NULL modificator.
+     */
+    @Test
+    public void alterTableDropAddColumn() {
+        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+
+        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        executeSql("alter table my_table drop column val2");
+
+        List<List<?>> res = executeSql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+
+        executeSql("alter table my_table add column val2 varchar not null");
+
+        res = executeSql("select * from my_table ");
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+        // The command DROP COLUMN does not remove actual data from the cluster, it's a known and documented limitation.
+        assertEquals("2", res.get(0).get(2));
+
+        assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
+            "Null value is not allowed");
+
+        executeSql("insert into my_table (id, val, val2) values (1, '2', '3')");
+
+        assertEquals(2, executeSql("select * from my_table").size());
+    }
+
+    /**
+     * Alter table logging/nologing.
+     */
+    @Test
+    public void alterTableLogging() {
+        String cacheName = "cache";
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(cacheName)
+            .setDataRegionName(PERSISTENT_DATA_REGION).setIndexedTypes(Integer.class, Integer.class));
+
+        assertTrue(client.cluster().isWalEnabled(cacheName));
+
+        executeSql("alter table \"" + cacheName + "\".Integer nologging");
+
+        assertFalse(client.cluster().isWalEnabled(cacheName));
+
+        executeSql("alter table \"" + cacheName + "\".Integer logging");
+
+        assertTrue(client.cluster().isWalEnabled(cacheName));
+    }
+
+    /**
+     * Tests that multiline statements with DDL and DML works as expected.
+     */
+    @Test
+    public void testMulitlineWithCreateTable() {
+        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+            "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
+            "ALTER TABLE test ADD COLUMN val2 int;" +
+            "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
+            "ALTER TABLE test DROP COLUMN val2;";
+
+        executeSql(multiLineQuery);
+
+        List<List<?>> res = executeSql("SELECT * FROM test order by val0");
+        assertEquals(2, res.size());
+
+        for (int i = 0; i < res.size(); i++) {
+            List<?> row = res.get(i);
+
+            assertEquals(2, row.size());
+            assertEquals(i, row.get(0));
+            assertEquals("test" + i, row.get(1));
         }
     }
 
-    /** */
-    private CalciteQueryProcessor queryProcessor() {
-        return Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+    /**
+     * Asserts that executeSql throws an exception.
+     *
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    private void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
+        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
     }
 
     /**

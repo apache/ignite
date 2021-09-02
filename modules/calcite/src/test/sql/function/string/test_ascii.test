@@ -2,15 +2,16 @@
 # description:  test ascii() and chr() functions
 # group: [string]
 
-#statement ok
-#PRAGMA enable_verification
-
 # Some ascii checks
+query I
+SELECT ascii('')
+----
+0
+
 query I
 SELECT ascii('x')
 ----
 120
-
 
 query I
 SELECT ASCII('a')

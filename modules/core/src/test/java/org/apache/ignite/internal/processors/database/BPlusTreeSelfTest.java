@@ -55,6 +55,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -66,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
@@ -168,7 +168,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
 
-        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager");
+        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager") {
+            @Override public PageLockListener createPageLockTracker(String name) {
+                return new TestPageLockListener(super.createPageLockTracker(name));
+            }
+        };
 
         lockTrackerManager.start();
     }
@@ -2781,7 +2785,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 },
-                new TestPageLockListener(lockTrackerManager.createPageLockTracker("testTree"))
+                lockTrackerManager
             );
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
@@ -2930,7 +2934,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new LongAdderMetric("NO_OP", null),
+            new DataRegionMetricsImpl(plcCfg, new GridTestKernalContext(log())),
             true);
 
         pageMem.start();
@@ -3070,9 +3074,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /**
          * @param delegate Real implementation of page lock listener.
          */
-        private TestPageLockListener(
-            PageLockListener delegate) {
-
+        private TestPageLockListener(PageLockListener delegate) {
             this.delegate = delegate;
         }
 
@@ -3159,6 +3161,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
 
             assertEquals(Long.valueOf(pageId), locks(false).remove(pageId));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            delegate.close();
         }
 
         /**

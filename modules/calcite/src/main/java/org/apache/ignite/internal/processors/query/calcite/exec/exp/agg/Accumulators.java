@@ -67,6 +67,8 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
+            case "ANY_VALUE":
+                return AnyVal.FACTORY;
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -168,10 +170,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class SingleVal implements Accumulator {
-        /** */
-        private Object holder;
-
+    private static class SingleVal extends AnyVal {
         /** */
         private boolean touched;
 
@@ -180,21 +179,47 @@ public class Accumulators {
 
         /** */
         @Override public void add(Object... args) {
-            assert args.length == 1 : args.length;
-
             if (touched)
                 throw new IllegalArgumentException("Subquery returned more than 1 value.");
 
             touched = true;
 
-            holder = args[0];
+            super.add(args);
         }
 
         /** */
         @Override public void apply(Accumulator other) {
-            assert holder == null : "sudden apply for: " + other + " on SingleVal";
+            if (((SingleVal)other).touched) {
+                if (touched)
+                    throw new IllegalArgumentException("Subquery returned more than 1 value.");
+                else
+                    touched = true;
+            }
 
-            holder = ((SingleVal)other).holder;
+            super.apply(other);
+        }
+    }
+
+    /** */
+    private static class AnyVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = AnyVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            if (holder == null)
+                holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            if (holder == null)
+                holder = ((AnyVal)other).holder;
         }
 
         /** */

@@ -164,6 +164,77 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
+SqlNode IndexedColumn() :
+{
+    final Span s;
+    SqlNode col;
+}
+{
+    col = SimpleIdentifier()
+    (
+        <ASC>
+    |   <DESC> {
+            col = SqlStdOperatorTable.DESC.createCall(getPos(), col);
+        }
+    )?
+    {
+        return col;
+    }
+}
+
+SqlNodeList IndexedColumnList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col = null;
+}
+{
+    <LPAREN> { s = span(); }
+    col = IndexedColumn() { list.add(col); }
+    (
+        <COMMA> col = IndexedColumn() { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlCreate SqlCreateIndex(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier idxId;
+    final SqlIdentifier tblId;
+    final SqlNodeList columnList;
+    SqlNumericLiteral parallel = null;
+    SqlNumericLiteral inlineSize = null;
+}
+{
+    <INDEX>
+    ifNotExists = IfNotExistsOpt()
+    idxId = SimpleIdentifier()
+    <ON>
+    tblId = CompoundIdentifier()
+    columnList = IndexedColumnList()
+    (
+        <PARALLEL> <UNSIGNED_INTEGER_LITERAL> {
+            if (parallel != null)
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.optionAlreadyDefined("PARALLEL"));
+
+            parallel = SqlLiteral.createExactNumeric(token.image, getPos());
+        }
+    |
+        <INLINE_SIZE> <UNSIGNED_INTEGER_LITERAL> {
+            if (inlineSize != null)
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.optionAlreadyDefined("INLINE_SIZE"));
+
+            inlineSize = SqlLiteral.createExactNumeric(token.image, getPos());
+        }
+    )*
+    {
+        return new IgniteSqlCreateIndex(s.end(this), ifNotExists, idxId, tblId, columnList, parallel, inlineSize);
+    }
+}
+
 boolean IfExistsOpt() :
 {
 }
@@ -184,6 +255,17 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
     }
 }
 
+SqlDrop SqlDropIndex(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <INDEX> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return new IgniteSqlDropIndex(s.end(this), ifExists, id);
+    }
+}
+
 void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
 {
     final SqlDataTypeSpec dt;
@@ -198,4 +280,79 @@ void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
                 s.pos()));
         list.add(dt);
     }
+}
+
+SqlNodeList ColumnWithTypeList() :
+{
+    final Span s;
+    List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col;
+}
+{
+    <LPAREN> { s = span(); }
+    col = ColumnWithType() { list.add(col); }
+    (
+        <COMMA> col = ColumnWithType() { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlNode ColumnWithType() :
+{
+    SqlIdentifier id;
+    SqlDataTypeSpec type;
+    boolean nullable = true;
+    final Span s = Span.of();
+}
+{
+    id = SimpleIdentifier()
+    type = DataType()
+    [
+        <NOT> <NULL> {
+            nullable = false;
+        }
+    ]
+    {
+        return SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), null, null);
+    }
+}
+
+SqlNodeList ColumnWithTypeOrList() :
+{
+    SqlNode col;
+    SqlNodeList list;
+}
+{
+    col = ColumnWithType() { return new SqlNodeList(Collections.singletonList(col), col.getParserPosition()); }
+|
+    list = ColumnWithTypeList() { return list; }
+}
+
+SqlNode SqlAlterTable() :
+{
+    final Span s;
+    final boolean ifExists;
+    final SqlIdentifier id;
+    boolean colIgnoreErr;
+    SqlNode col;
+    SqlNodeList cols;
+}
+{
+    <ALTER> { s = span(); }
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier()
+    (
+        <LOGGING> { return new IgniteSqlAlterTable(s.end(this), ifExists, id, true); }
+    |
+        <NOLOGGING>  { return new IgniteSqlAlterTable(s.end(this), ifExists, id, false); }
+    |
+        <ADD> [<COLUMN>] colIgnoreErr = IfNotExistsOpt() cols = ColumnWithTypeOrList() {
+            return new IgniteSqlAlterTableAddColumn(s.end(this), ifExists, id, colIgnoreErr, cols);
+        }
+    |
+        <DROP> [<COLUMN>] colIgnoreErr = IfExistsOpt() cols = SimpleIdentifierOrList() {
+            return new IgniteSqlAlterTableDropColumn(s.end(this), ifExists, id, colIgnoreErr, cols);
+        }
+    )
 }

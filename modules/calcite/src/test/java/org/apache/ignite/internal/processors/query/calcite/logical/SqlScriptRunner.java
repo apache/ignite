@@ -137,12 +137,19 @@ public class SqlScriptRunner {
 
         /** */
         String nextLine() throws IOException {
+            String ret = nextLineWithoutTrim();
+
+            return ret == null ? null : ret.trim();
+        }
+
+        /** */
+        String nextLineWithoutTrim() throws IOException {
             if (r.ready()) {
                 String s = r.readLine();
 
                 lineNum++;
 
-                return s.trim();
+                return s;
             }
 
             return null;
@@ -155,7 +162,7 @@ public class SqlScriptRunner {
 
         /** */
         String positionDescription() {
-            return fileName + ':' + lineNum;
+            return '(' + fileName + ':' + lineNum + ')';
         }
 
         /** {@inheritDoc} */
@@ -427,13 +434,13 @@ public class SqlScriptRunner {
                         break;
 
                     default:
-                        throw new IgniteException("Unknown type character '" + resTypesChars.charAt(i) + "'. "
+                        throw new IgniteException("Unknown type character '" + resTypesChars.charAt(i) + "' at: "
                             + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
                 }
             }
 
             if (F.isEmpty(resTypes)) {
-                throw new IgniteException("Missing type string. "
+                throw new IgniteException("Missing type string at: "
                     + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
             }
 
@@ -451,7 +458,7 @@ public class SqlScriptRunner {
             }
 
             // Read expected results
-            String s = script.nextLine();
+            String s = script.nextLineWithoutTrim();
             Matcher m = HASHING_PTRN.matcher(s);
 
             if (m.matches()) {
@@ -474,7 +481,7 @@ public class SqlScriptRunner {
                         singleValOnLine = true;
 
                     if (vals.length != resTypes.size() && !singleValOnLine) {
-                        throw new IgniteException("Invalid columns count at the result. "
+                        throw new IgniteException("Invalid columns count at the result at: "
                             + script.positionDescription() + " [row=\"" + s + "\", types=" + resTypes + ']');
                     }
 
@@ -497,11 +504,11 @@ public class SqlScriptRunner {
                         }
                     }
                     catch (Exception e) {
-                        throw new IgniteException("Cannot parse expected results. "
+                        throw new IgniteException("Cannot parse expected results at: "
                             + script.positionDescription() + "[row=\"" + s + "\", types=" + resTypes + ']', e);
                     }
 
-                    s = script.nextLine();
+                    s = script.nextLineWithoutTrim();
                 }
             }
         }
@@ -529,8 +536,9 @@ public class SqlScriptRunner {
         /** */
         private void checkResultTuples(List<List<?>> res) {
             if (expectedRes.size() != res.size()) {
-                throw new AssertionError("Invalid results rows count at " + posDesc +
-                    ". [expected=" + expectedRes + ", actual=" + res + ']');
+                throw new AssertionError("Invalid results rows count at: " + posDesc +
+                    ". [expectedRows=" + expectedRes.size() + ", actualRows=" + res.size() +
+                    ", expected=" + expectedRes + ", actual=" + res + ']');
             }
 
             for (int i = 0; i < expectedRes.size(); ++i) {
@@ -538,12 +546,12 @@ public class SqlScriptRunner {
                 List<?> row = res.get(i);
 
                 if (row.size() != expectedRow.size()) {
-                    throw new AssertionError("Invalid columns count at " + posDesc +
+                    throw new AssertionError("Invalid columns count at: " + posDesc +
                         ". [expected=" + expectedRes + ", actual=" + res + ']');
                 }
 
                 for (int j = 0; j < expectedRow.size(); ++j) {
-                    checkEquals("Not expected result at " + posDesc +
+                    checkEquals("Not expected result at: " + posDesc +
                         ". [row=" + i + ", col=" + j +
                         ", expected=" + expectedRow.get(j) + ", actual=" + row.get(j) + ']', expectedRow.get(j), row.get(j));
                 }
@@ -556,15 +564,22 @@ public class SqlScriptRunner {
                 throw new AssertionError(msg);
 
             if (actual instanceof Number) {
-                BigDecimal actDec = new BigDecimal(String.valueOf(actual));
-                BigDecimal expDec = new BigDecimal(expectedStr);
+                if ("NaN".equals(expectedStr) || expectedStr.endsWith("Infinity")) {
+                    if (!expectedStr.equals(String.valueOf(actual)))
+                        throw new AssertionError(msg);
+                }
+                else {
+                    BigDecimal actDec = new BigDecimal(String.valueOf(actual));
+                    BigDecimal expDec = new BigDecimal(expectedStr);
 
-                if (actDec.compareTo(expDec) != 0)
-                    throw new AssertionError(msg);
+                    if (actDec.compareTo(expDec) != 0)
+                        throw new AssertionError(msg);
+                }
             }
             else {
-                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)))
-                    throw new AssertionError(msg);
+                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)) &&
+                    !("(empty)".equals(expectedStr) && String.valueOf(actual).isEmpty()))
+                     throw new AssertionError(msg);
             }
         }
 

@@ -38,11 +38,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
-    private static IgniteEx client;
+    protected static IgniteEx client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(3);
+        startGrids(nodeCount());
 
         client = startClientGrid("client");
     }
@@ -57,6 +57,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         cleanQueryPlanCache();
+    }
+
+    /** */
+    protected int nodeCount() {
+        return 3;
     }
 
     /** */

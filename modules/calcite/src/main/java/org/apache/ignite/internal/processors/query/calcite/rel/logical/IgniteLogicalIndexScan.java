@@ -85,7 +85,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
     }
 
     /**
-     * Creates a TableScan.
+     * Creates a IndexScan.
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.

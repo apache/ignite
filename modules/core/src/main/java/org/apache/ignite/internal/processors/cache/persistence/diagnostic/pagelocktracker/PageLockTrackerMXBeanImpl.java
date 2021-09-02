@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
-
 /**
  * Implementation of {@link PageLockTrackerMXBean}.
  */
@@ -40,7 +38,7 @@ public class PageLockTrackerMXBeanImpl implements PageLockTrackerMXBean {
 
     /** {@inheritDoc} */
     @Override public String dumpLocks() {
-        return mgr.dumpLocks();
+        return mgr.dumpLocksToString();
     }
 
     /** {@inheritDoc} */

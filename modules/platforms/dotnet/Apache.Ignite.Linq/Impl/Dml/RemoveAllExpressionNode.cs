@@ -27,10 +27,12 @@ namespace Apache.Ignite.Linq.Impl.Dml
     using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
     /// <summary>
-    /// Represents a <see cref="MethodCallExpression"/> for 
+    /// Represents a <see cref="MethodCallExpression"/> for
     /// <see cref="CacheLinqExtensions.RemoveAll{TKey,TValue}(IQueryable{ICacheEntry{TKey,TValue}})"/>.
     /// When user calls RemoveAll, this node is generated.
     /// </summary>
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
+        Justification = "Instantiated by framework")]
     internal sealed class RemoveAllExpressionNode : ResultOperatorExpressionNodeBase
     {
         /** */

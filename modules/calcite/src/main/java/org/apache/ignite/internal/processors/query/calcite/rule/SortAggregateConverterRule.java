@@ -115,12 +115,11 @@ public class SortAggregateConverterRule {
             RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(agg.getGroupSet().asList()));
 
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
-            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(collation);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
 
             RelNode map = new IgniteMapSortAggregate(
                 cluster,
-                outTrait,
+                outTrait.replace(IgniteDistributions.random()),
                 convert(input, inTrait),
                 agg.getGroupSet(),
                 agg.getGroupSets(),

@@ -18,15 +18,13 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.IndexType;
@@ -41,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends H2IndexCostedBase implements GridIndex<H2Row> {
+public abstract class GridH2IndexBase extends H2IndexCostedBase {
     /**
      * Constructor.
      *
@@ -261,12 +259,17 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase implements GridI
         return cols;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCursor<H2Row> find(
-        H2Row lower,
-        H2Row upper,
-        IndexQueryContext qctx
-    ) {
-        throw new UnsupportedOperationException();
+    /**
+     * Finds an instance of an interface implemented by this object,
+     * or returns null if this object does not support that interface.
+     */
+    public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz == null)
+            return null;
+
+        if (clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        return null;
     }
 }

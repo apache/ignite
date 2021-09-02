@@ -3,17 +3,14 @@
 # group: [time]
 
 statement ok
-PRAGMA enable_verification
+CREATE TABLE times(id INTEGER, i TIME)
 
 statement ok
-CREATE TABLE times(i TIME)
-
-statement ok
-INSERT INTO times VALUES ('00:01:20'), ('20:08:10.998'), ('20:08:10.33'), ('20:08:10.001'), (NULL)
+INSERT INTO times VALUES (0, TIME '00:01:20'), (1, TIME '20:08:10.998'), (2, TIME '20:08:10.33'), (3, TIME '20:08:10.001'), (4, NULL)
 
 # extract various parts of the time
 query I
-SELECT EXTRACT(second FROM i) FROM times
+SELECT EXTRACT(second FROM i) FROM times ORDER BY id
 ----
 20
 10
@@ -22,7 +19,7 @@ SELECT EXTRACT(second FROM i) FROM times
 NULL
 
 query I
-SELECT EXTRACT(minute FROM i) FROM times
+SELECT EXTRACT(minute FROM i) FROM times ORDER BY id
 ----
 1
 8
@@ -31,39 +28,12 @@ SELECT EXTRACT(minute FROM i) FROM times
 NULL
 
 query I
-SELECT EXTRACT(hour FROM i) FROM times
+SELECT EXTRACT(hour FROM i) FROM times ORDER BY id
 ----
 0
 20
 20
 20
-NULL
-
-query I
-SELECT EXTRACT(milliseconds FROM i) FROM times
-----
-20000
-10998
-10330
-10001
-NULL
-
-query I
-SELECT EXTRACT(microseconds FROM i) FROM times
-----
-20000000
-10998000
-10330000
-10001000
-NULL
-
-query I
-SELECT EXTRACT(epoch FROM i) FROM times
-----
-20
-10
-10
-10
 NULL
 
 # time gives errors for date-only parts

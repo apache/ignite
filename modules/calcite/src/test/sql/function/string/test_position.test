@@ -1,0 +1,58 @@
+# name: test/sql/function/string/test_position.test
+# description: Just simple test to check support of POSITION function.
+# group: [string]
+
+query T
+select position('g' in 'Gridgain.com')
+----
+5
+
+query T
+select position('G' in 'Gridgain.com')
+----
+1
+
+query T
+select position('Z' in 'Gridgain.com')
+----
+0
+
+query T
+select position('i' in 'Gridgain.com')
+----
+3
+
+query T
+select position('i' in null)
+----
+NULL
+
+query T
+select position(NULL in 'Gridgain.com')
+----
+NULL
+
+query T
+select position(NULL in null)
+----
+NULL
+
+query T
+select position('i' in 'Gridgain.com' FROM 5)
+----
+7
+
+query T
+select position('i' in 'Gridgain.com' FROM 8)
+----
+0
+
+query T
+select position('i' in 'Gridgain.com' FROM 100)
+----
+0
+
+query T
+select position('i' in null FROM 8)
+----
+NULL

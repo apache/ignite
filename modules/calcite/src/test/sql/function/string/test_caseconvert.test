@@ -2,8 +2,12 @@
 # description: UPPER/LOWER test
 # group: [string]
 
-statement ok
-PRAGMA enable_verification
+# test NULL constant
+query TT
+select UPPER(NULL), LOWER(NULL)
+----
+NULL
+NULL
 
 # unicode
 query TTTT
@@ -18,59 +22,48 @@ SELECT UPPER('Αα Ββ Γγ Δδ Εε Ζζ  Ηη Θθ Ιι Κκ Λλ Μμ Νν 
 ΑΑ ΒΒ ΓΓ ΔΔ ΕΕ ΖΖ  ΗΗ ΘΘ ΙΙ ΚΚ ΛΛ ΜΜ ΝΝ ΞΞ ΟΟ ΠΠ ΡΡ ΣΣΣ ΤΤ ΥΥ ΦΦ ΧΧ ΨΨ ΩΩ	αα ββ γγ δδ εε ζζ  ηη θθ ιι κκ λλ μμ νν ξξ οο ππ ρρ σσς ττ υυ φφ χχ ψψ ωω
 
 # test upper/lower on scalar values
-query TTTT
-select UPPER(''), UPPER('hello'), UPPER('MotörHead'), UPPER(NULL)
+query TTT
+select UPPER(''), UPPER('hello'), UPPER('MotörHead')
 ----
-(empty)	HELLO	MOTÖRHEAD	NULL
+(empty)	HELLO	MOTÖRHEAD
 
-query TTTT
-select LOWER(''), LOWER('hello'), LOWER('MotörHead'), LOWER(NULL)
+query TTT
+select LOWER(''), LOWER('hello'), LOWER('MotörHead')
 ----
-(empty)	hello	motörhead	NULL
-
-# test ucase/lcase on scalar values
-query TTTT
-select UCASE(''), UCASE('hello'), UCASE('MotörHead'), UCASE(NULL)
-----
-(empty)	HELLO	MOTÖRHEAD	NULL
-
-query TTTT
-select LCASE(''), LCASE('hello'), LCASE('MotörHead'), LCASE(NULL)
-----
-(empty)	hello	motörhead	NULL
+(empty)	hello	motörhead
 
 # test on entire tables
 statement ok
-CREATE TABLE strings(a STRING, b STRING)
+CREATE TABLE strings(a VARCHAR, b VARCHAR)
 
 statement ok
 INSERT INTO strings VALUES ('Hello', 'World'), ('HuLlD', NULL), ('MotörHead','RÄcks')
 
-query TT
-select UPPER(a), UCASE(a)  FROM strings
+query T
+select UPPER(a) FROM strings ORDER BY a
 ----
-HELLO	HELLO
-HULLD	HULLD
-MOTÖRHEAD	MOTÖRHEAD
+HELLO
+HULLD
+MOTÖRHEAD
 
-query TT
-select LOWER(a), LCASE(a) FROM strings
+query T
+select LOWER(a) FROM strings ORDER BY a
 ----
-hello	hello
-hulld	hulld
-motörhead	motörhead
+hello
+hulld
+motörhead
 
-query TT
-select LOWER(b), LCASE(b) FROM strings
+query T
+select LOWER(b) FROM strings ORDER BY b
 ----
-world	world
-NULL	NULL
-räcks	räcks
+räcks
+world
+NULL
 
 # test with selection vector
-query TTTT
-select UPPER(a), LOWER(a), UCASE(a), LCASE(a) FROM strings WHERE b IS NOT NULL
+query TT
+select UPPER(a), LOWER(a) FROM strings WHERE b IS NOT NULL ORDER BY a
 ----
-HELLO	hello	HELLO	hello
-MOTÖRHEAD	motörhead	MOTÖRHEAD	motörhead
+HELLO	hello
+MOTÖRHEAD	motörhead
 

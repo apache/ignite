@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.List;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import java.math.BigDecimal;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -101,9 +106,13 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
     @Test
-    public void testMultipleRowsFromSingleAggr() {
+    public void testMultipleRowsFromSingleAggr() throws Exception {
         createAndPopulateTable();
+
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),
+            IllegalArgumentException.class);
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT t._key, (SELECT x FROM " +
                 "TABLE(system_range(1, 5))) FROM person t").check(), IllegalArgumentException.class);
@@ -112,5 +121,55 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
                 "TABLE(system_range(t._key, t._key + 1))) FROM person t").check(), IllegalArgumentException.class);
 
         assertQuery("SELECT t._key, (SELECT x FROM TABLE(system_range(t._key, t._key))) FROM person t").check();
+
+        // Check exception on reduce phase.
+        String cacheName = "person";
+
+        IgniteCache<Integer, Employer> person = client.cache(cacheName);
+
+        person.clear();
+
+        for (int gridIdx = 0; gridIdx < nodeCount(); gridIdx++)
+            person.put(primaryKey(grid(gridIdx).cache(cacheName)), new Employer(gridIdx == 0 ? "Emp" : null, 0.0d));
+
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),
+            IllegalArgumentException.class);
+
+        assertQuery("SELECT (SELECT name FROM person WHERE name is not null)").returns("Emp").check();
+    }
+
+    /** */
+    @Test
+    public void testAnyValAggr() {
+        createAndPopulateTable();
+
+        List<List<?>> res = execute("select any_value(name) from person");
+
+        assertEquals(1, res.size());
+
+        Object val = res.get(0).get(0);
+
+        assertTrue("Unexpected value: " + val, "Igor".equals(val) || "Roma".equals(val) || "Ilya".equals(val));
+
+        // Test with grouping.
+        res = execute("select any_value(name), salary from person group by salary order by salary");
+
+        assertEquals(2, res.size());
+
+        val = res.get(0).get(0);
+
+        assertTrue("Unexpected value: " + val, "Igor".equals(val) || "Roma".equals(val));
+
+        val = res.get(1).get(0);
+
+        assertEquals("Ilya", val);
+    }
+
+    /** */
+    private List<List<?>> execute(String sql) {
+        List<FieldsQueryCursor<List<?>>> cursors = Commons.lookupComponent(client.context(), QueryEngine.class)
+            .query(null, "PUBLIC", sql);
+
+        return cursors.get(0).getAll();
     }
 }

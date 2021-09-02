@@ -38,7 +38,7 @@ public final class MvccCacheIdAwareDataLeafIO extends AbstractDataLeafIO {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
+    @Override public boolean storeCacheId() {
         return true;
     }
 

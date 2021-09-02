@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -346,7 +347,9 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) && assignments != null) {
+        if (delay == 0 || force) {
+            assert assignments != null;
+
             final RebalanceFuture oldFut = rebalanceFut;
 
             if (assignments.cancelled()) { // Pending exchange.
@@ -482,9 +485,9 @@ public class GridDhtPartitionDemander {
             }
 
             if (historical) // Can not be reordered.
-                ctx.kernalContext().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
+                ctx.kernalContext().pools().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
             else // Can be reordered.
-                ctx.kernalContext().getRebalanceExecutorService().execute(r);
+                ctx.kernalContext().pools().getRebalanceExecutorService().execute(r);
         }
     }
 
@@ -536,21 +539,30 @@ public class GridDhtPartitionDemander {
                 log.debug("Received supply message [" + demandRoutineInfo(nodeId, supplyMsg) + ']');
 
             // Check whether there were error during supplying process.
-            if (supplyMsg.classError() != null)
-                errMsg = supplyMsg.classError().getMessage();
-            else if (supplyMsg.error() != null)
-                errMsg = supplyMsg.error().getMessage();
+            Throwable msgExc = null;
 
-            if (errMsg != null) {
-                U.warn(log, "Rebalancing routine has failed [" +
-                    demandRoutineInfo(nodeId, supplyMsg) + ", err=" + errMsg + ']');
+            final GridDhtPartitionTopology top = grp.topology();
+
+            if (supplyMsg.classError() != null)
+                msgExc = supplyMsg.classError();
+            else if (supplyMsg.error() != null)
+                msgExc = supplyMsg.error();
+
+            if (msgExc != null) {
+                GridDhtPartitionMap partMap = top.localPartitionMap();
+
+                Set<Integer> unstableParts = supplyMsg.infos().keySet().stream()
+                    .filter(p -> partMap.get(p) == MOVING)
+                    .collect(Collectors.toSet());
+
+                U.error(log, "Rebalancing routine has failed, some partitions could be unavailable for reading" +
+                    " [" + demandRoutineInfo(nodeId, supplyMsg) +
+                    ", unavailablePartitions=" + S.compact(unstableParts) + ']', msgExc);
 
                 fut.error(nodeId);
 
                 return;
             }
-
-            final GridDhtPartitionTopology top = grp.topology();
 
             fut.receivedBytes.addAndGet(supplyMsg.messageSize());
 
@@ -760,7 +772,7 @@ public class GridDhtPartitionDemander {
 
                 ctx.kernalContext().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(100) {
                     @Override public void onTimeout() {
-                        ctx.kernalContext().getRebalanceExecutorService().execute(() ->
+                        ctx.kernalContext().pools().getRebalanceExecutorService().execute(() ->
                             ownPartition(fut, p, nodeId, supplyMsg));
                     }
                 });
@@ -927,6 +939,7 @@ public class GridDhtPartitionDemander {
                 topVer,
                 cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
                 false,
+                false,
                 row
             )) {
                 cached.touch(); // Start tracking.
@@ -1046,7 +1059,8 @@ public class GridDhtPartitionDemander {
      * @param supplyMsg Supply message.
      */
     private String demandRoutineInfo(UUID supplier, GridDhtPartitionSupplyMessage supplyMsg) {
-        return "grp=" + grp.cacheOrGroupName() + ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier;
+        return "grp=" + grp.cacheOrGroupName() + ", rebalanceId=" + supplyMsg.rebalanceId() +
+            ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier;
     }
 
     /**
