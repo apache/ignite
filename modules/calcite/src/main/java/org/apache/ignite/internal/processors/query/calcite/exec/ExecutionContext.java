@@ -101,9 +101,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private Object[] correlations = new Object[16];
 
-    /** */
-    private IgniteLogger log;
-
     /**
      * @param qryId Query ID.
      * @param fragmentDesc Partitions information.
