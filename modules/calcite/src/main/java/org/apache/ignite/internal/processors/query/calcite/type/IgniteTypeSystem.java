@@ -42,23 +42,33 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveSumType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
+        RelDataType sumType;
+
         switch (argumentType.getSqlTypeName()) {
             case TINYINT:
             case SMALLINT:
-                return typeFactory.createJavaType(Long.class);
+                sumType = typeFactory.createJavaType(Long.class);
+
+                break;
 
             case INTEGER:
             case BIGINT:
             case DECIMAL:
-                return typeFactory.createJavaType(BigDecimal.class);
+                sumType = typeFactory.createJavaType(BigDecimal.class);
+
+                break;
 
             case REAL:
             case FLOAT:
             case DOUBLE:
-                return typeFactory.createJavaType(Double.class);
+                sumType = typeFactory.createJavaType(Double.class);
+
+                break;
 
             default:
                 return super.deriveSumType(typeFactory, argumentType);
         }
+
+        return typeFactory.createTypeWithNullability(sumType, argumentType.isNullable());
     }
 }

@@ -31,9 +31,9 @@ SELECT a, COUNT(*), COUNT(s) FROM test GROUP BY a ORDER BY a;
 query TR
 SELECT s, SUM(a) FROM test GROUP BY s ORDER BY s;
 ----
+NULL	11.000000
 hello	11.000000
 world	12.000000
-NULL	11.000000
 
 # distinct aggregations on string
 statement ok
