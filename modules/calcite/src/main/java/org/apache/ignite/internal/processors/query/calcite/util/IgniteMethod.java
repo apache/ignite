@@ -45,7 +45,7 @@ public enum IgniteMethod {
     SCALAR_EXECUTE(SingleScalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
     /** See {@link BiScalar#execute(ExecutionContext, Object, Object, Object)} */
     BI_SCALAR_EXECUTE(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
-    /** See {@link FragmentMappingMetadata#fragmentMapping()} */
+    /** See {@link FragmentMappingMetadata#fragmentMapping(MappingQueryContext)} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping", MappingQueryContext.class);
 
     /** */

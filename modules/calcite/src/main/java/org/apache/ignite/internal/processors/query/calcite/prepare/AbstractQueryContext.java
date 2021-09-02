@@ -31,7 +31,6 @@ public class AbstractQueryContext implements Context {
         this.parentCtx = parentCtx;
     }
 
-
     /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aCls) {
         if (aCls == getClass())

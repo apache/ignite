@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -277,7 +278,9 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
         FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, null, null);
         return new ExecutionContext<>(
-            BaseQueryContext.builder().build(),
+            BaseQueryContext.builder()
+                .logger(log)
+                .build(),
             taskExecutor(nodeId),
             qryId,
             nodeId,

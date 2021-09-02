@@ -74,7 +74,9 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     /** {@inheritDoc} */
     @Override public QueryPlan queryPlan(CacheKey key, Supplier<QueryPlan> planSupplier) {
         Map<CacheKey, QueryPlan> cache = this.cache;
+
         QueryPlan plan = cache.computeIfAbsent(key, k -> planSupplier.get());
+
         return plan.copy();
     }
 

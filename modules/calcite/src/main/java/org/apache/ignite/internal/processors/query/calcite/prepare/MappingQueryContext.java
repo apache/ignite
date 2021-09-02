@@ -22,7 +22,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
- * Abstract query context.
+ * Query mapping context.
  */
 public class MappingQueryContext {
     /** */

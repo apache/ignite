@@ -113,7 +113,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
      * 3) after deleting statistics - by row count and heuristics again.
      */
     @Test
-    public void testQueryCostWithStatistics() throws IgniteCheckedException, InterruptedException {
+    public void testQueryCostWithStatistics() throws Exception {
         String sql = "select name from person where salary is not null";
 
         createAndPopulateTable();

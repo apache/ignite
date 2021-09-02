@@ -76,12 +76,12 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -331,26 +331,21 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(serialized);
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(
-                    newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
-                        .build()
-                )
-                .logger(log)
-                .build()
+        BaseQueryContext ctx = BaseQueryContext.builder()
+            .frameworkConfig(
+                newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build()
             )
+            .logger(log)
             .build();
 
         List<RelNode> deserializedNodes = new ArrayList<>();
 
-        try (IgnitePlanner ignored = ctx.planner()) {
-            for (String s : serialized) {
-                RelJsonReader reader = new RelJsonReader(ctx.unwrap(BaseQueryContext.class).catalogReader());
+        for (String s : serialized) {
+            RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
 
-                deserializedNodes.add(reader.read(s));
-            }
+            deserializedNodes.add(reader.read(s));
         }
 
         List<RelNode> expectedRels = fragments.stream()

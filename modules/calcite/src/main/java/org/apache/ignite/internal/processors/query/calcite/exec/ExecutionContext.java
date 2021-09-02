@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
@@ -102,13 +103,14 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private Object[] correlations = new Object[16];
 
     /**
+     * @param qctx Parent base query context.
      * @param qryId Query ID.
      * @param fragmentDesc Partitions information.
      * @param params Parameters.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
-        BaseQueryContext parentCtx,
+        BaseQueryContext qctx,
         QueryTaskExecutor executor,
         UUID qryId,
         UUID locNodeId,
@@ -118,7 +120,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         RowHandler<Row> handler,
         Map<String, Object> params
     ) {
-        super(parentCtx);
+        super(qctx);
 
         this.executor = executor;
         this.qryId = qryId;
@@ -131,8 +133,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         expressionFactory = new ExpressionFactoryImpl<>(
             this,
-            parentCtx.typeFactory(),
-            parentCtx.config().getParserConfig().conformance()
+            qctx.typeFactory(),
+            qctx.config().getParserConfig().conformance()
         );
 
         long ts = U.currentTimeMillis();

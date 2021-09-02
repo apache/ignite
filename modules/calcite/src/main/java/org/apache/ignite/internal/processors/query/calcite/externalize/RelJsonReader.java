@@ -59,7 +59,6 @@ public class RelJsonReader {
     /** */
     private final ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
-
     /** */
     private final RelOptSchema relOptSchema;
 

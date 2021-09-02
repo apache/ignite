@@ -225,8 +225,7 @@ public final class PlanningContext implements Context {
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry,
-                parameters);
+            return new PlanningContext(parentCtx, qry, parameters);
         }
     }
 }

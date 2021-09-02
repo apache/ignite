@@ -259,7 +259,9 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      */
     private ExecutionContext<?> baseInboxContext(UUID nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
-            BaseQueryContext.builder().build(),
+            BaseQueryContext.builder()
+                .logger(log)
+                .build(),
             taskExecutor(),
             qryId,
             locaNodeId,
