@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -389,10 +390,10 @@ public class GridServiceProxy<T> implements Serializable {
      * Calls service method, measures and registers its duration.
      *
      * @param srvcProc Current service processor.
-     * @param svc The service object.
+     * @param svc      The service object.
      * @param srvcName The service name.
-     * @param mtd Method to call.
-     * @param args Arguments for {@code mtd}.
+     * @param mtd      Method to call.
+     * @param args     Arguments for {@code mtd}.
      */
     private static Object measureServiceMethod(
         ServiceProcessorAdapter srvcProc,
@@ -400,23 +401,41 @@ public class GridServiceProxy<T> implements Serializable {
         String srvcName,
         Method mtd,
         Object[] args
-    ) throws InvocationTargetException, IllegalAccessException, IgniteCheckedException {
-        if (svc instanceof PlatformService && PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
-            return mtd.invoke(svc, args);
-
-        long startTime = System.nanoTime();
-
-        try {
+    ) throws Exception {
+        return measureCall(srvcProc, () -> {
             if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
                 return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
             else
                 return mtd.invoke(svc, args);
+        }, srvcName, mtd.getName(), mtd.getParameterTypes());
+    }
+
+    /**
+     * Calls the target, measures and registers its duration.
+     *
+     * @param srvcProc Current service processor.
+     * @param target   Target to call and measure.
+     * @param srvcName Related service name.
+     * @param mtdName  Related method name.
+     * @param argTypes Agrument types of the related method.
+     */
+    private static Object measureCall(
+        ServiceProcessorAdapter srvcProc,
+        Callable<Object> target,
+        String srvcName,
+        String mtdName,
+        Class<?>[] argTypes
+    ) throws Exception {
+        long startTime = System.nanoTime();
+
+        try {
+            return target.call();
         }
         finally {
             if (srvcProc instanceof IgniteServiceProcessor) {
                 long duration = System.nanoTime() - startTime;
 
-                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
+                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtdName, argTypes);
 
                 if (histogram != null)
                     histogram.value(duration);
@@ -490,15 +509,19 @@ public class GridServiceProxy<T> implements Serializable {
             Method mtd = ctx.method(key);
 
             if (ctx.service() instanceof PlatformService && mtd == null)
-                return callPlatformService((PlatformService)ctx.service());
+                return callPlatformService(ctx, (PlatformService)ctx.service());
             else
                 return callService(ctx, mtd);
         }
 
         /** */
-        private Object callPlatformService(PlatformService srv) {
+        private Object callPlatformService(ServiceContextImpl svcCtx, PlatformService srv) {
             try {
-                return srv.invokeMethod(mtdName, false, true, args);
+                if (svcCtx.statisticsEnabled())
+                    return measureCall(ignite.context().service(),
+                        () -> srv.invokeMethod(mtdName, false, true, args), svcName, mtdName, argTypes);
+                else
+                    return srv.invokeMethod(mtdName, false, true, args);
             }
             catch (PlatformNativeException ne) {
                 throw new ServiceProxyException(U.convertException(ne));

@@ -281,11 +281,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             callService4Times(ignite, serverStickyProxies.get(i % serverStickyProxies.size()));
 
             // Call from client.
-            ignite = clients.get(i % clients.size());
-
-            callService4Times(ignite, clientStickyProxies.get(i % clientStickyProxies.size()));
-
-            invokeCollector += 8;
+//            ignite = clients.get(i % clients.size());
+//
+//            callService4Times(ignite, clientStickyProxies.get(i % clientStickyProxies.size()));
+//
+            invokeCollector += 4;
         }
 
         long invokesInMetrics = 0;
@@ -334,7 +334,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         extraSrvc.hello();
 
-        extraSrvc.hello(1);
+        extraSrvc.hello(2);
     }
 
     /** Provides test service configuration. */

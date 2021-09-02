@@ -1945,14 +1945,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * Searches histogram for service method.
      *
      * @param srvcName Service name.
-     * @param mtd Service method.
+     * @param mtdName  Method name.
+     * @param argTypes Argument types of the method.
      * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
      */
-    HistogramMetricImpl histogram(String srvcName, Method mtd) {
+    HistogramMetricImpl histogram(String srvcName, String mtdName, Class<?>[] argTypes) {
         Map<GridServiceMethodReflectKey, HistogramMetricImpl> srvcMap = invocationHistograms.get(srvcName);
 
         return srvcMap == null ?
             null :
-            srvcMap.get(new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes()));
+            srvcMap.get(new GridServiceMethodReflectKey(mtdName, argTypes));
     }
 }
