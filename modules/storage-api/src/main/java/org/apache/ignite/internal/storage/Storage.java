@@ -35,9 +35,10 @@ public interface Storage extends AutoCloseable {
      * Reads a DataRow for a given key.
      *
      * @param key Search row.
-     * @return Data row.
+     * @return Data row or {@code null} if no data has been found.
      * @throws StorageException If failed to read the data or the storage is already stopped.
      */
+    @Nullable
     public DataRow read(SearchRow key) throws StorageException;
 
     /**
@@ -137,4 +138,3 @@ public interface Storage extends AutoCloseable {
      */
     void restoreSnapshot(Path snapshotPath);
 }
-

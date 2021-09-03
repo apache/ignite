@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.table.distributed.raft;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.table.distributed.command.UpsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.MultiRowsResponse;
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
@@ -77,227 +79,342 @@ public class PartitionListener implements RaftGroupListener {
 
     /** {@inheritDoc} */
     @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
-        while (iterator.hasNext()) {
-            CommandClosure<ReadCommand> clo = iterator.next();
-
-            if (clo.command() instanceof GetCommand) {
-                DataRow readValue = storage.read(extractAndWrapKey(((GetCommand) clo.command()).getKeyRow()));
-
-                ByteBufferRow responseRow = null;
-
-                if (readValue.hasValueBytes())
-                    responseRow = new ByteBufferRow(readValue.valueBytes());
-
-                clo.result(new SingleRowResponse(responseRow));
-            }
-            else if (clo.command() instanceof GetAllCommand) {
-                Set<BinaryRow> keyRows = ((GetAllCommand)clo.command()).getKeyRows();
-
-                assert keyRows != null && !keyRows.isEmpty();
-
-                List<SearchRow> keys = keyRows.stream().map(PartitionListener::extractAndWrapKey)
-                    .collect(Collectors.toList());
-
-                List<BinaryRow> res = storage
-                    .readAll(keys)
-                    .stream()
-                    .filter(DataRow::hasValueBytes)
-                    .map(read -> new ByteBufferRow(read.valueBytes()))
-                    .collect(Collectors.toList());
-
-                clo.result(new MultiRowsResponse(res));
-            }
+        iterator.forEachRemaining((CommandClosure<? extends ReadCommand> clo) -> {
+            if (clo.command() instanceof GetCommand)
+                handleGetCommand((CommandClosure<GetCommand>) clo);
+            else if (clo.command() instanceof GetAllCommand)
+                handleGetAllCommand((CommandClosure<GetAllCommand>) clo);
             else
                 assert false : "Command was not found [cmd=" + clo.command() + ']';
-        }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
-        while (iterator.hasNext()) {
-            CommandClosure<WriteCommand> clo = iterator.next();
+        iterator.forEachRemaining((CommandClosure<? extends WriteCommand> clo) -> {
+            Command command = clo.command();
 
-            if (clo.command() instanceof InsertCommand) {
-                BinaryRow row = ((InsertCommand)clo.command()).getRow();
-
-                assert row.hasValue() : "Insert command should have a value.";
-
-                DataRow newRow = extractAndWrapKeyValue(row);
-
-                InsertInvokeClosure writeIfAbsent = new InsertInvokeClosure(newRow);
-
-                storage.invoke(newRow, writeIfAbsent);
-
-                clo.result(writeIfAbsent.result());
-            }
-            else if (clo.command() instanceof DeleteCommand) {
-                SearchRow newRow = extractAndWrapKey(((DeleteCommand)clo.command()).getKeyRow());
-
-                var getAndRemoveClosure = new GetAndRemoveInvokeClosure();
-
-                storage.invoke(newRow, getAndRemoveClosure);
-
-                clo.result(getAndRemoveClosure.result());
-            }
-            else if (clo.command() instanceof ReplaceCommand) {
-                ReplaceCommand cmd = ((ReplaceCommand)clo.command());
-
-                DataRow expected = extractAndWrapKeyValue(cmd.getOldRow());
-                DataRow newRow = extractAndWrapKeyValue(cmd.getRow());
-
-                var replaceClosure = new ReplaceExactInvokeClosure(expected, newRow);
-
-                storage.invoke(expected, replaceClosure);
-
-                clo.result(replaceClosure.result());
-            }
-            else if (clo.command() instanceof UpsertCommand) {
-                BinaryRow row = ((UpsertCommand)clo.command()).getRow();
-
-                assert row.hasValue() : "Upsert command should have a value.";
-
-                storage.write(extractAndWrapKeyValue(row));
-
-                clo.result(null);
-            }
-            else if (clo.command() instanceof InsertAllCommand) {
-                Set<BinaryRow> rows = ((InsertAllCommand)clo.command()).getRows();
-
-                assert rows != null && !rows.isEmpty();
-
-                List<DataRow> keyValues = rows.stream().map(PartitionListener::extractAndWrapKeyValue)
-                    .collect(Collectors.toList());
-
-                List<BinaryRow> res = storage.insertAll(keyValues).stream()
-                    .filter(DataRow::hasValueBytes)
-                    .map(inserted -> new ByteBufferRow(inserted.valueBytes()))
-                    .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toList());
-
-                clo.result(new MultiRowsResponse(res));
-            }
-            else if (clo.command() instanceof UpsertAllCommand) {
-                Set<BinaryRow> rows = ((UpsertAllCommand)clo.command()).getRows();
-
-                assert rows != null && !rows.isEmpty();
-
-                storage.writeAll(rows.stream().map(PartitionListener::extractAndWrapKeyValue).collect(Collectors.toList()));
-
-                clo.result(null);
-            }
-            else if (clo.command() instanceof DeleteAllCommand) {
-                Set<BinaryRow> rows = ((DeleteAllCommand)clo.command()).getRows();
-
-                assert rows != null && !rows.isEmpty();
-
-                List<SearchRow> keys = rows.stream().map(PartitionListener::extractAndWrapKey)
-                    .collect(Collectors.toList());
-
-                List<BinaryRow> res = storage.removeAll(keys).stream()
-                    .filter(DataRow::hasValueBytes)
-                    .map(removed -> new ByteBufferRow(removed.valueBytes()))
-                    .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toList());
-
-                clo.result(new MultiRowsResponse(res));
-            }
-            else if (clo.command() instanceof DeleteExactCommand) {
-                BinaryRow row = ((DeleteExactCommand)clo.command()).getRow();
-
-                assert row != null;
-                assert row.hasValue();
-
-                DataRow keyValue = extractAndWrapKeyValue(row);
-
-                var deleteExact = new DeleteExactInvokeClosure(keyValue);
-
-                storage.invoke(keyValue, deleteExact);
-
-                clo.result(deleteExact.result());
-            }
-            else if (clo.command() instanceof DeleteExactAllCommand) {
-                Set<BinaryRow> rows = ((DeleteExactAllCommand)clo.command()).getRows();
-
-                assert rows != null && !rows.isEmpty();
-
-                List<DataRow> keyValues = rows.stream().map(PartitionListener::extractAndWrapKeyValue)
-                    .collect(Collectors.toList());
-
-                List<BinaryRow> res = storage.removeAllExact(keyValues).stream()
-                    .filter(DataRow::hasValueBytes)
-                    .map(inserted -> new ByteBufferRow(inserted.valueBytes()))
-                    .filter(BinaryRow::hasValue)
-                    .collect(Collectors.toList());
-
-                clo.result(new MultiRowsResponse(res));
-            }
-            else if (clo.command() instanceof ReplaceIfExistCommand) {
-                BinaryRow row = ((ReplaceIfExistCommand)clo.command()).getRow();
-
-                assert row != null;
-
-                DataRow keyValue = extractAndWrapKeyValue(row);
-
-                var replaceIfExists = new GetAndReplaceInvokeClosure(keyValue, true);
-
-                storage.invoke(keyValue, replaceIfExists);
-
-                clo.result(replaceIfExists.result());
-            }
-            else if (clo.command() instanceof GetAndDeleteCommand) {
-                BinaryRow row = ((GetAndDeleteCommand)clo.command()).getKeyRow();
-
-                assert row != null;
-
-                SearchRow keyRow = extractAndWrapKey(row);
-
-                var getAndRemoveClosure = new GetAndRemoveInvokeClosure();
-
-                storage.invoke(keyRow, getAndRemoveClosure);
-
-                if (getAndRemoveClosure.result())
-                    clo.result(new SingleRowResponse(new ByteBufferRow(getAndRemoveClosure.oldRow().valueBytes())));
-                else
-                    clo.result(new SingleRowResponse(null));
-            }
-            else if (clo.command() instanceof GetAndReplaceCommand) {
-                BinaryRow row = ((GetAndReplaceCommand)clo.command()).getRow();
-
-                assert row != null && row.hasValue();
-
-                DataRow keyValue = extractAndWrapKeyValue(row);
-
-                var getAndReplace = new GetAndReplaceInvokeClosure(keyValue, true);
-
-                storage.invoke(keyValue, getAndReplace);
-
-                DataRow oldRow = getAndReplace.oldRow();
-
-                BinaryRow res = oldRow.hasValueBytes() ? new ByteBufferRow(oldRow.valueBytes()) : null;
-
-                clo.result(new SingleRowResponse(res));
-            }
-            else if (clo.command() instanceof GetAndUpsertCommand) {
-                BinaryRow row = ((GetAndUpsertCommand)clo.command()).getKeyRow();
-
-                assert row != null && row.hasValue();
-
-                DataRow keyValue = extractAndWrapKeyValue(row);
-
-                var getAndReplace = new GetAndReplaceInvokeClosure(keyValue, false);
-
-                storage.invoke(keyValue, getAndReplace);
-
-                DataRow oldRow = getAndReplace.oldRow();
-
-                if (oldRow.hasValueBytes())
-                    clo.result(new SingleRowResponse(new ByteBufferRow(oldRow.valueBytes())));
-                else
-                    clo.result(new SingleRowResponse(null));
-            }
+            if (command instanceof InsertCommand)
+                handleInsertCommand((CommandClosure<InsertCommand>) clo);
+            else if (command instanceof DeleteCommand)
+                handleDeleteCommand((CommandClosure<DeleteCommand>) clo);
+            else if (command instanceof ReplaceCommand)
+                handleReplaceCommand((CommandClosure<ReplaceCommand>) clo);
+            else if (command instanceof UpsertCommand)
+                handleUpsertCommand((CommandClosure<UpsertCommand>) clo);
+            else if (command instanceof InsertAllCommand)
+                handleInsertAllCommand((CommandClosure<InsertAllCommand>) clo);
+            else if (command instanceof UpsertAllCommand)
+                handleUpsertAllCommand((CommandClosure<UpsertAllCommand>) clo);
+            else if (command instanceof DeleteAllCommand)
+                handleDeleteAllCommand((CommandClosure<DeleteAllCommand>) clo);
+            else if (command instanceof DeleteExactCommand)
+                handleDeleteExactCommand((CommandClosure<DeleteExactCommand>) clo);
+            else if (command instanceof DeleteExactAllCommand)
+                handleDeleteExactAllCommand((CommandClosure<DeleteExactAllCommand>) clo);
+            else if (command instanceof ReplaceIfExistCommand)
+                handleReplaceIfExistsCommand((CommandClosure<ReplaceIfExistCommand>) clo);
+            else if (command instanceof GetAndDeleteCommand)
+                handleGetAndDeleteCommand((CommandClosure<GetAndDeleteCommand>) clo);
+            else if (command instanceof GetAndReplaceCommand)
+                handleGetAndReplaceCommand((CommandClosure<GetAndReplaceCommand>) clo);
+            else if (command instanceof GetAndUpsertCommand)
+                handleGetAndUpsertCommand((CommandClosure<GetAndUpsertCommand>) clo);
             else
-                assert false : "Command was not found [cmd=" + clo.command() + ']';
-        }
+                assert false : "Command was not found [cmd=" + command + ']';
+        });
+    }
+
+    /**
+     * Handler for the {@link GetCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleGetCommand(CommandClosure<GetCommand> clo) {
+        BinaryRow keyRow = clo.command().getKeyRow();
+
+        DataRow readValue = storage.read(new BinarySearchRow(keyRow));
+
+        BinaryRow responseRow = readValue == null ? null : new ByteBufferRow(readValue.valueBytes());
+
+        clo.result(new SingleRowResponse(responseRow));
+    }
+
+    /**
+     * Handler for the {@link GetAllCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleGetAllCommand(CommandClosure<GetAllCommand> clo) {
+        Set<BinaryRow> keyRows = clo.command().getKeyRows();
+
+        assert keyRows != null && !keyRows.isEmpty();
+
+        List<SearchRow> keys = keyRows.stream()
+            .map(BinarySearchRow::new)
+            .collect(Collectors.toList());
+
+        List<BinaryRow> res = storage.readAll(keys).stream()
+            .map(read -> new ByteBufferRow(read.valueBytes()))
+            .collect(Collectors.toList());
+
+        clo.result(new MultiRowsResponse(res));
+    }
+
+    /**
+     * Handler for the {@link InsertCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleInsertCommand(CommandClosure<InsertCommand> clo) {
+        BinaryRow row = clo.command().getRow();
+
+        assert row.hasValue() : "Insert command should have a value.";
+
+        DataRow newRow = extractAndWrapKeyValue(row);
+
+        var writeIfAbsent = new InsertInvokeClosure(newRow);
+
+        storage.invoke(newRow, writeIfAbsent);
+
+        clo.result(writeIfAbsent.result());
+    }
+
+    /**
+     * Handler for the {@link DeleteCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleDeleteCommand(CommandClosure<DeleteCommand> clo) {
+        BinaryRow keyRow = clo.command().getKeyRow();
+
+        SearchRow newRow = new BinarySearchRow(keyRow);
+
+        var getAndRemoveClosure = new GetAndRemoveInvokeClosure();
+
+        storage.invoke(newRow, getAndRemoveClosure);
+
+        clo.result(getAndRemoveClosure.result());
+    }
+
+    /**
+     * Handler for the {@link ReplaceCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleReplaceCommand(CommandClosure<ReplaceCommand> clo) {
+        DataRow expected = extractAndWrapKeyValue(clo.command().getOldRow());
+        DataRow newRow = extractAndWrapKeyValue(clo.command().getRow());
+
+        var replaceClosure = new ReplaceExactInvokeClosure(expected, newRow);
+
+        storage.invoke(expected, replaceClosure);
+
+        clo.result(replaceClosure.result());
+    }
+
+    /**
+     * Handler for the {@link UpsertCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleUpsertCommand(CommandClosure<UpsertCommand> clo) {
+        BinaryRow row = clo.command().getRow();
+
+        assert row.hasValue() : "Upsert command should have a value.";
+
+        storage.write(extractAndWrapKeyValue(row));
+
+        clo.result(null);
+    }
+
+    /**
+     * Handler for the {@link InsertAllCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleInsertAllCommand(CommandClosure<InsertAllCommand> clo) {
+        Set<BinaryRow> rows = clo.command().getRows();
+
+        assert rows != null && !rows.isEmpty();
+
+        List<DataRow> keyValues = rows.stream()
+            .map(PartitionListener::extractAndWrapKeyValue)
+            .collect(Collectors.toList());
+
+        List<BinaryRow> res = storage.insertAll(keyValues).stream()
+            .map(inserted -> new ByteBufferRow(inserted.valueBytes()))
+            .collect(Collectors.toList());
+
+        clo.result(new MultiRowsResponse(res));
+    }
+
+    /**
+     * Handler for the {@link UpsertAllCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleUpsertAllCommand(CommandClosure<UpsertAllCommand> clo) {
+        Set<BinaryRow> rows = clo.command().getRows();
+
+        assert rows != null && !rows.isEmpty();
+
+        List<DataRow> keyValues = rows.stream()
+            .map(PartitionListener::extractAndWrapKeyValue)
+            .collect(Collectors.toList());
+
+        storage.writeAll(keyValues);
+
+        clo.result(null);
+    }
+
+    /**
+     * Handler for the {@link DeleteAllCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleDeleteAllCommand(CommandClosure<DeleteAllCommand> clo) {
+        Set<BinaryRow> rows = clo.command().getRows();
+
+        assert rows != null && !rows.isEmpty();
+
+        List<SearchRow> keys = rows.stream()
+            .map(BinarySearchRow::new)
+            .collect(Collectors.toList());
+
+        List<BinaryRow> res = storage.removeAll(keys).stream()
+            .map(removed -> new ByteBufferRow(removed.valueBytes()))
+            .collect(Collectors.toList());
+
+        clo.result(new MultiRowsResponse(res));
+    }
+
+    /**
+     * Handler for the {@link DeleteExactCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleDeleteExactCommand(CommandClosure<DeleteExactCommand> clo) {
+        BinaryRow row = clo.command().getRow();
+
+        assert row != null && row.hasValue();
+
+        DataRow keyValue = extractAndWrapKeyValue(row);
+
+        var deleteExact = new DeleteExactInvokeClosure(keyValue);
+
+        storage.invoke(keyValue, deleteExact);
+
+        clo.result(deleteExact.result());
+    }
+
+    /**
+     * Handler for the {@link DeleteExactAllCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleDeleteExactAllCommand(CommandClosure<DeleteExactAllCommand> clo) {
+        Set<BinaryRow> rows = clo.command().getRows();
+
+        assert rows != null && !rows.isEmpty();
+
+        List<DataRow> keyValues = rows.stream()
+            .map(PartitionListener::extractAndWrapKeyValue)
+            .collect(Collectors.toList());
+
+        List<BinaryRow> res = storage.removeAllExact(keyValues).stream()
+            .map(inserted -> new ByteBufferRow(inserted.valueBytes()))
+            .collect(Collectors.toList());
+
+        clo.result(new MultiRowsResponse(res));
+    }
+
+    /**
+     * Handler for the {@link ReplaceIfExistCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleReplaceIfExistsCommand(CommandClosure<ReplaceIfExistCommand> clo) {
+        BinaryRow row = clo.command().getRow();
+
+        assert row != null;
+
+        DataRow keyValue = extractAndWrapKeyValue(row);
+
+        var replaceIfExists = new GetAndReplaceInvokeClosure(keyValue, true);
+
+        storage.invoke(keyValue, replaceIfExists);
+
+        clo.result(replaceIfExists.result());
+    }
+
+    /**
+     * Handler for the {@link GetAndDeleteCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleGetAndDeleteCommand(CommandClosure<GetAndDeleteCommand> clo) {
+        BinaryRow row = clo.command().getKeyRow();
+
+        assert row != null;
+
+        SearchRow keyRow = new BinarySearchRow(row);
+
+        var getAndRemoveClosure = new GetAndRemoveInvokeClosure();
+
+        storage.invoke(keyRow, getAndRemoveClosure);
+
+        BinaryRow removedRow = getAndRemoveClosure.result() ?
+            new ByteBufferRow(getAndRemoveClosure.oldRow().valueBytes()) :
+            null;
+
+        clo.result(new SingleRowResponse(removedRow));
+    }
+
+    /**
+     * Handler for the {@link GetAndReplaceCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleGetAndReplaceCommand(CommandClosure<GetAndReplaceCommand> clo) {
+        BinaryRow row = clo.command().getRow();
+
+        assert row != null && row.hasValue();
+
+        DataRow keyValue = extractAndWrapKeyValue(row);
+
+        var getAndReplace = new GetAndReplaceInvokeClosure(keyValue, true);
+
+        storage.invoke(keyValue, getAndReplace);
+
+        DataRow oldRow = getAndReplace.oldRow();
+
+        BinaryRow res = oldRow == null ? null : new ByteBufferRow(oldRow.valueBytes());
+
+        clo.result(new SingleRowResponse(res));
+    }
+
+    /**
+     * Handler for the {@link GetAndUpsertCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleGetAndUpsertCommand(CommandClosure<GetAndUpsertCommand> clo) {
+        BinaryRow row = clo.command().getKeyRow();
+
+        assert row != null && row.hasValue();
+
+        DataRow keyValue = extractAndWrapKeyValue(row);
+
+        var getAndReplace = new GetAndReplaceInvokeClosure(keyValue, false);
+
+        storage.invoke(keyValue, getAndReplace);
+
+        DataRow oldRow = getAndReplace.oldRow();
+
+        BinaryRow response = oldRow == null ? null : new ByteBufferRow(oldRow.valueBytes());
+
+        clo.result(new SingleRowResponse(response));
     }
 
     /** {@inheritDoc} */
@@ -331,22 +448,39 @@ public class PartitionListener implements RaftGroupListener {
      */
     @NotNull private static DataRow extractAndWrapKeyValue(@NotNull BinaryRow row) {
         byte[] key = new byte[row.keySlice().capacity()];
+
         row.keySlice().get(key);
 
         return new SimpleDataRow(key, row.bytes());
     }
 
     /**
-     * Extracts a key from the {@link BinaryRow} and wraps it in a {@link SearchRow}.
-     *
-     * @param row Binary row.
-     * @return Search row.
+     * Adapter that converts a {@link BinaryRow} into a {@link SearchRow}.
      */
-    @NotNull private static SearchRow extractAndWrapKey(@NotNull BinaryRow row) {
-        byte[] key = new byte[row.keySlice().capacity()];
-        row.keySlice().get(key);
+    private static class BinarySearchRow implements SearchRow {
+        /** Search key. */
+        private final byte[] keyBytes;
 
-        return new SimpleDataRow(key, null);
+        /**
+         * Constructor.
+         *
+         * @param row Row to search for.
+         */
+        BinarySearchRow(BinaryRow row) {
+            keyBytes = new byte[row.keySlice().capacity()];
+
+            row.keySlice().get(keyBytes);
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte @NotNull [] keyBytes() {
+            return keyBytes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @NotNull ByteBuffer key() {
+            return ByteBuffer.wrap(keyBytes);
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.lang.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This is an utility class for serialization cache tuples. It will be removed after another way for serialization is
@@ -78,7 +79,7 @@ public class CommandUtils {
      * @param row Row.
      * @param consumer Byte array consumer.
      */
-    public static void rowToBytes(BinaryRow row, Consumer<byte[]> consumer) {
+    public static void rowToBytes(@Nullable BinaryRow row, Consumer<byte[]> consumer) {
         if (row == null)
             return;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.storage.basic;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -45,19 +46,19 @@ public class ConcurrentHashMapStorage implements Storage {
     private final ConcurrentMap<ByteArray, byte[]> map = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public DataRow read(SearchRow key) throws StorageException {
+    @Override @Nullable public DataRow read(SearchRow key) throws StorageException {
         byte[] keyBytes = key.keyBytes();
 
         byte[] valueBytes = map.get(new ByteArray(keyBytes));
 
-        return new SimpleDataRow(keyBytes, valueBytes);
+        return valueBytes == null ? null : new SimpleDataRow(keyBytes, valueBytes);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<DataRow> readAll(Collection<? extends SearchRow> keys) {
         return keys.stream()
-            .map(SearchRow::keyBytes)
-            .map(key -> new SimpleDataRow(key, map.get(new ByteArray(key))))
+            .map(this::read)
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
 
@@ -68,7 +69,7 @@ public class ConcurrentHashMapStorage implements Storage {
 
     /** {@inheritDoc} */
     @Override public void writeAll(Collection<? extends DataRow> rows) throws StorageException {
-        rows.forEach(row -> map.put(new ByteArray(row.keyBytes()), row.valueBytes()));
+        rows.forEach(this::write);
     }
 
     /** {@inheritDoc} */
@@ -86,30 +87,37 @@ public class ConcurrentHashMapStorage implements Storage {
 
     /** {@inheritDoc} */
     @Override public Collection<DataRow> removeAll(Collection<? extends SearchRow> keys) {
-        return keys.stream()
-            .map(SearchRow::keyBytes)
-            .map(key -> new SimpleDataRow(key, map.remove(new ByteArray(key))))
-            .filter(SimpleDataRow::hasValueBytes)
-            .collect(Collectors.toList());
+        var deletedRows = new ArrayList<DataRow>(keys.size());
+
+        for (SearchRow key : keys) {
+            byte[] keyBytes = key.keyBytes();
+
+            byte[] removedValueBytes = map.remove(new ByteArray(keyBytes));
+
+            if (removedValueBytes != null)
+                deletedRows.add(new SimpleDataRow(keyBytes, removedValueBytes));
+        }
+
+        return deletedRows;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<DataRow> removeAllExact(Collection<? extends DataRow> keyValues) {
-        return keyValues.stream()
-            .filter(kv -> {
-                ByteArray key = new ByteArray(kv.keyBytes());
+        var deletedRows = new ArrayList<DataRow>(keyValues.size());
 
-                byte[] currentValue = map.get(key);
+        for (DataRow row : keyValues) {
+            var key = new ByteArray(row.keyBytes());
 
-                if (Arrays.equals(currentValue, kv.valueBytes())) {
-                    map.remove(key);
+            byte[] existingValueBytes = map.get(key);
 
-                    return true;
-                }
+            if (Arrays.equals(existingValueBytes, row.valueBytes())) {
+                map.remove(key);
 
-                return false;
-            })
-            .collect(Collectors.toList());
+                deletedRows.add(row);
+            }
+        }
+
+        return deletedRows;
     }
 
     /** {@inheritDoc} */
@@ -121,11 +129,15 @@ public class ConcurrentHashMapStorage implements Storage {
 
         byte[] existingDataBytes = map.get(mapKey);
 
-        clo.call(new SimpleDataRow(keyBytes, existingDataBytes));
+        clo.call(existingDataBytes == null ? null : new SimpleDataRow(keyBytes, existingDataBytes));
 
         switch (clo.operationType()) {
             case WRITE:
-                map.put(mapKey, clo.newRow().valueBytes());
+                DataRow newRow = clo.newRow();
+
+                assert newRow != null;
+
+                map.put(mapKey, newRow.valueBytes());
 
                 break;
 
@@ -165,7 +177,7 @@ public class ConcurrentHashMapStorage implements Storage {
             }
 
             /** {@inheritDoc} */
-            @Override public void close() throws Exception {
+            @Override public void close() {
                 // No-op.
             }
         };

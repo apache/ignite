@@ -51,9 +51,8 @@ public class ReplaceExactInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@NotNull DataRow row) {
-        replaces = (!row.hasValueBytes() && !expectedRow.hasValueBytes())
-            || (Arrays.equals(row.valueBytes(), expectedRow.valueBytes()));
+    @Override public void call(@Nullable DataRow row) {
+        replaces = row != null && Arrays.equals(row.valueBytes(), expectedRow.valueBytes());
     }
 
     /** {@inheritDoc} */

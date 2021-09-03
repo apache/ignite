@@ -35,6 +35,7 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
     private final boolean onlyIfExists;
 
     /** Previous data row. */
+    @Nullable
     private DataRow oldRow;
 
     /** {@code true} if this closure replaces a row, {@code false} otherwise. */
@@ -52,10 +53,10 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@NotNull DataRow row) {
+    @Override public void call(@Nullable DataRow row) {
         oldRow = row;
 
-        replaces = row.hasValueBytes() || !onlyIfExists;
+        replaces = row != null || !onlyIfExists;
     }
 
     /** {@inheritDoc} */
@@ -71,10 +72,8 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
     /**
      * @return Previous data row.
      */
-    @NotNull
+    @Nullable
     public DataRow oldRow() {
-        assert oldRow != null;
-
         return oldRow;
     }
 

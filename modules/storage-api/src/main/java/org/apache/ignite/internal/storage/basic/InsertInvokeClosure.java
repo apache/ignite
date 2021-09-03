@@ -44,8 +44,8 @@ public class InsertInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@NotNull DataRow row) {
-        inserts = !row.hasValueBytes();
+    @Override public void call(@Nullable DataRow row) {
+        inserts = row == null;
     }
 
     /** {@inheritDoc} */

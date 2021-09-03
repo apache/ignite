@@ -45,8 +45,8 @@ public class DeleteExactInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@NotNull DataRow row) {
-        deletes = row.hasValueBytes() && Arrays.equals(this.row.valueBytes(), row.valueBytes());
+    @Override public void call(@Nullable DataRow row) {
+        deletes = row != null && Arrays.equals(this.row.valueBytes(), row.valueBytes());
     }
 
     /** {@inheritDoc} */

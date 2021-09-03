@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.storage;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,9 +30,9 @@ public interface InvokeClosure<T> {
      * current data in the storage passed as an argument.
      * The result of the operation can be obtained via the {@link #result()} method.
      *
-     * @param row Old row.
+     * @param row Old row or {@code null} if no old row has been found.
      */
-    void call(@NotNull DataRow row);
+    void call(@Nullable DataRow row);
 
     /**
      * @return Result of the invocation. Can be {@code null}.
@@ -51,7 +50,7 @@ public interface InvokeClosure<T> {
     /**
      * @return Operation type for this closure or {@code null} if it is unknown.
      * After method {@link #call(DataRow)} has been called, operation type must
-     * be known and this method can not return {@code null}.
+     * be computed and this method cannot return {@code null}.
      */
     @Nullable OperationType operationType();
 }

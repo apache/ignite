@@ -20,13 +20,12 @@ package org.apache.ignite.internal.storage.basic;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
 import org.apache.ignite.internal.storage.OperationType;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** Invoke closure implementation for a remove operation. */
 public class SimpleRemoveInvokeClosure implements InvokeClosure<Void> {
     /** {@inheritDoc} */
-    @Override public void call(@NotNull DataRow row) {
+    @Override public void call(@Nullable DataRow row) {
     }
 
     /** {@inheritDoc} */

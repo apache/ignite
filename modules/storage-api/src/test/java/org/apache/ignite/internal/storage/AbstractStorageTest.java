@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.storage;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +72,7 @@ public abstract class AbstractStorageTest {
     public void readWriteRemove() {
         SearchRow searchRow = searchRow(KEY);
 
-        assertNull(storage.read(searchRow).value());
+        assertNull(storage.read(searchRow));
 
         DataRow dataRow = dataRow(KEY, VALUE);
 
@@ -81,7 +82,7 @@ public abstract class AbstractStorageTest {
 
         storage.remove(searchRow);
 
-        assertNull(storage.read(searchRow).value());
+        assertNull(storage.read(searchRow));
     }
 
     /**
@@ -96,7 +97,7 @@ public abstract class AbstractStorageTest {
 
         storage.invoke(searchRow, readClosure);
 
-        assertNull(readClosure.row().value());
+        assertNull(readClosure.row());
 
         DataRow dataRow = dataRow(KEY, VALUE);
 
@@ -110,7 +111,7 @@ public abstract class AbstractStorageTest {
 
         storage.invoke(searchRow, readClosure);
 
-        assertNull(readClosure.row().value());
+        assertNull(readClosure.row());
     }
 
     /**
@@ -235,7 +236,7 @@ public abstract class AbstractStorageTest {
 
         assertTrue(closure.result());
 
-        checkHasNoEntry(dataRow);
+        assertNull(storage.read(dataRow));
     }
 
     /**
@@ -278,7 +279,7 @@ public abstract class AbstractStorageTest {
 
         checkRowsEqual(dataRow, closure.oldRow());
 
-        checkHasNoEntry(dataRow);
+        assertNull(storage.read(dataRow));
     }
 
     /**
@@ -298,13 +299,13 @@ public abstract class AbstractStorageTest {
 
         assertFalse(closure.result());
 
-        assertNull(closure.oldRow().valueBytes());
+        assertNull(closure.oldRow());
 
         checkHasSameEntry(dataRow);
     }
 
     /**
-     * Tests that {@link GetAndReplaceInvokeClosure} with the {@link GetAndReplaceInvokeClosure#onlyIfExists} set to
+     * Tests that {@link GetAndReplaceInvokeClosure} with the {@code GetAndReplaceInvokeClosure#onlyIfExists} set to
      * {@code false} retrieves and replaces the existing entry in the storage.
      */
     @Test
@@ -336,7 +337,7 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Tests that {@link GetAndReplaceInvokeClosure} with the {@link GetAndReplaceInvokeClosure#onlyIfExists} set to
+     * Tests that {@link GetAndReplaceInvokeClosure} with the {@code GetAndReplaceInvokeClosure#onlyIfExists} set to
      * {@code false} successfully inserts a new data row and returns an empty row if a previous row with the same key
      * doesn't exist .
      */
@@ -350,17 +351,15 @@ public abstract class AbstractStorageTest {
 
         DataRow replaced = closure.oldRow();
 
-        assertNotNull(replaced);
-
         assertTrue(closure.result());
 
-        assertFalse(replaced.hasValueBytes());
+        assertNull(replaced);
 
         checkHasSameEntry(dataRow);
     }
 
     /**
-     * Tests that {@link GetAndReplaceInvokeClosure} with the {@link GetAndReplaceInvokeClosure#onlyIfExists} set to
+     * Tests that {@link GetAndReplaceInvokeClosure} with the {@code GetAndReplaceInvokeClosure#onlyIfExists} set to
      * {@code true} retrieves and replaces the existing entry in the storage.
      */
     @Test
@@ -383,14 +382,12 @@ public abstract class AbstractStorageTest {
 
         assertTrue(closure.result());
 
-        assertTrue(replaced.hasValueBytes());
-
         checkHasDifferentEntry(dataRow);
         checkHasSameEntry(newRow);
     }
 
     /**
-     * Tests that {@link GetAndReplaceInvokeClosure} with the {@link GetAndReplaceInvokeClosure#onlyIfExists} set to
+     * Tests that {@link GetAndReplaceInvokeClosure} with the {@code GetAndReplaceInvokeClosure#onlyIfExists} set to
      * {@code true} doesn't insert a new entry if a previous one doesn't exist.
      */
     @Test
@@ -403,13 +400,11 @@ public abstract class AbstractStorageTest {
 
         DataRow replaced = closure.oldRow();
 
-        assertNotNull(replaced);
+        assertNull(replaced);
 
         assertFalse(closure.result());
 
-        assertFalse(replaced.hasValueBytes());
-
-        checkHasNoEntry(dataRow);
+        assertNull(storage.read(dataRow));
     }
 
     /**
@@ -523,9 +518,7 @@ public abstract class AbstractStorageTest {
     public void testRemoveAll() throws Exception {
         List<DataRow> rows = insertBulk(100);
 
-        Collection<DataRow> removed = storage.removeAll(
-            rows.stream().map(r -> new SimpleDataRow(r.keyBytes(), null)).collect(Collectors.toList())
-        );
+        Collection<DataRow> removed = storage.removeAll(rows);
 
         assertEquals(rows, removed);
 
@@ -537,7 +530,7 @@ public abstract class AbstractStorageTest {
     }
 
     @Test
-    public void testRemoveAllKeyNotExists() throws Exception {
+    public void testRemoveAllKeyNotExists() {
         Collection<DataRow> removed = storage.removeAll(Collections.singleton(searchRow(KEY)));
 
         assertNotNull(removed);
@@ -570,7 +563,7 @@ public abstract class AbstractStorageTest {
      * the given value.
      */
     @Test
-    public void testRemoveAllExact_failureBranch() throws Exception {
+    public void testRemoveAllExact_failureBranch() {
         List<DataRow> rows = insertBulk(100);
 
         List<DataRow> notExactRows = IntStream.range(0, 100)
@@ -611,17 +604,6 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Checks that the storage has no value for the given search row.
-     *
-     * @param row Search row.
-     */
-    private void checkHasNoEntry(SearchRow row) {
-        DataRow read = storage.read(row);
-
-        assertFalse(read.hasValueBytes());
-    }
-
-    /**
      * Checks that the storage contains a row with a given key but with a different value.
      *
      * @param row Data row.
@@ -629,6 +611,7 @@ public abstract class AbstractStorageTest {
     private void checkHasDifferentEntry(DataRow row) {
         DataRow read = storage.read(row);
 
+        assertNotNull(read);
         assertFalse(Arrays.equals(row.valueBytes(), read.valueBytes()));
     }
 
@@ -640,6 +623,7 @@ public abstract class AbstractStorageTest {
     private void checkHasSameEntry(DataRow row) {
         DataRow read = storage.read(row);
 
+        assertNotNull(read);
         checkRowsEqual(row, read);
     }
 
@@ -649,7 +633,7 @@ public abstract class AbstractStorageTest {
      * @param expected Expected data row.
      * @param actual Actual data row.
      */
-    private void checkRowsEqual(DataRow expected, DataRow actual) {
+    private static void checkRowsEqual(DataRow expected, DataRow actual) {
         assertArrayEquals(expected.keyBytes(), actual.keyBytes());
         assertArrayEquals(expected.valueBytes(), actual.valueBytes());
     }
@@ -660,11 +644,16 @@ public abstract class AbstractStorageTest {
      * @param key String key.
      * @return Search row.
      */
-    private SearchRow searchRow(String key) {
-        return new SimpleDataRow(
-            key.getBytes(StandardCharsets.UTF_8),
-            null
-        );
+    private static SearchRow searchRow(String key) {
+        return new SearchRow() {
+            @Override public byte @NotNull [] keyBytes() {
+                return key.getBytes(StandardCharsets.UTF_8);
+            }
+
+            @Override public @NotNull ByteBuffer key() {
+                return ByteBuffer.wrap(keyBytes());
+            }
+        };
     }
 
     /**
@@ -674,7 +663,7 @@ public abstract class AbstractStorageTest {
      * @param value String value.
      * @return Data row.
      */
-    private DataRow dataRow(String key, String value) {
+    private static DataRow dataRow(String key, String value) {
         return new SimpleDataRow(
             key.getBytes(StandardCharsets.UTF_8),
             value.getBytes(StandardCharsets.UTF_8)
@@ -690,7 +679,7 @@ public abstract class AbstractStorageTest {
      * @throws Exception If error occurred during iteration or while closing the cursor.
      */
     @NotNull
-    private <T> List<T> toList(Cursor<T> cursor) throws Exception {
+    private static <T> List<T> toList(Cursor<T> cursor) throws Exception {
         try (cursor) {
             return StreamSupport.stream(cursor.spliterator(), false).collect(Collectors.toList());
         }

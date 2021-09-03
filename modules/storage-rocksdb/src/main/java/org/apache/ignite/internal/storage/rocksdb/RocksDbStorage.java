@@ -138,9 +138,9 @@ public class RocksDbStorage implements Storage {
 
             var handles = new ArrayList<ColumnFamilyHandle>();
 
-            this.db = RocksDB.open(options, dbPath.toAbsolutePath().toString(), descriptors, handles);
+            db = RocksDB.open(options, dbPath.toAbsolutePath().toString(), descriptors, handles);
 
-            this.data = new ColumnFamily(db, handles.get(0), COLUMN_FAMILY_NAME, dataFamilyOptions, dataOptions);
+            data = new ColumnFamily(db, handles.get(0), COLUMN_FAMILY_NAME, dataFamilyOptions, dataOptions);
         }
         catch (RocksDBException e) {
             try {
@@ -155,11 +155,13 @@ public class RocksDbStorage implements Storage {
     }
 
     /** {@inheritDoc} */
-    @Override public DataRow read(SearchRow key) throws StorageException {
+    @Override @Nullable public DataRow read(SearchRow key) throws StorageException {
         try {
             byte[] keyBytes = key.keyBytes();
 
-            return new SimpleDataRow(keyBytes, data.get(keyBytes));
+            byte[] valueBytes = data.get(keyBytes);
+
+            return valueBytes == null ? null : new SimpleDataRow(keyBytes, valueBytes);
         }
         catch (RocksDBException e) {
             throw new StorageException("Failed to read data from the storage", e);
@@ -168,19 +170,22 @@ public class RocksDbStorage implements Storage {
 
     /** {@inheritDoc} */
     @Override public Collection<DataRow> readAll(Collection<? extends SearchRow> keys) throws StorageException {
-        List<DataRow> res = new ArrayList<>();
+        List<DataRow> res = new ArrayList<>(keys.size());
 
         try {
             List<byte[]> keysList = keys.stream().map(SearchRow::keyBytes).collect(Collectors.toList());
 
-            List<byte[]> values = db.multiGetAsList(keysList);
+            List<byte[]> valuesList = db.multiGetAsList(keysList);
 
-            assert keys.size() == values.size();
+            assert keys.size() == valuesList.size();
 
             for (int i = 0; i < keysList.size(); i++) {
                 byte[] key = keysList.get(i);
 
-                res.add(new SimpleDataRow(key, values.get(i)));
+                byte[] value = valuesList.get(i);
+
+                if (value != null)
+                    res.add(new SimpleDataRow(key, value));
             }
 
             return res;
@@ -336,9 +341,10 @@ public class RocksDbStorage implements Storage {
     @Override public <T> T invoke(SearchRow key, InvokeClosure<T> clo) throws StorageException {
         try {
             byte[] keyBytes = key.keyBytes();
+
             byte[] existingDataBytes = data.get(keyBytes);
 
-            clo.call(new SimpleDataRow(keyBytes, existingDataBytes));
+            clo.call(existingDataBytes == null ? null : new SimpleDataRow(keyBytes, existingDataBytes));
 
             switch (clo.operationType()) {
                 case WRITE:
@@ -426,7 +432,7 @@ public class RocksDbStorage implements Storage {
             if (!Files.exists(snapshotPath))
                 throw new IgniteInternalException("Snapshot not found: " + snapshotPath);
 
-            this.data.ingestExternalFile(Collections.singletonList(snapshotPath.toString()), ingestOptions);
+            data.ingestExternalFile(Collections.singletonList(snapshotPath.toString()), ingestOptions);
         }
         catch (RocksDBException e) {
             throw new IgniteInternalException("Fail to ingest sst file at path: " + path, e);
@@ -448,6 +454,10 @@ public class RocksDbStorage implements Storage {
         /** Custom filter predicate. */
         private final Predicate<SearchRow> filter;
 
+        /**
+         * @param iter Iterator.
+         * @param filter Filter.
+         */
         private ScanCursor(RocksIterator iter, Predicate<SearchRow> filter) {
             this.iter = iter;
             this.filter = filter;
@@ -462,7 +472,7 @@ public class RocksDbStorage implements Storage {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            while (isValid() && !filter.test(new SimpleDataRow(iter.key(), null)))
+            while (isValid() && !filter.test(new SimpleDataRow(iter.key(), iter.value())))
                 iter.next();
 
             return isValid();
