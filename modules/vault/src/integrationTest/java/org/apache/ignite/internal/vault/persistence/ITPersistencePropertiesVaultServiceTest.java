@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.is;
  * Test suite for testing persistence properties of {@link PersistentVaultService}.
  */
 @ExtendWith(WorkDirectoryExtension.class)
-class PersistencePropertiesVaultServiceTest {
+class ITPersistencePropertiesVaultServiceTest {
     /** */
     private static final int TIMEOUT_SECONDS = 1;
 

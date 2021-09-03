@@ -37,7 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Ignition interface tests.
  */
 @ExtendWith(WorkDirectoryExtension.class)
-class IgnitionTest {
+class ITIgnitionTest {
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
             put("node0", "{\n" +

@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for {@link ConnectionManager}.
  */
-public class ConnectionManagerTest {
+public class ITConnectionManagerTest {
     /** Started connection managers. */
     private final List<ConnectionManager> startedManagers = new ArrayList<>();
 

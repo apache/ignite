@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-14578")
 @ExtendWith(WorkDirectoryExtension.class)
-class TableCreationTest {
+class ITTableCreationTest {
     /** Nodes bootstrap configuration with preconfigured tables. */
     private final LinkedHashMap<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
         put("node0", "{\n" +

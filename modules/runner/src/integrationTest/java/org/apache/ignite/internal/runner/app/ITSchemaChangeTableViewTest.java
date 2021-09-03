@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Ignition interface tests.
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-14581")
-class SchemaChangeTableViewTest extends AbstractSchemaChangeTest {
+class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
     /**
      * Check add a new column to table schema.
      */

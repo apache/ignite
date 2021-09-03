@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mock;
 /**
  * Client connector integration tests with real sockets.
  */
-public class ClientHandlerIntegrationTest {
+public class ITClientHandlerTest {
     /** Magic bytes. */
     private static final byte[] MAGIC = new byte[]{0x49, 0x47, 0x4E, 0x49};
 

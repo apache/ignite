@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Ignition interface tests.
  */
 @ExtendWith(WorkDirectoryExtension.class)
-class DynamicTableCreationTest {
+class ITDynamicTableCreationTest {
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
         put("node0", "{\n" +
