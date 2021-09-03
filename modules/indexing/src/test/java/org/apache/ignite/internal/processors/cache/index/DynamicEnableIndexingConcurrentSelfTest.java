@@ -52,8 +52,8 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -632,7 +632,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         /** {@inheritDoc} */
         @Override public void startRebuild(
             GridCacheContext cctx, GridFutureAdapter<Void> fut, SchemaIndexCacheVisitorClosure clo,
-            SchemaIndexOperationCancellationToken cancel) {
+            IndexRebuildCancelToken cancel) {
             awaitIndexing(cctx.localNodeId());
 
             super.startRebuild(cctx, fut, clo, cancel);

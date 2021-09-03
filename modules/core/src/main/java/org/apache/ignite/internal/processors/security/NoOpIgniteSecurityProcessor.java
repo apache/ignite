@@ -46,7 +46,11 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     public static final String SECURITY_DISABLED_ERROR_MSG = "Operation cannot be performed: Ignite security disabled.";
 
     /** No operation security context. */
-    private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null);
+    private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null) {
+        @Override public void close() {
+            // No-op.
+        }
+    };
 
     /** Instance of IgniteSandbox. */
     private final IgniteSandbox sandbox = new NoOpSandbox();
@@ -66,6 +70,11 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID nodeId) {
         return opSecCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isDefaultContext() {
+        return true;
     }
 
     /** {@inheritDoc} */

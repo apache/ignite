@@ -15,38 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema;
+package org.apache.ignite.client;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Index operation cancellation token.
+ * An externalizable person entity for the tests.
  */
-public class SchemaIndexOperationCancellationToken {
-    /** Cancel flag. */
-    private final AtomicBoolean flag = new AtomicBoolean();
+public class PersonExternalizable implements Externalizable {
+    /** */
+    private String name;
 
     /**
-     * Get cancel state.
-     *
-     * @return {@code True} if cancelled.
+     * Externalizable
      */
-    public boolean isCancelled() {
-        return flag.get();
+    public PersonExternalizable() {
     }
 
-    /**
-     * Do cancel.
-     *
-     * @return {@code True} if cancel flag was set by this call.
-     */
-    public boolean cancel() {
-        return flag.compareAndSet(false, true);
+    /** */
+    public PersonExternalizable(String name) {
+        this.name = name;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaIndexOperationCancellationToken.class, this);
+        return S.toString(PersonExternalizable.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeUTF(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        name = in.readUTF();
     }
 }

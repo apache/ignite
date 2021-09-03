@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.util;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -25,10 +26,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Test methods for storage manipulation.
@@ -41,65 +41,54 @@ public class TestStorageUtils {
      * @param key Key.
      * @param breakCntr Break counter.
      * @param breakData Break data.
-     * @param ver GridCacheVersion to use.
-     * @param brokenValPostfix Postfix to add to value if breakData flag is set to true.
      */
     public static void corruptDataEntry(
         GridCacheContext<?, ?> ctx,
         Object key,
         boolean breakCntr,
-        boolean breakData,
-        GridCacheVersion ver,
-        String brokenValPostfix
-    ) {
+        boolean breakData
+    ) throws IgniteCheckedException {
+        assert !ctx.isLocal();
+
         int partId = ctx.affinity().partition(key);
+        GridDhtLocalPartition locPart = ctx.topology().localPartition(partId);
+
+        CacheEntry<Object, Object> e = ctx.cache().keepBinary().getEntry(key);
+
+        KeyCacheObject keyCacheObj = e.getKey() instanceof BinaryObject ?
+            (KeyCacheObject)e.getKey() :
+            new KeyCacheObjectImpl(e.getKey(), null, partId);
+
+        DataEntry dataEntry = new DataEntry(ctx.cacheId(),
+            keyCacheObj,
+            new CacheObjectImpl(breakData ? e.getValue().toString() + "brokenValPostfix" : e.getValue(), null),
+            GridCacheOperation.UPDATE,
+            new GridCacheVersion(),
+            new GridCacheVersion(),
+            0L,
+            partId,
+            breakCntr ? locPart.updateCounter() + 1 : locPart.updateCounter(),
+            DataEntry.EMPTY_FLAGS);
+
+        IgniteCacheDatabaseSharedManager db = ctx.shared().database();
+
+        db.checkpointReadLock();
 
         try {
-            long updateCntr = ctx.topology().localPartition(partId).updateCounter();
+            assert dataEntry.op() == GridCacheOperation.UPDATE;
 
-            CacheEntry<Object, Object> e = ctx.cache().keepBinary().getEntry(key);
+            ctx.offheap().update(ctx,
+                dataEntry.key(),
+                dataEntry.value(),
+                dataEntry.writeVersion(),
+                dataEntry.expireTime(),
+                locPart,
+                null);
 
-            Object valToPut = e.getValue();
-
-            KeyCacheObject keyCacheObj = e.getKey() instanceof BinaryObject ?
-                (KeyCacheObject)e.getKey() :
-                new KeyCacheObjectImpl(e.getKey(), null, partId);
-
-            if (breakCntr)
-                updateCntr++;
-
-            if (breakData)
-                valToPut = e.getValue().toString() + brokenValPostfix;
-
-            // Create data entry
-
-            DataEntry dataEntry = new DataEntry(
-                ctx.cacheId(),
-                keyCacheObj,
-                new CacheObjectImpl(valToPut, null),
-                GridCacheOperation.UPDATE,
-                new GridCacheVersion(),
-                ver,
-                0L,
-                partId,
-                updateCntr,
-                DataEntry.EMPTY_FLAGS
-            );
-
-            IgniteCacheDatabaseSharedManager db = ctx.shared().database();
-
-            db.checkpointReadLock();
-
-            try {
-                U.invoke(GridCacheDatabaseSharedManager.class, db, "applyUpdate", ctx, dataEntry,
-                    false);
-            }
-            finally {
-                db.checkpointReadUnlock();
-            }
+            ctx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
         }
-        catch (IgniteCheckedException e) {
-            e.printStackTrace();
+        finally {
+            db.checkpointReadUnlock();
         }
     }
 }

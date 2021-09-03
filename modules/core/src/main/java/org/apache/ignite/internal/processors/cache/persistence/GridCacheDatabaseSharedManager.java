@@ -1966,6 +1966,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.tm().clearUncommitedStates();
 
+            cctx.wal().startAutoReleaseSegments();
+
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after LOGICAL RECOVERY phase:");
 
@@ -2697,10 +2699,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         CacheGroupContext ctx = cctx.cache().cacheGroup(rbRec.groupId());
 
                         if (ctx != null && !ctx.isLocal()) {
-                            ctx.topology().forceCreatePartition(rbRec.partitionId());
+                            GridDhtLocalPartition part = ctx.topology().forceCreatePartition(rbRec.partitionId());
 
-                            ctx.offheap().onPartitionInitialCounterUpdated(rbRec.partitionId(), rbRec.start(),
-                                rbRec.range());
+                            ctx.offheap().dataStore(part).updateInitialCounter(rbRec.start(), rbRec.range());
                         }
 
                         break;
@@ -2880,7 +2881,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param dataEntry Data entry to apply.
      * @throws IgniteCheckedException If failed to restore.
      */
-    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+    private void applyUpdate(GridCacheContext<?, ?> cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+        assert cacheCtx.offheap() instanceof GridCacheOffheapManager;
+
         int partId = dataEntry.partitionId();
 
         if (partId == -1)
@@ -2913,7 +2916,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter() - 1, 1);
+                    cacheCtx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
 
                 break;
 
@@ -2932,7 +2935,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
 
                 if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter() - 1, 1);
+                    cacheCtx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
 
                 break;
 
