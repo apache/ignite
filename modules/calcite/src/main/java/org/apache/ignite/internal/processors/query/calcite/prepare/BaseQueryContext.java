@@ -223,24 +223,14 @@ public final class BaseQueryContext extends AbstractQueryContext {
     }
 
     /**
-     * Planner context builder.
+     * Query context builder.
      */
     @SuppressWarnings("PublicInnerClass") 
     public static class Builder {
         /** */
-        private static final RelTraitDef<?>[] TRAIT_DEFS = {
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            DistributionTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE,
-        };
-
-        /** */
         private static final FrameworkConfig EMPTY_CONFIG =
             Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(createRootSchema(false))
-                .traitDefs(TRAIT_DEFS)
                 .build();
 
         /** */

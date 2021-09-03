@@ -177,14 +177,14 @@ public final class Commons {
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
     public static BaseQueryContext context(RelNode rel) {
         return context(rel.getCluster());
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
     public static BaseQueryContext context(RelOptCluster cluster) {
         try {

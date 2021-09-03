@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadat
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -464,7 +465,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private PlanningContext createContext(QueryContext ctx, @Nullable String schema, String qry, Object[] params) {
-        return createContext(Commons.convert(ctx), topologyVersion(), schema, qry, params);
+        return createContext(Commons.convert(ctx), schema, qry, params);
     }
 
     /** */
@@ -481,8 +482,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer,
-        @Nullable String schema, String qry, Object[] params) {
+    private PlanningContext createContext(Context parent, @Nullable String schema, String qry, Object[] params) {
         return PlanningContext.builder()
             .parentContext(createQueryContext(parent, schema))
             .query(qry)
@@ -663,9 +663,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private ListFieldsQueryCursor<?> mapAndExecutePlan(UUID qryId, MultiStepPlan plan, BaseQueryContext qctx,
-        Object[] params) {
-        plan.init(Commons.mapContext(locNodeId, topologyVersion()));
+    private ListFieldsQueryCursor<?> mapAndExecutePlan(
+        UUID qryId,
+        MultiStepPlan plan,
+        BaseQueryContext qctx,
+        Object[] params
+    ) {
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion());
+        plan.init(mapCtx);
 
         List<Fragment> fragments = plan.fragments();
 
@@ -696,7 +701,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryId,
             locNodeId,
             locNodeId,
-            topologyVersion(),
+            mapCtx.topologyVersion(),
             fragmentDesc,
             handler,
             Commons.parametersMap(params));
