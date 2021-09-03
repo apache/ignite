@@ -1521,7 +1521,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param rmtNodeId The remote node to connect to.
      * @param partHnd Received partition handler.
      */
-    public IgniteInternalFuture<Void> requestRemoteSnapshot(
+    public IgniteInternalFuture<Void> requestRemoteSnapshotAsync(
         UUID rmtNodeId,
         String snpName,
         Map<Integer, Set<Integer>> parts,

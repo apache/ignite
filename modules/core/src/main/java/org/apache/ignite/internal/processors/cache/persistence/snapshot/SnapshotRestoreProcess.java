@@ -136,8 +136,11 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  as inapplicable for historical rebalancing]])
  *  9. Add cache destroy rollback procedure if loading was unsuccessful.
  *  10. Crash-recovery when node crashes with started, but not loaded caches.
- *  11. Do not allow schema changes during the restore procedure.
+ *  (?) 11. Do not allow schema changes during the restore procedure.
  *  12. Restore busy lock should throw exception if a lock acquire fails.
+ *  13. Should we clean the 'dirty' flag here, so pages won't be collected by the checkpoint?
+ *  (?) 14. cancelOrWaitPartitionDestroy should we wait for partition destroying.
+ *  (done) 15. prevent page store initialization on write if tag has been incremented.
  *
  * Other strategies to be memento to:
  *
@@ -1228,6 +1231,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                     // It is safe to own all persistence cache partitions here, since partitions state
                     // are already located on the disk.
                     grp.topology().ownMoving();
+
                     grp.shared().exchange().refreshPartitions(Collections.singleton(grp));
 
                     if (log.isInfoEnabled()) {
@@ -1264,7 +1268,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                     continue;
 
                 ctx.cache().context().snapshotMgr()
-                    .requestRemoteSnapshot(m.getKey(),
+                    .requestRemoteSnapshotAsync(m.getKey(),
                         opCtx0.snpName,
                         m.getValue(),
                         opCtx0.stopChecker,
@@ -1998,10 +2002,6 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
 
         /** {@inheritDoc} */
         @Override public void onMarkCheckpointBegin(Context ctx) {
-            // TODO Should we clean the 'dirty' flag here, so pages won't be collected by the checkpoint?
-            // TODO cancelOrWaitPartitionDestroy should we wait for partition destroying?
-            // TODO prevent page store initialization on write if tag has been incremented.
-
             if (inited.isCompletedExceptionally())
                 return;
 
