@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -80,6 +82,12 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private byte[] masterKeyDigest;
 
+    /** */
+    private final Lock readLock;
+
+    /** */
+    private final Lock writeLock;
+
     /**
      * @param rqId Unique snapshot request id.
      * @param snpName Snapshot name.
@@ -110,6 +118,12 @@ public class SnapshotMetadata implements Serializable {
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
                 .add(p.getPartitionId()));
+
+        ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+        readLock = rwLock.readLock();
+
+        writeLock = rwLock.writeLock();
     }
 
     /**
@@ -186,9 +200,20 @@ public class SnapshotMetadata implements Serializable {
      * @return {@code True} if cache group is encrypted. {@code False} otherwise.
      */
     public boolean isCacheGroupEncrypted(int grpId) {
-        Set<Integer> encrGrpIds = this.encrGrpIds;
+//        Set<Integer> encrGrpIds = this.encrGrpIds;
 
-        return encrGrpIds != null && encrGrpIds.contains(grpId);
+        if (encrGrpIds != null) {
+            readLock.lock();
+
+            try {
+                return encrGrpIds.contains(grpId);
+            }
+            finally {
+                readLock.unlock();
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -208,6 +233,27 @@ public class SnapshotMetadata implements Serializable {
         byte[] masterKeyDigest = this.masterKeyDigest;
 
         return masterKeyDigest == null ? null : masterKeyDigest.clone();
+    }
+
+    /** */
+    public void setEncrGrpIds(Set<Integer> encrGrpIds) {
+        this.encrGrpIds = encrGrpIds;
+    }
+
+    /** */
+    public void lock(boolean write) {
+        if (write)
+            writeLock.lock();
+        else
+            readLock.lock();
+    }
+
+    /** */
+    public void unlock(boolean write) {
+        if (write)
+            writeLock.unlock();
+        else
+            readLock.unlock();
     }
 
     /**

@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -32,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -53,6 +57,44 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
         return (i -> new Account(i, i));
+    }
+
+    @Test
+    public void testNPE() throws Exception {
+        SnapshotMetadata snpMeta = new SnapshotMetadata(UUID.randomUUID(), SNAPSHOT_NAME, "df", "df", 4096,
+            Collections.emptyList(), Collections.emptySet(), Collections.emptySet());
+
+        snpMeta.lock(true);
+
+        snpMeta.encrGrpIds(Collections.singletonList(1));
+
+        CountDownLatch proceedLatch = new CountDownLatch(1);
+        CountDownLatch finishLatch = new CountDownLatch(1);
+
+        AtomicReference<Exception> errHolder = new AtomicReference<>();
+
+        new Thread(() -> {
+            proceedLatch.countDown();
+
+            try {
+                snpMeta.isCacheGroupEncrypted(1);
+            }
+            catch (Exception e) {
+                errHolder.set(e);
+            }
+
+            finishLatch.countDown();
+        }).start();
+
+        proceedLatch.await();
+
+        snpMeta.setEncrGrpIds(null);
+
+        snpMeta.unlock(true);
+
+        finishLatch.await();
+
+        Assert.assertNull("No exceptions must occure. But got " + errHolder.get(), errHolder.get());
     }
 
     /** Checks creation of encrypted cache with same name after putting plain cache in snapshot. */
