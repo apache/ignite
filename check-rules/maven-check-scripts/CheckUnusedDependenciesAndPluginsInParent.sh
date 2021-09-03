@@ -23,7 +23,8 @@ for xpath in "project/dependencyManagement/dependencies/dependency/artifactId/te
       while read -r declaration; do
         FOUND=false
         for pom in ${POMS}; do
-            if grep -E "<artifactId>${declaration}</artifactId>" "${pom}" 2>&1 1>/dev/null; then
+            local_xpath=$(sed -r -e 's|dependencyManagement/||' -e 's|pluginManagement/||' <<< ${xpath})
+            if xpath -q -e "${local_xpath}" "${pom}" | grep -E "${declaration}" 2>&1 1>/dev/null; then
             	FOUND=true
                 continue 2
             fi

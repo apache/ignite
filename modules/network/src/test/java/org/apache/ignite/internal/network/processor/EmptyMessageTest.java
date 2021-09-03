@@ -17,10 +17,27 @@
 
 package org.apache.ignite.internal.network.processor;
 
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.network.TestMessagesFactory;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /** */
-@Transferable(TestMessageGroup.EMPTY_MESSAGE)
-interface EmptyMessage extends NetworkMessage {
+public class EmptyMessageTest {
+    /** */
+    private final TestMessagesFactory factory = new TestMessagesFactory();
+
+    /**
+     * Test that {@code hashCode} and {@code equals} are generated correctly for empty messages.
+     */
+    @Test
+    public void testEqualsAndHashCode() {
+        EmptyMessage msg = factory.emptyMessage().build();
+
+        assertEquals(msg, msg);
+        assertNotEquals(factory.serializationOrderMessage().build(), msg);
+
+        assertEquals(EmptyMessageImpl.class.hashCode(), msg.hashCode());
+    }
 }

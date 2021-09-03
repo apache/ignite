@@ -17,23 +17,26 @@
 
 package org.apache.ignite.internal.network.processor;
 
+import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.annotations.Transferable;
 
-/**
- * Test message used in {@link SerializationOrderTest}.
- */
-@Transferable(TestMessageGroup.SERIALIZATION_ORDER_MESSAGE)
-public interface SerializationOrderMessage extends NetworkMessage {
+/** */
+interface NetworkMessage1 extends NetworkMessage {
     /** */
-    String b();
+    int y();
+}
 
+/** */
+interface NetworkMessage2 extends NetworkMessage1, Serializable {
     /** */
-    String d();
+    int x();
+}
 
+/** */
+@Transferable(TestMessageTypes.INHERITED_MESSAGE)
+public interface InheritedMessage extends NetworkMessage2 {
     /** */
-    int c();
-
-    /** */
-    int a();
+    int z();
 }
