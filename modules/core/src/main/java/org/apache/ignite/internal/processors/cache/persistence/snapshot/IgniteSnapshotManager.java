@@ -505,6 +505,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         cctx.exchange().registerExchangeAwareComponent(restoreCacheGrpProc);
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(restoreCacheGrpProc);
 
         // Manage remote snapshots.
         snpRmtHandler = new SequentialRemoteSnapshotManager();
@@ -1706,7 +1707,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
-        // TODO register snapshot task by request id.
         return (SnapshotFutureTask)registerSnapshotTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName, tmpWorkDir,
             ioFactory, snpSndr, parts, withMetaStorage, locBuff));
     }

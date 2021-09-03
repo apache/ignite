@@ -81,6 +81,9 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -124,13 +127,13 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * Snapshot recovery with transfer partitions.
  *
  * TODO: Some notes left to do for the restore using rebalancing:
- *  1. Disable WAL for starting caches.
+ *  (done) 1. Disable WAL for starting caches.
  *  (done) 2. Own partitions on exchange (like the rebalancing does).
  *  (done) 3. Handle and fire affinity change message when waitInfo becomes empty.
  *  (done) 4. Load partitions from remote nodes.
  *  (no need) 5. Set partition to MOVING state during copy from snapshot and read partition Metas.
  *  (done) 6. Replace index if topology match partitions.
- *  7. Rebuild index if need.
+ *  (done) 7. Rebuild index if need.
  *  8. Check the partition reservation during the restore if a next exchange occurs (see message:
  *  Cache groups were not reserved [[[grpId=-903566235, grpName=shared], reason=Checkpoint was marked
  *  as inapplicable for historical rebalancing]])
@@ -138,9 +141,11 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  10. Crash-recovery when node crashes with started, but not loaded caches.
  *  (?) 11. Do not allow schema changes during the restore procedure.
  *  12. Restore busy lock should throw exception if a lock acquire fails.
- *  13. Should we clean the 'dirty' flag here, so pages won't be collected by the checkpoint?
+ *  13. Should we clean the 'dirty' flag prior to markCheckpointBegin, so pages won't be collected by the checkpoint?
  *  (?) 14. cancelOrWaitPartitionDestroy should we wait for partition destroying.
  *  (done) 15. prevent page store initialization on write if tag has been incremented.
+ *  16. Register snapshot task by request id not by snapshot name.
+ *  17. Does waitRebInfo need to be cleaned on DynamicCacheChangeFailureMessage occurs for restored caches?
  *
  * Other strategies to be memento to:
  *
@@ -173,7 +178,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *   and then re-init index for started cache group. The second case will require data structures re-initialization on the fly.
  *
  */
-public class SnapshotRestoreProcess implements PartitionsExchangeAware {
+public class SnapshotRestoreProcess implements PartitionsExchangeAware, MetastorageLifecycleListener {
     /** Temporary cache directory prefix. */
     public static final String TMP_PREFIX = "_tmp_snp_restore_";
 
@@ -207,6 +212,12 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** The set of crash-recovery keys which has been processed on a node startup and can be removed. */
+    private final Set<String> crashRecoveryKeys = new HashSet<>();
+
+    /** Fully initialized metastorage. */
+    private volatile ReadWriteMetastorage metaStorage;
+
     /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile ClusterSnapshotFuture fut;
 
@@ -232,6 +243,52 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
 
         rollbackRestoreProc = new DistributedProcess<>(
             ctx, RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK, this::rollback, this::finishRollback);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+        assert metastorage != null;
+
+        try {
+            metastorage.iterate(RESTORE_KEY_PREFIX, (key, val) -> {
+                // Cache group directory name the restore of which has been guarded by this key.
+                String cacheDirAbsPath = key.replace(RESTORE_KEY_PREFIX, "");
+
+                Path path = Paths.get(cacheDirAbsPath);
+
+                if (path.isAbsolute()) {
+                    U.delete(path);
+                    U.delete(formatTmpDirName(path.toFile()));
+
+                    crashRecoveryKeys.add(key);
+                }
+            }, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to read cache groups for the restore process state.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        synchronized (this) {
+            this.metaStorage = metastorage;
+
+            crashRecoveryKeys.removeIf(key -> {
+                try {
+                    metastorage.remove(key);
+
+                    return true;
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Exception during metastorage key remove: " + key);
+                }
+
+                return false;
+            });
+
+            assert crashRecoveryKeys.isEmpty() : crashRecoveryKeys;
+        }
     }
 
     /**
@@ -905,6 +962,9 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
 
             CompletableFuture<Void> partFut = CompletableFuture.completedFuture(null);
 
+            // Guard all snapshot restore operations with the metastorage keys.
+            updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, false);
+
             if (opCtx0.sameTop) {
                 List<CompletableFuture<Path>> futs = new ArrayList<>();
                 String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
@@ -1043,7 +1103,6 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         // the cluster during the cache startup, the whole procedure will be rolled back.
         GridCompoundFuture<Boolean, Boolean> awaitBoth = new GridCompoundFuture<>();
 
-        // TODO WAL must be disabled also at startup.
         // TODO Exclude resending partitions if restore is in progress.
         awaitBoth.add(ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, true,
             IgniteUuid.fromUuid(reqId)));
@@ -1098,7 +1157,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
         if (failure == null) {
             finishProcess(reqId);
 
-            // TODO Is it correct to call it here?
+            updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
+
             ctx.cache().restartProxies();
 
             return;
@@ -1455,6 +1515,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
             }
         }
 
+        updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
+
         return retFut;
     }
 
@@ -1524,6 +1586,31 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware {
                 else
                     fut.completeExceptionally(t);
             });
+    }
+
+    /**
+     * @param metastorage Metastorage to update.
+     * @param dirs List of keys to process.
+     * @param remove {@code} if the keys must be removed.
+     */
+    private void updateMetastorageRecoveryKeys(ReadWriteMetastorage metastorage, Collection<File> dirs, boolean remove) {
+        for (File dir : dirs) {
+            ctx.cache().context().database().checkpointReadLock();
+
+            try {
+                if (remove)
+                    metastorage.remove(RESTORE_KEY_PREFIX + dir.getAbsolutePath());
+                else
+                    metastorage.write(RESTORE_KEY_PREFIX + dir.getAbsolutePath(), true);
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Updating the metastorage crash-recovery guard key fails [remove=" + remove +
+                    "dir=" + dir.getAbsolutePath() + ']');
+            }
+            finally {
+                ctx.cache().context().database().checkpointReadUnlock();
+            }
+        }
     }
 
     /**
