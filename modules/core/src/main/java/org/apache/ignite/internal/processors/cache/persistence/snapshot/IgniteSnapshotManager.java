@@ -91,6 +91,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -1416,7 +1418,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         if (task.start()) {
-            cctx.database().forceCheckpoint(String.format("Start snapshot operation: %s", snpReq.snapshotName()));
+            Checkpointer cp = ((GridCacheDatabaseSharedManager)cctx.database()).getCheckpointer();
+
+            if (cp == null) // Node is stopping.
+                return;
+
+            cp.scheduleCheckpoint(0, String.format("Start snapshot operation: %s", snpReq.snapshotName()), v -> {});
 
             // Schedule task on a checkpoint and wait when it starts.
             try {
