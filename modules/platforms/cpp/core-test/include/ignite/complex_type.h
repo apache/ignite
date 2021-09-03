@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_TEST_COMPLEX_TYPE
-#define _IGNITE_ODBC_TEST_COMPLEX_TYPE
+#ifndef _IGNITE_CORE_TEST_COMPLEX_TYPE
+#define _IGNITE_CORE_TEST_COMPLEX_TYPE
 
 #include <stdint.h>
 #include <string>
@@ -120,4 +120,4 @@ namespace ignite
     }
 }
 
-#endif // _IGNITE_ODBC_TEST_COMPLEX_TYPE
+#endif // _IGNITE_CORE_TEST_COMPLEX_TYPE

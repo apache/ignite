@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistorical
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointFailBeforeWriteMarkTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointFreeListTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointListenerForRegionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointMarkerReadingErrorOnStartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointStartLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.LightweightCheckpointTest;
@@ -135,6 +136,8 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, WalArchiveSizeConfigurationTest.class, ignoredTests);*/
 
         GridTestUtils.addTestIfNeeded(suite, RestorePartitionStateBenchmarkTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CheckpointMarkerReadingErrorOnStartTest.class, ignoredTests);
 
         return suite;
     }

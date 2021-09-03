@@ -305,7 +305,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 assert PageIO.getVersion(pageAddr) != 0;
 
                 IgniteCacheOffheapManager.CacheDataStore store =
-                    ((GridCacheOffheapManager)grp.offheap()).dataStore(partition);
+                    grp.offheap().dataStore(grp.isLocal() ? null : grp.topology().localPartition(partition));
 
                 if (store == null) {
                     log.warning("Failed to move old-version pending entry " +

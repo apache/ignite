@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,8 +53,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 
 /**
  * Security utilities.
@@ -292,5 +296,53 @@ public class SecurityUtils {
                 }
             });
         }
+    }
+
+    /**
+     * Marshals specified security context and adds it to the node attributes.
+     *
+     * @param secCtx Security context to be added.
+     * @param nodeAttrs Cluster node attributes to which security context attribute is to be added.
+     * @param marsh Marshaller.
+     * @return New copy of node attributes with security context attribute added.
+     * @throws IgniteCheckedException If security context serialization exception occurs.
+     */
+    public static Map<String, Object> withSecurityContext(
+        SecurityContext secCtx,
+        Map<String, Object> nodeAttrs,
+        Marshaller marsh
+    ) throws IgniteCheckedException {
+        if (!(secCtx instanceof Serializable))
+            throw new IgniteSpiException("Authentication subject is not serializable.");
+
+        Map<String, Object> res = new HashMap<>(nodeAttrs);
+
+        res.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, secCtx));
+
+        return res;
+    }
+
+    /**
+     * Performs local node authentication.
+     *
+     * @param node Cluster node to authenticate.
+     * @param cred Node credentials.
+     * @param nodeAuth Node authenticator.
+     * @return {@link SecurityContext} instance as authentication result.
+     */
+    public static SecurityContext authenticateLocalNode(
+        ClusterNode node,
+        SecurityCredentials cred,
+        DiscoverySpiNodeAuthenticator nodeAuth
+    ) {
+        assert nodeAuth != null;
+        assert cred != null || node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED) != null;
+
+        SecurityContext secCtx = nodeAuth.authenticateNode(node, cred);
+
+        if (secCtx == null)
+            throw new IgniteSpiException("Authentication failed for local node: " + node.id());
+
+        return secCtx;
     }
 }

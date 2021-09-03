@@ -306,6 +306,70 @@ namespace ignite
                 return impl.Get()->BroadcastAsync<F, false>(func);
             }
 
+            /**
+             * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+             * then 'taskName' will be used as task class name to auto-deploy the task.
+             *
+             * @param taskName Java task name.
+             * @param taskArg Argument of task execution of type A.
+             * @return Task result of type @c R.
+             *
+             * @tparam R Type of task result.
+             * @tparam A Type of task argument.
+             */
+            template<typename R, typename A>
+            R ExecuteJavaTask(const std::string& taskName, const A& taskArg)
+            {
+                return impl.Get()->ExecuteJavaTask<R, A>(taskName, taskArg);
+            }
+
+            /**
+             * Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+             * then 'taskName' will be used as task class name to auto-deploy the task.
+             *
+             * @param taskName Java task name.
+             * @return Task result of type @c R.
+             *
+             * @tparam R Type of task result.
+             */
+            template<typename R>
+            R ExecuteJavaTask(const std::string& taskName)
+            {
+                return impl.Get()->ExecuteJavaTask<R>(taskName);
+            }
+
+            /**
+             * Asynchronously executes given Java task on the grid projection. If task for given name has not been
+             * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
+             *
+             * @param taskName Java task name.
+             * @param taskArg Argument of task execution of type A.
+             * @return Future containing a result of type @c R.
+             *
+             * @tparam R Type of task result.
+             * @tparam A Type of task argument.
+             */
+            template<typename R, typename A>
+            Future<R> ExecuteJavaTaskAsync(const std::string& taskName, const A& taskArg)
+            {
+                return impl.Get()->ExecuteJavaTaskAsync<R, A>(taskName, taskArg);
+            }
+
+            /**
+             * Asynchronously executes given Java task on the grid projection. If task for given name has not been
+             * deployed yet, then 'taskName' will be used as task class name to auto-deploy the task.
+             *
+             * @param taskName Java task name.
+             * @return Future containing a result of type @c R.
+             *
+             * @tparam R Type of task result.
+             */
+            template<typename R>
+            Future<R> ExecuteJavaTaskAsync(const std::string& taskName)
+            {
+                return impl.Get()->ExecuteJavaTaskAsync<R>(taskName);
+            }
+
         private:
             /** Implementation. */
             common::concurrent::SharedPointer<impl::compute::ComputeImpl> impl;
