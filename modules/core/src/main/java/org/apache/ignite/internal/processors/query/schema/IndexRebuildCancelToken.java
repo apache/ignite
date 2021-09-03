@@ -14,23 +14,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.IgniteCheckedException;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception occurred when canceling index rebuild via {@link IndexRebuildCancelToken}.
+ * Index operation cancellation token.
  */
-public class SchemaIndexOperationCancellationException extends IgniteCheckedException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+public class IndexRebuildCancelToken {
+    /** Cancel flag. */
+    private final AtomicReference<Throwable> flag;
+
+    /** Default constructor. */
+    public IndexRebuildCancelToken() {
+        flag = new AtomicReference<>();
+    }
 
     /**
-     * Constructor.
-     *
-     * @param msg Error message.
+     * @return Exception that causes cancellation action.
      */
-    public SchemaIndexOperationCancellationException(String msg) {
-        super(msg);
+    public @Nullable Throwable cancelException() {
+        return flag.get();
+    }
+
+    /**
+     * Do cancel.
+     *
+     * @return {@code True} if cancel flag was set by this call.
+     */
+    public boolean cancel(Throwable e) {
+        return flag.compareAndSet(null, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IndexRebuildCancelToken.class, this);
     }
 }

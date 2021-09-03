@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.security.compute.closure.ExecutorSe
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.maintenance.MaintenanceModeNodeSecurityTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
@@ -124,7 +125,8 @@ import org.junit.runners.Suite;
     SchedulerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
-    MultipleSSLContextsTest.class
+    MultipleSSLContextsTest.class,
+    MaintenanceModeNodeSecurityTest.class
 })
 public class SecurityTestSuite {
     /** */

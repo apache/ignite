@@ -49,7 +49,7 @@ import org.junit.Test;
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
-    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";
+    public static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";
 
     /** */
     private static final String TEST_PREDICATE_RESOURCE_NAME = U.classNameToResourceName(PREDICATE_CLASSNAME);
