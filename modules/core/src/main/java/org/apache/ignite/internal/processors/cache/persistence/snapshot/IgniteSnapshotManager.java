@@ -1425,8 +1425,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 task.started().get();
 
                 if (log.isInfoEnabled()) {
-                    log.info("Finished waiting for synchronized checkpoint under topology lock " +
-                        "[snapName=" + task.snapshotName() + ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                    log.info("Finished waiting for a synchronized checkpoint under topology lock " +
+                        "[snpName=" + task.snapshotName() + ", time=" + (U.currentTimeMillis() - start) + "ms]");
                 }
             }
             catch (IgniteCheckedException e) {

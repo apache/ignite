@@ -400,7 +400,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
                 if (log.isInfoEnabled()) {
                     log.info("Finished waiting for all the concurrent operations over the metadata store before snapshot " +
-                        "[snapName=" + snpName + ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                        "[snpName=" + snpName + ", time=" + (U.currentTimeMillis() - start) + "ms]");
                 }
             }
             catch (IgniteCheckedException ignore) {
@@ -459,7 +459,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     if (!missed.isEmpty()) {
                         throw new IgniteCheckedException("Snapshot operation cancelled due to " +
                             "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
-                            ", missed" + S.compact(missed) + ']');
+                            ", missed=" + S.compact(missed) + ']');
                     }
                 }
                 else {
@@ -527,8 +527,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
         if (log.isInfoEnabled()) {
             log.info("Submit partition processing tasks to the snapshot execution pool " +
-                "[map=" + convert(partFileLengths.keySet()) +
-                ", totalSizes=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
+                "[map=" + compactGroupPartitions(partFileLengths.keySet()) +
+                ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
         }
 
         Collection<BinaryType> binTypesCopy = cctx.kernalContext()
@@ -697,7 +697,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
      * @param grps List of processing pairs.
      * @return Map of cache group id their partitions compacted by {@link S#compact(Collection)}.
      */
-    private static Map<Integer, String> convert(Collection<GroupPartitionId> grps) {
+    private static Map<Integer, String> compactGroupPartitions(Collection<GroupPartitionId> grps) {
         return grps.stream()
             .collect(Collectors.groupingBy(GroupPartitionId::getGroupId,
                 Collectors.mapping(GroupPartitionId::getPartitionId,
