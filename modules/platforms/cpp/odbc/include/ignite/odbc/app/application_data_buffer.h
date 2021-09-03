@@ -44,13 +44,13 @@ namespace ignite
             {
                 enum Type
                 {
-                    /** Conversion successfull. No data lost. */
+                    /** Conversion successful. No data lost. */
                     AI_SUCCESS,
 
-                    /** Conversion successfull, but fractional truncation occurred. */
+                    /** Conversion successful, but fractional truncation occurred. */
                     AI_FRACTIONAL_TRUNCATED,
 
-                    /** Conversion successfull, but right-side variable length data truncation occurred. */
+                    /** Conversion successful, but right-side variable length data truncation occurred. */
                     AI_VARLEN_DATA_TRUNCATED,
 
                     /** Conversion is not supported. */

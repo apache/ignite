@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1005,7 +1006,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             if (waitForAffTop && affFut != null) {
                 affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> fut0) {
-                        ctx.closure().runLocalSafe(new Runnable() {
+                        ctx.closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
                                 onResponse(failoverRes);
                             }
@@ -1024,7 +1025,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     private void sendRetryRequest(final long waitms, final GridJobResultImpl jRes, final GridJobExecuteResponse resp) {
         ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
-                ctx.closure().runLocalSafe(new Runnable() {
+                ctx.closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         try {
                             ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
@@ -1421,7 +1422,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             forceLocDep,
                             ses.isFullSupport(),
                             internal,
-                            subjId,
                             affCacheIds,
                             affPartId,
                             mapTopVer,
@@ -1588,7 +1588,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             evt.taskNode(evtNode);
             evt.jobId(jobId);
             evt.type(evtType);
-            evt.taskSubjectId(ses.subjectId());
+            evt.taskSubjectId(subjId);
             evt.resultPolicy(plc);
 
             ctx.event().record(evt);

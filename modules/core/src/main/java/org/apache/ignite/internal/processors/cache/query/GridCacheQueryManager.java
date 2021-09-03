@@ -182,7 +182,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         QRY_DETAIL_METRICS_MERGE_FX = GridCacheQueryDetailMetricsAdapter::aggregate;
 
     /** */
-    private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
+    private final boolean isIndexingSpiAllowsBinary =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
 
     /** */
     private GridQueryProcessor qryProc;
@@ -1875,14 +1876,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (rmtFut == null)
                 return new GridFinishedFuture<>(convertMetadata(res));
 
-            return rmtFut.chain(new IgniteClosureX<IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>>, Collection<GridCacheSqlMetadata>>() {
-                @Override public Collection<GridCacheSqlMetadata> applyx(
-                    IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> fut) throws IgniteCheckedException {
-                    res.addAll(fut.get());
+            return rmtFut.chain(
+                new IgniteClosureX<IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>>, Collection<GridCacheSqlMetadata>>() {
+                    @Override public Collection<GridCacheSqlMetadata> applyx(
+                        IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> fut) throws IgniteCheckedException {
+                        res.addAll(fut.get());
 
-                    return convertMetadata(res);
+                        return convertMetadata(res);
+                    }
                 }
-            });
+            );
         }
         finally {
             leaveBusy();

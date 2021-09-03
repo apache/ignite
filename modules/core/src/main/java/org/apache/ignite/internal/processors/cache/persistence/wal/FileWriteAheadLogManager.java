@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -127,15 +126,21 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
+import static org.apache.ignite.IgniteSystemProperties.getDouble;
+import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -206,21 +211,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** @see IgniteSystemProperties#IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE */
     public static final double DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = 0.25;
 
-    /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE */
-    public static final double DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = 0.5;
-
     /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT */
     public static final long DFLT_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = 1000L;
 
     /** Use mapped byte buffer. */
     private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, DFLT_WAL_MMAP);
-
-    /**
-     * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
-     */
-    private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
-        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE,
-            DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
     /**
      * Number of WAL compressor worker threads.
@@ -248,8 +243,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final long maxSegCountWithoutCheckpoint;
 
-    /** Size of wal archive since which removing of old archive should be started. */
-    private final long allowedThresholdWalArchiveSize;
+    /** Maximum size of the WAL archive in bytes. */
+    private final long maxWalArchiveSize;
+
+    /** Minimum size of the WAL archive in bytes. */
+    private final long minWalArchiveSize;
 
     /** */
     private final WALMode mode;
@@ -277,6 +275,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** WAL archive directory (including consistent ID as subfolder). */
     private File walArchiveDir;
+
+    /** WAL cdc directory (including consistent ID as subfolder) */
+    private File walCdcDir;
 
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
@@ -331,6 +332,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final long walAutoArchiveAfterInactivity;
 
+    /** Positive (non-0) value indicates WAL must be archived even if not complete. */
+    private final long walForceArchiveTimeout;
+
     /**
      * Container with last WAL record logged timestamp.<br> Zero value means there was no records logged to current
      * segment, skip possible archiving for this case<br> Value is filled only for case {@link
@@ -338,17 +342,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final AtomicLong lastRecordLoggedMs = new AtomicLong();
 
+    /** Last rollover time. */
+    private AtomicLong lastRolloverMs;
+
     /**
      * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown.
      * Null for non background modes.
      */
     @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
-    /**
-     * Reference to the last added next archive timeout check object. Null if mode is not enabled. Should be cancelled
-     * at shutdown
-     */
-    @Nullable private volatile GridTimeoutObject nextAutoArchiveTimeoutObj;
+    /** Reference to the last added next timeout rollover object. */
+    @Nullable private TimeoutRollover timeoutRollover;
+
+    /** Timeout rollover mutex. */
+    @Nullable private final Object timeoutRolloverMux;
 
     /**
      * Listener invoked for each segment file IO initializer.
@@ -406,15 +413,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = mode == WALMode.FSYNC ? dsCfg.getFileIOFactory() : new RandomAccessFileIOFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
+        walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
 
-        allowedThresholdWalArchiveSize = (long)(dsCfg.getMaxWalArchiveSize() * THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
+        timeoutRolloverMux = (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) ? new Object() : null;
+
+        if (walForceArchiveTimeout > 0)
+            lastRolloverMs = new AtomicLong();
+
+        maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
+
+        minWalArchiveSize = minWalArchiveSize(dsCfg);
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
 
         fileHandleManagerFactory = new FileHandleManagerFactory(dsCfg);
 
-        double cpTriggerArchiveSizePercentage = IgniteSystemProperties.getDouble(
+        double cpTriggerArchiveSizePercentage = getDouble(
             IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE);
 
         maxSegCountWithoutCheckpoint = (long)((U.adjustedWalHistorySize(dsCfg, log) * cpTriggerArchiveSizePercentage)
@@ -456,13 +471,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
+            if (dsCfg.isCdcEnabled()) {
+                walCdcDir = initDirectory(
+                    dsCfg.getCdcWalPath(),
+                    DataStorageConfiguration.DFLT_WAL_CDC_PATH,
+                    resolveFolders.folderName(),
+                    "change data capture directory"
+                );
+            }
+
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
             metrics = dbMgr.persistentStoreMetricsImpl();
-
-            checkOrPrepareFiles();
 
             if (metrics != null) {
                 metrics.setWalSizeProvider(new CO<Long>() {
@@ -481,7 +503,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 });
             }
 
-            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled(), log);
+            segmentAware = new SegmentAware(
+                log,
+                dsCfg.getWalSegments(),
+                dsCfg.isWalCompactionEnabled(),
+                minWalArchiveSize,
+                maxWalArchiveSize
+            );
 
             // We have to initialize compressor before archiver in order to setup already compressed segments.
             // Otherwise, FileArchiver initialization will trigger redundant work for FileCompressor.
@@ -492,10 +520,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (isArchiverEnabled())
-                archiver = new FileArchiver(segmentAware, log);
+                archiver = new FileArchiver(log);
 
             if (!walArchiveUnlimited())
                 cleaner = new FileCleaner(log);
+
+            prepareAndCheckWalFiles();
+
+            if (compressor != null)
+                compressor.initAlreadyCompressedSegments();
+
+            if (archiver != null)
+                archiver.init(segmentAware);
 
             segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
@@ -540,7 +576,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.reset();
 
         segmentAware.resetWalArchiveSizes();
-        segmentAware.addCurrentWalArchiveSize(totalSize(walArchiveFiles()));
+
+        for (FileDescriptor descriptor : walArchiveFiles())
+            segmentAware.addSize(descriptor.idx, descriptor.file.length());
 
         if (isArchiverEnabled()) {
             assert archiver != null : "FileArchiver should be initialized.";
@@ -635,17 +673,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Method is called twice on deactivate and stop.
      * It shutdown workers but do not deallocate them to avoid duplication.
-     * */
+     */
     @Override protected void stop0(boolean cancel) {
         final GridTimeoutProcessor.CancelableTask schedule = backgroundFlushSchedule;
 
         if (schedule != null)
             schedule.close();
 
-        final GridTimeoutObject timeoutObj = nextAutoArchiveTimeoutObj;
-
-        if (timeoutObj != null)
-            cctx.time().removeTimeoutObject(timeoutObj);
+        stopAutoRollover();
 
         try {
             fileHandleManager.onDeactivate();
@@ -745,42 +780,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.BACKGROUND)
             backgroundFlushSchedule = cctx.time().schedule(this::doFlush, flushFreq, flushFreq);
 
-        if (walAutoArchiveAfterInactivity > 0)
-            scheduleNextInactivityPeriodElapsedCheck();
+        if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
+            scheduleNextRolloverCheck();
     }
 
     /**
-     * Schedules next check of inactivity period expired. Based on current record update timestamp. At timeout method
-     * does check of inactivity period and schedules new launch.
+     * Schedules next rollover check.
+     * If {@link DataStorageConfiguration#getWalForceArchiveTimeout()} configured rollover happens forcefully.
+     * Else check based on current record update timestamp and at timeout method does check of inactivity period and schedules new launch.
      */
-    private void scheduleNextInactivityPeriodElapsedCheck() {
-        final long lastRecMs = lastRecordLoggedMs.get();
-        final long nextPossibleAutoArchive = (lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs) + walAutoArchiveAfterInactivity;
+    private void scheduleNextRolloverCheck() {
+        assert walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0;
+        assert timeoutRolloverMux != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Schedule WAL rollover check at " + new Time(nextPossibleAutoArchive).toString());
+        synchronized (timeoutRolloverMux) {
+            long nextEndTime = walForceArchiveTimeout > 0
+                ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
+                : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
 
-        nextAutoArchiveTimeoutObj = new GridTimeoutObject() {
-            private final IgniteUuid id = IgniteUuid.randomUuid();
+            cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
+        }
+    }
 
-            @Override public IgniteUuid timeoutId() {
-                return id;
-            }
-
-            @Override public long endTime() {
-                return nextPossibleAutoArchive;
-            }
-
-            @Override public void onTimeout() {
-                if (log.isDebugEnabled())
-                    log.debug("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()).toString() + ")");
-
-                checkWalRolloverRequiredDuringInactivityPeriod();
-
-                scheduleNextInactivityPeriodElapsedCheck();
-            }
-        };
-        cctx.time().addTimeoutObject(nextAutoArchiveTimeoutObj);
+    /** */
+    private long nextTimeout(long lastEvt, long timeout) {
+        return lastEvt <= 0 ? U.currentTimeMillis() : lastEvt + timeout;
     }
 
     /** {@inheritDoc} */
@@ -789,25 +813,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Checks if there was elapsed significant period of inactivity. If WAL auto-archive is enabled using
-     * {@link #walAutoArchiveAfterInactivity} > 0 this method will activate roll over by timeout.<br>
+     * Checks if there was elapsed significant period of inactivity or force archive timeout.
+     * If WAL auto-archive is enabled using {@link #walAutoArchiveAfterInactivity} > 0 or {@link #walForceArchiveTimeout}
+     * this method will activate roll over by timeout.
      */
-    private void checkWalRolloverRequiredDuringInactivityPeriod() {
-        if (walAutoArchiveAfterInactivity <= 0)
-            return; // feature not configured, nothing to do
+    private void checkWalRolloverRequired() {
+        if (walAutoArchiveAfterInactivity <= 0 && walForceArchiveTimeout <= 0)
+            return; // feature not configured, nothing to do.
 
-        final long lastRecMs = lastRecordLoggedMs.get();
+        if (lastRecordLoggedMs.get() == 0)
+            return; //no records were logged to current segment, does not consider inactivity.
 
-        if (lastRecMs == 0)
-            return; //no records were logged to current segment, does not consider inactivity
-
-        final long elapsedMs = U.currentTimeMillis() - lastRecMs;
-
-        if (elapsedMs <= walAutoArchiveAfterInactivity)
-            return; // not enough time elapsed since last write
-
-        if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
-            return; // record write occurred concurrently
+        if (walForceArchiveTimeout > 0) {
+            if (!checkTimeout(lastRolloverMs, walForceArchiveTimeout))
+                return;
+        }
+        else if (!checkTimeout(lastRecordLoggedMs, walAutoArchiveAfterInactivity))
+            return;
 
         final FileWriteHandle handle = currentHandle();
 
@@ -819,6 +841,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
+    }
+
+    /** */
+    private boolean checkTimeout(AtomicLong lastEvt, long timeout) {
+        final long lastEvtMs = lastEvt.get();
+
+        final long elapsedMs = U.currentTimeMillis() - lastEvtMs;
+
+        if (elapsedMs <= timeout)
+            return false; // not enough time elapsed since last write.
+
+        // Will return false if record write occurred concurrently.
+        return lastEvt.compareAndSet(lastEvtMs, 0);
     }
 
     /** {@inheritDoc} */
@@ -894,9 +929,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (ptr != null) {
-                metrics.onWalRecordLogged();
+                metrics.onWalRecordLogged(rec.size());
 
-                if (walAutoArchiveAfterInactivity > 0)
+                if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
 
                 return ptr;
@@ -914,7 +949,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private FileWriteHandle closeBufAndRollover(
         FileWriteHandle currWriteHandle,
-        WALRecord rec,
+        @Nullable WALRecord rec,
         RolloverType rolloverType
     ) throws IgniteCheckedException {
         long idx = currWriteHandle.getSegmentId();
@@ -923,8 +958,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWriteHandle res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
 
-        if (log != null && log.isInfoEnabled())
-            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" + rec.type());
+        if (log != null && log.isInfoEnabled()) {
+            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" +
+                (rec == null ? null : rec.type()));
+        }
 
         return res;
     }
@@ -1074,8 +1111,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             else {
                 deleted++;
 
-                segmentSize.remove(desc.idx());
-                segmentAware.addCurrentWalArchiveSize(-len);
+                long idx = desc.idx();
+
+                segmentSize.remove(idx);
+                segmentAware.addSize(idx, -len);
             }
 
             // Bump up the oldest archive segment index.
@@ -1280,8 +1319,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
             }
 
+            long idx = cur.getSegmentId() + 1;
+            long currSize = 0;
+            long reservedSize = maxWalSegmentSize;
+
             if (archiver == null)
-                segmentAware.addReservedWalArchiveSize(maxWalSegmentSize);
+                segmentAware.addSize(idx, reservedSize);
 
             FileWriteHandle next;
             try {
@@ -1301,14 +1344,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     assert ptr != null;
                 }
 
-                segmentSize.put(next.getSegmentId(), maxWalSegmentSize);
-
-                if (archiver == null)
-                    segmentAware.addCurrentWalArchiveSize(maxWalSegmentSize);
+                currSize = reservedSize;
+                segmentSize.put(idx, currSize);
             }
             finally {
                 if (archiver == null)
-                    segmentAware.addReservedWalArchiveSize(-maxWalSegmentSize);
+                    segmentAware.addSize(idx, currSize - reservedSize);
             }
 
             if (next.getSegmentId() - lastCheckpointPtr.index() >= maxSegCountWithoutCheckpoint)
@@ -1318,8 +1359,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert updated : "Concurrent updates on rollover are not allowed";
 
-            if (walAutoArchiveAfterInactivity > 0)
+            if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) {
                 lastRecordLoggedMs.set(0);
+
+                if (walForceArchiveTimeout > 0)
+                    lastRolloverMs.set(U.currentTimeMillis());
+            }
 
             // Let other threads to proceed with new segment.
             hnd.signalNextAvailable();
@@ -1502,11 +1547,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Deletes temp files creates and prepares new; Creates the first segment if necessary.
+     * Prepare and check WAL files.
      *
      * @throws StorageException If failed.
      */
-    private void checkOrPrepareFiles() throws StorageException {
+    private void prepareAndCheckWalFiles() throws StorageException {
         Collection<File> tmpFiles = new HashSet<>();
 
         for (File walDir : F.asList(walWorkDir, walArchiveDir)) {
@@ -1521,21 +1566,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
         }
 
-        File[] allFiles = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+        if (F.isEmpty(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER)))
+            createFile(new File(walWorkDir, fileName(0)));
 
-        if (isArchiverEnabled() && !F.isEmpty(allFiles) && allFiles.length > dsCfg.getWalSegments()) {
-            throw new StorageException("Failed to initialize wal (work directory contains incorrect " +
-                "number of segments) [cur=" + allFiles.length + ", expected=" + dsCfg.getWalSegments() + ']');
-        }
+        if (isArchiverEnabled()) {
+            moveSegmentsToArchive();
 
-        // Allocate the first segment synchronously. All other segments will be allocated by archiver in background.
-        if (F.isEmpty(allFiles)) {
-            File first = new File(walWorkDir, fileName(0));
+            renameLastSegment();
 
-            createFile(first);
-        }
-        else if (isArchiverEnabled())
+            formatWorkSegments();
+
             checkFiles(0, false, null, null);
+        }
     }
 
     /**
@@ -1724,14 +1766,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * Constructor.
          *
-         * @param segmentAware Segment aware.
          * @param log Logger.
          */
-        private FileArchiver(SegmentAware segmentAware, IgniteLogger log) throws IgniteCheckedException {
+        private FileArchiver(IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
                 cctx.kernalContext().workersRegistry());
-
-            init(segmentAware);
         }
 
         /**
@@ -1864,7 +1903,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 blockingSectionBegin();
 
                 try {
-                    segmentAware.awaitSegment(0);//wait for init at least one work segments.
+                    segmentAware.awaitSegment(0); //wait for init at least one work segments.
                 }
                 finally {
                     blockingSectionEnd();
@@ -2000,8 +2039,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long offs = switchSegmentRecordOffset.getAndSet((int)segIdx, 0);
             long origLen = origFile.length();
 
+            long currSize = 0;
             long reservedSize = offs > 0 && offs < origLen ? offs : origLen;
-            segmentAware.addReservedWalArchiveSize(reservedSize);
+
+            segmentAware.addSize(absIdx, reservedSize);
 
             try {
                 if (offs > 0 && offs < origLen)
@@ -2011,14 +2052,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
+                if (dsCfg.isCdcEnabled())
+                    Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
+
                 if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
                 }
 
-                segmentSize.put(absIdx, dstFile.length());
-                segmentAware.addCurrentWalArchiveSize(dstFile.length());
+                currSize = dstFile.length();
+                segmentSize.put(absIdx, currSize);
             }
             catch (IOException e) {
                 deleteArchiveFiles(dstFile, dstTmpFile);
@@ -2028,7 +2072,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
             }
             finally {
-                segmentAware.addReservedWalArchiveSize(-reservedSize);
+                segmentAware.addSize(absIdx, currSize - reservedSize);
             }
 
             if (log.isInfoEnabled()) {
@@ -2048,7 +2092,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Background creation of all segments except first. First segment was created in main thread by {@link
-         * FileWriteAheadLogManager#checkOrPrepareFiles()}
+         * FileWriteAheadLogManager#prepareAndCheckWalFiles()}
          */
         private void allocateRemainingFiles() throws StorageException {
             checkFiles(
@@ -2092,8 +2136,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         FileCompressor(IgniteLogger log) {
             super(0, log);
-
-            initAlreadyCompressedSegments();
         }
 
         /** */
@@ -2117,6 +2159,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (alreadyCompressed.length > 0)
                 segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
+
+            for (FileDescriptor fd : alreadyCompressed)
+                metrics.onWalSegmentCompressed(fd.file().length());
         }
 
         /**
@@ -2223,8 +2268,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     File raw = new File(walArchiveDir, segmentFileName);
 
+                    long currSize = 0;
                     long reservedSize = raw.length();
-                    segmentAware.addReservedWalArchiveSize(reservedSize);
+
+                    segmentAware.addSize(segIdx, reservedSize);
 
                     try {
                         deleteObsoleteRawSegments();
@@ -2240,8 +2287,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             f0.force();
                         }
 
-                        segmentSize.put(segIdx, zip.length());
-                        segmentAware.addCurrentWalArchiveSize(zip.length());
+                        currSize = zip.length();
+                        segmentSize.put(segIdx, currSize);
+
+                        metrics.onWalSegmentCompressed(currSize);
 
                         segmentAware.onSegmentCompressed(segIdx);
 
@@ -2259,7 +2308,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         segmentAware.onSegmentCompressed(segIdx);
                     }
                     finally {
-                        segmentAware.addReservedWalArchiveSize(-reservedSize);
+                        segmentAware.addSize(segIdx, currSize - reservedSize);
                     }
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
@@ -2370,7 +2419,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return;
 
                 if (desc.idx < lastCheckpointPtr.index() && duplicateIndices.contains(desc.idx))
-                    segmentAware.addCurrentWalArchiveSize(-deleteArchiveFiles(desc.file));
+                    segmentAware.addSize(desc.idx, -deleteArchiveFiles(desc.file));
             }
         }
     }
@@ -2425,8 +2474,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     File unzipTmp = new File(walArchiveDir, segmentFileName + TMP_SUFFIX);
                     File unzip = new File(walArchiveDir, segmentFileName);
 
+                    long currSize = 0;
                     long reservedSize = U.uncompressedSize(zip);
-                    segmentAware.addReservedWalArchiveSize(reservedSize);
+
+                    segmentAware.addSize(segmentToDecompress, reservedSize);
 
                     IgniteCheckedException ex = null;
 
@@ -2444,7 +2495,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         Files.move(unzipTmp.toPath(), unzip.toPath());
 
-                        segmentAware.addCurrentWalArchiveSize(unzip.length());
+                        currSize = unzip.length();
                     }
                     catch (IOException e) {
                         deleteArchiveFiles(unzipTmp);
@@ -2459,7 +2510,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                     finally {
-                        segmentAware.addReservedWalArchiveSize(-reservedSize);
+                        segmentAware.addSize(segmentToDecompress, currSize - reservedSize);
                     }
 
                     updateHeartbeat();
@@ -2936,7 +2987,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (files == null)
                 return Collections.emptyList();
 
-            return Arrays.stream(files).map(File::getName).sorted().collect(Collectors.toList());
+            return Arrays.stream(files).map(File::getName).sorted().collect(toList());
         }
 
         /** {@inheritDoc} */
@@ -3103,7 +3154,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      * @return Size in bytes.
      */
-    public long totalSize(FileDescriptor... fileDescriptors) {
+    public static long totalSize(FileDescriptor... fileDescriptors) {
         long len = 0;
 
         for (FileDescriptor descriptor : fileDescriptors)
@@ -3118,7 +3169,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return {@code True} if unlimited.
      */
     private boolean walArchiveUnlimited() {
-        return dsCfg.getMaxWalArchiveSize() == DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+        return maxWalArchiveSize == UNLIMITED_WAL_ARCHIVE;
     }
 
     /**
@@ -3168,7 +3219,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (!isCancelled()) {
-                    segmentAware.awaitExceedMaxArchiveSize(allowedThresholdWalArchiveSize);
+                    segmentAware.awaitExceedMaxArchiveSize(minWalArchiveSize);
                     segmentAware.awaitAvailableTruncateArchive();
 
                     FileDescriptor[] walArchiveFiles = walArchiveFiles();
@@ -3185,7 +3236,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             high = fileDesc;
 
                             // Ensure that there will be exactly removed at least one segment.
-                            if (totalSize - (size += fileDesc.file.length()) < allowedThresholdWalArchiveSize)
+                            if (totalSize - (size += fileDesc.file.length()) < minWalArchiveSize)
                                 break;
                         }
                     }
@@ -3196,7 +3247,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (log.isInfoEnabled()) {
                             log.info("Starting to clean WAL archive [highIdx=" + highPtr.index()
                                 + ", currSize=" + U.humanReadableByteCount(totalSize)
-                                + ", maxSize=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize()) + ']');
+                                + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
 
                         ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
@@ -3206,7 +3257,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (log.isInfoEnabled()) {
                             log.info("Finish clean WAL archive [cleanCnt=" + truncated
                                 + ", currSize=" + U.humanReadableByteCount(totalSize(walArchiveFiles()))
-                                + ", maxSize=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize()) + ']');
+                                + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
                     }
                 }
@@ -3251,5 +3302,283 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             new IgniteThread(this).start();
         }
+    }
+
+    /**
+     * Moving working segments to archive, if segments are more than {@link DataStorageConfiguration#getWalSegments()}
+     * or index of first segment is not 0. All segments will be moved except for last one,
+     * as well as all compressed segments.
+     *
+     * @throws StorageException If an error occurs while moving.
+     */
+    private void moveSegmentsToArchive() throws StorageException {
+        assert isArchiverEnabled();
+
+        FileDescriptor[] workSegments = scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER));
+
+        List<FileDescriptor> toMove = new ArrayList<>();
+
+        if (!F.isEmpty(workSegments) && (workSegments.length > dsCfg.getWalSegments() || workSegments[0].idx() != 0))
+            toMove.addAll(F.asList(workSegments).subList(0, workSegments.length - 1));
+
+        toMove.addAll(F.asList(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER))));
+
+        if (!toMove.isEmpty()) {
+            log.warning("Content of WAL working directory needs rearrangement, some WAL segments will be moved to " +
+                "archive: " + walArchiveDir.getAbsolutePath() + ". Segments from " + toMove.get(0).file().getName() +
+                " to " + toMove.get(toMove.size() - 1).file().getName() + " will be moved, total number of files: " +
+                toMove.size() + ". This operation may take some time.");
+
+            for (int i = 0, j = 0; i < toMove.size(); i++) {
+                FileDescriptor fd = toMove.get(i);
+
+                File tmpDst = new File(walArchiveDir, fd.file().getName() + TMP_SUFFIX);
+                File dst = new File(walArchiveDir, fd.file().getName());
+
+                try {
+                    Files.copy(fd.file().toPath(), tmpDst.toPath());
+
+                    Files.move(tmpDst.toPath(), dst.toPath());
+
+                    Files.delete(fd.file().toPath());
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("WAL segment moved [src=" + fd.file().getAbsolutePath() +
+                            ", dst=" + dst.getAbsolutePath() + ']');
+                    }
+
+                    // Batch output.
+                    if (log.isInfoEnabled() && (i == toMove.size() - 1 || (i != 0 && i % 9 == 0))) {
+                        log.info("WAL segments moved: " + toMove.get(j).file().getName() +
+                            (i == j ? "" : " - " + toMove.get(i).file().getName()));
+
+                        j = i + 1;
+                    }
+                }
+                catch (IOException e) {
+                    throw new StorageException("Failed to move WAL segment [src=" + fd.file().getAbsolutePath() +
+                        ", dst=" + dst.getAbsolutePath() + ']', e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Renaming last segment if it is only one and its index is greater than {@link DataStorageConfiguration#getWalSegments()}.
+     *
+     * @throws StorageException If an error occurs while renaming.
+     */
+    private void renameLastSegment() throws StorageException {
+        assert isArchiverEnabled();
+
+        FileDescriptor[] workSegments = scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER));
+
+        if (workSegments.length == 1 && workSegments[0].idx() != workSegments[0].idx() % dsCfg.getWalSegments()) {
+            FileDescriptor toRen = workSegments[0];
+
+            if (log.isInfoEnabled()) {
+                log.info("Last WAL segment file has to be renamed from " + toRen.file().getName() + " to " +
+                    fileName(toRen.idx() % dsCfg.getWalSegments()) + '.');
+            }
+
+            String toRenFileName = fileName(toRen.idx() % dsCfg.getWalSegments());
+
+            File tmpDst = new File(walWorkDir, toRenFileName + TMP_SUFFIX);
+            File dst = new File(walWorkDir, toRenFileName);
+
+            try {
+                Files.copy(toRen.file().toPath(), tmpDst.toPath());
+
+                Files.move(tmpDst.toPath(), dst.toPath());
+
+                Files.delete(toRen.file().toPath());
+
+                if (log.isInfoEnabled()) {
+                    log.info("WAL segment renamed [src=" + toRen.file().getAbsolutePath() +
+                        ", dst=" + dst.getAbsolutePath() + ']');
+                }
+            }
+            catch (IOException e) {
+                throw new StorageException("Failed to rename WAL segment [src=" +
+                    toRen.file().getAbsolutePath() + ", dst=" + dst.getAbsolutePath() + ']', e);
+            }
+        }
+    }
+
+    /**
+     * Formatting working segments to {@link DataStorageConfiguration#getWalSegmentSize()} for work in a mmap or fsync case.
+     *
+     * @throws StorageException If an error occurs when formatting.
+     */
+    private void formatWorkSegments() throws StorageException {
+        assert isArchiverEnabled();
+
+        if (mode == WALMode.FSYNC || mmap) {
+            List<FileDescriptor> toFormat = Arrays.stream(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER)))
+                .filter(fd -> fd.file().length() < dsCfg.getWalSegmentSize()).collect(toList());
+
+            if (!toFormat.isEmpty()) {
+                if (log.isInfoEnabled()) {
+                    log.info("WAL segments in working directory should have the same size: '" +
+                        U.humanReadableByteCount(dsCfg.getWalSegmentSize()) + "'. Segments that need reformat " +
+                        "found: " + F.viewReadOnly(toFormat, fd -> fd.file().getName()) + '.');
+                }
+
+                for (int i = 0, j = 0; i < toFormat.size(); i++) {
+                    FileDescriptor fd = toFormat.get(i);
+
+                    File tmpDst = new File(fd.file().getName() + TMP_SUFFIX);
+
+                    try {
+                        Files.copy(fd.file().toPath(), tmpDst.toPath());
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Start formatting WAL segment [filePath=" + tmpDst.getAbsolutePath() +
+                                ", fileSize=" + U.humanReadableByteCount(tmpDst.length()) +
+                                ", toSize=" + U.humanReadableByteCount(dsCfg.getWalSegmentSize()) + ']');
+                        }
+
+                        try (FileIO fileIO = ioFactory.create(tmpDst, CREATE, READ, WRITE)) {
+                            int left = (int)(dsCfg.getWalSegmentSize() - tmpDst.length());
+
+                            fileIO.position(tmpDst.length());
+
+                            while (left > 0)
+                                left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left));
+
+                            fileIO.force();
+                        }
+
+                        Files.move(tmpDst.toPath(), fd.file().toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
+
+                        if (log.isDebugEnabled())
+                            log.debug("WAL segment formatted: " + fd.file().getAbsolutePath());
+
+                        // Batch output.
+                        if (log.isInfoEnabled() && (i == toFormat.size() - 1 || (i != 0 && i % 9 == 0))) {
+                            log.info("WAL segments formatted: " + toFormat.get(j).file().getName() +
+                                (i == j ? "" : " - " + fileName(i)));
+
+                            j = i + 1;
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new StorageException("Failed to format WAL segment: " + fd.file().getAbsolutePath(), e);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Timeout object for automatically rollover segments if the recording
+     * to the WAL was not more than or equal to {@link #walAutoArchiveAfterInactivity}.
+     */
+    private class TimeoutRollover implements GridTimeoutObject {
+        /** ID of timeout object. */
+        private final IgniteUuid id = IgniteUuid.randomUuid();
+
+        /** Timestamp for triggering. */
+        private final long endTime;
+
+        /** Cancel flag. */
+        private boolean cancel;
+
+        /**
+         * Constructor.
+         *
+         * @param endTime Timestamp for triggering.
+         */
+        private TimeoutRollover(long endTime) {
+            if (log.isDebugEnabled())
+                log.debug("Schedule WAL rollover check at " + new Time(endTime).toString());
+
+            this.endTime = endTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid timeoutId() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long endTime() {
+            return endTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            assert walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0;
+            assert timeoutRolloverMux != null;
+
+            synchronized (timeoutRolloverMux) {
+                if (!cancel) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Checking if WAL rollover required (" +
+                            new Time(U.currentTimeMillis()).toString() + ")");
+                    }
+
+                    checkWalRolloverRequired();
+
+                    scheduleNextRolloverCheck();
+                }
+            }
+        }
+
+        /**
+         * Cancel auto rollover.
+         */
+        public void cancel() {
+            assert walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0;
+            assert timeoutRolloverMux != null;
+
+            synchronized (timeoutRolloverMux) {
+                if (log.isDebugEnabled())
+                    log.debug("Auto rollover is canceled");
+
+                cancel = true;
+            }
+        }
+    }
+
+    /**
+     * Stop auto rollover.
+     */
+    private void stopAutoRollover() {
+        if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) {
+            assert timeoutRolloverMux != null;
+
+            synchronized (timeoutRolloverMux) {
+                TimeoutRollover timeoutRollover = this.timeoutRollover;
+
+                if (timeoutRollover != null) {
+                    timeoutRollover.cancel();
+
+                    cctx.time().removeTimeoutObject(timeoutRollover);
+                }
+            }
+        }
+    }
+
+    /**
+     * Getting min size(in bytes) of WAL archive directory(greater than 0,
+     * or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE} if max WAL archive size is unlimited).
+     *
+     * @param dsCfg Memory configuration.
+     * @return Min allowed size(in bytes) of WAL archives.
+     */
+    static long minWalArchiveSize(DataStorageConfiguration dsCfg) {
+        long max = dsCfg.getMaxWalArchiveSize();
+        long min = dsCfg.getMinWalArchiveSize();
+
+        double percentage = getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, -1);
+
+        return max == UNLIMITED_WAL_ARCHIVE ? max : min != HALF_MAX_WAL_ARCHIVE_SIZE ? min :
+            percentage == -1 ? max / 2 : (long)(max * percentage);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void startAutoReleaseSegments() {
+        segmentAware.startAutoReleaseSegments();
     }
 }

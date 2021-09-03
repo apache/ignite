@@ -28,8 +28,10 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistor
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistenceSequentialCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
+import org.apache.ignite.internal.processors.cache.persistence.RestorePartitionStateDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryWithParamsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteSequentialNodeCrashRecoveryTest;
@@ -93,10 +95,12 @@ import org.junit.runners.Suite;
     IgnitePdsCorruptedIndexTest.class,
 
     IgniteLogicalRecoveryTest.class,
+    IgniteLogicalRecoveryWithParamsTest.class,
 
     IgniteSequentialNodeCrashRecoveryTest.class,
 
-    IgniteCacheGroupsWithRestartsTest.class
+    IgniteCacheGroupsWithRestartsTest.class,
+    RestorePartitionStateDuringCheckpointTest.class
 })
 public class IgnitePdsWithIndexingCoreTestSuite {
 }

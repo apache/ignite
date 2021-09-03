@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,8 +56,10 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link IgniteDataStreamer} - functionality for streaming large amounts of data into cache.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteServices} - distributed service grid functionality (e.g. singletons on the cluster).</li>
- * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
- * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteMessaging} -
+ * functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteEvents} -
+ * functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
  * <li>{@link ExecutorService} - distributed thread pools.</li>
  * <li>{@link IgniteAtomicLong} - distributed atomic long.</li>
  * <li>{@link IgniteAtomicReference} - distributed atomic reference.</li>
@@ -682,21 +685,21 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return Collection of {@link MemoryMetrics} snapshots.
-     * @deprecated Use {@link #dataRegionMetrics()} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Use {@link #dataRegionMetrics(String)} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
-     * @deprecated Use {@link #dataStorageMetrics()} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public PersistenceMetrics persistentStoreMetrics();
@@ -708,6 +711,7 @@ public interface Ignite extends AutoCloseable {
      * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
      *
      * @return Collection of {@link DataRegionMetrics} snapshots.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     public Collection<DataRegionMetrics> dataRegionMetrics();
 
@@ -725,6 +729,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return {@link DataStorageMetrics} snapshot.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
      */
     public DataStorageMetrics dataStorageMetrics();
 

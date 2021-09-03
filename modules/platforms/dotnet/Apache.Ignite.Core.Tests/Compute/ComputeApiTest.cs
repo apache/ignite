@@ -191,15 +191,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cluster = _grid1.GetCluster();
 
-            IClusterMetrics metrics = cluster.GetMetrics();
+            var metrics = cluster.GetMetrics();
 
             Assert.IsNotNull(metrics);
-
             Assert.AreEqual(cluster.GetNodes().Count, metrics.TotalNodes);
 
-            Thread.Sleep(2000);
-
-            IClusterMetrics newMetrics = cluster.GetMetrics();
+            TestUtils.WaitForTrueCondition(() => cluster.GetMetrics().LastUpdateTime > metrics.LastUpdateTime, 2000);
+            var newMetrics = cluster.GetMetrics();
 
             Assert.IsFalse(metrics == newMetrics);
             Assert.IsTrue(metrics.LastUpdateTime < newMetrics.LastUpdateTime);
@@ -722,11 +720,11 @@ namespace Apache.Ignite.Core.Tests.Compute
                 // Cancel while executing
                 var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
                 cts.Cancel();
-                Assert.IsTrue(task.IsCanceled);
+                TestUtils.WaitForTrueCondition(() => task.IsCanceled);
 
                 // Use cancelled token
-                task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
-                Assert.IsTrue(task.IsCanceled);
+                var task2 = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                Assert.IsTrue(task2.IsCanceled);
             }
         }
 

@@ -521,6 +521,25 @@ validate_indexes has finished with errors (listed above).
 Like `idle_verify`, index validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
 ====
 
+=== Checking Snapshot Consistency
+
+The checking snapshot consistency command works the same way as the `idle_verify` command does. It compares hashes between
+a primary partition and a corresponding backup partitions and prints a report if any differences are found.
+Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
+recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
+
+This procedure does not require the cluster to be in the `idle` state.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
+control.(sh|bat) --snapshot check snapshot_name
+----
+--
+
 === Check SQL Index Inline Size
 
 A running Ignite cluster could have different SQL index inline sizes on its cluster nodes.
@@ -843,6 +862,8 @@ tab:Windows[]
 ----
 control.bat --system-view views
 ----
+--
+
 
 Examples of the output:
 
@@ -894,3 +915,35 @@ TRANSACTIONS                   SYS       Running transactions
 CACHES                         SYS       Caches
 TASKS                          SYS       Running compute tasks
 Command [SYSTEM-VIEW] finished with code: 0
+
+
+== Performance Statistics
+
+Ignite provides a built-in tool for cluster profiling. Read link:monitoring-metrics/performance-statistics[Performance Statistics] for more information.
+
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --performance-statistics [start|stop|rotate|status]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --performance-statistics [start|stop|rotate|status]
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `start`| Start collecting performance statistics in the cluster.
+| `stop`| Stop collecting performance statistics in the cluster.
+| `rotate`| Rotate collecting performance statistics in the cluster.
+| `status`| Get status of collecting performance statistics in the cluster.
+|===
+

@@ -138,25 +138,27 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(
+    /**
+     * @param exchId Exchange ID.
+     * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
+     * @return Partition assignments which will be requested from supplier nodes.
+     */
+    public GridDhtPreloaderAssignments generateAssignments(
         GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut) {
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public RebalanceFuture addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload,
+    @Override public RebalanceFuture prepare(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
         long rebalanceId,
         RebalanceFuture next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,
-        GridCompoundFuture<Boolean, Boolean> compatibleRebFut) {
+        GridCompoundFuture<Boolean, Boolean> compatibleRebFut
+    ) {
         return null;
     }
 
@@ -205,7 +207,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishPreloading(AffinityTopologyVersion topVer) {
+    @Override public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId) {
         // No-op.
     }
 }

@@ -42,7 +42,7 @@ public abstract class SqlListenerUtils {
      */
     @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
         throws BinaryObjectException {
-        return readObject(reader, binObjAllow,true);
+        return readObject(reader, binObjAllow, true);
     }
 
     /**

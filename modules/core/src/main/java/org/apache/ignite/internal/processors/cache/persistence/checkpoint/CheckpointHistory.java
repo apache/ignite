@@ -439,14 +439,12 @@ public class CheckpointHistory {
      *
      * @param grpId Group id.
      * @param partsCounter Partition mapped to update counter.
-     * @param latestReservedPointer Latest reserved WAL pointer.
      * @param margin Margin pointer.
      * @return Earliest WAL pointer for group specified.
      */
     @Nullable public WALPointer searchEarliestWalPointer(
         int grpId,
         Map<Integer, Long> partsCounter,
-        WALPointer latestReservedPointer,
         long margin
     ) throws IgniteCheckedException {
         if (F.isEmpty(partsCounter))
@@ -466,6 +464,12 @@ public class CheckpointHistory {
             Iterator<Map.Entry<Integer, Long>> iter = modifiedPartsCounter.entrySet().iterator();
 
             WALPointer ptr = cpEntry.checkpointMark();
+
+            if (!wal.reserved(ptr)) {
+                throw new IgniteCheckedException("WAL pointer appropriate to the checkpoint was not reserved " +
+                    "[cp=(" + cpEntry.checkpointId() + ", " + U.format(cpEntry.timestamp())
+                    + "), ptr=" + ptr + ']');
+            }
 
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
@@ -494,7 +498,7 @@ public class CheckpointHistory {
                 }
             }
 
-            if ((F.isEmpty(modifiedPartsCounter) && F.isEmpty(historyPointerCandidate)) || ptr.compareTo(latestReservedPointer) == 0)
+            if (F.isEmpty(modifiedPartsCounter))
                 break;
         }
 
@@ -588,7 +592,16 @@ public class CheckpointHistory {
             long margin,
             Map<Integer, Long> partCntsForUpdate
         ) {
-            Long foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part);
+            Long foundCntr = null;
+
+            try {
+                foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part);
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Checkpoint cannot be chosen because counter is unavailable [grpId=" + grpId
+                    + ", part=" + part
+                    + ", cp=(" + cpEntry.checkpointId() + ", " + U.format(cpEntry.timestamp()) + ")]", e);
+            }
 
             if (foundCntr == null || foundCntr == walPntrCntr) {
                 partCntsForUpdate.put(part, walPntrCntr);
@@ -608,7 +621,7 @@ public class CheckpointHistory {
      * @param searchCntrMap Search map contains (Group Id, partition, counter).
      * @return Map of group-partition on checkpoint entry or empty map if nothing found.
      */
-    @Nullable public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
+    public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
         Map<T2<Integer, Integer>, Long> searchCntrMap
     ) {
         if (F.isEmpty(searchCntrMap))
@@ -639,7 +652,9 @@ public class CheckpointHistory {
                 if (F.isEmpty(modifiedSearchMap))
                     return res;
             }
-            catch (IgniteCheckedException ignore) {
+            catch (IgniteCheckedException e) {
+                log.warning("Checkpoint data is unavailable in WAL [cpTs=" + U.format(cpTs) + ']', e);
+
                 break;
             }
         }

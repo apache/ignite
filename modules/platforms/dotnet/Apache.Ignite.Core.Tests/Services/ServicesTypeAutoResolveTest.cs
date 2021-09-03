@@ -22,8 +22,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
+    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
-    using org.apache.ignite.platform.model;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Tests checks ability to execute service method without explicit registration of parameter type.
@@ -36,9 +38,9 @@ namespace Apache.Ignite.Core.Tests.Services
             new Employee {Fio = "Sarah Connor", Salary = 1},
             new Employee {Fio = "John Connor", Salary = 2}
         };
-        
+
         /** */
-        protected internal static readonly Parameter[] Param = new[] 
+        protected internal static readonly Parameter[] Param = new[]
         {
             new Parameter()
                 {Id = 1, Values = new[] {new ParamValue() {Id = 1, Val = 42}, new ParamValue() {Id = 2, Val = 43}}},
@@ -48,6 +50,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private IIgnite _grid1;
+
+        /** */
+        private IIgnite _client;
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
@@ -91,50 +96,97 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            const string platformSvcName = "PlatformTestService";
+
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+
+            DoTestService(svc);
+
+            DoTestDepartments(svc);
+
+            _grid1.GetServices().Cancel(platformSvcName);
+        }
+
+        /// <summary>
         /// Tests Java service invocation with dynamic proxy.
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceDynamicProxy() 
+        public void TestCallJavaServiceDynamicProxy()
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
-            doTestService(new JavaServiceDynamicProxy(svc));
+            DoTestService(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
-        /// Tests Java service invocation.
+        /// Tests Java service invocation on local.
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaService()
+        public void TestCallJavaServiceLocal()
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
 
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            doTestService(svc);
+            DoTestService(svc);
 
+            DoTestDepartments(svc);
+
+            _grid1.GetServices().Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation on remote node..
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceRemote()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            DoTestService(svc);
+
+            DoTestDepartments(svc);
+
+            _grid1.GetServices().Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests departments call.
+        /// </summary>
+        private void DoTestDepartments(IJavaService svc)
+        {
             Assert.IsNull(svc.testDepartments(null));
 
-            var arr  = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
 
             ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-
-            _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
         /// Tests java service instance.
         /// </summary>
-        private void doTestService(IJavaService svc)
+        private static void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testAddress(null));
 
@@ -201,7 +253,17 @@ namespace Apache.Ignite.Core.Tests.Services
                 return;
 
             var path = Path.Combine("Config", "Compute", "compute-grid");
-            _grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
+
+            var cfg = GetConfiguration(path + "1.xml");
+
+            _grid1 = Ignition.Start(cfg);
+
+            cfg.ClientMode = true;
+            cfg.IgniteInstanceName = "client";
+            cfg.WorkDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "client_work");
+
+            _client = Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -223,7 +285,11 @@ namespace Apache.Ignite.Core.Tests.Services
 
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl
+                SpringConfigUrl = springConfigUrl,
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
+                }
             };
         }
     }

@@ -57,7 +57,11 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientServerError;
@@ -176,12 +180,19 @@ public class FunctionalTest {
      */
     @Test
     public void testCacheConfiguration() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        final String dataRegionName = "functional-test-data-region";
+
+        IgniteConfiguration cfg = Config.getServerConfiguration()
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setName(dataRegionName)));
+
+        try (Ignite ignored = Ignition.start(cfg);
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             final String CACHE_NAME = "testCacheConfiguration";
 
-            ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName(CACHE_NAME)
+            ClientCacheConfiguration cacheCfgTemplate = new ClientCacheConfiguration().setName(CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setBackups(3)
                 .setCacheMode(CacheMode.PARTITIONED)
@@ -218,13 +229,26 @@ public class FunctionalTest {
                     .setIndexes(Collections.singletonList(new QueryIndex("id", true, "IDX_EMPLOYEE_ID")))
                     .setAliases(Stream.of("id", "orgId").collect(Collectors.toMap(f -> f, String::toUpperCase)))
                 )
-                .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30));
+                .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30))
+                .setCopyOnRead(!CacheConfiguration.DFLT_COPY_ON_READ)
+                .setDataRegionName(dataRegionName)
+                .setMaxConcurrentAsyncOperations(4)
+                .setMaxQueryIteratorsCount(4)
+                .setOnheapCacheEnabled(true)
+                .setQueryDetailMetricsSize(1024)
+                .setQueryParallelism(4)
+                .setSqlEscapeAll(true)
+                .setSqlIndexMaxInlineSize(1024)
+                .setSqlSchema("functional-test-schema")
+                .setStatisticsEnabled(true);
+
+            ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration(cacheCfgTemplate);
 
             ClientCache<Object, Object> cache = client.createCache(cacheCfg);
 
             assertEquals(CACHE_NAME, cache.getName());
 
-            assertTrue(Comparers.equal(cacheCfg, cache.getConfiguration()));
+            assertTrue(Comparers.equal(cacheCfgTemplate, cache.getConfiguration()));
         }
     }
 

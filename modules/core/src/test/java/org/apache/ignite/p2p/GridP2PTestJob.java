@@ -110,7 +110,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
             cls = Class.forName("java.math.BigInteger");
         }
         catch (ClassNotFoundException e) {
-            log.error("Mandatory class can't be loaded: [java.math.BigInteger]",e);
+            log.error("Mandatory class can't be loaded: [java.math.BigInteger]", e);
 
             return -5;
         }

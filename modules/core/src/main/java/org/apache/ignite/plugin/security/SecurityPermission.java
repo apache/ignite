@@ -84,8 +84,14 @@ public enum SecurityPermission {
     /** Administration operation: write distributed properties values. */
     ADMIN_WRITE_DISTRIBUTED_PROPERTY,
 
-    /** Administration operation with cluster snapshots (CREATE, CANCEL). */
-    ADMIN_SNAPSHOT;
+    /** Administration operation with cluster snapshots (create, cancel, check). */
+    ADMIN_SNAPSHOT,
+
+    /** Permission to execute REFRESH STATISTICS command. */
+    REFRESH_STATISTICS,
+
+    /** Permission to execute ANALYZE and DROP STATISTICS command. */
+    CHANGE_STATISTICS;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

@@ -29,7 +29,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.QueryFullText
     /// </summary>
     public static class Program
     {
-        private const string EmployeeCacheName = "dotnet_cache_query_employee";
+        private const string EmployeeCacheName = "dotnet_cache_query_full_text_employee";
 
         public static void Main()
         {

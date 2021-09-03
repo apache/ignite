@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -1104,7 +1103,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static IgniteInternalFuture runAsync(final Runnable task) {
-        return runAsync(task,"async-runnable-runner");
+        return runAsync(task, "async-runnable-runner");
     }
 
     /**
@@ -2201,6 +2200,23 @@ public final class GridTestUtils {
     }
 
     /**
+     * Removing the directory cache groups.
+     * Deletes all directory satisfy the {@code cacheGrpFilter}.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cacheGrpFilter Filter cache groups.
+     * @throws Exception If failed.
+     */
+    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        String nodeDirName = U.maskForFileName(igniteInstanceName);
+
+        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
+            U.delete(cacheGrpDir);
+    }
+
+    /**
      * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
      * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
      * This method return correct simple name for inner classes.
@@ -2372,16 +2388,6 @@ public final class GridTestUtils {
             connStr += "/?" + params;
 
         return DriverManager.getConnection(connStr);
-    }
-
-    /**
-     * Removes idle_verify log files created in tests.
-     */
-    public static void cleanIdleVerifyLogFiles() {
-        File dir = new File(".");
-
-        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
-            f.delete();
     }
 
     /**

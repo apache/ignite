@@ -126,7 +126,8 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
             seed
         );
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
 
         PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 

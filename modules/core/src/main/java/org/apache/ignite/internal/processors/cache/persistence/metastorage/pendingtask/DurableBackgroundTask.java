@@ -18,41 +18,42 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage.pend
 
 import java.io.Serializable;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * Durable task that should be used to do long operations (e.g. index deletion) in background
- * for cases when node with persistence can fail before operation is completed. After start, node reads it's
- * pending background tasks from metastorage and completes them.
+ * Durable task that should be used to do long operations (e.g. index deletion) in background.
+ * @param <R> Type of the result of the task.
  */
-public interface DurableBackgroundTask extends Serializable {
+public interface DurableBackgroundTask<R> extends Serializable {
     /**
-     * Short unique name of the task is used to build metastorage key for saving this task and for logging.
+     * Getting the name of the task to identify it.
+     * Also used as part of a key for storage in a MetaStorage.
      *
-     * @return Short name of this task.
+     * @return Task name.
      */
-    public String shortName();
+    String name();
 
     /**
-     * Method that executes the task. It is called after node start.
+     * Canceling the task.
+     */
+    void cancel();
+
+    /**
+     * Asynchronous task execution.
      *
-     * @param ctx Grid kernal context.
-     */
-    public void execute(GridKernalContext ctx);
-
-    /**
-     * Method that marks task as complete.
-     */
-    public void complete();
-
-    /**
-     * Method that return completion flag.
+     * Completion of the task execution should be only with the {@link DurableBackgroundTaskResult result}.
      *
-     * @return flag that task completed.
+     * @param ctx Kernal context.
+     * @return Future of the tasks.
      */
-    public boolean isCompleted();
+    IgniteInternalFuture<DurableBackgroundTaskResult<R>> executeAsync(GridKernalContext ctx);
 
     /**
-     * Callback for task cancellation.
+     * Converting the current task to another after restoring from metaStorage.
+     *
+     * @return Converted task.
      */
-    public void onCancel();
+    default DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
+        return this;
+    }
 }

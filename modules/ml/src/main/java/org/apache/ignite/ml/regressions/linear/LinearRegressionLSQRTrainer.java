@@ -63,7 +63,8 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
                                                                  Preprocessor<K, V> extractor) {
         LSQRResult res;
 
-        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor =
+            new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder, envBuilder,

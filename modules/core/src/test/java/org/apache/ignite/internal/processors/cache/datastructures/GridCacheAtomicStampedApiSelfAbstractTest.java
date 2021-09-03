@@ -160,7 +160,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends IgniteAt
                 true);
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                cache.put(1,1);
+                cache.put(1, 1);
 
                 assertEquals(initVal, atomicStamped.value());
                 assertEquals(initStamp, atomicStamped.stamp());

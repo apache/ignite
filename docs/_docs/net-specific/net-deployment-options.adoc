@@ -17,34 +17,57 @@
 == Overview
 
 Apache Ignite.NET consists of .NET assemblies and Java jar files. The .NET assemblies are referenced by your project and
-are copied to an output folder during the build automatically. The JAR files should be copied manually.
+are copied to an output folder during the build automatically. The JAR files can be handled automatically or manually, depending on the approach.
 Ignite.NET discovers them via the `IgniteHome` or `JvmClasspath` settings.
 
 This page introduces several most-commonly used deployment options of Ignite.NET nodes.
 
-== Full Binary Package Deployment
-
-* Copy the https://ignite.apache.org[whole Ignite distribution package, window=_blank] along with your application
-* Set the `IGNITE_HOME` environment variable or `IgniteConfiguration.IgniteHome` setting to point to that folder
-
 == NuGet Deployment
 
-The post-build event is updated automatically during the Ignite.NET NuGet package installation to copy jar files to
-`Libs` folder in the output directory (see link:quick-start/dotnet[Getting Started]).
-Make sure to include that `Libs` folder when distributing your binaries.
+`Apache.Ignite` NuGet package includes a `lib` folder with all the required jar files. This folder has
+the `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` build action, and is copied automatically to the output directory
+during the build or publish process.
 
 Make sure `IGNITE_HOME` is not set globally. Normally you don't need to set `IGNITE_HOME` with NuGet, except for
 ASP.NET deployments (see below).
 
+To disable this default build action, add the `<ExcludeAssets>build</ExcludeAssets>` https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets[property] to the corresponding `<PackageReference>` in your `.csproj` file.
+This can be useful for thin client use cases and custom deployments.
+
 [tabs]
 --
-tab:Post-Build Event[]
-[source,shell]
+tab:MyApp.csproj[]
+[source,xml]
 ----
-if not exist "$(TargetDir)Libs" md "$(TargetDir)Libs"
-xcopy /s /y "$(SolutionDir)packages\Apache.Ignite.1.6.0\Libs\*.*" "$(TargetDir)Libs"
+<Project Sdk="Microsoft.NET.Sdk">
+    ...
+
+    <ItemGroup>
+      <PackageReference Include="Apache.Ignite" Version="2.9.1">
+          <ExcludeAssets>build</ExcludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>
 ----
 --
+
+== Single File Deployment
+
+Ignite.NET supports link:https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file[single file deployment] that is available in .NET Core 3 / .NET 5+.
+
+* Use the `IncludeAllContentForSelfExtract` MSBuild property to include jar files into the single-file bundle, or ship them separately.
+* See xref:net-troubleshooting.adoc#libcoreclr-not-found[Troubleshooting: DllNotFoundException] for a workaround that is required
+on .NET 5 with some Ignite versions.
+
+Publish command example:
+
+`dotnet publish --self-contained true -r linux-x64 -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true`
+
+== Full Binary Package Deployment
+
+* Copy the https://ignite.apache.org/download.cgi#binaries[whole Ignite distribution package, window=_blank] along with your application
+* Set the `IGNITE_HOME` environment variable or `IgniteConfiguration.IgniteHome` setting to point to that folder
 
 == Custom Deployment
 
@@ -58,7 +81,7 @@ The minimum set of jars for Ignite.NET is:
 
 === Deploying JARs to a default location:
 
-* Copy the JAR files to the `Libs` folder next to Apache.Ignite.Core.dll
+* Copy the JAR files to the `libs` folder next to Apache.Ignite.Core.dll
 * Do not set the `IgniteConfiguration.JvmClasspath`, `IgniteConfiguration.IgniteHome` properties and `IGNITE_HOME` environment variable
 
 === Deploying jar files to an arbitrary location:

@@ -99,10 +99,17 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(
+        Session session,
+        int[] masks,
+        TableFilter[] filters,
+        int filter,
+        SortOrder sortOrder,
+        HashSet<Column> allColumnsSet
+    ) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndexEx(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getCostRangeIndex(session, masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = ((GridH2IndexBase)idx).getDistributedMultiplier(session, filters, filter);
 

@@ -144,7 +144,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V4;
+        return V5;
     }
 
     /** */

@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-To run Ignite with Java 11 or later, follow these steps:
+To run Ignite with Java 11, follow these steps:
 
 1.  Set the `JAVA_HOME` environment variable to point to the Java installation
 directory.
@@ -33,10 +33,6 @@ application:
 --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
 --illegal-access=permit
 ----
-
-3.  TLSv1.3, which is available in Java 11, is not supported at the
-moment. Consider adding `‑Djdk.tls.client.protocols=TLSv1.2` if SSL
-between nodes is used.
 
 
 

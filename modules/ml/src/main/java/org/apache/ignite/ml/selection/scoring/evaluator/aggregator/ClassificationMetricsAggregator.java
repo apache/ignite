@@ -29,7 +29,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
  *
  * @param <L> Type of label.
  */
-public class ClassificationMetricsAggregator<L extends Serializable> implements MetricStatsAggregator<L, EmptyContext<L>, ClassificationMetricsAggregator<L>> {
+public class ClassificationMetricsAggregator<L extends Serializable>
+    implements MetricStatsAggregator<L, EmptyContext<L>, ClassificationMetricsAggregator<L>> {
     /**
      * Serial version uid.
      */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 
 /**
@@ -166,9 +167,10 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         byte[] rowBytes,
         long rightChildId,
         int pageSize,
-        boolean needRowBytes
+        boolean needRowBytes,
+        PageMetrics metrics
     ) throws IgniteCheckedException {
-        initNewPage(newRootPageAddr, newRootId, pageSize);
+        initNewPage(newRootPageAddr, newRootId, pageSize, metrics);
 
         setCount(newRootPageAddr, 1);
         setLeft(newRootPageAddr, 0, leftChildId);

@@ -161,7 +161,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @throws IgniteCheckedException if failed
      */
-    private static void strictCheck(List<FileDescriptor> walFiles, WALPointer lowBound, WALPointer highBound) throws IgniteCheckedException {
+    private static void strictCheck(
+        List<FileDescriptor> walFiles,
+        WALPointer lowBound,
+        WALPointer highBound
+    ) throws IgniteCheckedException {
         int idx = 0;
 
         if (lowBound.index() > Long.MIN_VALUE) {
@@ -354,7 +358,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
-        if (processor != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
+        if (processor != null && (rec.type() == RecordType.DATA_RECORD
+            || rec.type() == RecordType.DATA_RECORD_V2
+            || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
@@ -498,7 +504,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionId(),
                 dataEntry.partitionCounter(),
                 coCtx,
-                keepBinary);
+                keepBinary,
+                dataEntry.flags());
     }
 
     /** {@inheritDoc} */

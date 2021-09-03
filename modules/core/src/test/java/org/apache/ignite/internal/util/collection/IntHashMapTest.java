@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.collection.IntHashMap.INITIAL_CAPACITY;
 import static org.apache.ignite.internal.util.collection.IntHashMap.MAXIMUM_CAPACITY;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test for the specific implementation of IntMap.
@@ -39,14 +44,11 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
     /** */
     @Test
     public void removeBackShift() {
-        HashMap<Integer, Integer> bijection = new HashMap<>();
-        bijection.put(1, 14);
-        bijection.put(2, 14);
-        bijection.put(3, 14);
-        bijection.put(4, 14);
-        bijection.put(5, 14);
-
-        IntMap<String> directPositionMap = bijectionHashFunctionMap(bijection);
+        IntHashMap<String> directPositionMap = new IntHashMap<String>() {
+            @Override protected int index(int key) {
+                return 14;
+            }
+        };
 
         directPositionMap.put(1, value(1));
         directPositionMap.put(2, value(2));
@@ -56,24 +58,17 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
 
         directPositionMap.remove(1);
 
-        Assert.assertEquals(4, directPositionMap.size());
+        assertEquals(4, directPositionMap.size());
     }
 
     /** */
     @Test
     public void distance() {
-        HashMap<Integer, Integer> bijection = new HashMap<>();
-        bijection.put(1, 14);
-        bijection.put(2, 14);
-        bijection.put(3, 14);
-        bijection.put(4, 14);
-        bijection.put(5, 14);
-        bijection.put(6, 14);
-        bijection.put(7, 14);
-        bijection.put(8, 14);
-        bijection.put(9, 14);
-
-        IntHashMap<String> directPositionMap = (IntHashMap<String>)bijectionHashFunctionMap(bijection);
+        IntHashMap<String> directPositionMap = new IntHashMap<String>() {
+            @Override protected int index(int key) {
+                return 14;
+            }
+        };
 
         directPositionMap.put(1, value(1));
         directPositionMap.put(2, value(2));
@@ -115,20 +110,77 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
     }
 
     /**
-     * @param initSize Initial size.
+     * Checking the correctness of {@link IntMap#computeIfAbsent}.
      */
-    private int realCapacityForInitialSize(int initSize) {
-        return ((Object[]) U.field(new IntHashMap<String>(initSize), "entries")).length;
+    @Test
+    public void testComputeIfAbsent() {
+        IntHashMap<Object> map0 = new IntHashMap<>();
+
+        assertThrows(
+            null,
+            () -> map0.computeIfAbsent(0, null),
+            NullPointerException.class,
+            null
+        );
+
+        Map<Integer, Object> map1 = new HashMap<>();
+
+        assertEquals(map1.computeIfAbsent(0, i -> i + " 0"), map0.computeIfAbsent(0, i -> i + " 0"));
+        assertEquals(map1.computeIfAbsent(0, i -> i + " 1"), map0.computeIfAbsent(0, i -> i + " 1"));
+
+        assertEquals(map1.computeIfAbsent(1, i -> i + " 0"), map0.computeIfAbsent(1, i -> i + " 0"));
+        assertEquals(map1.computeIfAbsent(1, i -> i + " 1"), map0.computeIfAbsent(1, i -> i + " 1"));
+
+        assertEquals("0 0", map0.get(0));
+        assertEquals("1 0", map0.get(1));
     }
 
     /**
-     * @param bijection Bijection.
+     * Tests the copy constructor.
      */
-    private IntMap<String> bijectionHashFunctionMap(Map<Integer, Integer> bijection) {
-        return new IntHashMap<String>() {
-            @Override protected int index(int key) {
-                return bijection.get(key);
-            }
-        };
+    @Test
+    public void testCopyConstructor() {
+        IntMap<String> expected = new IntHashMap<>();
+
+        IntStream.range(0, 10).forEach(i -> expected.put(i, String.valueOf(i)));
+
+        IntMap<Object> actual = new IntHashMap<>(expected);
+
+        Object[] expectedKeys = Arrays.stream(expected.keys()).boxed().toArray();
+        Object[] actualKeys = Arrays.stream(actual.keys()).boxed().toArray();
+
+        assertThat(actualKeys, arrayContainingInAnyOrder(expectedKeys));
+
+        expected.forEach((key, expectedVal) -> assertThat(actual.get(key), is((Object) expectedVal)));
+    }
+
+    /**
+     * Tests the {@link IntHashMap#clear} method.
+     */
+    @Test
+    public void testClear() {
+        IntMap<String> map = new IntHashMap<>();
+
+        IntStream.range(0, 10).forEach(i -> map.put(i, String.valueOf(i)));
+
+        assertThat(map.size(), is(10));
+
+        map.clear();
+
+        assertThat(map.size(), is(0));
+
+        IntStream.range(0, 10).forEach(i -> assertThat(map.containsKey(i), is(false)));
+
+        // clear an empty map
+        map.clear();
+
+        assertThat(map.size(), is(0));
+    }
+
+    /**
+     * @param initSize Initial size.
+     */
+    private static int realCapacityForInitialSize(int initSize) {
+        return ((Object[]) U.field(new IntHashMap<String>(initSize), "entries")).length;
     }
 }

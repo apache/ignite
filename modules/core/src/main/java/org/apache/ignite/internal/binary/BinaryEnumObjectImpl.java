@@ -349,7 +349,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     @Override public int putValue(long addr) throws IgniteCheckedException {
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0);
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes);
     }
 
     /** {@inheritDoc} */
@@ -472,5 +472,19 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         }
 
         return reader.afterMessageRead(BinaryEnumObjectImpl.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        if (valBytes == null) {
+            try {
+                valBytes = U.marshal(ctx.marshaller(), this);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        return BinaryPrimitives.readInt(valBytes, ord + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 }

@@ -40,6 +40,11 @@ namespace Apache.Ignite.Core.Client
         InvalidOpCode = 2,
 
         /// <summary>
+        /// Invalid node state (node is stopping or not fully started).
+        /// </summary>
+        InvalidNodeState = 10,
+
+        /// <summary>
         /// Specified cache does not exist.
         /// </summary>
         CacheDoesNotExist = 1000,

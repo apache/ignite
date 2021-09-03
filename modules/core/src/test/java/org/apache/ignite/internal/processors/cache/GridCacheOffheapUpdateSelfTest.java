@@ -123,7 +123,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             ClusterNode locNode = grid.cluster().localNode();
 
-            for (;key < 30; key++) {
+            for (; key < 30; key++) {
                 if (!grid.affinity(DEFAULT_CACHE_NAME).isPrimary(locNode, key) && !grid.affinity(DEFAULT_CACHE_NAME).isBackup(locNode, key))
                     break;
             }

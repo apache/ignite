@@ -156,11 +156,13 @@
     <ClCompile Include="..\..\src\ignite_client.cpp" />
     <ClCompile Include="..\..\src\cache\query\query_fields_cursor.cpp" />
     <ClCompile Include="..\..\src\cache\query\query_fields_row.cpp" />
+    <ClCompile Include="..\..\src\compute\compute_client.cpp" />
     <ClCompile Include="..\..\src\impl\affinity\affinity_assignment.cpp" />
     <ClCompile Include="..\..\src\impl\affinity\affinity_manager.cpp" />
     <ClCompile Include="..\..\src\impl\affinity\affinity_topology_version.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
+    <ClCompile Include="..\..\src\impl\compute\compute_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\data_channel.cpp" />
     <ClCompile Include="..\..\src\impl\data_router.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp" />
@@ -169,6 +171,7 @@
     <ClCompile Include="..\..\src\impl\protocol_version.cpp" />
     <ClCompile Include="..\..\src\impl\remote_type_updater.cpp" />
     <ClCompile Include="..\..\src\impl\utility.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp" />
     <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
     <ClCompile Include="..\..\src\impl\transactions\transactions_proxy.cpp" />
   </ItemGroup>
@@ -186,6 +189,7 @@
     <ClInclude Include="..\..\include\ignite\thin\cache\query\query_fields_cursor.h" />
     <ClInclude Include="..\..\include\ignite\thin\cache\query\query_fields_row.h" />
     <ClInclude Include="..\..\include\ignite\thin\cache\query\query_sql_fields.h" />
+    <ClInclude Include="..\..\include\ignite\thin\compute\compute_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />
     <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h" />
@@ -199,6 +203,7 @@
     <ClInclude Include="..\..\src\impl\cache\query\cursor_page.h" />
     <ClInclude Include="..\..\src\impl\cache\query\query_fields_cursor_impl.h" />
     <ClInclude Include="..\..\src\impl\cache\query\query_fields_row_impl.h" />
+    <ClInclude Include="..\..\src\impl\compute\compute_client_impl.h" />
     <ClInclude Include="..\..\src\impl\data_channel.h" />
     <ClInclude Include="..\..\src\impl\data_router.h" />
     <ClInclude Include="..\..\src\impl\ignite_client_impl.h" />
