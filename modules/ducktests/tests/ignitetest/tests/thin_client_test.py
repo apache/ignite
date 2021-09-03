@@ -94,7 +94,7 @@ class ThinClientTest(IgniteTest):
         ControlUtility(cluster=ignite).activate()
 
 
-        for i in range(20):
+        for i in range(2):
             ignite.freeze_node(ignite.nodes[0])
             thin_clients.start_async()
             thin_clients.await_started()
