@@ -169,9 +169,9 @@ public class SecurityUtils {
 
     /** 
      * @return Current security context if it is different from local node security context, otherwise {@code null}. 
-     * @see #withSecurityContext(GridKernalContext, SecurityContext) 
+     * @see #withRemoteSecurityContext(GridKernalContext, SecurityContext)
      */
-    public static SecurityContext currentSecurityContext(GridKernalContext ctx) {
+    public static SecurityContext remoteSecurityContext(GridKernalContext ctx) {
         IgniteSecurity security = ctx.security();
 
         if (!security.enabled() || security.isDefaultContext())
@@ -205,7 +205,7 @@ public class SecurityUtils {
      * (e.g. in system workers).
      * @return {@link OperationSecurityContext} instance if new security context is set, otherwise {@code null}.
      */
-    public static OperationSecurityContext withSecurityContext(GridKernalContext ctx, SecurityContext secCtx) {
+    public static OperationSecurityContext withRemoteSecurityContext(GridKernalContext ctx, SecurityContext secCtx) {
         if (secCtx == null)
             return null;
 

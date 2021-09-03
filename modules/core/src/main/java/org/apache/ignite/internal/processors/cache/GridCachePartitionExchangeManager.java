@@ -187,8 +187,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.currentSecurityContext;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 
 /**
@@ -726,7 +726,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-            SecurityContext secCtx = currentSecurityContext(cctx.kernalContext());
+            SecurityContext secCtx = remoteSecurityContext(cctx.kernalContext());
 
             exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(secCtx, evt.eventNode()));
             exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(secCtx, evt.eventNode()));
@@ -3005,7 +3005,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         void forceReassign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture fut) {
             if (!hasPendingExchange())
-                futQ.add(new RebalanceReassignExchangeTask(currentSecurityContext(cctx.kernalContext()), exchId, fut));
+                futQ.add(new RebalanceReassignExchangeTask(remoteSecurityContext(cctx.kernalContext()), exchId, fut));
         }
 
         /**
@@ -3015,7 +3015,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
             GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-            futQ.add(new ForceRebalanceExchangeTask(currentSecurityContext(cctx.kernalContext()), exchId, fut));
+            futQ.add(new ForceRebalanceExchangeTask(remoteSecurityContext(cctx.kernalContext()), exchId, fut));
 
             return fut;
         }
@@ -3025,7 +3025,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
             StopCachesOnClientReconnectExchangeTask task =
-                new StopCachesOnClientReconnectExchangeTask(currentSecurityContext(cctx.kernalContext()), caches);
+                new StopCachesOnClientReconnectExchangeTask(remoteSecurityContext(cctx.kernalContext()), caches);
 
             futQ.add(task);
 
@@ -3038,7 +3038,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param rebalanceId Rebalance id.
          */
         void finishPreloading(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
-            futQ.add(new FinishPreloadingTask(currentSecurityContext(cctx.kernalContext()), topVer, grpId, rebalanceId));
+            futQ.add(new FinishPreloadingTask(remoteSecurityContext(cctx.kernalContext()), topVer, grpId, rebalanceId));
         }
 
         /**
@@ -3275,7 +3275,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    try (OperationSecurityContext c = withSecurityContext(cctx.kernalContext(), task.securityContext())) {
+                    try (OperationSecurityContext c = withRemoteSecurityContext(cctx.kernalContext(), task.securityContext())) {
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
 

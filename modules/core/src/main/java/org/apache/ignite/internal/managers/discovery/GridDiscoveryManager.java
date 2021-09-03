@@ -181,10 +181,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.currentSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -781,7 +781,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                SecurityContext secCtx = currentSecurityContext(ctx);
+                SecurityContext secCtx = remoteSecurityContext(ctx);
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
@@ -2375,9 +2375,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     localNode(),
                     null,
                     Collections.<ClusterNode>emptyList(),
-                    new ClientCacheChangeDummyDiscoveryMessage(currentSecurityContext(ctx), reqId, startReqs, cachesToClose),
+                    new ClientCacheChangeDummyDiscoveryMessage(remoteSecurityContext(ctx), reqId, startReqs, cachesToClose),
                     null,
-                    currentSecurityContext(ctx)
+                    remoteSecurityContext(ctx)
                 )
             );
         }
@@ -2399,7 +2399,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 discoCache.nodeMap.values(),
                 null,
                 null,
-                currentSecurityContext(ctx)
+                remoteSecurityContext(ctx)
             )
         );
     }
@@ -2796,7 +2796,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 locNodeOnlyTop,
                                 null,
                                 null,
-                                currentSecurityContext(ctx)
+                                remoteSecurityContext(ctx)
                             )
                         );
 
@@ -3121,7 +3121,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            try (OperationSecurityContext ignored = withSecurityContext(ctx, evt.secCtx)) {
+            try (OperationSecurityContext ignored = withRemoteSecurityContext(ctx, evt.secCtx)) {
                 int type = evt.type;
 
                 AffinityTopologyVersion topVer = evt.topVer;

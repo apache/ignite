@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.currentSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 
 /**
  *
@@ -41,7 +41,7 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
         super(timeout);
 
         this.cctx = cctx;
-        secCtx = currentSecurityContext(cctx.kernalContext());
+        secCtx = remoteSecurityContext(cctx.kernalContext());
     }
 
     /** {@inheritDoc} */
