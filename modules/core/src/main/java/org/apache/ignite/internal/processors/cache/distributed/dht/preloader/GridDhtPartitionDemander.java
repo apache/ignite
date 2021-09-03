@@ -347,7 +347,9 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) && assignments != null) {
+        if (delay == 0 || force) {
+            assert assignments != null;
+
             final RebalanceFuture oldFut = rebalanceFut;
 
             if (assignments.cancelled()) { // Pending exchange.
@@ -483,9 +485,9 @@ public class GridDhtPartitionDemander {
             }
 
             if (historical) // Can not be reordered.
-                ctx.kernalContext().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
+                ctx.kernalContext().pools().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
             else // Can be reordered.
-                ctx.kernalContext().getRebalanceExecutorService().execute(r);
+                ctx.kernalContext().pools().getRebalanceExecutorService().execute(r);
         }
     }
 
@@ -648,7 +650,7 @@ public class GridDhtPartitionDemander {
                                     if (grp.mvccEnabled())
                                         mvccPreloadEntries(topVer, node, p, infosWrap);
                                     else {
-                                        preloadEntries(topVer, p, infosWrap);
+                                        preloadEntries(topVer, part, infosWrap);
 
                                         rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
                                     }
@@ -770,7 +772,7 @@ public class GridDhtPartitionDemander {
 
                 ctx.kernalContext().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(100) {
                     @Override public void onTimeout() {
-                        ctx.kernalContext().getRebalanceExecutorService().execute(() ->
+                        ctx.kernalContext().pools().getRebalanceExecutorService().execute(() ->
                             ownPartition(fut, p, nodeId, supplyMsg));
                     }
                 });
@@ -871,19 +873,19 @@ public class GridDhtPartitionDemander {
      * Adds entries to partition p.
      *
      * @param topVer Topology version.
-     * @param p Partition id.
+     * @param part Local partition.
      * @param infos Entries info for preload.
      * @throws IgniteCheckedException If failed.
      */
     private void preloadEntries(
         AffinityTopologyVersion topVer,
-        int p,
+        GridDhtLocalPartition part,
         Iterator<GridCacheEntryInfo> infos
     ) throws IgniteCheckedException {
         // Received keys by caches, for statistics.
         IntHashMap<GridMutableLong> receivedKeys = new IntHashMap<>();
 
-        grp.offheap().storeEntries(p, infos, new IgnitePredicateX<CacheDataRow>() {
+        grp.offheap().storeEntries(part, infos, new IgnitePredicateX<CacheDataRow>() {
             /** {@inheritDoc} */
             @Override public boolean applyx(CacheDataRow row) throws IgniteCheckedException {
                 receivedKeys.computeIfAbsent(row.cacheId(), cid -> new GridMutableLong()).incrementAndGet();

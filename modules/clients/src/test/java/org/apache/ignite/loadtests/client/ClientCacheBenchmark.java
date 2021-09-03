@@ -18,10 +18,10 @@
 package org.apache.ignite.loadtests.client;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Random;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
@@ -31,6 +31,7 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientPartitionAffinity;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridFileLock;
@@ -252,7 +253,7 @@ public class ClientCacheBenchmark {
                         GridLoadTestUtils.appendLineToFile(
                             outputFileName,
                             "%s,%d",
-                            GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                            IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                             Math.round(benchmark.getItersPerSec()));
                     }
                     catch (IOException e) {

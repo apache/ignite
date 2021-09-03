@@ -15,27 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
+package org.apache.ignite.internal.processors.localtask;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.PageLockStackSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 
 /**
- * Dump processor.
+ * The task to be convertible after restoring from metaStorage.
  */
-public interface DumpProcessor {
-    /**
-     * @param snapshot Process lock log snapshot.
-     */
-    void processDump(PageLockLogSnapshot snapshot);
+class ConvertibleTask extends SimpleTask {
+    /** Serial version UID. */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @param snapshot Process lock stack snapshot.
+     * Default constructor.
      */
-    void processDump(PageLockStackSnapshot snapshot);
+    public ConvertibleTask() {
+        // No-op.
+    }
 
     /**
-     * @param snapshot Process lock thread dump snapshot.
+     * Constructor.
+     *
+     * @param name Task name.
      */
-    void processDump(ThreadPageLocksDumpLock snapshot);
+    public ConvertibleTask(String name) {
+        super(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
+        return new SimpleTask("converted-task-" + name());
+    }
 }

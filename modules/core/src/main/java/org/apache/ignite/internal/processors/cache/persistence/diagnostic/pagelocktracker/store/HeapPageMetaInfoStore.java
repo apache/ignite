@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,49 +25,31 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class HeapPageMetaInfoStore implements PageMetaInfoStore {
-    /**
-     *
-     */
+    /** */
     private static final int OVERHEAD_SIZE = 8 + 16 + 8 + 8;
 
-    /**
-     *
-     */
+    /** */
     private static final int PAGE_ID_OFFSET = 0;
 
-    /**
-     *
-     */
+    /** */
     private static final int PAGE_HEADER_ADDRESS_OFFSET = 1;
 
-    /**
-     *
-     */
+    /** */
     private static final int PAGE_ADDRESS_OFFSET = 2;
 
-    /**
-     *
-     */
+    /** */
     private static final int PAGE_META_OFFSET = 3;
 
-    /**
-     *
-     */
+    /** */
     private static final int ITEM_SIZE = 4;
 
-    /**
-     *
-     */
+    /** */
     private long[] arr;
 
-    /**
-     *
-     */
+    /** */
     private final MemoryCalculator memoryCalc;
 
-    /**
-     *
-     */
+    /** */
     public HeapPageMetaInfoStore(int capacity, @Nullable MemoryCalculator memoryCalc) {
         this.arr = new long[capacity * ITEM_SIZE];
         this.memoryCalc = memoryCalc;

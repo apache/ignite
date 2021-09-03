@@ -143,6 +143,9 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected boolean onHasNext() throws IgniteCheckedException {
+        if (curException != null)
+            throw curException;
+
         return curRec != null;
     }
 

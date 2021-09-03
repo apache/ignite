@@ -796,6 +796,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
+                        ctx.security().onLocalJoin();
+
                         ctx.cache().context().versions().onLocalJoin(topVer);
 
                         ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
@@ -853,6 +855,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
                     assert locNode.isClient() : locNode;
                     assert node.isClient() : node;
+
+                    ctx.security().onLocalJoin();
 
                     boolean clusterRestarted = gridStartTime != getSpi().getGridStartTime();
 

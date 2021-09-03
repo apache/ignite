@@ -44,7 +44,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -68,6 +68,12 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
  * BPlusTree where nodes stores inlined index keys.
  */
 public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
+    /**
+     * Default sql index size for types with variable length (such as String or byte[]).
+     * Note that effective length will be lower, because 3 bytes will be taken for the inner representation of variable type.
+     */
+    public static final int IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE = 10;
+
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
 
@@ -86,11 +92,11 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** */
     private final InlineIndexRowHandler rowHnd;
 
-    /** Cache context. */
-    private final GridCacheContext<?, ?> cctx;
+    /** Cache group context. */
+    private final CacheGroupContext grpCtx;
 
     /** Statistics holder used by underlying BPlusTree. */
-    private final IoStatisticsHolder stats;
+    @Nullable private final IoStatisticsHolder stats;
 
     /** */
     private final IgniteLogger log;
@@ -106,7 +112,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      */
     public InlineIndexTree(
         SortedIndexDefinition def,
-        GridCacheContext<?, ?> cctx,
+        CacheGroupContext grpCtx,
         String treeName,
         IgniteCacheOffheapManager offheap,
         ReuseList reuseList,
@@ -115,29 +121,31 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         long metaPageId,
         boolean initNew,
         int configuredInlineSize,
+        int maxInlineSize,
         IndexKeyTypeSettings keyTypeSettings,
         @Nullable IndexRowCache idxRowCache,
         @Nullable IoStatisticsHolder stats,
         InlineIndexRowHandlerFactory rowHndFactory,
-        InlineRecommender recommender) throws IgniteCheckedException {
+        InlineRecommender recommender
+    ) throws IgniteCheckedException {
         super(
             treeName,
-            cctx.groupId(),
-            cctx.group().name(),
+            grpCtx.groupId(),
+            grpCtx.name(),
             pageMemory,
-            cctx.shared().wal(),
+            grpCtx.shared().wal(),
             offheap.globalRemoveId(),
             metaPageId,
             reuseList,
             PageIdAllocator.FLAG_IDX,
-            cctx.shared().kernalContext().failure(),
-            null,
+            grpCtx.shared().kernalContext().failure(),
+            grpCtx.shared().diagnostic().pageLockTracker(),
             pageIoResolver
         );
 
-        this.cctx = cctx;
+        this.grpCtx = grpCtx;
 
-        log = cctx.kernalContext().config().getGridLogger();
+        log = grpCtx.shared().kernalContext().config().getGridLogger();
 
         this.stats = stats;
 
@@ -147,7 +155,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         this.idxRowCache = idxRowCache;
 
-        mvccEnabled = cctx.mvccEnabled();
+        mvccEnabled = grpCtx.mvccEnabled();
 
         if (!initNew) {
             // Init from metastore.
@@ -177,7 +185,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
-                rowHnd.inlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
+                rowHnd.inlineIndexKeyTypes(), rowHnd.indexKeyDefinitions(),
+                configuredInlineSize, maxInlineSize);
 
             setIos(inlineSize, mvccEnabled);
         }
@@ -374,7 +383,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        row.initFromLink(cacheContext().group(), CacheDataRowAdapter.RowData.FULL, true);
+        row.initFromLink(cacheGroupContext(), CacheDataRowAdapter.RowData.FULL, true);
 
         IndexRowImpl r = new IndexRowImpl(rowHandler(), row);
 
@@ -394,7 +403,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
         MvccDataRow row = new MvccDataRow(
-            cacheContext().group(),
+            cacheGroupContext(),
             0,
             link,
             partId,
@@ -427,12 +436,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /**
      * @param keyTypes Index key types.
+     * @param keyDefs Index key definitions.
      * @param cfgInlineSize Inline size from index config.
      * @param maxInlineSize Max inline size from cache config.
      * @return Inline size.
      */
     public static int computeInlineSize(
         List<InlineIndexKeyType> keyTypes,
+        List<IndexKeyDefinition> keyDefs,
         int cfgInlineSize,
         int maxInlineSize
     ) {
@@ -451,25 +462,43 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int size = 0;
 
-        for (InlineIndexKeyType keyType: keyTypes) {
-            if (keyType.inlineSize() <= 0) {
+        for (int i = 0; i < keyTypes.size(); i++) {
+            InlineIndexKeyType keyType = keyTypes.get(i);
+
+            int sizeInc = keyType.inlineSize();
+
+            if (sizeInc < 0) {
+                int precision = keyDefs.get(i).precision();
+
+                if (precision > 0)
+                    // 3 is required to store (type, length) of value.
+                    sizeInc = 3 + precision;
+                else
+                    sizeInc = IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE;
+            }
+
+            size += sizeInc;
+
+            if (size > propSize) {
                 size = propSize;
                 break;
             }
-
-            size += keyType.inlineSize();
         }
 
         return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
     }
 
-    /** */
-    public GridCacheContext<?, ?> cacheContext() {
-        return cctx;
+    /**
+     * Getting cache group context.
+     *
+     * @return Cache group context.
+     */
+    public CacheGroupContext cacheGroupContext() {
+        return grpCtx;
     }
 
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 64;
 
     /**
      * @return Inline size.
@@ -587,13 +616,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** {@inheritDoc} */
     @Override protected void temporaryReleaseLock() {
-        cctx.kernalContext().cache().context().database().checkpointReadUnlock();
-        cctx.kernalContext().cache().context().database().checkpointReadLock();
+        grpCtx.shared().database().checkpointReadUnlock();
+        grpCtx.shared().database().checkpointReadLock();
     }
 
     /** {@inheritDoc} */
     @Override protected long maxLockHoldTime() {
-        long sysWorkerBlockedTimeout = cctx.kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
+        long sysWorkerBlockedTimeout = grpCtx.shared().kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
 
         // Using timeout value reduced by 10 times to increase possibility of lock releasing before timeout.
         return sysWorkerBlockedTimeout == 0 ? Long.MAX_VALUE : (sysWorkerBlockedTimeout / 10);

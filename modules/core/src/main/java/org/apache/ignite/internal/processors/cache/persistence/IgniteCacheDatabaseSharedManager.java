@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -97,6 +96,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
@@ -295,8 +296,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             String freeListName = memPlcCfg.getName() + "##FreeList";
 
-            PageLockListener lsnr = cctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName);
-
             CacheFreeList freeList = new CacheFreeList(
                 0,
                 freeListName,
@@ -304,7 +303,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 persistenceEnabled ? cctx.wal() : null,
                 0L,
                 true,
-                lsnr,
+                cctx.diagnostic().pageLockTracker(),
                 cctx.kernalContext(),
                 null,
                 PageIdAllocator.FLAG_IDX
@@ -649,14 +648,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             long min = memCfg.getMinWalArchiveSize();
 
-            if (min != HALF_MAX_WAL_ARCHIVE_SIZE && min > max) {
-                throw new IgniteCheckedException(String.format(
-                    "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
-                        "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
-                        "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
-                        "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
-                        "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
-                    HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+            double percentage = getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, -1);
+
+            if (min != HALF_MAX_WAL_ARCHIVE_SIZE) {
+                if (min > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
+                            "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
+                            "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
+                            "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
+                            "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
+                        HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+                }
+            }
+            else if (percentage != -1) {
+                log.warning(String.format(
+                    "%s is deprecated, use DataRegionConfiguration.minWalArchiveSize instead",
+                    IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                ));
+
+                if ((long)(max * percentage) > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "%s must be less than or equal to 1.0",
+                        IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                    ));
+                }
             }
         }
     }
@@ -1483,6 +1499,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param shutdown {@code True} to force memory regions shutdown.
      */
     private void onDeActivate(boolean shutdown) {
+        if (freeListMap != null)
+            freeListMap.values().forEach(DataStructure::close);
+
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
