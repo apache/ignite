@@ -124,4 +124,9 @@ public class IgniteStatisticsDummyStoreImpl implements IgniteStatisticsStore {
     @Override public Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> loadAllObsolescence() {
         return Collections.emptyMap();
     }
+
+    /** {@inheritDoc} */
+    @Override public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap() {
+        return Collections.emptyMap();
+    }
 }

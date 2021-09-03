@@ -48,9 +48,6 @@ import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsH
 @RunWith(Parameterized.class)
 public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositoryStaticTest {
     /** */
-    public static final StatisticsKey T1_KEY = new StatisticsKey(SCHEMA, "t1");
-
-    /** */
     public static final StatisticsKey T2_KEY = new StatisticsKey(SCHEMA, "t2");
 
     /** */

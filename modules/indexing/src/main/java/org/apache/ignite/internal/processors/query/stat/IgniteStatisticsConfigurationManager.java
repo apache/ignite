@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
-import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.ColumnConfigurationViewSupplier;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -241,50 +241,11 @@ public class IgniteStatisticsConfigurationManager {
 
         this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
+        ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
+            logSupplier);
         sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
-            new StatisticsColumnConfigurationViewWalker(), this::columnConfigurationViewSupplier, Function.identity());
-    }
-
-    /**
-     * Statistics column configuration view filterable supplier.
-     *
-     * @param filter Filter.
-     * @return Iterable with selected statistics column configuration views.
-     */
-    private Iterable<StatisticsColumnConfigurationView> columnConfigurationViewSupplier(Map<String, Object> filter) {
-        String schema = (String)filter.get(StatisticsColumnConfigurationViewWalker.SCHEMA_FILTER);
-        String name = (String)filter.get(StatisticsColumnConfigurationViewWalker.NAME_FILTER);
-
-        Collection<StatisticsObjectConfiguration> configs;
-        try {
-            if (!F.isEmpty(schema) && !F.isEmpty(name)) {
-                StatisticsKey key = new StatisticsKey(schema, name);
-                StatisticsObjectConfiguration keyCfg = config(key);
-
-                if (keyCfg == null)
-                    return Collections.emptyList();
-
-                configs = Collections.singletonList(keyCfg);
-            }
-            else
-                configs = getAllConfig();
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Error while getting statistics configuration: " + e.getMessage(), e);
-
-            configs = Collections.emptyList();
-        }
-
-        List<StatisticsColumnConfigurationView> res = new ArrayList<>();
-
-        for (StatisticsObjectConfiguration cfg : configs) {
-            for (StatisticsColumnConfiguration colCfg : cfg.columnsAll().values()) {
-                if (!colCfg.tombstone())
-                    res.add(new StatisticsColumnConfigurationView(cfg, colCfg));
-            }
-        }
-
-        return res;
+            new StatisticsColumnConfigurationViewWalker(), colCfgViewSupplier::columnConfigurationViewSupplier,
+            Function.identity());
     }
 
     /**
@@ -336,7 +297,10 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager stopped.");
     }
 
-    /** */
+    /** Brings statistics repository state to configuration for the given topology version.
+     *
+     * @param topVer Topology version to all operations.
+     */
     private void scanAndCheckLocalStatistics(AffinityTopologyVersion topVer) {
         mgmtPool.submit(() -> {
             Map<StatisticsObjectConfiguration, Set<Integer>> res = new HashMap<>();
@@ -563,98 +527,105 @@ public class IgniteStatisticsConfigurationManager {
             GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
 
             if (tbl == null) {
-                // Drop tables handle by onDropTable
-                return Collections.emptySet();
-            }
-
-            GridCacheContext cctx = tbl.cacheContext();
-
-            if (cctx == null)
-                return Collections.emptySet();
-
-            AffinityTopologyVersion topVer0 = cctx.affinity().affinityReadyFuture(topVer).get();
-
-            final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
-
-            if (F.isEmpty(parts)) {
-                // There is no data on the node for specified cache.
-                // Remove oll data
-                dropColumnsOnLocalStatistics(cfg, cfg.columns().keySet());
+                repo.clearLocalStatistics(cfg.key());
+                repo.clearLocalPartitionsStatistics(cfg.key(), null);
 
                 return Collections.emptySet();
             }
 
-            final Set<Integer> partsOwn = new HashSet<>(
-                cctx.affinity().backupPartitions(cctx.localNodeId(), topVer0)
-            );
+            GridCacheContext<?, ?> cctx = tbl.cacheContext();
 
-            partsOwn.addAll(parts);
+            if (cctx == null || !(cctx.gate().enterIfNotStopped()))
+                return Collections.emptySet();
 
-            if (log.isDebugEnabled())
-                log.debug("Check local statistics [key=" + cfg + ", parts=" + parts + ']');
+            try {
+                AffinityTopologyVersion topVer0 = cctx.affinity().affinityReadyFuture(topVer).get();
 
-            Collection<ObjectPartitionStatisticsImpl> partStats = repo.getLocalPartitionsStatistics(cfg.key());
+                final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
-            Set<Integer> partsToRmv = new HashSet<>();
-            Set<Integer> partsToCollect = new HashSet<>(parts);
-            Map<String, StatisticsColumnConfiguration> colsToCollect = new HashMap<>();
-            Set<String> colsToRmv = new HashSet<>();
+                if (F.isEmpty(parts)) {
+                    // There is no data on the node for specified cache.
+                    // Remove oll data
+                    dropColumnsOnLocalStatistics(cfg, cfg.columns().keySet());
 
-            if (!F.isEmpty(partStats)) {
-                for (ObjectPartitionStatisticsImpl pstat : partStats) {
-                    if (!partsOwn.contains(pstat.partId()))
-                        partsToRmv.add(pstat.partId());
+                    return Collections.emptySet();
+                }
 
-                    boolean partExists = true;
+                final Set<Integer> partsOwn = new HashSet<>(
+                    cctx.affinity().backupPartitions(cctx.localNodeId(), topVer0)
+                );
 
-                    for (StatisticsColumnConfiguration colCfg : cfg.columnsAll().values()) {
-                        ColumnStatistics colStat = pstat.columnStatistics(colCfg.name());
+                partsOwn.addAll(parts);
 
-                        if (colCfg.tombstone()) {
-                            if (colStat != null)
-                                colsToRmv.add(colCfg.name());
-                        }
-                        else {
-                            if (colStat == null || colStat.version() < colCfg.version()) {
-                                colsToCollect.put(colCfg.name(), colCfg);
+                if (log.isDebugEnabled())
+                    log.debug("Check local statistics [key=" + cfg + ", parts=" + parts + ']');
 
-                                partsToCollect.add(pstat.partId());
+                Collection<ObjectPartitionStatisticsImpl> partStats = repo.getLocalPartitionsStatistics(cfg.key());
 
-                                partExists = false;
+                Set<Integer> partsToRmv = new HashSet<>();
+                Set<Integer> partsToCollect = new HashSet<>(parts);
+                Map<String, StatisticsColumnConfiguration> colsToCollect = new HashMap<>();
+                Set<String> colsToRmv = new HashSet<>();
+
+                if (!F.isEmpty(partStats)) {
+                    for (ObjectPartitionStatisticsImpl pstat : partStats) {
+                        if (!partsOwn.contains(pstat.partId()))
+                            partsToRmv.add(pstat.partId());
+
+                        boolean partExists = true;
+
+                        for (StatisticsColumnConfiguration colCfg : cfg.columnsAll().values()) {
+                            ColumnStatistics colStat = pstat.columnStatistics(colCfg.name());
+
+                            if (colCfg.tombstone()) {
+                                if (colStat != null)
+                                    colsToRmv.add(colCfg.name());
+                            }
+                            else {
+                                if (colStat == null || colStat.version() < colCfg.version()) {
+                                    colsToCollect.put(colCfg.name(), colCfg);
+
+                                    partsToCollect.add(pstat.partId());
+
+                                    partExists = false;
+                                }
                             }
                         }
+
+                        if (partExists)
+                            partsToCollect.remove(pstat.partId());
+                    }
+                }
+
+                if (!F.isEmpty(partsToRmv)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Remove local partitioned statistics [key=" + cfg.key() +
+                            ", part=" + partsToRmv + ']');
                     }
 
-                    if (partExists)
-                        partsToCollect.remove(pstat.partId());
-                }
-            }
+                    partsToRmv.forEach(p -> {
+                        assert !partsToCollect.contains(p);
 
-            if (!F.isEmpty(partsToRmv)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Remove local partitioned statistics [key=" + cfg.key() +
-                        ", part=" + partsToRmv + ']');
+                        repo.clearLocalPartitionStatistics(cfg.key(), p);
+                    });
                 }
 
-                partsToRmv.forEach(p -> {
-                    assert !partsToCollect.contains(p);
+                if (!F.isEmpty(colsToRmv))
+                    dropColumnsOnLocalStatistics(cfg, colsToRmv);
 
-                    repo.clearLocalPartitionStatistics(cfg.key(), p);
-                });
+                if (!F.isEmpty(partsToCollect))
+                    gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect);
+                else {
+                    // All local statistics by partition are available.
+                    // Only refresh aggregated local statistics.
+                    gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts));
+                }
+
+                return parts;
             }
-
-            if (!F.isEmpty(colsToRmv))
-                dropColumnsOnLocalStatistics(cfg, colsToRmv);
-
-            if (!F.isEmpty(partsToCollect))
-                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect);
-            else {
-                // All local statistics by partition are available.
-                // Only refresh aggregated local statistics.
-                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts));
+            finally {
+                cctx.gate().leave();
             }
-
-            return parts;
         }
         catch (Throwable ex) {
             log.error("Unexpected error on check local statistics", ex);
@@ -664,7 +635,7 @@ public class IgniteStatisticsConfigurationManager {
     }
 
     /**
-     * Match local statistic with changes of statistic configuration:
+     * Match local statistic with changes of statistic configuration for the given key:
      * - update statistics;
      * - drop columns;
      * - add new columns to collect statistics.
@@ -743,22 +714,26 @@ public class IgniteStatisticsConfigurationManager {
         gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), partsToAggregate));
     }
 
-    /** */
+    /**
+     * Drop specified columns.
+     *
+     * @param cfg New Configuration to drop columns by.
+     * @param cols Columns to drop.
+     */
     private void dropColumnsOnLocalStatistics(StatisticsObjectConfiguration cfg, Set<String> cols) {
-        if (log.isDebugEnabled()) {
-            log.debug("Remove local statistics [key=" + cfg.key() +
-                ", columns=" + cols + ']');
-        }
+        if (log.isDebugEnabled())
+            log.debug("Remove local statistics [key=" + cfg.key() + ", columns=" + cols + ']');
 
         LocalStatisticsGatheringContext gCtx = gatherer.gatheringInProgress(cfg.key());
 
         if (gCtx != null) {
-            gCtx.futureAggregate().thenAccept((v) -> {
+            gCtx.futureAggregate().thenAcceptAsync((v) -> {
                 repo.clearLocalStatistics(cfg.key(), cols);
                 repo.clearLocalPartitionsStatistics(cfg.key(), cols);
-            });
+            }, gatherer.gatheringPool());
         }
         else {
+            // TODO
             repo.clearLocalStatistics(cfg.key(), cols);
             repo.clearLocalPartitionsStatistics(cfg.key(), cols);
         }

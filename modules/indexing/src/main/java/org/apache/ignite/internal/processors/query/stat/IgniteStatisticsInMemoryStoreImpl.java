@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -161,14 +162,33 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
     }
 
     /** {@inheritDoc} */
+    @Override public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap() {
+        Map<StatisticsKey, Collection<Integer>> res = new HashMap<>();
+
+        obsStats.forEach((k, v) -> {
+            int[] keys = v.keys();
+            List<Integer> partIds = new ArrayList<>(keys.length);
+
+            for (int i = 0; i < keys.length; i++)
+                partIds.add(keys[i]);
+
+            res.put(k, partIds);
+        });
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public ObjectPartitionStatisticsImpl getLocalPartitionStatistics(StatisticsKey key, int partId) {
         ObjectPartitionStatisticsImpl[] res = new ObjectPartitionStatisticsImpl[1];
+
         partsStats.computeIfPresent(key, (k, v) -> {
             // Need to access the map under the lock.
             res[0] = v.get(partId);
 
             return v;
         });
+
         return res[0];
     }
 
@@ -203,11 +223,13 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
         Collection<ObjectPartitionStatisticsImpl> statistics
     ) {
         IntMap<ObjectPartitionStatisticsImpl> statisticsMap = new IntHashMap<ObjectPartitionStatisticsImpl>();
+
         for (ObjectPartitionStatisticsImpl s : statistics) {
             if (statisticsMap.put(s.partId(), s) != null)
                 log.warning(String.format("Trying to save more than one %s.%s partition statistics for partition %d",
                     key.schema(), key.obj(), s.partId()));
         }
+
         return statisticsMap;
     }
 }

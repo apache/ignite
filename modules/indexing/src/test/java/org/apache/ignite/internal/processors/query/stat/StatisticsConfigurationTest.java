@@ -217,6 +217,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
      */
     @Test
     public void updateStatisticsOnChangeTopology() throws Exception {
+        log.info("Starting server 0 node");
         startGridAndChangeBaseline(0);
 
         createSmallTable(null);
@@ -225,31 +226,40 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting client cli node");
         startClientGrid("cli");
+
+        log.info("Starting server 1 node");
         startGridAndChangeBaseline(1);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting server 2 node");
         startGridAndChangeBaseline(2);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting server 2 node");
         startGridAndChangeBaseline(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Stoppping server 0 node");
         stopGridAndChangeBaseline(0);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Stopping server 2 node");
         stopGridAndChangeBaseline(2);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Stopping server 3 node");
         stopGridAndChangeBaseline(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting server 3 node");
         startGridAndChangeBaseline(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,9 +35,8 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnLocalDataViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnPartitionDataViewWalker;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
-import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
-import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
-import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
+import org.apache.ignite.internal.processors.query.stat.view.ColumnLocalDataViewSupplier;
+import org.apache.ignite.internal.processors.query.stat.view.ColumnPartitionDataViewSupplier;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -75,7 +73,7 @@ public class IgniteStatisticsRepository {
     private final IgniteStatisticsHelper helper;
 
     /** Started flag. */
-    private AtomicBoolean started = new AtomicBoolean(false);
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * Constructor.
@@ -93,135 +91,17 @@ public class IgniteStatisticsRepository {
     ) {
         this.store = store;
         this.helper = helper;
-        this.log = logSupplier.apply(IgniteStatisticsRepository.class);
+        log = logSupplier.apply(IgniteStatisticsRepository.class);
 
+        ColumnPartitionDataViewSupplier colPartDataViewSupplier = new ColumnPartitionDataViewSupplier(store);
         sysViewMgr.registerFiltrableView(STAT_PART_DATA_VIEW, STAT_PART_DATA_VIEW_DESC,
-            new StatisticsColumnPartitionDataViewWalker(), this::columnPartitionStatisticsViewSupplier,
+            new StatisticsColumnPartitionDataViewWalker(), colPartDataViewSupplier::columnPartitionStatisticsViewSupplier,
             Function.identity());
 
+        ColumnLocalDataViewSupplier colLocDataViewSupplier = new ColumnLocalDataViewSupplier(this);
         sysViewMgr.registerFiltrableView(STAT_LOCAL_DATA_VIEW, STAT_LOCAL_DATA_VIEW_DESC,
-            new StatisticsColumnLocalDataViewWalker(), this::columnLocalStatisticsViewSupplier,
+            new StatisticsColumnLocalDataViewWalker(), colLocDataViewSupplier::columnLocalStatisticsViewSupplier,
             Function.identity());
-    }
-
-    /**
-     * Statistics column partition data view filterable supplier.
-     *
-     * @param filter Filter.
-     * @return Iterable with statistics column partition data views.
-     */
-    private Iterable<StatisticsColumnPartitionDataView> columnPartitionStatisticsViewSupplier(
-        Map<String, Object> filter
-    ) {
-        String type = (String)filter.get(StatisticsColumnPartitionDataViewWalker.TYPE_FILTER);
-
-        if (type != null && !StatisticsColumnConfigurationView.TABLE_TYPE.equalsIgnoreCase(type))
-            return Collections.emptyList();
-
-        String schema = (String)filter.get(StatisticsColumnPartitionDataViewWalker.SCHEMA_FILTER);
-        String name = (String)filter.get(StatisticsColumnPartitionDataViewWalker.NAME_FILTER);
-        Integer partId = (Integer)filter.get(StatisticsColumnPartitionDataViewWalker.PARTITION_FILTER);
-        String column = (String)filter.get(StatisticsColumnPartitionDataViewWalker.COLUMN_FILTER);
-
-        Map<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> partsStatsMap;
-
-        if (!F.isEmpty(schema) && !F.isEmpty(name)) {
-            StatisticsKey key = new StatisticsKey(schema, name);
-            Collection<ObjectPartitionStatisticsImpl> keyStat;
-
-            if (partId == null)
-                keyStat = store.getLocalPartitionsStatistics(key);
-            else {
-                ObjectPartitionStatisticsImpl partStat = store.getLocalPartitionStatistics(key, partId);
-                keyStat = (partStat == null) ? Collections.emptyList() : Collections.singletonList(partStat);
-            }
-
-            partsStatsMap = Collections.singletonMap(key, keyStat);
-        }
-        else
-            partsStatsMap = store.getAllLocalPartitionsStatistics(schema);
-
-        List<StatisticsColumnPartitionDataView> res = new ArrayList<>();
-
-        for (Map.Entry<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> partsStatsEntry : partsStatsMap.entrySet()) {
-            StatisticsKey key = partsStatsEntry.getKey();
-
-            for (ObjectPartitionStatisticsImpl partStat : partsStatsEntry.getValue()) {
-                if (column == null) {
-                    for (Map.Entry<String, ColumnStatistics> colStatEntry : partStat.columnsStatistics().entrySet())
-                        res.add(new StatisticsColumnPartitionDataView(key, colStatEntry.getKey(), partStat));
-                }
-                else {
-                    ColumnStatistics colStat = partStat.columnStatistics(column);
-
-                    if (colStat != null)
-                        res.add(new StatisticsColumnPartitionDataView(key, column, partStat));
-                }
-            }
-        }
-
-        return res;
-    }
-
-    /**
-     * Statistics column local node data view filterable supplier.
-     *
-     * @param filter Filter.
-     * @return Iterable with statistics column local node data views.
-     */
-    private Iterable<StatisticsColumnLocalDataView> columnLocalStatisticsViewSupplier(Map<String, Object> filter) {
-        String type = (String)filter.get(StatisticsColumnPartitionDataViewWalker.TYPE_FILTER);
-
-        if (type != null && !StatisticsColumnConfigurationView.TABLE_TYPE.equalsIgnoreCase(type))
-            return Collections.emptyList();
-
-        String schema = (String)filter.get(StatisticsColumnLocalDataViewWalker.SCHEMA_FILTER);
-        String name = (String)filter.get(StatisticsColumnLocalDataViewWalker.NAME_FILTER);
-        String column = (String)filter.get(StatisticsColumnPartitionDataViewWalker.COLUMN_FILTER);
-
-        Map<StatisticsKey, ObjectStatisticsImpl> localStatsMap;
-
-        if (!F.isEmpty(schema) && !F.isEmpty(name)) {
-            StatisticsKey key = new StatisticsKey(schema, name);
-
-            ObjectStatisticsImpl objLocalStat = locStats.get(key);
-
-            if (objLocalStat == null)
-                return Collections.emptyList();
-
-            localStatsMap = Collections.singletonMap(key, objLocalStat);
-        }
-        else
-            localStatsMap = locStats.entrySet().stream().filter(e -> F.isEmpty(schema) || schema.equals(e.getKey().schema()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        List<StatisticsColumnLocalDataView> res = new ArrayList<>();
-
-        for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> localStatsEntry : localStatsMap.entrySet()) {
-            StatisticsKey key = localStatsEntry.getKey();
-            ObjectStatisticsImpl stat = localStatsEntry.getValue();
-
-            if (column == null) {
-                for (Map.Entry<String, ColumnStatistics> colStat : localStatsEntry.getValue().columnsStatistics()
-                    .entrySet()) {
-                    StatisticsColumnLocalDataView colStatView = new StatisticsColumnLocalDataView(key, colStat.getKey(),
-                        stat);
-
-                    res.add(colStatView);
-                }
-            }
-            else {
-                ColumnStatistics colStat = localStatsEntry.getValue().columnStatistics(column);
-
-                if (colStat != null) {
-                    StatisticsColumnLocalDataView colStatView = new StatisticsColumnLocalDataView(key, column, stat);
-
-                    res.add(colStatView);
-                }
-            }
-        }
-
-        return res;
     }
 
     /**
@@ -235,14 +115,15 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Clear partition statistics for specified object.
+     * Clear partition statistics and obsolescence info for specified object.
      *
-     * @param key Object to clear statistics by.
+     * @param key Object to clear statistics and obsolescence by.
      * @param colNames if specified - only statistics by specified columns will be cleared.
      */
     public void clearLocalPartitionsStatistics(StatisticsKey key, Set<String> colNames) {
         if (F.isEmpty(colNames)) {
             store.clearLocalPartitionsStatistics(key);
+            store.clearObsolescenceInfo(key, null);
 
             return;
         }
@@ -384,6 +265,15 @@ public class IgniteStatisticsRepository {
      */
     public ObjectStatisticsImpl getLocalStatistics(StatisticsKey key) {
         return locStats.get(key);
+    }
+
+    /**
+     * Get all local statistics. Return internal map without copying.
+     *
+     * @return Local (for current node) object statistics.
+     */
+    public Map<StatisticsKey, ObjectStatisticsImpl> getAllLocalStatisticsInt() {
+        return locStats;
     }
 
     /**
@@ -531,7 +421,7 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Update obsolescence info cache to fit specified cfg.
+     * Update obsolescence info cache to fit specified cfg. Remove the others from store to clean it.
      *
      * @param cfg Obsolescence configuration.
      */
@@ -540,10 +430,12 @@ public class IgniteStatisticsRepository {
 
         for (Map.Entry<StatisticsKey, Set<Integer>> objDeleted : deleted.entrySet())
             store.clearObsolescenceInfo(objDeleted.getKey(), objDeleted.getValue());
+
+        fitObsolescenceInfo(cfg);
     }
 
     /**
-     * Load or update obsolescence info cache to fit specified cfg.
+     * Load or update obsolescence info cache to fit specified cfg. Remove the others from store to clean it.
      *
      * @param cfg Map object statistics configuration to primary partitions set.
      */
@@ -552,6 +444,35 @@ public class IgniteStatisticsRepository {
             loadObsolescenceInfo(cfg);
         else
             updateObsolescenceInfo(cfg);
+    }
+
+    /**
+     * Check store to clean unnecessary records.
+     *
+     * @param cfg Map object statistics configuration to primary partitions set.
+     */
+    private void fitObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
+        Map<StatisticsKey, Set<Integer>> keyPartCfg = new HashMap<>(cfg.size());
+        cfg.forEach((k, v) -> keyPartCfg.put(k.key(), v));
+
+        Map<StatisticsKey, Collection<Integer>> obsolescenceMap = store.loadObsolescenceMap();
+
+        for (Map.Entry<StatisticsKey, Collection<Integer>> objObs : obsolescenceMap.entrySet()) {
+            Set<Integer> cfgObs = keyPartCfg.get(objObs.getKey());
+
+            if (cfgObs == null)
+                store.clearObsolescenceInfo(objObs.getKey(), null);
+            else {
+                List<Integer> partToRemove = new ArrayList<>();
+
+                for (Integer objPartObsId :objObs.getValue()) {
+                    if (!cfgObs.contains(objPartObsId))
+                        partToRemove.add(objPartObsId);
+                }
+
+                store.clearObsolescenceInfo(objObs.getKey(), partToRemove);
+            }
+        }
     }
 
     /**
@@ -627,7 +548,7 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Save all modified obsolescence info to local metastorage.
+     * Save all modified obsolescence info to store.
      *
      * @return Map with all partitions of objects with dirty partitions.
      */

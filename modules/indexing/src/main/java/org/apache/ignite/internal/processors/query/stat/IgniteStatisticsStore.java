@@ -97,7 +97,7 @@ public interface IgniteStatisticsStore {
 
     /**
      *
-     * @param obsolescence
+     * @param obsolescence Statistics key to partId to obsolescence info map to save.
      */
     public void saveObsolescenceInfo(
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> obsolescence
@@ -117,4 +117,11 @@ public interface IgniteStatisticsStore {
      * @return StatisticsKey to partitionId to obsolescence info map.
      */
     public Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> loadAllObsolescence();
+
+    /**
+     * Load all obsolescence map from store.
+     *
+     * @return StatisticsKey to parititonId map with all presented obsolescence info.
+     */
+    public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap();
 }

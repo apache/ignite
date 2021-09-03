@@ -94,6 +94,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state", StatisticsUsageState::fromOrdinal, StatisticsUsageState::index, StatisticsUsageState.class);
 
+    /** Last known statistics usage state. */
+    private volatile StatisticsUsageState lastUsageState = null;
+
     /** Started flag to prevent double start on change statistics usage state and activation and vice versa. */
     private boolean started = false;
 
@@ -176,6 +179,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 if (log.isInfoEnabled())
                     log.info(String.format("Statistics usage state was changed from %s to %s", oldVal, newVal));
 
+                lastUsageState = newVal;
+
                 if (oldVal == newVal)
                     return;
 
@@ -189,12 +194,14 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         if (!ctx.clientNode()) {
             ctx.timeout().schedule(() -> {
-                try {
-                    processObsolescence();
-                }
-                catch (Throwable e) {
-                    log.warning("Error while processing statistics obsolescence", e);
-                }
+                mgmtPool.submit(() -> {
+                    try {
+                        gatherer.busyRun(() -> processObsolescence());
+                    }
+                    catch (Throwable e) {
+                        log.warning("Error while processing statistics obsolescence", e);
+                    }
+                });
             }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
         }
 
@@ -319,7 +326,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public StatisticsUsageState usageState() {
-        return usageState.getOrDefault(DEFAULT_STATISTICS_USAGE_STATE);
+        return (lastUsageState == null) ? DEFAULT_STATISTICS_USAGE_STATE : lastUsageState;
     }
 
     /** {@inheritDoc} */

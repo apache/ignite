@@ -112,7 +112,6 @@ public class StatisticsGatherer {
         }
 
         if (inProgressCtx == null) {
-
             CompletableFuture<ObjectStatisticsImpl> f = CompletableFuture.supplyAsync(
                 () -> {
                     if (!gatheringLock.enterBusy())
@@ -136,7 +135,7 @@ public class StatisticsGatherer {
             return ctx;
         }
         else {
-            inProgressCtx.futureGather().thenAccept((complete) -> {
+            inProgressCtx.futureGather().thenAcceptAsync((complete) -> {
                 if (complete) {
                     if (gatheringLock.enterBusy()) {
                         try {
@@ -158,7 +157,7 @@ public class StatisticsGatherer {
                     inProgressCtx.futureAggregate().complete(null);
 
                 gatheringInProgress.remove(key, inProgressCtx);
-            });
+            }, gatherPool);
 
             return inProgressCtx;
         }
@@ -243,45 +242,49 @@ public class StatisticsGatherer {
         final LocalStatisticsGatheringContext ctx,
         final GatherPartitionStatistics task
     ) {
-        CompletableFuture<ObjectPartitionStatisticsImpl> f = CompletableFuture.supplyAsync(() -> {
-            if (!gatheringLock.enterBusy())
-                return null;
-
-            try {
-                return task.call();
-            }
-            finally {
-                gatheringLock.leaveBusy();
-            }
-        }, gatherPool);
-
-        f.thenAccept((partStat) -> {
+        gatherPool.submit(() -> {
             if (!gatheringLock.enterBusy())
                 return;
 
             try {
+                ObjectPartitionStatisticsImpl partStat = task.call();
                 completePartitionStatistic(tbl, cfg, key, ctx, task.partition(), partStat);
+            }
+            catch (Throwable t) {
+                if (t instanceof GatherStatisticCancelException) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Collect statistics task was cancelled " +
+                            "[key=" + key + ", part=" + task.partition() + ']');
+                    }
+                }
+                else {
+                    log.error("Unexpected error on statistic gathering", t);
+
+                    ctx.cancel();
+                }
             }
             finally {
                 gatheringLock.leaveBusy();
             }
         });
+    }
 
-        f.exceptionally((ex) -> {
-            if (ex.getCause() instanceof GatherStatisticCancelException) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Collect statistics task was cancelled " +
-                        "[key=" + key + ", part=" + task.partition() + ']');
-                }
-            }
-            else {
-                log.error("Unexpected error on statistic gathering", ex);
+    /**
+     * Run task on busy lock.
+     *
+     * @param r Task to run.
+     */
+    public void busyRun(Runnable r) {
+        if (!gatheringLock.enterBusy())
+            return;
 
-                ctx.futureGather().obtrudeException(ex);
-            }
+        try {
+            r.run();
+        }
+        finally {
+            gatheringLock.leaveBusy();
+        }
 
-            return null;
-        });
     }
 
     /**
@@ -379,5 +382,14 @@ public class StatisticsGatherer {
 
         gatheringLock.block();
         gatheringLock.unblock();
+    }
+
+    /**
+     * Get gathering pool.
+     *
+     * @return Gathering pool.
+     */
+    public IgniteThreadPoolExecutor gatheringPool() {
+        return gatherPool;
     }
 }
