@@ -1038,7 +1038,7 @@ public class ITMetaStorageServiceTest {
             200
         ).get(3, TimeUnit.SECONDS);
 
-        MetaStorageService metaStorageSvc2 =  new MetaStorageServiceImpl(metaStorageRaftGrpSvc, NODE_ID_1);
+        MetaStorageService metaStorageSvc2 = new MetaStorageServiceImpl(metaStorageRaftGrpSvc, NODE_ID_1);
 
         Cursor<Entry> cursorNode0 = metaStorageSvc.range(EXPECTED_RESULT_ENTRY.key(), null);
 

@@ -101,7 +101,6 @@ class LiveSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
         assertEquals("111", res.value("valStrNew"));
         assertEquals(Integer.valueOf(333), res.value("valIntNew"));
 
-
         ((TableImpl)tbl).schemaType(SchemaMode.STRICT_SCHEMA);
 
         Tuple anotherKey = Tuple.create().set("key", 2L);

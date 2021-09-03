@@ -140,7 +140,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         Iterator<RaftGroupService> iterClients = clients.iterator();
 
         while (iterClients.hasNext()) {
-            RaftGroupService client  = iterClients.next();
+            RaftGroupService client = iterClients.next();
 
             iterClients.remove();
 

@@ -435,7 +435,6 @@ public class ITDistributedTableTest {
         for (int i = 0; i < keysCnt; i++)
             keys.add(Tuple.create().set("key", Long.valueOf(i)));
 
-
         Map<Tuple, Tuple> entries = view.getAll(keys);
 
         assertEquals(keysCnt, entries.size());

@@ -30,9 +30,16 @@ Code style is checked with [Apache Maven Checkstyle Plugin](https://maven.apache
 * [Checkstyle suppressions](check-rules/checkstyle-suppressions.xml)
 * [Checkstyle rules for javadocs](https://checkstyle.sourceforge.io/config_javadoc.html)
 
+It is enabled by default and is bound to `compile` phase.
+
+Build project without code style check:
+```
+mvn clean <compile|package|install|deploy> -Dcheckstyle.skip
+```
+
 Run code style checks only:
 ```
-mvn clean checkstyle:checkstyle-aggregate
+mvn clean validate -Pcheckstyle -Dmaven.all-checks.skip
 ```
 
 Run javadoc style checks for public api only:
@@ -41,7 +48,9 @@ mvn clean checkstyle:checkstyle-aggregate -P javadoc-public-api
 ```
 >ℹ `javadoc-public-api` profile is required for enabling checkstyle rules for public API javadoc.
 
-Code style check result is generated at `target/site/checkstyle-aggregate.html`
+Code style check results are generated at:
+* `target/site/checkstyle-aggregate.html`
+* `target/checkstyle.xml`
 
 ### License headers
 Project files license headers match with required template is checked with [Apache Rat Maven Plugin](https://creadur.apache.org/rat/apache-rat-plugin/).

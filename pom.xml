@@ -69,6 +69,55 @@
         <module>modules/vault</module>
     </modules>
 
+    <profiles>
+        <!--
+            This profile is used to check the code for coding guidelines.
+
+            It runs by default and can be skipped with either
+            -Dmaven.chechstyle.skip or -Dcheckstyle.skip flag.
+
+            It executes 2 times - first for generating report and second
+            for failing build if errors found.
+        -->
+        <profile>
+            <id>checkstyle</id>
+            <activation>
+                <property>
+                    <name>!maven.all-checks.skip</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-report</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>checkstyle-aggregate</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>fail-if-error</id>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <failsOnError>true</failsOnError>
+                                    <consoleOutput>true</consoleOutput>
+                                    <logViolationsToConsole>true</logViolationsToConsole>
+                                </configuration>
+                                <goals>
+                                    <goal>checkstyle-aggregate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
