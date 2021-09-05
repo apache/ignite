@@ -178,6 +178,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.ExchangeType.ALL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
@@ -3311,15 +3312,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (fut.topologyVersion().equals(lastAffChangedVer))
                                     exchFut = fut;
                                 else if (lastAffChangedVer.after(exchId.topologyVersion())) {
-                                    // There is a new exchange which should trigger rebalancing.
-                                    // This reassignment request can be skipped.
-                                    if (log.isInfoEnabled()) {
-                                        log.info("Partitions reassignment request skipped due to affinity was already changed" +
-                                            " [reassignTopVer=" + exchId.topologyVersion() +
-                                            ", lastAffChangedTopVer=" + lastAffChangedVer + ']');
-                                    }
+                                    if (lastFut.exchangeType() == ALL) {
+                                        // There is a new exchange which should trigger rebalancing.
+                                        // This reassignment request can be skipped.
+                                        if (log.isInfoEnabled()) {
+                                            log.info("Partitions reassignment request skipped due to affinity was already changed" +
+                                                " [reassignTopVer=" + exchId.topologyVersion() +
+                                                ", lastAffChangedTopVer=" + lastAffChangedVer + ']');
+                                        }
 
-                                    continue;
+                                        continue;
+                                    }
+                                    else
+                                        exchFut = lastFut;
                                 }
                             }
                         }
