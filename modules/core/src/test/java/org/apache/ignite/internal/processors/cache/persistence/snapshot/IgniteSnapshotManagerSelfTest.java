@@ -562,7 +562,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        GridCacheSharedContext<Object, Object> cctx = ignite.context().cache().context();
+        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)cctx.database());
 
         // Ensure that previous checkpoint finished.
@@ -600,12 +600,12 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         GridTestUtils.setFieldValue(cctx.snapshotMgr(), "clusterSnpReq",
             new SnapshotOperationRequest(UUID.randomUUID(), ignite.localNode().id(), SNAPSHOT_NAME, null, null));
 
-        // Try to start the snapshot task asynchronously. .
+        // Try to start the snapshot task asynchronously.
         IgniteInternalFuture<?> beforeTopUnlockFut = GridTestUtils.runAsync(() -> {
             cctx.snapshotMgr().onDoneBeforeTopologyUnlock(null);
         });
 
-        // Wait until the snapshot task checkpoint listener is registered..
+        // Wait until the snapshot task checkpoint listener is registered.
         boolean taskCpLsnrRegistered = GridTestUtils.waitForCondition(lsnr::check, testTimeout);
 
         assertTrue(taskCpLsnrRegistered);
