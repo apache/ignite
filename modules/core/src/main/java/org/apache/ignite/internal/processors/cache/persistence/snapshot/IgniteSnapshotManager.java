@@ -1327,7 +1327,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         if (task.start()) {
-            cctx.database().forceCheckpoint(String.format("Start snapshot operation: %s", snpReq.snapshotName()));
+            cctx.database().forceNewCheckpoint(String.format("Start snapshot operation: %s", snpReq.snapshotName()), lsnr -> {});
 
             // Schedule task on a checkpoint and wait when it starts.
             try {
