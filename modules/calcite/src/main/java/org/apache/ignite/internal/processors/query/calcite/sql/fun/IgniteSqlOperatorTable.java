@@ -50,6 +50,18 @@ public class IgniteSqlOperatorTable extends ReflectiveSqlOperatorTable {
     public static final SqlFunction SYSTEM_RANGE = new SqlSystemRangeFunction();
 
     /**
+     *
+     */
+    public static final SqlFunction TYPEOF =
+        new SqlFunction(
+            "TYPEOF",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.VARCHAR_2000,
+            null,
+            OperandTypes.ANY,
+            SqlFunctionCategory.SYSTEM);
+
+    /**
      * Returns the Ignite operator table, creating it if necessary.
      */
     public static synchronized IgniteSqlOperatorTable instance() {

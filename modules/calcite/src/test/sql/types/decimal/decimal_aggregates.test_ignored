@@ -2,7 +2,6 @@
 # description: Test decimal aggregates
 # group: [decimal]
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14555
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14596
 
 statement ok
 PRAGMA enable_verification
@@ -10,7 +9,7 @@ PRAGMA enable_verification
 query I
 SELECT typeof(ANY_VALUE('0.1'::DECIMAL(4,1)))
 ----
-DECIMAL(4,1)
+DECIMAL(4, 1)
 
 # scalar aggregates
 # first
