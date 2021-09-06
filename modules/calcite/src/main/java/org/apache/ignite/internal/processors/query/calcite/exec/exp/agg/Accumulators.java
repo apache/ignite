@@ -92,7 +92,6 @@ public class Accumulators {
     /** */
     private static Supplier<Accumulator> sumFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
-            case INTEGER:
             case BIGINT:
             case DECIMAL:
                 return () -> new Sum(new DecimalSumEmptyIsZero());
@@ -104,6 +103,7 @@ public class Accumulators {
 
             case TINYINT:
             case SMALLINT:
+            case INTEGER:
             default:
                 return () -> new Sum(new LongSumEmptyIsZero());
         }
@@ -112,7 +112,6 @@ public class Accumulators {
     /** */
     private static Supplier<Accumulator> sumEmptyIsZeroFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
-            case INTEGER:
             case BIGINT:
             case DECIMAL:
                 return DecimalSumEmptyIsZero.FACTORY;
@@ -124,6 +123,7 @@ public class Accumulators {
 
             case TINYINT:
             case SMALLINT:
+            case INTEGER:
             default:
                 return LongSumEmptyIsZero.FACTORY;
         }

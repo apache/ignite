@@ -532,7 +532,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            tf.createJavaType(BigDecimal.class),
+            tf.createJavaType(Long.class),
             null);
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
@@ -554,7 +554,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, new BigDecimal(Integer.MAX_VALUE).add(new BigDecimal(10))), root.next());
+        Assert.assertArrayEquals(row(0, (long)Integer.MAX_VALUE / 2 + (long)Integer.MAX_VALUE / 2 + 11L), root.next());
 
         assertFalse(root.hasNext());
     }

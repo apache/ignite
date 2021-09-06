@@ -45,13 +45,13 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
         RelDataType sumType;
 
         switch (argumentType.getSqlTypeName()) {
+            case INTEGER:
             case TINYINT:
             case SMALLINT:
                 sumType = typeFactory.createJavaType(Long.class);
 
                 break;
 
-            case INTEGER:
             case BIGINT:
             case DECIMAL:
                 sumType = typeFactory.createJavaType(BigDecimal.class);

@@ -79,30 +79,6 @@ public final class AggregateExpandDistinctAggregatesRule
         super(config);
     }
 
-    @Deprecated public AggregateExpandDistinctAggregatesRule(
-        Class<? extends Aggregate> clazz,
-        boolean useGroupingSets,
-        RelBuilderFactory relBuilderFactory) {
-        this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
-            .withOperandSupplier(b ->
-                b.operand(clazz).anyInputs())
-            .as(Config.class)
-            .withUsingGroupingSets(useGroupingSets));
-    }
-
-    @Deprecated public AggregateExpandDistinctAggregatesRule(
-        Class<? extends LogicalAggregate> clazz,
-        boolean useGroupingSets,
-        RelFactories.JoinFactory joinFactory) {
-        this(clazz, useGroupingSets, RelBuilder.proto(Contexts.of(joinFactory)));
-    }
-
-    @Deprecated public AggregateExpandDistinctAggregatesRule(
-        Class<? extends LogicalAggregate> clazz,
-        RelFactories.JoinFactory joinFactory) {
-        this(clazz, false, RelBuilder.proto(Contexts.of(joinFactory)));
-    }
-
     //~ Methods ----------------------------------------------------------------
 
     /**
