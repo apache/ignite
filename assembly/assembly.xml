@@ -54,7 +54,7 @@
 
         <file>
             <source>examples/pom-standalone.xml</source>
-            <outputDirectory>/examples</outputDirectory>
+            <outputDirectory>./examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
     </files>
@@ -62,7 +62,7 @@
     <fileSets>
         <fileSet>
             <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
+            <outputDirectory>./examples</outputDirectory>
             <includes>
                 <include>config/**</include>
                 <include>src/**</include>
