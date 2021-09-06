@@ -56,7 +56,8 @@ public final class PlanningContext implements Context {
     private PlanningContext(
         Context parentCtx,
         String qry,
-        Object[] parameters) {
+        Object[] parameters
+    ) {
         this.qry = qry;
         this.parameters = parameters;
 
