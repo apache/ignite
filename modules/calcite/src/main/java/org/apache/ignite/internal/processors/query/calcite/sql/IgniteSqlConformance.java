@@ -30,4 +30,9 @@ public class IgniteSqlConformance extends SqlAbstractConformance {
     @Override public boolean isPercentRemainderAllowed() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBangEqualAllowed() {
+        return true;
+    }
 }

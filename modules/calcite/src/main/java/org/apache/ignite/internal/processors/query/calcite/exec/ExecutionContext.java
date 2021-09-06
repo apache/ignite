@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  */
 public class ExecutionContext<Row> implements DataContext {
     /** */
-    private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+    private final TimeZone timeZone = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-15276 Support other locales.
@@ -113,7 +113,7 @@ public class ExecutionContext<Row> implements DataContext {
         expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
 
         long ts = U.currentTimeMillis();
-        startTs = ts + TIME_ZONE.getOffset(ts);
+        startTs = ts + timeZone.getOffset(ts);
     }
 
     /**
@@ -209,7 +209,7 @@ public class ExecutionContext<Row> implements DataContext {
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
-            return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
+            return timeZone; // TODO DistributedSqlConfiguration#timeZone
         if (Variable.CURRENT_TIMESTAMP.camelName.equals(name))
             return startTs;
         if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))

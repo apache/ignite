@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.LinkedHashMap;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -841,7 +842,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByKeyAlias() {
-        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id")
+        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id nulls first")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER"))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(1, "Mozart", 3, "Vienna", 33)
@@ -855,7 +856,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByDepId() {
-        assertQuery("SELECT * FROM Developer ORDER BY depId")
+        assertQuery("SELECT * FROM Developer ORDER BY depId nulls first")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(3, "Bach", 1, "Leipzig", 55)

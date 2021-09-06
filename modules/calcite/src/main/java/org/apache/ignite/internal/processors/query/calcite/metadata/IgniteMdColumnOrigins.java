@@ -173,8 +173,10 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         if (rexNode instanceof RexInputRef) {
             // Direct reference:  no derivation added.
             RexInputRef inputRef = (RexInputRef) rexNode;
+
             return mq.getColumnOrigins(input, inputRef.getIndex());
         }
+
         // Anything else is a derivation, possibly from multiple columns.
         final Set<RelColumnOrigin> set = getMultipleColumns(rexNode, input, mq);
 
