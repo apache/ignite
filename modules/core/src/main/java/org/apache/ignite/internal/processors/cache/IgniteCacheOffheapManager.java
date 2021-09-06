@@ -101,7 +101,6 @@ public interface IgniteCacheOffheapManager {
     /**
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
-     * @return Processed partitions: partition id -> processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
     void restorePartitionStates() throws IgniteCheckedException;
