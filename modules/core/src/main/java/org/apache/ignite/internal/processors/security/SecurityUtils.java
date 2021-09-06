@@ -47,6 +47,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.F;
@@ -169,11 +171,49 @@ public class SecurityUtils {
         }
     }
 
+    /** 
+     * @return Current security context if it is different from local node security context, otherwise {@code null}. 
+     * @see #withRemoteSecurityContext(GridKernalContext, SecurityContext)
+     */
+    public static SecurityContext remoteSecurityContext(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        if (!security.enabled() || security.isDefaultContext())
+            return null;
+
+        return security.securityContext();
+    }
+
     /** @return Current security subject ID if security is enabled, otherwise null. */
     public static UUID securitySubjectId(GridKernalContext ctx) {
         IgniteSecurity security = ctx.security();
 
         return security.enabled() ? security.securityContext().subject().id() : null;
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheSharedContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
+    }
+
+    /**
+     * Sets specified security context as current if it differs from the {@code null}.
+     * {@code null} means that security context of the local node is specified or security is disabled so no security
+     * context change is needed.
+     * Note that this method is safe to use only when it is known to be called in the security context of the local node
+     * (e.g. in system workers).
+     * @return {@link OperationSecurityContext} instance if new security context is set, otherwise {@code null}.
+     */
+    public static OperationSecurityContext withRemoteSecurityContext(GridKernalContext ctx, SecurityContext secCtx) {
+        if (secCtx == null)
+            return null;
+
+        return ctx.security().withContext(secCtx);
     }
 
     /**

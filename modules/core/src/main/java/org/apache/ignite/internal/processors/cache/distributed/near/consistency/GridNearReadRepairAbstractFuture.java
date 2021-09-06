@@ -168,7 +168,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                         mapping.getValue(), // Keys.
                         readThrough,
                         false, // Local get required.
-                        tx != null ? tx.subjectId() : null,
                         taskName,
                         deserializeBinary,
                         recovery,
