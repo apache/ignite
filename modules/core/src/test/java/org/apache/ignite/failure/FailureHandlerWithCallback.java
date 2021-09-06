@@ -14,17 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.failure;
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import org.apache.ignite.internal.util.typedef.T2;
+import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 
 /**
- * Interface to distinguish exceptions that were caused by broken persistence datastructures invariants.
+ * Failure handler for test purposes that can execute callback to pass failure context inside of it.
  */
-public interface CorruptedPersistenceException {
-    /**
-     * @return (groupId, pageId) pairs for pages that might be corrupted.
-     */
-    public T2<Integer, Long>[] pages();
+public class FailureHandlerWithCallback extends AbstractFailureHandler {
+    /** */
+    private final Consumer<FailureContext> cb;
+
+    /** */
+    public FailureHandlerWithCallback(Consumer<FailureContext> cb) {
+        this.cb = cb;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+        cb.accept(failureCtx);
+
+        return true;
+    }
 }
