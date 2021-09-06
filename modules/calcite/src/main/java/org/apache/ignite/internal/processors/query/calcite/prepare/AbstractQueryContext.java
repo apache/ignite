@@ -17,28 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.function.Supplier;
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.calcite.plan.Context;
 
 /**
- *
+ * Abstract query context.
  */
-public interface QueryPlanCache extends Service {
-    /**
-     * @param key Cache key.
-     * @param planSupplier Factory method to generate a plan on cache miss.
-     * @return Query plan.
-     */
-    QueryPlan queryPlan(CacheKey key, Supplier<QueryPlan> planSupplier);
+public class AbstractQueryContext implements Context {
+    /** */
+    private final Context parentCtx;
 
-    /**
-     * @param key Cache key.
-     * @return Query plan.
-     */
-    QueryPlan queryPlan(CacheKey key);
+    /** */
+    public AbstractQueryContext(Context parentCtx) {
+        this.parentCtx = parentCtx;
+    }
 
-    /**
-     * Clear cache.
-     */
-    void clear();
+    /** {@inheritDoc} */
+    @Override public <C> C unwrap(Class<C> aCls) {
+        if (aCls == getClass())
+            return aCls.cast(this);
+
+        return parentCtx.unwrap(aCls);
+    }
 }

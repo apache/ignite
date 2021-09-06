@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -53,12 +54,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -174,24 +177,17 @@ public final class Commons {
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
-    public static PlanningContext context(RelNode rel) {
+    public static BaseQueryContext context(RelNode rel) {
         return context(rel.getCluster());
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
-    public static PlanningContext context(RelOptCluster cluster) {
-        return context(cluster.getPlanner().getContext());
-    }
-
-    /**
-     * Extracts planner context.
-     */
-    public static PlanningContext context(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
+    public static BaseQueryContext context(RelOptCluster cluster) {
+        return Objects.requireNonNull(cluster.getPlanner().getContext().unwrap(BaseQueryContext.class));
     }
 
     /**
@@ -430,5 +426,20 @@ public final class Commons {
         }
 
         return res;
+    }
+
+    /** */
+    public static RelOptCluster cluster() {
+        return BaseQueryContext.CLUSTER;
+    }
+
+    /** */
+    public static IgniteTypeFactory typeFactory() {
+        return BaseQueryContext.TYPE_FACTORY;
+    }
+
+    /** */
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
+        return new MappingQueryContext(locNodeId, topVer);
     }
 }

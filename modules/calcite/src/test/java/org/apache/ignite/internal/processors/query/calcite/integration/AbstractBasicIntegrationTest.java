@@ -93,6 +93,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         );
 
         int idx = 0;
+
         person.put(idx++, new Employer("Igor", 10d));
         person.put(idx++, new Employer(null, 15d));
         person.put(idx++, new Employer("Ilya", 15d));

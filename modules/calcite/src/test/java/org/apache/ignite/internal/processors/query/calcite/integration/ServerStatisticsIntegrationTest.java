@@ -115,7 +115,9 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
     @Test
     public void testQueryCostWithStatistics() throws IgniteCheckedException {
         String sql = "select name from person where salary is not null";
+
         createAndPopulateTable();
+
         StatisticsKey key = new StatisticsKey("PUBLIC", "PERSON");
         srv = ignite(0);
 

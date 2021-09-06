@@ -257,6 +257,27 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks bang equal is allowed and works.
+     */
+    @Test
+    public void testBangEqual() throws Exception {
+        IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
+            .setName("developer")
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Developer.class)
+            .setBackups(2)
+        );
+
+        developer.put(1, new Developer("Name1", 1));
+        developer.put(10, new Developer("Name10", 10));
+        developer.put(100, new Developer("Name100", 100));
+
+        awaitPartitionMapExchange(true, true, null);
+
+        assertEquals(2, sql("SELECT * FROM Developer WHERE projectId != ?", false, 1).size());
+    }
+
+    /**
      * Checks all grids execution contexts are closed or registered (Out|In)boxes are present.
      */
     private void checkContextCancelled() throws IgniteInterruptedCheckedException {
@@ -1203,7 +1224,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<List<?>> allSrv;
 
         if (!noCheck) {
-            List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql);
+            List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql, args);
 
             try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
                 allSrv = srvCursor.getAll();
