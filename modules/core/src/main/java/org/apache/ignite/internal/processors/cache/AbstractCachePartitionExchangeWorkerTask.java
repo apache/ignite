@@ -18,41 +18,20 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Cache statistics mode change task for exchange worker.
- */
-public class CacheStatisticsModeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
-    /** Discovery message. */
-    private final CacheStatisticsModeChangeMessage msg;
+/** */
+public abstract class AbstractCachePartitionExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    /** Security context in which current task must be executed. */
+    @Nullable private final SecurityContext secCtx;
 
-    /**
-     * @param secCtx Security context in which current task must be executed.
-     * @param msg Message.
-     */
-    public CacheStatisticsModeChangeTask(SecurityContext secCtx, CacheStatisticsModeChangeMessage msg) {
-        super(secCtx);
-
-        assert msg != null;
-
-        this.msg = msg;
+    /** */
+    protected AbstractCachePartitionExchangeWorkerTask(@Nullable SecurityContext secCtx) {
+        this.secCtx = secCtx;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean skipForExchangeMerge() {
-        return false;
-    }
-
-    /**
-     * @return Message.
-     */
-    public CacheStatisticsModeChangeMessage message() {
-        return msg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(CacheStatisticsModeChangeTask.class, this);
+    @Override @Nullable public SecurityContext securityContext() {
+        return secCtx;
     }
 }
