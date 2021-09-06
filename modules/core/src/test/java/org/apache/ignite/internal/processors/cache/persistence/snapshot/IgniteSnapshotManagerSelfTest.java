@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -562,8 +562,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
-        GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)cctx.database());
+        GridCacheDatabaseSharedManager dbMgr =
+            ((GridCacheDatabaseSharedManager)ignite.context().cache().context().database());
 
         // Ensure that previous checkpoint finished.
         dbMgr.getCheckpointer().currentProgress().futureFor(CheckpointState.FINISHED).get();
@@ -592,29 +592,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         beforeCpEnter.await(testTimeout, TimeUnit.MILLISECONDS);
 
-        SnapshotFutureTask snpFut = cctx.snapshotMgr().registerSnapshotTask(SNAPSHOT_NAME, cctx.localNodeId(),
-            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null), false,
-            cctx.snapshotMgr().localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
-
-        // Simulate snapshot take process.
-        GridTestUtils.setFieldValue(cctx.snapshotMgr(), "clusterSnpReq",
-            new SnapshotOperationRequest(UUID.randomUUID(), ignite.localNode().id(), SNAPSHOT_NAME, null, null));
-
-        // Try to start the snapshot task asynchronously.
-        IgniteInternalFuture<?> beforeTopUnlockFut = GridTestUtils.runAsync(() -> {
-            cctx.snapshotMgr().onDoneBeforeTopologyUnlock(null);
-        });
+        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
         // Wait until the snapshot task checkpoint listener is registered.
-        boolean taskCpLsnrRegistered = GridTestUtils.waitForCondition(lsnr::check, testTimeout);
-
-        assertTrue(taskCpLsnrRegistered);
+        assertTrue(GridTestUtils.waitForCondition(lsnr::check, testTimeout));
 
         // Unblock checkpointer.
         beforeCpExit.countDown();
-
-        // Wait until the topology lock is released.
-        beforeTopUnlockFut.get(testTimeout);
 
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
