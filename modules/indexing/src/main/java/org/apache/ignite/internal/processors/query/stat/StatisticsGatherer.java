@@ -101,23 +101,25 @@ public class StatisticsGatherer {
 
         LocalStatisticsGatheringContext inProgressCtx = gatheringInProgress.putIfAbsent(key, ctx);
 
-        if (!active) {
-            gatheringInProgress.remove(key, ctx);
-            ctx.cancel();
-
-            if (log.isDebugEnabled())
-                log.debug("Reject aggregation by key " + key + " due to inactive state.");
-
-            return inProgressCtx;
-        }
-
         if (inProgressCtx == null) {
             CompletableFuture<ObjectStatisticsImpl> f = CompletableFuture.supplyAsync(
                 () -> {
-                    if (!gatheringLock.enterBusy())
-                        return null;
+                    if (!gatheringLock.enterBusy() || !active) {
+                        if (log.isDebugEnabled())
+                            log.debug("Can't aggregate statistics by key " + key + " due to inactive state.");
+                        gatheringInProgress.remove(key, ctx);
+                        ctx.cancel();
 
-                    return aggregate.get();
+                        return null;
+                    }
+
+                    try {
+                        return aggregate.get();
+                    }
+                    finally {
+                        gatheringLock.leaveBusy();
+                    }
+
             }, gatherPool);
 
             f.handle((stat, ex) -> {
@@ -127,7 +129,6 @@ public class StatisticsGatherer {
                     ctx.futureAggregate().completeExceptionally(ex);
 
                 gatheringInProgress.remove(key, ctx);
-                gatheringLock.leaveBusy();
 
                 return null;
             });
@@ -139,6 +140,12 @@ public class StatisticsGatherer {
                 if (complete) {
                     if (gatheringLock.enterBusy()) {
                         try {
+                            if (!active) {
+                                inProgressCtx.cancel();
+
+                                return;
+                            }
+
                             ObjectStatisticsImpl stat = aggregate.get();
 
                             inProgressCtx.futureAggregate().complete(stat);
@@ -247,6 +254,9 @@ public class StatisticsGatherer {
                 return;
 
             try {
+                if (!active)
+                    return;
+
                 ObjectPartitionStatisticsImpl partStat = task.call();
                 completePartitionStatistic(tbl, cfg, key, ctx, task.partition(), partStat);
             }
@@ -279,6 +289,9 @@ public class StatisticsGatherer {
             return;
 
         try {
+            if (!active)
+                return;
+
             r.run();
         }
         finally {
@@ -377,7 +390,6 @@ public class StatisticsGatherer {
      */
     public void cancelAllTasks() {
         gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel);
-
         gatheringInProgress.clear();
 
         gatheringLock.block();
