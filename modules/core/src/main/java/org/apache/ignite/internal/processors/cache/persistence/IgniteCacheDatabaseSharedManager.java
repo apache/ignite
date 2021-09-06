@@ -995,11 +995,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Schedule new checkpoint.
+     * Schedule a new checkpoint.<p>
+     * Note: if a checkpoint is already running and the locks have not been taken yet,
+     *       then a new checkpoint will not be forced.
      *
      * @param reason Reason.
      */
     @Nullable public CheckpointProgress forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
+     * Schedule a new checkpoint.
+     *
+     * @param reason Reason.
+     * @param lsnr Listener which will be called on scheduled checkpoint finish.
+     */
+    @Nullable public <R> CheckpointProgress forceNewCheckpoint(String reason,
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         return null;
     }
 
