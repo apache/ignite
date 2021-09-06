@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -526,7 +527,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         final GridCachePreloader preloader = demanderNode.cachex(CACHE_NAME).context().group().preloader();
 
         GridTestUtils.waitForCondition(() ->
-                ((GridDhtPartitionDemander.RebalanceFuture)preloader.rebalanceFuture()).topologyVersion().equals(curTopVer),
+                ((GridDhtPartitionDemander.RebalanceFuture) preloader.rebalanceFuture()).topologyVersion().equals(curTopVer),
             getTestTimeout()
         );
 
@@ -749,7 +750,47 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-15364")
     @Test
     public void testSwitchHistoricalRebalanceToFullAndClientJoin() throws Exception {
-        testSwitchHistoricalRebalanceToFull(IgniteWalRebalanceTest::injectFailingIOFactory, true);
+        testSwitchHistoricalRebalanceToFull(
+            IgniteWalRebalanceTest::injectFailingIOFactory,
+            () -> {
+                startClientGrid(G.allGrids().size());
+
+                return true;
+            });
+    }
+
+    /**
+     * Tests that demander switches to full rebalance if the previously chosen supplier for a group has failed
+     * to perform historical rebalance due to an unexpected error while historical iterator (wal iterator) is created.
+     * Additionally, the client node with a new cache joins the cluster between the demand message sent,
+     * and the supply message received.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSwitchHistoricalRebalanceToFullAndClientWithCacheJoin() throws Exception {
+        testSwitchHistoricalRebalanceToFull(
+            IgniteWalRebalanceTest::injectFailingIOFactory,
+            () -> {
+                String igniteInstanceName = getTestIgniteInstanceName(G.allGrids().size());
+
+                IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+
+                cfg.setClientMode(true);
+
+                CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("test-client-cache")
+                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                    .setRebalanceMode(CacheRebalanceMode.ASYNC)
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setBackups(backups)
+                    .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
+
+                cfg.setCacheConfiguration(ccfg);
+
+                startGrid(igniteInstanceName, cfg, null);
+
+                return false;
+            });
     }
 
     /**
@@ -760,7 +801,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSwitchHistoricalRebalanceToFullDueToFailOnCreatingWalIterator() throws Exception {
-        testSwitchHistoricalRebalanceToFull(IgniteWalRebalanceTest::injectFailingIOFactory, false);
+        testSwitchHistoricalRebalanceToFull(IgniteWalRebalanceTest::injectFailingIOFactory, () -> true);
     }
 
     /**
@@ -771,41 +812,43 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSwitchHistoricalRebalanceToFullWhileIteratingOverWAL() throws Exception {
-        testSwitchHistoricalRebalanceToFull(supplier1 -> {
-            try {
-                // Corrupt wal record in order to fail historical rebalance from supplier1 node.
-                IgniteWriteAheadLogManager walMgr = supplier1.context().cache().context().wal();
+        testSwitchHistoricalRebalanceToFull(
+            supplier1 -> {
+                try {
+                    // Corrupt wal record in order to fail historical rebalance from supplier1 node.
+                    IgniteWriteAheadLogManager walMgr = supplier1.context().cache().context().wal();
 
-                WALPointer ptr = walMgr.log(new DataRecord(new DataEntry(
-                    CU.cacheId("test-cache-1"),
-                    new KeyCacheObjectImpl(0, null, 0),
-                    null,
-                    GridCacheOperation.DELETE,
-                    new GridCacheVersion(0, 1, 1, 0),
-                    new GridCacheVersion(0, 1, 1, 0),
-                    0,
-                    0,
-                    0,
-                    DataEntry.EMPTY_FLAGS
-                )));
+                    WALPointer ptr = walMgr.log(new DataRecord(new DataEntry(
+                        CU.cacheId("test-cache-1"),
+                        new KeyCacheObjectImpl(0, null, 0),
+                        null,
+                        GridCacheOperation.DELETE,
+                        new GridCacheVersion(0, 1, 1, 0),
+                        new GridCacheVersion(0, 1, 1, 0),
+                        0,
+                        0,
+                        0,
+                        DataEntry.EMPTY_FLAGS
+                    )));
 
-                File walDir = U.field(walMgr, "walWorkDir");
+                    File walDir = U.field(walMgr, "walWorkDir");
 
-                List<FileDescriptor> walFiles = new IgniteWalIteratorFactory().resolveWalFiles(
-                    new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(walDir));
+                    List<FileDescriptor> walFiles = new IgniteWalIteratorFactory().resolveWalFiles(
+                        new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(walDir));
 
-                FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
+                    FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
-                WalTestUtils.corruptWalSegmentFile(lastWalFile, ptr);
+                    WalTestUtils.corruptWalSegmentFile(lastWalFile, ptr);
 
-                IgniteCache<Integer, IndexedObject> c1 = supplier1.cache("test-cache-1");
-                for (int i = 0; i < PARTS_CNT * 100; i++)
-                    c1.put(i, new IndexedObject(i + PARTS_CNT));
-            }
-            catch (IgniteCheckedException | IOException e) {
-                throw new RuntimeException(e);
-            }
-        }, false);
+                    IgniteCache<Integer, IndexedObject> c1 = supplier1.cache("test-cache-1");
+                    for (int i = 0; i < PARTS_CNT * 100; i++)
+                        c1.put(i, new IndexedObject(i + PARTS_CNT));
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            },
+            () -> true);
     }
 
     /**
@@ -813,13 +856,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      * to perform historical rebalance due to an unexpected error.
      *
      * @param corruptWalClo Closure that corrupts wal iterating on supplier node.
-     * @param needClientStart {@code true} if client node should join the cluster between
-     *                                    the demand message sent and the supply message received.
+     * @param clientClo Closure that is called between the demand message sent and the supply message received.
+     *                  Returns {@code true} if it is assumed that the rebalancing from the second supplier should be reassigned.
      * @throws Exception If failed
      */
     public void testSwitchHistoricalRebalanceToFull(
         IgniteInClosure<IgniteEx> corruptWalClo,
-        boolean needClientStart
+        IgniteCallable<Boolean> clientClo
     ) throws Exception {
         backups = 3;
 
@@ -937,14 +980,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         final IgniteInternalFuture<Boolean> preloadFut2 = restartedDemander.cachex(cacheName2).context().group()
             .preloader().rebalanceFuture();
 
-        if (needClientStart)
-            startClientGrid(3);
+        boolean rebalanceReassigned = clientClo.call();
 
         // Unblock messages and start tracking demand and supply messages.
         demanderSpi.stopBlock();
 
-        // Wait until rebalancing will be cancelled for both suppliers.
-        GridTestUtils.waitForCondition(() -> preloadFut1.isDone() && preloadFut2.isDone(), getTestTimeout());
+        // Wait until rebalancing will be cancelled.
+        GridTestUtils.waitForCondition(
+            () -> preloadFut1.isDone() && (!rebalanceReassigned || (rebalanceReassigned && preloadFut2.isDone())),
+            getTestTimeout());
 
         Assert.assertEquals(
             "Rebalance should be cancelled on demander node: " + preloadFut1,
@@ -953,7 +997,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         Assert.assertEquals(
             "Rebalance should be cancelled on demander node: " + preloadFut2,
             false,
-            preloadFut2.get());
+            rebalanceReassigned && preloadFut2.get());
 
         // Unblock supply messages from supplier2
         supplierSpi2.stopBlock();
@@ -994,11 +1038,21 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             .filter(msg -> msg.hasFull() || msg.hasHistorical())
             .collect(toList());
 
-        assertEquals("There should only two demand messages.", 2, demandMsgsForSupplier2.size());
-        assertTrue(
-            "Both messages should require historical rebalance [" +
-                "msg=" + demandMsgsForSupplier2.get(0) + ", msg=" + demandMsgsForSupplier2.get(1) + ']',
+        if (rebalanceReassigned) {
+            assertEquals(
+                "There should be only two demand messages.", 2, demandMsgsForSupplier2.size());
+            assertTrue(
+                "Both messages should require historical rebalance [" +
+                    "msg=" + demandMsgsForSupplier2.get(0) + ", msg=" + demandMsgsForSupplier2.get(1) + ']',
                 histPred.apply(demandMsgsForSupplier2.get(0)) && histPred.apply(demandMsgsForSupplier2.get(1)));
+        }
+        else {
+            assertEquals(
+                "There should be only one demand message.", 1, demandMsgsForSupplier2.size());
+            assertTrue(
+                "Message should require historical rebalance [" + "msg=" + demandMsgsForSupplier2.get(0) + ']',
+                histPred.apply(demandMsgsForSupplier2.get(0)));
+        }
     }
 
     /**
