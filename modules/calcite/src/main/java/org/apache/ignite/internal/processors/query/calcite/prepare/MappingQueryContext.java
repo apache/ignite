@@ -26,24 +26,15 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
  */
 public class MappingQueryContext {
     /** */
-    private final RelOptCluster cluster;
-
-    /** */
     private final UUID locNodeId;
 
     /** */
     private final AffinityTopologyVersion topVer;
 
     /** */
-    public MappingQueryContext(RelOptCluster cluster, UUID locNodeId, AffinityTopologyVersion topVer) {
-        this.cluster = cluster;
+    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer) {
         this.locNodeId = locNodeId;
         this.topVer = topVer;
-    }
-
-    /** */
-    public RelOptCluster cluster() {
-        return cluster;
     }
 
     /** */

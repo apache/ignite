@@ -187,12 +187,7 @@ public final class Commons {
      * Extracts query context.
      */
     public static BaseQueryContext context(RelOptCluster cluster) {
-        try {
-            return Objects.requireNonNull((cluster.getPlanner().getContext().unwrap(BaseQueryContext.class)));
-        }
-        catch (NullPointerException e) {
-            throw e;
-        }
+        return Objects.requireNonNull(cluster.getPlanner().getContext().unwrap(BaseQueryContext.class));
     }
 
     /**
@@ -445,6 +440,6 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return new MappingQueryContext(cluster(), locNodeId, topVer);
+        return new MappingQueryContext(locNodeId, topVer);
     }
 }

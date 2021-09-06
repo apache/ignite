@@ -29,7 +29,7 @@ import static java.util.stream.Stream.generate;
 public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
-    public void trimColumnNames() throws InterruptedException {
+    public void trimColumnNames() {
         createAndPopulateTable();
 
         String X300 = generate(() -> "X").limit(300).collect(joining());
@@ -40,7 +40,7 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void columnNames() throws InterruptedException {
+    public void columnNames() {
         createAndPopulateTable();
 
         assertQuery("select count(_key), _key from person group by _key")

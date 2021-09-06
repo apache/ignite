@@ -123,9 +123,7 @@ public class Fragment {
 
     /** */
     public Fragment copy() {
-        RelOptCluster cluster = Commons.cluster();
-
-        return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
+        return new Cloner(Commons.cluster()).go(this);
     }
 
     /**
@@ -134,8 +132,6 @@ public class Fragment {
      * @param mq Metadata query.
      */
     Fragment map(MappingService mappingSrvc, MappingQueryContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
-        assert root.getCluster() == ctx.cluster() : "Fragment is detached [fragment=" + this + "]";
-
         if (mapping != null)
             return this;
 

@@ -95,7 +95,7 @@ public class QueryTemplate {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
 
         for (Fragment fragment : fragments)
-            b.add(fragment.map(mappingService, ctx, mq).copy());
+            b.add(fragment.map(mappingService, ctx, mq));
 
         return b.build();
     }
