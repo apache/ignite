@@ -562,11 +562,14 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
+        assertTrue("Test requires that only forced checkpoints were allowed.",
+            ignite.configuration().getDataStorageConfiguration().getCheckpointFrequency() >= TimeUnit.DAYS.toMillis(365));
+
         GridCacheDatabaseSharedManager dbMgr =
             ((GridCacheDatabaseSharedManager)ignite.context().cache().context().database());
 
         // Ensure that previous checkpoint finished.
-        dbMgr.getCheckpointer().currentProgress().futureFor(CheckpointState.FINISHED).get();
+        dbMgr.getCheckpointer().currentProgress().futureFor(CheckpointState.FINISHED).get(testTimeout);
 
         CountDownLatch beforeCpEnter = new CountDownLatch(1);
         CountDownLatch beforeCpExit = new CountDownLatch(1);
