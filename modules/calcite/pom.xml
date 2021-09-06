@@ -248,7 +248,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -261,11 +260,6 @@
                 </dependencies>
                 <configuration>
                     <annotationProcessorPaths>
-                        <path>
-                            <groupId>com.google.errorprone</groupId>
-                            <artifactId>error_prone_core</artifactId>
-                            <version>${errorprone-annotation-processor.version}</version>
-                        </path>
                         <path>
                             <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-network-annotation-processor</artifactId>

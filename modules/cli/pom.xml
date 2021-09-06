@@ -170,11 +170,6 @@
                     <!-- <useIncrementalCompilation>false</useIncrementalCompilation> -->
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>com.google.errorprone</groupId>
-                            <artifactId>error_prone_core</artifactId>
-                            <version>${errorprone-annotation-processor.version}</version>
-                        </path>
-                        <path>
                             <groupId>io.micronaut</groupId>
                             <artifactId>micronaut-inject-java</artifactId>
                             <version>${micronaut.version}</version>
@@ -194,11 +189,6 @@
                         </goals>
                         <configuration>
                             <annotationProcessorPaths>
-                                <path>
-                                    <groupId>com.google.errorprone</groupId>
-                                    <artifactId>error_prone_core</artifactId>
-                                    <version>${errorprone-annotation-processor.version}</version>
-                                </path>
                                 <path>
                                     <groupId>io.micronaut</groupId>
                                     <artifactId>micronaut-inject-java</artifactId>

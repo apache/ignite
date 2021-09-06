@@ -96,11 +96,6 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>com.google.errorprone</groupId>
-                            <artifactId>error_prone_core</artifactId>
-                            <version>${errorprone-annotation-processor.version}</version>
-                        </path>
-                        <path>
                             <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-configuration-annotation-processor</artifactId>
                             <version>${project.version}</version>
