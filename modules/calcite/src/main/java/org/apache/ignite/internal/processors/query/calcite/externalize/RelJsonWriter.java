@@ -73,7 +73,7 @@ public class RelJsonWriter implements RelWriter {
     public RelJsonWriter(RelOptCluster cluster, boolean pretty) {
         this.pretty = pretty;
 
-        relJson = new RelJson(cluster);
+        relJson = new RelJson();
     }
 
     /** {@inheritDoc} */

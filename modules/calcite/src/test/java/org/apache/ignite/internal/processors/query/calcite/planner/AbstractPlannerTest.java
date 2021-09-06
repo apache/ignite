@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -77,9 +76,11 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -228,15 +229,16 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
-            .logger(log)
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(
+                    newConfigBuilder(FRAMEWORK_CONFIG)
+                        .defaultSchema(schema)
+                        .build()
+                )
+                .logger(log)
+                .build()
+            )
             .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgnitePlanner planner = ctx.planner();
@@ -284,20 +286,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected RelNode originalLogicalTree(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
+        PlanningContext ctx = plannerCtx(sql, publicSchema);
 
         RelRoot relRoot;
 
@@ -342,24 +331,21 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(serialized);
 
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
+        BaseQueryContext ctx = BaseQueryContext.builder()
+            .frameworkConfig(
+                newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build()
+            )
             .logger(log)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         List<RelNode> deserializedNodes = new ArrayList<>();
 
-        try (IgnitePlanner ignored = ctx.planner()) {
-            for (String s : serialized) {
-                RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
-                deserializedNodes.add(reader.read(s));
-            }
+        for (String s : serialized) {
+            RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
+
+            deserializedNodes.add(reader.read(s));
         }
 
         List<RelNode> expectedRels = fragments.stream()
@@ -429,7 +415,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected static void createTable(IgniteSchema schema, String name, RelDataType type, IgniteDistribution distr,
         List<List<UUID>> assignment) {
         TestTable table = new TestTable(type) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 if (F.isEmpty(assignment))
                     return super.colocationGroup(ctx);
                 else
@@ -745,7 +731,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+        @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
             throw new AssertionError();
         }
 
@@ -825,7 +811,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+        @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
             throw new AssertionError();
         }
 

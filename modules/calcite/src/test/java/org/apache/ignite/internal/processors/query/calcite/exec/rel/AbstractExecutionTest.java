@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -50,7 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -277,12 +278,18 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
         FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, null, null);
         return new ExecutionContext<>(
-            taskExecutor(nodeId),
-            PlanningContext.builder()
-                .localNodeId(nodeId)
-                .logger(log())
+            BaseQueryContext.builder()
+                .logger(log)
                 .build(),
-            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of());
+            taskExecutor(nodeId),
+            qryId,
+            nodeId,
+            nodeId,
+            AffinityTopologyVersion.NONE,
+            fragmentDesc,
+            ArrayRowHandler.INSTANCE,
+            ImmutableMap.of()
+        );
     }
 
     /** */
