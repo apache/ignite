@@ -758,8 +758,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void executeFragment(UUID qryId, FragmentPlan plan, FragmentDescription fragmentDesc, ExecutionContext<Row> ectx) {
-        long frId = fragmentDesc.fragmentId();
+    private void executeFragment(UUID qryId, FragmentPlan plan, ExecutionContext<Row> ectx) {
         UUID origNodeId = ectx.originatingNodeId();
 
         Outbox<Row> node = new LogicalRelImplementor<>(
@@ -771,7 +770,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 .go(plan.root());
 
         try {
-            messageService().send(origNodeId, new QueryStartResponse(qryId, frId));
+            messageService().send(origNodeId, new QueryStartResponse(qryId, ectx.fragmentId()));
         }
         catch (IgniteCheckedException e) {
             IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
@@ -842,7 +841,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 Commons.parametersMap(msg.parameters())
             );
 
-            executeFragment(msg.queryId(), (FragmentPlan)qryPlan, msg.fragmentDescription(), ectx);
+            executeFragment(msg.queryId(), (FragmentPlan)qryPlan, ectx);
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);

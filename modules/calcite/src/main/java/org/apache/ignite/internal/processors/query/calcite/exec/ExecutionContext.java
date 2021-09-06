@@ -211,7 +211,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      * @return Originating node ID (the node, who started the execution).
      */
     public UUID originatingNodeId() {
-        return originatingNodeId == null ? locNodeId : originatingNodeId;
+        return originatingNodeId;
     }
 
     /**
