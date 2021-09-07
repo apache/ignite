@@ -387,12 +387,13 @@ public class IgniteStatisticsConfigurationManager {
             validate(target, tbl);
 
             List<StatisticsColumnConfiguration> colCfgs;
-            if (F.isEmpty(target.columns()))
+
+            if (F.isEmpty(target.columns())) {
                 colCfgs = Arrays.stream(tbl.getColumns())
                     .filter(c -> c.getColumnId() >= QueryUtils.DEFAULT_COLUMNS_COUNT)
                     .map(c -> new StatisticsColumnConfiguration(c.getName(), null))
                     .collect(Collectors.toList());
-            else
+            } else
                 colCfgs = new ArrayList<>(target.columns().values());
 
             StatisticsObjectConfiguration newCfg = new StatisticsObjectConfiguration(target.key(), colCfgs,
@@ -406,8 +407,12 @@ public class IgniteStatisticsConfigurationManager {
                     StatisticsObjectConfiguration resultCfg = (oldCfg == null) ? newCfg :
                         StatisticsObjectConfiguration.merge(oldCfg, newCfg);
 
-                    if (distrMetaStorage.compareAndSet(key, oldCfg, resultCfg))
+                    if (distrMetaStorage.compareAndSet(key, oldCfg, resultCfg)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Statistics configuration updated to " + resultCfg);
+
                         break;
+                    }
                 }
             }
             catch (IgniteCheckedException ex) {
@@ -446,8 +451,12 @@ public class IgniteStatisticsConfigurationManager {
                             Collections.emptySet()
                     );
 
-                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg))
+                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Statistics configuration dropped to " + newCfg);
+
                         break;
+                    }
                 }
             }
             catch (IgniteCheckedException ex) {
@@ -510,8 +519,12 @@ public class IgniteStatisticsConfigurationManager {
 
                     StatisticsObjectConfiguration newCfg = oldCfg.refresh(cols);
 
-                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg))
+                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Statistics configuration refreshed to " + newCfg);
+
                         break;
+                    }
                 }
             }
             catch (IgniteCheckedException ex) {
@@ -689,6 +702,8 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             if (!F.isEmpty(diff.updateCols())) {
+                globalStatMgr.clearGlobalStatistics(newCfg.key(), diff.updateCols().keySet());
+
                 GridH2Table tbl = schemaMgr.dataTable(newCfg.key().schema(), newCfg.key().obj());
 
                 // Drop table handles by dropTblLsnr.

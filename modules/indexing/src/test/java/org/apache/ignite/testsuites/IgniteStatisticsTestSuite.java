@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.query.stat.SqlStatisticsCommandTest
 import org.apache.ignite.internal.processors.query.stat.StatisticsClearTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsConfigurationTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsGatheringTest;
+import org.apache.ignite.internal.processors.query.stat.StatisticsGlobalViewInMemoryTest;
+import org.apache.ignite.internal.processors.query.stat.StatisticsGlobalViewPersistenceTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsObsolescenceTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsStorageInMemoryTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsStoragePersistenceTest;
@@ -93,7 +95,9 @@ import org.junit.runners.Suite;
 
     // Views
     StatisticsViewsPersistenceTest.class,
-    StatisticsViewsInMemoryTest.class
+    StatisticsViewsInMemoryTest.class,
+    StatisticsGlobalViewPersistenceTest.class,
+    StatisticsGlobalViewInMemoryTest.class
 })
 public class IgniteStatisticsTestSuite {
 }

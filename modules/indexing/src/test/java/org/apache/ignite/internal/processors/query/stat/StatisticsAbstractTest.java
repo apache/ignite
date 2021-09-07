@@ -35,8 +35,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -408,45 +412,45 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
             Map<StatisticsTarget, Long> expectedVer = new HashMap<>();
             IgniteStatisticsManagerImpl statMgr = statisticsMgr(0);
 
-            for (StatisticsTarget target : targets) {
-                StatisticsObjectConfiguration currCfg = statMgr.statisticConfiguration().config(target.key());
-
-                Predicate<StatisticsColumnConfiguration> pred;
-
-                if (F.isEmpty(target.columns()))
-                    pred = c -> true;
-                else {
-                    Set<String> cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
-
-                    pred = c -> cols.contains(c.name());
-                }
-
-                Long expVer = (currCfg == null) ? 1L : currCfg.columnsAll().values().stream().filter(pred)
-                    .mapToLong(StatisticsColumnConfiguration::version).min().orElse(0L) + 1;
-
-                expectedVer.put(target, expVer);
-            }
+            for (StatisticsTarget target : targets)
+                expectedVer.put(target, minStatVer(statMgr, target) + 1);
 
             if (collect)
                 statisticsMgr(0).collectStatistics(buildDefaultConfigurations(targets));
             else
                 statisticsMgr(0).refreshStatistics(targets);
 
-            if (StatisticsType.GLOBAL == type) {
-                for (Ignite ign :G.allGrids()) {
-                    IgniteStatisticsManagerImpl nodeMgr = statisticsMgr((IgniteEx)ign);
-
-                    for (StatisticsTarget target : targets)
-                        nodeMgr.getGlobalStatistics(target.key());
-                }
-
-            }
-
             awaitStatistics(TIMEOUT, expectedVer, type);
         }
         catch (Exception ex) {
             throw new IgniteException(ex);
         }
+    }
+
+    /**
+     * Get minimum statistics version for the given target.
+     *
+     * param statMgr Statistics manager to get configuration from.
+     * @param target Statistics target to get the minimum version by.
+     * @return Minimum statistics configuraion version for the given target
+     * or 0 if there are no configuration for the given targer.
+     * @throws IgniteCheckedException In case of configuration read errors.
+     */
+    public Long minStatVer(IgniteStatisticsManagerImpl statMgr, StatisticsTarget target) throws IgniteCheckedException {
+        StatisticsObjectConfiguration currCfg = statMgr.statisticConfiguration().config(target.key());
+
+        Predicate<StatisticsColumnConfiguration> pred;
+
+        if (F.isEmpty(target.columns()))
+            pred = c -> true;
+        else {
+            Set<String> cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
+
+            pred = c -> cols.contains(c.name());
+        }
+
+        return (currCfg == null) ? 0L : currCfg.columnsAll().values().stream().filter(pred)
+            .mapToLong(StatisticsColumnConfiguration::version).min().orElse(0L);
     }
 
     /**
@@ -538,6 +542,11 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
 
                 for (Map.Entry<StatisticsTarget, Long> targetVersionEntry : expectedVersions.entrySet()) {
                     StatisticsTarget target = targetVersionEntry.getKey();
+
+                    // Statistics configuration manager could not get fresh enough configuration version till now so we
+                    // need to request global statistics again to force it's collection
+                    statisticsMgr(ign).getGlobalStatistics(target.key());
+
                     Long ver = targetVersionEntry.getValue();
 
                     ObjectStatisticsImpl s;
@@ -591,8 +600,8 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         for (String col : cols) {
             ColumnStatistics colStat = stat.columnStatistics(col);
 
-            assertFalse(String.format("Expect minVer %d but column %s has %s version.", ver, col, colStat.version()),
-                colStat == null || colStat.version() < ver);
+            assertFalse(String.format("Expect minVer %d but column %s has %s version.", ver, col,
+                (colStat == null) ? null : colStat.version()), colStat == null || colStat.version() < ver);
         }
     }
 
@@ -761,5 +770,104 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                 return checker.test(res);
             }, 1000));
         }
+    }
+
+    /**
+     * Add persistence to default data region specified ignite configuration.
+     *
+     * @param cfg Base configuration to add persistence into.
+     * @param igniteInstanceName Instance name.
+     * @return Same configuration with persistence enabled.
+     */
+    protected IgniteConfiguration addPersistence(IgniteConfiguration cfg, String igniteInstanceName) {
+        cfg.setConsistentId(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return cfg;
+    }
+
+    /**
+     * Add in memory to default data region specified ignite configuration.
+     *
+     * @param cfg Base configuration to add in memory into.
+     * @param igniteInstanceName Instance name.
+     * @return Same configuration with persistence enabled.
+     */
+    protected IgniteConfiguration addImMemory(IgniteConfiguration cfg, String igniteInstanceName) {
+        cfg.setConsistentId(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(false));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return cfg;
+    }
+
+    /**
+     * Check that all expected lines exist in actual. If not - fail.
+     *
+     * @param expected Expected lines, nulls mean any value.
+     * @param actual Actual lines.
+     */
+    protected void checkContains(List<List<Object>> expected, List<List<?>> actual) {
+        List<Object> notExisting = testContains(expected, actual);
+
+        if (notExisting != null)
+            fail("Unable to found " + notExisting + " in specified dataset");
+    }
+
+    /**
+     * Test that all expected lines exist in actual.
+     *
+     * @param expected Expected lines, nulls mean any value.
+     * @param actual Actual lines.
+     * @return First not existing line or {@code null} if all lines presented.
+     */
+    protected List<Object> testContains(List<List<Object>> expected, List<List<?>> actual) {
+        assertTrue(expected.size() <= actual.size());
+
+        assertTrue("Test may take too long with such datasets of actual = " + actual.size(), actual.size() <= 1024);
+
+        for (List<Object> exp : expected) {
+            boolean found = false;
+
+            for (List<?> act : actual) {
+                found = checkEqualWithNull(exp, act);
+
+                if (found)
+                    break;
+            }
+
+            if (!found)
+                return exp;
+        }
+
+        return null;
+    }
+
+    /**
+     * Compare expected line with actual one.
+     *
+     * @param expected Expected line, {@code null} value mean any value.
+     * @param actual Actual line.
+     * @return {@code true} if line are equal, {@code false} - otherwise.
+     */
+    protected boolean checkEqualWithNull(List<Object> expected, List<?> actual) {
+        assertEquals(expected.size(), actual.size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            Object exp = expected.get(i);
+            Object act = actual.get(i);
+
+            if (exp != null && !exp.equals(act) && act != null)
+                return false;
+        }
+
+        return true;
     }
 }
