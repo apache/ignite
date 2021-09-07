@@ -3211,15 +3211,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CommandHandler h = new CommandHandler();
 
+        // Block communication on node 1.
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
-        // Restore single cache group.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", DEFAULT_CACHE_NAME));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + DEFAULT_CACHE_NAME + ']');
+        // Restore single cache group from node 0.
+        IgniteFuture<Void> fut = ig.snapshot().restoreSnapshot(snpName, Collections.singleton(DEFAULT_CACHE_NAME));
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
@@ -3249,6 +3248,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class,
+            "Operation has been canceled by the user.");
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
