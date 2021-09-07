@@ -600,8 +600,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+        if (cctx.kernalContext().clientNode() || !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
@@ -620,8 +619,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "prior to snapshot operation start: " + leftNodes));
         }
 
-        if (!cctx.localNode().isClient() && cctx.kernalContext().encryption().isMasterKeyChangeInProgress()
-            || cctx.kernalContext().encryption().reencryptionInProgress()) {
+        if (!cctx.localNode().isClient() && (cctx.kernalContext().encryption().isMasterKeyChangeInProgress()
+            || cctx.kernalContext().encryption().reencryptionInProgress())) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Master key changing or " +
                 "caches re-encryption process is not finished yet."));
         }
@@ -1080,6 +1079,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
+
+        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+        kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
+
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, name).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
@@ -1087,14 +1092,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
-                byte[] currentMasterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
+                byte[] curMasterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
 
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
                     for (SnapshotMetadata meta : nodeMetas) {
-                        if (meta.masterKeyDigest() == null)
-                            continue;
-
-                        if (currentMasterKeyDigest == null) {
+                        if (curMasterKeyDigest == null && meta.masterKeyDigest() != null) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
                                     "' has encrypted caches while encryption is disabled. No keys exist to decrypt data to validate.")))));
@@ -1102,7 +1104,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             return;
                         }
 
-                        if (!Arrays.equals(meta.masterKeyDigest(), currentMasterKeyDigest)) {
+                        if (meta.masterKeyDigest() != null && !Arrays.equals(meta.masterKeyDigest(), curMasterKeyDigest)) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
                                     "' has different signature of the master key. Unable to decrypt data to validate.")))));
@@ -1113,12 +1115,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         grpIds.keySet().removeAll(meta.partitions().keySet());
                     }
                 }
-
-                Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-                    (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
-
-                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-                kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
 
                 if (!grpIds.isEmpty()) {
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,

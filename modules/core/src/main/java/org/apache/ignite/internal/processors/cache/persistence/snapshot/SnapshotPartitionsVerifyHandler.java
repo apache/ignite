@@ -267,10 +267,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
      */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
         /** Kernal context */
-        private GridKernalContext ctx;
+        private final GridKernalContext ctx;
 
         /** Data dirs of snapshot's caches by group id. */
-        private Map<Integer, File> grpDirs;
+        private final Map<Integer, File> grpDirs;
 
         /** Encryption keys loaded from snapshot. */
         private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();

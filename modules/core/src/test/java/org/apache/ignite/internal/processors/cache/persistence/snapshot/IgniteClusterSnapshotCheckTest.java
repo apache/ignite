@@ -120,8 +120,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         startClientGrid();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
 

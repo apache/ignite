@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -178,6 +177,7 @@ public class SnapshotMetadata implements Serializable {
             snapshotName().equals(compare.snapshotName()) &&
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
+            Objects.equals(encrGrpIds, compare.encrGrpIds) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
     }
 
@@ -186,8 +186,6 @@ public class SnapshotMetadata implements Serializable {
      * @return {@code True} if cache group is encrypted. {@code False} otherwise.
      */
     public boolean isCacheGroupEncrypted(int grpId) {
-        Set<Integer> encrGrpIds = this.encrGrpIds;
-
         return encrGrpIds != null && encrGrpIds.contains(grpId);
     }
 
@@ -205,9 +203,7 @@ public class SnapshotMetadata implements Serializable {
      * @return Master key digest for encrypted caches.
      */
     public byte[] masterKeyDigest() {
-        byte[] masterKeyDigest = this.masterKeyDigest;
-
-        return masterKeyDigest == null ? null : masterKeyDigest.clone();
+        return masterKeyDigest;
     }
 
     /**
@@ -217,12 +213,8 @@ public class SnapshotMetadata implements Serializable {
      */
     public SnapshotMetadata encrGrpIds(Collection<Integer> encrGrpIds) {
         // Might be null even if final due to deserialization of previous version the object;
-        if (this.encrGrpIds == null) {
-            synchronized (this) {
-                if (this.encrGrpIds == null)
-                    this.encrGrpIds = ConcurrentHashMap.newKeySet();
-            }
-        }
+        if (this.encrGrpIds == null)
+            this.encrGrpIds = new HashSet<>();
 
         this.encrGrpIds.addAll(encrGrpIds);
 

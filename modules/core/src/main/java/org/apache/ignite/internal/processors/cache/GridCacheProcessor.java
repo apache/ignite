@@ -3546,6 +3546,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 false,
                 null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
+                null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
             if (req != null) {
@@ -3804,10 +3805,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         disabledAfterStart,
                         ccfg.queryEntities(),
                         encrKey != null ? encrKey.key() : null,
-                        encrKey != null ? masterKeyDigest : null);
-
-                    if (encrKey != null)
-                        req.encryptionKeyId(encrKey.id());
+                        encrKey != null ? encrKey.id() : null,
+                        encrKey != null ? masterKeyDigest : null
+                        );
 
                     if (req != null) {
                         if (req.clientStartOnly()) {
@@ -5085,6 +5085,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
+     * @param encKeyId Id of the encryption key.
      * @param masterKeyDigest Master key digest.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
@@ -5102,6 +5103,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
+        @Nullable Integer encKeyId,
         @Nullable byte[] masterKeyDigest
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
@@ -5114,9 +5116,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.disabledAfterStart(disabledAfterStart);
 
-        req.masterKeyDigest(masterKeyDigest);
-
         req.encryptionKey(encKey);
+
+        req.encryptionKeyId(encKeyId);
+
+        req.masterKeyDigest(masterKeyDigest);
 
         req.restartId(restartId);
 

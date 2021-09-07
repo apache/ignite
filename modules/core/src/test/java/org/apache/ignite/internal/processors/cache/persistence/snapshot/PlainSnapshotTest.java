@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -30,13 +31,16 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Snapshot test for plain, not-encrypted-only snapshots.
@@ -122,5 +126,24 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         File snpWorkDir = mgr.snapshotTmpDir();
 
         assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotInMemoryFail() throws Exception {
+        persistence = false;
+
+        IgniteEx srv = startGrid(0);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteEx clnt = startClientGrid(1);
+
+        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            "Snapshots on an in-memory clusters are not allowed.");
     }
 }

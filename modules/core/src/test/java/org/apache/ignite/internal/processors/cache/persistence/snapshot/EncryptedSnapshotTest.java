@@ -144,6 +144,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ig = startGrids(3);
 
+        ig.cluster().state(ACTIVE);
+
         IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
 
         for (Exception e : snpCheckRes.exceptions().values()) {

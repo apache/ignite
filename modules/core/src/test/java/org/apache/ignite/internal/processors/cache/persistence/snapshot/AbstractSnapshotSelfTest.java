@@ -291,7 +291,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setEncryptionEnabled(encryption);
     }
 
     /**
