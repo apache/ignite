@@ -108,10 +108,10 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
         assertEquals(ROWS / 10, res.size());
 
         res.forEach(r -> {
-            BigDecimal s0 = (BigDecimal)r.get(0);
-            BigDecimal s1 = (BigDecimal)r.get(1);
+            long s0 = (long)r.get(0);
+            long s1 = (long)r.get(1);
 
-            assertEquals(s0.multiply(new BigDecimal(2)), s1);
+            assertEquals(s0 * 2, s1);
         });
     }
 
