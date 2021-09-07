@@ -298,17 +298,17 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                     if (!cond.test(left, right))
                         continue;
 
-                    final Row row = handler.concat(left, right);
-
                     matched = true;
 
                     if (joinType == JoinRelType.SEMI) {
                         requested--;
                         downstream().push(left);
                         left = null;
-                    }
-                    else if (joinType == JoinRelType.INNER) {
+                    } else if (joinType == JoinRelType.INNER) {
                         requested--;
+
+                        final Row row = handler.concat(left, right);
+                        
                         downstream().push(row);
                     }
                 }
@@ -320,27 +320,26 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                         downstream().push(left);
                     }
                 }
-            }
-            finally {
+            } finally {
                 inLoop = false;
             }
 
-            if (requested > 0 && waitingLeft == 0 && F.isEmpty(leftInBuf))
-                requestLeft();
+            if (requested > 0) {
+                if (waitingLeft == 0 && F.isEmpty(leftInBuf))
+                    requestLeft();
 
-            if (requested > 0 && waitingRight == 0 && F.isEmpty(rightInBuf))
-                requestRight();
+                if (waitingRight == 0 && F.isEmpty(rightInBuf))
+                    requestRight();
+            }
 
             // rewind right if left is not empty.
-            if (requested > 0 && !leftIsEmpty()) {
-                if (rightIsEmptying()) {
-                    // if left == null seems no progress and right is empty.
-                    if (left != null) {
-                        left = null;
-                        matched = false;
-                        rightSource().rewind();
-                        requestRight();
-                    }
+            if (requested > 0 && rightIsEmptying() && !leftIsEmpty()) {
+                // if left == null seems no progress and right is empty.
+                if (left != null) {
+                    left = null;
+                    matched = false;
+                    rightSource().rewind();
+                    requestRight();
                 }
             }
 
