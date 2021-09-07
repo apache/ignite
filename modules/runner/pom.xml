@@ -154,5 +154,23 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>platform-test-node-runner</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>org.apache.ignite.internal.runner.app.PlatformTestNodeRunner</mainClass>
+                    <arguments>...</arguments>
+                    <classpathScope>test</classpathScope>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

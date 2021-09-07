@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<RuleSet Name="Rules for Apache Ignite tests" ToolsVersion="10.0">
+  <Include Path="Apache.Ignite.ruleset" Action="Default" />
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <!-- Enable xmldoc file generation -->
+    <Rule Id="SA0001" Action="None" />
+
+    <!-- Elements should be documented -->
+    <Rule Id="SA1600" Action="None" />
+
+    <!-- Partial classes should be documented -->
+    <Rule Id="SA1601" Action="None" />
+
+    <!-- Enums should be documented -->
+    <Rule Id="SA1602" Action="None" />
+
+    <!-- Types that own disposable fields should be disposable -->
+    <Rule Id="CA1001" Action="None" />
+
+    <!-- Implement IDisposable correctly -->
+    <Rule Id="CA1063" Action="None" />
+
+    <!-- Dispose must call SuppressFinalize -->
+    <Rule Id="CA1816" Action="None" />
+
+    <!-- Call Dispose -->
+    <Rule Id="CA2000" Action="None" />
+
+    <!-- Call ConfigureAwait (not needed in tests) -->
+    <Rule Id="CA2007" Action="None" />
+
+    <!-- DoNotCatchGeneralExceptionTypes -->
+    <Rule Id="CA1031" Action="None" />
+  </Rules>
+</RuleSet>

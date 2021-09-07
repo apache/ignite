@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite", "Apache.Ignite\Apache.Ignite.csproj", "{AB19FD0A-84F3-4D46-8051-656A7AAE2BA8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Tests", "Apache.Ignite.Tests\Apache.Ignite.Tests.csproj", "{21478528-C1D9-41D1-84FB-B9F332356380}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{681DAFE7-175B-464F-81A4-3357B5789AE7}"
+ProjectSection(SolutionItems) = preProject
+	README.md = README.md
+	stylecop.json = stylecop.json
+	Directory.Build.props = Directory.Build.props
+	Apache.Ignite.Tests.ruleset = Apache.Ignite.Tests.ruleset
+	Apache.Ignite.ruleset = Apache.Ignite.ruleset
+	DEVNOTES.md = DEVNOTES.md
+EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks", "Apache.Ignite.Benchmarks\Apache.Ignite.Benchmarks.csproj", "{9E63F965-535F-4AF2-A380-0780EAC6390E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AB19FD0A-84F3-4D46-8051-656A7AAE2BA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB19FD0A-84F3-4D46-8051-656A7AAE2BA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB19FD0A-84F3-4D46-8051-656A7AAE2BA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB19FD0A-84F3-4D46-8051-656A7AAE2BA8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21478528-C1D9-41D1-84FB-B9F332356380}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21478528-C1D9-41D1-84FB-B9F332356380}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21478528-C1D9-41D1-84FB-B9F332356380}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21478528-C1D9-41D1-84FB-B9F332356380}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E63F965-535F-4AF2-A380-0780EAC6390E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E63F965-535F-4AF2-A380-0780EAC6390E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E63F965-535F-4AF2-A380-0780EAC6390E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E63F965-535F-4AF2-A380-0780EAC6390E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

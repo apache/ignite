@@ -104,6 +104,7 @@
         <maven.shade.plugin.version>3.2.4</maven.shade.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
+        <maven.exec.plugin.version>3.0.0</maven.exec.plugin.version>
     </properties>
 
     <distributionManagement>
@@ -942,6 +943,12 @@
                     <artifactId>fmpp-maven-plugin</artifactId>
                     <version>${maven.fmpp.plugin.version}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${maven.exec.plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -1127,6 +1134,7 @@
                         <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/HeapByteBufUtil.java</exclude> <!-- Netty license. -->
                         <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/timer/TimerTask.java</exclude> <!-- Netty license. -->
                         <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/timer/Timeout.java</exclude> <!-- Netty license. -->
+                        <exclude>**/*.sln</exclude> <!-- Visual Studio solution. -->
                     </excludes>
                 </configuration>
             </plugin>

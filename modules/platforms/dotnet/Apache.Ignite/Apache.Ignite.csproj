@@ -1,0 +1,42 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.3.75" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>$(AssemblyName).Tests, PublicKey=0024000004800000140100000602000000240000525341310008000001000100b99219bf9bc81eac1a487cbe891e803003ef4b3d34ac47d166b2f44df2ba3c2476a7584066590d2e9ca3eb3d8fe471ad1935e0b67d21066dfb70ec72e4c55ceb7352cad2977a3fe989f4d84de256edf02d465cb6a3159e0851b3d1ce2be06f48e425709afdb9cc496b3d73e2e6ca92cc655919e7668fe52d82836d23696b3cfe8e2a9d282a96f4f509c71e9bcea264516ed6d5594883c0d133970bb6030136255de8f4fe77cfe82a32b97e474c05415e33cc08c6f39a96e48cec59bce4b4593b6b28aea46ba3f1a4e777af9a08faea092bf9dd9782a620415a7a5bb233a563dd6086c6e5e8f2868d71bcfa65dd6f18595bd0fd652ff142b46fcd339d78d82d8d</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>$(AssemblyName).Benchmarks, PublicKey=00240000048000001401000006020000002400005253413100080000010001003f0927863ac8623a4cd6325c77a39572155d52c79bf748b099c9dcd08ed0e0c20987d659250c78217685082cf0cb2196dc8f934f1c9249ec586dc793bf3397daee9b308858d9a96215310f1fad77285d0bfe0bf9c9057ff9908bc6858a19559fa3482d02f31ff5e1cefa81e012baa95de641ee51e706f9e5c955b4635df20105f9c0bc484d590e7aed8ff8eeb608cbffa7eb3cd99e1b9868635e528c5fe49503ec2dda3b3f6cd9b9115d461240bdb6a6c77e79961b7f7d7008f0eb91409658994543122406b23a571fc23542ff0d8658815a989c4fb16a7e0c973fe2217a94891daa499c338bd37b81b1f4cd4de90865eca1ccdb9946011db314892aed32a9d9</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

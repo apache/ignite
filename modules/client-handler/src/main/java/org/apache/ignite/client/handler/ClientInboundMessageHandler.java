@@ -137,7 +137,13 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
 
             try {
                 ProtocolVersion.LATEST_VER.pack(errPacker);
-                errPacker.packInt(ClientErrorCode.FAILED).packString(t.getMessage());
+
+                String message = t.getMessage();
+
+                if (message == null)
+                    message = t.getClass().getName();
+
+                errPacker.packInt(ClientErrorCode.FAILED).packString(message);
 
                 write(errPacker, ctx);
             }
