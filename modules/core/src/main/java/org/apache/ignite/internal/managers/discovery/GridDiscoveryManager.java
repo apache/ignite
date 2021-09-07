@@ -806,6 +806,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!ctx.clientDisconnected()) {
+                        // The security processor must be notified first, since {@link IgniteSecurity#onLocalJoin}
+                        // finishes local node security context initialization that can be demanded by other Ignite
+                        // components.
                         ctx.security().onLocalJoin();
 
                         if (!isLocDaemon) {
