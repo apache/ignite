@@ -92,7 +92,7 @@ public class PlatformTestNodeRunner {
 
         String ports = startedNodes.stream()
                 .map(n -> String.valueOf(getPort((IgniteImpl)n)))
-                .collect(Collectors.joining (","));
+                .collect(Collectors.joining(","));
 
         System.out.println("THIN_CLIENT_PORTS=" + ports);
 
