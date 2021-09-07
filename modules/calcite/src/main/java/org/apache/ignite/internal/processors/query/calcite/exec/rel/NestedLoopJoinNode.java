@@ -184,6 +184,16 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
+    protected void requestRight() throws Exception {
+        rightSource().request(waitingRight = IN_BUFFER_SIZE);
+    }
+
+    /** */
+    protected void requestLeft() throws Exception {
+        leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+    }
+
+    /** */
     protected Node<Row> leftSource() {
         return sources().get(0);
     }
@@ -241,6 +251,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
+         * @param joinType Join operation type.
          */
         public InnerJoin(
             ExecutionContext<Row> ctx,
@@ -269,16 +280,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         /** */
         private boolean rightIsEmptying() {
             return waitingRight == NOT_WAITING && F.isEmpty(rightInBuf);
-        }
-
-        /** */
-        private void requestRight() throws Exception {
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
-        }
-
-        /** */
-        private void requestLeft() throws Exception {
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE);
         }
 
         /** */
@@ -409,16 +410,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
             right = null;
 
             super.rewindInternal();
-        }
-
-        /** */
-        private void requestRight() throws Exception {
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
-        }
-
-        /** */
-        private void requestLeft() throws Exception {
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE);
         }
 
         /** {@inheritDoc} */
@@ -563,16 +554,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         /** */
         private boolean leftIsEmpty() {
             return left == null && F.isEmpty(leftInBuf);
-        }
-
-        /** */
-        private void requestRight() throws Exception {
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
-        }
-
-        /** */
-        private void requestLeft() throws Exception {
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE);
         }
 
         /** */
