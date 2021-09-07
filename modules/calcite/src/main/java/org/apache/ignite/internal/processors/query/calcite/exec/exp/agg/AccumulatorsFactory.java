@@ -172,13 +172,13 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     /** */
     private final class WrapperPrototype implements Supplier<AccumulatorWrapper<Row>> {
         /** */
-        private Supplier<Accumulator> accFactory;
+        private Supplier<Accumulator<Row>> accFactory;
 
         /** */
         private final AggregateCall call;
 
         /** */
-        private Function<Object[], Object[]> inAdapter;
+        private Function<Row, Row> inAdapter;
 
         /** */
         private Function<Object, Object> outAdapter;
@@ -190,19 +190,19 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         /** {@inheritDoc} */
         @Override public AccumulatorWrapper<Row> get() {
-            Accumulator accumulator = accumulator();
+            Accumulator<Row> accumulator = accumulator();
 
             return new AccumulatorWrapperImpl(accumulator, call, inAdapter, outAdapter);
         }
 
         /** */
-        @NotNull private Accumulator accumulator() {
+        @NotNull private Accumulator<Row> accumulator() {
             if (accFactory != null)
                 return accFactory.get();
 
             // init factory and adapters
             accFactory = Accumulators.accumulatorFactory(call, ctx);
-            Accumulator accumulator = accFactory.get();
+            Accumulator<Row> accumulator = accFactory.get();
 
             inAdapter = createInAdapter(accumulator);
             outAdapter = createOutAdapter(accumulator);
@@ -211,7 +211,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         }
 
         /** */
-        @NotNull private Function<Object[], Object[]> createInAdapter(Accumulator accumulator) {
+        @NotNull private Function<Row, Row> createInAdapter(Accumulator<Row> accumulator) {
             if (type == AggregateType.REDUCE || F.isEmpty(call.getArgList()))
                 return Function.identity();
 
@@ -224,17 +224,20 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             List<Function<Object, Object>> casts =
                 Commons.transform(Pair.zip(inTypes, outTypes), AccumulatorsFactory::cast);
 
-            return new Function<Object[], Object[]>() {
-                @Override public Object[] apply(Object[] args) {
-                    for (int i = 0; i < args.length; i++)
-                        args[i] = casts.size() > i ? casts.get(i).apply(args[i]) : args[i];
+            return new Function<Row, Row>() {
+                @Override public Row apply(Row args) {
+                    RowHandler<Row> hnd = ctx.rowHandler();
+                    for (int i = 0; i < hnd.columnCount(args); i++) {
+                        Object o = casts.size() > i ? casts.get(i).apply(hnd.get(i, args)) : hnd.get(i, args);
+                        hnd.set(i, args, o);
+                    }
                     return args;
                 }
             };
         }
 
         /** */
-        @NotNull private Function<Object, Object> createOutAdapter(Accumulator accumulator) {
+        @NotNull private Function<Object, Object> createOutAdapter(Accumulator<Row> accumulator) {
             if (type == AggregateType.MAP)
                 return Function.identity();
 
@@ -253,10 +256,10 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     /** */
     private final class AccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
         /** */
-        private final Accumulator accumulator;
+        private final Accumulator<Row> accumulator;
 
         /** */
-        private final Function<Object[], Object[]> inAdapter;
+        private final Function<Row, Row> inAdapter;
 
         /** */
         private final Function<Object, Object> outAdapter;
@@ -278,9 +281,9 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         /** */
         AccumulatorWrapperImpl(
-            Accumulator accumulator,
+            Accumulator<Row> accumulator,
             AggregateCall call,
-            Function<Object[], Object[]> inAdapter,
+            Function<Row, Row> inAdapter,
             Function<Object, Object> outAdapter
         ) {
             this.accumulator = accumulator;
@@ -317,18 +320,20 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            Object[] args = new Object[argList.size() + collations.size()];
-            for (int i = 0; i < argList.size(); i++) {
-                args[i] = handler.get(argList.get(i), row);
+            Row row1 = argList.isEmpty() ? handler.factory().create()
+                : handler.factory(ctx.getTypeFactory(), accumulator.argumentTypes(ctx.getTypeFactory())).create();
 
-                if (ignoreNulls && args[i] == null)
+            for (int i = 0; i < argList.size(); i++) {
+                handler.set(i, row1, handler.get(argList.get(i), row));
+
+                if (ignoreNulls && handler.get(i, row1) == null)
                     return;
             }
+//
+//            for (int i = 0; i < collations.size(); i++)
+//                args[argList.size() + i] = handler.get(collations.get(i), row);
 
-            for (int i = 0; i < collations.size(); i++)
-                args[argList.size() + i] = handler.get(collations.get(i), row);
-
-            accumulator.add(inAdapter.apply(args));
+            accumulator.add(inAdapter.apply(row1));
         }
 
         /** {@inheritDoc} */

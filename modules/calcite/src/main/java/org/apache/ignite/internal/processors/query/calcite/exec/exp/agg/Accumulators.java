@@ -34,6 +34,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -49,14 +50,16 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 /**
  *
  */
-public class Accumulators {
+public class Accumulators<Row> {
     /** */
-    public static <Row> Supplier<Accumulator> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
-        Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
+    public static<Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
+        RowHandler<Row> handler = ctx.rowHandler();
+
+        Supplier<Accumulator<Row>> fac = accumulatorFunctionFactory(call, handler);
 
         Comparator<Row> comp = ctx.expressionFactory().comparator(getMappedCollation(call));
 
-        Supplier<Accumulator> supplier;
+        Supplier<Accumulator<Row>> supplier;
 
         if (comp == null)
             supplier = fac;
@@ -64,7 +67,7 @@ public class Accumulators {
             int colFieldsCnt = (int) calculateOuterCollations(call);
             if (colFieldsCnt > 0)
                 supplier = () -> new SortingAccumulator<>(
-                    () -> new CollationExtracorAccumulator(fac, colFieldsCnt),
+                    () -> new CollationExtracorAccumulator<>(fac, colFieldsCnt, handler, ctx.getTypeFactory()),
                     comp
                 );
             else
@@ -72,7 +75,7 @@ public class Accumulators {
         }
 
         if (call.isDistinct())
-            return () -> new DistinctAccumulator(supplier);
+            return () -> new DistinctAccumulator<>(supplier, handler);
 
         return supplier;
     }
@@ -120,120 +123,120 @@ public class Accumulators {
     }
 
     /** */
-    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call) {
+    private static<Row> Supplier<Accumulator<Row>> accumulatorFunctionFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.getAggregation().getName()) {
             case "COUNT":
-                return LongCount.FACTORY;
+                return () -> new LongCount<>(hnd);
             case "AVG":
-                return avgFactory(call);
+                return avgFactory(call, hnd);
             case "SUM":
-                return sumFactory(call);
+                return sumFactory(call, hnd);
             case "$SUM0":
-                return sumEmptyIsZeroFactory(call);
+                return sumEmptyIsZeroFactory(call, hnd);
             case "MIN":
-                return minFactory(call);
+                return minFactory(call, hnd);
             case "MAX":
-                return maxFactory(call);
+                return maxFactory(call, hnd);
             case "SINGLE_VALUE":
-                return SingleVal.FACTORY;
+                return () -> new SingleVal<>(hnd);
             case "LISTAGG":
-                return ListAggAccumulator::new;
+                return () -> new ListAggAccumulator<>(hnd);
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
     }
 
     /** */
-    private static Supplier<Accumulator> avgFactory(AggregateCall call) {
+    private static <Row> Supplier<Accumulator<Row>> avgFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case BIGINT:
             case DECIMAL:
-                return DecimalAvg.FACTORY;
+                return () -> new DecimalAvg<>(hnd);
             case DOUBLE:
             case REAL:
             case FLOAT:
             case INTEGER:
             default:
-                return DoubleAvg.FACTORY;
+                return () -> new DoubleAvg<>(hnd);
         }
     }
 
     /** */
-    private static Supplier<Accumulator> sumFactory(AggregateCall call) {
+    private static <Row> Supplier<Accumulator<Row>> sumFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return DoubleSum.FACTORY;
+                return () -> new DoubleSum<>(hnd);
             case DECIMAL:
-                return DecimalSum.FACTORY;
+                return () -> new DecimalSum<>(hnd);
             case INTEGER:
-                return IntSum.FACTORY;
+                return () -> new IntSum<>(hnd);
             case BIGINT:
             default:
-                return LongSum.FACTORY;
+                return () -> new LongSum<>(hnd);
         }
     }
 
     /** */
-    private static Supplier<Accumulator> sumEmptyIsZeroFactory(AggregateCall call) {
+    private static <Row> Supplier<Accumulator<Row>> sumEmptyIsZeroFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return DoubleSumEmptyIsZero.FACTORY;
+                return () -> new DoubleSumEmptyIsZero<>(hnd);
             case DECIMAL:
-                return DecimalSumEmptyIsZero.FACTORY;
+                return () -> new DecimalSumEmptyIsZero<>(hnd);
             case INTEGER:
-                return IntSumEmptyIsZero.FACTORY;
+                return () -> new IntSumEmptyIsZero<>(hnd);
             case BIGINT:
             default:
-                return LongSumEmptyIsZero.FACTORY;
+                return () -> new LongSumEmptyIsZero<>(hnd);
         }
     }
 
     /** */
-    private static Supplier<Accumulator> minFactory(AggregateCall call) {
+    private static <Row> Supplier<Accumulator<Row>> minFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return DoubleMinMax.MIN_FACTORY;
+                return () -> new DoubleMinMax<>(true, hnd);
             case DECIMAL:
-                return DecimalMinMax.MIN_FACTORY;
+                return () -> new DecimalMinMax<>(true, hnd);
             case INTEGER:
-                return IntMinMax.MIN_FACTORY;
+                return () -> new IntMinMax<>(true, hnd);
             case CHAR:
             case VARCHAR:
-                return VarCharMinMax.MIN_FACTORY;
+                return () -> new VarCharMinMax<>(true, hnd);
             case BIGINT:
             default:
-                return LongMinMax.MIN_FACTORY;
+                return () -> new LongMinMax<>(true, hnd);
         }
     }
 
     /** */
-    private static Supplier<Accumulator> maxFactory(AggregateCall call) {
+    private static <Row> Supplier<Accumulator<Row>> maxFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return DoubleMinMax.MAX_FACTORY;
+                return () -> new DoubleMinMax<>(false, hnd);
             case DECIMAL:
-                return DecimalMinMax.MAX_FACTORY;
+                return () -> new DecimalMinMax<>(false, hnd);
             case INTEGER:
-                return IntMinMax.MAX_FACTORY;
+                return () -> new IntMinMax<>(false, hnd);
             case CHAR:
             case VARCHAR:
-                return VarCharMinMax.MAX_FACTORY;
+                return () -> new VarCharMinMax<>(false, hnd);
             case BIGINT:
             default:
-                return LongMinMax.MAX_FACTORY;
+                return () -> new LongMinMax<>(false, hnd);
         }
     }
 
     /** */
-    private static class SingleVal implements Accumulator {
+    private static class SingleVal<Row> implements Accumulator<Row> {
         /** */
         private Object holder;
 
@@ -241,25 +244,30 @@ public class Accumulators {
         private boolean touched;
 
         /** */
-        public static final Supplier<Accumulator> FACTORY = SingleVal::new;
+        private final RowHandler<Row> hnd;
 
         /** */
-        @Override public void add(Object... args) {
-            assert args.length == 1 : args.length;
+        private SingleVal(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
+        /** */
+        @Override public void add(Row row) {
+            assert hnd.columnCount(row) == 1 : hnd.columnCount(row);
 
             if (touched)
                 throw new IllegalArgumentException("Subquery returned more than 1 value.");
 
             touched = true;
 
-            holder = args[0];
+            holder = hnd.get(0, row);
         }
 
         /** */
-        @Override public void apply(Accumulator other) {
+        @Override public void apply(Accumulator<Row> other) {
             assert holder == null : "sudden apply for: " + other + " on SingleVal";
 
-            holder = ((SingleVal)other).holder;
+            holder = ((SingleVal<Row>)other).holder;
         }
 
         /** */
@@ -279,19 +287,24 @@ public class Accumulators {
     }
 
     /** */
-    public static class DecimalAvg implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DecimalAvg::new;
-        
+    private static class DecimalAvg<Row> implements Accumulator<Row> {
         /** */
         private BigDecimal sum = BigDecimal.ZERO;
 
         /** */
         private BigDecimal cnt = BigDecimal.ZERO;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DecimalAvg(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal)args[0];
+        @Override public void add(Row row) {
+            BigDecimal in = (BigDecimal)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -301,8 +314,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DecimalAvg other0 = (DecimalAvg)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DecimalAvg<Row> other0 = (DecimalAvg<Row>)other;
 
             sum = sum.add(other0.sum);
             cnt = cnt.add(other0.cnt);
@@ -325,19 +338,24 @@ public class Accumulators {
     }
 
     /** */
-    public static class DoubleAvg implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DoubleAvg::new;
-
+    private static class DoubleAvg<Row> implements Accumulator<Row> {
         /** */
         private double sum;
 
         /** */
         private long cnt;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DoubleAvg(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Double in = (Double)args[0];
+        @Override public void add(Row row) {
+            Double in = (Double)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -347,8 +365,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DoubleAvg other0 = (DoubleAvg)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DoubleAvg<Row> other0 = (DoubleAvg<Row>)other;
 
             sum += other0.sum;
             cnt += other0.cnt;
@@ -371,24 +389,29 @@ public class Accumulators {
     }
 
     /** */
-    private static class LongCount implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = LongCount::new;
-
+    private static class LongCount<Row> implements Accumulator<Row> {
         /** */
         private long cnt;
 
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            assert F.isEmpty(args) || args.length == 1;
+        /** */
+        private final RowHandler<Row> hnd;
 
-            if (F.isEmpty(args) || args[0] != null)
+        /** */
+        private LongCount(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            assert row == null || hnd.columnCount(row) == 0 || hnd.columnCount(row) == 1;
+
+            if (row == null || hnd.columnCount(row) == 0 || hnd.get(0, row) != null)
                 cnt++;
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            LongCount other0 = (LongCount)other;
+        @Override public void apply(Accumulator<Row> other) {
+            LongCount<Row> other0 = (LongCount<Row>)other;
             cnt += other0.cnt;
         }
 
@@ -409,19 +432,23 @@ public class Accumulators {
     }
 
     /** */
-    private static class DoubleSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DoubleSum::new;
-
+    private static class DoubleSum<Row> implements Accumulator<Row> {
         /** */
         private double sum;
 
         /** */
         private boolean empty = true;
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DoubleSum(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Double in = (Double)args[0];
+        @Override public void add(Row row) {
+            Double in = (Double)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -431,8 +458,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DoubleSum other0 = (DoubleSum)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DoubleSum<Row> other0 = (DoubleSum<Row>)other;
 
             if (other0.empty)
                 return;
@@ -458,19 +485,24 @@ public class Accumulators {
     }
 
     /** */
-    private static class IntSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = IntSum::new;
-
+    private static class IntSum<Row> implements Accumulator<Row> {
         /** */
         private int sum;
 
         /** */
         private boolean empty = true;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private IntSum(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Integer in = (Integer)args[0];
+        @Override public void add(Row row) {
+            Integer in = (Integer)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -480,8 +512,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            IntSum other0 = (IntSum)other;
+        @Override public void apply(Accumulator<Row> other) {
+            IntSum<Row> other0 = (IntSum<Row>)other;
 
             if (other0.empty)
                 return;
@@ -507,19 +539,24 @@ public class Accumulators {
     }
 
     /** */
-    private static class LongSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = LongSum::new;
-
+    private static class LongSum<Row> implements Accumulator<Row> {
         /** */
         private long sum;
 
         /** */
         private boolean empty = true;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private LongSum(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Long in = (Long)args[0];
+        @Override public void add(Row row) {
+            Long in = (Long)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -529,8 +566,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            LongSum other0 = (LongSum)other;
+        @Override public void apply(Accumulator<Row> other) {
+            LongSum<Row> other0 = (LongSum<Row>)other;
 
             if (other0.empty)
                 return;
@@ -556,16 +593,21 @@ public class Accumulators {
     }
 
     /** */
-    private static class DecimalSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DecimalSum::new;
-
+    private static class DecimalSum<Row> implements Accumulator<Row> {
         /** */
         private BigDecimal sum;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DecimalSum(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal)args[0];
+        @Override public void add(Row row) {
+            BigDecimal in = (BigDecimal)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -574,8 +616,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DecimalSum other0 = (DecimalSum)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DecimalSum<Row> other0 = (DecimalSum<Row>)other;
 
             if (other0.sum == null)
                 return;
@@ -600,16 +642,21 @@ public class Accumulators {
     }
 
     /** */
-    private static class DoubleSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DoubleSumEmptyIsZero::new;
-
+    private static class DoubleSumEmptyIsZero<Row> implements Accumulator<Row> {
         /** */
         private double sum;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DoubleSumEmptyIsZero(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Double in = (Double)args[0];
+        @Override public void add(Row row) {
+            Double in = (Double)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -618,8 +665,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DoubleSumEmptyIsZero other0 = (DoubleSumEmptyIsZero)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DoubleSumEmptyIsZero<Row> other0 = (DoubleSumEmptyIsZero<Row>)other;
 
             sum += other0.sum;
         }
@@ -641,16 +688,21 @@ public class Accumulators {
     }
 
     /** */
-    private static class IntSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = IntSumEmptyIsZero::new;
-
+    private static class IntSumEmptyIsZero<Row> implements Accumulator<Row> {
         /** */
         private int sum;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private IntSumEmptyIsZero(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Integer in = (Integer)args[0];
+        @Override public void add(Row row) {
+            Integer in = (Integer)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -659,8 +711,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            IntSumEmptyIsZero other0 = (IntSumEmptyIsZero)other;
+        @Override public void apply(Accumulator<Row> other) {
+            IntSumEmptyIsZero<Row> other0 = (IntSumEmptyIsZero<Row>)other;
 
             sum += other0.sum;
         }
@@ -682,17 +734,21 @@ public class Accumulators {
     }
 
     /** */
-    private static class LongSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = LongSumEmptyIsZero::new;
-
+    private static class LongSumEmptyIsZero<Row> implements Accumulator<Row> {
         /** */
         private long sum;
 
         /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private LongSumEmptyIsZero(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+        /** */
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Long in = (Long)args[0];
+        @Override public void add(Row row) {
+            Long in = (Long)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -701,8 +757,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            LongSumEmptyIsZero other0 = (LongSumEmptyIsZero)other;
+        @Override public void apply(Accumulator<Row> other) {
+            LongSumEmptyIsZero<Row> other0 = (LongSumEmptyIsZero<Row>)other;
 
             sum += other0.sum;
         }
@@ -724,16 +780,21 @@ public class Accumulators {
     }
 
     /** */
-    private static class DecimalSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DecimalSumEmptyIsZero::new;
-
+    private static class DecimalSumEmptyIsZero<Row> implements Accumulator<Row> {
         /** */
         private BigDecimal sum;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DecimalSumEmptyIsZero(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+        }
+
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal)args[0];
+        @Override public void add(Row row) {
+            BigDecimal in = (BigDecimal)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -742,8 +803,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DecimalSumEmptyIsZero other0 = (DecimalSumEmptyIsZero)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DecimalSumEmptyIsZero<Row> other0 = (DecimalSumEmptyIsZero<Row>)other;
 
             sum = sum == null ? other0.sum : sum.add(other0.sum);
         }
@@ -765,13 +826,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class DoubleMinMax implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new DoubleMinMax(true);
-
-        /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new DoubleMinMax(false);
-
+    private static class DoubleMinMax<Row> implements Accumulator<Row> {
         /** */
         private final boolean min;
 
@@ -782,13 +837,17 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private DoubleMinMax(boolean min) {
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private DoubleMinMax(boolean min, RowHandler<Row> hnd) {
             this.min = min;
+            this.hnd = hnd;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Double in = (Double)args[0];
+        @Override public void add(Row row) {
+            Double in = (Double)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -798,8 +857,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DoubleMinMax other0 = (DoubleMinMax)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DoubleMinMax<Row> other0 = (DoubleMinMax<Row>)other;
 
             if (other0.empty)
                 return;
@@ -825,13 +884,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class VarCharMinMax implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new VarCharMinMax(true);
-
-        /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new VarCharMinMax(false);
-
+    private static class VarCharMinMax<Row> implements Accumulator<Row> {
         /** */
         private final boolean min;
 
@@ -842,13 +895,17 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private VarCharMinMax(boolean min) {
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private VarCharMinMax(boolean min, RowHandler<Row> hnd) {
             this.min = min;
+            this.hnd = hnd;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            CharSequence in = (CharSequence)args[0];
+        @Override public void add(Row row) {
+            CharSequence in = (CharSequence)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -861,8 +918,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            VarCharMinMax other0 = (VarCharMinMax)other;
+        @Override public void apply(Accumulator<Row> other) {
+            VarCharMinMax<Row> other0 = (VarCharMinMax<Row>)other;
 
             if (other0.empty)
                 return;
@@ -913,13 +970,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class IntMinMax implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new IntMinMax(true);
-
-        /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new IntMinMax(false);
-
+    private static class IntMinMax<Row> implements Accumulator<Row> {
         /** */
         private final boolean min;
 
@@ -929,14 +980,19 @@ public class Accumulators {
         /** */
         private boolean empty = true;
 
+
         /** */
-        private IntMinMax(boolean min) {
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private IntMinMax(boolean min, RowHandler<Row> hnd) {
             this.min = min;
+            this.hnd = hnd;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Integer in = (Integer)args[0];
+        @Override public void add(Row row) {
+            Integer in = (Integer)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -946,8 +1002,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            IntMinMax other0 = (IntMinMax)other;
+        @Override public void apply(Accumulator<Row> other) {
+            IntMinMax<Row> other0 = (IntMinMax<Row>)other;
 
             if (other0.empty)
                 return;
@@ -973,13 +1029,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class LongMinMax implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new LongMinMax(true);
-
-        /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new LongMinMax(false);
-
+    private static class LongMinMax<Row> implements Accumulator<Row> {
         /** */
         private final boolean min;
 
@@ -990,13 +1040,17 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private LongMinMax(boolean min) {
+        private final RowHandler<Row> hnd;
+
+        /** */
+        private LongMinMax(boolean min, RowHandler<Row> hnd) {
             this.min = min;
+            this.hnd = hnd;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Long in = (Long)args[0];
+        @Override public void add(Row row) {
+            Long in = (Long)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -1006,8 +1060,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            LongMinMax other0 = (LongMinMax)other;
+        @Override public void apply(Accumulator<Row> other) {
+            LongMinMax<Row> other0 = (LongMinMax<Row>)other;
 
             if (other0.empty)
                 return;
@@ -1033,13 +1087,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class DecimalMinMax implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new DecimalMinMax(true);
-
-        /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new DecimalMinMax(false);
-
+    private static class DecimalMinMax<Row> implements Accumulator<Row> {
         /** */
         private final boolean min;
 
@@ -1047,13 +1095,17 @@ public class Accumulators {
         private BigDecimal val;
 
         /** */
-        private DecimalMinMax(boolean min) {
+        private final RowHandler<Row> hnd;
+        
+        /** */
+        private DecimalMinMax(boolean min, RowHandler<Row> hnd) {
+            this.hnd = hnd;
             this.min = min;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal)args[0];
+        @Override public void add(Row row) {
+            BigDecimal in = (BigDecimal)hnd.get(0, row);
 
             if (in == null)
                 return;
@@ -1062,8 +1114,8 @@ public class Accumulators {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DecimalMinMax other0 = (DecimalMinMax)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DecimalMinMax<Row> other0 = (DecimalMinMax<Row>)other;
 
             if (other0.val == null)
                 return;
@@ -1088,29 +1140,36 @@ public class Accumulators {
     }
 
     /** */
-    private static class DistinctAccumulator implements Accumulator {
+    private static class DistinctAccumulator<Row> implements Accumulator<Row> {
         /** */
-        private final Accumulator acc;
+        private final Accumulator<Row> acc;
+        
+        /** */
+        private final RowHandler<Row> hnd;
 
         /** */
         private final Set<GroupKey> set = new LinkedHashSet<>();
 
         /** */
-        private DistinctAccumulator(Supplier<Accumulator> accSup) {
+        private DistinctAccumulator(Supplier<Accumulator<Row>> accSup, RowHandler<Row> hnd) {
             acc = accSup.get();
+            this.hnd = hnd;
         }
 
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            if (args == null || args.length == 0)
+        @Override public void add(Row row) {
+            if (row == null || hnd.columnCount(row) == 0)
                 return;
+
+            Object[] args = new Object[hnd.columnCount(row)];
+            for (int i = 0; i < hnd.columnCount(row); i++)
+                args[i] = hnd.get(i, row);
 
             set.add(new GroupKey(args));
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DistinctAccumulator other0 = (DistinctAccumulator)other;
+        @Override public void apply(Accumulator<Row> other) {
+            DistinctAccumulator<Row> other0 = (DistinctAccumulator<Row>)other;
 
             set.addAll(other0.set);
         }
@@ -1120,7 +1179,7 @@ public class Accumulators {
             for (GroupKey key : set) {
                 Object[] args = extractObjects(key);
 
-                acc.add(args);
+                acc.add((Row)args);
             }
 
             return acc.end();
@@ -1147,7 +1206,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class SortingAccumulator<Row> implements Accumulator {
+    private static class SortingAccumulator<Row> implements Accumulator<Row> {
         /** */
         private final transient Comparator<Row> comp;
 
@@ -1155,31 +1214,26 @@ public class Accumulators {
         private final List<Row> list;
 
         /** */
-        private final Accumulator acc;
+        private final Accumulator<Row> acc;
 
         /**
          * @param accSup Acc support.
          * @param comp Comparator.
          */
-        private SortingAccumulator(Supplier<Accumulator> accSup, Comparator<Row> comp) {
+        private SortingAccumulator(Supplier<Accumulator<Row>> accSup, Comparator<Row> comp) {
             this.comp = comp;
 
             this.list = new ArrayList<>();
             this.acc = accSup.get();
         }
 
-        /** */
-        private void addToList(Row args) {
-            list.add(args);
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            list.add(row);
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            addToList((Row)args);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
+        @Override public void apply(Accumulator<Row> other) {
             SortingAccumulator<Row> other1 = (SortingAccumulator<Row>)other;
             list.addAll(other1.list);
         }
@@ -1189,7 +1243,7 @@ public class Accumulators {
             list.sort(comp);
 
             for (Row objects : list)
-                acc.add((Object[])objects);
+                acc.add(objects);
 
             return acc.end();
         }
@@ -1206,29 +1260,33 @@ public class Accumulators {
     }
 
     /** */
-    private static class ListAggAccumulator implements Accumulator {
+    private static class ListAggAccumulator<Row> implements Accumulator<Row> {
         /** Default separator. */
         private static final String DEFAULT_SEPARATOR = ",";
 
         /** */
-        private final List<Object[]> list;
+        private final List<Row> list;
+        
+        /** */
+        private final RowHandler<Row> hnd;
 
         /** */
-        public ListAggAccumulator() {
-            list = new ArrayList<>();
+        public ListAggAccumulator(RowHandler<Row> hnd) {
+            this.hnd = hnd;
+            this.list = new ArrayList<>();
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            if (args[0] == null)
+        @Override public void add(Row row) {
+            if (row == null || hnd.get(0, row) == null)
                 return;
 
-            list.add(args);
+            list.add(row);
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            ListAggAccumulator other0 = (ListAggAccumulator)other;
+        @Override public void apply(Accumulator<Row> other) {
+            ListAggAccumulator<Row> other0 = (ListAggAccumulator<Row>)other;
 
             list.addAll(other0.list);
         }
@@ -1240,14 +1298,14 @@ public class Accumulators {
 
             StringBuilder builder = new StringBuilder();
 
-            for (Object[] objects: list) {
+            for (Row row: list) {
                 if (builder.length() != 0)
-                    if (objects.length > 1 && objects[1] != null)
-                        builder.append(objects[1]);
+                    if (hnd.columnCount(row) > 1 && hnd.get(1, row) != null)
+                        builder.append(hnd.get(1, row));
                     else
                         builder.append(DEFAULT_SEPARATOR);
 
-                builder.append(objects[0]);
+                builder.append(hnd.get(0, row));
             }
 
             return builder.toString();
@@ -1266,34 +1324,46 @@ public class Accumulators {
     }
 
     /** */
-    private static class CollationExtracorAccumulator implements Accumulator {
+    private static class CollationExtracorAccumulator<Row> implements Accumulator<Row> {
         /** */
-        private final Accumulator acc;
+        private final Accumulator<Row> acc;
+
+        /** Handler. */
+        private final RowHandler<Row> hnd;
 
         /** */
         private final int outerCollsCnt;
 
+        /** */
+        private final IgniteTypeFactory factory;
+
         /**
-         * @param accSup Accumulator.
+         * @param accSup Accumulator<Row>.
          * @param outerCollsCnt Outer collations count.
          */
-        public CollationExtracorAccumulator(Supplier<Accumulator> accSup, int outerCollsCnt) {
+        public CollationExtracorAccumulator(Supplier<Accumulator<Row>> accSup, int outerCollsCnt, RowHandler<Row> hnd,
+            IgniteTypeFactory factory) {
             this.outerCollsCnt = outerCollsCnt;
             this.acc = accSup.get();
+            this.hnd = hnd;
+            this.factory = factory;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Object[] finalObjects = new Object[args.length - outerCollsCnt];
+        @Override public void add(Row row) {
+            int i = hnd.columnCount(row) - outerCollsCnt;
+            Object[] finalObjects = new Object[i];
 
-            System.arraycopy(args, 0, finalObjects, 0, args.length - outerCollsCnt);
+            for (int i1 = 0; i1 < i; i1++)
+                finalObjects[i1] = hnd.get(i1, row);
 
-            acc.add(finalObjects);
+            Row row1 = hnd.factory(factory, acc.argumentTypes(factory)).create(finalObjects);
+            acc.add(row1);
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            CollationExtracorAccumulator other1 = (CollationExtracorAccumulator)other;
+        @Override public void apply(Accumulator<Row> other) {
+            CollationExtracorAccumulator<Row> other1 = (CollationExtracorAccumulator<Row>)other;
             acc.apply(other1.acc);
         }
 
