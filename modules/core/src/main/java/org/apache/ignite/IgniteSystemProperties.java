@@ -2025,6 +2025,7 @@ public final class IgniteSystemProperties {
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
+     * @param <E> Type of the enum.
      * @return Enum value or {@code null} if the property is not set.
      */
     public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
@@ -2033,6 +2034,8 @@ public final class IgniteSystemProperties {
 
     /**
      * @param name Name of the system property or environment variable.
+     * @param dflt Default value if property is not set.
+     * @param <E> Type of the enum.
      * @return Enum value or the given default.
      */
     public static <E extends Enum<E>> E getEnum(String name, E dflt) {

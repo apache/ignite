@@ -48,6 +48,7 @@ public class RandomForestTreeModel implements IgniteModel<Vector, Double> {
         this.usedFeatures = usedFeatures;
     }
 
+    /** */
     public RandomForestTreeModel() {
     }
 

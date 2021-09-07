@@ -672,6 +672,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         return null;
     }
 
+    /** */
     @Nullable private GridDeploymentInfoBean getDepBean(CachedDeploymentInfo<K, V> d) {
         if (d == null || cctx.discovery().node(d.senderId()) == null)
             // Sender has left.

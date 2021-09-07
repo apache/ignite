@@ -134,6 +134,37 @@
             See: https://checkstyle.sourceforge.io/config_whitespace.html#GenericWhitespace
         -->
         <module name="GenericWhitespace"/>
+
+        <!--
+           Checks for missing Javadoc comments for a method or constructor arguments.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#MissingJavadocMethod
+        -->
+        <module name="MissingJavadocMethod">
+            <property name="scope" value="private"/>
+            <property name="allowedAnnotations" value="{}"/>
+        </module>
+
+        <!--
+           Checks presence of a Javadoc for a method or constructor.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#JavadocMethod
+        -->
+        <module name="JavadocMethod">
+            <property name="scope" value="public"/>
+        </module>
+
+        <!--
+           Checks for missing Javadoc comments for class, enum, interface, and annotation interface definitions.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#MissingJavadocType
+        -->
+        <module name="MissingJavadocType">
+            <property name="scope" value="private"/>
+        </module>
+
+        <!--
+           Checks that a variable has a Javadoc comment. Ignores serialVersionUID fields.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#JavadocVariable
+        -->
+        <module name="JavadocVariable"/>
     </module>
 
     <!--

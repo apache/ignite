@@ -279,6 +279,7 @@ public interface MessageWriter {
      * @param name Field name.
      * @param arr Array of objects.
      * @param itemType Array component type.
+     * @param <T> Type of the objects that array contains.
      * @return Whether array was fully written.
      */
     public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType);
@@ -289,6 +290,7 @@ public interface MessageWriter {
      * @param name Field name.
      * @param col Collection.
      * @param itemType Collection item type.
+     * @param <T> Type of the objects that collection contains.
      * @return Whether value was fully written.
      */
     public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType);
@@ -300,6 +302,8 @@ public interface MessageWriter {
      * @param map Map.
      * @param keyType Map key type.
      * @param valType Map value type.
+     * @param <K> Initial key types of the map to write.
+     * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
     public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,

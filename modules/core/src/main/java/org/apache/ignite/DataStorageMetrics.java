@@ -35,7 +35,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 @Deprecated
 public interface DataStorageMetrics {
     /**
-     * Gets the average number of WAL records per second written during the last time interval.
+     * @return  The average number of WAL records per second written during the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
@@ -45,7 +45,7 @@ public interface DataStorageMetrics {
     public float getWalLoggingRate();
 
     /**
-     * Gets the average number of bytes per second written during the last time interval.
+     * @return  The average number of bytes per second written during the last time interval.
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
      * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
@@ -54,12 +54,12 @@ public interface DataStorageMetrics {
     public float getWalWritingRate();
 
     /**
-     * Gets the current number of WAL segments in the WAL archive.
+     * @return The current number of WAL segments in the WAL archive.
      */
     public int getWalArchiveSegments();
 
     /**
-     * Gets the average WAL fsync duration in microseconds over the last time interval.
+     * @return The average WAL fsync duration in microseconds over the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
@@ -69,7 +69,7 @@ public interface DataStorageMetrics {
     public float getWalFsyncTimeAverage();
 
     /**
-     * Returns WAL buffer poll spins number over the last time interval.
+     * @return  WAL buffer poll spins number over the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.

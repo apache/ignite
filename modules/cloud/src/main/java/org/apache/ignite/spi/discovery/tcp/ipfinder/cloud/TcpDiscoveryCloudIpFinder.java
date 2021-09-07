@@ -134,30 +134,30 @@ import org.jclouds.location.reference.LocationConstants;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
-    /* JCloud default connection timeout. */
+    /** JCloud default connection timeout. */
     private static final String JCLOUD_CONNECTION_TIMEOUT = "10000"; //10 secs
 
-    /* Cloud provider. */
+    /** Cloud provider. */
     private String provider;
 
-    /* Cloud specific identity (user name, email address, etc.). */
+    /** Cloud specific identity (user name, email address, etc.). */
     private String identity;
 
-    /* Cloud specific credential (password, access key, etc.). */
+    /** Cloud specific credential (password, access key, etc.). */
     @GridToStringExclude
     private String credential;
 
-    /* Path to a cloud specific credential. */
+    /** Path to a cloud specific credential. */
     @GridToStringExclude
     private String credentialPath;
 
-    /* Regions where VMs are located. */
+    /** Regions where VMs are located. */
     private TreeSet<String> regions;
 
-    /* Zones where VMs are located. */
+    /** Zones where VMs are located. */
     private TreeSet<String> zones;
 
-    /* Nodes filter by regions and zones. */
+    /** Nodes filter by regions and zones. */
     private Predicate<ComputeMetadata> nodesFilter;
 
     /** Init guard. */
@@ -168,7 +168,7 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
-    /* JCloud compute service. */
+    /** JCloud compute service. */
     private ComputeService computeService;
 
     /**

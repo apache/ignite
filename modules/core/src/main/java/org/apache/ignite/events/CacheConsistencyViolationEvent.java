@@ -99,22 +99,22 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      */
     public interface EntryInfo {
         /**
-         * Value.
+         * @return Value.
          */
         public Object getValue();
 
         /**
-         * Version.
+         * @return Version.
          */
         public CacheEntryVersion getVersion();
 
         /**
-         * Located at the primary node.
+         * @return Located at the primary node.
          */
         public boolean isPrimary();
 
         /**
-         * Marked as correct during the fix.
+         * @return Marked as correct during the fix.
          */
         public boolean isCorrect();
     }
