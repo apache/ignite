@@ -63,12 +63,12 @@ public class Accumulators {
         else {
             int colFieldsCnt = (int) calculateOuterCollations(call);
             if (colFieldsCnt > 0)
-                supplier = () -> new SortingAccumulator(
+                supplier = () -> new SortingAccumulator<>(
                     () -> new CollationExtracorAccumulator(fac, colFieldsCnt),
                     comp
                 );
             else
-                supplier = () -> new SortingAccumulator(fac, comp);
+                supplier = () -> new SortingAccumulator<>(fac, comp);
         }
 
         if (call.isDistinct())
@@ -1147,12 +1147,12 @@ public class Accumulators {
     }
 
     /** */
-    private static class SortingAccumulator implements Accumulator {
+    private static class SortingAccumulator<Row> implements Accumulator {
         /** */
-        private final transient Comparator comp;
+        private final transient Comparator<Row> comp;
 
         /** */
-        private final List<Object[]> list;
+        private final List<Row> list;
 
         /** */
         private final Accumulator acc;
@@ -1161,21 +1161,26 @@ public class Accumulators {
          * @param accSup Acc support.
          * @param comp Comparator.
          */
-        private SortingAccumulator(Supplier<Accumulator> accSup, Comparator comp) {
+        private SortingAccumulator(Supplier<Accumulator> accSup, Comparator<Row> comp) {
             this.comp = comp;
 
             this.list = new ArrayList<>();
             this.acc = accSup.get();
         }
 
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
+        /** */
+        private void addToList(Row args) {
             list.add(args);
         }
 
         /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            addToList((Row)args);
+        }
+
+        /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            SortingAccumulator other1 = (SortingAccumulator)other;
+            SortingAccumulator<Row> other1 = (SortingAccumulator<Row>)other;
             list.addAll(other1.list);
         }
 
@@ -1183,8 +1188,8 @@ public class Accumulators {
         @Override public Object end() {
             list.sort(comp);
 
-            for (Object[] objects : list)
-                acc.add(objects);
+            for (Row objects : list)
+                acc.add((Object[])objects);
 
             return acc.end();
         }
