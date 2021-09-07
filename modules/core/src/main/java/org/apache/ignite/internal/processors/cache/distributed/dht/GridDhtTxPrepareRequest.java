@@ -95,9 +95,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
@@ -154,7 +151,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         GridCacheVersion nearXidVer,
         boolean last,
         boolean onePhaseCommit,
-        UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
         boolean storeWriteThrough,
@@ -179,7 +175,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.nearWrites = nearWrites;
         this.miniId = miniId;
         this.nearXidVer = nearXidVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.mvccSnapshot = mvccSnapshot;
         this.updCntrs = updCntrs;
@@ -229,13 +224,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -503,30 +491,24 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 33:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 34:
+            case 33:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 35:
+            case 34:
                 if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
 
-            case 36:
+            case 35:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
@@ -637,14 +619,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 32:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 33:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -652,7 +626,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 34:
+            case 33:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -660,7 +634,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 35:
+            case 34:
                 txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
@@ -668,7 +642,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 36:
+            case 35:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -688,7 +662,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 37;
+        return 36;
     }
 
     /** {@inheritDoc} */

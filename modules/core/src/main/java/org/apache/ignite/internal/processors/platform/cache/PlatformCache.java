@@ -45,8 +45,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -370,6 +373,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_RELEASE_PARTITION = 97;
+
+    /** */
+    public static final int OP_INVOKE_JAVA = 98;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -785,6 +791,33 @@ public class PlatformCache extends PlatformAbstractTarget {
                             writeInvokeAllResult(writer, val);
                         }
                     });
+                }
+
+                case OP_INVOKE_JAVA: {
+                    String procName = reader.readString();
+                    Object key = reader.readObjectDetached();
+                    Object arg = reader.readObjectDetached();
+
+                    GridDeployment dep = cache.context().kernalContext().deploy().getDeployment(procName);
+
+                    if (dep == null)
+                        throw new IgniteDeploymentCheckedException("Unknown CacheEntryProcessor name or failed to " +
+                                "auto-deploy entry processor (was entry processor (re|un)deployed?): " + procName);
+
+                    IgniteBiTuple<Class<?>, Throwable> procCls = dep.deployedClass(procName);
+
+                    if (procCls.get1() == null)
+                        throw new IgniteDeploymentCheckedException("Unknown CacheEntryProcessor name or failed to " +
+                                "auto-deploy entry processor (was entry processor (re|un)deployed?) [procName=" +
+                                procName + ", dep=" + dep + ']', procCls.get2());
+
+                    if (!CacheEntryProcessor.class.isAssignableFrom(procCls.get1()))
+                        throw new IgniteCheckedException("Failed to auto-deploy entry processor (deployed class is " +
+                                "not an entry processor) [procName=" + procName + ", depCls=" + procCls + ']');
+
+                    CacheEntryProcessor proc = PlatformUtils.createJavaObject(procName);
+
+                    return writeResult(mem, cache.invoke(key, proc, arg));
                 }
 
                 case OP_LOCK: {

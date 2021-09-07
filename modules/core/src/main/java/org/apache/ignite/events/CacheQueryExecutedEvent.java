@@ -20,6 +20,7 @@ package org.apache.ignite.events;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -213,7 +214,8 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     /**
      * Gets security subject ID.
      *
-     * @return Security subject ID.
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
      */
     @Nullable public UUID subjectId() {
         return subjId;

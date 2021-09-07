@@ -16,11 +16,12 @@
  */
 
 #include "impl/utility.h"
-#include "impl/cache/cache_client_impl.h"
 #include "impl/message.h"
 #include "impl/response_status.h"
 
 #include "impl/ignite_client_impl.h"
+#include "impl/cache/cache_client_impl.h"
+#include "impl/compute/compute_client_impl.h"
 #include "impl/transactions/transactions_impl.h"
 
 namespace ignite
@@ -32,7 +33,8 @@ namespace ignite
             IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
                 cfg(cfg),
                 router(new DataRouter(cfg)),
-                txImpl(new transactions::TransactionsImpl(router))
+                txImpl(new transactions::TransactionsImpl(router)),
+                computeImpl(new compute::ComputeClientImpl(router))
             {
                 // No-op.
             }

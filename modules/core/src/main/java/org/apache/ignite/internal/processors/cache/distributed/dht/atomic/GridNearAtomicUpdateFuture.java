@@ -109,7 +109,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
@@ -129,7 +128,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
-        UUID subjId,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
@@ -145,7 +143,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             rawRetval,
             expiryPlc,
             filter,
-            subjId,
             taskNameHash,
             skipStore,
             keepBinary,
@@ -155,7 +152,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
         assert conflictRmvVals == null || conflictRmvVals.size() == keys.size();
-        assert subjId != null;
 
         this.keys = keys;
         this.vals = vals;
@@ -1031,7 +1027,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     expiryPlc,
                     invokeArgs,
                     filter,
-                    subjId,
                     taskNameHash,
                     flags,
                     cctx.deploymentEnabled(),
@@ -1145,7 +1140,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             expiryPlc,
             invokeArgs,
             filter,
-            subjId,
             taskNameHash,
             flags,
             cctx.deploymentEnabled(),

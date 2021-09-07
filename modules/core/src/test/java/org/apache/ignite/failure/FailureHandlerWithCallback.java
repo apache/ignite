@@ -14,39 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.failure;
 
-package org.apache.ignite.internal.processors.query.schema;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 
 /**
- * Index operation cancellation token.
+ * Failure handler for test purposes that can execute callback to pass failure context inside of it.
  */
-public class SchemaIndexOperationCancellationToken {
-    /** Cancel flag. */
-    private final AtomicBoolean flag = new AtomicBoolean();
+public class FailureHandlerWithCallback extends AbstractFailureHandler {
+    /** */
+    private final Consumer<FailureContext> cb;
 
-    /**
-     * Get cancel state.
-     *
-     * @return {@code True} if cancelled.
-     */
-    public boolean isCancelled() {
-        return flag.get();
-    }
-
-    /**
-     * Do cancel.
-     *
-     * @return {@code True} if cancel flag was set by this call.
-     */
-    public boolean cancel() {
-        return flag.compareAndSet(false, true);
+    /** */
+    public FailureHandlerWithCallback(Consumer<FailureContext> cb) {
+        this.cb = cb;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SchemaIndexOperationCancellationToken.class, this);
+    @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+        cb.accept(failureCtx);
+
+        return true;
     }
 }

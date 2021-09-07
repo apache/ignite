@@ -112,9 +112,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Trackable flag. */
     private boolean trackable;
 
-    /** Subject ID. */
-    private final UUID subjId;
-
     /** Task name. */
     private final String taskName;
 
@@ -168,7 +165,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even if called on backup node.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -183,7 +179,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -211,7 +206,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.key = key;
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
-        this.subjId = subjId;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
@@ -302,7 +296,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     false,
                     readThrough,
                     topVer,
-                    subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc,
                     skipVals,
@@ -364,7 +357,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 key,
                 readThrough,
                 topVer,
-                subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
@@ -496,7 +488,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                     null,
                                     txLbl,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }
@@ -519,7 +510,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -538,7 +528,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 /*read-through*/false,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
                                 null,
                                 taskName,
                                 expiryPlc,
