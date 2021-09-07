@@ -27,7 +27,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -250,7 +249,7 @@ public class FunctionsTest extends GridCommonAbstractTest {
     private void assertThrows(String qry, Class<? extends Throwable> cls, String msg) {
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> qryEngine.query(null, "PUBLIC",qry).get(0).getAll(),
+            () -> qryEngine.query(null, "PUBLIC", qry).get(0).getAll(),
             cls,
             msg
         );
