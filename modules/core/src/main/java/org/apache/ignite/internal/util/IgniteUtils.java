@@ -12211,13 +12211,8 @@ public abstract class IgniteUtils {
 
             long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
 
-            if (seconds > 0) {
+            if (seconds > 0)
                 sb.append(seconds).append('s');
-
-                millis -= TimeUnit.SECONDS.toMillis(seconds);
-            }
-
-            sb.append(millis).append("ms");
         }
 
         return sb.toString();
