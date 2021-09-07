@@ -321,6 +321,29 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Send request to affinity node and handle response.
      */
+    public <T> T affinityService(
+        int cacheId,
+        int part,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientError {
+        if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
+            UUID affNodeId = affinityCtx.affinityNode(cacheId, part);
+
+            if (affNodeId != null) {
+                return applyOnNodeChannelWithFallback(affNodeId, channel ->
+                    channel.service(op, payloadWriter, payloadReader)
+                );
+            }
+        }
+
+        return service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Send request to affinity node and handle response.
+     */
     public <T> IgniteClientFuture<T> affinityServiceAsync(
         int cacheId,
         Object key,
