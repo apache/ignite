@@ -162,7 +162,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     int grpId = CU.cacheId(grpName);
                     int partId = partId(part.getName());
 
-                    try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, meta.isCacheGroupEncrypted(grpId) ?
+                    try (FilePageStore pageStore =
+                             (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
                                  snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
                     ) {
                         if (partId == INDEX_PARTITION) {
@@ -288,11 +289,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         /** {@inheritDoc} */
         @Override public @Nullable GroupKey getActiveKey(int grpId) {
-            throw new UnsupportedOperationException("Id of active group key is unknown.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
             return decryptedKeys.computeIfAbsent(grpId, gid -> {
                 GroupKey grpKey = null;
 
@@ -303,7 +299,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         GroupKeyEncrypted grpKeyEncrypted = cacheData.grpKeyEncrypted();
 
-                        assert grpKeyEncrypted != null;
+                        if (grpKeyEncrypted == null)
+                            return null;
 
                         if (grpKey == null)
                             grpKey = new GroupKey(grpKeyEncrypted.id(), ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
@@ -313,14 +310,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         }
                     }
 
-                    assert grpKey != null;
-
                     return grpKey;
                 }
                 catch (Exception e) {
                     throw new IgniteException("Unable to extract ciphered encryption key of cache group " + gid + '.', e);
                 }
             });
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
+            GroupKey key = getActiveKey(grpId);
+
+            return key != null && key.id() == keyId ? key : null;
         }
     }
 }

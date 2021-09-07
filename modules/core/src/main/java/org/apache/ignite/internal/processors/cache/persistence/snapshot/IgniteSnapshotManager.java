@@ -682,14 +682,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 smf.getParentFile().mkdirs();
 
-                SnapshotMetadata meta = addEncrData(new SnapshotMetadata(req.requestId(),
+                SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
                     pdsSettings.folderName(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     blts,
-                    fut.result()));
+                    fut.result());
+
+                meta.masterKeyDigest(cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh, meta, out);
@@ -1096,7 +1098,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
                     for (SnapshotMetadata meta : nodeMetas) {
-                        if (curMasterKeyDigest == null && meta.masterKeyDigest() != null) {
+                        byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+
+                        if (curMasterKeyDigest == null && snpMasterKeyDigest != null) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
                                     "' has encrypted caches while encryption is disabled. No keys exist to decrypt data to validate.")))));
@@ -1104,7 +1108,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             return;
                         }
 
-                        if (meta.masterKeyDigest() != null && !Arrays.equals(meta.masterKeyDigest(), curMasterKeyDigest)) {
+                        if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, curMasterKeyDigest)) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
                                     "' has different signature of the master key. Unable to decrypt data to validate.")))));
@@ -1719,26 +1723,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     FileIOFactory ioFactory() {
         return ioFactory;
-    }
-
-    /**
-     * Stores meta of encryption caches (if exist) in {@code snpMeta}.
-     *
-     * @param snpMeta Snapshot metadata.
-     * @return {@code snpMeta}.
-     */
-    private SnapshotMetadata addEncrData(SnapshotMetadata snpMeta) {
-        Map<Integer, GroupKey> grpKeys =
-            snpMeta.cacheGroupIds().stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
-                Collectors.toMap(Function.identity(), gid -> cctx.kernalContext().encryption().getActiveKey(gid)));
-
-        if (!grpKeys.isEmpty()) {
-            snpMeta.masterKeyDigest(cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
-
-            snpMeta.encrGrpIds(grpKeys.keySet());
-        }
-
-        return snpMeta;
     }
 
     /**

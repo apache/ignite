@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,10 +59,6 @@ public class SnapshotMetadata implements Serializable {
     /** The list of cache groups ids which were included into snapshot. */
     @GridToStringInclude
     private final List<Integer> grpIds;
-
-    /** Encrypted group ids. */
-    @GridToStringInclude
-    private Set<Integer> encrGrpIds;
 
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
@@ -177,16 +173,8 @@ public class SnapshotMetadata implements Serializable {
             snapshotName().equals(compare.snapshotName()) &&
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
-            Objects.equals(encrGrpIds, compare.encrGrpIds) &&
+            Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
-    }
-
-    /**
-     * @param grpId Cache id or cache group id.
-     * @return {@code True} if cache group is encrypted. {@code False} otherwise.
-     */
-    public boolean isCacheGroupEncrypted(int grpId) {
-        return encrGrpIds != null && encrGrpIds.contains(grpId);
     }
 
     /**
@@ -203,22 +191,7 @@ public class SnapshotMetadata implements Serializable {
      * @return Master key digest for encrypted caches.
      */
     public byte[] masterKeyDigest() {
-        return masterKeyDigest;
-    }
-
-    /**
-     * Stores ids of encrypted cache groups.
-     *
-     * @return this meta.
-     */
-    public SnapshotMetadata encrGrpIds(Collection<Integer> encrGrpIds) {
-        // Might be null even if final due to deserialization of previous version the object;
-        if (this.encrGrpIds == null)
-            this.encrGrpIds = new HashSet<>();
-
-        this.encrGrpIds.addAll(encrGrpIds);
-
-        return this;
+        return masterKeyDigest == null ? null : masterKeyDigest.clone();
     }
 
     /** {@inheritDoc} */
