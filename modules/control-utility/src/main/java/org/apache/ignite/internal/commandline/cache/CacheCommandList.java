@@ -40,6 +40,11 @@ public enum CacheCommandList {
     LIST("list", new CacheViewer()),
 
     /**
+     * Delete user-created caches.
+     */
+    DELETE("delete", new CacheDelete()),
+
+    /**
      * Validates indexes attempting to read each indexed entry.
      */
     VALIDATE_INDEXES("validate_indexes", new CacheValidateIndexes()),
