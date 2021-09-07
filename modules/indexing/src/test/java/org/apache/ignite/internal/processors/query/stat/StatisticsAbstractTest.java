@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -545,7 +546,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
 
                     // Statistics configuration manager could not get fresh enough configuration version till now so we
                     // need to request global statistics again to force it's collection
-                    statisticsMgr(ign).getGlobalStatistics(target.key());
+                    // TODO: remove me statisticsMgr(ign).getGlobalStatistics(target.key());
 
                     Long ver = targetVersionEntry.getValue();
 
@@ -566,7 +567,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                             throw new IllegalArgumentException("Unexpected statistics type " + type);
                     }
 
-                    checkStatisticsVersion(s, target, ver);
+                    checkStatisticsVersion(ign.localNode().id(), s, target, ver);
                 }
 
                 return;
@@ -587,8 +588,9 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param target Statistics target to check only some columns.
      * @param ver Mininum allowed version.
      */
-    private void checkStatisticsVersion(ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
-        assertFalse(stat == null || stat.columnsStatistics().isEmpty());
+    private void checkStatisticsVersion(UUID nodeId, ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
+        assertFalse("No column statistics found: " + stat + " on node " + nodeId,
+            stat == null || stat.columnsStatistics().isEmpty());
 
         Set<String> cols;
 
@@ -600,8 +602,8 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         for (String col : cols) {
             ColumnStatistics colStat = stat.columnStatistics(col);
 
-            assertFalse(String.format("Expect minVer %d but column %s has %s version.", ver, col,
-                (colStat == null) ? null : colStat.version()), colStat == null || colStat.version() < ver);
+            assertFalse(String.format("Expect minVer %d but column %s has %s version on node %s", ver, col,
+                (colStat == null) ? null : colStat.version(), nodeId), colStat == null || colStat.version() < ver);
         }
     }
 

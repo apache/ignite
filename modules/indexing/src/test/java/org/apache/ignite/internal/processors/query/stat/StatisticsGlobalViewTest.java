@@ -34,7 +34,7 @@ public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
         super.beforeTestsStarted();
         cleanPersistenceDir();
 
-        startGridsMultiThreaded(1);// TODO restore 2
+        startGridsMultiThreaded(2);
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -59,10 +59,12 @@ public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
 
         checkSqlResult("select * from SYS.STATISTICS_GLOBAL_DATA where NAME = 'SMALL'", null, act -> {
             checkContains(partLines, act);
+
             return true;
         });
 
         startGrid(2);
+        awaitPartitionMapExchange();
 
         requestGlobalStatistics(SMALL_KEY);
 

@@ -698,11 +698,11 @@ public class IgniteStatisticsConfigurationManager {
 
             if (!F.isEmpty(diff.dropCols())) {
                 dropColumnsOnLocalStatistics(newCfg, diff.dropCols());
-                globalStatMgr.clearGlobalStatistics(oldCfg.key(), diff.dropCols());
+                globalStatMgr.clearGlobalStatistics(oldCfg.key(), diff.dropCols(), false);
             }
 
             if (!F.isEmpty(diff.updateCols())) {
-                globalStatMgr.clearGlobalStatistics(newCfg.key(), diff.updateCols().keySet());
+                globalStatMgr.clearGlobalStatistics(newCfg.key(), diff.updateCols().keySet(), true);
 
                 GridH2Table tbl = schemaMgr.dataTable(newCfg.key().schema(), newCfg.key().obj());
 

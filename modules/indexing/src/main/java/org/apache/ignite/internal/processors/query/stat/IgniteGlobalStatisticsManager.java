@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
@@ -256,20 +257,20 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
     /** Start. */
     public void start() {
-        if (log.isTraceEnabled())
-            log.trace("Global statistics manager starting...");
+        if (log.isDebugEnabled())
+            log.debug("Global statistics manager starting...");
 
         globalStatistics.clear();
         exchange.registerExchangeAwareComponent(exchAwareLsnr);
 
-        if (log.isTraceEnabled())
-            log.trace("Global statistics manager started.");
+        if (log.isDebugEnabled())
+            log.debug("Global statistics manager started.");
     }
 
     /** Stop. */
     public void stop() {
-        if (log.isTraceEnabled())
-            log.trace("Global statistics manager stopping...");
+        if (log.isDebugEnabled())
+            log.debug("Global statistics manager stopping...");
 
         topVer = null;
 
@@ -282,8 +283,8 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
 
-        if (log.isTraceEnabled())
-            log.trace("Global statistics manager stopped.");
+        if (log.isDebugEnabled())
+            log.debug("Global statistics manager stopped.");
     }
 
     /**
@@ -294,6 +295,9 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      */
     public ObjectStatisticsImpl getGlobalStatistics(StatisticsKey key) {
         CacheEntry<ObjectStatisticsImpl> res = globalStatistics.computeIfAbsent(key, k -> {
+            if (log.isDebugEnabled())
+                log.debug("Scheduling global statistics collection by key " + key);
+
             mgmtPool.submit(() -> collectGlobalStatistics(key));
 
             return new CacheEntry<>(null);
@@ -320,13 +324,25 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
                     StatisticsKeyMessage keyMsg = new StatisticsKeyMessage(key.schema(), key.obj(),
                         Collections.emptyList());
 
+                    Map<String, Long> versions = statCfg.columns().entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().version()));
+
                     StatisticsRequest globalReq = new StatisticsRequest(UUID.randomUUID(), keyMsg,
-                        StatisticsType.GLOBAL, null, null);
+                        StatisticsType.GLOBAL, null, versions);
 
                     outGlobalStatisticsRequests.put(key, globalReq.reqId());
 
+                    if (log.isDebugEnabled())
+                        log.debug("Send global statistics request by configuration " + statCfg);
+
                     send(statMaster, globalReq);
+
                 }
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Unable to start global statistics collection due to lack of configuration by key "
+                        + key);
             }
 
         }
@@ -342,6 +358,9 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      * @param statCfg Statistics config to gather global statistics by.
      */
     private void gatherGlobalStatistics(StatisticsObjectConfiguration statCfg) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Start global statistics collection by configuration " + statCfg);
+
         StatisticsTarget target = new StatisticsTarget(statCfg.key());
 
         List<StatisticsAddressedRequest> locRequests = helper.generateGatheringRequests(target, statCfg);
@@ -426,7 +445,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         StatisticsKey key = new StatisticsKey(req.key().schema(), req.key().obj());
         ObjectStatisticsImpl objectStatistics = repo.getLocalStatistics(key, req.topVer());
 
-        if (checkLocalStatistics(objectStatistics, req.versions()))
+        if (checkStatisticsVersions(objectStatistics, req.versions()))
             sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
         else {
             StatisticsObjectConfiguration cfg = cfgMgr.config(key);
@@ -447,7 +466,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             // Double check that we have no race with collection finishing.
             objectStatistics = repo.getLocalStatistics(key, req.topVer());
 
-            if (checkLocalStatistics(objectStatistics, req.versions())) {
+            if (checkStatisticsVersions(objectStatistics, req.versions())) {
                 StatisticsAddressedRequest removedReq = removeFromRequests(inLocalRequests, key, req.reqId());
 
                 if (removedReq != null)
@@ -478,13 +497,13 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     }
 
     /**
-     * Test if local statistics is fit to all required versions.
+     * Test if specified statistics is fit to all required versions.
      *
      * @param stat Statistics to check.
      * @param versions Map of column name to required version.
      * @return {@code true} if it is, {@code false} otherwise.
      */
-    private boolean checkLocalStatistics(
+    private boolean checkStatisticsVersions(
         ObjectStatisticsImpl stat,
         Map<String, Long> versions
     ) {
@@ -517,7 +536,8 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         CacheEntry<ObjectStatisticsImpl> objectStatisticsEntry = globalStatistics.get(key);
 
-        if (objectStatisticsEntry == null || objectStatisticsEntry.object() == null) {
+        if (objectStatisticsEntry == null || objectStatisticsEntry.object() == null
+            || !checkStatisticsVersions(objectStatisticsEntry.object(), req.versions())) {
             if (discoMgr.localNode().id().equals(getStatisticsMasterNode(key))) {
                 addToRequests(inGloblaRequests, key, new StatisticsAddressedRequest(req, nodeId));
 
@@ -525,7 +545,8 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             }
             objectStatisticsEntry = globalStatistics.get(key);
 
-            if (objectStatisticsEntry != null && objectStatisticsEntry.object() != null) {
+            if (objectStatisticsEntry != null && objectStatisticsEntry.object() != null
+                && checkStatisticsVersions(objectStatisticsEntry.object(), req.versions())) {
                 StatisticsAddressedRequest removed = removeFromRequests(inGloblaRequests, key, req.reqId());
 
                 if (removed != null)
@@ -638,13 +659,20 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      *
      * @param key Object key to clear blobal statistics by.
      * @param colNames Only statistics by specified columns will be cleared.
+     * @param updated If {@code true} - recollect existing global statistics.
      */
-    public void clearGlobalStatistics(StatisticsKey key, Set<String> colNames) {
+    public void clearGlobalStatistics(StatisticsKey key, Set<String> colNames, boolean updated) {
         globalStatistics.computeIfPresent(key, (k, v) -> {
-            ObjectStatisticsImpl globStatNew = v.object().subtract(colNames);
+            ObjectStatisticsImpl globStatOld = v.object();
+            ObjectStatisticsImpl globStatNew = (globStatOld == null) ? null : globStatOld.subtract(colNames);
 
-            return globStatNew.columnsStatistics().isEmpty() ? null : new CacheEntry<>(v.cachedAt(), globStatNew);
+            if (updated)
+                mgmtPool.submit(() -> collectGlobalStatistics(key));
+
+            return (globStatNew == null || globStatNew.columnsStatistics().isEmpty()) ? null :
+                new CacheEntry<>(v.cachedAt(), globStatNew);
         });
+        outGlobalStatisticsRequests.remove(key);
     }
 
     /**
@@ -756,7 +784,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      */
     private UUID getStatisticsMasterNode(StatisticsKey key) {
         UUID[] nodes = discoMgr.aliveServerNodes().stream().map(ClusterNode::id).sorted().toArray(UUID[]::new);
-        int idx = key.obj().hashCode() % nodes.length;
+        int idx = IgniteUtils.hashToIndex(key.obj().hashCode(), nodes.length);
 
         return nodes[idx];
     }
