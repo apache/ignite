@@ -323,7 +323,7 @@ public class IgniteImpl implements Ignite {
 
         if (explicitStop.get()) {
             doStopNode(List.of(vaultMgr, nodeCfgMgr, clusterSvc, raftMgr, metaStorageMgr,
-                clusterCfgMgr, baselineMgr, affinityMgr, schemaMgr, distributedTblMgr, qryEngine, restModule));
+                clusterCfgMgr, baselineMgr, affinityMgr, schemaMgr, distributedTblMgr, qryEngine, restModule, clientHandlerModule));
         }
     }
 
@@ -405,7 +405,7 @@ public class IgniteImpl implements Ignite {
      */
     private void doStopNode(@NotNull List<IgniteComponent> startedComponents) {
         ListIterator<IgniteComponent> beforeStopIter =
-            startedComponents.listIterator(startedComponents.size() - 1);
+            startedComponents.listIterator(startedComponents.size());
 
         while (beforeStopIter.hasPrevious()) {
             IgniteComponent componentToExecBeforeNodeStop = beforeStopIter.previous();
@@ -420,7 +420,7 @@ public class IgniteImpl implements Ignite {
         }
 
         ListIterator<IgniteComponent> stopIter =
-            startedComponents.listIterator(startedComponents.size() - 1);
+            startedComponents.listIterator(startedComponents.size());
 
         while (stopIter.hasPrevious()) {
             IgniteComponent componentToStop = stopIter.previous();

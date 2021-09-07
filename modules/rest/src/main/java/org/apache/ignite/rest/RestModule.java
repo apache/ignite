@@ -79,6 +79,9 @@ public class RestModule implements IgniteComponent {
     /** Presentation of cluster configuration. */
     private final ConfigurationPresentation<String> clusterCfgPresentation;
 
+    /** Netty channel. */
+    private volatile Channel channel;
+
     /**
      * Creates a new instance of REST module.
      *
@@ -97,6 +100,9 @@ public class RestModule implements IgniteComponent {
 
     /** {@inheritDoc} */
     @Override public void start() {
+        if (channel != null)
+            throw new IgniteException("RestModule is already started.");
+
         var router = new Router();
 
         router
@@ -127,7 +133,7 @@ public class RestModule implements IgniteComponent {
                 (req, resp) -> handleUpdate(req, resp, clusterCfgPresentation)
             );
 
-        startRestEndpoint(router);
+        channel = startRestEndpoint(router).channel();
     }
 
     /**
@@ -206,6 +212,11 @@ public class RestModule implements IgniteComponent {
 
     /** {@inheritDoc} */
     @Override public void stop() throws Exception {
+        if (channel != null) {
+            channel.close().await();
+
+            channel = null;
+        }
     }
 
     /**
