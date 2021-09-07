@@ -85,7 +85,6 @@ public class CacheQueryPageRequester {
             bean.arguments(),
             qry.includeMetadata(),
             qry.keepBinary(),
-            qry.subjectId(),
             qry.taskHash(),
             cctx.startTopologyVersion(),
             qry.mvccSnapshot(),
@@ -115,7 +114,6 @@ public class CacheQueryPageRequester {
             fut.fields(),
             all,
             qry.keepBinary(),
-            qry.subjectId(),
             qry.taskHash(),
             cctx.startTopologyVersion(),
             // Force deployment anyway if scan query is used.

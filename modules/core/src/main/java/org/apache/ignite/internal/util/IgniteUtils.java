@@ -74,6 +74,7 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -244,6 +245,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -4236,22 +4238,29 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
-        if (sock != null) {
-            try {
-                // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
-                sock.shutdownOutput();
-                sock.shutdownInput();
-            }
-            catch (Exception e) {
-                warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
-            }
+        if (sock == null)
+            return;
 
-            try {
-                sock.close();
-            }
-            catch (Exception e) {
-                warn(log, "Failed to close socket: " + e.getMessage(), e);
-            }
+        try {
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to shutdown socket", ex);
+        }
+        catch (Exception e) {
+            warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
+        }
+
+        try {
+            sock.close();
+        }
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to close socket", ex);
+        }
+        catch (Exception e) {
+            warn(log, "Failed to close socket: " + e.getMessage(), e);
         }
     }
 

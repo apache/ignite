@@ -2138,10 +2138,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ctx.security().enabled()) {
             UUID secSubjId = null;
 
-            UUID curSecSubjId = ctx.security().securityContext().subject().id();
-
-            if (!locNodeId.equals(curSecSubjId))
-                secSubjId = curSecSubjId;
+            if (!ctx.security().isDefaultContext())
+                secSubjId = ctx.security().securityContext().subject().id();
 
             return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
         }
@@ -3668,7 +3666,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Resource injection.
                     if (dep != null)
-                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()), msgBody);
+                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()).get1(), msgBody);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal user message [node=" + nodeId + ", message=" +

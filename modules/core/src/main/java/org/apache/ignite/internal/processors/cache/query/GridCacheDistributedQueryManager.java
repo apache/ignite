@@ -301,7 +301,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.limit(),
                 req.includeMetaData(),
                 req.keepBinary(),
-                req.subjectId(),
                 req.taskHash(),
                 req.mvccSnapshot(),
                 req.isDataPageScanEnabled()
