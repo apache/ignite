@@ -113,28 +113,6 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
         "SYSTEM_UPDATE_COUNTER_KEY".getBytes(StandardCharsets.UTF_8)
     );
 
-    static {
-        RocksDB.loadLibrary();
-    }
-
-    /** RockDB options. */
-    private final DBOptions options;
-
-    /** RocksDb instance. */
-    private final RocksDB db;
-
-    /** Data column family. */
-    private final ColumnFamily data;
-
-    /** Index column family. */
-    private final ColumnFamily index;
-
-    /** RW lock. */
-    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-
-    /** Thread-pool for snapshot operations execution. */
-    private final ExecutorService snapshotExecutor = Executors.newFixedThreadPool(2);
-
     /**
      * Special value for the revision number which means that operation should be applied
      * to the latest revision of an entry.
@@ -144,14 +122,36 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
     /** Lexicographic order comparator. */
     static final Comparator<byte[]> CMP = Arrays::compare;
 
+    static {
+        RocksDB.loadLibrary();
+    }
+
+    /** RW lock. */
+    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+    /** Thread-pool for snapshot operations execution. */
+    private final ExecutorService snapshotExecutor = Executors.newFixedThreadPool(2);
+
     /** Path to the rocksdb database. */
     private final Path dbPath;
 
+    /** RockDB options. */
+    private volatile DBOptions options;
+
+    /** RocksDb instance. */
+    private volatile RocksDB db;
+
+    /** Data column family. */
+    private volatile ColumnFamily data;
+
+    /** Index column family. */
+    private volatile ColumnFamily index;
+
     /** Revision. Will be incremented for each single-entry or multi-entry update operation. */
-    private long rev;
+    private volatile long rev;
 
     /** Update counter. Will be incremented for each update of any particular entry. */
-    private long updCntr;
+    private volatile long updCntr;
 
     /**
      * Constructor.
@@ -159,49 +159,45 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
      * @param dbPath RocksDB path.
      */
     public RocksDBKeyValueStorage(Path dbPath) {
+        this.dbPath = dbPath;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        options = new DBOptions()
+            .setCreateMissingColumnFamilies(true)
+            .setCreateIfMissing(true);
+
+        Options dataOptions = new Options().setCreateIfMissing(true)
+            // The prefix is the revision of an entry, so prefix length is the size of a long
+            .useFixedLengthPrefixExtractor(Long.BYTES);
+
+        ColumnFamilyOptions dataFamilyOptions = new ColumnFamilyOptions(dataOptions);
+
+        Options indexOptions = new Options().setCreateIfMissing(true);
+
+        ColumnFamilyOptions indexFamilyOptions = new ColumnFamilyOptions(indexOptions);
+
+        List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
+            new ColumnFamilyDescriptor(DATA.nameAsBytes(), dataFamilyOptions),
+            new ColumnFamilyDescriptor(INDEX.nameAsBytes(), indexFamilyOptions)
+        );
+
+        var handles = new ArrayList<ColumnFamilyHandle>();
+
         try {
-            options = new DBOptions()
-                .setCreateMissingColumnFamilies(true)
-                .setCreateIfMissing(true);
-
-            this.dbPath = dbPath;
-
-            Options dataOptions = new Options().setCreateIfMissing(true)
-                // The prefix is the revision of an entry, so prefix length is the size of a long
-                .useFixedLengthPrefixExtractor(Long.BYTES);
-
-            ColumnFamilyOptions dataFamilyOptions = new ColumnFamilyOptions(dataOptions);
-
-            Options indexOptions = new Options().setCreateIfMissing(true);
-
-            ColumnFamilyOptions indexFamilyOptions = new ColumnFamilyOptions(indexOptions);
-
-            List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
-                new ColumnFamilyDescriptor(DATA.nameAsBytes(), dataFamilyOptions),
-                new ColumnFamilyDescriptor(INDEX.nameAsBytes(), indexFamilyOptions)
-            );
-
-            var handles = new ArrayList<ColumnFamilyHandle>();
-
             // Delete existing data, relying on the raft's snapshot and log playback
             destroyRocksDB();
 
             this.db = RocksDB.open(options, dbPath.toAbsolutePath().toString(), descriptors, handles);
-
-            data = new ColumnFamily(db, handles.get(0), DATA.name(), dataFamilyOptions, dataOptions);
-
-            index = new ColumnFamily(db, handles.get(1), INDEX.name(), indexFamilyOptions, indexOptions);
         }
-        catch (Exception e) {
-            try {
-                close();
-            }
-            catch (Exception exception) {
-                e.addSuppressed(exception);
-            }
-
+        catch (RocksDBException e) {
             throw new IgniteInternalException("Failed to start the storage", e);
         }
+
+        data = new ColumnFamily(db, handles.get(0), DATA.name(), dataFamilyOptions, dataOptions);
+
+        index = new ColumnFamily(db, handles.get(1), INDEX.name(), indexFamilyOptions, indexOptions);
     }
 
     /**

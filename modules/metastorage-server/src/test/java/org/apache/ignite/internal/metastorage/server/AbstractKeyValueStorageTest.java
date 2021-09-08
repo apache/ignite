@@ -49,6 +49,8 @@ public abstract class AbstractKeyValueStorageTest {
     @BeforeEach
     public void setUp() {
         storage = storage();
+
+        storage.start();
     }
 
     @AfterEach

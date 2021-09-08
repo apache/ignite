@@ -39,8 +39,6 @@ import static org.apache.ignite.internal.metastorage.server.Value.TOMBSTONE;
 
 /**
  * Simple in-memory key/value storage.
- *
- * WARNING: Only for test purposes.
  */
 public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
     /** Lexicographical comparator. */
@@ -68,13 +66,22 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
     private final Object mux = new Object();
 
     /** {@inheritDoc} */
+    @Override public void start() {
+        // no-op
+    }
+
+    /** {@inheritDoc} */
     @Override public long revision() {
-        return rev;
+        synchronized (mux) {
+            return rev;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long updateCounter() {
-        return updCntr;
+        synchronized (mux) {
+            return updCntr;
+        }
     }
 
     /** {@inheritDoc} */
@@ -278,7 +285,9 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
 
     /** {@inheritDoc} */
     @Override public Cursor<Entry> range(byte[] keyFrom, byte[] keyTo) {
-        return new RangeCursor(keyFrom, keyTo, rev);
+        synchronized (mux) {
+            return new RangeCursor(keyFrom, keyTo, rev);
+        }
     }
 
     /** {@inheritDoc} */

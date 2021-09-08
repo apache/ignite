@@ -32,6 +32,7 @@ import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.service.ITAbstractListenerSnapshotTest;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,6 +56,16 @@ public class ITMetaStorageServicePersistenceTest extends ITAbstractListenerSnaps
 
     /** */
     private MetaStorageServiceImpl metaStorage;
+
+    /** */
+    private KeyValueStorage storage;
+
+    /** */
+    @AfterEach
+    void tearDown() throws Exception {
+        if (storage != null)
+            storage.close();
+    }
 
     /** {@inheritDoc} */
     @Override public void beforeFollowerStop(RaftGroupService service) throws Exception {
@@ -117,7 +128,11 @@ public class ITMetaStorageServicePersistenceTest extends ITAbstractListenerSnaps
 
     /** {@inheritDoc} */
     @Override public RaftGroupListener createListener(Path workDir) {
-        return new MetaStorageListener(new RocksDBKeyValueStorage(workDir.resolve(UUID.randomUUID().toString())));
+        storage = new RocksDBKeyValueStorage(workDir.resolve(UUID.randomUUID().toString()));
+
+        storage.start();
+
+        return new MetaStorageListener(storage);
     }
 
     /** {@inheritDoc} */
@@ -133,7 +148,7 @@ public class ITMetaStorageServicePersistenceTest extends ITAbstractListenerSnaps
      * @throws ExecutionException If failed.
      * @throws InterruptedException If failed.
      */
-    private void check(MetaStorageServiceImpl metaStorage, EntryImpl expected)
+    private static void check(MetaStorageServiceImpl metaStorage, EntryImpl expected)
         throws ExecutionException, InterruptedException {
         Entry entry = metaStorage.get(expected.key()).get();
 

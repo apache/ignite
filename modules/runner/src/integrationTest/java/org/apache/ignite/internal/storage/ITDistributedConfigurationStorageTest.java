@@ -29,6 +29,7 @@ import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
+import org.apache.ignite.internal.metastorage.server.SimpleInMemoryKeyValueStorage;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -109,7 +110,8 @@ public class ITDistributedConfigurationStorageTest {
                 vaultManager,
                 cfgManager,
                 clusterService,
-                raftManager
+                raftManager,
+                new SimpleInMemoryKeyValueStorage()
             );
 
             cfgStorage = new DistributedConfigurationStorage(metaStorageManager, vaultManager);

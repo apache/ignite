@@ -39,7 +39,7 @@ import org.apache.ignite.internal.metastorage.client.MetaStorageServiceImpl;
 import org.apache.ignite.internal.metastorage.client.Operation;
 import org.apache.ignite.internal.metastorage.client.OperationTimeoutException;
 import org.apache.ignite.internal.metastorage.client.WatchListener;
-import org.apache.ignite.internal.metastorage.server.SimpleInMemoryKeyValueStorage;
+import org.apache.ignite.internal.metastorage.server.KeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
 import org.apache.ignite.internal.metastorage.watch.AggregatedWatch;
 import org.apache.ignite.internal.metastorage.watch.KeyCriterion;
@@ -101,14 +101,14 @@ public class MetaStorageManager implements IgniteComponent {
      *
      * @see WatchAggregator
      */
-    private final WatchAggregator watchAggregator;
+    private final WatchAggregator watchAggregator = new WatchAggregator();
 
     /**
      * Future which will be completed with {@link IgniteUuid},
      * when aggregated watch will be successfully deployed.
      * Can be resolved to {@link Optional#empty()} if no watch deployed at the moment.
      */
-    private CompletableFuture<Optional<IgniteUuid>> deployFut;
+    private CompletableFuture<Optional<IgniteUuid>> deployFut = new CompletableFuture<>();
 
     /**
      * If true - all new watches will be deployed immediately.
@@ -121,6 +121,9 @@ public class MetaStorageManager implements IgniteComponent {
     /** Flag indicates if meta storage nodes were set on start */
     private boolean metaStorageNodesOnStart;
 
+    /** Actual storage for the Metastorage. */
+    private final KeyValueStorage storage;
+
     /**
      * The constructor.
      *
@@ -128,19 +131,20 @@ public class MetaStorageManager implements IgniteComponent {
      * @param locCfgMgr Local configuration manager.
      * @param clusterNetSvc Cluster network service.
      * @param raftMgr Raft manager.
+     * @param storage Storage. This component owns this resource and will manage its lifecycle.
      */
     public MetaStorageManager(
         VaultManager vaultMgr,
         ConfigurationManager locCfgMgr,
         ClusterService clusterNetSvc,
-        Loza raftMgr
+        Loza raftMgr,
+        KeyValueStorage storage
     ) {
         this.vaultMgr = vaultMgr;
         this.locCfgMgr = locCfgMgr;
         this.clusterNetSvc = clusterNetSvc;
         this.raftMgr = raftMgr;
-        watchAggregator = new WatchAggregator();
-        deployFut = new CompletableFuture<>();
+        this.storage = storage;
     }
 
     /** {@inheritDoc} */
@@ -158,10 +162,12 @@ public class MetaStorageManager implements IgniteComponent {
                 .filter(metaStorageNodesContainsLocPred)
                 .collect(Collectors.toList());
 
+            storage.start();
+
             this.metaStorageSvcFut = raftMgr.prepareRaftGroup(
                 METASTORAGE_RAFT_GROUP_NAME,
                 metaStorageMembers,
-                new MetaStorageListener(new SimpleInMemoryKeyValueStorage())
+                new MetaStorageListener(storage)
             ).thenApply(service ->
                 new MetaStorageServiceImpl(service, clusterNetSvc.topologyService().localMember().id())
             );
@@ -196,6 +202,12 @@ public class MetaStorageManager implements IgniteComponent {
     /** {@inheritDoc} */
     @Override public void stop() {
         // TODO: IGNITE-15161 Implement component's stop.
+        try {
+            storage.close();
+        }
+        catch (Exception e) {
+            throw new IgniteInternalException("Exception when stopping the storage", e);
+        }
     }
 
     /**

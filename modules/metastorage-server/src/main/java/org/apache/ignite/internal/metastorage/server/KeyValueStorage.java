@@ -30,6 +30,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface KeyValueStorage extends AutoCloseable {
     /**
+     * Starts the given storage, allocating the necessary resources.
+     */
+    void start();
+
+    /**
      * Returns storage revision.
      *
      * @return Storage revision.
@@ -83,7 +88,7 @@ public interface KeyValueStorage extends AutoCloseable {
      * @param key The key.
      * @param value The value.
      */
-    void put(@NotNull byte[] key, @NotNull byte[] value);
+    void put(byte[] key, byte[] value);
 
     /**
      * Inserts an entry with the given key and given value and returns previous entry.
@@ -159,7 +164,7 @@ public interface KeyValueStorage extends AutoCloseable {
      * @param keyTo Last key of range (exclusive).
      * @return Cursor by entries which correspond to the given keys range.
      */
-    Cursor<Entry> range(byte[] keyFrom, byte[] keyTo);
+    Cursor<Entry> range(byte[] keyFrom, byte @Nullable [] keyTo);
 
     /**
      * Returns cursor by entries which correspond to the given keys range and bounded by revision number..
