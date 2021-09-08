@@ -165,6 +165,24 @@
            See: https://checkstyle.sourceforge.io/config_javadoc.html#JavadocVariable
         -->
         <module name="JavadocVariable"/>
+
+        <!--
+          Suppresses MissingJavadocMethod check violations in the specified packages.
+          See: https://checkstyle.sourceforge.io/config_filters.html#SuppressionXpathSingleFilter
+       -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="(?&lt;!Missing)JavadocMethod"/>
+            <property name="files" value="[\\/]internal[\\/]|[\\/]test[\\/]|[\\/]tests[\\/]|[\\/]ml[\\/]|[\\/]yardstick[\\/]"/>
+        </module>
+
+        <!--
+          Suppresses all Javadoc check violations in the specified files.
+          See: https://checkstyle.sourceforge.io/config_filters.html#SuppressionXpathSingleFilter
+       -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="Javadoc"/>
+            <property name="files" value="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
+        </module>
     </module>
 
     <!--

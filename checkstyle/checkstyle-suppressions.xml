@@ -26,8 +26,4 @@
     <suppress checks="NoWhitespaceBefore" files="ConcurrentLinkedHashMap\.java"/>
     <suppress checks="LineLength"
               files="ClusterTagGenerator\.java|PagesWriteSpeedBasedThrottle\.java|GridExecutorService\.java|CatboostClassificationModel\.java"/>
-    <suppress checks="(?&lt;!Missing)JavadocMethod"
-              files="[\\/]internal[\\/]|[\\/]test[\\/]|[\\/]tests[\\/]|[\\/]ml[\\/]|[\\/]yardstick[\\/]"/>
-    <suppress checks="Javadoc"
-              files="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
 </suppressions>
