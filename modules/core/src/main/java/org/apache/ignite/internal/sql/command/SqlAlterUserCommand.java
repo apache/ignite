@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.PASSWORD;
@@ -34,6 +35,7 @@ public class SqlAlterUserCommand implements SqlCommand {
     private String userName;
 
     /** User's password. */
+    @GridToStringExclude
     private String passwd;
 
     /**
