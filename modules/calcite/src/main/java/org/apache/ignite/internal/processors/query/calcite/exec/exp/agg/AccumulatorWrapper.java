@@ -28,8 +28,8 @@ public interface AccumulatorWrapper<Row> {
     Object end();
 
     /** */
-    void apply(Accumulator accumulator);
+    void apply(Accumulator<Row> accumulator);
 
     /** */
-    Accumulator accumulator();
+    Accumulator<Row> accumulator();
 }

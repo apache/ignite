@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
@@ -52,32 +51,36 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
  */
 public class Accumulators<Row> {
     /** */
-    public static<Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
-        RowHandler<Row> handler = ctx.rowHandler();
+    public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
+        RowHandler<Row> hnd = ctx.rowHandler();
 
-        Supplier<Accumulator<Row>> fac = accumulatorFunctionFactory(call, handler);
+        Supplier<Accumulator<Row>> fac = accumulatorFunctionFactory(call, hnd);
 
         Comparator<Row> comp = ctx.expressionFactory().comparator(getMappedCollation(call));
 
-        Supplier<Accumulator<Row>> supplier;
-
-        if (comp == null)
-            supplier = fac;
-        else {
-            int colFieldsCnt = (int) calculateOuterCollations(call);
-            if (colFieldsCnt > 0)
-                supplier = () -> new SortingAccumulator<>(
-                    () -> new CollationExtracorAccumulator<>(fac, colFieldsCnt, handler, ctx.getTypeFactory()),
-                    comp
-                );
-            else
-                supplier = () -> new SortingAccumulator<>(fac, comp);
-        }
+        Supplier<Accumulator<Row>> supplier = getSortingAccSupplierIfNeeded(call, ctx, hnd, fac, comp);
 
         if (call.isDistinct())
-            return () -> new DistinctAccumulator<>(supplier, handler);
+            return () -> new DistinctAccumulator<>(supplier, hnd, ctx.getTypeFactory());
 
         return supplier;
+    }
+
+    /** */
+    private static <Row> Supplier<Accumulator<Row>> getSortingAccSupplierIfNeeded(AggregateCall call,
+        ExecutionContext<Row> ctx, RowHandler<Row> hnd, Supplier<Accumulator<Row>> fac, Comparator<Row> comp) {
+        if (comp == null)
+            return fac;
+
+        int colFieldsCnt = (int) calculateOuterCollations(call);
+
+        if (colFieldsCnt > 0)
+            return () -> new SortingAccumulator<>(
+                () -> new CollationExtracorAccumulator<>(fac, colFieldsCnt, hnd, ctx.getTypeFactory()),
+                comp
+            );
+
+        return () -> new SortingAccumulator<>(fac, comp);
     }
 
     /** */
@@ -114,16 +117,16 @@ public class Accumulators<Row> {
                 mapIdx = argList.size() + collOff;
                 collOff++;
             }
-            if (idx != mapIdx)
-                mapping.put(idx, mapIdx);
-        }
 
+            mapping.put(idx, mapIdx);
+        }
+        
         return mapping.isEmpty() ?
-            call.getCollation() : call.getCollation().apply(Mappings.target(mapping, srcCnt, collations.size()));
+            call.getCollation() : call.getCollation().apply(Mappings.target(mapping, srcCnt, srcCnt));
     }
 
     /** */
-    private static<Row> Supplier<Accumulator<Row>> accumulatorFunctionFactory(AggregateCall call, RowHandler<Row> hnd) {
+    private static <Row> Supplier<Accumulator<Row>> accumulatorFunctionFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.getAggregation().getName()) {
             case "COUNT":
                 return () -> new LongCount<>(hnd);
@@ -438,6 +441,7 @@ public class Accumulators<Row> {
 
         /** */
         private boolean empty = true;
+
         /** */
         private final RowHandler<Row> hnd;
 
@@ -745,7 +749,7 @@ public class Accumulators<Row> {
         private LongSumEmptyIsZero(RowHandler<Row> hnd) {
             this.hnd = hnd;
         }
-        /** */
+
         /** {@inheritDoc} */
         @Override public void add(Row row) {
             Long in = (Long)hnd.get(0, row);
@@ -980,7 +984,6 @@ public class Accumulators<Row> {
         /** */
         private boolean empty = true;
 
-
         /** */
         private final RowHandler<Row> hnd;
 
@@ -1148,19 +1151,26 @@ public class Accumulators<Row> {
         private final RowHandler<Row> hnd;
 
         /** */
+        private final IgniteTypeFactory factory;
+
+        /** */
         private final Set<GroupKey> set = new LinkedHashSet<>();
 
         /** */
-        private DistinctAccumulator(Supplier<Accumulator<Row>> accSup, RowHandler<Row> hnd) {
-            acc = accSup.get();
+        private DistinctAccumulator(Supplier<Accumulator<Row>> accSup, RowHandler<Row> hnd,
+            IgniteTypeFactory factory) {
+            this.acc = accSup.get();
             this.hnd = hnd;
+            this.factory = factory;
         }
 
+        /** {@inheritDoc} */
         @Override public void add(Row row) {
             if (row == null || hnd.columnCount(row) == 0)
                 return;
 
             Object[] args = new Object[hnd.columnCount(row)];
+
             for (int i = 0; i < hnd.columnCount(row); i++)
                 args[i] = hnd.get(i, row);
 
@@ -1177,21 +1187,16 @@ public class Accumulators<Row> {
         /** {@inheritDoc} */
         @Override public Object end() {
             for (GroupKey key : set) {
-                Object[] args = extractObjects(key);
 
-                acc.add((Row)args);
+                Row row = hnd.factory(factory, acc.argumentTypes(factory)).create();
+
+                for (int i = 0; i < key.fieldsCount(); i++)
+                    hnd.set(i, row, key.field(i));
+
+                acc.add(row);
             }
 
             return acc.end();
-        }
-
-        @NotNull private Object[] extractObjects(GroupKey key) {
-            Object[] args = new Object[key.fieldsCount()];
-
-            for (int i = 0; i < key.fieldsCount(); i++)
-                args[i] = key.field(i);
-
-            return args;
         }
 
         /** {@inheritDoc} */
@@ -1235,6 +1240,7 @@ public class Accumulators<Row> {
         /** {@inheritDoc} */
         @Override public void apply(Accumulator<Row> other) {
             SortingAccumulator<Row> other1 = (SortingAccumulator<Row>)other;
+
             list.addAll(other1.list);
         }
 
@@ -1242,8 +1248,8 @@ public class Accumulators<Row> {
         @Override public Object end() {
             list.sort(comp);
 
-            for (Row objects : list)
-                acc.add(objects);
+            for (Row row : list)
+                acc.add(row);
 
             return acc.end();
         }
@@ -1351,14 +1357,14 @@ public class Accumulators<Row> {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int i = hnd.columnCount(row) - outerCollsCnt;
-            Object[] finalObjects = new Object[i];
+            int colCnt = hnd.columnCount(row) - outerCollsCnt;
 
-            for (int i1 = 0; i1 < i; i1++)
-                finalObjects[i1] = hnd.get(i1, row);
+            Row originalRow = hnd.factory(factory, acc.argumentTypes(factory)).create();
 
-            Row row1 = hnd.factory(factory, acc.argumentTypes(factory)).create(finalObjects);
-            acc.add(row1);
+            for (int i = 0; i < colCnt; i++)
+                hnd.set(i, originalRow, hnd.get(i, row));
+
+            acc.add(originalRow);
         }
 
         /** {@inheritDoc} */

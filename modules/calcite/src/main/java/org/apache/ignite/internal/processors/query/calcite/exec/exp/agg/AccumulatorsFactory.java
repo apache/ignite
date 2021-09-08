@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -320,20 +322,23 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            Row row1 = argList.isEmpty() ? handler.factory().create()
-                : handler.factory(ctx.getTypeFactory(), accumulator.argumentTypes(ctx.getTypeFactory())).create();
+            Type[] types = new Type[argList.size() + collations.size()];
+
+            Arrays.fill(types, Object.class);
+
+            Row accumulatorRow = handler.factory(types).create();
 
             for (int i = 0; i < argList.size(); i++) {
-                handler.set(i, row1, handler.get(argList.get(i), row));
+                handler.set(i, accumulatorRow, handler.get(argList.get(i), row));
 
-                if (ignoreNulls && handler.get(i, row1) == null)
+                if (ignoreNulls && handler.get(i, accumulatorRow) == null)
                     return;
             }
-//
-//            for (int i = 0; i < collations.size(); i++)
-//                args[argList.size() + i] = handler.get(collations.get(i), row);
 
-            accumulator.add(inAdapter.apply(row1));
+            for (int i = 0; i < collations.size(); i++)
+                handler.set(argList.size() + i, accumulatorRow, handler.get(collations.get(i), row));
+
+            accumulator.add(inAdapter.apply(accumulatorRow));
         }
 
         /** {@inheritDoc} */
@@ -344,14 +349,14 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator accumulator) {
+        @Override public void apply(Accumulator<Row> accumulator) {
             assert type == AggregateType.REDUCE;
 
             this.accumulator.apply(accumulator);
         }
 
         /** {@inheritDoc} */
-        @Override public Accumulator accumulator() {
+        @Override public Accumulator<Row> accumulator() {
             assert type == AggregateType.MAP;
 
             return accumulator;
