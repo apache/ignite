@@ -94,13 +94,17 @@ public class IgniteStatisticsRepository {
         log = logSupplier.apply(IgniteStatisticsRepository.class);
 
         ColumnPartitionDataViewSupplier colPartDataViewSupplier = new ColumnPartitionDataViewSupplier(store);
+        
         sysViewMgr.registerFiltrableView(STAT_PART_DATA_VIEW, STAT_PART_DATA_VIEW_DESC,
-            new StatisticsColumnPartitionDataViewWalker(), colPartDataViewSupplier::columnPartitionStatisticsViewSupplier,
+            new StatisticsColumnPartitionDataViewWalker(), 
+            colPartDataViewSupplier::columnPartitionStatisticsViewSupplier,
             Function.identity());
 
         ColumnLocalDataViewSupplier colLocDataViewSupplier = new ColumnLocalDataViewSupplier(this);
+        
         sysViewMgr.registerFiltrableView(STAT_LOCAL_DATA_VIEW, STAT_LOCAL_DATA_VIEW_DESC,
-            new StatisticsColumnLocalDataViewWalker(), colLocDataViewSupplier::columnLocalStatisticsViewSupplier,
+            new StatisticsColumnLocalDataViewWalker(), 
+            colLocDataViewSupplier::columnLocalStatisticsViewSupplier,
             Function.identity());
     }
 

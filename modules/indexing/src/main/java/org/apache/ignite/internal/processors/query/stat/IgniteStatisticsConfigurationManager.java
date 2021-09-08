@@ -244,7 +244,8 @@ public class IgniteStatisticsConfigurationManager {
         ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
             logSupplier);
         sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
-            new StatisticsColumnConfigurationViewWalker(), colCfgViewSupplier::columnConfigurationViewSupplier,
+            new StatisticsColumnConfigurationViewWalker(), 
+            colCfgViewSupplier::columnConfigurationViewSupplier,
             Function.identity());
     }
 
