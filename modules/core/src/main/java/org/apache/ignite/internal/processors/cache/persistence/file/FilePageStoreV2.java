@@ -16,9 +16,9 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.File;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import java.nio.file.Path;
+import java.util.function.LongConsumer;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  *
@@ -27,30 +27,27 @@ public class FilePageStoreV2 extends FilePageStore {
     /** File version. */
     public static final int VERSION = 2;
 
-    /** Header size. */
-    private final int hdrSize;
-
     /**
+     * Constructor which initializes file path provider closure, allowing to calculate file path in any time.
+     *
      * @param type Type.
-     * @param file File.
+     * @param pathProvider file path provider.
      * @param factory Factory.
-     * @param cfg Config.
-     * @param allocatedTracker Metrics updater
+     * @param pageSize Page size.
+     * @param allocatedTracker Allocated tracker.
      */
     public FilePageStoreV2(
         byte type,
-        File file,
+        IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
-        DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker) {
-        super(type, file, factory, cfg, allocatedTracker);
-
-        hdrSize = cfg.getPageSize();
+        int pageSize,
+        LongConsumer allocatedTracker) {
+        super(type, pathProvider, factory, pageSize, allocatedTracker);
     }
 
     /** {@inheritDoc} */
     @Override public int headerSize() {
-        return hdrSize;
+        return pageSize;
     }
 
     /** {@inheritDoc} */
@@ -72,7 +69,7 @@ public class FilePageStoreV2 extends FilePageStore {
 
     /** {@inheritDoc} */
     @Override public void punchHole(long pageId, int usefulBytes) {
-        assert usefulBytes >= 0 && usefulBytes < pageSize: usefulBytes;
+        assert usefulBytes >= 0 && usefulBytes < pageSize : usefulBytes;
 
         long off = pageOffset(pageId);
 

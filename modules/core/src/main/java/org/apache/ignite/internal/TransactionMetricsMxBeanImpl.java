@@ -19,11 +19,23 @@ package org.apache.ignite.internal;
 
 import java.util.Map;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 /**
  * Transactions MXBean implementation.
+ *
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=\"tx\"" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     /** */
     private static final long serialVersionUID = 0L;
@@ -100,5 +112,4 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
         return transactionMetrics.getOwnerTransactionsNumber();
     }
 }
-
 

@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -39,16 +40,19 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.ThinProtocolFeature;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -71,9 +75,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.transactions.TransactionMixedModeException;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.Nullable;
@@ -85,8 +90,13 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_9_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_GET;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_NAME_GET;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_NAME_PUT;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_PUT;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.CACHE_PARTITIONS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
@@ -151,9 +161,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Protocol version. */
     private final ClientListenerProtocolVersion protocolVer;
 
-    /** Authentication context */
-    private AuthorizationContext actx;
-
     /** Facade that hides transformations internal cache api entities -> jdbc metadata. */
     private final JdbcMetadataInfo meta;
 
@@ -174,7 +181,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
-     * @param actx Authentication context.
      * @param protocolVer Protocol version.
      * @param connCtx Jdbc connection context.
      */
@@ -192,7 +198,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
-        AuthorizationContext actx,
         ClientListenerProtocolVersion protocolVer,
         JdbcConnectionContext connCtx
     ) {
@@ -225,7 +230,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.autoCloseCursors = autoCloseCursors;
         this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
-        this.actx = actx;
 
         log = connCtx.kernalContext().log(getClass());
 
@@ -299,9 +303,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
 
-        if (actx != null)
-            AuthorizationContext.context(actx);
-
         JdbcResponse resp;
         try {
             switch (req.type()) {
@@ -310,7 +311,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     break;
 
                 case QRY_FETCH:
-                    resp =  fetchQuery((JdbcQueryFetchRequest)req);
+                    resp = fetchQuery((JdbcQueryFetchRequest)req);
                     break;
 
                 case QRY_CLOSE:
@@ -365,6 +366,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     resp = getCachePartitions((JdbcCachePartitionsRequest)req);
                     break;
 
+                case BINARY_TYPE_NAME_PUT:
+                    resp = registerBinaryType((JdbcBinaryTypeNamePutRequest)req);
+                    break;
+
+                case BINARY_TYPE_NAME_GET:
+                    resp = getBinaryTypeName((JdbcBinaryTypeNameGetRequest)req);
+                    break;
+
+                case BINARY_TYPE_PUT:
+                    resp = putBinaryType((JdbcBinaryTypePutRequest)req);
+                    break;
+
+                case BINARY_TYPE_GET:
+                    resp = getBinaryType((JdbcBinaryTypeGetRequest)req);
+                    break;
+
                 default:
                     resp = new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
                         "Unsupported JDBC request [req=" + req + ']');
@@ -376,8 +393,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return resp;
         }
         finally {
-            AuthorizationContext.clear();
-
             busyLock.leaveBusy();
         }
     }
@@ -472,6 +487,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
+            processor.onFail(e);
+
             if (X.cause(e, QueryCancelledException.class) != null)
                 return exceptionToResult(new QueryCancelledException());
             else
@@ -483,7 +500,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+    @Override public ClientListenerResponse handleException(Throwable e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -503,6 +520,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         // Write node id.
         if (protocolVer.compareTo(VER_2_8_0) >= 0)
             writer.writeUuid(connCtx.kernalContext().localNodeId());
+
+        // Write all features supported by the node.
+        if (protocolVer.compareTo(VER_2_9_0) >= 0)
+            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
     }
 
     /**
@@ -599,6 +620,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setArgs(req.arguments());
             qry.setAutoCommit(req.autoCommit());
 
+            if (req.explicitTimeout()) {
+                // Timeout is handled on a client side, do not handle it on a server side.
+                qry.setTimeout(0, TimeUnit.MILLISECONDS);
+            }
+
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
 
@@ -644,7 +670,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 if (cur.isQuery())
                     res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        isClientAffinityAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 else {
@@ -656,7 +682,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                             ", res=" + S.toString(List.class, items) + ']';
 
                     res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
-                        isClientAffinityAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 }
@@ -970,9 +996,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
-
-        if (cliCtx.dataPageScanEnabled() != null)
-            qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+        qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
@@ -996,7 +1020,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.getSchema(),
                     cliCtx,
                     qry.getSql(),
-                    qry.batchedArguments()
+                    qry.batchedArguments(),
+                    connCtx.clientDescriptor()
                 );
 
                 for (int i = 0; i < cnt.size(); i++)
@@ -1074,7 +1099,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName());
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
 
             JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
@@ -1114,6 +1139,100 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             return exceptionToResult(e);
         }
+    }
+
+    /**
+     * Handler for updating binary type requests.
+     *
+     * @param req Incoming request.
+     * @return Acknowledgement in case of successful updating.
+     */
+    private JdbcResponse putBinaryType(JdbcBinaryTypePutRequest req) {
+        try {
+            getBinaryCtx().updateMetadata(req.meta().typeId(), req.meta(), false);
+
+            return resultToResonse(new JdbcUpdateBinarySchemaResult(req.requestId(), true));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to update binary schema [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Handler for querying binary type requests.
+     *
+     * @param req Incoming request.
+     * @return Response with binary type schema.
+     */
+    private JdbcResponse getBinaryType(JdbcBinaryTypeGetRequest req) {
+        try {
+            BinaryTypeImpl type = (BinaryTypeImpl)connCtx.kernalContext().cacheObjects().binary().type(req.typeId());
+
+            return resultToResonse(new JdbcBinaryTypeGetResult(req.requestId(), type != null ? type.metadata() : null));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get binary type name [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Handler for querying binary type name requests.
+     *
+     * @param req Incoming request.
+     * @return Response with binary type name.
+     */
+    private JdbcResponse getBinaryTypeName(JdbcBinaryTypeNameGetRequest req) {
+        try {
+            String name = getMarshallerCtx().getClassName(req.platformId(), req.typeId());
+
+            return resultToResonse(new JdbcBinaryTypeNameGetResult(req.requestId(), name));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get binary type name [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Handler for register new binary type requests.
+     *
+     * @param req Incoming request.
+     * @return Acknowledgement in case of successful registration.
+     */
+    private JdbcResponse registerBinaryType(JdbcBinaryTypeNamePutRequest req) {
+        try {
+            boolean res = getMarshallerCtx().registerClassName(req.platformId(), req.typeId(), req.typeName(), false);
+
+            return resultToResonse(new JdbcUpdateBinarySchemaResult(req.requestId(), res));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to register new type [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Get marshaller context from connection context.
+     *
+     * @return Marshaller context.
+     */
+    private MarshallerContext getMarshallerCtx() {
+        return connCtx.kernalContext().marshallerContext();
+    }
+
+    /**
+     * Get binary context from connection context.
+     *
+     * @return Binary context.
+     */
+    private BinaryContext getBinaryCtx() {
+        return ((CacheObjectBinaryProcessorImpl)connCtx.kernalContext().cacheObjects()).binaryContext();
     }
 
     /**
@@ -1202,7 +1321,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link JdbcResponse}.
      */
-    private JdbcResponse exceptionToResult(Exception e) {
+    private JdbcResponse exceptionToResult(Throwable e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof TransactionSerializationException)
@@ -1313,7 +1432,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Partitions distributions.
      */
     private JdbcResponse getCachePartitions(JdbcCachePartitionsRequest req) {
-        List<JdbcThinAffinityAwarenessMappingGroup> mappings = new ArrayList<>();
+        List<JdbcThinPartitionAwarenessMappingGroup> mappings = new ArrayList<>();
 
         AffinityTopologyVersion topVer = connCtx.kernalContext().cache().context().exchange().readyAffinityVersion();
 
@@ -1322,7 +1441,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 connCtx.kernalContext().cache().cacheDescriptor(cacheId),
                 topVer);
 
-            mappings.add(new JdbcThinAffinityAwarenessMappingGroup(cacheId, partitionsMap));
+            mappings.add(new JdbcThinPartitionAwarenessMappingGroup(cacheId, partitionsMap));
         }
 
         return new JdbcResponse(new JdbcCachePartitionsResult(mappings), topVer);
@@ -1357,7 +1476,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *
      * @return True if supported, false otherwise.
      */
-    private boolean isCancellationSupported() {
+    @Override public boolean isCancellationSupported() {
         return (protocolVer.compareTo(VER_2_8_0) >= 0);
     }
 
@@ -1479,13 +1598,18 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /**
      * @param partResRequested Boolean flag that signals whether client requested partiton result.
      * @param partRes Direved partition result.
-     * @return True if applicable to jdbc thin client side affinity awareness:
+     * @return True if applicable to jdbc thin client side partition awareness:
      *   1. Partitoin result was requested;
      *   2. Partition result either null or
      *     a. Rendezvous affinity function without map filters was used;
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
-    private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
-        return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
+    private static boolean isClientPartitionAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
+        return partResRequested && (partRes == null || partRes.isClientPartitionAwarenessApplicable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return protocolVer;
     }
 }

@@ -19,16 +19,20 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
  * Page handler.
@@ -111,7 +115,8 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        IoStatisticsHolder statHolder
+        IoStatisticsHolder statHolder,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
         long page = pageMem.acquirePage(cacheId, pageId, statHolder);
         try {
@@ -120,7 +125,7 @@ public abstract class PageHandler<X, R> {
             if (pageAddr == 0L)
                 return lockFailed;
             try {
-                PageIO io = PageIO.getPageIO(pageAddr);
+                PageIO io = pageIoRslvr.resolve(pageAddr);
                 return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg, statHolder);
             }
             finally {
@@ -156,7 +161,8 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        IoStatisticsHolder statHolder
+        IoStatisticsHolder statHolder,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
         long pageAddr = 0L;
 
@@ -164,7 +170,7 @@ public abstract class PageHandler<X, R> {
             if ((pageAddr = readLock(pageMem, cacheId, pageId, page, lsnr)) == 0L)
                 return lockFailed;
 
-            PageIO io = PageIO.getPageIO(pageAddr);
+            PageIO io = pageIoRslvr.resolve(pageAddr);
             return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg, statHolder);
         }
         finally {
@@ -235,7 +241,21 @@ public abstract class PageHandler<X, R> {
         PageLockListener lsnr,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
-        Boolean res = writePage(pageMem, grpId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE, statHolder);
+        Boolean res = writePage(
+            pageMem,
+            grpId,
+            pageId,
+            lsnr,
+            PageHandler.NO_OP,
+            init,
+            wal,
+            null,
+            null,
+            0,
+            FALSE,
+            statHolder,
+            DEFAULT_PAGE_IO_RESOLVER
+        );
 
         assert res != FALSE;
     }
@@ -268,7 +288,8 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        IoStatisticsHolder statHolder
+        IoStatisticsHolder statHolder,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
         boolean releaseAfterWrite = true;
         long page = pageMem.acquirePage(grpId, pageId, statHolder);
@@ -287,7 +308,7 @@ public abstract class PageHandler<X, R> {
                     walPlc = FALSE;
                 }
                 else
-                    init = PageIO.getPageIO(pageAddr);
+                    init = pageIoRslvr.resolve(pageAddr);
 
                 R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
 
@@ -338,7 +359,8 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        IoStatisticsHolder statHolder
+        IoStatisticsHolder statHolder,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
         long pageAddr = writeLock(pageMem, grpId, pageId, page, lsnr, false);
 
@@ -354,7 +376,7 @@ public abstract class PageHandler<X, R> {
                 walPlc = FALSE;
             }
             else
-                init = PageIO.getPageIO(pageAddr);
+                init = pageIoRslvr.resolve(pageAddr);
 
             R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
 
@@ -440,7 +462,9 @@ public abstract class PageHandler<X, R> {
 
         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-        init.initNewPage(pageAddr, pageId, pageMem.realPageSize(grpId));
+        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(grpId);
+
+        init.initNewPage(pageAddr, pageId, pageMem.realPageSize(grpId), metrics);
 
         // Here we should never write full page, because it is known to be new.
         if (isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, FALSE))
@@ -463,7 +487,7 @@ public abstract class PageHandler<X, R> {
         long pageId,
         long page,
         IgniteWriteAheadLogManager wal,
-        Boolean walPlc) {
+        @Nullable Boolean walPlc) {
         // If the page is clean, then it is either newly allocated or just after checkpoint.
         // In both cases we have to write full page contents to WAL.
         return wal != null && !wal.isAlwaysWriteFullPages() && walPlc != TRUE && !wal.disabled(cacheId) &&

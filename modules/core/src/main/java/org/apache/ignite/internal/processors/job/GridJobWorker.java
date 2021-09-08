@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJob;
@@ -38,8 +39,6 @@ import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
-import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
@@ -51,6 +50,9 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -174,6 +176,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Request topology version. */
     private final String execName;
 
+    /** Security context. */
+    private final SecurityContext secCtx;
+
     /**
      * @param ctx Kernal context.
      * @param dep Grid deployment.
@@ -240,6 +245,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
         taskTopic = TOPIC_TASK.topic(ses.getJobId(), locNodeId);
+
+        secCtx = ctx.security().securityContext();
     }
 
     /**
@@ -270,8 +277,28 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Create time.
      */
-    long getCreateTime() {
+    public long getCreateTime() {
         return createTime;
+    }
+
+    /** @return Start time. */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** @return Finish time. */
+    public long getFinishTime() {
+        return finishTime;
+    }
+
+    /** @return Is started. */
+    public boolean isStarted() {
+        return isStarted;
+    }
+
+    /** @return Grid reservable resource. */
+    public GridReservable getPartsReservation() {
+        return partsReservation;
     }
 
     /**
@@ -319,14 +346,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @return {@code true} if job is being finished after execution
      *      and {@code false} otherwise.
      */
-    boolean isFinishing() {
+    public boolean isFinishing() {
         return finishing.get();
     }
 
     /**
      * @return Parent task node ID.
      */
-    ClusterNode getTaskNode() {
+    public ClusterNode getTaskNode() {
         return taskNode;
     }
 
@@ -367,7 +394,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return {@code True} if job is timed out.
      */
-    boolean isTimedOut() {
+    public boolean isTimedOut() {
         return timedOut;
     }
 
@@ -453,9 +480,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
+
+            job = SecurityUtils.sandboxedProxy(ctx, ComputeJob.class, job);
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+            if (log.isDebugEnabled())
+                U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
             ex = new IgniteException(e);
         }
@@ -507,7 +537,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         // Make sure flag is not set for current thread.
         HOLD.set(false);
 
-        try {
+        SqlFieldsQuery.setThreadedQueryInitiatorId("task:" + ses.getTaskName() + ":" + getJobId());
+
+        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
             if (partsReservation != null) {
                 try {
                     if (!partsReservation.reserve()) {
@@ -589,28 +621,29 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     assert ex != null;
                 }
                 else {
-                    if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgfsOutOfSpaceException.class)) {
-                        // Print exception for internal errors only if debug is enabled.
-                        if (log.isDebugEnabled())
-                            U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
-                    }
-                    else if (X.hasCause(e, InterruptedException.class)) {
-                        String msg = "Job was cancelled [jobId=" + ses.getJobId() + ", ses=" + ses + ']';
-
-                        if (log.isDebugEnabled())
-                            U.error(log, msg, e);
-                        else
-                            U.warn(log, msg);
+                    if (X.hasCause(e, InterruptedException.class)) {
+                        if (log.isDebugEnabled()) {
+                            U.error(log,
+                                "Job was cancelled [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+                        }
                     }
                     else if (X.hasCause(e, GridServiceNotFoundException.class) ||
-                        X.hasCause(e, ClusterTopologyCheckedException.class))
-                        // Should be throttled, because GridServiceProxy continuously retry getting service.
-                        LT.error(log, e, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']');
+                        X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                        if (log.isDebugEnabled()) {
+                            // Should be throttled, because GridServiceProxy continuously retry getting service.
+                            LT.error(log, e, "Failed to execute job [jobId=" + ses.getJobId() +
+                                ", ses=" + ses + ']');
+                        }
+                    }
                     else {
-                        U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+                        String msg = "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']';
 
-                        if (X.hasCause(e, OutOfMemoryError.class))
+                        if (X.hasCause(e, OutOfMemoryError.class)) {
+                            U.error(log, msg, e);
+
                             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                        } else if (log.isDebugEnabled())
+                            U.error(log, msg, e);
                     }
 
                     ex = e;
@@ -642,6 +675,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
         }
         finally {
+            SqlFieldsQuery.resetThreadedQueryInitiatorId();
+
             if (partsReservation != null)
                 partsReservation.release();
         }
@@ -693,7 +728,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert msg != null;
         assert ex != null;
 
-        U.error(log, msg, e);
+        if (log.isDebugEnabled())
+            U.error(log, msg, e);
 
         return ex;
     }
@@ -721,7 +757,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                 U.wrapThreadLoader(dep.classLoader(), new IgniteRunnable() {
                     @Override public void run() {
-                        job0.cancel();
+                        try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
+                            job0.cancel();
+                        }
                     }
                 });
             }
@@ -764,7 +802,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
         evt.taskNode(taskNode);
-        evt.taskSubjectId(ses.subjectId());
+        evt.taskSubjectId(secCtx != null ? secCtx.subject().id() : null);
 
         ctx.event().record(evt);
     }

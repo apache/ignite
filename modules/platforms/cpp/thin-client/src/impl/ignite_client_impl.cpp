@@ -16,11 +16,13 @@
  */
 
 #include "impl/utility.h"
-#include "impl/cache/cache_client_impl.h"
 #include "impl/message.h"
 #include "impl/response_status.h"
 
 #include "impl/ignite_client_impl.h"
+#include "impl/cache/cache_client_impl.h"
+#include "impl/compute/compute_client_impl.h"
+#include "impl/transactions/transactions_impl.h"
 
 namespace ignite
 {
@@ -30,7 +32,9 @@ namespace ignite
         {
             IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
                 cfg(cfg),
-                router(new DataRouter(cfg))
+                router(new DataRouter(cfg)),
+                txImpl(new transactions::TransactionsImpl(router)),
+                computeImpl(new compute::ComputeClientImpl(router))
             {
                 // No-op.
             }
@@ -51,7 +55,7 @@ namespace ignite
 
                 int32_t cacheId = utility::GetCacheId(name);
 
-                return MakeCacheImpl(router, name, cacheId);
+                return MakeCacheImpl(router, txImpl, name, cacheId);
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::GetOrCreateCache(const char* name)
@@ -68,7 +72,7 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
 
-                return MakeCacheImpl(router, name, cacheId);
+                return MakeCacheImpl(router, txImpl, name, cacheId);
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::CreateCache(const char* name)
@@ -85,7 +89,7 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
 
-                return MakeCacheImpl(router, name, cacheId);
+                return MakeCacheImpl(router, txImpl, name, cacheId);
             }
 
             void IgniteClientImpl::DestroyCache(const char* name)
@@ -116,10 +120,11 @@ namespace ignite
 
             common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::MakeCacheImpl(
                 const SP_DataRouter& router,
+                const transactions::SP_TransactionsImpl& tx,
                 const std::string& name,
                 int32_t id)
             {
-                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, id));
+                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, tx, name, id));
 
                 return cache;
             }

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -46,6 +47,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Test p2p value. */
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";

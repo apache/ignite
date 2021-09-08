@@ -17,29 +17,44 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
-import java.util.Iterator;
-import org.apache.ignite.ml.selection.scoring.LabelPair;
+import java.io.Serializable;
+import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.MetricStatsAggregator;
+import org.apache.ignite.ml.selection.scoring.evaluator.context.EvaluationContext;
 
 /**
- * Base interface for score calculators.
+ * This class represents a container with computed value of metric and it provides a factory for metric statistics
+ * aggregation class.
  *
- * @param <L> Type of a label (truth or prediction).
+ * @param <L> Type of label.
+ * @param <C> Type of evaluation context.
+ * @param <A> Type of statistics aggregator.
  */
-public interface Metric<L> {
+public interface Metric<L, C extends EvaluationContext<L, C>, A extends MetricStatsAggregator<L, C, A>> extends Serializable {
     /**
-     * Calculates score.
+     * Creates statistics aggregator.
      *
-     * @param iter Iterator that supplies pairs of truth values and predicated.
-     * @return Score.
+     * @return Statistics aggregator
      */
-    public double score(Iterator<LabelPair<L>> iter);
+    public A makeAggregator();
 
     /**
-     * Returns the metric's name.
+     * Initializes metric value by statistics aggregator.
      *
-     * NOTE: Should be unique to calculate multiple metrics correctly.
-     *
-     * @return String name representation.
+     * @param aggr Aggregator.
      */
-    public String name();
+    public Metric<L, C, A> initBy(A aggr);
+
+    /**
+     * Returns metric value.
+     *
+     * @return Metric value.
+     */
+    public double value();
+
+    /**
+     * Returns metric name.
+     *
+     * @return Metric name.
+     */
+    public MetricName name();
 }

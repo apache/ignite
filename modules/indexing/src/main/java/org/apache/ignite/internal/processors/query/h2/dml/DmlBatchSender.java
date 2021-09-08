@@ -39,11 +39,18 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CACHE_UPDATE;
 
 /**
  * Batch sender class.
@@ -191,22 +198,30 @@ public class DmlBatchSender {
      * @param batch Batch.
      */
     private void sendBatch(Batch batch) {
-        DmlPageProcessingResult pageRes = processPage(cctx, batch);
+        try (
+            TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
+                .create(SQL_CACHE_UPDATE, MTC.span())
+                .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(batch.size())))
+        ) {
+            DmlPageProcessingResult pageRes = processPage(cctx, batch);
 
-        batch.clear();
+            batch.clear();
 
-        updateCnt += pageRes.count();
+            updateCnt += pageRes.count();
 
-        if (failedKeys == null)
-            failedKeys = new ArrayList<>();
+            if (failedKeys == null)
+                failedKeys = new ArrayList<>();
 
-        failedKeys.addAll(F.asList(pageRes.errorKeys()));
+            failedKeys.addAll(F.asList(pageRes.errorKeys()));
 
-        if (pageRes.error() != null) {
-            if (err == null)
-                err = pageRes.error();
-            else
-                err.setNextException(pageRes.error());
+            if (pageRes.error() != null) {
+                MTC.span().addTag(ERROR, pageRes.error()::getMessage);
+
+                if (err == null)
+                    err = pageRes.error();
+                else
+                    err.setNextException(pageRes.error());
+            }
         }
     }
 
@@ -229,6 +244,17 @@ public class DmlBatchSender {
                 assert rowNum != null;
 
                 cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
+            }
+
+            if (X.hasCause(e, IgniteClusterReadOnlyException.class)) {
+                SQLException sqlEx = new SQLException(
+                    e.getMessage(),
+                    SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED,
+                    IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
+                    e
+                );
+
+                return new DmlPageProcessingResult(0, null, sqlEx);
             }
 
             return new DmlPageProcessingResult(0, null,
@@ -322,7 +348,7 @@ public class DmlBatchSender {
     /**
      * Batch for update.
      */
-    private static class Batch  {
+    private static class Batch {
         /** Map from keys to row numbers. */
         private Map<Object, Integer> rowNums = new HashMap<>();
 

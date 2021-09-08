@@ -64,15 +64,11 @@ public class SslParametersTest extends GridCommonAbstractTest {
      * @return Client config.
      */
     protected ClientConfiguration getClientConfiguration() {
-        ClientConfiguration cfg = new ClientConfiguration();
-
-        cfg.setAddresses("127.0.0.1:10800");
-
-        cfg.setSslMode(SslMode.REQUIRED);
-
-        cfg.setSslContextFactory(createSslFactory());
-
-        return cfg;
+        return new ClientConfiguration()
+                .setAddresses("127.0.0.1:10800")
+                .setSslMode(SslMode.REQUIRED)
+                .setSslContextFactory(createSslFactory())
+                .setPartitionAwarenessEnabled(false);
     }
 
     /**
@@ -177,7 +173,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
             },
             null,
             IllegalArgumentException.class,
-            "Unsupported ciphersuite"
+            "TLC_FAKE_CIPHER"
         );
     }
 
@@ -288,7 +284,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
             cipherSuites,
             protocols,
             ClientConnectionException.class,
-            "Ignite cluster is unavailable"
+            "SSL handshake failed"
         );
     }
 
@@ -307,7 +303,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        GridTestUtils.assertThrows(
+        GridTestUtils.assertThrowsAnyCause(
             null,
             new Callable<Object>() {
                 @Override public Object call() {

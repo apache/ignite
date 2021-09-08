@@ -76,9 +76,7 @@ namespace Apache.Ignite.Config
 
             foreach (var arg in args)
             {
-                if (string.IsNullOrWhiteSpace(arg.Item2))
-                    throw new IgniteException(string.Format(
-                        "Missing argument value: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
+                ValidateArgValue(arg);
 
                 var arg0 = arg;  // copy captured variable
                 Func<string, bool> argIs = x => arg0.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
@@ -129,6 +127,22 @@ namespace Apache.Ignite.Config
             }
 
             return cfg;
+        }
+
+        /// <summary>
+        /// Validates arg value, throws an exception when not valid.
+        /// </summary>
+        /// <param name="arg">Tuple of arg name and value.</param>
+        /// <returns>Arg value.</returns>
+        public static string ValidateArgValue(Tuple<string, string> arg)
+        {
+            if (string.IsNullOrWhiteSpace(arg.Item2))
+            {
+                throw new IgniteException(
+                    string.Format("Missing argument value: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
+            }
+
+            return arg.Item2;
         }
 
         /// <summary>

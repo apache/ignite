@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -40,27 +39,13 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 6;
 
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(NODES - 2);
 
-        client = true;
-
-        startGridsMultiThreaded(NODES - 2, 2);
+        startClientGridsMultiThreaded(NODES - 2, 2);
     }
 
     /**

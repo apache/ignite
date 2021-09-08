@@ -443,8 +443,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static class Listener implements P2<UUID, Object> {
         /** Source node id. */
         private final UUID sourceNodeId;
+
         /** */
         private final boolean ret;
+
         /** */
         @IgniteInstanceResource
         private Ignite ignite;

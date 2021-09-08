@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains multilayer perceptron architecture classes.
  */
+
 package org.apache.ignite.ml.nn.architecture;

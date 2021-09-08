@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,7 +40,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.parseSubFolderName;
 
 /**
  * Test for new and old style persistent storage folders generation
@@ -117,7 +117,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (pstWalStoreCustomPath != null)
             ok &= U.delete(pstWalStoreCustomPath);
 
-        ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
 
         if (failIfDeleteNotCompleted)
             assertTrue(ok);
@@ -185,7 +185,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        assertDirectoryExist("binary_meta", subfolderName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subfolderName);
 
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
@@ -365,7 +365,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
                 " but actual class is " + (consistentId == null ? null : consistentId.getClass()),
             consistentId instanceof UUID);
 
-        return PdsConsistentIdProcessor.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
+        return PdsFolderResolver.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
     }
 
     /**
@@ -655,12 +655,12 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if failed.
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
+        final File curFolder = new File(U.defaultWorkDirectory(), PdsFolderResolver.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
-        final File[] files = curFolder.listFiles(PdsConsistentIdProcessor.DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
         for (File file : files) {
-            final PdsConsistentIdProcessor.FolderCandidate uid = parseSubFolderName(file, log);
+            final PdsFolderResolver.FolderCandidate uid = parseSubFolderName(file, log);
 
             if (uid != null)
                 indexes.add(uid.nodeIndex());
@@ -676,10 +676,10 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if IO error occur
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        assertDirectoryExist("binary_meta", subDirName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);
+        assertDirectoryExist(PdsFolderResolver.DB_DEFAULT_FOLDER, subDirName);
     }
 
     /**
@@ -693,7 +693,6 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         assertDirectoryExist(curFolder, subFolderNames);
     }
-
 
     /**
      * Checks one folder existence.

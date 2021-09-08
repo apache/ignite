@@ -56,9 +56,6 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (!getTestIgniteInstanceName(0).equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         cfg.setCacheConfiguration(
             cacheConfiguration(TIMESTAMP_CACHE),
             cacheConfiguration(Entity1.class.getName()),
@@ -93,8 +90,8 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        startGrid(1);
-        startGrid(2);
+        startClientGrid(1);
+        startClientGrid(2);
     }
 
     /**

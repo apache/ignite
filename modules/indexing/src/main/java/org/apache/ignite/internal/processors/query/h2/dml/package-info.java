@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains routines for executing DML statements on top of H2.
  */
+
 package org.apache.ignite.internal.processors.query.h2.dml;

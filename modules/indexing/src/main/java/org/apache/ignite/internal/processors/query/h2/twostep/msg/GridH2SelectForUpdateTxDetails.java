@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridH2SelectForUpdateTxDetails implements Message {
     /** */
     private static final long serialVersionUID = 8166491041528984454L;
+
     /** */
     private long threadId;
 
@@ -39,9 +39,6 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
     /** */
     private int miniId;
-
-    /** */
-    private UUID subjId;
 
     /** */
     private GridCacheVersion lockVer;
@@ -66,18 +63,16 @@ public class GridH2SelectForUpdateTxDetails implements Message {
      * @param threadId Thread id.
      * @param futId Future id.
      * @param miniId Mini fture id.
-     * @param subjId Subject id.
      * @param lockVer Lock version.
      * @param taskNameHash Task name hash.
      * @param clientFirst {@code True} if this is the first client request.
      * @param timeout Tx timeout.
      */
-    public GridH2SelectForUpdateTxDetails(long threadId, IgniteUuid futId, int miniId, UUID subjId,
+    public GridH2SelectForUpdateTxDetails(long threadId, IgniteUuid futId, int miniId,
         GridCacheVersion lockVer, int taskNameHash, boolean clientFirst, long timeout) {
         this.threadId = threadId;
         this.futId = futId;
         this.miniId = miniId;
-        this.subjId = subjId;
         this.lockVer = lockVer;
         this.taskNameHash = taskNameHash;
         this.clientFirst = clientFirst;
@@ -103,13 +98,6 @@ public class GridH2SelectForUpdateTxDetails implements Message {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Subject id.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -177,24 +165,18 @@ public class GridH2SelectForUpdateTxDetails implements Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
@@ -246,14 +228,6 @@ public class GridH2SelectForUpdateTxDetails implements Message {
                 reader.incrementState();
 
             case 4:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -261,7 +235,7 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -269,7 +243,7 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -289,7 +263,7 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 7;
     }
 
     /** {@inheritDoc} */

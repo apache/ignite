@@ -49,7 +49,9 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -115,7 +117,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<KeyClass, ValueClass> cacheConfiguration() {
-        CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
+        CacheConfiguration<KeyClass, ValueClass> ccfg = super.cacheConfiguration();
 
         return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
     }
@@ -466,20 +468,20 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         idxLatch.await();
 
-        // Destroy cache (drop table).
-        destroySqlCache(cli);
+        // Start destroy cache (drop table).
+        IgniteInternalFuture<Boolean> desFut = destroySqlCacheFuture(cli);
+
+        U.sleep(2_000);
+
+        assertFalse(idxFut.isDone());
+        assertFalse(desFut.isDone());
 
         // Unblock indexing and see what happens.
         unblockIndexing(srv1);
 
-        try {
-            idxFut.get();
+        GridTestUtils.assertThrows(log, (Callable<?>)idxFut::get, SchemaOperationException.class, null);
 
-            fail("Exception has not been thrown.");
-        }
-        catch (SchemaOperationException e) {
-            // No-op.
-        }
+        assertTrue(desFut.get());
     }
 
     /**
@@ -620,7 +622,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
+                    try {
+                        assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
+                    }
+                    catch (Exception e) {
+                        awaitConcDestroyException(e);
+                    }
                 }
 
                 return null;
@@ -1092,7 +1099,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         /** {@inheritDoc} */
         @Override public void dynamicIndexDrop(@NotNull String schemaName, String idxName, boolean ifExists)
-            throws IgniteCheckedException{
+            throws IgniteCheckedException {
             awaitIndexing(ctx.localNodeId());
 
             super.dynamicIndexDrop(schemaName, idxName, ifExists);

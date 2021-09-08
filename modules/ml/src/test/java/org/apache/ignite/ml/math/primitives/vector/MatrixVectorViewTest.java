@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.math.primitives.vector;
 
-import org.apache.ignite.ml.math.exceptions.IndexException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
@@ -33,8 +33,10 @@ import static org.junit.Assert.assertTrue;
 public class MatrixVectorViewTest {
     /** */
     private static final String UNEXPECTED_VALUE = "Unexpected value";
+
     /** */
     private static final int SMALL_SIZE = 3;
+
     /** */
     private static final int IMPOSSIBLE_SIZE = -1;
 

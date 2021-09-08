@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -37,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -62,6 +59,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.lang.Boolean.FALSE;
@@ -99,13 +97,14 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testMultipleIndexedTypes() throws Exception {
         final String cacheName = "test_multi_type";
 
         IgniteEx server = startGrid(0);
         server.cluster().active(true);
 
-        CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setIndexedTypes(
@@ -127,7 +126,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             )
         );
 
-        IgniteCache<Object,Object> cache = server.createCache(ccfg);
+        IgniteCache<Object, Object> cache = server.createCache(ccfg);
 
         cache.put(1L, "bla-bla");
         cache.put(2L, new TestData(777L));
@@ -137,32 +136,27 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         CacheDataTree.isLastFindWithDataPageScan();
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("select z, _key, _val from TestData use index()")
-            .setDataPageScanEnabled(true)).getAll();
+        List<List<?>> res = cache.query(new SqlFieldsQuery("select z, _key, _val from TestData use index()")).getAll();
         assertEquals(1, res.size());
         assertEquals(777L, res.get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
-        res = cache.query(new SqlFieldsQuery("select _val, _key from String use index()")
-            .setDataPageScanEnabled(true)).getAll();
+        res = cache.query(new SqlFieldsQuery("select _val, _key from String use index()")).getAll();
         assertEquals(1, res.size());
         assertEquals("bla-bla", res.get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
-        res = cache.query(new SqlFieldsQuery("select _key, _val from Integer use index()")
-            .setDataPageScanEnabled(true)).getAll();
+        res = cache.query(new SqlFieldsQuery("select _key, _val from Integer use index()")).getAll();
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
-        res = cache.query(new SqlFieldsQuery("select _key, _val from uuids use index()")
-            .setDataPageScanEnabled(true)).getAll();
+        res = cache.query(new SqlFieldsQuery("select _key, _val from uuids use index()")).getAll();
         assertEquals(1, res.size());
         assertEquals(7, res.get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
-        res = cache.query(new SqlFieldsQuery("select age, name from my_persons use index()")
-            .setDataPageScanEnabled(true)).getAll();
+        res = cache.query(new SqlFieldsQuery("select age, name from my_persons use index()")).getAll();
         assertEquals(1, res.size());
         assertEquals(99, res.get(0).get(0));
         assertEquals("Vasya", res.get(0).get(1));
@@ -173,6 +167,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testConcurrentUpdatesWithMvcc() throws Exception {
         doTestConcurrentUpdates(true);
     }
@@ -181,6 +176,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testConcurrentUpdatesNoMvcc() throws Exception {
         try {
             doTestConcurrentUpdates(false);
@@ -198,13 +194,13 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         IgniteEx server = startGrid(0);
         server.cluster().active(true);
 
-        CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
         ccfg.setAtomicityMode(enableMvcc ?
             CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT :
             CacheAtomicityMode.TRANSACTIONAL);
 
-        IgniteCache<Long,Long> cache = server.createCache(ccfg);
+        IgniteCache<Long, Long> cache = server.createCache(ccfg);
 
         long accounts = 100;
         long initialBalance = 100;
@@ -212,9 +208,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         for (long i = 0; i < accounts; i++)
             cache.put(i, initialBalance);
 
-        assertEquals(accounts * initialBalance,((Number)
+        assertEquals(accounts * initialBalance, ((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
-                .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
+                ).getAll().get(0).get(0)).longValue());
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
         AtomicBoolean cancel = new AtomicBoolean();
@@ -285,7 +281,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             while (!cancel.get() && !Thread.interrupted()) {
                 assertEquals("wrong sum!", accounts * initialBalance, ((Number)
                     cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
-                        .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
+                        ).getAll().get(0).get(0)).longValue());
 //                info("query ok!");
             }
         }, 2, "query");
@@ -308,6 +304,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScan() throws Exception {
         final String cacheName = "test";
 
@@ -315,21 +312,20 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         IgniteEx server = startGrid(0);
         server.cluster().active(true);
 
-        Ignition.setClientMode(true);
-        IgniteEx client = startGrid(1);
+        IgniteEx client = startClientGrid(1);
 
-        CacheConfiguration<Long,TestData> ccfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Long, TestData> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, TestData.class);
         ccfg.setSqlFunctionClasses(QueryDataPageScanTest.class);
 
-        IgniteCache<Long,TestData> clientCache = client.createCache(ccfg);
+        IgniteCache<Long, TestData> clientCache = client.createCache(ccfg);
 
         final int keysCnt = 1000;
 
         for (long i = 0; i < keysCnt; i++)
             clientCache.put(i, new TestData(i));
 
-        IgniteCache<Long,TestData> serverCache = server.cache(cacheName);
+        IgniteCache<Long, TestData> serverCache = server.cache(cacheName);
 
         doTestScanQuery(clientCache, keysCnt);
         doTestScanQuery(serverCache, keysCnt);
@@ -344,13 +340,13 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         doTestLazySql(serverCache, keysCnt);
     }
 
-    private void doTestLazySql(IgniteCache<Long,TestData> cache, int keysCnt) {
+    private void doTestLazySql(IgniteCache<Long, TestData> cache, int keysCnt) {
         checkLazySql(cache, false, keysCnt);
         checkLazySql(cache, true, keysCnt);
         checkLazySql(cache, null, keysCnt);
     }
 
-    private void checkLazySql(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
+    private void checkLazySql(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
         CacheDataTree.isLastFindWithDataPageScan();
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
@@ -365,7 +361,6 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                         "where a.z between ? and ? " +
                         "and check_scan_flag(?,true)")
                     .setLazy(true)
-                    .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setArgs(1, expNestedLoops, DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setPageSize(keysCnt / 10) // Must be less than keysCnt.
             )
@@ -393,7 +388,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         }
     }
 
-    private void doTestDml(IgniteCache<Long,TestData> cache) {
+    private void doTestDml(IgniteCache<Long, TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
         int callsCnt = 0;
@@ -411,12 +406,11 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
-    private void checkDml(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
+    private void checkDml(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled) {
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
         assertEquals(0L, cache.query(new SqlFieldsQuery(
             "update TestData set z = z + 1 where check_scan_flag(?,false)")
-            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
             .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
         ).getAll().get(0).get(0));
 
@@ -430,7 +424,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 
-    private void doTestSqlQuery(IgniteCache<Long,TestData> cache) {
+    private void doTestSqlQuery(IgniteCache<Long, TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
         int callsCnt = 0;
@@ -448,19 +442,19 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
-    private void checkSqlQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
+    private void checkSqlQuery(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled) {
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
         assertTrue(cache.query(new SqlQuery<>(TestData.class,
             "from TestData use index() where check_scan_flag(?,false)") // Force full scan with USE INDEX()
             .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
-            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
+            )
             .getAll().isEmpty());
 
         checkSqlLastFindDataPageScan(dataPageScanEnabled);
     }
 
-    private void doTestScanQuery(IgniteCache<Long,TestData> cache, int keysCnt) {
+    private void doTestScanQuery(IgniteCache<Long, TestData> cache, int keysCnt) {
         // Scan query (data page scan must be disabled by default).
         TestPredicate.callsCnt.set(0);
         int callsCnt = 0;
@@ -482,9 +476,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
     }
 
-    private void checkScanQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
-        assertTrue(cache.query(new ScanQuery<>(new TestPredicate())
-            .setDataPageScanEnabled(dataPageScanEnabled)).getAll().isEmpty());
+    private void checkScanQuery(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
+        assertTrue(cache.query(new ScanQuery<>(new TestPredicate())).getAll().isEmpty());
         assertEquals(expLastDataPageScan, CacheDataTree.isLastFindWithDataPageScan());
     }
 
@@ -512,9 +505,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public ResultSet executeSqlQueryWithTimer(
             PreparedStatement stmt,
-            Connection conn,
+            H2PooledConnection conn,
             String sql,
-            @Nullable Collection<Object> params,
             int timeoutMillis,
             @Nullable GridQueryCancel cancel,
             Boolean dataPageScanEnabled,
@@ -523,14 +515,14 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             callsCnt.incrementAndGet();
             assertEquals(expectedDataPageScanEnabled, dataPageScanEnabled);
 
-            return super.executeSqlQueryWithTimer(stmt, conn, sql, params, timeoutMillis,
+            return super.executeSqlQueryWithTimer(stmt, conn, sql, timeoutMillis,
                 cancel, dataPageScanEnabled, qryInfo);
         }
     }
 
     /**
      */
-    static class TestPredicate implements IgniteBiPredicate<Long,TestData> {
+    static class TestPredicate implements IgniteBiPredicate<Long, TestData> {
         /** */
         static final AtomicInteger callsCnt = new AtomicInteger();
 
@@ -578,6 +570,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     static class Person implements Externalizable {
         String name;
+
         int age;
 
         public Person() {
@@ -599,8 +592,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             age = in.readInt();
         }
 
-        static LinkedHashMap<String,String> getFields() {
-            LinkedHashMap<String,String> m = new LinkedHashMap<>();
+        static LinkedHashMap<String, String> getFields() {
+            LinkedHashMap<String, String> m = new LinkedHashMap<>();
 
             m.put("age", "INT");
             m.put("name", "VARCHAR");

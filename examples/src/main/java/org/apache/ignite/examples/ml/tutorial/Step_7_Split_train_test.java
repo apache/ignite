@@ -35,7 +35,7 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * The highest accuracy in the previous example ({@link Step_6_KNN}) is the result of
@@ -44,15 +44,17 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
- * After that it defines how to split the data to train and test sets and configures preprocessors that extract
- * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract features
+ * from an upstream data and perform other desired changes over the extracted data.</p>
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_7_Split_train_test {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 7 (split to train and test) example started.");
@@ -98,11 +100,10 @@ public class Step_7_Split_train_test {
                         minMaxScalerPreprocessor
                     );
 
-
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     ignite,
                     dataCache,
                     split.getTrainFilter(),
@@ -127,6 +128,9 @@ public class Step_7_Split_train_test {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

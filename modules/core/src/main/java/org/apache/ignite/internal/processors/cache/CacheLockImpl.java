@@ -25,7 +25,9 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -49,6 +51,9 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** */
     private volatile Thread lockedThread;
+
+    /** Lock start time in nanoseconds. */
+    private volatile long startTimeNanos;
 
     /**
      * @param gate Gate.
@@ -88,6 +93,9 @@ class CacheLockImpl<K, V> implements Lock {
      */
     private void incrementLockCounter() {
         assert (lockedThread == null && cntr == 0) || (lockedThread == Thread.currentThread() && cntr > 0);
+
+        if (cntr == 0 && delegate.context().kernalContext().performanceStatistics().enabled())
+            startTimeNanos = System.nanoTime();
 
         cntr++;
 
@@ -186,8 +194,19 @@ class CacheLockImpl<K, V> implements Lock {
 
             cntr--;
 
-            if (cntr == 0)
+            if (cntr == 0) {
                 lockedThread = null;
+
+                if (startTimeNanos > 0) {
+                    delegate.context().kernalContext().performanceStatistics().cacheOperation(
+                        OperationType.CACHE_LOCK,
+                        delegate.context().cacheId(),
+                        U.currentTimeMillis(),
+                        System.nanoTime() - startTimeNanos);
+
+                    startTimeNanos = 0;
+                }
+            }
 
             delegate.unlockAll(keys);
         }

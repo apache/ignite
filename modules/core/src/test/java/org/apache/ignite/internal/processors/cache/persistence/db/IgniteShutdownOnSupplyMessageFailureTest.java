@@ -20,22 +20,23 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.Event;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -43,11 +44,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 
 /** */
 public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstractTest {
@@ -59,9 +62,6 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
 
     /** Node name with test file factory. */
     private static final int NODE_NAME_WITH_TEST_FILE_FACTORY = 0;
-
-    /** Node name listen to a left event. */
-    private static final int NODE_NAME_LISTEN_TO_LEFT_EVENT = 1;
 
     /** Wait on supply message failure. */
     private static final CountDownLatch WAIT_ON_SUPPLY_MESSAGE_FAILURE = new CountDownLatch(1);
@@ -85,15 +85,17 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
             .setWalMode(WALMode.FSYNC)
             .setCheckpointFrequency(500);
 
-        if (name.equals(getTestIgniteInstanceName(NODE_NAME_WITH_TEST_FILE_FACTORY)))
+        if (name.equals(getTestIgniteInstanceName(NODE_NAME_WITH_TEST_FILE_FACTORY))) {
             conf.setFileIOFactory(new FailingFileIOFactory(canFailFirstNode));
 
-        if (name.equals(getTestIgniteInstanceName(NODE_NAME_LISTEN_TO_LEFT_EVENT)))
-            registerLeftEvent(cfg);
+            cfg.setIncludeEventTypes(EVT_CACHE_REBALANCE_PART_SUPPLIED);
+
+            cfg.setFailureHandler(new TestFailureHandler());
+        }
+        else
+            cfg.setFailureHandler(new StopNodeFailureHandler());
 
         cfg.setDataStorageConfiguration(conf);
-
-        cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg;
     }
@@ -126,7 +128,7 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
         IgniteEx ig = startGrid(0);
         IgniteEx awayNode = startGrid(1);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         createCache(ig, TEST_REBALANCE_CACHE);
 
@@ -136,13 +138,26 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
 
         populateCache(ig, TEST_REBALANCE_CACHE, 3_000, 6_000);
 
+        // Breaks historical rebalance. The second node will try to switch to full rebalance.
         canFailFirstNode.set(true);
+
+        // Break full rebalance.
+        IgnitePredicate<CacheRebalancingEvent> locLsnr = evt -> {
+            if (TEST_REBALANCE_CACHE.equals(evt.cacheName()))
+                throw new AssertionError(new IOException("Test crash"));
+
+            return true;
+        };
+
+        ig.events().localListen(locLsnr, EVT_CACHE_REBALANCE_PART_SUPPLIED);
 
         startGrid(1);
 
         WAIT_ON_SUPPLY_MESSAGE_FAILURE.await();
 
-        assertEquals(1, grid(1).context().discovery().aliveServerNodes().size());
+        assertTrue(GridTestUtils.waitForCondition(() -> grid(1).context().discovery().aliveServerNodes().size() == 1,
+            getTestTimeout()));
+
         assertFalse(awayNode.context().discovery().alive(ig.context().localNodeId())); // Only second node is alive
     }
 
@@ -177,22 +192,18 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
     }
 
     /**
-     * @param cfg Config.
+     * Test failure handler.
      */
-    private void registerLeftEvent(IgniteConfiguration cfg) {
-        int[] evts = {EVT_NODE_LEFT};
+    private static class TestFailureHandler extends StopNodeFailureHandler {
+        /** {@inheritDoc} */
+        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+            Throwable err = X.cause(failureCtx.error(), IOException.class);
 
-        cfg.setIncludeEventTypes(evts);
+            if (err != null && err.getMessage() != null && err.getMessage().contains("Test crash"))
+                WAIT_ON_SUPPLY_MESSAGE_FAILURE.countDown();
 
-        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
-
-        lsnrs.put((IgnitePredicate<Event>)event -> {
-            WAIT_ON_SUPPLY_MESSAGE_FAILURE.countDown();
-
-            return true;
-        }, evts);
-
-        cfg.setLocalEventListeners(lsnrs);
+            return super.handle(ignite, failureCtx);
+        }
     }
 
     /**

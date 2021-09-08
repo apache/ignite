@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML dataset split examples.
+ * <!-- Package description. --> ML dataset split examples.
  */
 package org.apache.ignite.examples.ml.selection.split;

@@ -100,7 +100,7 @@ namespace ignite
 
                 out.Synchronize();
 
-                long long res = env.Context()->TargetInStreamOutLong(javaRef, Operation::PUT_META, mem.Get()->PointerLong(), &jniErr);
+                int64_t res = env.Context()->TargetInStreamOutLong(javaRef, Operation::PUT_META, mem.Get()->PointerLong(), &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -83,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = GridName,
-                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
+                SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-store.xml"),
             });
         }
 

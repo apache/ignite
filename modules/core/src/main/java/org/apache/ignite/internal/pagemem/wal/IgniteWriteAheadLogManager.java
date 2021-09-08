@@ -19,10 +19,12 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
@@ -90,8 +92,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @throws IgniteCheckedException If failed to write.
      * @throws StorageException If IO exception occurred during the write. If an exception is thrown from this
      *      method, the WAL will be invalidated and the node will be stopped.
+     * @return Last WAL position which was flushed to WAL segment file. May be greater than or equal to a {@code ptr}.
+     * May be {@code null}, it means nothing has been flushed.
      */
-    public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
+    public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 
     /**
      * Reads WAL record by the specified pointer.
@@ -130,7 +134,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
      *
+     * NOTE: If the {@link DataStorageConfiguration#getMaxWalArchiveSize()} is exceeded, the segment will be released.
+     *
      * @param start WAL pointer.
+     * @return {@code True} if the reservation was successful.
      */
     public boolean reserve(WALPointer start);
 
@@ -138,20 +145,18 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Invoke this method to release WAL history since provided pointer that was previously reserved.
      *
      * @param start WAL pointer.
-     * @throws IgniteException If failed to release.
      */
-    public void release(WALPointer start) throws IgniteCheckedException;
+    public void release(WALPointer start);
 
     /**
-     * Gives a hint to WAL manager to clear entries logged before the given pointer. Some entries before the
-     * the given pointer will be kept because there is a configurable WAL history size. Those entries may be used
-     * for partial partition rebalancing.
+     * Gives a hint to WAL manager to clear entries logged before the given pointer.
+     * If entries are needed for binary recovery, they will not be affected.
+     * Some entries may be reserved eg for historical rebalance and they also will not be affected.
      *
-     * @param low Pointer since which WAL will be truncated. If null, WAL will be truncated from the oldest segment.
-     * @param high Pointer for which it is safe to clear the log.
+     * @param high Upper border to which WAL segments will be deleted.
      * @return Number of deleted WAL segments.
      */
-    public int truncate(WALPointer low, WALPointer high);
+    public int truncate(@Nullable WALPointer high);
 
     /**
      * Notifies {@code this} about latest checkpoint pointer.
@@ -162,6 +167,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param ptr Pointer for which it is safe to compact the log.
      */
     public void notchLastCheckpointPtr(WALPointer ptr);
+
+    /**
+     * @return Current segment index.
+     */
+    public long currentSegment();
 
     /**
      * @return Total number of segments in the WAL archive.
@@ -177,11 +187,6 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Last compacted segment index.
      */
     public long lastCompactedSegment();
-
-    /**
-     * @return Max allowed index of archived segment to delete or -1 if it does not exist.
-     */
-    public long maxArchivedSegmentToDelete();
 
     /**
      * Checks if WAL segment is under lock or reserved
@@ -206,4 +211,24 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
+
+    /**
+     * Getting local WAL segment size.
+     *
+     * @param idx Absolute segment index.
+     * @return Segment size, {@code 0} if size is unknown.
+     */
+    long segmentSize(long idx);
+
+    /**
+     * Get last written pointer.
+     *
+     * @return Last written pointer.
+     */
+    WALPointer lastWritePointer();
+
+    /**
+     * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
+     */
+    void startAutoReleaseSegments();
 }

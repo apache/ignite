@@ -71,7 +71,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -599,7 +599,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws SQLException On error.
      */
     private BigDecimal convertStringToBigDecimalViaJdbc(String strDec, int scale) throws SQLException {
-        try(ResultSet rs = stmt.executeQuery("select '" + strDec + "'")) {
+        try (ResultSet rs = stmt.executeQuery("select '" + strDec + "'")) {
             assert rs.next();
 
             return rs.getBigDecimal(1, scale);

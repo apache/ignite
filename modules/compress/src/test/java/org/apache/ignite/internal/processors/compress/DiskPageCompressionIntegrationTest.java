@@ -41,12 +41,16 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
@@ -81,15 +85,14 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     /**
      * @throws Exception If failed.
      */
-    @Override
-    protected void doTestPageCompression() throws Exception {
+    @Override protected void doTestPageCompression() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
         String cacheName = "test";
 
-        CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
+        CacheConfiguration<Integer, TestVal> ccfg = new CacheConfiguration<Integer, TestVal>()
             .setName(cacheName)
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
@@ -97,7 +100,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
             .setDiskPageCompression(compression)
             .setDiskPageCompressionLevel(compressionLevel);
 
-        IgniteCache<Integer,TestVal> cache = ignite.getOrCreateCache(ccfg);
+        IgniteCache<Integer, TestVal> cache = ignite.getOrCreateCache(ccfg);
 
         int cnt = 2_000;
 
@@ -110,7 +113,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
             .cache().context().database());
 
-        dbMgr.forceCheckpoint("test compression").finishFuture().get();
+        dbMgr.forceCheckpoint("test compression").futureFor(FINISHED).get();
 
         FilePageStoreManager storeMgr = dbMgr.getFileStoreManager();
 
@@ -130,17 +133,18 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         else
             assertTrue(sparseStoreSize < 0);
 
-        GridCacheContext<?,?> cctx = ignite.cachex(cacheName).context();
+        GridCacheContext<?, ?> cctx = ignite.cachex(cacheName).context();
 
         int cacheId = cctx.cacheId();
         int groupId = cctx.groupId();
 
         assertEquals(cacheId, groupId);
 
-        CacheGroupMetricsMXBean mx = cctx.group().mxBean();
+        MetricRegistry mreg = ignite.context().metric().registry(
+            metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));
 
-        storeSize = mx.getStorageSize();
-        sparseStoreSize = mx.getSparseStorageSize();
+        storeSize = mreg.<LongMetric>findMetric("StorageSize").value();
+        sparseStoreSize = mreg.<LongMetric>findMetric("SparseStorageSize").value();
 
         assertTrue("storeSize: " + storeSize, storeSize > 0);
 
@@ -183,7 +187,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         String cacheName = "test";
 
-        CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
+        CacheConfiguration<Integer, TestVal> ccfg = new CacheConfiguration<Integer, TestVal>()
             .setName(cacheName)
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
@@ -194,9 +198,10 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         ignite.getOrCreateCache(ccfg);
 
-        IgniteInternalCache<Integer,TestVal> cache = ignite.cachex(cacheName);
+        IgniteInternalCache<Integer, TestVal> cache = ignite.cachex(cacheName);
 
-        CacheGroupMetricsMXBean mx = cache.context().group().mxBean();
+        MetricRegistry mreg = ignite.context().metric().registry(
+            metricName(CACHE_GROUP_METRICS_PREFIX, cacheName));
 
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
             .cache().context().database());
@@ -207,10 +212,10 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
             assertTrue(cache.putIfAbsent(i, new TestVal(i)));
 
             if (i % 50_000 == 0) {
-                dbMgr.forceCheckpoint("test").finishFuture().get();
+                dbMgr.forceCheckpoint("test").futureFor(FINISHED).get();
 
-                long sparse = mx.getSparseStorageSize();
-                long size = mx.getStorageSize();
+                long sparse = mreg.<LongMetric>findMetric("SparseStorageSize").value();
+                long size = mreg.<LongMetric>findMetric("StorageSize").value();
 
                 System.out.println(i + " >> " + sparse + " / " + size + " = " + ((double)sparse / size));
             }

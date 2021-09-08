@@ -84,7 +84,6 @@ public interface LearningEnvironmentBuilder extends Serializable {
         return withParallelismStrategyDependency(constant(stgy));
     }
 
-
     /**
      * Specify dependency (partition -> logging factory).
      *
@@ -138,6 +137,14 @@ public interface LearningEnvironmentBuilder extends Serializable {
     public default LearningEnvironmentBuilder withRandom(Random random) {
         return withRandomDependency(constant(random));
     }
+
+    /**
+     * Specify partition data time-to-live in seconds (-1 for an infinite lifetime).
+     *
+     * @param dataTtl Partition data time-to-live in seconds (-1 for an infinite lifetime).
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withDataTtl(long dataTtl);
 
     /**
      * Get default {@link LearningEnvironmentBuilder}.

@@ -17,22 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
  *
  */
-public class RebalanceReassignExchangeTask implements CachePartitionExchangeWorkerTask {
+public class RebalanceReassignExchangeTask extends AbstractCachePartitionExchangeWorkerTask {
     /** */
     private final GridDhtPartitionExchangeId exchId;
 
+    /** */
+    private final GridDhtPartitionsExchangeFuture exchFut;
+
     /**
+     * @param secCtx Security context in which current task must be executed.
      * @param exchId Exchange ID.
+     * @param exchFut Exchange future.
      */
-    public RebalanceReassignExchangeTask(GridDhtPartitionExchangeId exchId) {
+    public RebalanceReassignExchangeTask(
+        SecurityContext secCtx,
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
+        super(secCtx);
+
         assert exchId != null;
+        assert exchFut != null;
 
         this.exchId = exchId;
+        this.exchFut = exchFut;
     }
 
     /** {@inheritDoc} */
@@ -45,5 +59,12 @@ public class RebalanceReassignExchangeTask implements CachePartitionExchangeWork
      */
     public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
+    }
+
+    /**
+     * @return Exchange future.
+     */
+    public GridDhtPartitionsExchangeFuture future() {
+        return exchFut;
     }
 }

@@ -19,9 +19,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,8 +39,13 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     private CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that will be preloaded from all it's current data. */
+    @GridToStringInclude
     private Set<Integer> full;
 
+    /**
+     * @param historical Historical partition set.
+     * @param full Full partition set.
+     */
     public IgniteDhtDemandedPartitionsMap(
         @Nullable CachePartitionPartialCountersMap historical,
         @Nullable Set<Integer> full)
@@ -46,7 +54,9 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
         this.full = full;
     }
 
+    /** */
     public IgniteDhtDemandedPartitionsMap() {
+        // No-op.
     }
 
     /**
@@ -165,6 +175,12 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
         return historical;
     }
+
+    /** */
+    public Collection<Integer> all() {
+        return F.concat(false, fullSet(), historicalSet());
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

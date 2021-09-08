@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -25,9 +24,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -82,9 +78,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         Ignite srv1 = startGrid("server1-block");
 
-        helper.clientModeThreadLocal(true);
-
-        IgniteEx cli = startGrid("client-block");
+        IgniteEx cli = startClientGrid("client-block");
 
         IgniteCache<Object, Object> cache = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -94,14 +88,8 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         assertEquals(1, srv1.cluster().forClients().nodes().size());
 
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-        IgniteEx ignite = grid("server1-block");
-
-        ObjectName spiName = U.makeMBeanName(ignite.context().igniteInstanceName(), "SPIs",
-            ZookeeperDiscoverySpi.class.getSimpleName());
-
-        ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+        ZookeeperDiscoverySpiMBean bean = getMxBean(srv1.name(), "SPIs",
+            ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
         assertNotNull(bean);
 
@@ -142,9 +130,8 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         sesTimeout = 3000;
         testSockNio = true;
-        helper.clientMode(true);
 
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -184,9 +171,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         joinTimeout = 3000;
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(1, CLIENTS);
+        startClientGridsMultiThreaded(1, CLIENTS);
 
         waitForTopology(CLIENTS + 1);
 
@@ -218,13 +203,11 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     public void testStartNoServers_FailOnTimeout() {
         joinTimeout = 3000;
 
-        helper.clientMode(true);
-
         long start = System.currentTimeMillis();
 
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startGrid(0);
+                startClientGrid(0);
 
                 return null;
             }
@@ -263,9 +246,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                helper.clientModeThreadLocal(true);
-
-                startGrid(0);
+                startClientGrid(0);
 
                 return null;
             }
@@ -274,8 +255,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         U.sleep(3000);
 
         helper.waitSpi(getTestIgniteInstanceName(0), spis);
-
-        helper.clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -334,9 +313,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     private void disconnectOnServersLeft(int srvs, int clients) throws Exception {
         startGridsMultiThreaded(srvs);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(srvs, clients);
+        startClientGridsMultiThreaded(srvs, clients);
 
         for (int i = 0; i < GridTestUtils.SF.applyLB(5, 2); i++) {
             info("Iteration: " + i);
@@ -382,8 +359,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
             ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, disconnectLatch);
 
             evts.clear();
-
-            helper.clientMode(false);
 
             log.info("Restart servers.");
 

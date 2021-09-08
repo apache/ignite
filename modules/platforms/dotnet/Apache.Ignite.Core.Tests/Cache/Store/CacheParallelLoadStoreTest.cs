@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
+                SpringConfigUrl = "Config/native-client-test-cache-parallel-store.xml",
             });
         }
 

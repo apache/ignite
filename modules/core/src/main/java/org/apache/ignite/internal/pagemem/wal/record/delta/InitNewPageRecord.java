@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Initializes new page by calling {@link PageIO#initNewPage(long, long, int)}.
+ * Initializes new page by calling {@link PageIO#initNewPage(long, long, int, PageMetrics)}.
  */
 public class InitNewPageRecord extends PageDeltaRecord {
     /** */
@@ -43,7 +44,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
     /**
      * @param grpId Cache group ID.
-     * @param pageId  Page ID.
+     * @param pageId Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
      * @param newPageId New page ID.
@@ -54,7 +55,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
     /**
      * @param grpId Cache group ID.
-     * @param pageId  Page ID.
+     * @param pageId Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
      * @param newPageId New page ID.
@@ -77,7 +78,8 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
             // Partition consistency failure came from https://issues.apache.org/jira/browse/IGNITE-11030
             // This invalid record can come from persistent stores, version < 2.7.5 where this bug was not fixed.
-            newPartId = partId; // Just hack new page ID to make this record to be correctly applied.
+            // Just hack new page ID to make this record to be correctly applied.
+            newPartId = partId;
 
             this.newPageId = PageIdUtils.pageId(
                 newPartId,
@@ -90,7 +92,9 @@ public class InitNewPageRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(ioType, ioVer);
 
-        io.initNewPage(pageAddr, newPageId, pageMem.realPageSize(groupId()));
+        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(groupId());
+
+        io.initNewPage(pageAddr, newPageId, pageMem.realPageSize(groupId()), metrics);
     }
 
     /** {@inheritDoc} */
@@ -126,4 +130,3 @@ public class InitNewPageRecord extends PageDeltaRecord {
             "super", super.toString());
     }
 }
-

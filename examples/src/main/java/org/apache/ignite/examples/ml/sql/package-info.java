@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Example of using ML and SQL functionality togeter.
+ * <!-- Package description. --> Example of using ML and SQL functionality together.
  */
 package org.apache.ignite.examples.ml.sql;

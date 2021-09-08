@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -47,11 +50,13 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -59,27 +64,27 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsHelper;
-import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -88,34 +93,44 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Dummy grid kernal context
+ * Dummy context for offline utilities. All grid components registered in the standalone context
+ * must be properly stopped since the lifecycle of them are controlled by kernal.
+ *
+ * @see org.apache.ignite.internal.GridComponent#stop(boolean)
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
-    /** Binary metadata file store folder. */
-    public static final String BINARY_META_FOLDER = "binary_meta";
-
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
+
+    /** List of registered components. */
+    private final List<GridComponent> comps = new LinkedList<>();
 
     /** Logger. */
     private IgniteLogger log;
 
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
+
+    /** Metrics manager. */
+    private final GridMetricManager metricMgr;
+
+    /** System view manager. */
+    private final GridSystemViewManager sysViewMgr;
 
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
@@ -151,12 +166,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
+        this.metricMgr = new GridMetricManager(this);
+        this.sysViewMgr = new GridSystemViewManager(this);
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
+            binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
+
+        comps.add(cacheObjProcessor);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -173,15 +192,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * {@code null} means no specific folder is configured. <br> In this case folder for metadata is composed from work
      * directory and consistentId
      * @return Cache object processor able to restore data records content into binary objects
-     * @throws IgniteCheckedException Throws in case of initialization errors.
      */
     private IgniteCacheObjectProcessor binaryProcessor(
         final GridKernalContext ctx,
-        final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+        final File binaryMetadataFileStoreDir) {
 
         final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
-        processor.start();
+
         return processor;
     }
 
@@ -206,12 +224,15 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         marshaller.setContext(marshallerCtx);
 
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override public List<GridComponent> components() {
-        return null;
+        return Collections.unmodifiableList(comps);
     }
 
     /** {@inheritDoc} */
@@ -294,6 +315,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public GridMetricManager metric() {
+        return metricMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSystemViewManager systemView() {
+        return sysViewMgr;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheProcessor cache() {
         return null;
     }
@@ -311,6 +342,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Tracing tracing() {
+        return new NoopTracing();
     }
 
     /** {@inheritDoc} */
@@ -339,7 +375,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessor rest() {
+    @Override public MaintenanceRegistry maintenanceRegistry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRestProcessor rest() {
         return null;
     }
 
@@ -354,27 +395,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAuthenticationProcessor authentication() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsProcessorAdapter igfs() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsHelper igfsHelper() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopProcessorAdapter hadoop() {
         return null;
     }
 
@@ -385,21 +406,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridMarshallerMappingProcessor mapping() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopHelper hadoopHelper() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService utilityCachePool() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
         return null;
     }
 
@@ -474,7 +480,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IndexProcessor indexProcessor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridEncryptionManager encryption() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDefragmentation defragmentation() {
         return null;
     }
 
@@ -538,76 +554,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getServiceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getSystemExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public StripedExecutor getStripedExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getManagementExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getPeerClassLoadingExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getIgfsExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public StripedExecutor getDataStreamerExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getRestExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getAffinityExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService getIndexingExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getQueryExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<String, ? extends ExecutorService> customExecutors() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getSchemaExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return null;
     }
@@ -662,10 +608,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
-    @Override public IoStatisticsManager ioStats() {
-        return null;
-    }
-
     /** {@inheritDoc} */
     @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return null;
@@ -688,7 +630,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
-        return null;
+        return comps.iterator();
     }
 
     /** {@inheritDoc} */
@@ -699,5 +641,25 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public LongJVMPauseDetector longJvmPauseDetector() {
         return new LongJVMPauseDetector(log);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiagnosticProcessor diagnostic() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DurableBackgroundTasksProcessor durableBackgroundTask() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PerformanceStatisticsProcessor performanceStatistics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Executor getAsyncContinuationExecutor() {
+        return null;
     }
 }

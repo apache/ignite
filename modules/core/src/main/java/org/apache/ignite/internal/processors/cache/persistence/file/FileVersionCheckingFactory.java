@@ -21,14 +21,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
  */
-public class FileVersionCheckingFactory implements FilePageStoreFactory {
+public class FileVersionCheckingFactory {
     /** Property to override latest version. Should be used only in tests. */
     public static final String LATEST_VERSION_OVERRIDE_PROPERTY = "file.page.store.latest.version.override";
 
@@ -42,41 +46,65 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * Factory to provide I/O interfaces for read/write operations with files.
      * This is backup factory for V1 page store.
      */
-    private FileIOFactory fileIOFactoryStoreV1;
+    private final FileIOFactory fileIOFactoryStoreV1;
 
     /** Memory configuration. */
-    private final DataStorageConfiguration memCfg;
+    private final IntSupplier pageSize;
 
     /**
      * @param fileIOFactory File IO factory.
      * @param fileIOFactoryStoreV1 File IO factory for V1 page store and for version checking.
-     * @param memCfg Memory configuration.
+     * @param pageSize Page size supplier.
      */
     public FileVersionCheckingFactory(
         FileIOFactory fileIOFactory,
         FileIOFactory fileIOFactoryStoreV1,
-        DataStorageConfiguration memCfg
+        IntSupplier pageSize
     ) {
         this.fileIOFactory = fileIOFactory;
         this.fileIOFactoryStoreV1 = fileIOFactoryStoreV1;
-        this.memCfg = memCfg;
+        this.pageSize = pageSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public FilePageStore createPageStore(
-        byte type,
-        File file,
-        AllocatedPageTracker allocatedTracker) throws IgniteCheckedException {
-        if (!file.exists())
-            return createPageStore(type, file, latestVersion(), allocatedTracker);
+    /**
+     * Creates instance of PageStore based on given file.
+     *
+     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}.
+     * @param file File Page store file.
+     * @param allocatedTracker metrics updater.
+     * @return page store
+     * @throws IgniteCheckedException if failed.
+     */
+    public PageStore createPageStore(byte type, File file, LongConsumer allocatedTracker) throws IgniteCheckedException {
+        return createPageStore(type, file::toPath, allocatedTracker);
+    }
 
-        try (FileIO fileIO = fileIOFactoryStoreV1.create(file)) {
+    /**
+     * Creates instance of PageStore based on file path provider.
+     *
+     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}
+     * @param pathProvider File Page store path provider.
+     * @param allocatedTracker metrics updater
+     * @return page store
+     * @throws IgniteCheckedException if failed
+     */
+    public PageStore createPageStore(
+        byte type,
+        IgniteOutClosure<Path> pathProvider,
+        LongConsumer allocatedTracker
+    ) throws IgniteCheckedException {
+        Path filePath = pathProvider.apply();
+
+        if (!Files.exists(filePath))
+            return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker);
+
+        try (FileIO fileIO = fileIOFactoryStoreV1.create(filePath.toFile())) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, file, latestVersion(), allocatedTracker);
+                return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker);
 
-            ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
+            ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.nativeOrder());
 
             fileIO.readFully(hdr);
 
@@ -86,10 +114,10 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, file, ver, allocatedTracker);
+            return createPageStore(type, pathProvider, pageSize.getAsInt(), ver, allocatedTracker);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Error while creating file page store [file=" + file + "]:", e);
+            throw new IgniteCheckedException("Error while creating file page store [file=" + filePath.toAbsolutePath() + "]:", e);
         }
     }
 
@@ -101,7 +129,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
         try {
             latestVer = Integer.parseInt(System.getProperty(LATEST_VERSION_OVERRIDE_PROPERTY));
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignore) {
             // No override.
         }
 
@@ -112,24 +140,28 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * Instantiates specific version of FilePageStore.
      *
      * @param type Type.
-     * @param file File.
      * @param ver Version.
+     * @param pageSize Page size.
      * @param allocatedTracker Metrics updater
      */
-    public FilePageStore createPageStore(
+    private FilePageStore createPageStore(
         byte type,
-        File file,
+        IgniteOutClosure<Path> pathProvider,
+        int pageSize,
         int ver,
-        AllocatedPageTracker allocatedTracker) {
+        LongConsumer allocatedTracker
+    ) {
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, fileIOFactoryStoreV1, memCfg, allocatedTracker);
+                return new FilePageStore(type, pathProvider, fileIOFactoryStoreV1, pageSize, allocatedTracker);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, file, fileIOFactory, memCfg, allocatedTracker);
+                return new FilePageStoreV2(type, pathProvider, fileIOFactory, pageSize, allocatedTracker);
 
             default:
-                throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + file.getAbsolutePath() + "]");
+                throw new IllegalArgumentException(
+                    "Unknown version of file page store: " + ver + " for file [" + pathProvider.apply().toAbsolutePath() + "]"
+                );
         }
     }
 
@@ -143,7 +175,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
                 return FilePageStore.HEADER_SIZE;
 
             case FilePageStoreV2.VERSION:
-                return memCfg.getPageSize();
+                return pageSize.getAsInt();
 
             default:
                 throw new IllegalArgumentException("Unknown version of file page store.");

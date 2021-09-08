@@ -36,6 +36,10 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
+import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -49,11 +53,10 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -62,9 +65,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -73,7 +76,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 
 /**
  *
@@ -87,9 +91,6 @@ public class CacheGroupContext {
 
     /** Node ID cache group was received from. */
     private volatile UUID rcvdFrom;
-
-    /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
-    private boolean needsRecovery;
 
     /** */
     private volatile AffinityTopologyVersion locStartVer;
@@ -115,7 +116,7 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    /** We modify content under lock, by making defensive copy, field always contains unmodifiable list. */
     private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
     /** List of caches with registered CQ listeners. */
@@ -164,9 +165,6 @@ public class CacheGroupContext {
     /** */
     private final boolean mvccEnabled;
 
-    /** MXBean. */
-    private final CacheGroupMetricsMXBean mxBean;
-
     /** */
     private volatile boolean localWalEnabled;
 
@@ -182,6 +180,11 @@ public class CacheGroupContext {
     /** Statistics holder to track IO operations for data pages. */
     private final IoStatisticsHolder statHolderData;
 
+    /** */
+    private volatile boolean hasAtomicCaches;
+
+    /** Cache group metrics. */
+    private final CacheGroupMetricsImpl metrics;
 
     /**
      * @param ctx Context.
@@ -198,7 +201,7 @@ public class CacheGroupContext {
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
      */
-    CacheGroupContext(
+    public CacheGroupContext(
         GridCacheSharedContext ctx,
         int grpId,
         UUID rcvdFrom,
@@ -244,18 +247,20 @@ public class CacheGroupContext {
 
         log = ctx.kernalContext().log(getClass());
 
-        mxBean = new CacheGroupMetricsMXBeanImpl(this);
+        metrics = new CacheGroupMetricsImpl(this);
 
         if (systemCache()) {
             statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
             statHolderData = IoStatisticsHolderNoOp.INSTANCE;
         }
         else {
-            statHolderIdx = ctx.kernalContext().ioStats().registerIndex(IoStatisticsType.HASH_INDEX,
-                cacheOrGroupName(), HASH_PK_IDX_NAME);
+            GridMetricManager mmgr = ctx.kernalContext().metric();
 
-            statHolderData = ctx.kernalContext().ioStats().registerCacheGroup(cacheOrGroupName(), grpId);
+            statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mmgr);
+            statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mmgr);
         }
+
+        hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -357,6 +362,9 @@ public class CacheGroupContext {
 
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
+
+        if (!hasAtomicCaches)
+            hasAtomicCaches = cctx.config().getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -590,7 +598,6 @@ public class CacheGroupContext {
                     hasOldVal,
                     null,
                     null,
-                    null,
                     keepBinary);
     }
 
@@ -678,20 +685,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Current cache state. Must only be modified during exchange.
-     */
-    public boolean needsRecovery() {
-        return needsRecovery;
-    }
-
-    /**
-     * @param needsRecovery Needs recovery flag.
-     */
-    public void needsRecovery(boolean needsRecovery) {
-        this.needsRecovery = needsRecovery;
-    }
-
-    /**
      * @return Topology version when group was started on local node.
      */
     public AffinityTopologyVersion localStartVersion() {
@@ -765,6 +758,13 @@ public class CacheGroupContext {
      * @return Group name if it is specified, otherwise cache name.
      */
     public String cacheOrGroupName() {
+        return cacheOrGroupName(ccfg);
+    }
+
+    /**
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
         return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
     }
 
@@ -823,8 +823,6 @@ public class CacheGroupContext {
 
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
-
-        ctx.evict().onCacheGroupStopped(this);
 
         aff.cancelFutures(err);
 
@@ -977,7 +975,6 @@ public class CacheGroupContext {
         this.contQryCaches = contQryCaches;
     }
 
-
     /**
      * Obtain the group listeners lock. Write lock should be held to register/unregister listeners. Read lock should be
      * hel for CQ listeners notification.
@@ -1030,7 +1027,7 @@ public class CacheGroupContext {
         final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
 
         if (procC != null) {
-            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     for (Runnable c : procC)
                         c.run();
@@ -1075,13 +1072,16 @@ public class CacheGroupContext {
                 ccfg.getCacheMode() == LOCAL
             );
 
-        if (ccfg.getCacheMode() != LOCAL)
-            top = new GridDhtPartitionTopologyImpl(ctx, this);
+        if (ccfg.getCacheMode() != LOCAL) {
+            top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
+
+            metrics.onTopologyInitialized();
+        }
 
         try {
-            offheapMgr = persistenceEnabled
+            offheapMgr = ctx.kernalContext().resource().resolve(persistenceEnabled
                 ? new GridCacheOffheapManager()
-                : new IgniteCacheOffheapManagerImpl();
+                : new IgniteCacheOffheapManagerImpl());
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to initialize offheap manager", e);
@@ -1093,6 +1093,8 @@ public class CacheGroupContext {
             initializeIO();
 
             ctx.affinity().onCacheGroupCreated(this);
+
+            ctx.evict().onCacheGroupStarted(this);
         }
     }
 
@@ -1190,13 +1192,6 @@ public class CacheGroupContext {
         preldr.onReconnected();
     }
 
-    /**
-     * @return MXBean.
-     */
-    public CacheGroupMetricsMXBean mxBean() {
-        return mxBean;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
@@ -1211,6 +1206,8 @@ public class CacheGroupContext {
 
     /**
      * Local WAL enabled flag.
+     *
+     * @return {@code False} if a durability (WAL logging) is disabled for a group until rebalancing has finished.
      */
     public boolean localWalEnabled() {
         return localWalEnabled;
@@ -1228,8 +1225,10 @@ public class CacheGroupContext {
      */
     public void globalWalEnabled(boolean enabled) {
         if (globalWalEnabled != enabled) {
-            log.info("Global WAL state for group=" + cacheOrGroupName() +
-                " changed from " + globalWalEnabled + " to " + enabled);
+            if (log.isInfoEnabled()) {
+                log.info("Global state for group durability has changed [name=" + cacheOrGroupName() +
+                    ", enabled=" + enabled + ']');
+            }
 
             persistGlobalWalState(enabled);
 
@@ -1239,15 +1238,25 @@ public class CacheGroupContext {
 
     /**
      * @param enabled Local WAL enabled flag.
+     * @param persist If {@code true} then flag state will be persisted into metastorage.
      */
-    public void localWalEnabled(boolean enabled) {
-        if (localWalEnabled != enabled){
-            log.info("Local WAL state for group=" + cacheOrGroupName() +
-                " changed from " + localWalEnabled + " to " + enabled);
-
-            persistLocalWalState(enabled);
+    public void localWalEnabled(boolean enabled, boolean persist) {
+        if (localWalEnabled != enabled) {
+            if (log.isInfoEnabled()) {
+                log.info("Local state for group durability has changed [name=" + cacheOrGroupName() +
+                    ", enabled=" + enabled + ']');
+            }
 
             localWalEnabled = enabled;
+        }
+
+        if (persist) {
+            if (log.isInfoEnabled()) {
+                log.info("Local state for group durability has been logged to WAL [name=" + cacheOrGroupName() +
+                    ", enabled=" + enabled + ']');
+            }
+
+            persistLocalWalState(enabled);
         }
     }
 
@@ -1277,5 +1286,32 @@ public class CacheGroupContext {
      */
     public IoStatisticsHolder statisticsHolderData() {
         return statHolderData;
+    }
+
+    /**
+     * @return {@code True} if group has atomic caches.
+     */
+    public boolean hasAtomicCaches() {
+        return hasAtomicCaches;
+    }
+
+    /**
+     * @return Metrics.
+     */
+    public CacheGroupMetricsImpl metrics() {
+        return metrics;
+    }
+
+    /**
+     * Removes statistics metrics registries.
+     *
+     * @param destroy Group destroy flag.
+     */
+    public void removeIOStatistic(boolean destroy) {
+        if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName(), destroy);
+
+        if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
     }
 }

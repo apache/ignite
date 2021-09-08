@@ -24,6 +24,9 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class WeightedPredictionsAggregatorTest {
+
+    public static final double[] EMPTY_DOUBLE_ARRAY = {};
+
     /** */
     @Test
     public void testApply1() {
@@ -49,14 +52,14 @@ public class WeightedPredictionsAggregatorTest {
     @Test
     public void testToString() {
         PredictionsAggregator aggr = (PredictionsAggregator)doubles -> null;
-        assertTrue(aggr.toString().length() > 0);
-        assertTrue(aggr.toString(true).length() > 0);
-        assertTrue(aggr.toString(false).length() > 0);
+        assertTrue(!aggr.toString().isEmpty());
+        assertTrue(!aggr.toString(true).isEmpty());
+        assertTrue(!aggr.toString(false).isEmpty());
 
-        WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(new double[] {});
-        assertTrue(aggregator.toString().length() > 0);
-        assertTrue(aggregator.toString(true).length() > 0);
-        assertTrue(aggregator.toString(false).length() > 0);
+        WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(EMPTY_DOUBLE_ARRAY);
+        assertTrue(!aggregator.toString().isEmpty());
+        assertTrue(!aggregator.toString(true).isEmpty());
+        assertTrue(!aggregator.toString(false).isEmpty());
     }
 
 }

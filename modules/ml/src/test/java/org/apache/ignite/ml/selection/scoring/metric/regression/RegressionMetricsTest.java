@@ -17,122 +17,49 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.regression;
 
-import java.util.Arrays;
-import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.selection.scoring.evaluator.EvaluationResult;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link RegressionMetrics}.
+ * Tests for regression metrics.
  */
 public class RegressionMetricsTest {
     /**
      *
      */
     @Test
-    public void testDefaultBehaviour() {
-        Metric scoreCalculator = new RegressionMetrics();
+    public void testCalculation() {
+        Map<Vector, Double> linearSet = new HashMap<Vector, Double>() {{
+            put(VectorUtils.of(0.), 0.);
+            put(VectorUtils.of(1.), 1.);
+            put(VectorUtils.of(2.), 2.);
+            put(VectorUtils.of(3.), 3.);
+        }};
 
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 1.0, 1.0, 1.0),
-            Arrays.asList(1.0, 1.0, 0.0, 1.0)
-        );
+        IgniteModel<Vector, Double> linearModel = v -> v.get(0);
+        IgniteModel<Vector, Double> squareModel = v -> Math.pow(v.get(0), 2);
 
-        double score = scoreCalculator.score(cursor.iterator());
+        EvaluationResult linearRes = Evaluator.evaluateRegression(linearSet, linearModel, Vector::labeled);
+        assertEquals(0., linearRes.get(MetricName.MAE), 0.01);
+        assertEquals(0., linearRes.get(MetricName.MSE), 0.01);
+        assertEquals(0., linearRes.get(MetricName.R2), 0.01);
+        assertEquals(0., linearRes.get(MetricName.RSS), 0.01);
+        assertEquals(0., linearRes.get(MetricName.RMSE), 0.01);
 
-        assertEquals(0.5, score, 1e-12);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testDefaultBehaviourForScoreAll() {
-        RegressionMetrics scoreCalculator = new RegressionMetrics();
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 1.0, 1.0, 1.0),
-            Arrays.asList(1.0, 1.0, 0.0, 1.0)
-        );
-
-        RegressionMetricValues metricValues = scoreCalculator.scoreAll(cursor.iterator());
-
-        assertEquals(1.0, metricValues.rss(), 1e-12);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testCustomMetric() {
-        RegressionMetrics scoreCalculator = (RegressionMetrics) new RegressionMetrics()
-            .withMetric(RegressionMetricValues::mae);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals(0.25, score, 1e-12);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testNullCustomMetric() {
-        RegressionMetrics scoreCalculator = (RegressionMetrics) new RegressionMetrics()
-            .withMetric(null);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        // rmse as default metric
-        assertEquals(0.5, score, 1e-12);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testR2_1() {
-        RegressionMetrics scoreCalculator = (RegressionMetrics) new RegressionMetrics()
-            .withMetric(RegressionMetricValues::r2);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals(0.0, score, 1e-12);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testR2_2() {
-        RegressionMetrics scoreCalculator = (RegressionMetrics) new RegressionMetrics()
-            .withMetric(RegressionMetricValues::r2);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 2.0, 3.0, 4.0),
-            Arrays.asList(2.0, 2.0, 5.0, 10.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals(-7.19, score, 0.01);
+        EvaluationResult squareRes = Evaluator.evaluateRegression(linearSet, squareModel, Vector::labeled);
+        assertEquals(2., squareRes.get(MetricName.MAE), 0.01);
+        assertEquals(10., squareRes.get(MetricName.MSE), 0.01);
+        assertEquals(8., squareRes.get(MetricName.R2), 0.01);
+        assertEquals(40., squareRes.get(MetricName.RSS), 0.01);
+        assertEquals(Math.sqrt(10), squareRes.get(MetricName.RMSE), 0.01);
     }
 }

@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
-
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * WAL state propose message.
@@ -95,11 +94,6 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
      */
     public void affinityNode(boolean affNode) {
         this.affNode = affNode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
     }
 
     /** {@inheritDoc} */

@@ -100,7 +100,7 @@ class GridTestMessage implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
         out.writeLong(field1);
         out.writeLong(field2);
         U.writeString(out, str);
@@ -109,7 +109,7 @@ class GridTestMessage implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
         field1 = in.readLong();
         field2 = in.readLong();
         str = U.readString(in);

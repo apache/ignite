@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 
@@ -66,6 +66,8 @@ public interface FileHandleManager {
      * @param explicitFsync {@code true} if fsync required.
      * @throws IgniteCheckedException if fail.
      * @throws StorageException if storage was fail.
+     * @return Last WAL position which was flushed to WAL segment file. May be greater than or equal to a {@code ptr}.
+     * May be {@code null}, it means nothing has been flushed.
      */
-    void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
+    WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 }

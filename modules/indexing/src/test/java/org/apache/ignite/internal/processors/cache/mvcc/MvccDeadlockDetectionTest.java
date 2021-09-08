@@ -37,7 +37,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -75,9 +74,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         ign.getOrCreateCache(ccfg);
 
-        G.setClientMode(true);
-
-        client = startGrid(n);
+        client = startClientGrid(n);
     }
 
     /**

@@ -38,7 +38,7 @@ public interface ClientListenerRequestHandler {
      * @param req Request.
      * @return Error response.
      */
-    ClientListenerResponse handleException(Exception e, ClientListenerRequest req);
+    ClientListenerResponse handleException(Throwable e, ClientListenerRequest req);
 
     /**
      * Write successful handshake response.
@@ -46,6 +46,14 @@ public interface ClientListenerRequestHandler {
      * @param writer Binary writer.
      */
     void writeHandshake(BinaryWriterExImpl writer);
+
+
+    /**
+     * Checks whether query cancellation is supported within given version of protocol.
+     *
+     * @return {@code true} if supported, {@code false} otherwise.
+     */
+    boolean isCancellationSupported();
 
     /**
      * Detect whether given command is a cancellation command.
@@ -67,4 +75,7 @@ public interface ClientListenerRequestHandler {
      * @param reqId Request Id.
      */
     void unregisterRequest(long reqId);
+
+    /** @return Protocol version. */
+    ClientListenerProtocolVersion protocolVersion();
 }

@@ -27,13 +27,14 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
+public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport, PageReadWriteManager {
     /**
      * Invoked before starting checkpoint recover.
      */
@@ -50,10 +51,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cacheId Cache id.
      * @param partitions Partitions count.
      * @param workingDir Working directory.
-     * @param tracker Allocation tracker.
+     * @param pageMetrics Page metrics.
      * @throws IgniteCheckedException If failed.
      */
-    void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
+    public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
         throws IgniteCheckedException;
 
     /**
@@ -82,15 +83,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException;
 
     /**
-     * Callback called when a partition is created on the local node.
-     *
-     * @param grpId Cache group ID where the partition is being created.
-     * @param partId ID of the partition being created.
-     * @throws IgniteCheckedException If failed to handle partition create callback.
-     */
-    public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException;
-
-    /**
      * Callback called when a partition for the given cache is evicted from the local node.
      * After this callback is invoked, no data associated with the partition will be stored on disk.
      *
@@ -99,17 +91,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param tag Partition tag (growing 1-based partition file version).
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;
-
-    /**
-     * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
-     *
-     * @param grpId Cache group ID.
-     * @param pageId PageID to read.
-     * @param pageBuf Page buffer to write to.
-     * @throws IgniteCheckedException If failed to read the page.
-     */
-    public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException;
 
     /**
      * Checks if partition store exists.
@@ -139,7 +121,13 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
+    @Override public PageStore write(
+        int grpId,
+        long pageId,
+        ByteBuffer pageBuf,
+        int tag,
+        boolean calculateCrc
+    ) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the page store file.
@@ -171,12 +159,12 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * Allocates a page for the given page space.
      *
      * @param grpId Cache group ID.
-     * @param partId Partition ID. Used only if {@code flags} is equal to {@link PageMemory#FLAG_DATA}.
+     * @param partId Partition ID. Used only if {@code flags} is not equal to {@link PageMemory#FLAG_IDX}.
      * @param flags Page allocation flags.
      * @return Allocated page ID.
      * @throws IgniteCheckedException If IO exception occurred while allocating a page ID.
      */
-    public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
+    @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * Gets total number of allocated pages for the given space.
@@ -187,14 +175,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @throws IgniteCheckedException If failed.
      */
     public int pages(int grpId, int partId) throws IgniteCheckedException;
-
-    /**
-     * Gets meta page ID for specified cache.
-     *
-     * @param grpId Cache group ID.
-     * @return Meta page ID.
-     */
-    public long metaPageId(int grpId);
 
     /**
      * @return Saved cache configurations.
@@ -222,11 +202,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return {@code True} if index store for given cache group existed before node started.
      */
     public boolean hasIndexStore(int grpId);
-
-    /**
-     * @param grpDesc Cache group descriptor.
-     */
-    public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc);
 
     /**
      * Calculates number of pages currently allocated for given cache group.

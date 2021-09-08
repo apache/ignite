@@ -64,10 +64,10 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
         double d = 6;
         cacheDouble.put(d, d);
 
-        IgniteCache<Boolean, Boolean> cacheBoolean = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), boolean.class, boolean.class);
+        IgniteCache<Boolean, Boolean> cacheBoolean =
+            jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), boolean.class, boolean.class);
         boolean bool = true;
         cacheBoolean.put(bool, bool);
-
 
         assertEquals(cacheByte.query(new SqlQuery<>(Byte.class, "1 = 1")).getAll().size(), 1);
         assertEquals(cacheShort.query(new SqlQuery<>(Short.class, "1 = 1")).getAll().size(), 1);

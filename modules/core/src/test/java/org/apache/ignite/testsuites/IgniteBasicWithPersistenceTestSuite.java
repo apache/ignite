@@ -23,6 +23,10 @@ import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
+import org.apache.ignite.internal.cluster.FullyConnectedComponentSearcherTest;
+import org.apache.ignite.internal.cluster.IgniteClusterIdTagTest;
+import org.apache.ignite.internal.encryption.CacheGroupKeyChangeTest;
+import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheBigEntryTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
@@ -30,11 +34,30 @@ import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
+import org.apache.ignite.internal.encryption.EncryptionMXBeanTest;
+import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest;
+import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
+import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvationCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotHandlerTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotWithMetastorageTest;
+import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
+import org.apache.ignite.internal.processors.performancestatistics.CheckpointTest;
+import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsRotateFileTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
+import org.apache.ignite.internal.processors.performancestatistics.StringCacheTest;
+import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
-import org.apache.ignite.util.GridCommandHandlerSslTest;
-import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -51,9 +74,8 @@ import org.junit.runners.Suite;
     FailureHandlingConfigurationTest.class,
     SystemWorkersBlockingTest.class,
     CheckpointReadLockFailureTest.class,
+    CommonPoolStarvationCheckpointTest.class,
 
-    GridCommandHandlerTest.class,
-    GridCommandHandlerSslTest.class,
     GridInternalTaskUnusedWalSegmentsTest.class,
 
     GridNodeMetricsLogPdsSelfTest.class,
@@ -66,7 +88,38 @@ import org.junit.runners.Suite;
     EncryptedCacheRestartTest.class,
     EncryptedCachePreconfiguredRestartTest.class,
 
-    SingleNodePersistenceSslTest.class
+    SingleNodePersistenceSslTest.class,
+
+    MasterKeyChangeTest.class,
+    MasterKeyChangeConsistencyCheckTest.class,
+
+    CacheGroupKeyChangeTest.class,
+    CacheGroupReencryptionTest.class,
+
+    EncryptionMXBeanTest.class,
+
+    IgniteSnapshotManagerSelfTest.class,
+    IgniteClusterSnapshotSelfTest.class,
+    IgniteClusterSnapshotCheckTest.class,
+    IgniteSnapshotWithMetastorageTest.class,
+    IgniteSnapshotMXBeanTest.class,
+    IgniteClusterSnapshotRestoreSelfTest.class,
+    IgniteClusterSnapshotHandlerTest.class,
+
+    IgniteClusterIdTagTest.class,
+    FullyConnectedComponentSearcherTest.class,
+
+    PerformanceStatisticsSelfTest.class,
+    PerformanceStatisticsThinClientTest.class,
+    PerformanceStatisticsRotateFileTest.class,
+    TopologyChangesTest.class,
+    IgniteClusterIdTagTest.class,
+    StringCacheTest.class,
+    PerformanceStatisticsPropertiesTest.class,
+    PerformanceStatisticsMultipleStartTest.class,
+    ForwardReadTest.class,
+    CacheStartTest.class,
+    CheckpointTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

@@ -26,11 +26,17 @@ import java.util.Map;
  * @see ImputerPreprocessor
  */
 public class ImputerPartitionData implements AutoCloseable {
-    /** Sum of values in partition. */
+    /** Sum of values for each feature in partition. */
     private double[] sums;
 
-    /** Count of values in partition. */
+    /** Count of values for each feature in partition. */
     private int[] counts;
+
+    /** Max value for each feature in partition. */
+    private double[] maxs;
+
+    /** Min of values for each feature in partition. */
+    private double[] mins;
 
     /** Most frequent values. */
     private Map<Double, Integer>[] valuesByFreq;
@@ -76,12 +82,54 @@ public class ImputerPartitionData implements AutoCloseable {
     }
 
     /**
+     * Sets the array of maximum of values in partition for each feature in the dataset.
+     *
+     * @param maxs The given value.
+     *
+     * @return The partition data.
+     */
+    public ImputerPartitionData withMaxs(double[] maxs) {
+        this.maxs = maxs;
+        return this;
+    }
+
+    /**
+     * Sets the array of minimum of values in partition for each feature in the dataset.
+     *
+     * @param mins The given value.
+     *
+     * @return The partition data.
+     */
+    public ImputerPartitionData withMins(double[] mins) {
+        this.mins = mins;
+        return this;
+    }
+
+    /**
      * Gets the array of amounts of values in partition for each feature in the dataset.
      *
      * @return The counts.
      */
     public int[] counts() {
         return counts;
+    }
+
+    /**
+     * Gets the array of maximum of values in partition for each feature in the dataset.
+     *
+     * @return The counts.
+     */
+    public double[] maxs() {
+        return maxs;
+    }
+
+    /**
+     * Gets the array of minimum of values in partition for each feature in the dataset.
+     *
+     * @return The counts.
+     */
+    public double[] mins() {
+        return mins;
     }
 
     /**

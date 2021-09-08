@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -84,6 +85,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_MULTIPLE_STMTS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_SCHEMA;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
@@ -100,6 +102,22 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 public class JdbcConnection implements Connection {
     /** Null stub. */
     private static final String NULL = "null";
+
+    /** Multiple statements supported since version. */
+    private static final IgniteProductVersion MULTIPLE_STATEMENTS_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("2.4.0");
+
+    /** Multiple statements V2 task supported since version. */
+    private static final IgniteProductVersion MULTIPLE_STATEMENTS_TASK_V2_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("2.8.0");
+
+    /** Close remote cursor task is supported since version. {@link JdbcCloseCursorTask}*/
+    private static final IgniteProductVersion CLOSE_CURSOR_TASK_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("2.11.0");
+
+    /** Multiple statements V3 task supported since version. */
+    private static final IgniteProductVersion MULTIPLE_STATEMENTS_TASK_V3_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("2.11.0");
 
     /**
      * Ignite nodes cache.
@@ -178,6 +196,16 @@ public class JdbcConnection implements Connection {
     final Set<JdbcStatement> statements = new HashSet<>();
 
     /**
+     * Describes the client connection:
+     * - thin cli: "cli:host:port@user_name"
+     * - thin JDBC: "jdbc-thin:host:port@user_name"
+     * - ODBC: "odbc:host:port@user_name"
+     *
+     * Used by the running query view to display query initiator.
+     */
+    private final String clientDesc;
+
+    /**
      * Creates new connection.
      *
      * @param url Connection URL.
@@ -215,6 +243,7 @@ public class JdbcConnection implements Connection {
 
         multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
         skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
+        schemaName = QueryUtils.normalizeSchemaName(null, props.getProperty(PROP_SCHEMA));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -241,10 +270,15 @@ public class JdbcConnection implements Connection {
                         IgniteQueryErrorCode.CACHE_NOT_FOUND);
                 }
 
-                schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
+                if (schemaName == null)
+                    schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
             }
-            else
-                schemaName = QueryUtils.DFLT_SCHEMA;
+            else {
+                if (schemaName == null)
+                    schemaName = QueryUtils.DFLT_SCHEMA;
+            }
+
+            clientDesc = "jdbc-v2:" + F.first(ignite.cluster().localNode().addresses()) + ":" + ignite.name();
         }
         catch (Exception e) {
             close();
@@ -851,6 +885,34 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsSupported() {
+        return U.isOldestNodeVersionAtLeast(MULTIPLE_STATEMENTS_SUPPORTED_SINCE, ignite.cluster().nodes());
+    }
+
+    /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsTaskV2Supported() {
+        return U.isOldestNodeVersionAtLeast(MULTIPLE_STATEMENTS_TASK_V2_SUPPORTED_SINCE, ignite.cluster().nodes());
+    }
+
+    /**
+     * @return {@code true} if close remote cursor is supported.
+     */
+    boolean isCloseCursorTaskSupported() {
+        return U.isOldestNodeVersionAtLeast(CLOSE_CURSOR_TASK_SUPPORTED_SINCE, ignite.cluster().nodes());
+    }
+
+    /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsTaskV3Supported() {
+        return U.isOldestNodeVersionAtLeast(MULTIPLE_STATEMENTS_TASK_V3_SUPPORTED_SINCE, ignite.cluster().nodes());
+    }
+
+    /**
      * @return {@code true} if update on server is enabled, {@code false} otherwise.
      */
     boolean skipReducerOnUpdate() {
@@ -908,6 +970,20 @@ public class JdbcConnection implements Connection {
      */
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
+    }
+
+    /**
+     * Describes the client connection:
+     * - thin cli: "cli:host:port@user_name"
+     * - thin JDBC: "jdbc-thin:host:port@user_name"
+     * - ODBC: "odbc:host:port@user_name"
+     *
+     * Used by the running query view to display query initiator.
+     *
+     * @return Client descriptor string.
+     */
+    String clientDescriptor() {
+        return clientDesc;
     }
 
     /**

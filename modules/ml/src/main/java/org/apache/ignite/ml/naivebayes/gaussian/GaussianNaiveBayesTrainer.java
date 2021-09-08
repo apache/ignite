@@ -43,7 +43,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     private boolean equiprobableClasses;
 
     /** {@inheritDoc} */
-    @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> GaussianNaiveBayesModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                         Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -67,7 +67,6 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
             (env, upstream, upstreamSize, ctx) -> {
-
 
                 GaussianNaiveBayesSumsHolder res = new GaussianNaiveBayesSumsHolder();
                 while (upstream.hasNext()) {
@@ -103,11 +102,11 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     }
                 }
                 return res;
-            }
+            }, learningEnvironment()
         )) {
             GaussianNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
                 if (a == null)
-                    return b == null ? new GaussianNaiveBayesSumsHolder() : b;
+                    return b;
                 if (b == null)
                     return a;
                 return a.merge(b);

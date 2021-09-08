@@ -49,7 +49,9 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_5_Scaling_with_Pipeline {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 5 (scaling) via Pipeline example started.");
@@ -77,10 +79,8 @@ public class Step_5_Scaling_with_Pipeline {
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    mdl.getPreprocessor(),
+                double accuracy = Evaluator.evaluate(dataCache,
+                    mdl, mdl.getPreprocessor(),
                     new Accuracy<>()
                 );
 
@@ -92,6 +92,9 @@ public class Step_5_Scaling_with_Pipeline {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

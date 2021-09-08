@@ -18,4 +18,5 @@
 /**
  * Demonstrates the usage of binary objects with cache.
  */
+
 package org.apache.ignite.examples.binary.datagrid;

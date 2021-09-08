@@ -22,7 +22,9 @@ namespace Apache.Ignite.Core.Client.Cache
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
     /// <summary>
     /// Client cache API. See <see cref="IIgniteClient.GetCache{K, V}"/>.
@@ -423,5 +425,23 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <typeparam name="TV1">Value type in binary mode.</typeparam>
         /// <returns>Cache instance with binary mode enabled.</returns>
         ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>();
+
+        /// <summary>
+        /// Returns cache with the specified expired policy set. This policy will be used for each operation
+        /// invoked on the returned cache.
+        /// <para />
+        /// Unlike the <see cref="ICache{TK,TV}.WithExpiryPolicy"/> method, expiry durations are retrieved
+        /// from specified <see cref="IExpiryPolicy"/> on every key-value API operation.
+        /// </summary>
+        /// <param name="plc">Expiry policy to use.</param>
+        /// <returns>Cache instance with the specified expiry policy set.</returns>
+        ICacheClient<TK, TV> WithExpiryPolicy(IExpiryPolicy plc);
+
+        /// <summary>
+        /// Starts the continuous query execution.
+        /// </summary>
+        /// <param name="continuousQuery">Continuous query.</param>
+        /// <returns>Handle to stop the query execution.</returns>
+        IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery);
     }
 }

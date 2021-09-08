@@ -68,14 +68,14 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
         for (int i = 0; i < 10; i++) {
             int cnt = rnd.nextInt(10_000) + 1;
 
-            testBuffer(rnd, new CacheContinuousQueryEventBuffer(0), cnt, 1, 0.5f, threads);
-            testBuffer(rnd, new CacheContinuousQueryEventBuffer(0), cnt, 1, 0.9f, threads);
-            testBuffer(rnd, new CacheContinuousQueryEventBuffer(0), cnt, 1, 0.99f, threads);
-            testBuffer(rnd, new CacheContinuousQueryEventBuffer(0), cnt, 1, 0.01f, threads);
-            testBuffer(rnd, new CacheContinuousQueryEventBuffer(0), cnt, 1, 0.f, threads);
+            testBuffer(rnd, new CacheContinuousQueryEventBuffer(log), cnt, 1, 0.5f, threads);
+            testBuffer(rnd, new CacheContinuousQueryEventBuffer(log), cnt, 1, 0.9f, threads);
+            testBuffer(rnd, new CacheContinuousQueryEventBuffer(log), cnt, 1, 0.99f, threads);
+            testBuffer(rnd, new CacheContinuousQueryEventBuffer(log), cnt, 1, 0.01f, threads);
+            testBuffer(rnd, new CacheContinuousQueryEventBuffer(log), cnt, 1, 0.f, threads);
         }
 
-        CacheContinuousQueryEventBuffer b = new CacheContinuousQueryEventBuffer(0);
+        CacheContinuousQueryEventBuffer b = new CacheContinuousQueryEventBuffer(log);
 
         long cntr = 1;
 

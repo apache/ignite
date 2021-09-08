@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.preprocessing.standardscaling;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 
@@ -33,12 +36,13 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StandardScalerPreprocessor<K, V> implements Preprocessor<K, V> {
+public final class StandardScalerPreprocessor<K, V> implements Preprocessor<K, V>, DeployableObject {
     /** */
     private static final long serialVersionUID = -5977957318991608203L;
 
     /** Means for each column. */
     private final double[] means;
+
     /** Standard deviation for each column. */
     private final double[] sigmas;
 
@@ -87,5 +91,10 @@ public class StandardScalerPreprocessor<K, V> implements Preprocessor<K, V> {
     /** */
     public double[] getSigmas() {
         return sigmas;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

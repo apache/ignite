@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains util classes used in decision tree impurity calculators.
  */
+
 package org.apache.ignite.ml.tree.impurity.util;

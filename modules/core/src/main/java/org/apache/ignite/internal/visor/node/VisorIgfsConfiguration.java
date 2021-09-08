@@ -20,16 +20,11 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.igfs.IgfsMode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsMode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,10 +59,10 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     private int perNodeParallelBatchCnt;
 
     /** IGFS instance mode. */
-    private IgfsMode dfltMode;
+    private VisorIgfsMode dfltMode;
 
     /** Map of paths to IGFS modes. */
-    private Map<String, IgfsMode> pathModes;
+    private Map<String, VisorIgfsMode> pathModes;
 
     /** Maximum range length. */
     private long maxTaskRangeLen;
@@ -110,58 +105,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
      */
     public VisorIgfsConfiguration() {
         // No-op.
-    }
-
-    /**
-     * Create data transfer object for IGFS configuration properties.
-     * @param igfs IGFS configuration.
-     */
-    public VisorIgfsConfiguration(FileSystemConfiguration igfs) {
-        name = igfs.getName();
-        metaCacheName = igfs.getMetaCacheConfiguration().getName();
-        dataCacheName = igfs.getDataCacheConfiguration().getName();
-        blockSize = igfs.getBlockSize();
-        prefetchBlocks = igfs.getPrefetchBlocks();
-        streamBufSize = igfs.getBufferSize();
-        perNodeBatchSize = igfs.getPerNodeBatchSize();
-        perNodeParallelBatchCnt = igfs.getPerNodeParallelBatchCount();
-
-        dfltMode = igfs.getDefaultMode();
-        pathModes = igfs.getPathModes();
-        maxTaskRangeLen = igfs.getMaximumTaskRangeLength();
-        fragmentizerConcurrentFiles = igfs.getFragmentizerConcurrentFiles();
-        fragmentizerEnabled = igfs.isFragmentizerEnabled();
-        fragmentizerThrottlingBlockLen = igfs.getFragmentizerThrottlingBlockLength();
-        fragmentizerThrottlingDelay = igfs.getFragmentizerThrottlingDelay();
-
-        IgfsIpcEndpointConfiguration endpointCfg = igfs.getIpcEndpointConfiguration();
-
-        ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
-
-        ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
-        mgmtPort = igfs.getManagementPort();
-        seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
-
-        colocateMeta = igfs.isColocateMetadata();
-        relaxedConsistency = igfs.isRelaxedConsistency();
-        updateFileLenOnFlush = igfs.isUpdateFileLengthOnFlush();
-    }
-
-    /**
-     * Construct data transfer object for igfs configurations properties.
-     *
-     * @param igfss Igfs configurations.
-     * @return igfs configurations properties.
-     */
-    public static List<VisorIgfsConfiguration> list(FileSystemConfiguration[] igfss) {
-        List<VisorIgfsConfiguration> res = new ArrayList<>();
-
-        if (!F.isEmpty(igfss)) {
-            for (FileSystemConfiguration igfs : igfss)
-                res.add(new VisorIgfsConfiguration(igfs));
-        }
-
-        return res;
     }
 
     /**
@@ -223,14 +166,14 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /**
      * @return IGFS instance mode.
      */
-    public IgfsMode getDefaultMode() {
+    public VisorIgfsMode getDefaultMode() {
         return dfltMode;
     }
 
     /**
      * @return Map of paths to IGFS modes.
      */
-    @Nullable public Map<String, IgfsMode> getPathModes() {
+    @Nullable public Map<String, VisorIgfsMode> getPathModes() {
         return pathModes;
     }
 
@@ -354,7 +297,7 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         streamBufSize = in.readInt();
         perNodeBatchSize = in.readInt();
         perNodeParallelBatchCnt = in.readInt();
-        dfltMode = IgfsMode.fromOrdinal(in.readByte());
+        dfltMode = VisorIgfsMode.fromOrdinal(in.readByte());
         pathModes = U.readMap(in);
         maxTaskRangeLen = in.readLong();
         fragmentizerConcurrentFiles = in.readInt();

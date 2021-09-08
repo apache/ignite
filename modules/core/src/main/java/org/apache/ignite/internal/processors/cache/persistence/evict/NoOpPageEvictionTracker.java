@@ -47,4 +47,9 @@ public class NoOpPageEvictionTracker implements PageEvictionTracker {
     @Override public void forgetPage(long pageId) throws IgniteCheckedException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean evictionRequired() {
+        return false;
+    }
 }

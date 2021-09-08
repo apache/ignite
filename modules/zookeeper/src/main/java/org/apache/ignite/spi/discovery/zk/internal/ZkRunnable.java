@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 /**
  * Zk Runnable.
  */
-public abstract class ZkRunnable extends ZkAbstractCallabck implements Runnable {
+public abstract class ZkRunnable extends ZkAbstractCallback implements Runnable {
     /**
      * @param rtState Runtime state.
      * @param impl Discovery impl.

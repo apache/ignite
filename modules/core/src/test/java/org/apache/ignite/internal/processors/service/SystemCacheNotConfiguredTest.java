@@ -47,7 +47,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if("server".equals(igniteInstanceName))
+        if ("server".equals(igniteInstanceName))
             cfg.setServiceConfiguration(serviceConfiguration());
 
         return cfg;
@@ -62,7 +62,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
         new Thread(this::startServer).start();
 
-        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid(getConfiguration("client"));
 
         IgniteServices services = client.services();
 

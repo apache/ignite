@@ -17,11 +17,13 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -29,26 +31,26 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using Linear Regression model in Apache Ignite for house prices prediction.
- *
- * Description of model can be found in: https://en.wikipedia.org/wiki/Linear_regression .
- * Original dataset can be downloaded from: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/ .
- * Copy of dataset are stored in: modules/ml/src/main/resources/datasets/boston_housing_dataset.txt .
- * Score for regression estimation: R^2 (coefficient of determination).
- * Description of score evaluation can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=coefficient_of_determination .
+ * <p>
+ * Description of model can be found in: https://en.wikipedia.org/wiki/Linear_regression . Original dataset can be
+ * downloaded from: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/ . Copy of dataset are stored in:
+ * modules/ml/src/main/resources/datasets/boston_housing_dataset.txt . Score for regression estimation: R^2 (coefficient
+ * of determination). Description of score evaluation can be found in:
+ * https://stattrek.com/statistics/dictionary.aspx?definition=coefficient_of_determination
+ * .
  */
 public class BostonHousePricesPredictionExample {
-    /** Runs example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Runs example.
+     */
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -66,7 +68,7 @@ public class BostonHousePricesPredictionExample {
                 // Splits dataset to train and test samples with 80/20 proportion.
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.8);
 
-                System.out.println(">>> Start traininig.");
+                System.out.println(">>> Start training.");
                 LinearRegressionModel mdl = trainer.fit(
                     ignite, dataCache,
                     split.getTrainFilter(),
@@ -79,26 +81,32 @@ public class BostonHousePricesPredictionExample {
                     split.getTestFilter(),
                     mdl,
                     vectorizer,
-                    new RegressionMetrics().withMetric(RegressionMetricValues::r2)
+                    MetricName.R2
                 );
 
                 System.out.println(">>> Model: " + toString(mdl));
                 System.out.println(">>> R^2 score: " + score);
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
     /**
      * Prepare pretty string for model.
+     *
      * @param mdl Model.
      * @return String representation of model.
      */
     private static String toString(LinearRegressionModel mdl) {
         BiFunction<Integer, Double, String> formatter = (idx, val) -> String.format("%.2f*f%d", val, idx);
 
-        Vector weights = mdl.getWeights();
+        Vector weights = mdl.weights();
         StringBuilder sb = new StringBuilder(formatter.apply(0, weights.get(0)));
 
         for (int fid = 1; fid < weights.size(); fid++) {
@@ -107,7 +115,7 @@ public class BostonHousePricesPredictionExample {
                 .append(formatter.apply(fid, Math.abs(w)));
         }
 
-        double intercept = mdl.getIntercept();
+        double intercept = mdl.intercept();
         sb.append(" ").append(intercept > 0 ? "+" : "-").append(" ")
             .append(String.format("%.2f", Math.abs(intercept)));
         return sb.toString();

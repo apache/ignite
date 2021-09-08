@@ -17,10 +17,13 @@
 
 package org.apache.ignite.yardstick;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -215,7 +218,11 @@ public class IgniteBenchmarkArguments {
     private boolean printPartStats;
 
     /** */
-    @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
+    @Parameter(
+        names = {"-ltops", "--allowedLoadTestOperations"},
+        variableArity = true,
+        description = "List of enabled load test operations"
+    )
     private List<String> allowedLoadTestOps = new ArrayList<>();
 
     /** */
@@ -297,6 +304,16 @@ public class IgniteBenchmarkArguments {
     /** See {@link #selectCommand()}. */
     @Parameter(names = {"--select-command"})
     private SelectCommand selectCommand = SelectCommand.BY_PRIMARY_KEY;
+
+    /** Dynamic parameters. */
+    @DynamicParameter(names = {"-D", "--param"},
+        description = "Allow add any dynamic parameters specific for some benchmarks")
+    private Map<String, String> params = new HashMap<>();
+
+    /** Additional system prorperties. */
+    @DynamicParameter(names = {"-S", "--sysProp"},
+        description = "Allow add additinal dynamic system properties to benchmarks")
+    private Map<String, String> sysProps = new HashMap<>();
 
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
@@ -735,6 +752,68 @@ public class IgniteBenchmarkArguments {
      */
     public SelectCommand selectCommand() {
         return selectCommand;
+    }
+
+    /**
+     * @param name Parameter name.
+     * @param dflt Default value.
+     * @return value.
+     */
+    public String getStringParameter(String name, String dflt) {
+        String val = params.get(name);
+
+        return val != null ? val : dflt;
+    }
+
+    /**
+     * @param name Parameter name.
+     * @param dflt Default value.
+     * @return value.
+     */
+    public boolean getBooleanParameter(String name, boolean dflt) {
+        String val = params.get(name);
+
+        return val != null ? Boolean.parseBoolean(val) : dflt;
+    }
+
+    /**
+     * @param name Parameter name.
+     * @param dflt Default value.
+     * @return value.
+     */
+    public int getIntParameter(String name, int dflt) {
+        String val = params.get(name);
+
+        return val != null ? Integer.parseInt(val) : dflt;
+    }
+
+    /**
+     * @param name Parameter name.
+     * @param dflt Default value.
+     * @return value.
+     */
+    public long getLongParameter(String name, long dflt) {
+        String val = params.get(name);
+
+        return val != null ? Long.parseLong(val) : dflt;
+    }
+
+    /**
+     * @param name Parameter name.
+     * @param dflt Default value.
+     * @return value.
+     */
+    public double getDoubleParameter(String name, double dflt) {
+        String val = params.get(name);
+
+        return val != null ? Double.parseDouble(val) : dflt;
+    }
+
+    /**
+     * @return Additional dynamic system properties.
+     */
+    public Map<String, String> systemProperties() {
+        return sysProps;
     }
 
     /** {@inheritDoc} */

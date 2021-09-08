@@ -84,7 +84,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> LinearRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                       Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -126,7 +126,8 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
             seed
         );
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
 
         PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 
@@ -148,8 +149,8 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
      * @return State of MLP from last learning.
      */
     @NotNull private MultilayerPerceptron restoreMLPState(LinearRegressionModel mdl) {
-        Vector weights = mdl.getWeights();
-        double intercept = mdl.getIntercept();
+        Vector weights = mdl.weights();
+        double intercept = mdl.intercept();
         MLPArchitecture architecture1 = new MLPArchitecture(weights.size());
         architecture1 = architecture1.withAddedLayer(1, true, Activators.LINEAR);
         MLPArchitecture architecture = architecture1;

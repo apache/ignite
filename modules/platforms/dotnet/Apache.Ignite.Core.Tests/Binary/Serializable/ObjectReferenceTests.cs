@@ -96,6 +96,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
+                // ReSharper disable once AssignNullToNotNullAttribute
                 info.FullTypeName = typeof(ObjectInfoHolder).FullName;
                 info.AssemblyName = typeof(ObjectInfoHolder).Assembly.FullName;
 

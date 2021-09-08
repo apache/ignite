@@ -99,13 +99,13 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                 assert execCnt <= SPLIT_COUNT : "Invalid execute count: " + execCnt;
 
                 // Job returns 1 if was cancelled.
-                assert (Integer)res <= SPLIT_COUNT  : "Invalid task result: " + res;
+                assert (Integer)res <= SPLIT_COUNT : "Invalid task result: " + res;
 
                 // Should be exactly the same as Jobs number.
                 assert cancelCnt <= SPLIT_COUNT : "Invalid cancel count: " + cancelCnt;
 
                 // One per start and one per stop and some that come with metrics update.
-                assert colResolutionCnt > SPLIT_COUNT + 1:
+                assert colResolutionCnt > SPLIT_COUNT + 1 :
                     "Invalid collision resolution count: " + colResolutionCnt;
             }
         }

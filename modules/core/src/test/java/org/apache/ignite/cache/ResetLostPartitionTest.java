@@ -18,27 +18,34 @@
 package org.apache.ignite.cache;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 
 /**
  *
@@ -46,6 +53,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
+
     /** Cache size */
     public static final int CACHE_SIZE = 100000 / CACHE_NAMES.length;
 
@@ -60,24 +68,27 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        super.afterTest();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-        storageCfg.getDefaultDataRegionConfiguration()
+        storageCfg.setPageSize(1024).setWalMode(LOG_ONLY).setWalSegmentSize(4 * 1024 * 1024);
+
+        storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize(500L * 1024 * 1024);
+            .setMaxSize(100L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(storageCfg);
 
@@ -104,18 +115,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-            .setAffinity(new RendezvousAffinityFunction(false, 1024))
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
             .setIndexedTypes(String.class, String.class);
-    }
-
-    /** Client configuration */
-    private IgniteConfiguration getClientConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(true);
-
-        return cfg;
     }
 
     /**
@@ -147,73 +148,89 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        Ignite igniteClient = startGrid(getClientConfiguration("client"));
-
         for (String cacheName : CACHE_NAMES) {
-            IgniteCache<Integer, String> cache = igniteClient.cache(cacheName);
-
-            for (int j = 0; j < CACHE_SIZE; j++)
-                cache.put(j, "Value" + j);
+            try (IgniteDataStreamer<Object, Object> st = grid(0).dataStreamer(cacheName)) {
+                for (int j = 0; j < CACHE_SIZE; j++)
+                    st.addData(j, "Value" + j);
+            }
         }
 
-        stopGrid("client");
-
-        String dn2DirName = grid(1).name().replace(".", "_");
+        String g1Name = grid(1).name();
 
         stopGrid(1);
 
-        //Clean up the pds and WAL for second data node.
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
+        cleanPersistenceDir(g1Name);
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
-
-        //Here we have two from three data nodes and cache with 1 backup. So there is no data loss expected.
+        // Here we have two from three data nodes and cache with 1 backup. So there is no data loss expected.
         assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
 
-        //Start node 2 with empty PDS. Rebalance will be started.
-        startGrid(1);
+        // Start node 1 with empty PDS. Rebalance will be started, only sys cache will be rebalanced.
+        IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
+        TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+        spi1.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionDemandMessage) {
+                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage) msg;
 
-        //During rebalance stop node 3. Rebalance will be stopped.
+                    return msg0.groupId() != CU.cacheId("ignite-sys-cache");
+                }
+
+                return false;
+            }
+        });
+
+        GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(cfg1);
+
+                return null;
+            }
+        });
+
+        spi1.waitForBlocked();
+
+        // During rebalance stop node 3. Rebalance will be stopped.
         stopGrid(2);
 
-        //Start node 3.
+        spi1.stopBlock();
+
+        // Start node 3.
         startGrid(2);
 
-        //Loss data expected because rebalance to node 1 have not finished and node 2 was stopped.
+        // Data loss is expected because rebalance to node 1 have not finished and node 2 was stopped.
         assertTrue(CACHE_NAMES.length * CACHE_SIZE > averageSizeAroundAllNodes());
 
+        // Check all nodes report same lost partitions.
         for (String cacheName : CACHE_NAMES) {
-            //Node 1 will have only OWNING partitions.
-            assertTrue(getPartitionsStates(0, cacheName).stream().allMatch(state -> state == OWNING));
+            Collection<Integer> lost = null;
 
-            //Node 3 will have only OWNING partitions.
-            assertTrue(getPartitionsStates(2, cacheName).stream().allMatch(state -> state == OWNING));
+            for (Ignite grid : G.allGrids()) {
+                if (lost == null)
+                    lost = grid.cache(cacheName).lostPartitions();
+                else
+                    assertEquals(lost, grid.cache(cacheName).lostPartitions());
+            }
+
+            assertTrue(lost != null && !lost.isEmpty());
         }
-
-        boolean hasLost = false;
-        for (String cacheName : CACHE_NAMES) {
-            //Node 2 will have OWNING and LOST partitions.
-            hasLost |= getPartitionsStates(1, cacheName).stream().anyMatch(state -> state == LOST);
-        }
-
-        assertTrue(hasLost);
 
         if (reactivateGridBeforeResetPart) {
             grid(0).cluster().active(false);
             grid(0).cluster().active(true);
         }
 
-        //Try to reset lost partitions.
+        // Try to reset lost partitions.
         grid(2).resetLostPartitions(Arrays.asList(CACHE_NAMES));
 
         awaitPartitionMapExchange();
 
+        // Check all nodes report same lost partitions.
         for (String cacheName : CACHE_NAMES) {
-            //Node 2 will have only OWNING partitions.
-            assertTrue(getPartitionsStates(1, cacheName).stream().allMatch(state -> state == OWNING));
+            for (Ignite grid : G.allGrids())
+                assertTrue(grid.cache(cacheName).lostPartitions().isEmpty());
         }
 
-        //All data was back.
+        // All data was back.
         assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
 
         //Stop node 2 for checking rebalance correctness from this node.
@@ -245,9 +262,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         int totalSize = 0;
 
         for (Ignite ignite : IgnitionEx.allGrids()) {
-            for (String cacheName : CACHE_NAMES) {
+            for (String cacheName : CACHE_NAMES)
                 totalSize += ignite.cache(cacheName).size();
-            }
         }
 
         return totalSize / IgnitionEx.allGrids().size();

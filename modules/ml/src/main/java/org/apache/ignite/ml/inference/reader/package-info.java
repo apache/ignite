@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for model inference readers.
  */
+
 package org.apache.ignite.ml.inference.reader;

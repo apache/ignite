@@ -35,6 +35,7 @@ public class GridCacheLocalEvictionEventSelfTest extends GridCacheEvictionEventA
     public void beforeGridCacheLocalEvictionEventSelfTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);

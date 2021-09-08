@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
-import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
 import java.util.Collection;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteCloudTestSuite;

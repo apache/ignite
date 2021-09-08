@@ -100,6 +100,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     public static class ServiceWithSpringResourceImpl implements ServiceWithSpringResource, Service {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         @SpringResource(resourceClass = Integer.class)
         private transient Integer injectedSpringFld;
@@ -171,7 +172,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
         Future<?> fut = executorSvc.submit(testRunnable);
 
         try {
-            fut.get(5, TimeUnit.SECONDS);
+            fut.get(15, TimeUnit.SECONDS);
         }
         catch (TimeoutException ignored) {
             fail("Failed to wait for completion. Deadlock is possible");
@@ -210,7 +211,9 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
                     Ignite ignite = appCtx.getBean(Ignite.class);
-                    ServiceWithSpringResource svc = ignite.services().service("ServiceWithSpringResource");
+
+                    ServiceWithSpringResource svc = ignite.services().serviceProxy("ServiceWithSpringResource",
+                        ServiceWithSpringResource.class, false);
 
                     return svc.getInjectedSpringField();
                 }

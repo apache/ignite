@@ -427,11 +427,11 @@ public class GridClientConsistentHash<N> {
         int h = o == null ? 0 : o instanceof byte[] ? Arrays.hashCode((byte[])o) : o.hashCode();
 
         // Spread bits to hash code.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }

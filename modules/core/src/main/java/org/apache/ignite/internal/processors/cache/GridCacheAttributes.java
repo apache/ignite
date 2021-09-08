@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -49,18 +50,20 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment enrichment;
 
-
     /**
-     * @param cfg Cache configuration.
+     * Creates a new instance of cache attributes.
      *
+     * @param cfg Cache configuration.
      */
     public GridCacheAttributes(CacheConfiguration cfg) {
         this.ccfg = cfg;
     }
 
     /**
-     * @param cfg Cache configuration.
+     * Creates a new instance of cache attributes.
      *
+     * @param cfg Cache configuration.
+     * @param enrichment Cache configuration enrichment.
      */
     public GridCacheAttributes(CacheConfiguration cfg, CacheConfigurationEnrichment enrichment) {
         this.ccfg = cfg;
@@ -216,9 +219,6 @@ public class GridCacheAttributes implements Serializable {
         if (nearCfg == null)
             return null;
 
-        if (enrichment != null && enrichment.nearCacheConfigurationEnrichment() != null)
-            return enrichment.nearCacheConfigurationEnrichment().getFieldClassName("nearEvictPlcFactory");
-
         return className(nearCfg.getNearEvictionPolicyFactory());
     }
 
@@ -234,7 +234,7 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Transaction manager lookup class name.
-     * @deprecated Transaction manager lookup must be configured in 
+     * @deprecated Transaction manager lookup must be configured in
      *  {@link TransactionConfiguration#getTxManagerLookupClassName()}.
      */
     @Deprecated
@@ -251,7 +251,9 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Preload batch size.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchSize()} instead.
      */
+    @Deprecated
     public int rebalanceBatchSize() {
         return ccfg.getRebalanceBatchSize();
     }
@@ -265,7 +267,9 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Rebalance prefetch count.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchesPrefetchCount()} instead.
      */
+    @Deprecated
     public long rebalanceBatchesPrefetchCount() {
         return ccfg.getRebalanceBatchesPrefetchCount();
     }
@@ -279,14 +283,18 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Rebalance throttle.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
      */
+    @Deprecated
     public long rebalanceThrottle() {
         return ccfg.getRebalanceThrottle();
     }
 
     /**
      * @return Rebalance timeout.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceTimeout()} instead.
      */
+    @Deprecated
     public long rebalanceTimeout() {
         return ccfg.getRebalanceTimeout();
     }
@@ -365,6 +373,9 @@ public class GridCacheAttributes implements Serializable {
      * @return Interceptor class name.
      */
     public String interceptorClassName() {
+        if (enrichment != null && enrichment.hasField("interceptor"))
+            return enrichment.getFieldClassName("interceptor");
+
         return className(ccfg.getInterceptor());
     }
 

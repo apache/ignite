@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
+import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -45,9 +46,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -208,8 +209,12 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     public void testCacheMetaData() throws Exception {
         // Put internal key to test filtering of internal objects.
 
-        for (String cacheName : grid(0).cacheNames())
-            ((IgniteKernal)grid(0)).getCache(cacheName).getAndPut(new GridCacheInternalKeyImpl("LONG", ""), new GridCacheAtomicLongValue(0));
+        for (String cacheName : grid(0).cacheNames()) {
+            ((IgniteKernal)grid(0)).getCache(cacheName).getAndPut(
+                new GridCacheInternalKeyImpl("LONG", ""),
+                new GridCacheAtomicLongValue(0)
+            );
+        }
 
         try {
             Collection<GridCacheSqlMetadata> metas =
@@ -336,7 +341,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 }
                 else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()) || noOpCache.getName().equals(meta.cacheName()))
                     assertTrue("Invalid types size", types.isEmpty());
-                else if (!"cacheWithCustomKeyPrecision".equalsIgnoreCase(meta.cacheName()))
+                else if (!"cacheWithCustomKeyPrecision".equalsIgnoreCase(meta.cacheName()) &&
+                         !"cacheWithDecimalPrecisionAndScale".equalsIgnoreCase(meta.cacheName()))
                     fail("Unknown cache: " + meta.cacheName());
             }
         }
@@ -393,7 +399,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 .setSchema("cacheWithPrecision")
                 .setArgs(2, "DEF"), true);
 
-
         QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)qryProc.querySqlFields(
             new SqlFieldsQuery("SELECT _KEY, strField FROM TestType")
                 .setSchema("cacheWithPrecision"), true);
@@ -406,6 +411,51 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
             assertEquals(999, meta.precision());
         }
+    }
+
+    /**
+     * Test that scale and precision returned correctly for Decimal column in result set:
+     *
+     * 1. Start node;
+     * 2. Create table with Decimal(3,0) column;
+     * 3. Insert a new row into the table;
+     * 4. Execute select with decimal row;
+     * 5. Check that selected decimal column has precision 3 and scale 0.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDecimalColumnScaleAndPrecision() throws Exception {
+        QueryEntity qeWithPrecision = new QueryEntity()
+                .setKeyType("java.lang.Long")
+                .setValueType("TestType")
+                .addQueryField("age", "java.math.BigDecimal", "age")
+                .setFieldsPrecision(ImmutableMap.of("age", 3))
+                .setFieldsScale(ImmutableMap.of("age", 0));
+
+        grid(0).getOrCreateCache(cacheConfiguration()
+                .setName("cacheWithDecimalPrecisionAndScale")
+                .setQueryEntities(Collections.singleton(qeWithPrecision)));
+
+        GridQueryProcessor qryProc = grid(0).context().query();
+
+        qryProc.querySqlFields(
+                new SqlFieldsQuery("INSERT INTO TestType(_key, age) VALUES(?, ?)")
+                        .setSchema("cacheWithDecimalPrecisionAndScale")
+                        .setArgs(1, new BigDecimal(160)), true);
+
+        QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)qryProc.querySqlFields(
+                new SqlFieldsQuery("SELECT age FROM TestType")
+                        .setSchema("cacheWithDecimalPrecisionAndScale"), true);
+
+        List<GridQueryFieldMetadata> fieldsMeta = cursor.fieldsMeta();
+
+        assertEquals(1, fieldsMeta.size());
+
+        GridQueryFieldMetadata meta = fieldsMeta.get(0);
+
+        assertEquals(3, meta.precision());
+        assertEquals(0, meta.scale());
     }
 
     @Test
@@ -584,7 +634,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      * @param fldsQry Query.
      * @throws Exception if failed.
      */
-    private void doTestExecute (IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws Exception {
+    private void doTestExecute(IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws Exception {
         QueryCursor<List<?>> qry = cache.query(fldsQry);
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
@@ -684,10 +734,11 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /** @throws Exception If failed. */
     @Test
     public void testSelectAllJoined() throws Exception {
-        QueryCursor<List<?>> qry =
-            personCache.query(sqlFieldsQuery(
-                String.format("select p._key, p._val, p.*, o._key, o._val, o.* from \"%s\".Person p, \"%s\".Organization o where p.orgId = o.id",
-                    personCache.getName(), orgCache.getName())));
+        QueryCursor<List<?>> qry = personCache.query(sqlFieldsQuery(String.format(
+            "select p._key, p._val, p.*, o._key, o._val, o.* from \"%s\".Person p, \"%s\".Organization o where p.orgId = o.id",
+            personCache.getName(),
+            orgCache.getName()
+        )));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
 

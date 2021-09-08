@@ -34,7 +34,14 @@ import org.apache.ignite.IgniteException;
 /**
  * Class with various utility methods.
  */
-public class Utils {
+public final class Utils {
+    /**
+     *
+     */
+    private Utils(){
+        // No-op.
+    }
+
     /**
      * Perform deep copy of an object.
      *
@@ -158,7 +165,6 @@ public class Utils {
      * @param <T> Type of serialized object.
      * @return Deserialized object.
      */
-    @SuppressWarnings("unchecked")
     public static <T extends Serializable> T deserialize(byte[] o) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(o);
              ObjectInputStream ois = new ObjectInputStream(bais)) {

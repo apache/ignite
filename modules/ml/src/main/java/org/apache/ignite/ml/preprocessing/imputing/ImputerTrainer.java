@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,8 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
             (env, upstream, upstreamSize, ctx) -> {
                 double[] sums = null;
                 int[] counts = null;
+                double[] maxs = null;
+                double[] mins = null;
                 Map<Double, Integer>[] valuesByFreq = null;
 
                 while (upstream.hasNext()) {
@@ -63,11 +66,23 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     switch (imputingStgy) {
                         case MEAN:
-                            sums = calculateTheSums(row, sums);
-                            counts = calculateTheCounts(row, counts);
+                            sums = updateTheSums(row, sums);
+                            counts = updateTheCounts(row, counts);
                             break;
                         case MOST_FREQUENT:
-                            valuesByFreq = calculateFrequencies(row, valuesByFreq);
+                            valuesByFreq = updateFrequenciesByGivenRow(row, valuesByFreq);
+                            break;
+                        case LEAST_FREQUENT:
+                            valuesByFreq = updateFrequenciesByGivenRow(row, valuesByFreq);
+                            break;
+                        case MAX:
+                            maxs = updateTheMaxs(row, maxs);
+                            break;
+                        case MIN:
+                            mins = updateTheMins(row, mins);
+                            break;
+                        case COUNT:
+                            counts = updateTheCounts(row, counts);
                             break;
                         default: throw new UnsupportedOperationException("The chosen strategy is not supported");
                     }
@@ -82,10 +97,22 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     case MOST_FREQUENT:
                         partData = new ImputerPartitionData().withValuesByFrequency(valuesByFreq);
                         break;
+                    case LEAST_FREQUENT:
+                        partData = new ImputerPartitionData().withValuesByFrequency(valuesByFreq);
+                        break;
+                    case MAX:
+                        partData = new ImputerPartitionData().withMaxs(maxs);
+                        break;
+                    case MIN:
+                        partData = new ImputerPartitionData().withMins(mins);
+                        break;
+                    case COUNT:
+                        partData = new ImputerPartitionData().withCounts(counts);
+                        break;
                     default: throw new UnsupportedOperationException("The chosen strategy is not supported");
                 }
                 return partData;
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
 
             Vector imputingValues;
@@ -95,7 +122,19 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     imputingValues = VectorUtils.of(calculateImputingValuesBySumsAndCounts(dataset));
                     break;
                 case MOST_FREQUENT:
-                    imputingValues = VectorUtils.of(calculateImputingValuesByFrequencies(dataset));
+                    imputingValues = VectorUtils.of(calculateImputingValuesByTheMostFrequentValues(dataset));
+                    break;
+                case LEAST_FREQUENT:
+                    imputingValues = VectorUtils.of(calculateImputingValuesByTheLeastFrequentValues(dataset));
+                    break;
+                case MAX:
+                    imputingValues = VectorUtils.of(calculateImputingValuesByMaxValues(dataset));
+                    break;
+                case MIN:
+                    imputingValues = VectorUtils.of(calculateImputingValuesByMinValues(dataset));
+                    break;
+                case COUNT:
+                    imputingValues = VectorUtils.of(calculateImputingValuesByCounts(dataset));
                     break;
                 default: throw new UnsupportedOperationException("The chosen strategy is not supported");
             }
@@ -114,10 +153,83 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @param dataset The dataset of frequencies for each feature aggregated in each partition..
      * @return Most frequent value for each feature.
      */
-    private double[] calculateImputingValuesByFrequencies(
+    private double[] calculateImputingValuesByTheMostFrequentValues(
         Dataset<EmptyContext, ImputerPartitionData> dataset) {
-        Map<Double, Integer>[] frequencies = dataset.compute(
-            ImputerPartitionData::valuesByFrequency,
+        Map<Double, Integer>[] frequencies = getAggregatedFrequencies(dataset);
+
+        double[] res = new double[frequencies.length];
+
+        for (int i = 0; i < frequencies.length; i++) {
+            Optional<Map.Entry<Double, Integer>> max = frequencies[i].entrySet()
+                .stream()
+                .max(Comparator.comparingInt(Map.Entry::getValue));
+
+            if (max.isPresent())
+                res[i] = max.get().getKey();
+        }
+
+        return res;
+    }
+
+    /**
+     * Calculates the imputing values by frequencies keeping in the given dataset.
+     *
+     * @param dataset The dataset of frequencies for each feature aggregated in each partition..
+     * @return Least frequent value for each feature.
+     */
+    private double[] calculateImputingValuesByTheLeastFrequentValues(
+        Dataset<EmptyContext, ImputerPartitionData> dataset) {
+        Map<Double, Integer>[] frequencies = getAggregatedFrequencies(dataset);
+
+        double[] res = new double[frequencies.length];
+
+        for (int i = 0; i < frequencies.length; i++) {
+            Optional<Map.Entry<Double, Integer>> max = frequencies[i].entrySet()
+                .stream()
+                .min(Comparator.comparingInt(Map.Entry::getValue));
+
+            if (max.isPresent())
+                res[i] = max.get().getKey();
+        }
+
+        return res;
+    }
+
+    /**
+     * Merges the frequencies from each partition to the aggregated common state.
+     *
+     * @param dataset Dataset.
+     */
+    private Map<Double, Integer>[] getAggregatedFrequencies(Dataset<EmptyContext, ImputerPartitionData> dataset) {
+        return dataset.compute(
+                ImputerPartitionData::valuesByFrequency,
+                (a, b) -> {
+                    if (a == null)
+                        return b;
+
+                    if (b == null)
+                        return a;
+
+                    assert a.length == b.length;
+
+                    for (int i = 0; i < a.length; i++) {
+                        int finalI = i;
+                        a[i].forEach((k, v) -> b[finalI].merge(k, v, (f1, f2) -> f1 + f2));
+                    }
+                    return b;
+                }
+            );
+    }
+
+    /**
+     * Calculates the imputing values by counts keeping in the given dataset.
+     *
+     * @param dataset The dataset with counts for each feature aggregated in each partition.
+     * @return The count value for each feature.
+     */
+    private double[] calculateImputingValuesByCounts(Dataset<EmptyContext, ImputerPartitionData> dataset) {
+        int[] counts = dataset.compute(
+            ImputerPartitionData::counts,
             (a, b) -> {
                 if (a == null)
                     return b;
@@ -127,26 +239,72 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                 assert a.length == b.length;
 
-                for (int i = 0; i < a.length; i++) {
-                    int finalI = i;
-                    a[i].forEach((k, v) -> b[finalI].merge(k, v, (f1, f2) -> f1 + f2));
-                }
-                return b;
+                for (int i = 0; i < a.length; i++)
+                    a[i] += b[i];
+
+                return a;
             }
         );
 
-        double[] res = new double[frequencies.length];
+        // convert to double array
+        double[] res = new double[counts.length];
 
-        for (int i = 0; i < frequencies.length; i++) {
-            Optional<Map.Entry<Double, Integer>> max = frequencies[i].entrySet()
-                .stream()
-                .max(Comparator.comparingInt(Map.Entry::getValue));
-
-            if(max.isPresent())
-                res[i] = max.get().getKey();
-        }
+        for (int i = 0; i < res.length; i++)
+            res[i] = counts[i];
 
         return res;
+    }
+
+    /**
+     * Calculates the imputing values by min values keeping in the given dataset.
+     *
+     * @param dataset The dataset with min values for each feature aggregated in each partition.
+     * @return The min value for each feature.
+     */
+    private double[] calculateImputingValuesByMinValues(Dataset<EmptyContext, ImputerPartitionData> dataset) {
+        return dataset.compute(
+            ImputerPartitionData::mins,
+            (a, b) -> {
+                if (a == null)
+                    return b;
+
+                if (b == null)
+                    return a;
+
+                assert a.length == b.length;
+
+                for (int i = 0; i < a.length; i++)
+                    a[i] = Math.min(a[i], b[i]);
+
+                return a;
+            }
+        );
+    }
+
+    /**
+     * Calculates the imputing values by max values keeping in the given dataset.
+     *
+     * @param dataset The dataset with max values for each feature aggregated in each partition.
+     * @return The max value for each feature.
+     */
+    private double[] calculateImputingValuesByMaxValues(Dataset<EmptyContext, ImputerPartitionData> dataset) {
+        return dataset.compute(
+            ImputerPartitionData::maxs,
+            (a, b) -> {
+                if (a == null)
+                    return b;
+
+                if (b == null)
+                    return a;
+
+                assert a.length == b.length;
+
+                for (int i = 0; i < a.length; i++)
+                    a[i] = Math.max(a[i], b[i]);
+
+                return a;
+            }
+        );
     }
 
     /**
@@ -195,7 +353,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
         double[] means = new double[sums.length];
 
         for (int i = 0; i < means.length; i++)
-            means[i] = sums[i]/counts[i];
+            means[i] = sums[i] / counts[i];
 
         return means;
     }
@@ -207,7 +365,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @param valuesByFreq Holds the sums by values and features.
      * @return Updated sums by values and features.
      */
-    private Map<Double, Integer>[] calculateFrequencies(LabeledVector row, Map<Double, Integer>[] valuesByFreq) {
+    private Map<Double, Integer>[] updateFrequenciesByGivenRow(LabeledVector row, Map<Double, Integer>[] valuesByFreq) {
         if (valuesByFreq == null) {
             valuesByFreq = new HashMap[row.size()];
             for (int i = 0; i < valuesByFreq.length; i++) valuesByFreq[i] = new HashMap<>();
@@ -219,7 +377,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
         for (int i = 0; i < valuesByFreq.length; i++) {
             double v = row.get(i);
 
-            if(!Double.valueOf(v).equals(Double.NaN)) {
+            if (!Double.valueOf(v).equals(Double.NaN)) {
                 Map<Double, Integer> map = valuesByFreq[i];
 
                 if (map.containsKey(v))
@@ -238,15 +396,15 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @param sums Holds the sums by features.
      * @return Updated sums by features.
      */
-    private double[] calculateTheSums(LabeledVector row, double[] sums) {
+    private double[] updateTheSums(LabeledVector row, double[] sums) {
         if (sums == null)
             sums = new double[row.size()];
         else
             assert sums.length == row.size() : "Base preprocessor must return exactly " + sums.length
                 + " features";
 
-        for (int i = 0; i < sums.length; i++){
-            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+        for (int i = 0; i < sums.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
                 sums[i] += row.get(i);
         }
 
@@ -260,19 +418,69 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @param counts Holds the counts by features.
      * @return Updated counts by features.
      */
-    private int[] calculateTheCounts(LabeledVector row, int[] counts) {
+    private int[] updateTheCounts(LabeledVector row, int[] counts) {
         if (counts == null)
             counts = new int[row.size()];
         else
             assert counts.length == row.size() : "Base preprocessor must return exactly " + counts.length
                 + " features";
 
-        for (int i = 0; i < counts.length; i++){
-            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+        for (int i = 0; i < counts.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
                 counts[i]++;
         }
 
         return counts;
+    }
+
+    /**
+     * Updates mins by features.
+     *
+     * @param row Feature vector.
+     * @param mins Holds the mins by features.
+     * @return Updated mins by features.
+     */
+    private double[] updateTheMins(LabeledVector row, double[] mins) {
+        if (mins == null) {
+            mins = new double[row.size()];
+            Arrays.fill(mins, Double.POSITIVE_INFINITY);
+        }
+
+        else
+            assert mins.length == row.size() : "Base preprocessor must return exactly " + mins.length
+                + " features";
+
+        for (int i = 0; i < mins.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
+                mins[i] = Math.min(mins[i], row.get(i));
+        }
+
+        return mins;
+    }
+
+    /**
+     * Updates maxs by features.
+     *
+     * @param row Feature vector.
+     * @param maxs Holds the maxs by features.
+     * @return Updated maxs by features.
+     */
+    private double[] updateTheMaxs(LabeledVector row, double[] maxs) {
+        if (maxs == null) {
+            maxs = new double[row.size()];
+            Arrays.fill(maxs, Double.NEGATIVE_INFINITY);
+        }
+
+        else
+            assert maxs.length == row.size() : "Base preprocessor must return exactly " + maxs.length
+                + " features";
+
+        for (int i = 0; i < maxs.length; i++) {
+            if (!Double.valueOf(row.get(i)).equals(Double.NaN))
+                maxs[i] = Math.max(maxs[i], row.get(i));
+        }
+
+        return maxs;
     }
 
     /**
@@ -281,7 +489,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @param imputingStgy The given value.
      * @return The updated imputing trainer.
      */
-    public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStgy){
+    public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStgy) {
         this.imputingStgy = imputingStgy;
         return this;
     }

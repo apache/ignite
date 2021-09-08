@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
@@ -29,8 +28,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  *
@@ -54,14 +51,13 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         cleanPersistenceDir();
 
         startGrids(gridCount());
 
         initStoreStrategy();
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -72,12 +68,13 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
+    @Override protected IgniteInternalFuture createRestartAction(
+        final AtomicBoolean done,
+        final AtomicInteger restartCnt
+    ) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
             /** */
             private final long baselineTopChangeInterval = 10 * 1000;
@@ -103,11 +100,12 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
                         lastOpChangeUp = true;
                     }
 
-                    grid(0).cluster().setBaselineTopology(baselineNodes(grid(0).cluster().forServers().nodes()));
+                    resetBaselineTopology();
 
                     Thread.sleep(baselineTopChangeInterval);
 
-                    int c = restartCnt.incrementAndGet();
+                    //Only stopping node triggers Rebalance.
+                    int c = lastOpChangeUp ? restartCnt.get() : restartCnt.incrementAndGet();
 
                     if (c % logFreq == 0)
                         info("BaselineTopology changes: " + c);

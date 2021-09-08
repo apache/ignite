@@ -198,8 +198,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
-        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file, factory, dbCfg,
-            AllocatedPageTracker.NO_OP);
+        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file::toPath, factory, dbCfg.getPageSize(), val -> {});
 
         int pageSize = dbCfg.getPageSize();
 
@@ -217,7 +216,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                 long pageAdr = ptr + i * pageSize;
 
-                pageIO.initNewPage(pageAdr, pageId, pageSize);
+                pageIO.initNewPage(pageAdr, pageId, pageSize, null);
 
                 ByteBuffer buf = GridUnsafe.wrapPointer(pageAdr, pageSize);
 
@@ -333,7 +332,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                 }
 
                 private void parkForAWhile() {
-                    if(slowFileIoEnabled.get() && slow)
+                    if (slowFileIoEnabled.get() && slow)
                         LockSupport.parkNanos(1_000_000_000L);
                 }
             };

@@ -142,6 +142,9 @@ struct Operation
 
             /** Operation: SizeLoc(peekModes). */
             SIZE_LOC = 56,
+
+            /** Operation: Invoke. */
+            INVOKE_JAVA = 98,
     };
 };
 
@@ -181,7 +184,7 @@ namespace ignite
                 return OutOp(Operation::CONTAINS_KEYS, inOp, err);
             }
 
-            void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError& err)
+            void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(Operation::LOCAL_PEEK, inOp, outOp, err);
             }
@@ -326,6 +329,11 @@ namespace ignite
                 OutInOpX(Operation::INVOKE, inOp, outOp, err);
             }
 
+            void CacheImpl::InvokeJava(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
+            {
+                OutInOpX(Operation::INVOKE_JAVA, inOp, outOp, err);
+            }
+
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, Operation::QRY_SQL_FIELDS, err);
@@ -450,6 +458,7 @@ namespace ignite
 
                 rawWriter.WriteInt64(handle);
                 rawWriter.WriteBool(qry0.GetLocal());
+                rawWriter.WriteBool(false); // IncludeExpired
 
                 event::CacheEntryEventFilterHolderBase& filterOp = qry0.GetFilterHolder();
 

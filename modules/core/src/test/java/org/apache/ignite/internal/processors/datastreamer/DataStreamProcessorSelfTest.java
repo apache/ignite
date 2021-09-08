@@ -49,6 +49,7 @@ import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -159,6 +160,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             cfg.setClientMode(true);
         }
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -787,8 +790,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             assertTrue(c.localSize() == 0);
 
             multithreaded(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     ldr.flush();
 
                     assertEquals(9, c.size());

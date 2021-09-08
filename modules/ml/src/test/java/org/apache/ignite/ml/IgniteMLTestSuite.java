@@ -22,7 +22,6 @@ import org.apache.ignite.ml.common.CommonTestSuite;
 import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.environment.EnvironmentTestSuite;
-import org.apache.ignite.ml.genetic.GAGridTestSuite;
 import org.apache.ignite.ml.inference.InferenceTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
@@ -30,6 +29,7 @@ import org.apache.ignite.ml.multiclass.MultiClassTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
 import org.apache.ignite.ml.pipeline.PipelineTestSuite;
 import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
+import org.apache.ignite.ml.recommendation.RecommendationTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
@@ -54,7 +54,6 @@ import org.junit.runners.Suite;
     KNNTestSuite.class,
     PipelineTestSuite.class,
     PreprocessingTestSuite.class,
-    GAGridTestSuite.class,
     CompositionTestSuite.class,
     EnvironmentTestSuite.class,
     StructuresTestSuite.class,
@@ -63,6 +62,7 @@ import org.junit.runners.Suite;
     DataStreamGeneratorTestSuite.class,
     UtilTestSuite.class,
     RandomForestTreeTestSuite.class,
+    RecommendationTestSuite.class,
 
     /** JUnit 3 tests. */
     DecisionTreeTestSuite.class,

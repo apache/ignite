@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -71,9 +72,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
@@ -106,7 +104,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param retVal Return value flag.
      * @param implicitSingle Implicit single flag.
      * @param explicitLock Explicit lock flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
      * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
@@ -126,7 +123,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean retVal,
         boolean implicitSingle,
         boolean explicitLock,
-        @Nullable UUID subjId,
         int taskNameHash,
         boolean firstClientReq,
         boolean allowWaitTopFut,
@@ -148,7 +144,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         this.futId = futId;
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
         txLbl = tx.label();
@@ -219,13 +214,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
      * @return Task name hash.
      */
     public int taskNameHash() {
@@ -277,7 +265,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     private Collection<IgniteTxEntry> cloneEntries(Collection<IgniteTxEntry> c) {
         if (F.isEmpty(c))
-            return c;
+            return Collections.emptyList();
 
         Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 
@@ -353,24 +341,18 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeString("txLbl", txLbl))
                     return false;
 
@@ -417,14 +399,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 24:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -432,7 +406,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -440,7 +414,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
@@ -460,7 +434,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 28;
+        return 27;
     }
 
     /** {@inheritDoc} */

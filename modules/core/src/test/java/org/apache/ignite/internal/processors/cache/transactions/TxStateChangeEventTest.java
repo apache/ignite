@@ -23,7 +23,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,6 +69,11 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
     /** Resume. */
     private static AtomicBoolean resume = new AtomicBoolean();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
 
     /**
      *

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -101,9 +102,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** Remap count. */
     protected volatile int remapCnt;
 
-    /** Subject ID. */
-    protected UUID subjId;
-
     /** Task name. */
     protected String taskName;
 
@@ -128,9 +126,12 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** */
     protected final boolean recovery;
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /** */
     protected Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
-
 
     /**
      * @param cctx Context.
@@ -138,7 +139,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -151,7 +151,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -168,7 +167,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.keys = keys;
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
-        this.subjId = subjId;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
@@ -176,6 +174,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         futId = IgniteUuid.randomUuid();
     }
@@ -183,7 +182,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /**
      * @param aclass Class.
      */
-    protected void initLogger(Class<?> aclass){
+    protected void initLogger(Class<?> aclass) {
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, aclass);
     }
@@ -228,9 +227,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param topVer Topology version.
      */
     protected synchronized void addNodeAsInvalid(ClusterNode node, int part, AffinityTopologyVersion topVer) {
-        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap()) {
+        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap())
             invalidNodes = new HashMap<>();
-        }
 
         Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
 

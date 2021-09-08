@@ -17,29 +17,49 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.Exportable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONModelMixIn;
+import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.naivebayes.BayesModel;
 
 /**
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
-public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
-    /** */
+public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double>,
+    JSONWritable, DeployableObject {
+    /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
+
     /** Means of features for all classes. kth row contains means for labels[k] class. */
-    private final double[][] means;
+    private double[][] means;
+
     /** Variances of features for all classes. kth row contains variances for labels[k] class */
-    private final double[][] variances;
+    private double[][] variances;
+
     /** Prior probabilities of each class */
-    private final double[] classProbabilities;
+    private double[] classProbabilities;
+
     /** Labels. */
-    private final double[] labels;
+    private double[] labels;
+
     /** Feature sum, squared sum and count per label. */
-    private final GaussianNaiveBayesSumsHolder sumsHolder;
+    private GaussianNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param means Means of features for all classes.
@@ -50,11 +70,15 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
         double[] classProbabilities, double[] labels, GaussianNaiveBayesSumsHolder sumsHolder) {
-        this.means = means;
-        this.variances = variances;
-        this.classProbabilities = classProbabilities;
-        this.labels = labels;
+        this.means = means.clone();
+        this.variances = variances.clone();
+        this.classProbabilities = classProbabilities.clone();
+        this.labels = labels.clone();
         this.sumsHolder = sumsHolder;
+    }
+
+    /** */
+    public GaussianNaiveBayesModel() {
     }
 
     /** {@inheritDoc} */
@@ -64,48 +88,101 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Returns a number of class to which the input belongs. */
     @Override public Double predict(Vector vector) {
-        int k = classProbabilities.length;
+        double[] probabilityPowers = probabilityPowers(vector);
 
-        double maxProbability = .0;
         int max = 0;
+        for (int i = 0; i < probabilityPowers.length; i++) {
+            probabilityPowers[i] += Math.log(classProbabilities[i]);
 
-        for (int i = 0; i < k; i++) {
-            double p = classProbabilities[i];
-            for (int j = 0; j < vector.size(); j++) {
-                double x = vector.get(j);
-                double g = gauss(x, means[i][j], variances[i][j]);
-                p *= g;
-            }
-            if (p > maxProbability) {
+            if (probabilityPowers[i] > probabilityPowers[max])
                 max = i;
-                maxProbability = p;
-            }
         }
         return labels[max];
     }
 
-    /** */
+    /** {@inheritDoc} */
+    @Override public double[] probabilityPowers(Vector vector) {
+        double[] probabilityPowers = new double[classProbabilities.length];
+
+        for (int i = 0; i < classProbabilities.length; i++) {
+            for (int j = 0; j < vector.size(); j++) {
+                double x = vector.get(j);
+                double probability = gauss(x, means[i][j], variances[i][j]);
+                probabilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
+            }
+        }
+        return probabilityPowers;
+    }
+
+    /** A getter for means.*/
     public double[][] getMeans() {
         return means;
     }
 
-    /** */
+    /** A getter for variances.*/
     public double[][] getVariances() {
         return variances;
     }
 
-    /** */
+    /** A getter for classProbabilities.*/
     public double[] getClassProbabilities() {
         return classProbabilities;
     }
 
-    /** */
+    /** A getter for labels.*/
+    public double[] getLabels() {
+        return labels;
+    }
+
+    /** A getter for sumsHolder.*/
     public GaussianNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }
 
-    /** Gauss distribution */
-    private double gauss(double x, double mean, double variance) {
+    /** Gauss distribution. */
+    private static double gauss(double x, double mean, double variance) {
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
+    }
+
+    /** {@inheritDoc} */
+    @JsonIgnore
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.addMixIn(GaussianNaiveBayesModel.class, JSONModelMixIn.class);
+
+        ObjectWriter writer = mapper
+            .writerFor(GaussianNaiveBayesModel.class)
+            .withAttribute("formatVersion", JSONModel.JSON_MODEL_FORMAT_VERSION)
+            .withAttribute("timestamp", System.currentTimeMillis())
+            .withAttribute("uid", "dt_" + UUID.randomUUID().toString())
+            .withAttribute("modelClass", GaussianNaiveBayesModel.class.getSimpleName());
+
+        try {
+            File file = new File(path.toAbsolutePath().toString());
+            writer.writeValue(file, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Loads GaussianNaiveBayesModel from JSON file. */
+    public static GaussianNaiveBayesModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        GaussianNaiveBayesModel mdl;
+        try {
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, GaussianNaiveBayesModel.class.getSimpleName());
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GaussianNaiveBayesModel.class);
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

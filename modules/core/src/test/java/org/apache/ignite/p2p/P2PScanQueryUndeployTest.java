@@ -49,7 +49,7 @@ import org.junit.Test;
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
-    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";
+    public static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";
 
     /** */
     private static final String TEST_PREDICATE_RESOURCE_NAME = U.classNameToResourceName(PREDICATE_CLASSNAME);
@@ -81,9 +81,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         );
 
         cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
-
-        if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -119,7 +116,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        Ignite client = startGrid(CLIENT_INSTANCE_NAME);
+        Ignite client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         client.cluster().active(true);
 
@@ -133,7 +130,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         MessageCountingCommunicationSpi.resetDeploymentRequestCounter();
 
-        client = startGrid(CLIENT_INSTANCE_NAME);
+        client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         invokeScanQueryAndStopClient(client, predCls);
     }

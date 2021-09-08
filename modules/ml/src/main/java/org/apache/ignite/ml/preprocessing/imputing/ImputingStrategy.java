@@ -19,9 +19,24 @@ package org.apache.ignite.ml.preprocessing.imputing;
 
 /** This enum contains settings for imputing preprocessor. */
 public enum ImputingStrategy {
-    /** The default strategy. If this strategy is chosen, then replace missing values using the mean for the numeric features along the axis. */
+    /**
+     * The default strategy. If this strategy is chosen, then replace missing values using the mean for the numeric features along the
+     * axis.
+     */
     MEAN,
 
     /** If this strategy is chosen, then replace missing using the most frequent value along the axis. */
-    MOST_FREQUENT
+    MOST_FREQUENT,
+
+    /** If this strategy is chosen, then replace missing using the minimal value along the axis. */
+    MIN,
+
+    /** If this strategy is chosen, then replace missing using the maximum value along the axis. */
+    MAX,
+
+    /** If this strategy is chosen, then replace missing using the amount of values along the axis. */
+    COUNT,
+
+    /** If this strategy is chosen, then replace missing using the least frequent value along the axis. */
+    LEAST_FREQUENT
 }

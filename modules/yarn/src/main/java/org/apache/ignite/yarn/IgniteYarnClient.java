@@ -118,7 +118,7 @@ public class IgniteYarnClient {
 
             String tokRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
 
-            if (tokRenewer == null || tokRenewer.length() == 0)
+            if (tokRenewer == null || tokRenewer.isEmpty())
                 throw new IOException("Master Kerberos principal for the RM is not set.");
 
             log.info("Found RM principal: " + tokRenewer);
@@ -190,10 +190,12 @@ public class IgniteYarnClient {
     private static Path getIgnite(ClusterProperties props, FileSystem fileSystem) throws Exception {
         IgniteProvider provider = new IgniteProvider(props, fileSystem);
 
-        if (props.igniteUrl() == null)
-            return provider.getIgnite();
-        else
-            return provider.getIgnite(props.igniteUrl());
+        String igniteUrl = props.igniteUrl();
+
+        if (igniteUrl != null)
+            return provider.getIgnite(igniteUrl);
+
+        return provider.getIgnite();
     }
 
     /**

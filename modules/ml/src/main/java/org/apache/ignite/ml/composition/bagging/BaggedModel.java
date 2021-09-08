@@ -17,14 +17,17 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * This class represents model produced by {@link BaggedTrainer}.
  * It is a wrapper around inner representation of model produced by {@link BaggedTrainer}.
  */
-public class BaggedModel implements IgniteModel<Vector, Double> {
+public final class BaggedModel implements IgniteModel<Vector, Double>, DeployableObject {
     /** Inner representation of model produced by {@link BaggedTrainer}. */
     private IgniteModel<Vector, Double> mdl;
 
@@ -53,5 +56,10 @@ public class BaggedModel implements IgniteModel<Vector, Double> {
     /** {@inheritDoc} */
     @Override public void close() {
         mdl.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(mdl);
     }
 }

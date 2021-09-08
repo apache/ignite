@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryConfigurationGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNamePutRequest;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePa
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryContinuousRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveIfEqualsRequest;
@@ -68,6 +70,19 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesEndpointsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
 /**
  * Thin client message parser.
@@ -193,6 +208,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005;
 
+    /** */
+    private static final short OP_QUERY_CONTINUOUS = 2006;
+
+    /** */
+    public static final short OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION = 2007;
+
     /* Binary metadata operations. */
     /** */
     private static final short OP_BINARY_TYPE_NAME_GET = 3000;
@@ -206,39 +227,85 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_BINARY_TYPE_PUT = 3003;
 
+    /** */
+    private static final short OP_BINARY_CONFIGURATION_GET = 3004;
+
+    /** Start new transaction. */
+    private static final short OP_TX_START = 4000;
+
+    /** Commit transaction. */
+    private static final short OP_TX_END = 4001;
+
+    /* Cluster operations. */
+    /** */
+    private static final short OP_CLUSTER_GET_STATE = 5000;
+
+    /** */
+    private static final short OP_CLUSTER_CHANGE_STATE = 5001;
+
+    /** */
+    private static final short OP_CLUSTER_CHANGE_WAL_STATE = 5002;
+
+    /** */
+    private static final short OP_CLUSTER_GET_WAL_STATE = 5003;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_IDS = 5100;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_INFO = 5101;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS = 5102;
+
+    /* Compute operations. */
+    /** */
+    private static final short OP_COMPUTE_TASK_EXECUTE = 6000;
+
+    /** */
+    public static final short OP_COMPUTE_TASK_FINISHED = 6001;
+
+    /** Service invocation. */
+    private static final short OP_SERVICE_INVOKE = 7000;
+
+    /** Data streamers. */
+    /** */
+    private static final short OP_DATA_STREAMER_START = 8000;
+
+    /** */
+    private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
     /** Client connection context */
     private final ClientConnectionContext ctx;
 
-    /** Client version */
-    private final ClientListenerProtocolVersion ver;
+    /** Client protocol context */
+    private final ClientProtocolContext protocolCtx;
 
     /**
-     * Ctor.
-     *
      * @param ctx Client connection context.
      */
-    ClientMessageParser(ClientConnectionContext ctx, ClientListenerProtocolVersion ver) {
+    ClientMessageParser(ClientConnectionContext ctx, ClientProtocolContext protocolCtx) {
         assert ctx != null;
-        assert ver != null;
+        assert protocolCtx != null;
 
         this.ctx = ctx;
-        this.ver = ver;
+        this.protocolCtx = protocolCtx;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
         marsh = cacheObjProc.marshaller();
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
-        BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), inStream,
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), inStream,
                 null, null, true, true);
 
         return decode(reader);
@@ -250,7 +317,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
      * @param reader Reader.
      * @return Request.
      */
-    public ClientListenerRequest decode(BinaryRawReaderEx reader) {
+    public ClientListenerRequest decode(BinaryReaderExImpl reader) {
         short opCode = reader.readShort();
 
         switch (opCode) {
@@ -272,10 +339,15 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_BINARY_TYPE_PUT:
                 return new ClientBinaryTypePutRequest(reader);
 
+            case OP_BINARY_CONFIGURATION_GET:
+                return new ClientBinaryConfigurationGetRequest(reader);
+
             case OP_QUERY_SCAN:
                 return new ClientCacheScanQueryRequest(reader);
 
             case OP_QUERY_SCAN_CURSOR_GET_PAGE:
+
+            case OP_QUERY_SQL_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
 
             case OP_RESOURCE_CLOSE:
@@ -360,25 +432,64 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheGetNamesRequest(reader);
 
             case OP_CACHE_GET_CONFIGURATION:
-                return new ClientCacheGetConfigurationRequest(reader, ver);
+                return new ClientCacheGetConfigurationRequest(reader, protocolCtx);
 
             case OP_CACHE_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheCreateWithConfigurationRequest(reader, ver);
+                return new ClientCacheCreateWithConfigurationRequest(reader, protocolCtx);
 
             case OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, ver);
+                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, protocolCtx);
 
             case OP_QUERY_SQL:
                 return new ClientCacheSqlQueryRequest(reader);
 
-            case OP_QUERY_SQL_CURSOR_GET_PAGE:
-                return new ClientCacheQueryNextPageRequest(reader);
-
             case OP_QUERY_SQL_FIELDS:
-                return new ClientCacheSqlFieldsQueryRequest(reader);
+                return new ClientCacheSqlFieldsQueryRequest(reader, protocolCtx);
 
             case OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
+
+            case OP_QUERY_CONTINUOUS:
+                return new ClientCacheQueryContinuousRequest(reader);
+
+            case OP_TX_START:
+                return new ClientTxStartRequest(reader);
+
+            case OP_TX_END:
+                return new ClientTxEndRequest(reader);
+
+            case OP_CLUSTER_GET_STATE:
+                return new ClientClusterGetStateRequest(reader);
+
+            case OP_CLUSTER_CHANGE_STATE:
+                return new ClientClusterChangeStateRequest(reader);
+
+            case OP_CLUSTER_CHANGE_WAL_STATE:
+                return new ClientClusterWalChangeStateRequest(reader);
+
+            case OP_CLUSTER_GET_WAL_STATE:
+                return new ClientClusterWalGetStateRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_IDS:
+                return new ClientClusterGroupGetNodeIdsRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_INFO:
+                return new ClientClusterGroupGetNodesDetailsRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS:
+                return new ClientClusterGroupGetNodesEndpointsRequest(reader);
+
+            case OP_COMPUTE_TASK_EXECUTE:
+                return new ClientExecuteTaskRequest(reader);
+
+            case OP_SERVICE_INVOKE:
+                return new ClientServiceInvokeRequest(reader);
+
+            case OP_DATA_STREAMER_START:
+                return new ClientDataStreamerStartRequest(reader);
+
+            case OP_DATA_STREAMER_ADD_DATA:
+                return new ClientDataStreamerAddDataRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
@@ -386,29 +497,31 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(ClientListenerResponse resp) {
+    @Override public ClientMessage encode(ClientListenerResponse resp) {
         assert resp != null;
 
-        BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32);
+        BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32, BinaryMemoryAllocator.POOLED.chunk());
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        ((ClientResponse)resp).encode(ctx, writer);
+        assert resp instanceof ClientOutgoingMessage : "Unexpected response type: " + resp.getClass();
 
-        return outStream.arrayCopy();
+        ((ClientOutgoingMessage)resp).encode(ctx, writer);
+
+        return new ClientMessage(outStream);
     }
 
     /** {@inheritDoc} */
-    @Override public int decodeCommandType(byte[] msg) {
+    @Override public int decodeCommandType(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg.payload());
 
         return inStream.readShort();
     }
 
     /** {@inheritDoc} */
-    @Override public long decodeRequestId(byte[] msg) {
+    @Override public long decodeRequestId(ClientMessage msg) {
         return 0;
     }
 }

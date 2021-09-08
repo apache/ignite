@@ -48,7 +48,25 @@ namespace ignite
 
             /** Flag: acquired. */
             const int IGNITE_MEM_FLAG_ACQUIRED = 0x4;
-                
+
+            /**
+             * A helper union to bitwise conversion from int32_t to float and back.
+             */
+            union BinaryFloatInt32
+            {
+                float f;
+                int32_t i;
+            };
+
+            /**
+             * A helper union to bitwise conversion from int64_t to double and back.
+             */
+            union BinaryDoubleInt64
+            {
+                double d;
+                int64_t i;
+            };
+
             /**
              * Interop memory.
              */
@@ -168,6 +186,11 @@ namespace ignite
                 static bool IsAcquired(int32_t flags);
 
                 /**
+                 * Constructor.
+                 */
+                InteropMemory() : memPtr(0) { }
+
+                /**
                  * Destructor.
                  */
                 virtual ~InteropMemory() { }
@@ -229,7 +252,7 @@ namespace ignite
                 /**
                  * Reallocate memory.
                  *
-                 * @param cap Desired capactiy.
+                 * @param cap Desired capacity.
                  */
                 virtual void Reallocate(int32_t cap) = 0;
             protected:
@@ -255,7 +278,7 @@ namespace ignite
                  *
                  * @param memPtr Memory pointer.
                  */
-                explicit InteropUnpooledMemory(int8_t* memPtr);
+                explicit InteropUnpooledMemory(int8_t* memPtr = 0);
 
                 /**
                  * Destructor.
@@ -263,11 +286,25 @@ namespace ignite
                 ~InteropUnpooledMemory();
 
                 virtual void Reallocate(int32_t cap);
+
+                /**
+                 * Try get owning copy.
+                 *
+                 * @param mem Memory instance to transfer ownership to.
+                 * @return True on success
+                 */
+                bool TryGetOwnership(InteropUnpooledMemory& mem);
+
             private:
+                /**
+                 * Release all resources.
+                 */
+                void CleanUp();
+
                 /** Whether this instance is owner of memory chunk. */
                 bool owning; 
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory);
             };
         }
     }

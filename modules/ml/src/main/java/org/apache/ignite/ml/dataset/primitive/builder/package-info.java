@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for partition {@code data} and {@code context} builders.
  */
+
 package org.apache.ignite.ml.dataset.primitive.builder;

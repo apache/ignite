@@ -21,13 +21,17 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheInterceptorEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     /** Cache context. */
-    protected GridCacheContext cctx;
+    protected final GridCacheContext cctx;
+
+    /** Keep binary flag. */
+    private final boolean keepBinary;
 
     /** Key cache object. */
     protected KeyCacheObject keyObj;
@@ -43,9 +47,6 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     @GridToStringInclude(sensitive = true)
     protected V val;
 
-    /** Keep binary flag. */
-    private boolean keepBinary;
-
     /** Update counter. */
     private Long updateCntr;
 
@@ -56,10 +57,13 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      * @param keepBinary Keep binary flag.
      */
     public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepBinary) {
-        this.cctx = cctx;
-        this.keyObj = keyObj;
-        this.valObj = valObj;
-        this.keepBinary = keepBinary;
+        this(cctx,
+            keyObj,
+            null,
+            valObj,
+            null,
+            keepBinary,
+            null);
     }
 
     /**
@@ -69,10 +73,37 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      * @param cctx Cache context.
      */
     public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepBinary) {
-        this.cctx = cctx;
-        this.keyObj = keyObj;
-        this.val = val;
-        this.keepBinary = keepBinary;
+        this(cctx,
+            keyObj,
+            null,
+            null,
+            val,
+            keepBinary,
+            null);
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param keyObj Key cache object.
+     * @param key Key value.
+     * @param valObj Cache object
+     * @param keepBinary Keep binary flag.
+     * @param val Cache value.
+     */
+    public CacheLazyEntry(GridCacheContext ctx,
+        KeyCacheObject keyObj,
+        K key,
+        CacheObject valObj,
+        V val,
+        boolean keepBinary
+    ) {
+        this(ctx,
+            keyObj,
+            key,
+            valObj,
+            val,
+            keepBinary,
+            null);
     }
 
     /**
@@ -101,33 +132,15 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
         this.updateCntr = updateCntr;
     }
 
-    /**
-     * @param ctx Cache context.
-     * @param keyObj Key cache object.
-     * @param key Key value.
-     * @param valObj Cache object
-     * @param keepBinary Keep binary flag.
-     * @param val Cache value.
-     */
-    public CacheLazyEntry(GridCacheContext ctx,
-        KeyCacheObject keyObj,
-        K key,
-        CacheObject valObj,
-        V val,
-        boolean keepBinary
-    ) {
-        this.cctx = ctx;
-        this.keyObj = keyObj;
-        this.key = key;
-        this.valObj = valObj;
-        this.val = val;
-        this.keepBinary = keepBinary;
-    }
-
     /** {@inheritDoc} */
     @Override public K getKey() {
-        if (key == null)
-            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
+        if (key == null) {
+            key = (K)cctx.unwrapBinaryIfNeeded(
+                keyObj,
+                keepBinary,
+                U.deploymentClassLoader(cctx.kernalContext(), U.contextDeploymentClassLoaderId(cctx.kernalContext()))
+            );
+        }
 
         return key;
     }
@@ -144,8 +157,14 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      * @return the value corresponding to this entry
      */
     public V getValue(boolean keepBinary) {
-        if (val == null)
-            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
+        if (val == null) {
+            val = (V)cctx.unwrapBinaryIfNeeded(
+                valObj,
+                keepBinary,
+                true,
+                U.deploymentClassLoader(cctx.kernalContext(), U.contextDeploymentClassLoaderId(cctx.kernalContext()))
+            );
+        }
 
         return val;
     }

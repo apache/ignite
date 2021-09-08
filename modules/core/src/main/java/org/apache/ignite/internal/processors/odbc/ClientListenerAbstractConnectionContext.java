@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.UUID;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
@@ -39,23 +39,40 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
+    /** Nio session. */
+    protected final GridNioSession ses;
+
     /** Security context or {@code null} if security is disabled. */
     private SecurityContext secCtx;
 
     /** Connection ID. */
     private long connId;
 
-    /** Authorization context. */
-    private AuthorizationContext authCtx;
+    /** User attributes. */
+    protected Map<String, String> userAttrs;
+
+    /**
+     * Describes the client connection:
+     * - thin cli: "cli:host:port@user_name"
+     * - thin JDBC: "jdbc-thin:host:port@user_name"
+     * - ODBC: "odbc:host:port@user_name"
+     *
+     * Used by the running query view to display query initiator.
+     */
+    private String clientDesc;
 
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
+     * @param ses Client's NIO session.
+     * @param connId Connection ID.
      */
-    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
+    protected ClientListenerAbstractConnectionContext(
+        GridKernalContext ctx, GridNioSession ses, long connId) {
         this.ctx = ctx;
         this.connId = connId;
+        this.ses = ses;
     }
 
     /**
@@ -71,11 +88,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public AuthorizationContext authorizationContext() {
-        return authCtx;
-    }
-
-    /** {@inheritDoc} */
     @Override public long connectionId() {
         return connId;
     }
@@ -83,53 +95,57 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /**
      * Perform authentication.
      *
-     * @return Auth context.
      * @throws IgniteCheckedException If failed.
      */
-    protected AuthorizationContext authenticate(String user, String pwd) throws IgniteCheckedException {
-        if (ctx.security().enabled())
-            authCtx = authenticateExternal(user, pwd).authorizationContext();
-        else if (ctx.authentication().enabled()) {
-            if (F.isEmpty(user))
-                throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
+    protected void authenticate(GridNioSession ses, String user, String pwd) throws IgniteCheckedException {
+        if (!ctx.security().enabled())
+            return;
 
-            authCtx = ctx.authentication().authenticate(user, pwd);
-
-            if (authCtx == null)
-                throw new IgniteAccessControlException("Unknown authentication error.");
-        }
-        else
-            authCtx = null;
-
-        return authCtx;
-    }
-
-    /**
-     * Do 3-rd party authentication.
-     */
-    private AuthenticationContext authenticateExternal(String user, String pwd) throws IgniteCheckedException {
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
 
         AuthenticationContext authCtx = new AuthenticationContext();
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(UUID.randomUUID());
-        authCtx.nodeAttributes(Collections.emptyMap());
+        authCtx.nodeAttributes(F.isEmpty(userAttrs) ? Collections.emptyMap() : userAttrs);
         authCtx.credentials(cred);
+        authCtx.address(ses.remoteAddress());
+        authCtx.certificates(ses.certificates());
 
         secCtx = ctx.security().authenticate(authCtx);
 
-        if (secCtx == null)
+        if (secCtx == null) {
             throw new IgniteAccessControlException(
                 String.format("The user name or password is incorrect [userName=%s]", user)
             );
-
-        return authCtx;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         if (ctx.security().enabled())
             ctx.security().onSessionExpired(secCtx.subject().id());
+    }
+
+    /** */
+    protected void initClientDescriptor(String prefix) {
+        clientDesc = prefix + ":" + ses.remoteAddress().getHostString() + ":" + ses.remoteAddress().getPort();
+
+        if (secCtx != null)
+            clientDesc += "@" + secCtx.subject().login();
+    }
+
+    /**
+     * Describes the client connection:
+     * - thin cli: "cli:host:port@user_name"
+     * - thin JDBC: "jdbc-thin:host:port@user_name"
+     * - ODBC: "odbc:host:port@user_name"
+     *
+     * Used by the running query view to display query initiator.
+     *
+     * @return Client descriptor string.
+     */
+    public String clientDescriptor() {
+        return clientDesc;
     }
 }

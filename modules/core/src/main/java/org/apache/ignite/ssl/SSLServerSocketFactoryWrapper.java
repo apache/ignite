@@ -29,6 +29,7 @@ class SSLServerSocketFactoryWrapper extends SSLServerSocketFactory {
 
     /** */
     private final SSLServerSocketFactory delegate;
+
     /** */
     private final SSLParameters parameters;
 
@@ -62,7 +63,8 @@ class SSLServerSocketFactoryWrapper extends SSLServerSocketFactory {
     @Override public ServerSocket createServerSocket(int port, int backlog) throws IOException {
         SSLServerSocket srvSock = (SSLServerSocket)delegate.createServerSocket(port, backlog);
 
-        srvSock.setSSLParameters(parameters);
+        if (parameters != null)
+            srvSock.setSSLParameters(parameters);
 
         return srvSock;
     }

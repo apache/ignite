@@ -65,8 +65,7 @@ public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest
             checkProperty("TestClass");
         }
         finally {
-            if (useSimpleNameBackup != null)
-                GridTestProperties.setProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
+            GridTestProperties.setProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, useSimpleNameBackup);
         }
     }
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Collections;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -29,10 +30,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -128,7 +131,6 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
         checkSingleNodeRestart(false, true, false);
     }
 
-
     /**
      * @param rollBack If {@code True} then Tx will be rolled backup, committed otherwise.
      * @param recoverFromWAL If {@code True} then Tx recovery from WAL will be checked,
@@ -150,14 +152,15 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager wal = node.context().cache().context().wal();
 
-        if (recoverFromWAL){
+        if (recoverFromWAL) {
             //Force checkpoint. See for details: https://issues.apache.org/jira/browse/IGNITE-10187
             node.context().cache().context().database().waitForCheckpoint(null);
 
             ((GridCacheDatabaseSharedManager)node.context().cache().context().database()).enableCheckpoints(false).get();
         }
 
-        GridTimeoutProcessor.CancelableTask flushTask = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
+        GridTimeoutProcessor.CancelableTask flushTask =
+            GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
         WalStateManager.WALDisableContext wctx = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "walDisableContext");
 
         // Disable checkpoint and WAL flusher.
@@ -169,7 +172,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
             flushTask.onTimeout(); // Flush WAL.
 
-            if (!recoverFromWAL){
+            if (!recoverFromWAL) {
                 //Force checkpoint, then disable.
                 node.context().cache().context().database().waitForCheckpoint(null);
 
@@ -228,12 +231,12 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
                     barrier.await();
 
-                    startGrid(1);
+                    IgniteEx g1 = startGrid(1);
+                    g1.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
 
                     barrier.await();
                 }
                 catch (Exception e) {
-
                     barrier.reset();
                 }
             }
@@ -259,6 +262,9 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
             Thread.sleep(1000);
 
             tx.rollback();
+        }
+        catch (Exception e) {
+            assertTrue(X.hasCause(e, CacheInvalidStateException.class));
         }
 
         barrier.await();

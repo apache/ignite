@@ -21,7 +21,6 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -159,8 +158,10 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) {
         writer.writeString(schemaName);
         writer.writeString(tblName);
         writer.writeString(colName);
@@ -171,8 +172,10 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) {
         schemaName = reader.readString();
         tblName = reader.readString();
         colName = reader.readString();

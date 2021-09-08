@@ -23,7 +23,7 @@ namespace ignite
     {
         namespace binary
         {
-            BinaryTypeSnapshot::BinaryTypeSnapshot(std::string typeName, int32_t typeId) :
+            IGNITE_IMPORT_EXPORT BinaryTypeSnapshot::BinaryTypeSnapshot(std::string typeName, int32_t typeId) :
                 typeName(typeName),
                 typeId(typeId),
                 fieldIds(),
@@ -41,7 +41,7 @@ namespace ignite
                 // No-op.
             }
 
-            void BinaryTypeSnapshot::AddField(int32_t fieldId, const std::string& fieldName, int32_t fieldTypeId)
+            IGNITE_IMPORT_EXPORT void BinaryTypeSnapshot::AddField(int32_t fieldId, const std::string& fieldName, int32_t fieldTypeId)
             {
                 fieldIds.insert(fieldId);
                 fields[fieldName] = BinaryFieldMeta(fieldTypeId, fieldId);

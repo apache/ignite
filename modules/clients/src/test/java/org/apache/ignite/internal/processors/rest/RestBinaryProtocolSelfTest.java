@@ -180,7 +180,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     public void testFailure() throws Exception {
         IgniteKernal kernal = ((IgniteKernal)grid());
 
-        GridRestProcessor proc = kernal.context().rest();
+        IgniteRestProcessor proc = kernal.context().rest();
 
         // Clearing handlers collection to force failure.
         Field hndField = proc.getClass().getDeclaredField("handlers");
@@ -268,7 +268,6 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(client.cacheRemove(DEFAULT_CACHE_NAME, "wrongKey"));
 
         assertNull(jcacheDflt.get("key"));
-
 
         jcacheName.put("key", "val");
 
@@ -517,7 +516,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertEquals(PORT,  node.getTcpPort());
+        assertEquals(PORT, node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(grid().localNode().id(), false, false);
@@ -526,7 +525,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertEquals(PORT,  node.getTcpPort());
+        assertEquals(PORT, node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(HOST, true, true);
@@ -535,7 +534,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertEquals(PORT,  node.getTcpPort());
+        assertEquals(PORT, node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(HOST, false, false);
@@ -544,7 +543,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertEquals(PORT,  node.getTcpPort());
+        assertEquals(PORT, node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
     }
 

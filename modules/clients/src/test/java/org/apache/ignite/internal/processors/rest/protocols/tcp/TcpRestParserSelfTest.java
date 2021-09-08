@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientCache
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.impl.MockNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -114,7 +115,6 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, IOException.class, null);
-
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {

@@ -20,6 +20,7 @@
 
 #include <string>
 
+#include <ignite/common/common.h>
 #include <ignite/network/socket_client.h>
 
 namespace ignite
@@ -36,12 +37,12 @@ namespace ignite
              *
              * @throw IgniteError if it is not possible to load SSL library.
              */
-            void EnsureSslLoaded();
+            IGNITE_IMPORT_EXPORT void EnsureSslLoaded();
 
             /**
              * Make basic TCP socket.
              */
-            SocketClient* MakeTcpSocketClient();
+            IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient();
 
             /**
              * Make secure socket for SSL/TLS connection.
@@ -52,7 +53,7 @@ namespace ignite
              *
              * @throw IgniteError if it is not possible to load SSL library.
              */
-            SocketClient* MakeSecureSocketClient(const std::string& certPath,
+            IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const std::string& certPath,
                 const std::string& keyPath, const std::string& caPath);
         }
     }

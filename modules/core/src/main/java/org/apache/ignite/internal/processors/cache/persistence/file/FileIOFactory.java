@@ -29,6 +29,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 /**
  * {@link FileIO} factory definition.
  */
+@FunctionalInterface
 public interface FileIOFactory extends Serializable {
     /**
      * Creates I/O interface for file with default I/O mode.
@@ -37,9 +38,9 @@ public interface FileIOFactory extends Serializable {
      * @return File I/O interface.
      * @throws IOException If I/O interface creation was failed.
      */
-    default FileIO create(File file) throws IOException{
+    default FileIO create(File file) throws IOException {
         return create(file, CREATE, READ, WRITE);
-    };
+    }
 
     /**
      * Creates I/O interface for file with specified mode.

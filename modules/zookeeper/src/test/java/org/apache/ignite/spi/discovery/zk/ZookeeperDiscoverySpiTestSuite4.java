@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import org.apache.ignite.common.CacheCreateDestroyEventSecurityContextTest;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
+import org.apache.ignite.internal.IgniteNodeValidationFailedEventTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchangeTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -42,7 +45,10 @@ import org.junit.runners.Suite;
     GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class,
     IgniteCacheReplicatedQuerySelfTest.class,
     DistributedMetaStorageTest.class,
-    DistributedMetaStoragePersistentTest.class
+    DistributedMetaStoragePersistentTest.class,
+    IgniteNodeValidationFailedEventTest.class,
+    DiscoverySpiDataExchangeTest.class,
+    CacheCreateDestroyEventSecurityContextTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite4 {
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
+import java.sql.Timestamp;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -24,8 +25,6 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.sql.Timestamp;
 
 /**
  * Result of the {@link PlatformDotNetSessionLockProcessor} execution.

@@ -18,4 +18,5 @@
 /**
  * Contains Ignite Binary objects classes and examples.
  */
+
 package org.apache.ignite.examples.binary;

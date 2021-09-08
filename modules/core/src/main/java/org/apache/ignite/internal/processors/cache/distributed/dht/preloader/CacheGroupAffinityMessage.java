@@ -158,9 +158,8 @@ public class CacheGroupAffinityMessage implements Message {
                 if (aff == null) {
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                    assert grp != null : "No cache group holder or cache group to create AffinityMessage"
-                        + ". Requested group id: " + grpId
-                        + ". Topology version: " + topVer;
+                    if (grp == null)
+                        return null;
 
                     aff = grp.affinity();
                 }
@@ -182,7 +181,8 @@ public class CacheGroupAffinityMessage implements Message {
      * @param discoCache Discovery data cache.
      * @return Nodes list.
      */
-    public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder, DiscoCache discoCache) {
+    public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder,
+        DiscoCache discoCache) {
         List<ClusterNode> assign0 = new ArrayList<>(assign.size());
 
         for (int n = 0; n < assign.size(); n++) {

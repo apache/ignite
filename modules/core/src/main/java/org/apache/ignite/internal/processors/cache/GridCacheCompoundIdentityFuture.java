@@ -53,7 +53,7 @@ public abstract class GridCacheCompoundIdentityFuture<T> extends GridCompoundIde
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancel) {
-        if(super.onDone(res, err, cancel)){
+        if (super.onDone(res, err, cancel)) {
             endTime = U.currentTimeMillis();
             return true;
         }

@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Base class for interop targets.
     /// </summary>
-    internal class PlatformJniTarget : IPlatformTargetInternal
+    internal sealed class PlatformJniTarget : IPlatformTargetInternal
     {
         /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl
                 {typeof(long), FutureType.Long},
                 {typeof(short), FutureType.Short}
             };
-        
+
         /** Unmanaged target. */
         private readonly GlobalRef _target;
 
@@ -158,8 +158,8 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public TR InStreamOutStream<TR>(int type, Action<IBinaryStream> writeAction, 
-            Func<IBinaryStream, TR> readAction)
+        public TR InStreamOutStream<TR>(int type, Action<IBinaryStream> writeAction,
+            Func<IBinaryStream, TR> readAction, Func<Exception, TR> errorAction = null)
         {
             try
             {
@@ -177,12 +177,15 @@ namespace Apache.Ignite.Core.Impl
             }
             catch (JavaException jex)
             {
+                if (errorAction != null)
+                    return errorAction.Invoke(ConvertException(jex));
+
                 throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
-        public TR InStreamOutLong<TR>(int type, Action<IBinaryStream> outAction, Func<IBinaryStream, long, TR> inAction, 
+        public TR InStreamOutLong<TR>(int type, Func<IBinaryStream, bool> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> readErrorAction)
         {
             try
@@ -191,7 +194,11 @@ namespace Apache.Ignite.Core.Impl
 
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    outAction(stream);
+                    var writeRes = outAction(stream);
+                    if (!writeRes)
+                    {
+                        return default(TR);
+                    }
 
                     var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
@@ -218,7 +225,7 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        public TR InObjectStreamOutObjectStream<TR>(int type, Action<IBinaryStream> writeAction, 
+        public TR InObjectStreamOutObjectStream<TR>(int type, Action<IBinaryStream> writeAction,
             Func<IBinaryStream, IPlatformTargetInternal, TR> readAction, IPlatformTargetInternal arg)
         {
             PlatformMemoryStream outStream = null;
@@ -405,7 +412,7 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction, 
+        public T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction,
             Func<IBinaryRawReader, T> readAction)
         {
             try
@@ -456,7 +463,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "Result is returned from this method and should not be disposed.")]
+        public T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg,
             Action<IBinaryRawWriter> writeAction, Func<IBinaryRawReader, IPlatformTarget, T> readAction)
         {
             PlatformMemoryStream outStream = null;
@@ -540,7 +549,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction = null, 
+        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction = null,
             Func<IBinaryRawReader, T> readAction = null)
         {
             var convertFunc = readAction != null
@@ -575,7 +584,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, 
+        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction,
             Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken)
         {
             var convertFunc = readAction != null

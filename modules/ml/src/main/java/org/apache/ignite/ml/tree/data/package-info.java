@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains data and data builder required for decision tree trainers built on top of partition based dataset.
  */
+
 package org.apache.ignite.ml.tree.data;

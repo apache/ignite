@@ -61,8 +61,13 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
         dfltPlcCfg.setInitialSize(SIZE);
         dfltPlcCfg.setMaxSize(SIZE);
 
-        if (pds)
+        if (pds) {
+            // We need longer failure detection timeout for PDS enabled mode or checkpoint write lock can block tx
+            // checkpoint read lock for too long causing FH triggering on slow hardware.
+            cfg.setFailureDetectionTimeout(30_000);
+
             dfltPlcCfg.setPersistenceEnabled(true);
+        }
 
         dsCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);
         dsCfg.setPageSize(PAGE_SIZE);

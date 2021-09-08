@@ -88,17 +88,6 @@ final class GridDiagnostic {
                 }
             });
 
-            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-4", log) {
-                @Override public void body() {
-                    // Sufficiently tested OS.
-                    if (!U.isSufficientlyTestedOs()) {
-                        U.warn(log, "This operating system has been tested less rigorously: " + U.osString() +
-                            ". Our team will appreciate the feedback if you experience any problems running " +
-                            "ignite in this environment.");
-                    }
-                }
-            });
-
             exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-5", log) {
                 @Override public void body() {
                     // Fix for GG-1075.

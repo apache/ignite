@@ -199,7 +199,6 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         threadId,
                         futId,
                         ++idx, // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
-                        tx.subjectId(),
                         topVer,
                         lockVer,
                         mvccSnapshot,
@@ -216,7 +215,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         clientFirst
                     );
 
-                    sendRequest(req, node.id(), mini);
+                    sendRequest(req, node.id());
                 }
             }
 
@@ -237,25 +236,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      *
      * @param req Request.
      * @param nodeId Remote node ID.
-     * @param fut Result future.
      * @throws IgniteCheckedException if failed to send.
      */
-    private void sendRequest(GridCacheMessage req, UUID nodeId, MiniFuture fut) throws IgniteCheckedException {
-        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
-
-        if (txSync == null || txSync.isDone())
-            cctx.io().send(nodeId, req, QUERY_POOL); // Process query requests in query pool.
-        else
-            txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    try {
-                        cctx.io().send(nodeId, req, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        fut.onResult(null, e);
-                    }
-                }
-            });
+    private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
+        cctx.io().send(nodeId, req, QUERY_POOL); // Process query requests in query pool.
     }
 
     /**
@@ -288,10 +272,17 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    private synchronized MiniFuture miniFuture(int miniId) {
-        IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
+    private MiniFuture miniFuture(int miniId) {
+        compoundsReadLock();
 
-        return !fut.isDone() ? (MiniFuture)fut : null;
+        try {
+            IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
+
+            return !fut.isDone() ? (MiniFuture)fut : null;
+        }
+        finally {
+            compoundsReadUnlock();
+        }
     }
 
     /**
@@ -397,6 +388,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     private static class IntArrayHolder {
         /** */
         private int[] array;
+
         /** */
         private int size;
 

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains util classes that help to work with machine learning models in SQL and train models on data from SQL tables.
  */
+
 package org.apache.ignite.ml.sql;

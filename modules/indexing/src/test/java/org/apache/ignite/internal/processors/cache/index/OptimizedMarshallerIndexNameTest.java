@@ -52,6 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class OptimizedMarshallerIndexNameTest extends AbstractIndexingCommonTest {
     /** Test name 1 */
     private static final String TEST_NAME1 = "Name1";
+
     /** Test name 2 */
     private static final String TEST_NAME2 = "Name2";
 

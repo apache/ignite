@@ -55,14 +55,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test KILL QUERY requested from client which disconnected from cluster during cancellation in progress.
  */
-
 @RunWith(JUnit4.class)
 public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Node configration conter. */
-    private static int cntr;
 
     /** Statement. */
     protected Statement stmt;
@@ -74,9 +70,8 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        cntr = 0;
-
-        startGrids(2);
+        startGrids(1);
+        startClientGrid(1);
 
         for (int i = 0; i < 1000; ++i)
             grid(0).cache(GridAbstractTest.DEFAULT_CACHE_NAME).put(i, i);
@@ -136,9 +131,6 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        if (++cntr == 2)
-            cfg.setClientMode(true);
-
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg,
@@ -172,7 +164,7 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, () -> {
             stmt.executeQuery("select * from Integer where _key in " +
-                "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
+                "(select abs(_key) from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
 
             return null;
         }, SQLException.class, "The query was cancelled while executing.");
@@ -196,14 +188,21 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
                 assertEquals(1, runningQueries.size());
 
                 IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-                    clientNode().cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("KILL QUERY '" + runningQueries.get(0).globalQueryId() + "'"));
+                    clientNode().cache(DEFAULT_CACHE_NAME).query(
+                        new SqlFieldsQuery("KILL QUERY '" + runningQueries.get(0).globalQueryId() + "'")
+                    );
                 });
 
                 doSleep(500);
 
                 TestSQLFunctions.reqLatch.countDown();
 
-                GridTestUtils.assertThrows(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, "Failed to cancel query because local client node has been disconnected from the cluster");
+                GridTestUtils.assertThrows(
+                    log,
+                    () -> fut.get(TIMEOUT),
+                    IgniteCheckedException.class,
+                    "Failed to cancel query because local client node has been disconnected from the cluster"
+                );
             }
             catch (Exception e) {
                 log.error("Unexpected exception.", e);

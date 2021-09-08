@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -99,9 +100,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Optional filter. */
     protected final CacheEntryPredicate[] filter;
 
-    /** Subject ID. */
-    protected final UUID subjId;
-
     /** Task name hash. */
     protected final int taskNameHash;
 
@@ -116,6 +114,10 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Near cache flag. */
     protected final boolean nearEnabled;
+
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
 
     /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
     protected boolean topLocked;
@@ -155,7 +157,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param rawRetval Raw return value flag.
      * @param expiryPlc Expiry policy.
      * @param filter Filter.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
@@ -172,7 +173,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         CacheEntryPredicate[] filter,
-        UUID subjId,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
@@ -193,11 +193,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.rawRetval = rawRetval;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nearEnabled = CU.isNearEnabled(cctx);
 
@@ -350,7 +350,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
         Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-                cctx.unwrapBinaryIfNeeded(ret.value(), keepBinary) : ret.success();
+            cctx.unwrapBinaryIfNeeded(
+                ret.value(),
+                keepBinary,
+                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+            ) : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -406,7 +410,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         for (KeyCacheObject key : keys0) {
             try {
-                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
+                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(
+                    key,
+                    keepBinary,
+                    false,
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
+                );
             }
             catch (BinaryInvalidTypeException e) {
                 keys.add(cctx.toCacheKeyObject(key));
@@ -809,6 +818,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
          * @param cctx Context.
          */
         private void initMapping(List<UUID> nodeIds, GridCacheContext cctx) {
+            if (nodeIds.isEmpty() && req.initMappingLocally()) {
+                mappedNodes = U.newHashMap(nodeIds.size());
+
+                rcvdCnt = 0;
+            }
+
             assert rcvdCnt <= nodeIds.size();
 
             expCnt = nodeIds.size();

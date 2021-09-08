@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -114,24 +115,15 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
         UUID locNodeId = cctx.localNodeId();
 
-        for (Map.Entry<UUID, Collection<UUID>> e : tx.transactionNodes().entrySet()) {
-            if (!locNodeId.equals(e.getKey()) && !failedNodeIds.contains(e.getKey()) && !nodes.containsKey(e.getKey())) {
-                ClusterNode node = cctx.discovery().node(e.getKey());
-
-                if (node != null)
-                    nodes.put(node.id(), node);
-                else if (log.isInfoEnabled())
-                    log.info("Transaction node left (will ignore) " + e.getKey());
-            }
-
-            for (UUID nodeId : e.getValue()) {
+        for (Map.Entry<UUID, Collection<UUID>> entry : tx.transactionNodes().entrySet()) {
+            for (UUID nodeId : F.concat(false, entry.getKey(), entry.getValue())) {
                 if (!locNodeId.equals(nodeId) && !failedNodeIds.contains(nodeId) && !nodes.containsKey(nodeId)) {
                     ClusterNode node = cctx.discovery().node(nodeId);
 
                     if (node != null)
                         nodes.put(node.id(), node);
                     else if (log.isInfoEnabled())
-                        log.info("Transaction node left (will ignore) " + e.getKey());
+                        log.info("Transaction node left (will ignore) " + nodeId);
                 }
             }
         }
@@ -268,7 +260,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         for (Map.Entry<UUID, Collection<UUID>> entry : txNodes.entrySet()) {
             UUID nodeId = entry.getKey();
 
-            // Skip left nodes and local node.
+            // Skipping iteration when local node is one of tx's primary.
             if (!nodes.containsKey(nodeId) && nodeId.equals(cctx.localNodeId()))
                 continue;
 
@@ -425,7 +417,9 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      */
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -444,6 +438,9 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -468,7 +465,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 final MiniFuture f = (MiniFuture)fut;
 
                 if (f.nodeId().equals(nodeId)) {
-                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                         @Override public void run() {
                             f.onNodeLeft(nodeId);
                         }

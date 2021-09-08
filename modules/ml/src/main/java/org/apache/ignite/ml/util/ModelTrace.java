@@ -29,8 +29,10 @@ import org.jetbrains.annotations.NotNull;
 public class ModelTrace {
     /** Model name. */
     private final String mdlName;
+
     /** Use pretty mode. */
     private final boolean pretty;
+
     /** Model fields. */
     private List<IgniteBiTuple<String, Object>> mdlFields = new ArrayList<>();
 

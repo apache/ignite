@@ -18,4 +18,5 @@
 /**
  * Contains serializers implementation, to store BLOBs into Cassandra
  */
+
 package org.apache.ignite.cache.store.cassandra.serializer;

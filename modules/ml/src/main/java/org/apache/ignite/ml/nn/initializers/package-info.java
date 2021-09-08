@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains multilayer perceptron parameters initializers.
  */
+
 package org.apache.ignite.ml.nn.initializers;

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
@@ -98,8 +99,33 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected long nextPartitionCounter(AffinityTopologyVersion topVer,
         boolean primary,
+        boolean init,
         @Nullable Long primaryCntr) {
-        return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, primaryCntr);
+        try {
+            return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, init, primaryCntr);
+        }
+        catch (Throwable t) {
+            log.error("Failed to update counter for atomic cache [" +
+                ", initial=" + init +
+                ", primaryCntr=" + primaryCntr +
+                ", part=" + locPart + ']', t);
+
+            throw t;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long nextPartitionCounter(IgniteInternalTx tx, @Nullable Long primaryCntr) {
+        try {
+            return locPart.nextUpdateCounter(cctx.cacheId(), tx, primaryCntr);
+        }
+        catch (Throwable t) {
+            log.error("Failed to update counter for tx cache [" +
+                ", primaryCntr=" + primaryCntr +
+                ", part=" + locPart + ", tx=" + CU.txString(tx) + ']', t);
+
+            throw t;
+        }
     }
 
     /** {@inheritDoc} */
@@ -657,6 +683,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             if (cctx.store().isLocal())
                 cctx.store().remove(null, key);
 
+            updatePlatformCache(null, null);
+
             rmv = true;
 
             return true;
@@ -813,16 +841,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        lockEntry();
-
-        try {
-            return S.toString(GridDhtCacheEntry.class, this,
-                "part", locPart.id(),
-                "super", super.toString());
-        }
-        finally {
-            unlockEntry();
-        }
+        return toStringWithTryLock(() -> S.toString(GridDhtCacheEntry.class, this,
+            "part", locPart.id(),
+            "super", super.toString()));
     }
 
     /** {@inheritDoc} */

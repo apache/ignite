@@ -22,8 +22,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
+import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 
 /**
  * Implementation of factory to provide I/O interfaces for read primitives with files.
@@ -33,8 +33,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter
 public class LockedSegmentFileInputFactory implements SegmentFileInputFactory {
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
+
     /** Manager of segment location. */
     private final SegmentRouter segmentRouter;
+
     /** {@link FileIO} factory definition.*/
     private final FileIOFactory fileIOFactory;
 
@@ -61,7 +63,7 @@ public class LockedSegmentFileInputFactory implements SegmentFileInputFactory {
             id -> {
                 FileDescriptor segment = segmentRouter.findSegment(id);
 
-                return segment.toIO(fileIOFactory);
+                return segment.toReadOnlyIO(fileIOFactory);
             }
         );
     }

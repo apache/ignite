@@ -17,10 +17,22 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
+ *
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 public interface DataStorageMetrics {
     /**
      * Gets the average number of WAL records per second written during the last time interval.
@@ -93,6 +105,13 @@ public interface DataStorageMetrics {
      * @return Total checkpoint duration in milliseconds.
      */
     public long getLastCheckpointDuration();
+
+    /**
+     * Returns time when the last checkpoint was started.
+     *
+     * @return Time when the last checkpoint was started.
+     * */
+    public long getLastCheckpointStarted();
 
     /**
      * Gets the duration of last checkpoint lock wait in milliseconds.
@@ -230,4 +249,18 @@ public interface DataStorageMetrics {
      *         or negative value is not supported.
      */
     public long getSparseStorageSize();
+
+    /**
+     * Getting the total number of logged bytes into the WAL.
+     *
+     * @return Number of bytes.
+     */
+    long getWalWrittenBytes();
+
+    /**
+     * Getting the total size of the compressed segments in bytes.
+     *
+     * @return Number of bytes.
+     */
+    long getWalCompressedBytes();
 }

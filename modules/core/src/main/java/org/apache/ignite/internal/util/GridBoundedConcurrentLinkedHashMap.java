@@ -92,6 +92,7 @@ public class GridBoundedConcurrentLinkedHashMap<K, V> extends ConcurrentLinkedHa
     public GridBoundedConcurrentLinkedHashMap(int max, int initCap, float loadFactor, int concurLvl) {
         this(max, initCap, loadFactor, concurLvl, SINGLE_Q);
     }
+
     /**
      * Creates a new, empty map with the specified initial
      * capacity, load factor and concurrency level.

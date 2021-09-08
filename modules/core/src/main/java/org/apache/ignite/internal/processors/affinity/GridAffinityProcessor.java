@@ -247,7 +247,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             log.debug("Affinity cached values were cleared: " + (oldSize - affMap.size()));
     }
 
-
     /**
      * Maps keys to nodes for given cache.
      *
@@ -614,24 +613,27 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut = ctx.closure()
             .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/, 0, false);
 
-        return fut.chain(new CX1<IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, AffinityInfo>() {
-            @Override public AffinityInfo applyx(IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut) throws IgniteCheckedException {
-                GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = fut.get();
+        return fut.chain(
+            new CX1<IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, AffinityInfo>() {
+                @Override public AffinityInfo applyx(
+                    IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut
+                ) throws IgniteCheckedException {
+                    GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = fut.get();
 
-                AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
-                AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
+                    AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
+                    AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
 
-                assert m != null;
+                    assert m != null;
 
-                // Bring to initial state.
-                f.reset();
-                m.reset();
+                    // Bring to initial state.
+                    f.reset();
+                    m.reset();
 
-                CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
+                    CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-                return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(ccfg));
-            }
-        });
+                    return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(ccfg));
+                }
+            });
     }
 
     /**
@@ -1171,7 +1173,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             int hash = backups;
             hash = 31 * hash + affFuncCls.hashCode();
             hash = 31 * hash + filterCls.hashCode();
-            hash= 31 * hash + partsCnt;
+            hash = 31 * hash + partsCnt;
 
             this.hash = hash;
         }

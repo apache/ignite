@@ -45,6 +45,12 @@ public class ClientConnectorConfiguration {
     /** Default size of thread pool. */
     public static final int DFLT_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
+    /** Default selector count. */
+    public static final int DFLT_SELECTOR_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
+
+    /** Default handshake timeout. */
+    public static final int DFLT_HANDSHAKE_TIMEOUT = 10_000;
+
     /** Default idle timeout. */
     public static final int DFLT_IDLE_TIMEOUT = 0;
 
@@ -75,8 +81,14 @@ public class ClientConnectorConfiguration {
     /** Thread pool size. */
     private int threadPoolSize = DFLT_THREAD_POOL_SIZE;
 
+    /** Selector count. */
+    private int selectorCnt = DFLT_SELECTOR_CNT;
+
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
+
+    /** Handshake timeout. */
+    private long handshakeTimeout = DFLT_HANDSHAKE_TIMEOUT;
 
     /** JDBC connections enabled flag. */
     private boolean jdbcEnabled = true;
@@ -98,6 +110,9 @@ public class ClientConnectorConfiguration {
 
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
+
+    /** Thin-client specific configuration. */
+    private ThinClientConfiguration thinCliCfg = new ThinClientConfiguration();
 
     /**
      * Creates SQL connector configuration with all default values.
@@ -123,10 +138,15 @@ public class ClientConnectorConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         threadPoolSize = cfg.getThreadPoolSize();
         idleTimeout = cfg.getIdleTimeout();
+        handshakeTimeout = cfg.getHandshakeTimeout();
+        jdbcEnabled = cfg.jdbcEnabled;
+        odbcEnabled = cfg.odbcEnabled;
+        thinCliEnabled = cfg.thinCliEnabled;
         sslEnabled = cfg.isSslEnabled();
         sslClientAuth = cfg.isSslClientAuth();
         useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
         sslCtxFactory = cfg.getSslContextFactory();
+        thinCliCfg = new ThinClientConfiguration(cfg.getThinClientConfiguration());
     }
 
     /**
@@ -283,25 +303,49 @@ public class ClientConnectorConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing SQL requests.
+     * Size of thread pool that is in charge of processing client requests.
      * <p>
      * Defaults {@link #DFLT_THREAD_POOL_SIZE}.
      *
-     * @return Thread pool that is in charge of processing SQL requests.
+     * @return Thread pool that is in charge of processing client requests.
      */
     public int getThreadPoolSize() {
         return threadPoolSize;
     }
 
     /**
-     * Sets thread pool that is in charge of processing SQL requests. See {@link #getThreadPoolSize()} for more
+     * Sets thread pool that is in charge of processing client requests. See {@link #getThreadPoolSize()} for more
      * information.
      *
-     * @param threadPoolSize Thread pool that is in charge of processing SQL requests.
+     * @param threadPoolSize Thread pool that is in charge of processing client requests.
      * @return This instance for chaining.
      */
     public ClientConnectorConfiguration setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Get count of selectors to use in TCP server.
+     * <p>
+     * Defaults {@link #DFLT_SELECTOR_CNT}.
+     *
+     * @return Count of selectors to use in TCP server.
+     */
+    public int getSelectorCount() {
+        return selectorCnt;
+    }
+
+    /**
+     * Sets count of selectors to use in TCP server. See {@link #getSelectorCount()} for more
+     * information.
+     *
+     * @param selectorCnt Count of selectors to use in TCP server.
+     * @return This instance for chaining.
+     */
+    public ClientConnectorConfiguration setSelectorCount(int selectorCnt) {
+        this.selectorCnt = selectorCnt;
 
         return this;
     }
@@ -328,6 +372,34 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets handshake timeout for client connections.
+     * If no successful handshake is performed within this timeout upon successful establishment of TCP connection,
+     * the connection is closed.
+     * Zero or negative means no timeout.
+     *
+     * @return Handshake timeout in milliseconds.
+     */
+    public long getHandshakeTimeout() {
+        return handshakeTimeout;
+    }
+
+    /**
+     * Sets handshake timeout for client connections.
+     * If no successful handshake is performed within this timeout upon successful establishment of TCP connection,
+     * the connection is closed.
+     * Zero or negative means no timeout.
+     *
+     * @param handshakeTimeout Idle timeout in milliseconds.
+     * @see #getHandshakeTimeout()
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setHandshakeTimeout(long handshakeTimeout) {
+        this.handshakeTimeout = handshakeTimeout;
 
         return this;
     }
@@ -499,6 +571,24 @@ public class ClientConnectorConfiguration {
      */
     public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
+    }
+
+    /**
+     * Gets thin-client specific configuration.
+     */
+    public ThinClientConfiguration getThinClientConfiguration() {
+        return thinCliCfg;
+    }
+
+    /**
+     * Sets thin-client specific configuration.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setThinClientConfiguration(ThinClientConfiguration thinCliCfg) {
+        this.thinCliCfg = thinCliCfg;
+
+        return this;
     }
 
     /** {@inheritDoc} */

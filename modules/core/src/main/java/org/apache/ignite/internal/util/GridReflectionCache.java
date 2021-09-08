@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,8 +57,11 @@ public class GridReflectionCache implements Externalizable {
         }
     };
 
+    /** @see IgniteSystemProperties#IGNITE_REFLECTION_CACHE_SIZE */
+    public static final int DFLT_REFLECTION_CACHE_SIZE = 128;
+
     /** Cache size. */
-    private static final int CACHE_SIZE = Integer.getInteger(IGNITE_REFLECTION_CACHE_SIZE, 128);
+    private static final int CACHE_SIZE = Integer.getInteger(IGNITE_REFLECTION_CACHE_SIZE, DFLT_REFLECTION_CACHE_SIZE);
 
     /** Fields cache. */
     private ConcurrentMap<Class, List<Field>> fields = new GridBoundedConcurrentLinkedHashMap<>(
@@ -203,7 +207,6 @@ public class GridReflectionCache implements Externalizable {
 
         return fieldsList;
     }
-
 
     /**
      * Gets methods.

@@ -19,10 +19,22 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
+ *
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=io.dataregion.{data_region_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -31,14 +43,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     private final DataRegionConfiguration dataRegCfg;
 
     /**
-     * @param memMetrics DataRegionMetrics instance to expose through JMX interface.
-     * @param dataRegCfg Configuration of data region this MX Bean is created for.
+     * @param dataRegion Data region which metrics will be exposed through this JMX bean.
      */
-    DataRegionMetricsMXBeanImpl(DataRegionMetricsImpl memMetrics,
-        DataRegionConfiguration dataRegCfg
-    ) {
-        this.memMetrics = memMetrics;
-        this.dataRegCfg = dataRegCfg;
+    DataRegionMetricsMXBeanImpl(DataRegion dataRegion) {
+        this.memMetrics = dataRegion.metrics();
+        this.dataRegCfg = dataRegion.config();
     }
 
     /** {@inheritDoc} */

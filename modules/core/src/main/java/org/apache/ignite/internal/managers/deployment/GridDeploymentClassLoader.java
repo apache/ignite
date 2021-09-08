@@ -19,16 +19,21 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -37,10 +42,15 @@ import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 
 /**
  * Class loader that is able to resolve task subclasses and resources
@@ -51,6 +61,20 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"CustomClassloader"})
 class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInfo {
+    /** */
+    private static final ProtectionDomain PROTECTION_DOMAIN;
+
+    static {
+        Permissions perms = new Permissions();
+
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE));
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE + ".*"));
+
+        perms.setReadOnly();
+
+        PROTECTION_DOMAIN = new ProtectionDomain(null, perms);
+    }
+
     /** Class loader ID. */
     private final IgniteUuid id;
 
@@ -102,6 +126,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
     /** */
     private final Object mux = new Object();
+
+    /** */
+    private final String clsLdrHierarchy = classLoadersHierarchy();
 
     /**
      * Creates a new peer class loader.
@@ -445,6 +472,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         // Catch Throwable to secure against any errors resulted from
         // corrupted class definitions or other user errors.
         catch (Exception e) {
+            if (X.hasCause(e, TimeoutException.class))
+                throw e;
+
             throw new ClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
         }
 
@@ -499,7 +529,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (log.isDebugEnabled())
                     log.debug("Found class in local deployment [cls=" + name + ", dep=" + dep + ']');
 
-                return dep.deployedClass(name);
+                return dep.deployedClass(name).get1();
             }
         }
 
@@ -511,10 +541,12 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             Class<?> cls = findLoadedClass(name);
 
             if (cls == null) {
+                cls = ctx.security().sandbox().enabled()
+                    ? defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN)
+                    : defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
+
                 if (byteMap != null)
                     byteMap.put(path, byteSrc.array());
-
-                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');
@@ -569,9 +601,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         synchronized (mux) {
             // Skip requests for the previously missed classes.
-            if (missedRsrcs != null && missedRsrcs.contains(path))
-                throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrIds=" +
-                    nodeLdrMap + ", parentClsLoader=" + getParent() + ']');
+            if (missedRsrcs != null && missedRsrcs.contains(path)) {
+                throw new ClassNotFoundException("Failed to peer load class, previous request for the same class " +
+                    "has failed [class=" + name + ", nodeClsLdrIds=" +
+                    nodeLdrMap + ", clsLoadersHierarchy=" + clsLdrHierarchy + ']');
+            }
 
             // If single-node mode, then node cannot change and we simply reuse list and map.
             // Otherwise, make copies that can be used outside synchronization.
@@ -579,7 +613,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             nodeLdrMapCp = singleNode ? nodeLdrMap : new HashMap<>(nodeLdrMap);
         }
 
-        IgniteCheckedException err = null;
+        List<IgniteException> classRequestExceptions = new ArrayList<>();
 
         for (UUID nodeId : nodeListCp) {
             if (nodeId.equals(ctx.discovery().localNode().id()))
@@ -600,69 +634,101 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             try {
                 GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
 
-                if (res == null) {
-                    String msg = "Failed to send class-loading request to node (is node alive?) [node=" +
-                        node.id() + ", clsName=" + name + ", clsPath=" + path + ", clsLdrId=" + ldrId +
-                        ", parentClsLdr=" + getParent() + ']';
-
-                    if (!quiet)
-                        U.warn(log, msg);
-                    else if (log.isDebugEnabled())
-                        log.debug(msg);
-
-                    err = new IgniteCheckedException(msg);
-
-                    continue;
-                }
-
                 if (res.success())
                     return res.byteSource();
+                else {
+                    // In case of shared resources/classes all nodes should have it.
+                    String msg = "Failed to find class on remote node [class=" + name + ", nodeId=" + node.id() +
+                        ", clsLdrId=" + ldrId + ", classLoadersHierarchy=" + clsLdrHierarchy +
+                        ", reason=" + res.errorMessage() + ']';
 
-                // In case of shared resources/classes all nodes should have it.
-                if (log.isDebugEnabled())
-                    log.debug("Failed to find class on remote node [class=" + name + ", nodeId=" + node.id() +
-                        ", clsLdrId=" + ldrId + ", reason=" + res.errorMessage() + ']');
+                    LT.warn(log, msg);
 
-                synchronized (mux) {
-                    if (missedRsrcs != null)
-                        missedRsrcs.add(path);
+                    classRequestExceptions.add(new IgniteException(msg));
+
+                    synchronized (mux) {
+                        if (missedRsrcs != null)
+                            missedRsrcs.add(path);
+                    }
+
+                    break;
                 }
-
-                throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrs=" +
-                    nodeLdrMapCp + ", parentClsLoader=" + getParent() + ", reason=" + res.errorMessage() + ']');
             }
             catch (IgniteCheckedException e) {
                 // This thread should be interrupted again in communication if it
                 // got interrupted. So we assume that thread can be interrupted
                 // by processing cancellation request.
                 if (Thread.currentThread().isInterrupted()) {
+                    String msg = "Failed to find class probably due to task/job cancellation [name=" + name +
+                        ", clsLdrId=" + ldrId +
+                        ", nodeId=" + nodeId +
+                        ", clsLoadersHierarchy=" + clsLdrHierarchy + ']';
+
                     if (!quiet)
-                        U.error(log, "Failed to find class probably due to task/job cancellation: " + name, e);
+                        U.error(log, msg, e);
                     else if (log.isDebugEnabled())
-                        log.debug("Failed to find class probably due to task/job cancellation [name=" + name +
-                            ", err=" + e + ']');
+                        log.debug(msg);
                 }
                 else {
-                    if (!quiet)
-                        U.warn(log, "Failed to send class-loading request to node (is node alive?) [node=" +
-                            node.id() + ", clsName=" + name + ", clsPath=" + path + ", clsLdrId=" + ldrId +
-                            ", parentClsLdr=" + getParent() + ", err=" + e + ']');
-                    else if (log.isDebugEnabled())
-                        log.debug("Failed to send class-loading request to node (is node alive?) [node=" +
-                            node.id() + ", clsName=" + name + ", clsPath=" + path + ", clsLdrId=" + ldrId +
-                            ", parentClsLdr=" + getParent() + ", err=" + e + ']');
+                    String msg = "Failed to send class-loading request to node (is node alive?) [" +
+                        "node=" + node.id() +
+                        ", clsName=" + name +
+                        ", clsPath=" + path +
+                        ", clsLdrId=" + ldrId +
+                        ", clsLoadersHierarchy=" + clsLdrHierarchy +
+                        ", err=" + e + ']';
 
-                    err = e;
+                    if (!quiet)
+                        U.warn(log, msg, e);
+                    else if (log.isDebugEnabled())
+                        log.debug(msg);
+
+                    classRequestExceptions.add(new IgniteException(msg, e));
                 }
+            }
+            catch (TimeoutException e) {
+                classRequestExceptions.add(new IgniteException("Failed to send class-loading request to node (is node alive?) " +
+                    "[node=" + node.id() + ", clsName=" + name + ", clsPath=" + path + ", clsLdrId=" + ldrId +
+                    ", clsLoadersHierarchy=" + clsLdrHierarchy + ']', e));
             }
         }
 
-        throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrs=" +
-            nodeLdrMapCp + ", parentClsLoader=" + getParent() + ']', err);
+        if (!classRequestExceptions.isEmpty()) {
+            IgniteException exception = classRequestExceptions.remove(0);
+
+            for (Exception e : classRequestExceptions)
+                exception.addSuppressed(e);
+
+            LT.warn(log, exception.getMessage(), exception);
+
+            throw exception;
+        }
+        else {
+            ClassNotFoundException cnfe = new ClassNotFoundException("Failed to peer load class [" +
+                "class=" + name +
+                ", nodeClsLdrs=" + nodeLdrMapCp +
+                ", clsLoadersHierarchy=" + clsLdrHierarchy +
+                ']'
+            );
+
+            LT.warn(log, cnfe.getMessage(), cnfe);
+
+            throw cnfe;
+        }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public InputStream getResourceAsStream(String name) {
+        try {
+            return getResourceAsStreamEx(name);
+        }
+        catch (TimeoutException ignore) {
+            return null;
+        }
+    }
+
+    /** */
+    @Nullable public InputStream getResourceAsStreamEx(String name) throws TimeoutException {
         assert !Thread.holdsLock(mux);
 
         if (byteMap != null && name.endsWith(".class")) {
@@ -702,7 +768,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param name Resource name.
      * @return InputStream for resource or {@code null} if resource could not be found.
      */
-    @Nullable private InputStream sendResourceRequest(String name) {
+    @Nullable private InputStream sendResourceRequest(String name) throws TimeoutException {
         assert !Thread.holdsLock(mux);
 
         long endTime = computeEndTime(p2pTimeout);
@@ -741,12 +807,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 // Request is sent with timeout that is why we can use synchronization here.
                 GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
 
-                if (res == null) {
-                    U.warn(log, "Failed to get resource from node (is node alive?) [nodeId=" +
-                        node.id() + ", clsLdrId=" + ldrId + ", resName=" +
-                        name + ", parentClsLdr=" + getParent() + ']');
+                if (res.success()) {
+                    return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
+                        res.byteSource().size());
                 }
-                else if (!res.success()) {
+                else {
                     synchronized (mux) {
                         // Cache unsuccessfully loaded resource.
                         if (missedRsrcs != null)
@@ -756,45 +821,44 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     // Some frameworks like Spring often ask for the resources
                     // just in case - none will happen if there are no such
                     // resources. So we print out INFO level message.
-                    if (!quiet) {
-                        if (log.isInfoEnabled())
-                            log.info("Failed to get resource from node [nodeId=" +
-                                node.id() + ", clsLdrId=" + ldrId + ", resName=" +
-                                name + ", parentClsLdr=" + getParent() + ", msg=" + res.errorMessage() + ']');
-                    }
-                    else if (log.isDebugEnabled())
-                        log.debug("Failed to get resource from node [nodeId=" +
-                            node.id() + ", clsLdrId=" + ldrId + ", resName=" +
-                            name + ", parentClsLdr=" + getParent() + ", msg=" + res.errorMessage() + ']');
+                    String msg = "Failed to get resource from node [" +
+                        "nodeId=" + node.id() +
+                        ", clsLdrId=" + ldrId +
+                        ", resName=" + name +
+                        ", classLoadersHierarchy=" + classLoadersHierarchy() +
+                        ", msg=" + res.errorMessage() + ']';
+
+                    LT.info(log, msg);
 
                     // Do not ask other nodes in case of shared mode all of them should have the resource.
                     return null;
                 }
-                else {
-                    return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
-                        res.byteSource().size());
-                }
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | TimeoutException e) {
                 // This thread should be interrupted again in communication if it
                 // got interrupted. So we assume that thread can be interrupted
                 // by processing cancellation request.
                 if (Thread.currentThread().isInterrupted()) {
-                    if (!quiet)
-                        U.error(log, "Failed to get resource probably due to task/job cancellation: " + name, e);
-                    else if (log.isDebugEnabled())
-                        log.debug("Failed to get resource probably due to task/job cancellation: " + name);
+                    String msg = "Failed to get resource probably due to task/job cancellation [name=" + name +
+                        ", clsLdrId=" + ldrId +
+                        ", nodeId=" + nodeId +
+                        ", clsLoadersHierarchy=" + classLoadersHierarchy() + ']';
+
+                    LT.error(log, e, msg);
                 }
                 else {
-                    if (!quiet)
-                        U.warn(log, "Failed to get resource from node (is node alive?) [nodeId=" +
-                            node.id() + ", clsLdrId=" + ldrId + ", resName=" +
-                            name + ", parentClsLdr=" + getParent() + ", err=" + e + ']');
-                    else if (log.isDebugEnabled())
-                        log.debug("Failed to get resource from node (is node alive?) [nodeId=" +
-                            node.id() + ", clsLdrId=" + ldrId + ", resName=" +
-                            name + ", parentClsLdr=" + getParent() + ", err=" + e + ']');
+                    String msg = "Failed to get resource from node (is node alive?) [" +
+                        "node=" + node.id() +
+                        ", resName=" + name +
+                        ", clsLdrId=" + ldrId +
+                        ", clsLoadersHierarchy=" + classLoadersHierarchy() +
+                        ", err=" + e + ']';
+
+                    LT.warn(log, msg, e);
                 }
+
+                if (e instanceof TimeoutException)
+                    throw (TimeoutException) e;
             }
         }
 
@@ -806,5 +870,28 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         synchronized (mux) {
             return S.toString(GridDeploymentClassLoader.class, this);
         }
+    }
+
+    /**
+     * @return Hierarchy of all parents of this class loader.
+     */
+    private String classLoadersHierarchy() {
+        SB sb = new SB();
+
+        sb.a(getClass().getName());
+
+        ClassLoader ldr = this;
+
+        int iterations = 100;
+
+        while (ldr.getParent() != null && iterations > 0) {
+            sb.a("->").a(ldr.getParent().getClass().getName());
+
+            ldr = ldr.getParent();
+
+            iterations--;
+        }
+
+        return sb.toString();
     }
 }

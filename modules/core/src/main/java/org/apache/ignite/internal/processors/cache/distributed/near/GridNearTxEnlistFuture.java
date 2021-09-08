@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -153,6 +154,11 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** {@inheritDoc} */
     @Override protected void map(boolean topLocked) {
         this.topLocked = topLocked;
+
+        // Update write version to match current topology, otherwise version can lag behind local node's init version.
+        // Reproduced by IgniteCacheEntryProcessorNodeJoinTest.testAllEntryProcessorNodeJoin.
+        if (tx.local() && !topLocked)
+            tx.writeVersion(cctx.versions().next(tx.topologyVersion().topologyVersion()));
 
         sendNextBatches(null);
     }
@@ -383,8 +389,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     false,
                     tx.remainingTime(),
                     -1,
-                    this.tx.subjectId(),
-                    this.tx.taskNameHash(),
+                    SecurityUtils.securitySubjectId(cctx),
+                    tx.taskNameHash(),
                     false,
                     null);
 
@@ -445,7 +451,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             threadId,
             futId,
             batchId,
-            tx.subjectId(),
             topVer,
             lockVer,
             mvccSnapshot,
@@ -469,21 +474,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @throws IgniteCheckedException if failed to send.
      */
     private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
-        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
-
-        if (txSync == null || txSync.isDone())
-            cctx.io().send(nodeId, req, cctx.ioPolicy());
-        else
-            txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> future) {
-                    try {
-                        cctx.io().send(nodeId, req, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        GridNearTxEnlistFuture.this.onDone(e);
-                    }
-                }
-            });
+        cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
     /**

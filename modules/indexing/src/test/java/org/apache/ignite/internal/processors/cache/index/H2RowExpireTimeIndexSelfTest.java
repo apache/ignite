@@ -144,13 +144,15 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
         }
 
         {
-            List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where id >= 42 and id <= 42")).getAll();
+            List<List<?>> expired =
+                cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where id >= 42 and id <= 42")).getAll();
 
             Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
         }
 
         {
-            List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where id >= 5 and id <= 5")).getAll();
+            List<List<?>> expired =
+                cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where id >= 5 and id <= 5")).getAll();
 
             assertEqualsCollections(Collections.singletonList(asList(5, 6)), expired);
         }
@@ -185,7 +187,6 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
             assertEqualsCollections(asList(asList(3, 4), asList(5, 6)), mixed);
         }
-
 
         {
             List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer WHERE id >= 42")).getAll();

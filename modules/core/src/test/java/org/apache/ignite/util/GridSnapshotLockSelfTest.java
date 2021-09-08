@@ -60,7 +60,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
-                while(!stop.get()) {
+                while (!stop.get()) {
                     if (rnd.nextBoolean()) {
                         if (!lock.tryBeginUpdate())
                             continue;
@@ -86,7 +86,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                while(!stop.get()) {
+                while (!stop.get()) {
                     T3<Long, Long, Long> t;
 
                     try {

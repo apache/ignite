@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -139,8 +139,8 @@ public class VisorCacheSqlMetadata extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cacheName);
         U.writeCollection(out, types);
-        IgfsUtils.writeStringMap(out, keyClasses);
-        IgfsUtils.writeStringMap(out, valClasses);
+        IgniteUtils.writeStringMap(out, keyClasses);
+        IgniteUtils.writeStringMap(out, valClasses);
         U.writeMap(out, fields);
         U.writeMap(out, indexes);
     }
@@ -149,8 +149,8 @@ public class VisorCacheSqlMetadata extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
         types = U.readList(in);
-        keyClasses = IgfsUtils.readStringMap(in);
-        valClasses = IgfsUtils.readStringMap(in);
+        keyClasses = IgniteUtils.readStringMap(in);
+        valClasses = IgniteUtils.readStringMap(in);
         fields = U.readMap(in);
         indexes = U.readMap(in);
     }

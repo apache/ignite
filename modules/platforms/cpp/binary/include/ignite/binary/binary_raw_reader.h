@@ -31,6 +31,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_containers.h"
+#include "ignite/binary/binary_enum_entry.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
@@ -42,7 +43,7 @@ namespace ignite
         /**
          * Binary raw reader.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
          * underlying object.
          *
@@ -352,6 +353,13 @@ namespace ignite
             BinaryStringArrayReader ReadStringArray();
 
             /**
+             * Read enum entry.
+             *
+             * @return Enum entry.
+             */
+            BinaryEnumEntry ReadBinaryEnum();
+
+            /**
              * Start array read.
              *
              * Every time you get a BinaryArrayReader from BinaryRawReader you
@@ -443,11 +451,26 @@ namespace ignite
              * Read object.
              *
              * @return Object.
+             *
+             * @trapam T Object type. BinaryType class template should be specialized for the type.
              */
             template<typename T>
             T ReadObject()
             {
                 return impl->ReadObject<T>();
+            }
+
+            /**
+             * Read enum value.
+             *
+             * @return Enum value.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            T ReadEnum()
+            {
+                return impl->ReadEnum<T>();
             }
 
             /**

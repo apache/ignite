@@ -804,7 +804,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 171717);
 
-        io.initNewPage(pageAddr, pageId, pageSize);
+        io.initNewPage(pageAddr, pageId, pageSize, null);
 
         checkIo(io, page);
 
@@ -875,11 +875,11 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         long pageId = PageIdUtils.pageId(PageIdAllocator.MAX_PARTITION_ID, PageIdAllocator.FLAG_DATA, 171717);
 
-        io.initNewPage(pageAddr, pageId, pageSize);
+        io.initNewPage(pageAddr, pageId, pageSize, null);
 
         checkIo(io, page);
 
-        Function<ByteBuffer,List<Bytes>> getContents = (buf) -> {
+        Function<ByteBuffer, List<Bytes>> getContents = (buf) -> {
             try {
                 long addr = bufferAddress(buf);
 
@@ -1046,7 +1046,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) {
+        @Override public byte[] getLookupRow(BPlusTree<byte[], ?> tree, long pageAddr, int idx) {
             return PageUtils.getBytes(pageAddr, offset(idx), itemSize);
         }
     }
@@ -1075,7 +1075,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) {
+        @Override public byte[] getLookupRow(BPlusTree<byte[], ?> tree, long pageAddr, int idx) {
             return PageUtils.getBytes(pageAddr, offset(idx), itemSize);
         }
     }

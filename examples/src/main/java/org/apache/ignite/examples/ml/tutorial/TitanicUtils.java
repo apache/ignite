@@ -51,7 +51,7 @@ public class TitanicUtils {
         int cnt = 0;
         while (scanner.hasNextLine()) {
             String row = scanner.nextLine();
-            if(cnt == 0) {
+            if (cnt == 0) {
                 cnt++;
                 continue;
             }
@@ -60,9 +60,10 @@ public class TitanicUtils {
             NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
 
             for (int i = 0; i < cells.length; i++)
-                try{
+                try {
                     data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
-                } catch (java.lang.NumberFormatException e) {
+                }
+                catch (java.lang.NumberFormatException e) {
 
                     try {
                         data[i] = format.parse(cells[i]).doubleValue();
@@ -91,7 +92,7 @@ public class TitanicUtils {
         int cnt = 0;
         while (scanner.hasNextLine()) {
             String row = scanner.nextLine();
-            if(cnt == 0) {
+            if (cnt == 0) {
                 cnt++;
                 continue;
             }
@@ -100,9 +101,10 @@ public class TitanicUtils {
             NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
 
             for (int i = 0; i < cells.length; i++)
-                try{
+                try {
                     data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
-                } catch (java.lang.NumberFormatException e) {
+                }
+                catch (java.lang.NumberFormatException e) {
 
                     try {
                         data[i] = format.parse(cells[i]).doubleValue();

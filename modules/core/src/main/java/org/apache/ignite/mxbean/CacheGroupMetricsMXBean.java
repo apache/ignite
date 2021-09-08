@@ -21,10 +21,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
+ *
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cacheGroups.{cache_group_name}" instead.
+ *
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to cache group descriptor.")
 public interface CacheGroupMetricsMXBean {
     /**
@@ -191,4 +201,12 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Storage space allocated for group adjusted for possible sparsity, in bytes.")
     public long getSparseStorageSize();
+
+    /**
+     * @return Number of partitions need processed for finished indexes create or rebuilding.
+     * It is calculated as the number of local partition minus the processed.
+     * A value of 0 indicates that the index is built.
+     */
+    @MXBeanDescription("Count of partitions need processed for finished indexes create or rebuilding.")
+    public long getIndexBuildCountPartitionsLeft();
 }

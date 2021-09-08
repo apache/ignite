@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Failure processor.
  */
+
 package org.apache.ignite.internal.processors.failure;

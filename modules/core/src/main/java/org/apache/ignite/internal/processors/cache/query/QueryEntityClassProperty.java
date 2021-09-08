@@ -103,6 +103,13 @@ public class QueryEntityClassProperty {
     }
 
     /**
+     * @return Field's name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
      * @return Full name with all parents in dot notation.
      */
     public String fullName() {

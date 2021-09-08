@@ -16,9 +16,22 @@
 */
 package org.apache.ignite;
 
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+
 /**
  * Converter class from {@link DataStorageMetrics} to legacy {@link PersistenceMetrics}.
+ *
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 public class DataStorageMetricsAdapter implements PersistenceMetrics {
     /** Delegate. */
     private final DataStorageMetrics delegate;

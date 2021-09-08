@@ -20,20 +20,37 @@ package org.apache.ignite.internal.processors.jobmetrics;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL;
 
 /**
  * Processes job metrics.
+ *
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=compute.jobs" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
+    /** @see IgniteSystemProperties#IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL */
+    public static final int DFLT_JOBS_METRICS_CONCURRENCY_LEVEL = 64;
+
     /** */
-    private static final int CONCURRENCY_LEVEL = Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, 64);
+    private static final int CONCURRENCY_LEVEL =
+        Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, DFLT_JOBS_METRICS_CONCURRENCY_LEVEL);
 
     /** Time to live. */
     private final long expireTime;

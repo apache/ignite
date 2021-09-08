@@ -152,10 +152,13 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     static class TypeRegistrator implements Runnable {
         /** */
         static final String DEFAULT_BINARY_FIELD_NAME = "intField";
+
         /** */
         private Ignite ignite;
+
         /** Barrier for synchronous start of all threads. */
         private CyclicBarrier cyclicBarrier;
+
         /** Binary field name for new binary object. */
         private String binaryFieldName;
 

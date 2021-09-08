@@ -21,14 +21,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- *
+ * Splitter implementation that actually does not split cache configuration.
+ * This splitter is needed for backward compatibility.
  */
 public class CacheConfigurationSplitterOldFormat implements CacheConfigurationSplitter {
     /** Enricher to merge cache configuration and enrichment to support old (full) format. */
     private final CacheConfigurationEnricher enricher;
 
     /**
-     * @param enricher Enricher.
+     * Creates a new instance of splitter with the given {@code enricher}.
+     *
+     * @param enricher Configuration enricher.
      */
     public CacheConfigurationSplitterOldFormat(CacheConfigurationEnricher enricher) {
         this.enricher = enricher;

@@ -18,4 +18,5 @@
 /**
  * Contains commonly used helper classes
  */
+
 package org.apache.ignite.cache.store.cassandra.common;

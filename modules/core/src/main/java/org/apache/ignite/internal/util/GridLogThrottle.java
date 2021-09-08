@@ -44,8 +44,12 @@ public class GridLogThrottle {
     /** Throttle timeout in milliseconds. */
     private static volatile int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
 
+    /** @see IgniteSystemProperties#IGNITE_LOG_THROTTLE_CAPACITY */
+    public static final int DFLT_LOG_THROTTLE_CAPACITY = 128;
+
     /** Throttle capacity. */
-    private static final int throttleCap = IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, 128);
+    private static final int throttleCap =
+        IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, DFLT_LOG_THROTTLE_CAPACITY);
 
     /** Errors. */
     private static volatile ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
@@ -132,7 +136,6 @@ public class GridLogThrottle {
         log(log, e, msg, LogLevel.WARN, quite, byMsg);
     }
 
-
     /**
      * Logs warning if needed.
      *
@@ -144,6 +147,19 @@ public class GridLogThrottle {
         assert !F.isEmpty(msg);
 
         log(log, null, msg, LogLevel.WARN, quiet, false);
+    }
+
+    /**
+     * Logs warning if needed.
+     *
+     * @param log Logger.
+     * @param msg Message.
+     * @param e Error..
+     */
+    public static void warn(@Nullable IgniteLogger log, String msg, Throwable e) {
+        assert !F.isEmpty(msg);
+
+        log(log, e, msg, LogLevel.WARN, false, false);
     }
 
     /**
@@ -261,9 +277,9 @@ public class GridLogThrottle {
         WARN {
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
-                    U.quietAndWarn(log, msg);
+                    U.quietAndWarn(log, msg, e);
                 else
-                    U.warn(log, msg);
+                    U.warn(log, msg, e);
             }
         },
 

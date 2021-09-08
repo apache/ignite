@@ -40,12 +40,15 @@ import org.jetbrains.annotations.Nullable;
  * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
+    /** @see IgniteSystemProperties#IGNITE_UNWIND_THROTTLING_TIMEOUT */
+    public static final long DFLT_UNWIND_THROTTLING_TIMEOUT = 500L;
+
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
      * if there is nothing to clean yet.
      */
-    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(
-        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
+    private final long unwindThrottlingTimeout = Long.getLong(
+        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, DFLT_UNWIND_THROTTLING_TIMEOUT);
 
     /** Entries pending removal. This collection tracks entries for near cache only. */
     private GridConcurrentSkipListSetEx pendingEntries;
@@ -121,6 +124,15 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     @Override protected void onKernalStop0(boolean cancel) {
         if (pendingEntries != null)
             pendingEntries.clear();
+    }
+
+    /**
+     * Unregister this TTL manager of cache from periodical check on expired entries.
+     */
+    public void unregister() {
+        // Ignoring attempt to unregister manager that has never been started.
+        if (!starting.get())
+            return;
 
         cctx.shared().ttl().unregister(this);
     }
@@ -215,7 +227,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                     if (pendingEntries.remove(e)) {
                         if (obsoleteVer == null)
-                            obsoleteVer = cctx.versions().next();
+                            obsoleteVer = cctx.cache().nextVersion();
 
                         GridNearCacheEntry nearEntry = nearCache.peekExx(e.key);
 
@@ -225,7 +237,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
-            if(!cctx.affinityNode())
+            if (!cctx.affinityNode())
                 return false;  /* Pending tree never contains entries for that cache */
 
             if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
@@ -237,7 +249,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 return true;
 
             // There is nothing to clean, so the next clean up can be postponed.
-            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
+            nextCleanTime = U.currentTimeMillis() + unwindThrottlingTimeout;
 
             if (amount != -1 && pendingEntries != null) {
                 EntryWrapper e = pendingEntries.firstx();
@@ -265,7 +277,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         return false;
     }
-
 
     /**
      * @param cctx1 First cache context.

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -40,23 +41,25 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     private final UUID reqId;
 
     /** New cluster state. */
-    private final boolean clusterActive;
+    private final ClusterState state;
 
     /** State change error. */
     private Boolean transitionRes;
 
     /**
      * @param reqId State change request ID.
-     * @param clusterActive New cluster state.
+     * @param state New cluster state.
      */
     public ChangeGlobalStateFinishMessage(
         UUID reqId,
-        boolean clusterActive,
-        Boolean transitionRes) {
+        ClusterState state,
+        Boolean transitionRes
+    ) {
         assert reqId != null;
+        assert state != null;
 
         this.reqId = reqId;
-        this.clusterActive = clusterActive;
+        this.state = state;
         this.transitionRes = transitionRes;
     }
 
@@ -69,16 +72,25 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
 
     /**
      * @return New cluster state.
+     * @deprecated Use {@link #state()} instead.
      */
+    @Deprecated
     public boolean clusterActive() {
-        return clusterActive;
+        return state.active();
     }
 
     /**
      * @return Transition success status.
      */
     public boolean success() {
-        return transitionRes == null ? clusterActive : transitionRes;
+        return transitionRes == null ? state.active() : transitionRes;
+    }
+
+    /**
+     * @return New cluster state.
+     */
+    public ClusterState state() {
+        return state;
     }
 
     /** {@inheritDoc} */
@@ -93,11 +105,6 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
         return false;
     }
 

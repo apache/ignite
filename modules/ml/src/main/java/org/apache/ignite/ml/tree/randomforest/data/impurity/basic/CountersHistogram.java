@@ -23,7 +23,7 @@ import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 
 /**
- * Represents a historam of element counts per bucket.
+ * Represents a histogram of element counts per bucket.
  */
 public class CountersHistogram extends BootstrappedVectorsHistogram {
     /** Serial version uid. */

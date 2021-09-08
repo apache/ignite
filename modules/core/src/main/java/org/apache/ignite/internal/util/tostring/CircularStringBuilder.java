@@ -41,7 +41,7 @@ public class CircularStringBuilder {
      *
      * @param capacity Capacity.
      */
-    CircularStringBuilder (int capacity) {
+    CircularStringBuilder(int capacity) {
         assert capacity > 0 : "Can't allocate CircularStringBuilder with capacity: " + capacity;
 
         value = new char[capacity];
@@ -51,7 +51,7 @@ public class CircularStringBuilder {
      * Reset internal builder state
      */
     public void reset() {
-        Arrays.fill(value,(char)0);
+        Arrays.fill(value, (char)0);
         finishAt = -1;
         full = false;
         skipped = 0;

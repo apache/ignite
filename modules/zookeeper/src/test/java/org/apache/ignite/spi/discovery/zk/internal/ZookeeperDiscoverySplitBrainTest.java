@@ -49,11 +49,7 @@ public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestB
 
         startGridsMultiThreaded(5);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(5, 3);
-
-        helper.clientMode(false);
+        startClientGridsMultiThreaded(5, 3);
 
         awaitPartitionMapExchange();
 
@@ -106,11 +102,7 @@ public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestB
 
         Assert.assertEquals(5, srvNodes.size());
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(5, 3);
-
-        helper.clientMode(false);
+        startClientGridsMultiThreaded(5, 3);
 
         awaitPartitionMapExchange();
 
@@ -157,11 +149,7 @@ public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestB
         List<ClusterNode> srvPart1 = srvNodes.subList(0, 3);
         List<ClusterNode> srvPart2 = srvNodes.subList(3, srvNodes.size());
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(6, 5);
-
-        helper.clientMode(false);
+        startClientGridsMultiThreaded(6, 5);
 
         awaitPartitionMapExchange();
 

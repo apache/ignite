@@ -90,7 +90,6 @@ public interface LoadedPagesMap {
      */
     public ReplaceCandidate getNearestAt(int idxStart);
 
-
     /**
      * Removes entities matching provided predicate at specified mapping range.
      *
@@ -101,7 +100,6 @@ public interface LoadedPagesMap {
      * predicate.
      */
     public GridLongList removeIf(int startIdxToClear, int endIdxToClear, KeyPredicate keyPred);
-
 
     /**
      * Removes entities matching provided predicate.

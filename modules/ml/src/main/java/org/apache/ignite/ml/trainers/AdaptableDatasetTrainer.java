@@ -93,7 +93,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                                        Preprocessor<K, V> extractor) {
         M fit = wrapped.
             withEnvironmentBuilder(envBuilder)
@@ -165,7 +165,10 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L> mapping) {
         return of(new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
+            @Override public <K, V> M fitWithInitializedDeployingContext(
+                DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> extractor
+            ) {
                 return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
                     mapping.mapLabels((L)lv.label())
@@ -180,7 +183,6 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
                 )));
             }
 
-
             /** {@inheritDoc} */
             @Override public boolean isUpdateable(M mdl) {
                 return false;
@@ -194,14 +196,14 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /**
-     * Create a {@link TrainersSequentialComposition} of whis trainer and specified trainer.
+     * Create a {@link TrainersSequentialComposition} of this trainer and specified trainer.
      *
      * @param tr Trainer to compose with.
      * @param datasetMappingProducer {@link DatasetMapping} producer specifying dependency between this trainer and
      * trainer to compose with.
      * @param <O1> Type of output of trainer to compose with.
      * @param <M1> Type of model produced by the trainer to compose with.
-     * @return A {@link TrainersSequentialComposition} of whis trainer and specified trainer.
+     * @return A {@link TrainersSequentialComposition} of this trainer and specified trainer.
      */
     public <O1, M1 extends IgniteModel<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(
         DatasetTrainer<M1, L> tr,
@@ -221,8 +223,9 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      * feature extractor.
      */
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> afterFeatureExtractor(IgniteFunction<Vector, Vector> after) {
-        IgniteFunction<LabeledVector<L>, LabeledVector<L>> newExtractor = afterExtractor.andThen((IgniteFunction<LabeledVector<L>, LabeledVector<L>>)
-            slv -> new LabeledVector<>(after.apply(slv.features()), slv.label()));
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> newExtractor =
+            afterExtractor.andThen((IgniteFunction<LabeledVector<L>, LabeledVector<L>>)
+                slv -> new LabeledVector<>(after.apply(slv.features()), slv.label()));
         return new AdaptableDatasetTrainer<>(before,
             wrapped,
             this.after,
@@ -238,8 +241,9 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      * label extractor.
      */
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> afterLabelExtractor(IgniteFunction<L, L> after) {
-        IgniteFunction<LabeledVector<L>, LabeledVector<L>> newExtractor = afterExtractor.andThen((IgniteFunction<LabeledVector<L>, LabeledVector<L>>)
-            slv -> new LabeledVector<>(slv.features(), after.apply(slv.label())));
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> newExtractor =
+            afterExtractor.andThen((IgniteFunction<LabeledVector<L>, LabeledVector<L>>)
+                slv -> new LabeledVector<>(slv.features(), after.apply(slv.label())));
         return new AdaptableDatasetTrainer<>(before,
             wrapped,
             this.after,

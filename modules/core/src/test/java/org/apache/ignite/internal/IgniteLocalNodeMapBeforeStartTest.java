@@ -49,7 +49,7 @@ public class IgniteLocalNodeMapBeforeStartTest extends GridCommonAbstractTest {
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(lifecycleBean);
 
-        try (Ignite ignite  = Ignition.start(cfg)) {
+        try (Ignite ignite = Ignition.start(cfg)) {
             // No-op.
         }
 

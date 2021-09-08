@@ -66,11 +66,18 @@ namespace Apache.Ignite.Core
         /// </summary>
         public const string ClientConfigurationSectionName = "igniteClientConfiguration";
 
+        /// <summary>
+        /// Environment variable name to enable alternate stack checks on .NET Core 3+ and .NET 5+.
+        /// This is required to fix "Stack smashing detected" errors that occur instead of NullReferenceException
+        /// on Linux and macOS when Java overwrites SIGSEGV handler installed by .NET in thick client or server mode.
+        /// </summary>
+        private const string EnvEnableAlternateStackCheck = "COMPlus_EnableAlternateStackCheck";
+
         /** */
         private static readonly object SyncRoot = new object();
 
         /** GC warning flag. */
-        private static int _gcWarn;
+        private static int _diagPrinted;
 
         /** */
         private static readonly IDictionary<NodeKey, Ignite> Nodes = new Dictionary<NodeKey, Ignite>();
@@ -243,8 +250,8 @@ namespace Apache.Ignite.Core
 
                 log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
 
-                // 1. Check GC settings.
-                CheckServerGc(cfg, log);
+                // 1. Log diagnostics.
+                LogDiagnosticMessages(cfg, log);
 
                 // 2. Create context.
                 JvmDll.Load(cfg.JvmDllPath, log);
@@ -337,16 +344,31 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Check whether GC is set to server mode.
+        /// Performs system checks and logs diagnostic messages.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="log">Log.</param>
-        private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
+        private static void LogDiagnosticMessages(IgniteConfiguration cfg, ILogger log)
         {
-            if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                log.Warn("GC server mode is not enabled, this could lead to less " +
-                    "than optimal performance on multi-core machines (to enable see " +
-                    "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
+            if (!cfg.SuppressWarnings &&
+                Interlocked.CompareExchange(ref _diagPrinted, 1, 0) == 0)
+            {
+                if (!GCSettings.IsServerGC)
+                {
+                    log.Warn("GC server mode is not enabled, this could lead to less " +
+                             "than optimal performance on multi-core machines (to enable see " +
+                             "https://docs.microsoft.com/en-us/dotnet/core/run-time-config/garbage-collector).");
+                }
+
+                if ((Os.IsLinux || Os.IsMacOs) &&
+                    Environment.GetEnvironmentVariable(EnvEnableAlternateStackCheck) != "1")
+                {
+                    log.Warn("Alternate stack check is not enabled, this will cause 'Stack smashing detected' " +
+                             "error when NullReferenceException occurs on .NET Core on Linux and macOS. " +
+                             "To enable alternate stack check on .NET Core 3+ and .NET 5+, " +
+                             "set {0} environment variable to 1.", EnvEnableAlternateStackCheck);
+                }
+            }
         }
 
         /// <summary>
@@ -390,14 +412,14 @@ namespace Apache.Ignite.Core
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
 
-            LoadAssemblies(cfg.Assemblies);
+            LoadAllAssemblies(cfg.Assemblies);
 
             ICollection<string> cfgAssembllies;
             BinaryConfiguration binaryCfg;
 
             BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out binaryCfg);
 
-            LoadAssemblies(cfgAssembllies);
+            LoadAllAssemblies(cfgAssembllies);
 
             // 2. Create marshaller only after assemblies are loaded.
             if (cfg.BinaryConfiguration == null)
@@ -408,7 +430,7 @@ namespace Apache.Ignite.Core
             // 3. Send configuration details to Java
             cfg.Validate(log);
             // Use system marshaller.
-            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream), ClientSocket.CurrentProtocolVersion);
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>
@@ -518,73 +540,78 @@ namespace Apache.Ignite.Core
         /// Load assemblies.
         /// </summary>
         /// <param name="assemblies">Assemblies.</param>
-        private static void LoadAssemblies(IEnumerable<string> assemblies)
+        private static void LoadAllAssemblies(IEnumerable<string> assemblies)
         {
             if (assemblies != null)
             {
-                foreach (string s in assemblies)
+                foreach (var s in assemblies)
                 {
-                    // 1. Try loading as directory.
-                    if (Directory.Exists(s))
-                    {
-                        string[] files = Directory.GetFiles(s, "*.dll");
-
-#pragma warning disable 0168
-
-                        foreach (string dllPath in files)
-                        {
-                            if (!SelfAssembly(dllPath))
-                            {
-                                try
-                                {
-                                    Assembly.LoadFile(dllPath);
-                                }
-
-                                catch (BadImageFormatException)
-                                {
-                                    // No-op.
-                                }
-                            }
-                        }
-
-#pragma warning restore 0168
-
-                        continue;
-                    }
-
-                    // 2. Try loading using full-name.
-                    try
-                    {
-                        Assembly assembly = Assembly.Load(s);
-
-                        if (assembly != null)
-                            continue;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!(e is FileNotFoundException || e is FileLoadException))
-                            throw new IgniteException("Failed to load assembly: " + s, e);
-                    }
-
-                    // 3. Try loading using file path.
-                    try
-                    {
-                        Assembly assembly = Assembly.LoadFrom(s);
-
-                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                        if (assembly != null)
-                            continue;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!(e is FileNotFoundException || e is FileLoadException))
-                            throw new IgniteException("Failed to load assembly: " + s, e);
-                    }
-
-                    // 4. Not found, exception.
-                    throw new IgniteException("Failed to load assembly: " + s);
+                    LoadAssembly(s);
                 }
             }
+        }
+
+        /// <summary>
+        /// Load assembly from file, directory, or full name.
+        /// </summary>
+        /// <param name="asm">Assembly file, directory, or full name.</param>
+        internal static void LoadAssembly(string asm)
+        {
+            // 1. Try loading as directory.
+            if (Directory.Exists(asm))
+            {
+                string[] files = Directory.GetFiles(asm, "*.dll");
+
+                foreach (string dllPath in files)
+                {
+                    if (!SelfAssembly(dllPath))
+                    {
+                        try
+                        {
+                            Assembly.LoadFile(dllPath);
+                        }
+
+                        catch (BadImageFormatException)
+                        {
+                            // No-op.
+                        }
+                    }
+                }
+
+                return;
+            }
+
+            // 2. Try loading using full-name.
+            try
+            {
+                Assembly assembly = Assembly.Load(asm);
+
+                if (assembly != null)
+                    return;
+            }
+            catch (Exception e)
+            {
+                if (!(e is FileNotFoundException || e is FileLoadException))
+                    throw new IgniteException("Failed to load assembly: " + asm, e);
+            }
+
+            // 3. Try loading using file path.
+            try
+            {
+                Assembly assembly = Assembly.LoadFrom(asm);
+
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                if (assembly != null)
+                    return;
+            }
+            catch (Exception e)
+            {
+                if (!(e is FileNotFoundException || e is FileLoadException))
+                    throw new IgniteException("Failed to load assembly: " + asm, e);
+            }
+
+            // 4. Not found, exception.
+            throw new IgniteException("Failed to load assembly: " + asm);
         }
 
         /// <summary>
@@ -885,6 +912,7 @@ namespace Apache.Ignite.Core
             }
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "Not available on .NET FW")]
             public override int GetHashCode()
             {
                 return _name == null ? 0 : _name.GetHashCode();
@@ -892,7 +920,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Value object to pass data between .Net methods during startup bypassing Java.
+        /// Value object to pass data between .NET methods during startup bypassing Java.
         /// </summary>
         private class Startup
         {

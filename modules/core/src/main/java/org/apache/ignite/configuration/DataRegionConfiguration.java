@@ -21,6 +21,8 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.mxbean.MetricsMxBean;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -78,6 +80,9 @@ public final class DataRegionConfiguration implements Serializable {
     /** Default length of interval over which {@link DataRegionMetrics#getAllocationRate()} metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
+    /** Default page replacement mode. */
+    public static final PageReplacementMode DFLT_PAGE_REPLACEMENT_MODE = PageReplacementMode.CLOCK;
+
     /** Data region name. */
     private String name = DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -91,8 +96,11 @@ public final class DataRegionConfiguration implements Serializable {
     /** An optional path to a memory mapped files directory for this data region. */
     private String swapPath;
 
-    /** An algorithm for memory pages eviction. */
+    /** An algorithm for memory pages eviction (persistence is disabled). */
     private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
+
+    /** An algorithm for memory pages replacement (persistence is enabled). */
+    private PageReplacementMode pageReplacementMode = DFLT_PAGE_REPLACEMENT_MODE;
 
     /**
      * A threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page
@@ -140,6 +148,9 @@ public final class DataRegionConfiguration implements Serializable {
      * Default is {@code true}.
      */
     private boolean lazyMemoryAllocation = true;
+
+    /** Warm-up configuration. */
+    @Nullable private WarmUpConfiguration warmUpCfg;
 
     /**
      * Gets data region name.
@@ -238,6 +249,9 @@ public final class DataRegionConfiguration implements Serializable {
      * memory exception will be thrown if the memory region usage, defined by this data region, goes beyond its
      * capacity which is {@link #getMaxSize()}.
      *
+     * Note: Page eviction is used only when persistence is disabled for data region. For persistent data regions see
+     * page replacement mode ({@link #getPageReplacementMode()}).
+     *
      * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
      */
     public DataPageEvictionMode getPageEvictionMode() {
@@ -252,6 +266,31 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
         pageEvictionMode = evictionMode;
+
+        return this;
+    }
+
+    /**
+     * Gets memory pages replacement mode. If persistence is enabled and Ignite store on disk more data then available
+     * data region memory ({@link #getMaxSize()}) page replacement can be started to rotate memory pages with the disk.
+     * This parameter defines the algorithm to find pages to replace.
+     *
+     * Note: For not persistent data regions see page eviction mode ({@link #getPageEvictionMode()}).
+     *
+     * @return Memory pages replacement algorithm. {@link PageReplacementMode#CLOCK} used by default.
+     */
+    public PageReplacementMode getPageReplacementMode() {
+        return pageReplacementMode;
+    }
+
+    /**
+     * Sets memory pages replacement mode.
+     *
+     * @param replacementMode Page replacement mode.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setPageReplacementMode(PageReplacementMode replacementMode) {
+        pageReplacementMode = replacementMode;
 
         return this;
     }
@@ -362,7 +401,9 @@ public final class DataRegionConfiguration implements Serializable {
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @return Time interval over which allocation rate is calculated.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public long getMetricsRateTimeInterval() {
         return metricsRateTimeInterval;
     }
@@ -377,7 +418,9 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @param metricsRateTimeInterval Time interval used for allocation and eviction rates calculations.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public DataRegionConfiguration setMetricsRateTimeInterval(long metricsRateTimeInterval) {
         this.metricsRateTimeInterval = metricsRateTimeInterval;
 
@@ -394,7 +437,9 @@ public final class DataRegionConfiguration implements Serializable {
      * calculation overhead.
      *
      * @return number of sub intervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public int getMetricsSubIntervalCount() {
         return metricsSubIntervalCount;
     }
@@ -409,7 +454,9 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @param metricsSubIntervalCnt A number of sub-intervals.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public DataRegionConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
         this.metricsSubIntervalCount = metricsSubIntervalCnt;
 
@@ -462,6 +509,28 @@ public final class DataRegionConfiguration implements Serializable {
         this.lazyMemoryAllocation = lazyMemoryAllocation;
 
         return this;
+    }
+
+    /**
+     * Sets warm-up configuration.
+     *
+     * @param warmUpCfg Warm-up configuration. Can be {@code null} (default
+     *      {@link DataStorageConfiguration#getDefaultWarmUpConfiguration} will be used).
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmUpConfiguration(@Nullable WarmUpConfiguration warmUpCfg) {
+        this.warmUpCfg = warmUpCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets warm-up configuration.
+     *
+     * @return Warm-up configuration.
+     */
+    @Nullable public WarmUpConfiguration getWarmUpConfiguration() {
+        return warmUpCfg;
     }
 
     /** {@inheritDoc} */

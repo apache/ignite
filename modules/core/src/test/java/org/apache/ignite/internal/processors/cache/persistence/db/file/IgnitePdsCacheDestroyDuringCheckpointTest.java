@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -38,10 +39,10 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
     private static final String NAME_PREFIX = "CACHE-";
 
     /** */
-    private static final int NUM_ITERATIONS = 10;
+    private static final int NUM_ITERATIONS = SF.applyLB(5, 3);
 
     /** */
-    private static final int NUM_CACHES = 10;
+    private static final int NUM_CACHES = SF.applyLB(10, 3);
 
     /** */
     private static final int NUM_ENTRIES_PER_CACHE = 200;
@@ -51,9 +52,6 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDataStorageConfiguration(createDbConfig());
-
-        if (getTestIgniteInstanceIndex(gridName) == 1)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -97,7 +95,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
         ig.active(true);
 
         for (int j = 0; j < NUM_ITERATIONS; j++) {
-            Ignite client = startGrid(1);
+            Ignite client = startClientGrid(1);
 
             for (int i = 0; i < NUM_CACHES; i++) {
                 IgniteCache<?, ?> cache = ig.cache(NAME_PREFIX + i);
@@ -111,7 +109,6 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
             client.close();
         }
     }
-
 
     /** */
     private void populateCache(Ignite client) {

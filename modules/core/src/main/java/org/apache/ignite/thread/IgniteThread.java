@@ -38,9 +38,6 @@ public class IgniteThread extends Thread {
     /** Index for unassigned thread. */
     public static final int GRP_IDX_UNASSIGNED = -1;
 
-    /** Default thread's group. */
-    private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
-
     /** Number of all grid threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();
 
@@ -76,6 +73,16 @@ public class IgniteThread extends Thread {
      *
      * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
+     */
+    public IgniteThread(String igniteInstanceName, String threadName) {
+        this(igniteInstanceName, threadName, null);
+    }
+
+    /**
+     * Creates grid thread with given name for a given Ignite instance.
+     *
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
+     * @param threadName Name of thread.
      * @param r Runnable to execute.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {
@@ -93,7 +100,7 @@ public class IgniteThread extends Thread {
      * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe, byte plc) {
-        super(DFLT_GRP, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
+        super(r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
 
         A.ensure(grpIdx >= -1, "grpIdx >= -1");
 

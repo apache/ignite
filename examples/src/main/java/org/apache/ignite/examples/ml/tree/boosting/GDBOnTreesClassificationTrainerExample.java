@@ -22,19 +22,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.GDBModel;
+import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Example represents a solution for the task of classification learning based on
- * Gradient Boosting on trees implementation. It shows an initialization of {@link GDBBinaryClassifierOnTreesTrainer},
- * initialization of Ignite Cache, learning step and comparing of predicted and real values.
+ * Example represents a solution for the task of classification learning based on Gradient Boosting on trees
+ * implementation. It shows an initialization of {@link GDBBinaryClassifierOnTreesTrainer}, initialization of Ignite
+ * Cache, learning step and comparing of predicted and real values.
  * <p>
  * In this example dataset is created automatically by meander function {@code f(x) = [sin(x) > 0]}.</p>
  */
@@ -57,12 +57,12 @@ public class GDBOnTreesClassificationTrainerExample {
             try {
                 trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
-                // Create regression trainer.
-                DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
+                // Create classification trainer.
+                GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
                     .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
 
                 // Train decision tree model.
-                ModelsComposition mdl = trainer.fit(
+                GDBModel mdl = trainer.fit(
                     ignite,
                     trainingSet,
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
@@ -84,9 +84,13 @@ public class GDBOnTreesClassificationTrainerExample {
                 System.out.println(">>> ---------------------------------");
 
                 System.out.println(">>> GDB classification trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
@@ -103,13 +107,13 @@ public class GDBOnTreesClassificationTrainerExample {
     /**
      * Fill meander-like training data.
      *
-     * @param ignite Ignite instance.
+     * @param ignite         Ignite instance.
      * @param trainingSetCfg Training set config.
      */
     @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
         CacheConfiguration<Integer, double[]> trainingSetCfg) {
         IgniteCache<Integer, double[]> trainingSet = ignite.getOrCreateCache(trainingSetCfg);
-        for(int i = -50; i <= 50; i++) {
+        for (int i = -50; i <= 50; i++) {
             double x = ((double)i) / 10.0;
             double y = Math.sin(x) < 0 ? 0.0 : 1.0;
             trainingSet.put(i, new double[] {x, y});

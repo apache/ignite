@@ -17,17 +17,18 @@
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedParameter.Local
+
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
-    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -39,24 +40,19 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         /** */
         private IIgnite _ignite;
 
-        /** */
-        private StringBuilder _outSb;
-
         /// <summary>
         /// Sets up the test fixture.
         /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _outSb = new StringBuilder();
-            Console.SetError(new StringWriter(_outSb));
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(SimpleSerializable))
                 {
-                    NameMapper = new BinaryBasicNameMapper { IsSimpleName = true }
-                }
+                    NameMapper = new BinaryBasicNameMapper {IsSimpleName = true}
+                },
+                Logger = new ListLogger(new TestUtils.TestContextLogger()) {EnabledLevels = new[] {LogLevel.Warn}}
             };
 
             _ignite = Ignition.Start(cfg);
@@ -165,25 +161,24 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
         }
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1  // Console redirect issues on .NET Core
         /// <summary>
         /// Tests the log warning.
         /// </summary>
         [Test]
         public void TestLogWarning()
         {
-            Thread.Sleep(10);  // Wait for logger update.
+            Thread.Sleep(10); // Wait for logger update.
 
             var expected =
-                string.Format("[WARN ][main][Marshaller] Type '{0}' implements '{1}'. " +
+                string.Format("Type '{0}' implements '{1}'. " +
                               "It will be written in Ignite binary format, however, " +
                               "the following limitations apply: DateTime fields would not work in SQL; " +
                               "sbyte, ushort, uint, ulong fields would not work in DML.",
                     typeof(SimpleSerializable), typeof(ISerializable));
 
-            Assert.IsTrue(_outSb.ToString().Contains(expected));
+            var messages = ((ListLogger) _ignite.Logger).Entries.Select(e => e.Message).ToList();
+            Assert.IsTrue(messages.Contains(expected), string.Join(Environment.NewLine, messages));
         }
-#endif
 
         /// <summary>
         /// Serializable with Java-compatible fields.

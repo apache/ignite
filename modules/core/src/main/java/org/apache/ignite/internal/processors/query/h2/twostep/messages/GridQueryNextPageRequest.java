@@ -100,8 +100,6 @@ public class GridQueryNextPageRequest implements Message {
         return pageSize;
     }
 
-
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryNextPageRequest.class, this);

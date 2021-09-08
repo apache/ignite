@@ -17,12 +17,18 @@
 
 package org.apache.ignite.examples.ml.inference;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.regression.linear.LinearRegressionLSQRTrainerExample;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.inference.Model;
@@ -34,20 +40,15 @@ import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * This example is based on {@link LinearRegressionLSQRTrainerExample}, but to perform inference it uses an approach
  * implemented in {@link org.apache.ignite.ml.inference} package.
  */
 public class IgniteModelDistributedInferenceExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String... args) throws IOException, ExecutionException, InterruptedException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
@@ -98,9 +99,14 @@ public class IgniteModelDistributedInferenceExample {
                 System.out.println(">>> ---------------------------------");
 
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

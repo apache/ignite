@@ -18,7 +18,10 @@
 package org.apache.ignite.platform;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -30,12 +33,11 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.platform.model.V1;
+import org.apache.ignite.platform.model.V3;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Test task producing result without any arguments.
@@ -113,11 +115,17 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: binary enum. */
     private static final int TYPE_BINARY_ENUM = 23;
 
+    /** Type: V1. */
+    private static final int TYPE_V1 = 24;
+
+    /** Type: V3. */
+    private static final int TYPE_V3 = 25;
+
     /** Default cache name. */
     public static final String DEFAULT_CACHE_NAME = "default";
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
         return Collections.singletonMap(new EchoJob(arg), F.first(subgrid));
     }
@@ -242,6 +250,12 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
 
                     return ignite.binary().buildEnum("JavaDynEnum", "JavaFoo");
                 }
+
+                case TYPE_V1:
+                    return new V1("V1");
+
+                case TYPE_V3:
+                    return new V3("V3");
 
                 default:
                     throw new IgniteException("Unknown type: " + type);

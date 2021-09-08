@@ -89,7 +89,7 @@ public final class MarshallerMappingItem implements Serializable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * 31 * ((int) platformId) + 31 * typeId + (clsName != null ? clsName.hashCode() : 0) ;
+        return 31 * 31 * ((int)platformId) + 31 * typeId + (clsName != null ? clsName.hashCode() : 0);
     }
 
     /** {@inheritDoc} */

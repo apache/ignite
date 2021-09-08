@@ -101,6 +101,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Master key digest. */
+    @Nullable private byte[] masterKeyDigest;
+
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
@@ -134,21 +137,22 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @param ctx Context.
      * @param cfg0 Template configuration.
+     * @param splitCfg Cache configuration splitter.
      * @return Request to add template.
      */
-    static DynamicCacheChangeRequest addTemplateRequest(GridKernalContext ctx, CacheConfiguration<?, ?> cfg0) {
-        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(cfg0);
-
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg.getName(), ctx.localNodeId());
+    static DynamicCacheChangeRequest addTemplateRequest(
+        GridKernalContext ctx,
+        CacheConfiguration<?, ?> cfg0,
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg
+    ) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg0.getName(), ctx.localNodeId());
 
         req.template(true);
-
-        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = ctx.cache().backwardCompatibleSplitter().split(cfg);
 
         req.startCacheConfiguration(splitCfg.get1());
         req.cacheConfigurationEnrichment(splitCfg.get2());
 
-        req.schema(new QuerySchema(cfg.getQueryEntities()));
+        req.schema(new QuerySchema(cfg0.getQueryEntities()));
         req.deploymentId(IgniteUuid.randomUuid());
 
         return req;
@@ -242,7 +246,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      */
-    public boolean destroy(){
+    public boolean destroy() {
         return destroy;
     }
 
@@ -466,6 +470,16 @@ public class DynamicCacheChangeRequest implements Serializable {
         return encKey;
     }
 
+    /** @param masterKeyDigest Master key digest. */
+    public void masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest;
+    }
+
+    /** @return Master key digest that encrypted the group encryption key. */
+    @Nullable public byte[] masterKeyDigest() {
+        return masterKeyDigest;
+    }
+
     /**
      * @return Cache configuration enrichment.
      */
@@ -488,7 +502,7 @@ public class DynamicCacheChangeRequest implements Serializable {
             ", clientStartOnly=" + clientStartOnly +
             ", stop=" + stop +
             ", destroy=" + destroy +
-            ", disabledAfterStart" + disabledAfterStart +
+            ", disabledAfterStart=" + disabledAfterStart +
             ']';
     }
 }

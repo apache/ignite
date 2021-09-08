@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -38,8 +38,10 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -50,8 +52,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static java.util.Objects.isNull;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_FINISH;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -61,6 +66,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     implements GridCacheFuture<IgniteInternalTx>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Tracing span. */
+    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -223,45 +231,69 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
-        if (initialized() || err != null) {
-            Throwable e = this.err;
+        try (TraceSurroundings ignored = MTC.support(span)) {
+            if (initialized() || err != null) {
+                Throwable e = this.err;
 
-            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
-                try {
-                    boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
+                if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
+                    try {
+                        boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                    this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
+                        this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
+                    }
+                    catch (IgniteCheckedException finishErr) {
+                        U.error(log, "Failed to finish tx: " + tx, e);
+
+                        if (e == null)
+                            e = finishErr;
+                    }
                 }
-                catch (IgniteCheckedException finishErr) {
-                    U.error(log, "Failed to finish tx: " + tx, e);
 
-                    if (e == null)
-                        e = finishErr;
+                if (commit && e == null)
+                    e = this.tx.commitError();
+
+                Throwable finishErr = e != null ? e : err;
+
+                if (super.onDone(tx, finishErr)) {
+                    cctx.tm().mvccFinish(this.tx);
+
+                    if (finishErr == null)
+                        finishErr = this.tx.commitError();
+
+                    if (this.tx.syncMode() != PRIMARY_SYNC)
+                        this.tx.sendFinishReply(finishErr);
+
+                    if (!this.tx.txState().mvccEnabled() && !commit && shouldApplyCountersOnRollbackError(finishErr)) {
+                        TxCounters txCounters = this.tx.txCounters(false);
+
+                        if (txCounters != null) {
+                            try {
+                                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
+                            }
+                            catch (IgniteCheckedException e0) {
+                                throw new IgniteException(e0);
+                            }
+                        }
+                    }
+
+                    // Don't forget to clean up.
+                    cctx.mvcc().removeFuture(futId);
+
+                    return true;
                 }
             }
 
-            if (commit && e == null)
-                e = this.tx.commitError();
-
-            Throwable finishErr = e != null ? e : err;
-
-            if (super.onDone(tx, finishErr)) {
-                cctx.tm().mvccFinish(this.tx);
-
-                if (finishErr == null)
-                    finishErr = this.tx.commitError();
-
-                if (this.tx.syncMode() != PRIMARY_SYNC)
-                    this.tx.sendFinishReply(finishErr);
-
-                // Don't forget to clean up.
-                cctx.mvcc().removeFuture(futId);
-
-                return true;
-            }
+            return false;
         }
+    }
 
-        return false;
+    /**
+     * @param e Exception to check.
+     *
+     * @return {@code True} if counters must be applied.
+     */
+    private boolean shouldApplyCountersOnRollbackError(Throwable e) {
+        return !(e instanceof NodeStoppingException);
     }
 
     /**
@@ -286,22 +318,25 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      */
     @SuppressWarnings({"SimplifiableIfStatement"})
     public void finish(boolean commit) {
-        boolean sync;
+        try (MTC.TraceSurroundings ignored =
+                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_FINISH, MTC.span()))) {
+            boolean sync;
 
-        assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null;
+            assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null;
 
-        if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
-            sync = finish(commit, dhtMap, nearMap);
-        else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
-            sync = rollbackLockTransactions(tx.lockTransactionNodes());
-        else
-            // No backup or near nodes to send commit message to (just complete then).
-            sync = false;
+            if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
+                sync = finish(commit, dhtMap, nearMap);
+            else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
+                sync = rollbackLockTransactions(tx.lockTransactionNodes());
+            else
+                // No backup or near nodes to send commit message to (just complete then).
+                sync = false;
 
-        markInitialized();
+            markInitialized();
 
-        if (!sync)
-            onComplete();
+            if (!sync)
+                onComplete();
+        }
     }
 
     /**
@@ -350,7 +385,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 false,
@@ -437,11 +471,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             add(fut); // Append new future.
 
-            Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
-
-            for (IgniteTxEntry e : dhtMapping.entries())
-                updCntrs.add(e.updateCounter());
-
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -456,16 +485,15 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.system(),
                 tx.ioPolicy(),
                 tx.isSystemInvalidate(),
-                sync ? FULL_SYNC : tx.syncMode(),
+                sync || !commit ? FULL_SYNC : tx.syncMode(),
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
-                updCntrs,
+                null,
                 false,
                 false,
                 mvccSnapshot,
@@ -474,18 +502,26 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                if (isNull(cctx.discovery().getAlive(n.id()))) {
+                    log.error("Unable to send message (node left topology): " + n);
 
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
-                        ", dhtTxId=" + tx.xidVersion() +
-                        ", node=" + n.id() + ']');
+                    fut.onNodeLeft(new ClusterTopologyCheckedException("Node left grid while sending message to: "
+                        + n.id()));
                 }
+                else {
+                    cctx.io().send(n, req, tx.ioPolicy());
 
-                if (sync)
-                    res = true;
-                else
-                    fut.onDone();
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + n.id() + ']');
+                    }
+
+                    if (sync || !commit)
+                        res = true; // Force sync mode for rollback to prevent an issue with concurrent recovery.
+                    else
+                        fut.onDone();
+                }
             }
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
@@ -534,7 +570,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.rolledbackVersions(),
                     tx.pendingVersions(),
                     tx.size(),
-                    tx.subjectId(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,

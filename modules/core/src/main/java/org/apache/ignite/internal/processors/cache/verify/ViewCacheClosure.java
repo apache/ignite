@@ -88,7 +88,7 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                 Collection<CacheGroupContext> contexts = k.context().cache().cacheGroups();
 
                 for (CacheGroupContext context : contexts) {
-                    if (!compiled.matcher(context.cacheOrGroupName()).find())
+                    if (!context.userCache() || !compiled.matcher(context.cacheOrGroupName()).find())
                         continue;
 
                     CacheInfo ci = new CacheInfo();
@@ -111,10 +111,9 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                 Map<String, DynamicCacheDescriptor> descMap = k.context().cache().cacheDescriptors();
 
                 for (Map.Entry<String, DynamicCacheDescriptor> entry : descMap.entrySet()) {
-
                     DynamicCacheDescriptor desc = entry.getValue();
 
-                    if (!compiled.matcher(desc.cacheName()).find())
+                    if (!desc.cacheType().userCache() || !compiled.matcher(desc.cacheName()).find())
                         continue;
 
                     CacheInfo ci = new CacheInfo();

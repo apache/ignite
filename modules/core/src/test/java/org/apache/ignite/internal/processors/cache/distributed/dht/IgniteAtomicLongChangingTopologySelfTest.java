@@ -67,9 +67,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /** Queue. */
     private final Queue<Long> queue = new ConcurrentLinkedQueue<>();
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -83,8 +80,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         cfg.setAtomicConfiguration(atomicCfg);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -212,13 +207,9 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     private void testFailoverWithClient(IgniteInClosure<Ignite> c) throws Exception {
         startGridsMultiThreaded(GRID_CNT, false);
 
-        client = true;
-
-        Ignite ignite = startGrid(GRID_CNT);
+        Ignite ignite = startClientGrid(GRID_CNT);
 
         assertTrue(ignite.configuration().isClientMode());
-
-        client = false;
 
         final AtomicBoolean finished = new AtomicBoolean();
 

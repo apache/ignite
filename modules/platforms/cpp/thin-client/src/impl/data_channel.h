@@ -32,6 +32,7 @@
 
 #include "impl/protocol_version.h"
 #include "impl/ignite_node.h"
+#include "impl/response_status.h"
 
 namespace ignite
 {
@@ -59,9 +60,21 @@ namespace ignite
 
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
+
+                /** Version 1.3.0. */
+                static const ProtocolVersion VERSION_1_3_0;
                 
-                /** Version 1.4.0. Added: Affinity Awareness support, IEP-23. */
+                /** Version 1.4.0. Added: Partition awareness support, IEP-23. */
                 static const ProtocolVersion VERSION_1_4_0;
+
+                /** Version 1.5.0. Transaction support. */
+                static const ProtocolVersion VERSION_1_5_0;
+
+                /** Version 1.6.0. Expiration Policy Configuration. */
+                static const ProtocolVersion VERSION_1_6_0;
+
+                /** Version 1.6.0. Features introduced. */
+                static const ProtocolVersion VERSION_1_7_0;
 
                 /** Current version. */
                 static const ProtocolVersion VERSION_DEFAULT;
@@ -120,7 +133,7 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
                 {
-                    // Allocating 64KB to lessen number of reallocations.
+                    // Allocating 64KB to lessen number of re-allocations.
                     enum { BUFFER_SIZE = 1024 * 64 };
 
                     interop::InteropUnpooledMemory mem(BUFFER_SIZE);
@@ -145,6 +158,69 @@ namespace ignite
                 }
 
                 /**
+                 * Synchronously send request message, receive response and get a notification.
+                 *
+                 * @param req Request message.
+                 * @param notification Notification message.
+                 * @param timeout Timeout.
+                 * @return Channel that was used for request.
+                 * @throw IgniteError on error.
+                 */
+                template<typename ReqT, typename NotT>
+                void SyncMessageWithNotification(const ReqT& req, NotT& notification, int32_t timeout)
+                {
+                    // Allocating 64KB to lessen number of re-allocations.
+                    enum { BUFFER_SIZE = 1024 * 64 };
+
+                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
+
+                    int64_t id = GenerateRequestMessage(req, mem);
+
+                    common::concurrent::CsLockGuard lock(ioMutex);
+
+                    InternalSyncMessageUnguarded(mem, timeout);
+
+                    interop::InteropInputStream inStream(&mem);
+
+                    inStream.Position(4);
+
+                    int64_t rspId = inStream.ReadInt64();
+
+                    if (id != rspId)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Protocol error: Response message ID does not equal Request ID");
+
+                    binary::BinaryReaderImpl reader(&inStream);
+
+                    typedef typename NotT::ResponseType RspT;
+                    RspT rsp;
+
+                    rsp.Read(reader, currentVersion);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED, rsp.GetError().c_str());
+
+                    bool success = Receive(mem, 0);
+
+                    if (!success)
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not receive message response from the remote host: timeout");
+
+                    inStream.Position(4);
+                    inStream.Synchronize();
+
+                    int64_t notificationId = inStream.ReadInt64();
+
+                    if (notificationId != rsp.GetNotificationId())
+                    {
+                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification ID",
+                            "expected", rsp.GetNotificationId(), "actual", notificationId)
+                    }
+
+                    notification.Read(reader, currentVersion);
+                }
+
+                /**
                  * Send message stored in memory and synchronously receives
                  * response and stores it in the same memory.
                  *
@@ -152,6 +228,15 @@ namespace ignite
                  * @param timeout Operation timeout.
                  */
                 void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
+
+                /**
+                 * Send message stored in memory and synchronously receives
+                 * response and stores it in the same memory.
+                 *
+                 * @param mem Memory.
+                 * @param timeout Operation timeout.
+                 */
+                void InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout);
 
                 /**
                  * Get remote node.

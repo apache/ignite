@@ -19,6 +19,7 @@ package org.apache.ignite.spark.examples;
 
 import org.apache.ignite.examples.spark.IgniteCatalogExample;
 import org.apache.ignite.examples.spark.IgniteDataFrameExample;
+import org.apache.ignite.examples.spark.IgniteDataFrameJoinExample;
 import org.apache.ignite.examples.spark.IgniteDataFrameWriteExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
@@ -50,5 +51,13 @@ public class IgniteDataFrameSelfTest extends GridAbstractExamplesTest {
     @Test
     public void testDataFrameWriteExample() throws Exception {
         IgniteDataFrameWriteExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDataFrameJoinExample() throws Exception {
+        IgniteDataFrameJoinExample.main(EMPTY_ARGS);
     }
 }

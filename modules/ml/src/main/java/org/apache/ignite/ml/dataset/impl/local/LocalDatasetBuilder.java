@@ -101,7 +101,9 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** {@inheritDoc} */
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
         LearningEnvironmentBuilder envBuilder,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment learningEnvironment) {
+
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 
@@ -135,8 +137,9 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
             int cnt = (int)transformer1.transform(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cntBeforeTransform))).count();
 
-            Iterator<UpstreamEntry> iter =
-                transformer2.transform(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cntBeforeTransform)).map(x -> (UpstreamEntry)x)).iterator();
+            Iterator<UpstreamEntry> iter = transformer2.transform(
+                Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cntBeforeTransform)).map(x -> (UpstreamEntry)x)
+            ).iterator();
             Iterator<UpstreamEntry<K, V>> convertedBack = Utils.asStream(iter).map(x -> (UpstreamEntry<K, V>)x).iterator();
 
             C ctx = cntBeforeTransform > 0 ? partCtxBuilder.build(env, convertedBack, cnt) : null;

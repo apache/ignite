@@ -89,7 +89,7 @@ public:
 
         IgniteClientConfiguration cfg;
         cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-        cfg.SetAffinityAwareness(true);
+        cfg.SetPartitionAwareness(true);
 
         IgniteClient client = IgniteClient::Start(cfg);
 
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -529,7 +529,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -575,7 +575,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -619,7 +619,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -657,7 +657,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -849,7 +849,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDefaultDynamicCacheThreeNodes)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -881,7 +881,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112,127.0.0.1:11113");
-    cfg.SetAffinityAwareness(true);
+    cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 

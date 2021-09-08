@@ -54,7 +54,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        out = new GridUnsafeDataOutput(16 * 8+ LEN_BYTES);
+        out = new GridUnsafeDataOutput(16 * 8 + LEN_BYTES);
         in = new GridUnsafeDataInput();
         in.inputStream(new ByteArrayInputStream(out.internalArray()));
     }
@@ -94,7 +94,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         byte[] outArr = out.internalArray();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getShortByByteLE(outArr, i * 2+ LEN_BYTES));
+            assertEquals(arr[i], getShortByByteLE(outArr, i * 2 + LEN_BYTES));
 
         assertArrayEquals(arr, in.readShortArray());
     }
@@ -127,7 +127,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         byte[] outArr = out.internalArray();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getCharByByteLE(outArr, i * 2+ LEN_BYTES));
+            assertEquals(arr[i], getCharByByteLE(outArr, i * 2 + LEN_BYTES));
 
         assertArrayEquals(arr, in.readCharArray());
     }
@@ -160,7 +160,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         byte[] outArr = out.internalArray();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getIntByByteLE(outArr, i * 4+ LEN_BYTES));
+            assertEquals(arr[i], getIntByByteLE(outArr, i * 4 + LEN_BYTES));
 
         assertArrayEquals(arr, in.readIntArray());
     }
@@ -193,7 +193,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         byte[] outArr = out.internalArray();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getLongByByteLE(outArr, i * 8+ LEN_BYTES));
+            assertEquals(arr[i], getLongByByteLE(outArr, i * 8 + LEN_BYTES));
 
         assertArrayEquals(arr, in.readLongArray());
     }
@@ -226,7 +226,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         byte[] outArr = out.internalArray();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getFloatByByteLE(outArr, i * 4+ LEN_BYTES), 0);
+            assertEquals(arr[i], getFloatByByteLE(outArr, i * 4 + LEN_BYTES), 0);
 
         assertArrayEquals(arr, in.readFloatArray(), 0);
     }
@@ -259,7 +259,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         byte[] outArr = out.internalArray();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getDoubleByByteLE(outArr, i * 8+ LEN_BYTES), 0);
+            assertEquals(arr[i], getDoubleByByteLE(outArr, i * 8 + LEN_BYTES), 0);
 
         assertArrayEquals(arr, in.readDoubleArray(), 0);
     }

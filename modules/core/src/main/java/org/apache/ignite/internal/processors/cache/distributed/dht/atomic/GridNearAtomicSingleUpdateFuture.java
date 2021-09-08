@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -79,7 +80,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
@@ -98,7 +98,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
-        UUID subjId,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
@@ -114,15 +113,11 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             rawRetval,
             expiryPlc,
             filter,
-            subjId,
             taskNameHash,
             skipStore,
             keepBinary,
             recovery,
             remapCnt);
-
-        assert subjId != null;
-
         this.key = key;
         this.val = val;
     }
@@ -373,7 +368,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         mapOnTopology();
                     }
@@ -406,8 +401,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         if (cache.topology().stopping()) {
             completeFuture(
                 null,
-                cctx.shared().cache().isCacheRestarting(cache.name())?
-                    new IgniteCacheRestartingException(cache.name()):
+                cctx.shared().cache().isCacheRestarting(cache.name()) ?
+                    new IgniteCacheRestartingException(cache.name()) :
                     new CacheStoppedException(cache.name()),
                 null);
 
@@ -432,7 +427,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
             fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                         @Override public void run() {
                             mapOnTopology();
                         }
@@ -486,7 +481,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         sendSingleRequest(reqState0.req.nodeId(), reqState0.req);
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
 
             return;
         }
@@ -590,7 +585,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     syncMode,
                     op,
                     invokeArgs,
-                    subjId,
                     taskNameHash,
                     flags,
                     cctx.deploymentEnabled());
@@ -604,7 +598,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         topVer,
                         syncMode,
                         op,
-                        subjId,
                         taskNameHash,
                         flags,
                         cctx.deploymentEnabled());
@@ -618,7 +611,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         syncMode,
                         op,
                         filter,
-                        subjId,
                         taskNameHash,
                         flags,
                         cctx.deploymentEnabled());
@@ -636,7 +628,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 expiryPlc,
                 invokeArgs,
                 filter,
-                subjId,
                 taskNameHash,
                 flags,
                 cctx.deploymentEnabled(),

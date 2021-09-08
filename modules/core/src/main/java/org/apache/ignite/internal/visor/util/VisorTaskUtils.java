@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.net.InetAddress;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -36,7 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,8 +51,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
@@ -62,7 +59,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -78,7 +75,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
-import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_DIR;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED;
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -125,7 +121,6 @@ public class VisorTaskUtils {
     /** */
     public static final int REBALANCE_COMPLETE = 1;
 
-
     /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
 
@@ -161,14 +156,6 @@ public class VisorTaskUtils {
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
             return Long.compare(f2.getLastModified(), f1.getLastModified());
-        }
-    };
-
-    /** Debug date format. */
-    private static final ThreadLocal<SimpleDateFormat> DEBUG_DATE_FMT = new ThreadLocal<SimpleDateFormat>() {
-        /** {@inheritDoc} */
-        @Override protected SimpleDateFormat initialValue() {
-            return new SimpleDateFormat("HH:mm:ss,SSS");
         }
     };
 
@@ -748,28 +735,6 @@ public class VisorTaskUtils {
     }
 
     /**
-     * Resolve IGFS profiler logs directory.
-     *
-     * @param igfs IGFS instance to resolve logs dir for.
-     * @return {@link Path} to log dir or {@code null} if not found.
-     * @throws IgniteCheckedException if failed to resolve.
-     */
-    public static Path resolveIgfsProfilerLogsDir(IgniteFileSystem igfs) throws IgniteCheckedException {
-        String logsDir;
-
-        if (igfs instanceof IgfsEx)
-            logsDir = ((IgfsEx)igfs).clientLogDirectory();
-        else if (igfs == null)
-            throw new IgniteCheckedException("Failed to get profiler log folder (IGFS instance not found)");
-        else
-            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected IGFS instance type)");
-
-        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_IGFS_LOG_DIR);
-
-        return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
-    }
-
-    /**
      * Extract max size from eviction policy if available.
      *
      * @param plc Eviction policy.
@@ -834,8 +799,12 @@ public class VisorTaskUtils {
                 log.warning(msg);
         }
         else
-            X.println(String.format("[%s][%s]%s",
-                DEBUG_DATE_FMT.get().format(time), Thread.currentThread().getName(), msg));
+            X.println(String.format(
+                "[%s][%s]%s",
+                IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(time)),
+                Thread.currentThread().getName(),
+                msg
+            ));
     }
 
     /**
@@ -1135,7 +1104,7 @@ public class VisorTaskUtils {
      *     IPv4, private IPv4, IPv4 local host, IPv6.
      *     Lower addresses first.
      */
-    private static class SortableAddress implements Comparable<SortableAddress> {
+    public static class SortableAddress implements Comparable<SortableAddress> {
         /** */
         private int type;
 
@@ -1150,7 +1119,7 @@ public class VisorTaskUtils {
          *
          * @param addr Address as string.
          */
-        private SortableAddress(String addr) {
+        public SortableAddress(String addr) {
             this.addr = addr;
 
             if (addr.indexOf(':') > 0)
@@ -1286,7 +1255,7 @@ public class VisorTaskUtils {
      * @param cacheName Cache name to check.
      * @return {@code true} when cache restarting in progress.
      */
-    public static boolean isRestartingCache(IgniteEx ignite, String cacheName)  {
+    public static boolean isRestartingCache(IgniteEx ignite, String cacheName) {
         IgniteCacheProxy<Object, Object> proxy = ignite.context().cache().jcache(cacheName);
 
         return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl) proxy).isRestarting();

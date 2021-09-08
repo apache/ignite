@@ -18,15 +18,48 @@
 #ifndef _IGNITE_CORE_TEST_TEST_UTILS
 #define _IGNITE_CORE_TEST_TEST_UTILS
 
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
+
 #include "ignite/ignition.h"
 
-#define MUTE_TEST_FOR_TEAMCITY \
-    if (jetbrains::teamcity::underTeamcity()) \
-    { \
-        BOOST_TEST_MESSAGE("Muted on TeamCity because of periodical non-critical failures"); \
-        BOOST_CHECK(jetbrains::teamcity::underTeamcity()); \
-        return; \
+#define MUTE_TEST_FOR_TEAMCITY                                              \
+    if (jetbrains::teamcity::underTeamcity()) {                             \
+        BOOST_TEST_MESSAGE("Muted on TeamCity because of "                  \
+            "periodical non-critical failures");                            \
+        BOOST_CHECK(jetbrains::teamcity::underTeamcity());                  \
+        return;                                                             \
     }
+
+#define WITH_STABLE_TOPOLOGY_BEGIN(node)                                    \
+    int64_t __topVer = node.GetCluster().GetTopologyVersion();              \
+    while (true) {
+
+#define WITH_STABLE_TOPOLOGY_END break; }
+
+#define CHECK_TOPOLOGY_STABLE(node)                                         \
+    {                                                                       \
+        int64_t __topVer0 = node.GetCluster().GetTopologyVersion();         \
+        if (__topVer != __topVer0) {                                        \
+            __topVer = __topVer0;                                           \
+            continue;                                                       \
+        }                                                                   \
+    }
+
+#define WITH_RETRY_BEGIN                                                    \
+    int retries = 0;                                                        \
+    while (true) {
+
+#define WITH_RETRY_END break; }
+
+#define CHECK_EQUAL_OR_RETRY(expected, actual)                              \
+    if ((retries < RETRIES_FOR_STABLE_TOPOLOGY) && (expected != actual)) {  \
+        ++retries;                                                          \
+        continue;                                                           \
+    }                                                                       \
+    BOOST_CHECK_EQUAL(expected, actual)
+
+
 
 namespace ignite_test
 {
@@ -73,6 +106,11 @@ namespace ignite_test
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
 
     /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
+
+    /**
      * Check if the error is generic.
      *
      * @param err Error.
@@ -96,6 +134,33 @@ namespace ignite_test
     inline ignite::IgniteError MakeTestError()
     {
         return ignite::IgniteError(TEST_ERROR, "Test error");
+    }
+
+    /**
+     * Wait for condition.
+     * @tparam T Type of condition function.
+     * @param func Function that should check for condition and return true once it's performed.
+     * @param timeout Timeout to wait.
+     * @return True if condition was met, false if timeout has been reached.
+     */
+    template<typename F>
+    bool WaitForCondition(F func, int32_t timeout)
+    {
+        using namespace boost::chrono;
+
+        const int32_t span = 200;
+
+        steady_clock::time_point begin = steady_clock::now();
+
+        while (!func())
+        {
+            boost::this_thread::sleep_for(milliseconds(span));
+
+            if (timeout && duration_cast<milliseconds>(steady_clock::now() - begin).count() >= timeout)
+                return func();
+        }
+
+        return true;
     }
 }
 

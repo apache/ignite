@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.jetbrains.annotations.Nullable;
 import org.mockito.Mockito;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -58,7 +58,6 @@ public class MockWalIteratorFactory {
     /** Segments count in work dir. */
     private int segments;
 
-
     /**
      * Creates factory
      * @param log Logger.
@@ -78,6 +77,7 @@ public class MockWalIteratorFactory {
         this.subfolderName = subfolderName;
         this.segments = segments;
     }
+
     /**
      * Creates iterator
      * @param wal WAL directory without node consistent id

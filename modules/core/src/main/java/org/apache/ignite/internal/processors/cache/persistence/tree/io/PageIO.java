@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IndexPageType;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -28,9 +30,12 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogInnerIO;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageBPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastoreDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
@@ -45,10 +50,9 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwa
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
-import org.apache.ignite.internal.stat.IndexPageType;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base format for all the page types.
@@ -61,7 +65,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  *    static methods (like {@code {@link #getPageId(long)}}) intentionally:
  *    this base format can not be changed between versions.
  *
- * 2. IO must correctly override {@link #initNewPage(long, long, int)} method and call super.
+ * 2. IO must correctly override {@link #initNewPage(long, long, int, PageMetrics)} method and call super.
  *    We have logic that relies on this behavior.
  *
  * 3. Page IO type ID constant must be declared in this class to have a list of all the
@@ -154,7 +158,8 @@ public abstract class PageIO {
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
 
     /** */
-    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
+    // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8;
 
     /* All the page types. */
 
@@ -250,6 +255,18 @@ public abstract class PageIO {
 
     /** */
     public static final short T_TX_LOG_INNER = 31;
+
+    /** */
+    public static final short T_DATA_PART = 32;
+
+    /** */
+    public static final short T_MARKER_PAGE = 33;
+
+    /** */
+    public static final short T_DEFRAG_LINK_MAPPING_INNER = 34;
+
+    /** */
+    public static final short T_DEFRAG_LINK_MAPPING_LEAF = 35;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
@@ -593,10 +610,11 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param pageId Page ID.
      * @param pageSize Page size.
+     * @param metrics Page metrics for tracking page allocation. Can be {@code null} if no tracking is required.
      *
      * @see EncryptionSpi#encryptedSize(int)
      */
-    public void initNewPage(long pageAddr, long pageId, int pageSize) {
+    public void initNewPage(long pageAddr, long pageId, int pageSize, @Nullable PageMetrics metrics) {
         setType(pageAddr, getType());
         setVersion(pageAddr, getVersion());
         setPageId(pageAddr, pageId);
@@ -606,6 +624,28 @@ public abstract class PageIO {
         PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_2_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_3_OFF, 0L);
+
+        if (metrics != null && isIndexPage(getType()))
+            metrics.indexPages().increment();
+    }
+
+    /**
+     * Returns {@code true} if the given page type is related to SQL index data pages.
+     *
+     * @param pageType Page type (can be obtained by {@link #getType(long)} or {@link #getType(ByteBuffer)} methods).
+     */
+    public static boolean isIndexPage(int pageType) {
+        if ((T_H2_EX_REF_LEAF_START <= pageType && pageType <= T_H2_EX_REF_LEAF_END) ||
+            (T_H2_EX_REF_MVCC_LEAF_START <= pageType && pageType <= T_H2_EX_REF_MVCC_LEAF_END)
+        )
+            return true;
+
+        if ((T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
+            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END)
+        )
+            return true;
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -667,6 +707,9 @@ public abstract class PageIO {
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
             case T_DATA_METASTORAGE:
+                return (Q)MetastoreDataPageIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_PART:
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
 
             default:
@@ -784,10 +827,16 @@ public abstract class PageIO {
                 return (Q)CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_METASTORAGE_INNER:
-                return (Q)MetastorageTree.MetastorageInnerIO.VERSIONS.forVersion(ver);
+                return (Q)MetastorageBPlusIO.INNER_IO_VERSIONS.forVersion(ver);
 
             case T_DATA_REF_METASTORAGE_LEAF:
-                return (Q)MetastorageTree.MetastoreLeafIO.VERSIONS.forVersion(ver);
+                return (Q)MetastorageBPlusIO.LEAF_IO_VERSIONS.forVersion(ver);
+
+            case T_DEFRAG_LINK_MAPPING_INNER:
+                return (Q) LinkMap.INNER_IO_VERSIONS.forVersion(ver);
+
+            case T_DEFRAG_LINK_MAPPING_LEAF:
+                return (Q) LinkMap.LEAF_IO_VERSIONS.forVersion(ver);
 
             default:
                 // For tests.
@@ -808,30 +857,30 @@ public abstract class PageIO {
     public static IndexPageType deriveIndexPageType(long pageAddr) {
         int pageIoType = PageIO.getType(pageAddr);
         switch (pageIoType) {
-            case PageIO.T_DATA_REF_INNER:
-            case PageIO.T_DATA_REF_MVCC_INNER:
-            case PageIO.T_H2_REF_INNER:
-            case PageIO.T_H2_MVCC_REF_INNER:
-            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
-            case PageIO.T_CACHE_ID_DATA_REF_MVCC_INNER:
+            case T_DATA_REF_INNER:
+            case T_DATA_REF_MVCC_INNER:
+            case T_H2_REF_INNER:
+            case T_H2_MVCC_REF_INNER:
+            case T_CACHE_ID_AWARE_DATA_REF_INNER:
+            case T_CACHE_ID_DATA_REF_MVCC_INNER:
                 return IndexPageType.INNER;
 
-            case PageIO.T_DATA_REF_LEAF:
-            case PageIO.T_DATA_REF_MVCC_LEAF:
-            case PageIO.T_H2_REF_LEAF:
-            case PageIO.T_H2_MVCC_REF_LEAF:
-            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
-            case PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF:
+            case T_DATA_REF_LEAF:
+            case T_DATA_REF_MVCC_LEAF:
+            case T_H2_REF_LEAF:
+            case T_H2_MVCC_REF_LEAF:
+            case T_CACHE_ID_AWARE_DATA_REF_LEAF:
+            case T_CACHE_ID_DATA_REF_MVCC_LEAF:
                 return IndexPageType.LEAF;
 
             default:
-                if ((PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END) ||
-                    (PageIO.T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_LEAF_END)
+                if ((T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= T_H2_EX_REF_LEAF_END) ||
+                    (T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= T_H2_EX_REF_MVCC_LEAF_END)
                 )
                     return IndexPageType.LEAF;
 
-                if ((PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END) ||
-                    (PageIO.T_H2_EX_REF_MVCC_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_INNER_END)
+                if ((T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= T_H2_EX_REF_INNER_END) ||
+                    (T_H2_EX_REF_MVCC_INNER_START <= pageIoType && pageIoType <= T_H2_EX_REF_MVCC_INNER_END)
                 )
                     return IndexPageType.INNER;
         }
@@ -871,24 +920,29 @@ public abstract class PageIO {
     /**
      * @param addr Address.
      */
-    public static String printPage(long addr, int pageSize) throws IgniteCheckedException {
-        PageIO io = getPageIO(addr);
-
+    public static String printPage(long addr, int pageSize) {
         GridStringBuilder sb = new GridStringBuilder("Header [\n\ttype=");
 
-        sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
-            .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
-            .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
-            .a("\n],\n");
+        try {
+            PageIO io = getPageIO(addr);
 
-        if (getCompressionType(addr) != 0) {
-            sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
-                .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
-                .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
-                .a("\n]");
+            sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
+                .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
+                .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
+                .a("\n],\n");
+
+            if (getCompressionType(addr) != 0) {
+                sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
+                    .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
+                    .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
+                    .a("\n]");
+            }
+            else
+                io.printPage(addr, pageSize, sb);
         }
-        else
-            io.printPage(addr, pageSize, sb);
+        catch (IgniteCheckedException e) {
+            sb.a("Failed to print page: ").a(e.getMessage());
+        }
 
         return sb.toString();
     }

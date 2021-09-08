@@ -18,11 +18,11 @@
 package org.apache.ignite.examples.client;
 
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.client.ClientException;
+import org.apache.ignite.examples.model.Address;
 
 /**
  * Demonstrates how to use Ignite thin client for basic put/get cache operations.

@@ -83,7 +83,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         useBackupFactory = true;
         ioBlockSize = IgniteNativeIoLib.getDirectIOBlockSize(storePath.getAbsolutePath(), log);
 
-        if(!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, true)) {
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, true)) {
             if (log.isInfoEnabled())
                 log.info("Direct IO is explicitly disabled by system property.");
 

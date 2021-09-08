@@ -76,7 +76,7 @@ public class ConfigVariations {
         Parameters.parameter("setRebalanceBatchSize", 2028 * 1024),
         Parameters.parameter("setRebalanceBatchesPrefetchCount", 5L),
         Parameters.parameter("setRebalanceThreadPoolSize", 5),
-        Parameters.parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
+        Parameters.parameter("setRebalanceTimeout", IgniteConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
         Parameters.parameter("setRebalanceDelay", 1000L)
     );
 

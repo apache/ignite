@@ -1,0 +1,99 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Linear Regression
+
+== Overview
+
+Apache Ignite supports the ordinary least squares Linear Regression algorithm - one of the most basic and powerful machine learning algorithms. This documentation describes how the algorithm works, and is implemented in Apache Ignite.
+
+The basic idea behind the Linear Regression algorithm is an assumption that a dependent variable `y` and an explanatory variable `x` are in the following relationship:
+
+image::images/111.gif[]
+
+
+WARNING:Be aware that further documentation uses a dot product of vectors `x` and `b`, and explicitly avoids using a constant term. It is mathematically correct in the case where vector `x` is supplemented by one value equal to 1.
+
+The above assumption allows us to make a prediction based on a feature vector `x` if a vector `b` is known. This fact is reflected in Apache Ignite in the `LinearRegressionModel` class responsible for making predictions.
+
+
+== Model
+
+A Model in the case of linear regression is represented by the class `LinearRegressionModel`. It enables a prediction to be made for a given vector of features, in the following way:
+
+
+[source, java]
+----
+LinearRegressionModel model = ...;
+
+double prediction = model.predict(observation);
+----
+
+Model is fully independent object and after the training it can be saved, serialized and restored.
+
+== Trainers
+
+Linear Regression is a supervised learning algorithm. This means that to find parameters (vector `b`), we need to train on a training dataset and minimize the loss function:
+
+image::images/222.gif[]
+
+Apache Ignite provides two linear regression trainers: trainer based on the LSQR algorithm and another trainer based on the Stochastic Gradient Descent method.
+
+=== LSQR Trainer
+
+The LSQR algorithm finds the least-squares solution to a large, sparse, linear system of equations. The Apache Ignite implementation is a distributed version of this algorithm.
+
+
+[source, java]
+----
+// Create linear regression trainer.
+LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+
+// Train model.
+LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+
+// Make a prediction.
+double prediction = mdl.apply(coordinates);
+----
+
+
+=== SGD Trainer
+
+Another Linear Regression Trainer uses the stochastic gradient descent method to find a minimum of the loss function. The configuration of this trainer is similar to link:machine-learning/binary-classification/multilayer-perceptron[multilayer perceptron trainer] configuration and we can specify the type of updater (`SGD`, `RProp` of `Nesterov`), max number of iterations, batch size, number of local iterations and seed.
+
+[source, java]
+----
+// Create linear regression trainer.
+LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(
+    new UpdatesStrategy<>(
+        new RPropUpdateCalculator(),
+        RPropParameterUpdate::sumLocal,
+        RPropParameterUpdate::avg
+    ),
+    100000,  // Max iterations.
+    10,      // Batch size.
+    100,     // Local iterations.
+    123L     // Random seed.
+);
+
+// Train model.
+LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+
+// Make a prediction.
+double prediction = mdl.apply(coordinates);
+----
+
+== Examples
+
+To see how the Linear Regression can be used in practice, try these https://github.com/apache/ignite/tree/master/examples/src/main/java/org/apache/ignite/examples/ml/regression/linear[examples] that are available on GitHub and delivered with every Apache Ignite distribution.

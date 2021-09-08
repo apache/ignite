@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,7 +83,7 @@ class IntervalBasedMeasurement {
      * @param maxMeasurements Max historical measurements to keep.
      */
     IntervalBasedMeasurement(int intervalSwitchMs, int maxMeasurements) {
-        this.intervalSwitchNanos = intervalSwitchMs > 0 ? intervalSwitchMs * TimeUnit.MILLISECONDS.toNanos(1) : -1;
+        this.intervalSwitchNanos = intervalSwitchMs > 0 ? U.millisToNanos(intervalSwitchMs) : -1;
         this.maxMeasurements = maxMeasurements;
     }
 
@@ -134,8 +135,6 @@ class IntervalBasedMeasurement {
 
         return nanosPassed <= 0 ? 0 : opsDone * NANOS_IN_SECOND / nanosPassed;
     }
-
-
 
     /**
      * @param interval Measurement to check. {@code null} is always outdated.

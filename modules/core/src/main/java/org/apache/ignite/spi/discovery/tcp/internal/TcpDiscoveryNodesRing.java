@@ -173,6 +173,17 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * @return Server nodes.
+     */
+    public Collection<TcpDiscoveryNode> serverNodes() {
+        return nodes(new PN() {
+            @Override public boolean apply(ClusterNode node) {
+                return ((TcpDiscoveryNode)node).clientRouterNodeId() == null;
+            }
+        });
+    }
+
+    /**
      * Checks whether the topology has remote nodes in.
      *
      * @return {@code true} if the topology has remote nodes in.
@@ -237,7 +248,7 @@ public class TcpDiscoveryNodesRing {
 
             nodes = new TreeSet<>(nodes);
 
-            node.lastUpdateTime(U.currentTimeMillis());
+            node.lastUpdateTimeNanos(System.nanoTime());
 
             nodes.add(node);
 
@@ -310,7 +321,7 @@ public class TcpDiscoveryNodesRing {
                     firstAdd = false;
                 }
 
-                node.lastUpdateTime(U.currentTimeMillis());
+                node.lastUpdateTimeNanos(System.nanoTime());
 
                 this.nodes.add(node);
             }

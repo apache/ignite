@@ -46,7 +46,8 @@ namespace ignite
              */
             IgniteClientConfiguration() :
                 sslMode(SslMode::DISABLE),
-                affinityAwareness(false)
+                partitionAwareness(true),
+                connectionsLimit(0)
             {
                 // No-op.
             }
@@ -203,7 +204,7 @@ namespace ignite
             }
 
             /**
-             * Set Affinity Awareness.
+             * Set Partition Awareness.
              *
              * Enable or disable feature that enables thin client to consider data affinity when making requests
              * to the cluster. It means, thin client is going to connect to all available cluster servers listed by
@@ -211,23 +212,54 @@ namespace ignite
              *
              * Disabled by default.
              *
-             * @param enable Enable affinity awareness.
+             * @param enable Enable partition awareness.
              */
-            void SetAffinityAwareness(bool enable)
+            void SetPartitionAwareness(bool enable)
             {
-                affinityAwareness = enable;
+                partitionAwareness = enable;
             }
 
             /**
-             * Get Affinity Awareness flag.
+             * Get Partition Awareness flag.
              *
-             * @see SetAffinityAwareness() for details.
+             * @see SetPartitionAwareness() for details.
              *
-             * @return @c true if affinity awareness is enabled and @c false otherwise.
+             * @return @c true if partition awareness is enabled and @c false otherwise.
              */
-            bool IsAffinityAwareness() const
+            bool IsPartitionAwareness() const
             {
-                return affinityAwareness;
+                return partitionAwareness;
+            }
+
+            /**
+             * Get connection limit.
+             *
+             * By default, C++ thin client establishes a connection to every server node listed in @c endPoints. Use
+             * this setting to limit the number of active connections. This reduces initial connection time and the
+             * resource usage, but can have a negative effect on cache operation performance, especially if partition
+             * awareness is used.
+             *
+             * Zero value means that number of active connections is not limited.
+             *
+             * The default value is zero.
+             *
+             * @return Active connection limit.
+             */
+            uint32_t GetConnectionsLimit() const
+            {
+                return connectionsLimit;
+            }
+
+            /**
+             * Set connection limit.
+             *
+             * @see GetConnectionsLimit for details.
+             *
+             * @param connectionsLimit Connections limit to set.
+             */
+            void SetConnectionsLimit(uint32_t limit)
+            {
+                connectionsLimit = limit;
             }
 
         private:
@@ -252,8 +284,11 @@ namespace ignite
             /** SSL client certificate authority path */
             std::string sslCaFile;
 
-            /** Affinity Awareness. */
-            bool affinityAwareness;
+            /** Partition awareness. */
+            bool partitionAwareness;
+
+            /** Active connections limit. */
+            uint32_t connectionsLimit;
         };
     }
 }

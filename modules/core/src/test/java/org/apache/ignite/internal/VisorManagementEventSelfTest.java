@@ -35,7 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;;
+import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 
 /**
  *
@@ -140,7 +140,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private <T, R>  void doTestVisorTask(
+    private <T, R> void doTestVisorTask(
         Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite) throws Exception
     {
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
@@ -172,7 +172,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private <T, R>  void doTestNotManagementVisorTask(
+    private <T, R> void doTestNotManagementVisorTask(
         Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite) throws Exception
     {
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();

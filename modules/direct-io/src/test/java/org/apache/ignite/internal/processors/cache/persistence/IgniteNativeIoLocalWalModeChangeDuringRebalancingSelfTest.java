@@ -32,7 +32,6 @@ public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends L
     @Test
     @Override public void testWithExchangesMerge() throws Exception {
 
-
         super.testWithExchangesMerge();
     }
 }

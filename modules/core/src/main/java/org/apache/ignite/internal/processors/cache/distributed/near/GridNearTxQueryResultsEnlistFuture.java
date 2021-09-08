@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -354,8 +355,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                     false,
                     tx.remainingTime(),
                     -1,
-                    this.tx.subjectId(),
-                    this.tx.taskNameHash(),
+                    SecurityUtils.securitySubjectId(cctx),
+                    tx.taskNameHash(),
                     false,
                     tx.label());
 
@@ -416,7 +417,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             threadId,
             futId,
             batchId,
-            tx.subjectId(),
             topVer,
             lockVer,
             mvccSnapshot,
@@ -437,21 +437,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
      * @throws IgniteCheckedException if failed to send.
      */
     private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
-        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
-
-        if (txSync == null || txSync.isDone())
-            cctx.io().send(nodeId, req, cctx.ioPolicy());
-        else
-            txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> future) {
-                    try {
-                        cctx.io().send(nodeId, req, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        GridNearTxQueryResultsEnlistFuture.this.onDone(e);
-                    }
-                }
-            });
+        cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
     /**

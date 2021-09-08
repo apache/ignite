@@ -25,13 +25,9 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -64,12 +60,6 @@ public class JdbcStatement implements Statement {
 
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
-
-    /** Result sets. */
-    final Set<JdbcResultSet> resSets = new HashSet<>();
-
-    /** Fields indexes. */
-    Map<String, Integer> fieldsIdxs = new HashMap<>();
 
     /** Batch of statements. */
     private List<String> batch;
@@ -116,10 +106,24 @@ public class JdbcStatement implements Statement {
         UUID nodeId = conn.nodeId();
 
         boolean loc = nodeId == null;
+        JdbcQueryMultipleStatementsTask qryTask;
 
-        JdbcQueryMultipleStatementsTask qryTask = new JdbcQueryMultipleStatementsTask(loc ? ignite : null, conn.schemaName(),
-            sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+        if (conn.isMultipleStatementsTaskV3Supported()) {
+            qryTask = new JdbcQueryMultipleStatementsTaskV3(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(),
+                conn.isCollocatedQuery(), conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(),
+                conn.isMultipleStatementsAllowed(), conn.clientDescriptor());
+        }
+        else if (!conn.isMultipleStatementsAllowed() && conn.isMultipleStatementsTaskV2Supported()) {
+            qryTask = new JdbcQueryMultipleStatementsNotAllowTask(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+        }
+        else {
+            qryTask = new JdbcQueryMultipleStatementsTask(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+        }
 
         try {
             List<JdbcStatementResultInfo> rsInfos =
@@ -156,7 +160,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         if (!conn.isDmlSupported())
-            if(isQuery != null && !isQuery)
+            if (isQuery != null && !isQuery)
                 throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
             else
                 isQuery = true;
@@ -206,7 +210,7 @@ public class JdbcStatement implements Statement {
      * @throws SQLException On error.
      */
     protected void execute0(String sql, Boolean isQuery) throws SQLException {
-        if (conn.isMultipleStatementsAllowed())
+        if (conn.isMultipleStatementsSupported())
             executeMultipleStatement(sql, isQuery);
         else
             executeSingle(sql, isQuery);
@@ -231,13 +235,7 @@ public class JdbcStatement implements Statement {
      * @throws SQLException On error.
      */
     void closeInternal() throws SQLException {
-        for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {
-            JdbcResultSet rs = it.next();
-
-            rs.closeInternal();
-
-            it.remove();
-        }
+        closeResults();
 
         closed = true;
     }
@@ -471,7 +469,7 @@ public class JdbcStatement implements Statement {
         try {
             int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
 
-            long updateCnt = F.isEmpty(res)? -1 : res[res.length - 1];
+            long updateCnt = F.isEmpty(res) ? -1 : res[res.length - 1];
 
             results = Collections.singletonList(new JdbcResultSet(this, updateCnt));
 
@@ -688,5 +686,4 @@ public class JdbcStatement implements Statement {
             curRes = 0;
         }
     }
-
 }

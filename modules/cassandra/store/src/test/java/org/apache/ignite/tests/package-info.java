@@ -18,4 +18,5 @@
 /**
  * Contains unit tests
  */
+
 package org.apache.ignite.tests;

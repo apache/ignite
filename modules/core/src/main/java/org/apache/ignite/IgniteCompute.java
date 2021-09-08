@@ -371,6 +371,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * If task for given name has not been deployed yet, then {@code taskName} will be
      * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
+     * <p>
+     * If class with the same name was deployed more than once, the last deployed version is used.
+     * If method is called when other threads are deploying other versions of class with the same name there are no
+     * guarantees which version of the class will be executed.
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -523,7 +527,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs on nodes within the underlying cluster group.
      * Collection of all returned job results is returned from the result future.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @return Collection of job results for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -534,7 +538,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs asynchronously on nodes within the underlying cluster group.
      * Collection of all returned job results is returned from the result future.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
@@ -545,7 +549,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs on nodes within the underlying cluster group. The returned
      * job results will be reduced into an individual result by provided reducer.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
@@ -558,7 +562,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs asynchronously on nodes within the underlying cluster group. The returned
      * job results will be reduced into an individual result by provided reducer.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return a Future with reduced job result for this execution.
      * @throws IgniteException If execution failed.
@@ -701,7 +705,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return This {@code IgniteCompute} instance for chaining calls.
      */
     public IgniteCompute withNoFailover();
-
 
     /**
      * Disables caching for the next executed task in the <b>current thread</b>.

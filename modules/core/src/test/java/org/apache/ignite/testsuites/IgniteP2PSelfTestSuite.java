@@ -17,11 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.GridP2PAffinitySelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
+import org.apache.ignite.internal.managers.deployment.GridDifferentLocalDeploymentSelfTest;
+import org.apache.ignite.internal.managers.deployment.P2PCacheOperationIntoComputeTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
 import org.apache.ignite.p2p.GridP2PComputeWithNestedEntryProcessorTest;
+import org.apache.ignite.p2p.GridP2PContinuousDeploymentClientDisconnectTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest;
 import org.apache.ignite.p2p.GridP2PDifferentClassLoaderSelfTest;
 import org.apache.ignite.p2p.GridP2PDoubleDeploymentSelfTest;
 import org.apache.ignite.p2p.GridP2PHotRedeploymentSelfTest;
@@ -32,10 +37,12 @@ import org.apache.ignite.p2p.GridP2PNodeLeftSelfTest;
 import org.apache.ignite.p2p.GridP2PRecursionTaskSelfTest;
 import org.apache.ignite.p2p.GridP2PRemoteClassLoadersSelfTest;
 import org.apache.ignite.p2p.GridP2PSameClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PScanQueryWithTransformerTest;
 import org.apache.ignite.p2p.GridP2PTimeoutSelfTest;
 import org.apache.ignite.p2p.GridP2PUndeploySelfTest;
 import org.apache.ignite.p2p.P2PScanQueryUndeployTest;
 import org.apache.ignite.p2p.P2PStreamingClassLoaderTest;
+import org.apache.ignite.p2p.P2PUnsupportedClassVersionTest;
 import org.apache.ignite.p2p.SharedDeploymentTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -45,6 +52,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    GridP2PAffinitySelfTest.class,
     GridP2PDoubleDeploymentSelfTest.class,
     GridP2PHotRedeploymentSelfTest.class,
     GridP2PClassLoadingSelfTest.class,
@@ -56,7 +64,6 @@ import org.junit.runners.Suite;
     GridP2PJobClassLoaderSelfTest.class,
     GridP2PRecursionTaskSelfTest.class,
     GridP2PLocalDeploymentSelfTest.class,
-    //GridP2PTestTaskExecutionTest.class,
     GridP2PTimeoutSelfTest.class,
     GridP2PMissedResourceCacheSizeSelfTest.class,
     GridP2PContinuousDeploymentSelfTest.class,
@@ -66,6 +73,12 @@ import org.junit.runners.Suite;
     P2PScanQueryUndeployTest.class,
     GridDeploymentMessageCountSelfTest.class,
     GridP2PComputeWithNestedEntryProcessorTest.class,
+    GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest.class,
+    GridP2PScanQueryWithTransformerTest.class,
+    P2PCacheOperationIntoComputeTest.class,
+    GridP2PContinuousDeploymentClientDisconnectTest.class,
+    GridDifferentLocalDeploymentSelfTest.class,
+    P2PUnsupportedClassVersionTest.class
 })
 public class IgniteP2PSelfTestSuite {
 }

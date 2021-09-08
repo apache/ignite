@@ -1,0 +1,68 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Visor CMD
+
+== Overview
+
+Visor Command Line Interface (CMD) is a command-line tool for Ignite clusters monitoring. It provides basic statistics
+about cluster nodes, caches, and compute tasks. It also lets you manage the size of your cluster by starting or stopping nodes.
+
+[NOTE]
+====
+[discrete]
+=== Ignite Control Script
+The link:tools/control-script[Control Script] is another command-line tool developed by the Ignite community.
+It complements and expands capabilities of Visor CMD.
+====
+
+image::images/tools/visor-cmd.png[Visor CMD]
+
+== Usage
+
+Ignite ships the `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor CMD. To connect Visor CMD to a cluster,
+use the `open` command.
+
+The following commands are supported by Visor. To get full information on a command, type `help "cmd"` or `? "cmd"`.
+
+[cols="15%,15%,70%", opts="header"]
+|===
+|Command | Alias | Description
+
+| `ack`| | Acks arguments on all remote nodes.
+| `alert`| | Alerts for user-defined events.
+| `cache`| | Prints cache statistics, clears cache, prints list of all entries from cache.
+| `close`| | Disconnects Visor CMD console from the cluster.
+| `config`| | Prints nodes' configurations.
+| `deploy`| | Copies file or folder to remote host.
+| `disco`| | Prints topology change log.
+| `events`| | Prints events from a node.
+| `gc`| | Runs GC on remote nodes.
+| `help`| `?`| Visor CMD's help.
+| `kill`| | Kills or restarts a node.
+| `log`| | Starts or stops the cluster-wide events logging.
+| `mclear`| | Clears Visor CMD's memory variables.
+| `mget`| | Gets Visor CMD' memory variables
+| `mlist`| | Prints Visor CMD's memory variables.
+| `node`| | Prints node's statistics.
+| `open`| | Connects Visor CMD to the cluster.
+| `ping`| | Pings a node.
+| `quit`| | Close Visor CMD's connection.
+| `start`| | Starts or restarts remote nodes.
+| `status`| `!`| Prints detailed Visor CMD's status.
+| `tasks`| | Prints tasks' execution statistics.
+| `top`| | Prints the current cluster topology.
+| `vvm`| | Opens VisualVM for nodes in the cluster.
+|===
+

@@ -39,7 +39,7 @@ public class ImputerPreprocessorTest {
 
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<>(0, 1, 2);
 
-        ImputerPreprocessor<Integer,  double[]> preprocessor = new ImputerPreprocessor<>(
+        ImputerPreprocessor<Integer, double[]> preprocessor = new ImputerPreprocessor<>(
             VectorUtils.of(1.1, 10.1, 100.1),
             vectorizer
         );

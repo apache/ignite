@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
 
@@ -39,33 +40,35 @@ namespace Apache.Ignite.Core.Impl.Common
         [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
         private static readonly string ClasspathSeparator = Os.IsWindows ? ";" : ":";
 
+        /** Excluded modules from test classpath */
+        private static readonly string[] TestExcludedModules = { "rest-http" };
+
         /// <summary>
         /// Creates classpath from the given configuration, or default classpath if given config is null.
         /// </summary>
-        /// <param name="cfg">The configuration.</param>
+        /// <param name="classPath">Known or additional classpath, can be null.</param>
+        /// <param name="igniteHome">Ignite home, can be null.</param>
         /// <param name="forceTestClasspath">Append test directories even if
         /// <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
         /// <param name="log">The log.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
-        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false, 
+        internal static string CreateClasspath(string classPath, string igniteHome, bool forceTestClasspath = false,
             ILogger log = null)
         {
             var cpStr = new StringBuilder();
 
-            if (cfg != null && cfg.JvmClasspath != null)
+            if (!string.IsNullOrWhiteSpace(classPath))
             {
-                cpStr.Append(cfg.JvmClasspath);
+                cpStr.Append(classPath);
 
-                if (!cfg.JvmClasspath.EndsWith(ClasspathSeparator))
+                if (!classPath.EndsWith(ClasspathSeparator, StringComparison.Ordinal))
                     cpStr.Append(ClasspathSeparator);
             }
 
-            var ggHome = IgniteHome.Resolve(cfg, log);
-
-            if (!string.IsNullOrWhiteSpace(ggHome))
-                AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);
+            if (!string.IsNullOrWhiteSpace(igniteHome))
+                AppendHomeClasspath(igniteHome, forceTestClasspath, cpStr);
 
             if (log != null)
             {
@@ -73,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             var res = cpStr.ToString();
-            res = res.StartsWith(ClasspathPrefix) ? res : ClasspathPrefix + res;
+            res = res.StartsWith(ClasspathPrefix, StringComparison.Ordinal) ? res : ClasspathPrefix + res;
 
             return res;
         }
@@ -88,7 +91,9 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void AppendHomeClasspath(string ggHome, bool forceTestClasspath, StringBuilder cpStr)
         {
             // Append test directories (if needed) first, because otherwise build *.jar will be picked first.
-            if (forceTestClasspath || "true".Equals(Environment.GetEnvironmentVariable(EnvIgniteNativeTestClasspath)))
+            if (forceTestClasspath || bool.TrueString.Equals(
+                    Environment.GetEnvironmentVariable(EnvIgniteNativeTestClasspath),
+                    StringComparison.OrdinalIgnoreCase))
             {
                 AppendTestClasses(Path.Combine(ggHome, "examples"), cpStr);
                 AppendTestClasses(Path.Combine(ggHome, "modules"), cpStr);
@@ -103,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 foreach (string dir in Directory.EnumerateDirectories(ggLibs))
                 {
-                    if (!dir.EndsWith("optional"))
+                    if (!dir.EndsWith("optional", StringComparison.Ordinal))
                         AppendJars(dir, cpStr);
                 }
             }
@@ -130,9 +135,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="path">Path.</param>
         /// <param name="cp">Classpath builder.</param>
+        [SuppressMessage("Usage", "CA2249:Consider using 'string.Contains' instead of 'string.IndexOf'",
+            Justification = "Not supported on all platforms.")]
         private static void AppendTestClasses0(string path, StringBuilder cp)
         {
-            if (path.EndsWith("rest-http", StringComparison.OrdinalIgnoreCase))
+            var shouldExcluded = TestExcludedModules.Any(excl =>
+                path.IndexOf(excl, StringComparison.OrdinalIgnoreCase) >= 0);
+
+            if (shouldExcluded)
                 return;
 
             var dir = Path.Combine(path, "target", "classes");

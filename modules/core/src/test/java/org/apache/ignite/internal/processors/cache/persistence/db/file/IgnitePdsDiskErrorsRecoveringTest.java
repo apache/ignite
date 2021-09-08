@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -57,6 +58,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
  */
+@WithSystemProperty(key = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC", value = "false")
 public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -169,7 +171,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnCheckpointBeginFail() throws Exception {
         // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
-        ioFactory = new FilteringFileIOFactory("START.bin" + FilePageStoreManager.TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
+        ioFactory = new FilteringFileIOFactory(
+            "START.bin" + FilePageStoreManager.TMP_SUFFIX,
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20)
+        );
 
         final IgniteEx grid = startGrid(0);
         grid.cluster().active(true);
@@ -283,7 +288,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
-        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
+        ioFactory = new FilteringFileIOFactory(
+            ".wal",
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE))
+        );
 
         System.setProperty(IGNITE_WAL_MMAP, "false");
 

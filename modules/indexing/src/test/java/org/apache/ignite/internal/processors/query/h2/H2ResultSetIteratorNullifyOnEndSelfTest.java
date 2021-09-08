@@ -120,7 +120,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
      * Common Assertion
      * @param h2it target iterator
      */
-    private void checkIterator(H2ResultSetIterator h2it){
+    private void checkIterator(H2ResultSetIterator h2it) {
         if (Objects.nonNull(h2it))
             assertNull(GridTestUtils.getFieldValue(h2it, H2ResultSetIterator.class, "data"));
         else
@@ -135,7 +135,10 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
      */
     private H2ResultSetIterator extractGridIteratorInnerH2ResultSetIterator(QueryCursor<List<?>> qryCurs) {
         if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
-            GridQueryCacheObjectsIterator it = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iter");
+            Object it = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iter");
+
+            if (it instanceof QueryCursorImpl.LazyIterator)
+                it = GridTestUtils.getFieldValue(it, QueryCursorImpl.LazyIterator.class, "delegate");
 
             Iterator<List<?>> h2RsIt = GridTestUtils.getFieldValue(it, GridQueryCacheObjectsIterator.class, "iter");
 

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Base class for all platform benchmarks.
@@ -68,7 +69,8 @@ namespace Apache.Ignite.Benchmarks.Interop
                     "-DIGNITE_QUIET=false",
                     "-DIGNITE_NO_SHUTDOWN_HOOK=true"
                 },
-                JvmClasspath = Classpath ?? Core.Impl.Common.Classpath.CreateClasspath(forceTestClasspath: true),
+                JvmClasspath = Classpath ??
+                               Core.Impl.Common.Classpath.CreateClasspath(null, IgniteHome.Resolve(), true),
                 JvmDllPath = DllPath,
                 SpringConfigUrl = ConfigPath
             };

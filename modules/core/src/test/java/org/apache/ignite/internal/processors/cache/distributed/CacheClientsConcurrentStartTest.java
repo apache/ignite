@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -35,24 +44,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int SRV_CNT = 4;
@@ -74,7 +75,12 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi testSpi = new TcpDiscoverySpi() {
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            @Override protected void writeToSocket(
+                Socket sock,
+                OutputStream out,
+                TcpDiscoveryAbstractMessage msg,
+                long timeout
+            ) throws IOException, IgniteCheckedException {
                 if (msg instanceof TcpDiscoveryCustomEventMessage && msg.verified()) {
                     try {
                         System.out.println(Thread.currentThread().getName() + " delay custom message");
@@ -94,9 +100,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        if (getTestIgniteInstanceIndex(gridName) >= SRV_CNT)
-            cfg.setClientMode(true);
-        else {
+        if (getTestIgniteInstanceIndex(gridName) < SRV_CNT) {
             CacheConfiguration ccfgs[] = new CacheConfiguration[CACHES / 2];
 
             for (int i = 0; i < ccfgs.length; i++)
@@ -139,19 +143,20 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         startGrids(SRV_CNT);
 
         for (int i = 0; i < SRV_CNT; i++) {
-            ((TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi()).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg instanceof GridDhtPartitionsFullMessage) {
-                        try {
-                            U.sleep(ThreadLocalRandom.current().nextLong(500) + 100);
+            ((TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi()).blockMessages(
+                new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg instanceof GridDhtPartitionsFullMessage) {
+                            try {
+                                U.sleep(ThreadLocalRandom.current().nextLong(500) + 100);
+                            }
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
 
-                    return false;
-                }
+                        return false;
+                    }
             });
         }
 
@@ -165,7 +170,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
                     Random rnd = new Random();
 
                     try {
-                        Ignite ignite = startGrid(SRV_CNT + idx);
+                        Ignite ignite = startClientGrid(SRV_CNT + idx);
 
                         assertTrue(ignite.configuration().isClientMode());
 

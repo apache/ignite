@@ -37,4 +37,12 @@ class ZookeeperClientFailedException extends Exception {
     ZookeeperClientFailedException(Throwable cause) {
         super(cause);
     }
+
+    /**
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    ZookeeperClientFailedException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

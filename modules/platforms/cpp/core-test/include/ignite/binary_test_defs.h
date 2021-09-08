@@ -130,6 +130,27 @@ namespace ignite_test
                     return new DummyIdResolver();
                 }
             };
+
+            struct TestEnum
+            {
+                enum Type
+                {
+                    TEST_ZERO,
+
+                    TEST_NON_ZERO,
+
+                    TEST_NEGATIVE_42 = -42,
+
+                    TEST_SOME_BIG = 1241267
+                };
+            };
+
+            struct TypeWithEnumField
+            {
+                int32_t i32Field;
+                TestEnum::Type enumField;
+                std::string strField;
+            };
         }
     }
 }
@@ -148,7 +169,7 @@ namespace ignite
                 dst = "BinaryDummy";
             }
 
-            static void Write(BinaryWriter& writer, const gt::BinaryDummy& obj)
+            static void Write(BinaryWriter&, const gt::BinaryDummy&)
             {
                 // No-op.
             }
@@ -231,7 +252,7 @@ namespace ignite
                 dst = "BinaryFields";
             }
 
-            static bool IsNull(const gt::BinaryFields& obj)
+            static bool IsNull(const gt::BinaryFields&)
             {
                 return false;
             }
@@ -274,7 +295,7 @@ namespace ignite
                 dst = "PureRaw";
             }
 
-            static bool IsNull(const gt::PureRaw& obj)
+            static bool IsNull(const gt::PureRaw&)
             {
                 return false;
             }
@@ -298,6 +319,43 @@ namespace ignite
 
                 dst.val1 = rawReader.ReadString();
                 dst.val2 = rawReader.ReadInt32();
+            }
+        };
+
+        template<>
+        struct BinaryEnum<gt::TestEnum::Type> : BinaryEnumDefaultAll<gt::TestEnum::Type>
+        {
+            /**
+             * Get binary object type name.
+             *
+             * @param dst Output type name.
+             */
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "TestEnum";
+            }
+        };
+
+        template<>
+        struct BinaryType<gt::TypeWithEnumField> : BinaryTypeDefaultAll<gt::TypeWithEnumField>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "TypeWithEnumField";
+            }
+
+            static void Write(BinaryWriter& writer, const gt::TypeWithEnumField& obj)
+            {
+                writer.WriteInt32("i32Field", obj.i32Field);
+                writer.WriteEnum("enumField", obj.enumField);
+                writer.WriteString("strField", obj.strField);
+            }
+
+            static void Read(BinaryReader& reader, gt::TypeWithEnumField& dst)
+            {
+                dst.i32Field = reader.ReadInt32("i32Field");
+                dst.enumField = reader.ReadEnum<gt::TestEnum::Type>("enumField");
+                dst.strField = reader.ReadString("strField");
             }
         };
     }

@@ -35,6 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -46,24 +47,17 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE = "testCache";
-
-    /** */
-    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
-
-        TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
-
-        cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
     }
@@ -75,11 +69,7 @@ public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommon
     public void testPessimisticTx() throws Exception {
         startGrids(3);
 
-        client = true;
-
-        Ignite clientNode = startGrid(3);
-
-        client = false;
+        Ignite clientNode = startClientGrid(3);
 
         IgniteCache<Integer, Integer> cache = clientNode.createCache(cacheConfiguration(0, FULL_SYNC));
 

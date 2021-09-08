@@ -95,9 +95,10 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
 
     /**
      * Sets error.
+     *
      * @param err Error.
      */
-    public void error(IgniteCheckedException err){
+    public void error(IgniteCheckedException err) {
         this.err = err;
     }
 
@@ -156,8 +157,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         infos.add(info);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

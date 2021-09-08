@@ -29,7 +29,7 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * Usage of {@link ImputerTrainer} to fill missed data ({@code Double.NaN}) values in the chosen columns.
@@ -44,7 +44,9 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_2_Imputing {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 2 (imputing) example started.");
@@ -64,7 +66,7 @@ public class Step_2_Imputing {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     ignite,
                     dataCache,
                     vectorizer
@@ -87,6 +89,9 @@ public class Step_2_Imputing {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

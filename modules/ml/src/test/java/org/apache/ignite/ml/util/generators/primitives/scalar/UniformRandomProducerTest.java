@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.util.generators.primitives.scalar;
 
-import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -32,8 +32,7 @@ public class UniformRandomProducerTest {
     @Test
     public void testGet() {
         Random random = new Random(0L);
-        double[] bounds = Arrays.asList(random.nextInt(10) - 5, random.nextInt(10) - 5)
-            .stream().sorted().mapToDouble(x -> x)
+        double[] bounds = Stream.of(random.nextInt(10) - 5, random.nextInt(10) - 5).sorted().mapToDouble(x -> x)
             .toArray();
 
         double min = Math.min(bounds[0], bounds[1]);

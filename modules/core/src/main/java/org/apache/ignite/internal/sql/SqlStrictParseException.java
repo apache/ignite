@@ -38,7 +38,6 @@ public class SqlStrictParseException extends SqlParseException {
         this(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
     }
 
-
     /**
      * Constructor.
      * @param e SQL parse exception.

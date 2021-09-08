@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -30,9 +31,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_NODES_LEFT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Cache event manager.
@@ -65,7 +70,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param tx Possible surrounding transaction.
      * @param txLbl Possible lable of possible surrounding transaction.
      * @param val Read value.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param keepBinary Keep binary flag.
      */
@@ -73,7 +77,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         @Nullable IgniteInternalTx tx,
         @Nullable String txLbl,
         @Nullable CacheObject val,
-        @Nullable UUID subjId,
         @Nullable String taskName,
         boolean keepBinary) {
         if (isRecordable(EVT_CACHE_OBJECT_READ)) {
@@ -88,7 +91,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 val != null,
                 val,
                 val != null,
-                subjId,
                 null,
                 taskName,
                 keepBinary);
@@ -105,7 +107,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
@@ -118,7 +119,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         @Nullable CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         String cloClsName,
         String taskName,
         boolean keepBinary)
@@ -133,7 +133,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasNewVal,
             oldVal,
             hasOldVal,
-            subjId,
             cloClsName,
             taskName,
             keepBinary);
@@ -157,7 +156,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             false,
             null,
             null,
-            null,
             false);
     }
 
@@ -172,7 +170,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
@@ -186,7 +183,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         String cloClsName,
         String taskName,
         boolean keepBinary)
@@ -202,7 +198,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasNewVal,
             oldVal,
             hasOldVal,
-            subjId,
             cloClsName,
             taskName,
             keepBinary);
@@ -218,7 +213,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
@@ -231,7 +225,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         String cloClsName,
         String taskName,
         boolean keepBinary)
@@ -249,7 +242,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasNewVal,
             oldVal,
             hasOldVal,
-            subjId,
             cloClsName,
             taskName,
             keepBinary);
@@ -267,7 +259,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task class name.
      */
@@ -283,7 +274,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         @Nullable CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         @Nullable String cloClsName,
         @Nullable String taskName,
         boolean keepBinary
@@ -312,9 +302,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             Object oldVal0;
 
             try {
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false, null);
             }
             catch (Exception e) {
                 if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
@@ -329,9 +319,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
 
                 forceKeepBinary = true;
 
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false, null);
             }
 
             IgniteUuid xid = tx == null ? null : tx.xid();
@@ -353,10 +343,18 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 hasNewVal,
                 oldVal0,
                 hasOldVal,
-                subjId,
+                cacheEventSubjectId(type),
                 cloClsName,
                 taskName));
         }
+    }
+
+    /** @return The ID of security subject that was an initiator of the event with the specified type. */
+    private UUID cacheEventSubjectId(int type) {
+        return type == EVT_CACHE_NODES_LEFT ||
+            type == EVT_CACHE_ENTRY_EVICTED ||
+            type == EVT_CACHE_OBJECT_EXPIRED
+            ? null : securitySubjectId(cctx);
     }
 
     /**
@@ -388,11 +386,18 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         GridCacheContext cctx0 = cctx;
 
         // Event recording is impossible in recovery mode.
-        if (cctx0 != null && cctx0.kernalContext().recoveryMode())
+        if (cctx0 == null || cctx0.kernalContext().recoveryMode())
             return false;
 
-        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type)
-            && cctx0.config() != null && !cctx0.config().isEventsDisabled();
+        try {
+            CacheConfiguration cfg = cctx0.config();
+
+            return cctx0.userCache() && cctx0.gridEvents().isRecordable(type) && !cfg.isEventsDisabled();
+        }
+        catch (IllegalStateException e) {
+            // Cache context was cleaned up.
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

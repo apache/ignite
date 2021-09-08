@@ -30,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** */
     public static final short TYPE_CODE = 174;
 
@@ -62,7 +63,8 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout) {
+        boolean skipOnTimeout
+    ) {
         super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
@@ -82,7 +84,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
@@ -100,7 +102,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         }
 
         switch (writer.state()) {
-            case 7:
+            case 8:
                 if (!writer.writeUuid("secSubjId", secSubjId))
                     return false;
 
@@ -122,7 +124,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
             return false;
 
         switch (reader.state()) {
-            case 7:
+            case 8:
                 secSubjId = reader.readUuid("secSubjId");
 
                 if (!reader.isLastRead())

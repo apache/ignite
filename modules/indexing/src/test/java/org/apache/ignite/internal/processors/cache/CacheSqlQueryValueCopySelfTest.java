@@ -48,9 +48,6 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if ("client".equals(cfg.getIgniteInstanceName()))
-            cfg.setClientMode(true);
-
         CacheConfiguration<Integer, Value> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cc.setCopyOnRead(true);
@@ -93,7 +90,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTwoStepSqlClientQuery() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Value> cache = client.cache(DEFAULT_CACHE_NAME);
 
             List<Cache.Entry<Integer, Value>> all = cache.query(

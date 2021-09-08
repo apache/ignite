@@ -64,7 +64,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common logic for near caches.
+ * Common logic for near caches (smaller local cache that stores most recently or most frequently accessed data).
  */
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */
@@ -116,13 +116,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @return DHT cache.
      */
     public abstract GridDhtCacheAdapter<K, V> dht();
-
-    /** {@inheritDoc} */
-    @Override public void forceKeyCheck() {
-        super.forceKeyCheck();
-
-        dht().forceKeyCheck();
-    }
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
@@ -210,7 +203,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param forcePrimary Force primary flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -223,7 +215,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -244,7 +235,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             !skipStore,
             forcePrimary,
             txx,
-            subjId,
             taskName,
             deserializeBinary,
             expiry,
@@ -381,27 +371,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return dht().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgfsDataSizeChanged(long delta) {
-        dht().onIgfsDataSizeChanged(delta);
-    }
-
-    /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,
         boolean readers) {
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {
-            GridCacheVersion obsoleteVer = ctx.versions().next();
+            GridCacheVersion obsoleteVer = nextVersion();
 
             List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally(srv, near, readers);
 

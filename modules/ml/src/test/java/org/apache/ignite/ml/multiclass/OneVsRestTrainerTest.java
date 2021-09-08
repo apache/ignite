@@ -90,7 +90,8 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         OneVsRestTrainer<LogisticRegressionModel> trainer = new OneVsRestTrainer<>(binaryTrainer);
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer =
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         MultiClassModel originalMdl = trainer.fit(
             cacheMock, parts,
             vectorizer
@@ -105,7 +106,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         MultiClassModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

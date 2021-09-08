@@ -29,14 +29,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -171,7 +169,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         for (Iterator<IgniteBiTuple<String, byte[]>> it = generateTestData(size, from).iterator(); it.hasNext(); ) {
             IgniteBiTuple<String, byte[]> d = it.next();
 
-            metaStorage.writeRaw(d.getKey(), d.getValue());
+            metaStorage.write(d.getKey(), d.getValue());
 
             res.put(d.getKey(), d.getValue());
         }
@@ -210,7 +208,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             db.waitForCheckpoint("Test");
 
-            ((GridCacheDatabaseSharedManager)db).enableCheckpoints(false);
+            enableCheckpoints(ig, false);
 
             db.checkpointReadLock();
 
@@ -264,17 +262,15 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             db.checkpointReadLock();
             try {
-                Collection<IgniteBiTuple<String, byte[]>> read = metaStorage.readAll();
+                Collection<IgniteBiTuple<String, byte[]>> read = readTestData(testData, metaStorage);
 
                 int cnt = 0;
                 for (IgniteBiTuple<String, byte[]> r : read) {
                     byte[] test = testData.get(r.get1());
 
-                    if (test != null) {
-                        Assert.assertArrayEquals(r.get2(), test);
+                    Assert.assertArrayEquals(r.get2(), test);
 
-                        cnt++;
-                    }
+                    cnt++;
                 }
 
                 assertEquals(cnt, testData.size());
@@ -315,7 +311,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             try {
                 for (Map.Entry<String, byte[]> v : testData.entrySet())
-                    metaStorage.writeRaw(v.getKey(), v.getValue());
+                    metaStorage.write(v.getKey(), v.getValue());
             }
             finally {
                 db.checkpointReadUnlock();
@@ -338,17 +334,15 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
             db.checkpointReadLock();
 
             try {
-                Collection<IgniteBiTuple<String, byte[]>> read = metaStorage.readAll();
+                Collection<IgniteBiTuple<String, byte[]>> read = readTestData(testData, metaStorage);
 
                 int cnt = 0;
                 for (IgniteBiTuple<String, byte[]> r : read) {
                     byte[] test = testData.get(r.get1());
 
-                    if (test != null) {
-                        Assert.assertArrayEquals(r.get2(), test);
+                    Assert.assertArrayEquals(r.get2(), test);
 
-                        cnt++;
-                    }
+                    cnt++;
                 }
 
                 assertEquals(cnt, testData.size());
@@ -473,7 +467,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
         // Disable checkpoints in order to check whether recovery works.
         forceCheckpoint(grid(1));
-        disableCheckpoints(grid(1));
+        enableCheckpoints(grid(1), false);
 
         loadKeys(grid(1), KEYS_CNT, KEY_PREFIX, NEW_VAL_PREFIX, UPDATED_VAL_PREFIX);
 
@@ -586,18 +580,18 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Disable checkpoints on a specific node.
-     *
-     * @param node Ignite node.h
-     * @throws IgniteCheckedException If failed.
-     */
-    private void disableCheckpoints(Ignite node) throws IgniteCheckedException {
-        assert !node.cluster().localNode().isClient();
+    /** */
+    private Collection<IgniteBiTuple<String, byte[]>> readTestData(
+        Map<String, byte[]> testData,
+        MetaStorage metaStorage
+    ) throws IgniteCheckedException {
+        Collection<IgniteBiTuple<String, byte[]>> read = new ArrayList<>();
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)node).context()
-                .cache().context().database();
+        metaStorage.iterate("", (key, val) -> {
+            if (testData.containsKey(key))
+                read.add(new IgniteBiTuple<String, byte[]>(key, ((byte[])val)));
+        }, true);
 
-        dbMgr.enableCheckpoints(false).get();
+        return read;
     }
 }

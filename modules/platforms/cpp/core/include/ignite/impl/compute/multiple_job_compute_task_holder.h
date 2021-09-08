@@ -92,11 +92,10 @@ namespace ignite
                 /**
                  * Process remote job result.
                  *
-                 * @param job Job.
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader)
                 {
                     ComputeJobResult<ResultType> res;
 
@@ -105,6 +104,60 @@ namespace ignite
                     ProcessResult(res);
 
                     return ComputeJobResultPolicy::WAIT;
+                }
+
+                /**
+                 * Process remote job result.
+                 *
+                 * @param reader Reader for stream with result.
+                 */
+                virtual void JobResultError(const IgniteError& err)
+                {
+                    ComputeJobResult<ResultType> res;
+
+                    res.SetError(err);
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successful result.
+                 *
+                 * @param value Value.
+                 */
+                virtual void JobResultSuccess(int64_t value)
+                {
+                    ComputeJobResult<ResultType> res;
+
+                    res.SetResult(PrimitiveFutureResult<ResultType>(value));
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successful result.
+                 *
+                 * @param reader Reader for stream with result.
+                 */
+                virtual void JobResultSuccess(binary::BinaryReaderImpl& reader)
+                {
+                    ComputeJobResult<ResultType> res;
+
+                    res.SetResult(reader.ReadObject<ResultType>());
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successful null result.
+                 */
+                virtual void JobNullResultSuccess()
+                {
+                    ComputeJobResult<ResultType> res;
+
+                    res.SetResult(impl::binary::BinaryUtils::GetDefaultValue<ResultType>());
+
+                    ProcessResult(res);
                 }
 
                 /**
@@ -202,11 +255,10 @@ namespace ignite
                 /**
                  * Process remote job result.
                  *
-                 * @param job Job.
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader)
                 {
                     ComputeJobResult<void> res;
 
@@ -215,6 +267,60 @@ namespace ignite
                     ProcessResult(res);
 
                     return ComputeJobResultPolicy::WAIT;
+                }
+
+                /**
+                 * Process remote job result.
+                 *
+                 * @param reader Reader for stream with result.
+                 */
+                virtual void JobResultError(const IgniteError& err)
+                {
+                    ComputeJobResult<void> res;
+
+                    res.SetError(err);
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successful result.
+                 *
+                 * @param value Value.
+                 */
+                virtual void JobResultSuccess(int64_t)
+                {
+                    ComputeJobResult<void> res;
+
+                    res.SetResult();
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successful result.
+                 *
+                 * @param reader Reader for stream with result.
+                 */
+                virtual void JobResultSuccess(binary::BinaryReaderImpl&)
+                {
+                    ComputeJobResult<void> res;
+
+                    res.SetResult();
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successful null result.
+                 */
+                virtual void JobNullResultSuccess()
+                {
+                    ComputeJobResult<void> res;
+
+                    res.SetResult();
+
+                    ProcessResult(res);
                 }
 
                 /**

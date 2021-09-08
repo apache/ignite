@@ -44,7 +44,7 @@ public class CompositionUtils {
         DatasetTrainer<? extends M, L> trainer) {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> IgniteModel<I, O> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                 Preprocessor<K, V> extractor) {
                 return trainer.fit(datasetBuilder, extractor);
             }

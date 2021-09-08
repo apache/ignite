@@ -210,15 +210,13 @@ public final class CollocationModel {
         else if (Arrays.equals(this.childFilters, childFilters))
             return false;
 
-        if (this.childFilters == null) {
+        if (this.childFilters == null || this.childFilters.length != childFilters.length) {
             // We have to clone because H2 reuses array and reorders elements.
             this.childFilters = childFilters.clone();
 
             children = new CollocationModel[childFilters.length];
         }
         else {
-            assert this.childFilters.length == childFilters.length;
-
             // We have to copy because H2 reuses array and reorders elements.
             System.arraycopy(childFilters, 0, this.childFilters, 0, childFilters.length);
 
@@ -806,7 +804,7 @@ public final class CollocationModel {
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
         // other than index condition masks and sort order, but in our case it can depend on order
         // of previous table filters.
-        Map<Object,ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
+        Map<Object, ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
 
         if (!viewIdxCache.isEmpty())
             viewIdxCache.clear();

@@ -51,6 +51,8 @@ namespace ignite
             const std::string ConnectionStringParser::Key::sslCaFile              = "ssl_ca_file";
             const std::string ConnectionStringParser::Key::user                   = "user";
             const std::string ConnectionStringParser::Key::password               = "password";
+            const std::string ConnectionStringParser::Key::uid                    = "uid";
+            const std::string ConnectionStringParser::Key::pwd                    = "pwd";
             const std::string ConnectionStringParser::Key::nestedTxMode           = "nested_tx_mode";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
@@ -168,7 +170,7 @@ namespace ignite
                         return;
                     }
 
-                    if (!common::AllOf(value.begin(), value.end(), isdigit))
+                    if (!common::AllDigits(value))
                     {
                         if (diag)
                         {
@@ -272,7 +274,7 @@ namespace ignite
                 }
                 else if (lKey == Key::pageSize)
                 {
-                    if (!common::AllOf(value.begin(), value.end(), isdigit))
+                    if (!common::AllDigits(value))
                     {
                         if (diag)
                         {
@@ -302,7 +304,7 @@ namespace ignite
                     conv << value;
                     conv >> numValue;
 
-                    if (numValue <= 0 || numValue > 0xFFFFFFFFLL)
+                    if (numValue <= 0 || numValue > 0xFFFFFFFFL)
                     {
                         if (diag)
                         {
@@ -417,12 +419,24 @@ namespace ignite
                 {
                     cfg.SetDriver(value);
                 }
-                else if (lKey == Key::user)
+                else if (lKey == Key::user || lKey == Key::uid)
                 {
+                    if (!cfg.GetUser().empty() && diag)
+                    {
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                            "Re-writing USER (have you specified it several times?");
+                    }
+
                     cfg.SetUser(value);
                 }
-                else if (lKey == Key::password)
+                else if (lKey == Key::password || lKey == Key::pwd)
                 {
+                    if (!cfg.GetPassword().empty() && diag)
+                    {
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                            "Re-writing PASSWORD (have you specified it several times?");
+                    }
+
                     cfg.SetPassword(value);
                 }
                 else if (lKey == Key::nestedTxMode)

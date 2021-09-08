@@ -28,11 +28,12 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
  */
-public class ModelOnFeaturesSubspace implements IgniteModel<Vector, Double> {
+public final class ModelOnFeaturesSubspace implements IgniteModel<Vector, Double> {
     /**
      * Features mapping to subspace.
      */
     private final Map<Integer, Integer> featuresMapping;
+
     /**
      * Trained model of features subspace.
      */

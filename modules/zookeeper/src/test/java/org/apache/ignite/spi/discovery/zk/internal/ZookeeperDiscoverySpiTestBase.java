@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,6 +52,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -74,12 +76,14 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
+import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -90,7 +94,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
-import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
+import static org.apache.zookeeper.client.ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
  * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
@@ -119,8 +123,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected Map<String, Object> userAttrs;
 
     /**
-     * Map for checking discovery events per test. The {@link EVT_NODE_JOINED}, {@link EVT_NODE_FAILED}, {@link
-     * EVT_NODE_LEFT} events should be handled only once per topology version.
+     * Map for checking discovery events per test. The
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_JOINED EVT_NODE_JOINED},
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_FAILED EVT_NODE_FAILED},
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_LEFT EVT_NODE_LEFT}
+     * events should be handled only once per topology version.
      *
      * Need to be cleaned in case of cluster restart.
      */
@@ -193,7 +200,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS, clusterCustomProperties());
 
             zkCluster.start();
 
@@ -201,6 +208,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         }
 
         reset();
+    }
+
+    /**
+     * @return Cluster configuration custom properties.
+     */
+    protected Map<String, Object>[] clusterCustomProperties() {
+        return new Map[ZK_SRVS];
     }
 
     /** {@inheritDoc} */
@@ -307,8 +321,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
         }
-
-        helper.clientModeThreadLocalReset();
     }
 
     /**
@@ -335,7 +347,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
      * @return True if nodes equal by consistent id.
      */
     private boolean equalsTopologies(Collection<ClusterNode> nodes1, Collection<ClusterNode> nodes2) {
-        if(nodes1.size() != nodes2.size())
+        if (nodes1.size() != nodes2.size())
             return false;
 
         Set<Object> consistentIds1 = nodes1.stream()
@@ -400,24 +412,17 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (USE_TEST_CLUSTER) {
             assert zkCluster != null;
 
-            zkSpi.setZkConnectionString(zkCluster.getConnectString());
+            zkSpi.setZkConnectionString(getTestClusterZkConnectionString());
 
             if (zkRootPath != null)
                 zkSpi.setZkRootPath(zkRootPath);
         }
         else
-            zkSpi.setZkConnectionString("localhost:2181");
+            zkSpi.setZkConnectionString(getRealClusterZkConnectionString());
 
         cfg.setDiscoverySpi(zkSpi);
 
         cfg.setCacheConfiguration(getCacheConfiguration());
-
-        Boolean clientMode = helper.clientModeThreadLocal();
-
-        if (clientMode != null)
-            cfg.setClientMode(clientMode);
-        else
-            cfg.setClientMode(helper.clientMode());
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);
@@ -494,7 +499,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             }
         }, new int[]{EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT});
 
-        cfg.setLocalEventListeners(lsnrs);
+        if (!isMultiJvm())
+            cfg.setLocalEventListeners(lsnrs);
 
         if (persistence) {
             DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -522,7 +528,23 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (commFailureRslvr != null)
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
+    }
+
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    protected String getTestClusterZkConnectionString() {
+        return zkCluster.getConnectString();
+    }
+
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    protected String getRealClusterZkConnectionString() {
+        return "localhost:2181";
     }
 
     /**
@@ -545,6 +567,93 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
             zkCluster = null;
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void checkZkNodesCleanup() throws Exception {
+        final ZookeeperClient zkClient = new ZookeeperClient(getTestResources().getLogger(),
+            zkCluster.getConnectString(),
+            30_000,
+            null);
+
+        final String basePath = ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT + "/";
+
+        final String aliveDir = basePath + ZkIgnitePaths.ALIVE_NODES_DIR + "/";
+
+        try {
+            List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
+
+            boolean foundAlive = false;
+
+            for (String znode : znodes) {
+                if (znode.startsWith(aliveDir)) {
+                    foundAlive = true;
+
+                    break;
+                }
+            }
+
+            assertTrue(foundAlive); // Sanity check to make sure we check correct directory.
+
+            assertTrue("Failed to wait for unused znodes cleanup", GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
+
+                        for (String znode : znodes) {
+                            if (znode.startsWith(aliveDir) || znode.length() < basePath.length())
+                                continue;
+
+                            znode = znode.substring(basePath.length());
+
+                            if (!znode.contains("/")) // Ignore roots.
+                                continue;
+
+                            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8193
+                            if (znode.startsWith("jd/"))
+                                continue;
+
+                            log.info("Found unexpected znode: " + znode);
+
+                            return false;
+                        }
+
+                        return true;
+                    }
+                    catch (Exception e) {
+                        error("Unexpected error: " + e, e);
+
+                        fail("Unexpected error: " + e);
+                    }
+
+                    return false;
+                }
+            }, 10_000));
+        }
+        finally {
+            zkClient.close();
+        }
+    }
+
+    /**
+     * @param zk ZooKeeper client.
+     * @param root Root path.
+     * @return All children znodes for given path.
+     * @throws Exception If failed/
+     */
+    private List<String> listSubTree(ZooKeeper zk, String root) throws Exception {
+        for (int i = 0; i < 30; i++) {
+            try {
+                return ZKUtil.listSubTreeBFS(zk, root);
+            }
+            catch (KeeperException.NoNodeException e) {
+                info("NoNodeException when get znodes, will retry: " + e);
+            }
+        }
+
+        throw new Exception("Failed to get znodes: " + root);
     }
 
     /** */

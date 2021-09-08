@@ -131,8 +131,7 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /**
-     * Cuts the array sizes according to curIdx. No more entries can be added to this map
-     * after this method is called.
+     * Cuts the array sizes according to curIdx. No more entries can be added to this map after this method is called.
      */
     public void trim() {
         if (partIds != null && curIdx < partIds.length) {
@@ -179,6 +178,17 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /**
+     * Update initial counter by given index.
+     * It is used when iterated by WAL with a margin.
+     *
+     * @param idx Index.
+     * @param cntr Counter.
+     */
+    public void initialUpdateCounterAt(int idx, long cntr) {
+        initialUpdCntrs[idx] = cntr;
+    }
+
+    /**
      * Gets update counter saved at the given index.
      *
      * @param idx Index to get value from.
@@ -187,7 +197,6 @@ public class CachePartitionPartialCountersMap implements Serializable {
     public long updateCounterAt(int idx) {
         return updCntrs[idx];
     }
-
 
     /**
      * @param cntrsMap Partial local counters map.

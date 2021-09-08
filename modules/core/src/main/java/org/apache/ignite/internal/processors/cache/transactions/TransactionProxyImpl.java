@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -45,6 +47,12 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_CLOSE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_COMMIT;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_RESUME;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_ROLLBACK;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_SUSPEND;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
@@ -116,6 +124,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
+        tx.enterSystemSection();
+
         try {
             cctx.kernalContext().gateway().readLock();
         }
@@ -135,6 +145,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     private void leave() {
         try {
             CU.unwindEvicts(cctx);
+
+            tx.leaveSystemSection();
         }
         finally {
             cctx.kernalContext().gateway().readUnlock();
@@ -220,16 +232,19 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void suspend() throws IgniteException {
-        enter();
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_SUSPEND, MTC.span()))) {
+            enter();
 
-        try {
-            cctx.suspendTx(tx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            leave();
+            try {
+                cctx.suspendTx(tx);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                leave();
+            }
         }
     }
 
@@ -291,98 +306,138 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void commit() {
-        enter();
+        Span span = MTC.span();
 
-        try {
-            IgniteInternalFuture<IgniteInternalTx> commitFut = cctx.commitTxAsync(tx);
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, span))) {
+            enter();
 
-            if (async)
-                saveFuture(commitFut);
-            else
-                commitFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            try {
+                IgniteInternalFuture<IgniteInternalTx> commitFut = cctx.commitTxAsync(tx);
+
+                if (async)
+                    saveFuture(commitFut);
+                else
+                    commitFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                leave();
+            }
         }
         finally {
-            leave();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
-        enter();
+        Span span = MTC.span();
 
-        try {
-            return (IgniteFuture<Void>)createFuture(cctx.commitTxAsync(tx));
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, span))) {
+            enter();
+
+            try {
+                return (IgniteFuture<Void>)createFuture(cctx.commitTxAsync(tx));
+            }
+            finally {
+                leave();
+            }
         }
         finally {
-            leave();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        enter();
+        Span span = MTC.span();
 
-        try {
-            cctx.endTx(tx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_CLOSE, span))) {
+            enter();
+
+            try {
+                cctx.endTx(tx);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                leave();
+            }
         }
         finally {
-            leave();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() {
-        enter();
+        Span span = MTC.span();
 
-        try {
-            IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, span))) {
+            enter();
 
-            if (async)
-                asyncRes = new IgniteFutureImpl(rollbackFut);
-            else
-                rollbackFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            try {
+                IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
+
+                if (async)
+                    asyncRes = new IgniteFutureImpl(rollbackFut);
+                else
+                    rollbackFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                leave();
+            }
         }
         finally {
-            leave();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
-        enter();
+        Span span = MTC.span();
 
-        try {
-            return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, span))) {
+            enter();
+
+            try {
+                return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
+            }
+            finally {
+                leave();
+            }
         }
         finally {
-            leave();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
-        enter(true);
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(TX_RESUME, MTC.span()))) {
+            enter(true);
 
-        try {
-            cctx.resumeTx(tx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            leave();
+            try {
+                cctx.resumeTx(tx);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                leave();
+            }
         }
     }
 

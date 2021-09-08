@@ -59,6 +59,6 @@ public class SqlDatasetBuilder extends CacheBasedDatasetBuilder<Object, BinaryOb
      */
     public SqlDatasetBuilder(Ignite ignite, String upstreamCache, IgniteBiPredicate<Object, BinaryObject> filter,
         UpstreamTransformerBuilder transformerBuilder) {
-        super(ignite, ignite.cache(upstreamCache), filter, transformerBuilder, true);
+        super(ignite, ignite.cache(upstreamCache), filter, transformerBuilder, true, CacheBasedDatasetBuilder.DEFAULT_NUMBER_OF_RETRIES);
     }
 }

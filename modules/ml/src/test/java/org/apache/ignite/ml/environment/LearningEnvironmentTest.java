@@ -87,16 +87,22 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-             @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+             @Override public <K, V> IgniteModel<Object, Vector> fitWithInitializedDeployingContext(
+                 DatasetBuilder<K, V> datasetBuilder,
+                 Preprocessor<K, V> preprocessor
+             ) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
-                        TestUtils.DataWrapper.of(env.partition()));
+                        TestUtils.DataWrapper.of(env.partition()),
+                    envBuilder.buildForTrainer());
 
                 Vector v = null;
                 for (int iter = 0; iter < iterations; iter++) {
-                    v = ds.compute((dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
-                        (v1, v2) -> zipOverridingEmpty(v1, v2, -1));
+                    v = ds.compute(
+                        (dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
+                        (v1, v2) -> zipOverridingEmpty(v1, v2, -1)
+                    );
                 }
                 return constantModel(v);
             }
@@ -105,7 +111,6 @@ public class LearningEnvironmentTest {
             @Override public boolean isUpdateable(IgniteModel<Object, Vector> mdl) {
                 return false;
             }
-
 
             /** {@inheritDoc} */
              @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
@@ -119,7 +124,6 @@ public class LearningEnvironmentTest {
         Vector exp = VectorUtils.zeroes(partitions);
         for (int i = 0; i < partitions; i++)
             exp.set(i, i * iterations);
-
 
         Vector res = mdl.predict(null);
         assertEquals(exp, res);
@@ -144,7 +148,7 @@ public class LearningEnvironmentTest {
         return IntStream.range(0, partsCnt).boxed().collect(Collectors.toMap(x -> x, x -> x));
     }
 
-    /** Mock random numners generator. */
+    /** Mock random numbers generator. */
     private static class MockRandom extends Random {
         /** Serial version uuid. */
         private static final long serialVersionUID = -7738558243461112988L;

@@ -19,11 +19,9 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -38,13 +36,9 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(igniteInstanceName.contains("client"));
-
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1120_000);
 
-        cfg.setPluginConfigurations(
-            (TestSecurityPluginConfiguration)TestReconnectProcessor::new
-        );
+        cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;
     }
@@ -52,7 +46,7 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server");
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /**

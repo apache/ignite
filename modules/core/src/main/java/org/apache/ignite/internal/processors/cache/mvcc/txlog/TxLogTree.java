@@ -19,32 +19,56 @@ package org.apache.ignite.internal.processors.cache.mvcc.txlog;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class TxLogTree extends BPlusTree<TxKey, TxRow> {
     /**
+     * @param name Tree name (for debugging purposes).
      * @param pageMem Page memory.
      * @param wal Write ahead log manager
      * @param metaPageId Tree metapage id.
-     * @param reuseList Reuse list
+     * @param reuseList Reuse list.
      * @param failureProcessor Failure processor.
      * @param initNew {@code True} if new tree should be created.
+     * @param pageLockTrackerManager Page lock tracker manager.
      * @throws IgniteCheckedException If fails.
      */
-    public TxLogTree(PageMemory pageMem,
-        IgniteWriteAheadLogManager wal, long metaPageId,
-        ReuseList reuseList, FailureProcessor failureProcessor,
-        boolean initNew) throws IgniteCheckedException {
-        super(TxLog.TX_LOG_CACHE_NAME, TxLog.TX_LOG_CACHE_ID, pageMem, wal, new AtomicLong(), metaPageId,
-            reuseList, TxLogInnerIO.VERSIONS, TxLogLeafIO.VERSIONS, failureProcessor);
+    public TxLogTree(
+        String name,
+        PageMemory pageMem,
+        @Nullable IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        ReuseList reuseList,
+        FailureProcessor failureProcessor,
+        boolean initNew,
+        PageLockTrackerManager pageLockTrackerManager
+    ) throws IgniteCheckedException {
+        super(
+            name,
+            TxLog.TX_LOG_CACHE_ID,
+            TxLog.TX_LOG_CACHE_NAME,
+            pageMem,
+            wal,
+            new AtomicLong(),
+            metaPageId,
+            reuseList,
+            TxLogInnerIO.VERSIONS,
+            TxLogLeafIO.VERSIONS,
+            PageIdAllocator.FLAG_IDX,
+            failureProcessor,
+            pageLockTrackerManager
+        );
 
         initTree(initNew);
     }

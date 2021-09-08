@@ -101,5 +101,12 @@
                 <property name="socketTimeout" value="300" />
             </bean>
         </property>
+
+        <property name="executorConfiguration">
+            <bean class="org.apache.ignite.configuration.ExecutorConfiguration">
+                <property name="name" value="dotNetExecutor" />
+                <property name="size" value="2" />
+            </bean>
+        </property>
     </bean>
 </beans>

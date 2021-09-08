@@ -18,10 +18,22 @@ package org.apache.ignite;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Converter class from {@link DataRegionMetrics} to legacy {@link MemoryMetrics}.
+ *
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 public class DataRegionMetricsAdapter implements MemoryMetrics {
     /** Delegate. */
     private final DataRegionMetrics delegate;

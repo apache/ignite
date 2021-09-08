@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains various naive Bayes classifiers.
  */
+
 package org.apache.ignite.ml.naivebayes;

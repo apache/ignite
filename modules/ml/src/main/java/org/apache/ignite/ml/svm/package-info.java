@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains main APIs for SVM(support vector machines) algorithms.
  */
+
 package org.apache.ignite.ml.svm;

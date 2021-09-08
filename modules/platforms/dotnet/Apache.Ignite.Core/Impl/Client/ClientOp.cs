@@ -54,7 +54,8 @@ namespace Apache.Ignite.Core.Impl.Client
         CacheGetOrCreateWithConfiguration = 1054,
         CacheGetConfiguration = 1055,
         CacheDestroy = 1056,
-        
+        CachePartitions = 1101,
+
         // Queries.
         QueryScan = 2000,
         QueryScanCursorGetPage = 2001,
@@ -62,11 +63,38 @@ namespace Apache.Ignite.Core.Impl.Client
         QuerySqlCursorGetPage = 2003,
         QuerySqlFields = 2004,
         QuerySqlFieldsCursorGetPage = 2005,
+        QueryContinuous = 2006,
+        QueryContinuousEventNotification = 2007,
 
         // Metadata.
         BinaryTypeNameGet = 3000,
         BinaryTypeNamePut = 3001,
         BinaryTypeGet = 3002,
-        BinaryTypePut = 3003
+        BinaryTypePut = 3003,
+        BinaryConfigurationGet = 3004,
+
+        // Transactions
+        TxStart = 4000,
+        TxEnd = 4001,
+
+        // Cluster.
+        ClusterIsActive = 5000,
+        ClusterChangeState = 5001,
+        ClusterChangeWalState = 5002,
+        ClusterGetWalState = 5003,
+        ClusterGroupGetNodeIds = 5100,
+        ClusterGroupGetNodesInfo = 5101,
+        ClusterGroupGetNodesEndpoints = 5102,
+
+        // Compute.
+        ComputeTaskExecute = 6000,
+        ComputeTaskFinished = 6001,
+
+        // Services.
+        ServiceInvoke = 7000,
+
+        // Data Streamer.
+        DataStreamerStart = 8000,
+        DataStreamerAddData = 8001
     }
 }

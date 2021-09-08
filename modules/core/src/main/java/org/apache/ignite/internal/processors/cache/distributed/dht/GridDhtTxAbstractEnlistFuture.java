@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -187,6 +188,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
     private final Set<ClusterNode> firstReqSent = new HashSet<>();
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
@@ -215,7 +220,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert threadId == tx.threadId();
 
         this.threadId = threadId;
         this.cctx = cctx;
@@ -228,6 +232,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.tx = tx;
         this.filter = filter;
         this.keepBinary = keepBinary;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         lockVer = tx.xidVersion();
 
@@ -281,7 +286,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         else if (timeout > 0)
             timeoutObj = new LockTimeoutObject();
 
-        while(true) {
+        while (true) {
             IgniteInternalFuture<?> fut = tx.lockFut;
 
             if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
@@ -338,7 +343,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 return;
             }
 
-            if(!tx.implicitSingle())
+            if (!tx.implicitSingle())
                 tx.addActiveCache(cctx, false);
             else // Nothing to do for single update.
                 assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
@@ -417,7 +422,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     EntryProcessor entryProc = null;
                     Object[] invokeArgs = null;
 
-                    if(op.isInvoke()) {
+                    if (op.isInvoke()) {
                         assert needResult();
 
                         invokeVal = (GridInvokeValue)((IgniteBiTuple)cur).getValue();
@@ -757,7 +762,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 && MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0)
                 entry.newMvccTxState(row.newMvccTxState());
 
-
             assert mvccSnapshot.coordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
 
             res.add(entry);
@@ -840,7 +844,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
                 futId,
-                cctx.localNodeId(),
                 tx.topologyVersionSnapshot(),
                 lockVer,
                 mvccSnapshot.withoutActiveTransactions(),
@@ -1032,7 +1035,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (nearNodeId.equals(nodeId))
                 onDone(new ClusterTopologyCheckedException("Requesting node left the grid [nodeId=" + nodeId + ']'));
             else if (pending != null && pending.remove(nodeId) != null)
-                cctx.kernalContext().closure().runLocalSafe(() -> continueLoop(false));
+                cctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> continueLoop(false));
         }
         catch (Exception e) {
             onDone(e);

@@ -248,7 +248,7 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < GridTestUtils.SF.applyLB(100, 20); i++) {
                     int idx = maxIdx.incrementAndGet();
 
                     String tbl = "Person" + idx;

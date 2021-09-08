@@ -74,7 +74,10 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
             if (!e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["))
                 e.printStackTrace();
 
-            assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
+            assertTrue(
+                e.getMessage(),
+                e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) [")
+            );
         }
     }
 
@@ -82,22 +85,22 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCommunicationSpi(new TcpCommunicationSpi(){
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
 
             volatile long reqId = -1;
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
                 assert msg != null;
 
-                if ( GridIoMessage.class.isAssignableFrom(msg.getClass())){
+                if (GridIoMessage.class.isAssignableFrom(msg.getClass())) {
                     GridIoMessage gridMsg = (GridIoMessage)msg;
 
-                    if ( GridH2QueryRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
-                        GridH2QueryRequest req = (GridH2QueryRequest) (gridMsg.message());
+                    if (GridH2QueryRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
+                        GridH2QueryRequest req = (GridH2QueryRequest)(gridMsg.message());
                         reqId = req.requestId();
                         orgCache.destroy();
                     }
-                    else if ( GridQueryCancelRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
+                    else if (GridQueryCancelRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
                         GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
 
                         if (reqId == req.queryRequestId())

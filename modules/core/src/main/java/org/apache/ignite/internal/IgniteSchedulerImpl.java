@@ -23,14 +23,19 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteScheduler;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.scheduler.SchedulerFuture;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link IgniteScheduler} implementation.
@@ -57,13 +62,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> runLocal(Runnable r) {
+    @Override public IgniteFuture<?> runLocal(@NotNull Runnable r) {
         A.notNull(r, "r");
 
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(r, false));
+            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(localSecureRunnable(r), false));
         }
         finally {
             unguard();
@@ -71,14 +76,14 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit) {
+    @Override public Closeable runLocal(@NotNull Runnable r, long delay, TimeUnit timeUnit) {
         A.notNull(r, "r");
         A.ensure(delay > 0, "Illegal delay");
 
         guard();
 
         try {
-            return ctx.timeout().schedule(r, timeUnit.toMillis(delay), -1);
+            return ctx.timeout().schedule(localSecureRunnable(r), timeUnit.toMillis(delay), -1);
         }
         finally {
             unguard();
@@ -86,13 +91,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> callLocal(Callable<R> c) {
+    @Override public <R> IgniteFuture<R> callLocal(@NotNull Callable<R> c) {
         A.notNull(c, "c");
 
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(c, false));
+            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(localSecureCallable(c), false));
         }
         finally {
             unguard();
@@ -100,13 +105,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) {
+    @Override public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.schedule().schedule(job, ptrn);
+            return ctx.schedule().schedule(localSecureRunnable(job), ptrn);
         }
         finally {
             unguard();
@@ -114,13 +119,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) {
+    @Override public <R> SchedulerFuture<R> scheduleLocal(@NotNull Callable<R> job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.schedule().schedule(job, ptrn);
+            return ctx.schedule().schedule(localSecureCallable(job), ptrn);
         }
         finally {
             unguard();
@@ -159,5 +164,70 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
      */
     private Object readResolve() throws ObjectStreamException {
         return ctx.grid().scheduler();
+    }
+
+    /** @return Security aware runnable. */
+    private Runnable localSecureRunnable(Runnable original) {
+        if (!ctx.security().enabled() || ctx.security().isDefaultContext())
+            return original;
+
+        return new SecurityAwareClosure<Void>(ctx.security().securityContext().subject().id(), original);
+    }
+
+    /** @return Security aware callable. */
+    private <T> Callable<T> localSecureCallable(Callable<T> original) {
+        if (!ctx.security().enabled() || ctx.security().isDefaultContext())
+            return original;
+
+        return new SecurityAwareClosure<>(ctx.security().securityContext().subject().id(), original);
+    }
+
+    /** */
+    private class SecurityAwareClosure<T> implements GridPlainRunnable, GridPlainCallable<T>, GridInternalWrapper<Object> {
+        /** Security subject id. */
+        private final UUID secSubjId;
+
+        /** Runnable. */
+        private final Runnable runnable;
+
+        /** Callable. */
+        private final Callable<T> call;
+
+        /** */
+        private SecurityAwareClosure(UUID secSubjId, Runnable r) {
+            this.secSubjId = secSubjId;
+            runnable = SecurityUtils.sandboxedProxy(ctx, Runnable.class, r);
+            call = null;
+        }
+
+        /** */
+        private SecurityAwareClosure(UUID secSubjId, Callable<T> c) {
+            this.secSubjId = secSubjId;
+            call = SecurityUtils.sandboxedProxy(ctx, Callable.class, c);
+            runnable = null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            assert runnable != null;
+
+            try (OperationSecurityContext c = ctx.security().withContext(secSubjId)) {
+                runnable.run();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public T call() throws Exception {
+            assert call != null;
+
+            try (OperationSecurityContext c = ctx.security().withContext(secSubjId)) {
+                return call.call();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object userObject() {
+            return runnable != null ? runnable : call;
+        }
     }
 }

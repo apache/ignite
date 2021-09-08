@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -194,7 +194,7 @@ class ServiceDeploymentTask {
                         Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
                         if (!services.isEmpty()) {
-                            Map<Integer, Map<Integer, List<UUID>>> change = msg0.assignmentChange();
+                            Map<Integer, IgniteUuid> change = msg0.cacheDeploymentIds();
 
                             if (change != null) {
                                 Set<String> names = new HashSet<>();
@@ -458,7 +458,7 @@ class ServiceDeploymentTask {
             if (isCompleted())
                 return;
 
-            ctx.closure().runLocalSafe(() -> {
+            ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                 try {
                     ServiceDeploymentActions depResults = msg.servicesDeploymentActions();
 

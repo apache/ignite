@@ -126,7 +126,6 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 }
             }));
 
-
         Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount = new HashMap<>();
 
         int curPart = 0;
@@ -161,7 +160,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
     }
 
     /**
-     * By calling this method we would delete found garbarge in partitions and would try to
+     * By calling this method we would delete found garbage in partitions and would try to
      * cleanup indexes.
      *
      * @param grpIdToPartIdToGarbageCount GrpId -&gt; PartId -&gt; Garbage count.
@@ -175,7 +174,13 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             assert groupContext != null;
 
             for (Integer cacheId : e.getValue().keySet()) {
-                groupContext.offheap().stopCache(cacheId, true);
+                groupContext.shared().database().checkpointReadLock();
+                try {
+                    groupContext.offheap().stopCache(cacheId, true);
+                }
+                finally {
+                    groupContext.shared().database().checkpointReadUnlock();
+                }
 
                 ((GridCacheOffheapManager)
                     groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
@@ -282,7 +287,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 if (cacheCtx == null)
                     stoppedCachesForGrpId
                         .computeIfAbsent(grpCtx.groupId(), (x) -> new HashMap<>())
-                        .compute(cacheId, (x, y) -> y == null? 1 : y + 1);
+                        .compute(cacheId, (x, y) -> y == null ? 1 : y + 1);
             }
         }
         catch (IgniteCheckedException e) {
@@ -325,7 +330,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
         if (e instanceof InterruptedException)
             return new IgniteInterruptedException((InterruptedException)e);
         else if (e.getCause() instanceof IgniteException)
-            return  (IgniteException)e.getCause();
+            return (IgniteException)e.getCause();
         else
             return new IgniteException(e.getCause());
     }

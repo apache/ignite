@@ -25,9 +25,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.MetaAttributes;
 import org.apache.ignite.ml.math.StorageOpsMetrics;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
@@ -186,7 +186,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Argument vector.
      * @return This vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector assign(Vector vec);
 
@@ -216,7 +216,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param vec Argument vector.
      * @param fun Mapping function.
      * @return This function.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun);
 
@@ -319,7 +319,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Argument vector.
      * @return New vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector minus(Vector vec);
 
@@ -403,7 +403,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Other argument vector to add.
      * @return New vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector plus(Vector vec);
 
@@ -484,7 +484,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Vector to multiply by.
      * @return New vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector times(Vector vec);
 
@@ -535,7 +535,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold operation.
      * @return Folded value of these vectors.
-     * @throws CardinalityException Thrown when cardinalities mismatch.
+     * @throws CardinalityException Thrown when cardinality mismatch.
      */
     public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
         IgniteBiFunction<Double, Double, Double> combFun,
@@ -553,7 +553,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Another vector.
      * @return Distance squared.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public double getDistanceSquared(Vector vec);
 
@@ -571,7 +571,6 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param f Function used for replacing.
      **/
     public void compute(int i, IgniteIntDoubleToDoubleBiFunction f);
-
 
     /**
      * Returns array of doubles corresponds to vector components.

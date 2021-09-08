@@ -116,7 +116,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         // One is definitely processed. But there might be some more processed or cancelled or processed and cancelled.
         // Thus total number should be at least SPLIT_COUNT and at most (SPLIT_COUNT - 1) *2 +1
-        assert (cancelCnt + processedCnt) >= SPLIT_COUNT && (cancelCnt + processedCnt) <= (SPLIT_COUNT - 1) * 2 +1 :
+        assert (cancelCnt + processedCnt) >= SPLIT_COUNT && (cancelCnt + processedCnt) <= (SPLIT_COUNT - 1) * 2 + 1 :
             "Invalid cancel count value: " + cancelCnt;
     }
 

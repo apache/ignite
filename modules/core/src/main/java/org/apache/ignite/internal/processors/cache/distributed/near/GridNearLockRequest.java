@@ -71,9 +71,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @GridToStringInclude
     private GridCacheVersion[] dhtVers;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
@@ -112,7 +109,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param syncCommit Synchronous commit flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
@@ -137,7 +133,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         int keyCnt,
         int txSize,
         boolean syncCommit,
-        @Nullable UUID subjId,
         int taskNameHash,
         long createTtl,
         long accessTtl,
@@ -169,7 +164,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
@@ -226,10 +220,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Subject ID.
+     * @param topVer Topology version.
      */
-    public UUID subjectId() {
-        return subjId;
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -414,25 +408,19 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 28:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
-                if(!writer.writeString("txLbl", txLbl))
+            case 29:
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -501,14 +489,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 27:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 28:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -516,7 +496,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 28:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -524,10 +504,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 30:
+            case 29:
                 txLbl = reader.readString("txLbl");
 
-                if(!reader.isLastRead())
+                if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
@@ -544,7 +524,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 31;
+        return 30;
     }
 
     /** {@inheritDoc} */

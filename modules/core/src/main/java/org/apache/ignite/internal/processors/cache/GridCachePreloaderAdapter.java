@@ -26,14 +26,19 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
 /**
  * Adapter for preloading which always assumes that preloading finished.
@@ -51,9 +56,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     /** Start future (always completed by default). */
     private final IgniteInternalFuture finFut;
 
-    /** Preload predicate. */
-    protected IgnitePredicate<GridCacheEntryInfo> preloadPred;
-
     /**
      * @param grp Cache group.
      */
@@ -66,7 +68,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
         log = ctx.logger(getClass());
 
-        finFut = new GridFinishedFuture();
+        finFut = new GridFinishedFuture<>(true);
     }
 
     /** {@inheritDoc} */
@@ -95,16 +97,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
-        this.preloadPred = preloadPred;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePredicate<GridCacheEntryInfo> preloadPredicate() {
-        return preloadPred;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Object> startFuture() {
         return finFut;
     }
@@ -120,12 +112,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void unwindUndeploys() {
-        grp.unwindUndeploys();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void handleSupplyMessage(int idx, UUID id, GridDhtPartitionSupplyMessage s) {
+    @Override public void handleSupplyMessage(UUID id, GridDhtPartitionSupplyMessage s) {
         // No-op.
     }
 
@@ -151,24 +138,27 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
-        GridDhtPartitionsExchangeFuture exchFut) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
-                                                                     GridDhtPartitionsExchangeFuture exchFut) {
+    /**
+     * @param exchId Exchange ID.
+     * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
+     * @return Partition assignments which will be requested from supplier nodes.
+     */
+    public GridDhtPreloaderAssignments generateAssignments(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload,
+    @Override public RebalanceFuture prepare(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
         long rebalanceId,
-        Runnable next,
-        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
+        RebalanceFuture next,
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,
+        GridCompoundFuture<Boolean, Boolean> compatibleRebFut
+    ) {
         return null;
     }
 
@@ -191,4 +181,34 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     @Override public void resume() {
         // No-op
     }
+
+    /** {@inheritDoc} */
+    @Override public long timeout() {
+        return grp.shared().gridConfig().getRebalanceTimeout() == DFLT_REBALANCE_TIMEOUT ?
+            grp.config().getRebalanceTimeout() : grp.shared().gridConfig().getRebalanceTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long batchesPrefetchCount() {
+        return grp.shared().gridConfig().getRebalanceBatchesPrefetchCount() == DFLT_REBALANCE_BATCHES_PREFETCH_COUNT ?
+            grp.config().getRebalanceBatchesPrefetchCount() : grp.shared().gridConfig().getRebalanceBatchesPrefetchCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long throttle() {
+        return grp.shared().gridConfig().getRebalanceThrottle() == DFLT_REBALANCE_THROTTLE ?
+            grp.config().getRebalanceThrottle() : grp.shared().gridConfig().getRebalanceThrottle();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int batchSize() {
+        return grp.shared().gridConfig().getRebalanceBatchSize() == DFLT_REBALANCE_BATCH_SIZE ?
+            grp.config().getRebalanceBatchSize() : grp.shared().gridConfig().getRebalanceBatchSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId) {
+        // No-op.
+    }
 }
+

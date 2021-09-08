@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Log;
-    using Microsoft.Win32;
 
     /// <summary>
     /// Jvm.dll loader (libjvm.so on Linux, libjvm.dylib on macOs).
@@ -66,13 +65,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 "jre/lib/amd64/server",
                 "jre/lib/amd64/client"
             };
-
-        /** Registry lookup paths. */
-        private static readonly string[] JreRegistryKeys =
-        {
-            @"Software\JavaSoft\Java Runtime Environment",
-            @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
-        };
 
         /** Jvm dll file name. */
         internal static readonly string FileJvmDll = Os.IsWindows
@@ -305,15 +297,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
         {
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP
             if (!Os.IsWindows)
             {
                 yield break;
             }
 
-            foreach (var regPath in JreRegistryKeys)
+            var jreRegistryKeys = new[]
             {
-                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                @"Software\JavaSoft\Java Runtime Environment",
+                @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
+            };
+
+            foreach (var regPath in jreRegistryKeys)
+            {
+                using (var jSubKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath))
                 {
                     if (jSubKey == null)
                         continue;
@@ -356,8 +354,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 yield break;
             }
 
-            var file = Shell.BashExecute("readlink -f /usr/bin/java");
+            var file = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+            if (string.IsNullOrWhiteSpace(file))
+            {
+                yield break;
+            }
 
             var dir = Path.GetDirectoryName(file);
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin

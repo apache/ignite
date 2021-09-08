@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -85,7 +84,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore) {
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore, boolean primary) {
         assert false;
 
         return false;
@@ -420,7 +419,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -437,7 +435,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public EntryGetResult innerGetAndReserveForLoad(
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
@@ -453,7 +450,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         IgniteInternalTx tx,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -487,7 +483,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -543,7 +538,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean metrics,
         @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
-        UUID subjId,
         String taskName,
         boolean transformOp)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -575,7 +569,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion conflictVer,
         boolean conflictResolve,
         boolean intercept,
-        UUID subjId,
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
@@ -602,7 +595,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion drVer,
-        UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -711,7 +703,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore
+        boolean fromStore,
+        boolean primary,
+        CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;
 
@@ -745,7 +739,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean lockedByThread()  {
+    @Override public boolean lockedByThread() {
         return lockedByThread(Thread.currentThread().getId());
     }
 
@@ -908,8 +902,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo) {
         // No-op.
     }
 
@@ -955,6 +948,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public void unlockEntry() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean tryLockEntry(long timeout) {
+        return false;
     }
 
     /** {@inheritDoc} */

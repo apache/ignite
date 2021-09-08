@@ -39,6 +39,8 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
+import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 
 /**
@@ -55,10 +57,12 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_9_Scaling_With_Stacking {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
-        System.out.println(">>> Tutorial step 5 (scaling) example started.");
+        System.out.println(">>> Tutorial step 9 (scaling with stacking) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
@@ -67,6 +71,9 @@ public class Step_9_Scaling_With_Stacking {
                 // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
                     = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
+
+                TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+                    .split(0.75);
 
                 Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
@@ -108,19 +115,21 @@ public class Step_9_Scaling_With_Stacking {
 
                 StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl =
                     new StackedVectorDatasetTrainer<>(aggregator)
-                    .addTrainerWithDoubleOutput(trainer)
-                    .addTrainerWithDoubleOutput(trainer1)
-                    .addTrainerWithDoubleOutput(trainer2)
-                    .fit(
-                        ignite,
-                        dataCache,
-                        normalizationPreprocessor
-                    );
+                        .addTrainerWithDoubleOutput(trainer)
+                        .addTrainerWithDoubleOutput(trainer1)
+                        .addTrainerWithDoubleOutput(trainer2)
+                        .fit(
+                            ignite,
+                            dataCache,
+                            split.getTrainFilter(),
+                            normalizationPreprocessor
+                        );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
                 double accuracy = Evaluator.evaluate(
                     dataCache,
+                    split.getTestFilter(),
                     mdl,
                     normalizationPreprocessor,
                     new Accuracy<>()
@@ -129,11 +138,14 @@ public class Step_9_Scaling_With_Stacking {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 5 (scaling) example completed.");
+                System.out.println(">>> Tutorial step 9 (scaling with stacking) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

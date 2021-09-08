@@ -17,49 +17,65 @@
 
 package org.apache.ignite.ml.knn.ann;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.knn.NNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.util.ModelTrace;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public class ANNClassificationModel extends NNClassificationModel  {
+public final class ANNClassificationModel extends NNClassificationModel implements JSONWritable, DeployableObject {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 
     /** The labeled set of candidates. */
-    private final LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
+    private LabeledVectorSet<LabeledVector> candidates;
 
     /** Centroid statistics. */
-    private final ANNClassificationTrainer.CentroidStat centroindsStat;
+    private ANNClassificationTrainer.CentroidStat centroindsStat;
 
     /**
      * Build the model based on a candidates set.
      * @param centers The candidates set.
      * @param centroindsStat The stat about centroids.
      */
-    public ANNClassificationModel(LabeledVectorSet<ProbableLabel, LabeledVector> centers,
+    public ANNClassificationModel(LabeledVectorSet<LabeledVector> centers,
         ANNClassificationTrainer.CentroidStat centroindsStat) {
        this.candidates = centers;
        this.centroindsStat = centroindsStat;
     }
 
     /** */
-    public LabeledVectorSet<ProbableLabel, LabeledVector> getCandidates() {
+    private ANNClassificationModel() {
+    }
+
+    /** */
+    public LabeledVectorSet<LabeledVector> getCandidates() {
         return candidates;
     }
 
@@ -71,12 +87,12 @@ public class ANNClassificationModel extends NNClassificationModel  {
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
-            return classify(neighbors, v, stgy);
+            return classify(neighbors, v, weighted);
     }
 
     /** */
     @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
-        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, stgy, candidates, centroindsStat);
+        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, weighted, candidates, centroindsStat);
         exporter.save(mdlData, path);
     }
 
@@ -96,7 +112,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    @NotNull private LabeledVector[] getKClosestVectors(
+    private LabeledVector[] getKClosestVectors(
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res;
 
@@ -131,7 +147,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
+    private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < candidates.rowSize(); i++) {
@@ -146,7 +162,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
     }
 
     /** */
-    private double classify(List<LabeledVector> neighbors, Vector v, NNStrategy stgy) {
+    private double classify(List<LabeledVector> neighbors, Vector v, boolean weighted) {
         Map<Double, Double> clsVotes = new HashMap<>();
 
         for (LabeledVector neighbor : neighbors) {
@@ -157,7 +173,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
             // we predict class label, not the probability vector (it need here another math with counting of votes)
             probableClsLb.forEach((label, probability) -> {
                 double cnt = clsVotes.containsKey(label) ? clsVotes.get(label) : 0;
-                clsVotes.put(label, cnt + probability * getClassVoteForVector(stgy, distance));
+                clsVotes.put(label, cnt + probability * getClassVoteForVector(weighted, distance));
             });
         }
         return getClassWithMaxVotes(clsVotes);
@@ -169,7 +185,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
 
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
-        res = res * 37 + stgy.hashCode();
+        res = res * 37 + Boolean.hashCode(weighted);
         res = res * 37 + candidates.hashCode();
 
         return res;
@@ -187,7 +203,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
 
         return k == that.k
             && distanceMeasure.equals(that.distanceMeasure)
-            && stgy.equals(that.stgy)
+            && weighted == that.weighted
             && candidates.equals(that.candidates);
     }
 
@@ -201,8 +217,112 @@ public class ANNClassificationModel extends NNClassificationModel  {
         return ModelTrace.builder("KNNClassificationModel", pretty)
             .addField("k", String.valueOf(k))
             .addField("measure", distanceMeasure.getClass().getSimpleName())
-            .addField("strategy", stgy.name())
+            .addField("weighted", String.valueOf(weighted))
             .addField("amount of candidates", String.valueOf(candidates.rowSize()))
             .toString();
+    }
+
+    /** {@inheritDoc} */
+    @JsonIgnore
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
+    }
+
+    /** Loads ANNClassificationModel from JSON file. */
+    public static ANNClassificationModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
+        ANNJSONExportModel exportModel;
+        try {
+            exportModel = mapper
+                .readValue(new File(path.toAbsolutePath().toString()), ANNJSONExportModel.class);
+
+            return exportModel.convert();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
+        try {
+            ANNJSONExportModel exportModel = new ANNJSONExportModel(
+                System.currentTimeMillis(),
+                "ann_" + UUID.randomUUID(),
+                ANNClassificationModel.class.getSimpleName()
+            );
+            List<double[]> listOfCandidates = new ArrayList<>();
+            ProbableLabel[] labels = new ProbableLabel[candidates.rowSize()];
+            for (int i = 0; i < candidates.rowSize(); i++) {
+                labels[i] = (ProbableLabel) candidates.getRow(i).getLb();
+                listOfCandidates.add(candidates.features(i).asArray());
+            }
+
+            exportModel.candidateFeatures = listOfCandidates;
+            exportModel.distanceMeasure = distanceMeasure;
+            exportModel.k = k;
+            exportModel.weighted = weighted;
+            exportModel.candidateLabels = labels;
+            exportModel.centroindsStat = centroindsStat;
+
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, exportModel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** */
+    public static class ANNJSONExportModel extends JSONModel {
+        /** Centers of clusters. */
+        public List<double[]> candidateFeatures;
+
+        public ProbableLabel[] candidateLabels;
+
+        /** Distance measure. */
+        public DistanceMeasure distanceMeasure;
+
+        /** Amount of nearest neighbors. */
+        public int k;
+
+        /** kNN strategy. */
+        public boolean weighted;
+
+        /** Centroid statistics. */
+        public ANNClassificationTrainer.CentroidStat centroindsStat;
+
+        /** */
+        public ANNJSONExportModel(Long timestamp, String uid, String modelClass) {
+            super(timestamp, uid, modelClass);
+        }
+
+        /** */
+        @JsonCreator
+        public ANNJSONExportModel() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public ANNClassificationModel convert() {
+            if (candidateFeatures == null || candidateFeatures.isEmpty())
+                throw new IllegalArgumentException("Loaded list of candidates is empty. It should be not empty.");
+
+            double[] firstRow = candidateFeatures.get(0);
+            LabeledVectorSet<LabeledVector> candidatesForANN = new LabeledVectorSet<>(candidateFeatures.size(), firstRow.length);
+            LabeledVector<Double>[] data = new LabeledVector[candidateFeatures.size()];
+            for (int i = 0; i < candidateFeatures.size(); i++) {
+                data[i] = new LabeledVector(VectorUtils.of(candidateFeatures.get(i)), candidateLabels[i]);
+            }
+            candidatesForANN.setData(data);
+
+            ANNClassificationModel mdl = new ANNClassificationModel(candidatesForANN, centroindsStat);
+
+            mdl.withDistanceMeasure(distanceMeasure);
+            mdl.withK(k);
+            mdl.withWeighted(weighted);
+            return mdl;
+        }
     }
 }

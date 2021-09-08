@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -47,6 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-4768, https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstractTest {
     /** */
     private static final String ATOMIC_CACHE = "atomicCache";
@@ -60,9 +62,6 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
     /** */
     private static final int CLIENTS = 1;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -75,8 +74,6 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
         CacheConfiguration ccfg2 = cacheConfiguration(ATOMIC_CACHE, ATOMIC);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -113,13 +110,9 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);
 
-            client = false;
-
             startGridsMultiThreaded(SRVS);
 
-            client = true;
-
-            startGrid(SRVS);
+            startClientGrid(SRVS);
 
             final AtomicBoolean stop = new AtomicBoolean();
 
@@ -129,7 +122,7 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
                         while (!stop.get()) {
                             log.info("Start node.");
 
-                            startGrid(SRVS + CLIENTS);
+                            startClientGrid(SRVS + CLIENTS);
 
                             log.info("Stop node.");
 

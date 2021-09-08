@@ -25,12 +25,30 @@ import org.apache.ignite.ml.math.util.MapUtil;
 class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
     /** Serial version uid. */
     private static final long serialVersionUID = 1L;
+
     /** Sum of all values for all features for each label */
     Map<Double, double[]> featureSumsPerLbl = new HashMap<>();
+
     /** Sum of all squared values for all features for each label */
     Map<Double, double[]> featureSquaredSumsPerLbl = new HashMap<>();
+
     /** Rows count for each label */
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
+
+    public GaussianNaiveBayesSumsHolder() {
+    }
+
+    public Map<Double, double[]> getFeatureSumsPerLbl() {
+        return featureSumsPerLbl;
+    }
+
+    public Map<Double, double[]> getFeatureSquaredSumsPerLbl() {
+        return featureSquaredSumsPerLbl;
+    }
+
+    public Map<Double, Integer> getFeatureCountersPerLbl() {
+        return featureCountersPerLbl;
+    }
 
     /** Merge to current */
     GaussianNaiveBayesSumsHolder merge(GaussianNaiveBayesSumsHolder other) {
@@ -48,7 +66,7 @@ class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
         return arr1;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         // Do nothing, GC will clean up.
     }

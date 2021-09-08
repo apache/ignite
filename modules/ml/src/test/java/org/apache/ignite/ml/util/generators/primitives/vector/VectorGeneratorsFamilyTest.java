@@ -111,8 +111,6 @@ public class VectorGeneratorsFamilyTest {
             .add(() -> VectorUtils.of(2.))
             .build(0L);
 
-        family.asDataStream().labeled().limit(100).forEach(v -> {
-            assertEquals(v.features().get(0), v.label(), 1e-7);
-        });
+        family.asDataStream().labeled().limit(100).forEach(v -> assertEquals(v.features().get(0), v.label(), 1e-7));
     }
 }

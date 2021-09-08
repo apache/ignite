@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
@@ -77,7 +77,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
+public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -406,14 +406,14 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void setNodeId(UUID nodeId) {
+    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof LoggerNodeIdAware) {
-                ((LoggerNodeIdAware)a).setNodeId(nodeId);
+            if (a instanceof LoggerNodeIdAndApplicationAware) {
+                ((LoggerNodeIdAndApplicationAware)a).setApplicationAndNode(application, nodeId);
 
                 a.activateOptions();
             }
@@ -459,6 +459,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         if (!impl.isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
+            assert impl.isTraceEnabled() : "Logging at TRACE level without checking if TRACE level is enabled: " + msg;
+
         impl.trace(msg);
     }
 
@@ -467,6 +469,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         if (!impl.isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
+        assert impl.isDebugEnabled() : "Logging at DEBUG level without checking if DEBUG level is enabled: " + msg;
+
         impl.debug(msg);
     }
 
@@ -474,6 +478,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     @Override public void info(String msg) {
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
+
+        assert impl.isInfoEnabled() : "Logging at INFO level without checking if INFO level is enabled: " + msg;
 
         impl.info(msg);
     }

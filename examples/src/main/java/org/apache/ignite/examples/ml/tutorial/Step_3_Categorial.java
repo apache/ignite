@@ -31,7 +31,7 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * Let's add two categorial features "sex", "embarked" to predict more precisely than in {@link Step_1_Read_and_Learn}.
@@ -48,7 +48,9 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_3_Categorial {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 3 (categorial) example started.");
@@ -67,7 +69,7 @@ public class Step_3_Categorial {
                     .fit(ignite,
                         dataCache,
                         vectorizer
-                );
+                    );
 
                 Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
@@ -78,7 +80,7 @@ public class Step_3_Categorial {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     ignite,
                     dataCache,
                     imputingPreprocessor
@@ -101,6 +103,9 @@ public class Step_3_Categorial {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

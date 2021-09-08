@@ -48,9 +48,6 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /** Maximum size for near eviction policy. */
     private static final int EVICTION_MAX_SIZE = 10;
 
-    /** Node count. */
-    private int cnt;
-
     /** Caching mode specified by test. */
     private CacheMode cacheMode;
 
@@ -58,19 +55,10 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cnt = 0;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (cnt == 0)
-            c.setClientMode(true);
-        else {
+        if (getTestIgniteInstanceIndex(igniteInstanceName) != 0) {
             CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cc.setCacheMode(cacheMode);
@@ -83,8 +71,6 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
         }
 
         ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
-
-        cnt++;
 
         return c;
     }
@@ -161,7 +147,8 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNearEvictionMaxSize() throws Exception {
-        startGrids(GRID_COUNT);
+        startClientGrid(0);
+        startGridsMultiThreaded(1, GRID_COUNT - 1);
 
         try {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();

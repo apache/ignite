@@ -21,11 +21,12 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
@@ -39,11 +40,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.VARCHAR;
-import static java.sql.Types.DECIMAL;
-import static java.sql.Types.OTHER;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -67,7 +68,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -315,6 +316,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception ignored) {
             fail();
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 

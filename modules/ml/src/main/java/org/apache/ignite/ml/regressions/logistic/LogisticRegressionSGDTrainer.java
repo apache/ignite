@@ -63,7 +63,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     private long seed = 1234L;
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> LogisticRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
@@ -107,7 +107,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
 
         MultilayerPerceptron mlp;
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
 
         PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 
@@ -158,8 +159,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
      * @param maxIterations The parameter value.
      * @return Model with new max number of iterations before convergence parameter value.
      */
-    public LogisticRegressionSGDTrainer withMaxIterations(int maxIterations) {
-        this.maxIterations = maxIterations;
+    public LogisticRegressionSGDTrainer withMaxIterations(double maxIterations) {
+        this.maxIterations = (int) maxIterations;
         return this;
     }
 
@@ -169,8 +170,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
      * @param batchSize The size of learning batch.
      * @return Trainer with new batch size parameter value.
      */
-    public LogisticRegressionSGDTrainer withBatchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public LogisticRegressionSGDTrainer withBatchSize(double batchSize) {
+        this.batchSize = (int) batchSize;
         return this;
     }
 
@@ -180,8 +181,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new locIterations parameter value.
      */
-    public LogisticRegressionSGDTrainer withLocIterations(int amountOfLocIterations) {
-        this.locIterations = amountOfLocIterations;
+    public LogisticRegressionSGDTrainer withLocIterations(double amountOfLocIterations) {
+        this.locIterations = (int) amountOfLocIterations;
         return this;
     }
 

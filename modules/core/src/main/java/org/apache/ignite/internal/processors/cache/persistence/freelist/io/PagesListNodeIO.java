@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist.io;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler.copyMemory;
 
 /**
  * TODO optimize: now we have slow {@link #removePage(long, long)}
  */
-public class PagesListNodeIO extends PageIO {
+public class PagesListNodeIO extends PageIO implements CompactablePageIO {
     /** */
     public static final IOVersions<PagesListNodeIO> VERSIONS = new IOVersions<>(
         new PagesListNodeIO(1)
@@ -55,8 +59,8 @@ public class PagesListNodeIO extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setEmpty(pageAddr);
 
@@ -148,7 +152,7 @@ public class PagesListNodeIO extends PageIO {
      * @param idx Item index.
      * @return Item at the given index.
      */
-    private long getAt(long pageAddr, int idx) {
+    public long getAt(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx));
     }
 
@@ -233,12 +237,30 @@ public class PagesListNodeIO extends PageIO {
     }
 
     /** {@inheritDoc} */
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        copyPage(page, out, pageSize);
+
+        long pageAddr = GridUnsafe.bufferAddress(out);
+
+        // Just drop all the extra garbage at the end.
+        out.limit(offset(getCount(pageAddr)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePage(ByteBuffer compactPage, int pageSize) {
+        assert compactPage.isDirect();
+        assert compactPage.position() == 0;
+        assert compactPage.limit() <= pageSize;
+
+        compactPage.limit(pageSize); // Just add garbage to the end.
+    }
+
+    /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("PagesListNode [\n\tpreviousPageId=").appendHex(getPreviousId(addr))
             .a(",\n\tnextPageId=").appendHex(getNextId(addr))
             .a(",\n\tcount=").a(getCount(addr))
-            .a(",\n\tpages={")
-        ;
+            .a(",\n\tpages={");
 
         for (int i = 0; i < getCount(addr); i++)
             sb.a("\n\t\t").a(getAt(addr, i));

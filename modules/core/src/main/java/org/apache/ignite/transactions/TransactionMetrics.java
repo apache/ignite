@@ -17,13 +17,12 @@
 
 package org.apache.ignite.transactions;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
  * Transaction metrics, shared across all caches.
  */
-public interface TransactionMetrics extends Serializable {
+public interface TransactionMetrics {
     /**
      * Gets last time transaction was committed.
      *

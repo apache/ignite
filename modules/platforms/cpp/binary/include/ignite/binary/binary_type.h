@@ -18,7 +18,7 @@
 /**
  * @file
  * Declares ignite::binary::BinaryType class template and helping macros
- * to declare binary type specialisation for user types.
+ * to declare binary type specialization for user types.
  */
 
 #ifndef _IGNITE_BINARY_BINARY_TYPE
@@ -108,7 +108,7 @@ static bool IsNull(const T& obj) \
 
 /**
  * @def IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T)
- * Implementation of GetNull() function which returns an instance created with defult constructor.
+ * Implementation of GetNull() function which returns an instance created with default constructor.
  */
 #define IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T) \
 static void GetNull(T& dst) \
@@ -215,7 +215,7 @@ namespace ignite
             BinaryTypeNonNullableType<T> { };
 
         /**
-         * Templated binary type specification for pointers.
+         * BinaryType template specialization for pointers.
          */
         template <typename T>
         struct IGNITE_IMPORT_EXPORT BinaryType<T*>
@@ -292,7 +292,7 @@ namespace ignite
             /**
              * Get NULL value for the given binary type.
              *
-             * @param dst Null value for the type.
+             * @param dst NULL value for the type.
              */
             static void GetNull(T*& dst)
             {

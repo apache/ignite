@@ -99,7 +99,7 @@ namespace ignite
                 {
                     const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
 
-                    if (ver != 0 && config.IsAffinityAwareness())
+                    if (ver != 0 && config.IsPartitionAwareness())
                         affinityManager.UpdateAffinity(*ver);
                 }
 
@@ -112,14 +112,14 @@ namespace ignite
 
                 /**
                  * Synchronously send request message and receive response.
-                 * Uses provided timeout.
                  *
                  * @param req Request message.
                  * @param rsp Response message.
+                 * @return Channel that was used for request.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp)
+                SP_DataChannel SyncMessage(const ReqT& req, RspT& rsp)
                 {
                     SP_DataChannel channel = GetRandomChannel();
 
@@ -128,6 +128,8 @@ namespace ignite
                     SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                     ProcessMeta(metaVer);
+
+                    return channel;
                 }
 
                 /**
@@ -136,10 +138,11 @@ namespace ignite
                  * @param req Request message.
                  * @param rsp Response message.
                  * @param hint Preferred server node to use.
+                 * @return Channel that was used for request.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, const Guid& hint)
+                SP_DataChannel SyncMessage(const ReqT& req, RspT& rsp, const Guid& hint)
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
@@ -148,6 +151,8 @@ namespace ignite
                     SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                     ProcessMeta(metaVer);
+
+                    return channel;
                 }
 
                 /**
@@ -157,14 +162,57 @@ namespace ignite
                  *
                  * @param req Request message.
                  * @param rsp Response message.
+                 * @return Channel that was used for request.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessageNoMetaUpdate(const ReqT& req, RspT& rsp)
+                SP_DataChannel SyncMessageNoMetaUpdate(const ReqT& req, RspT& rsp)
                 {
                     SP_DataChannel channel = GetRandomChannel();
 
                     SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+
+                    return channel;
+                }
+
+                /**
+                 * Synchronously send request message, receive response and get a notification.
+                 *
+                 * @param req Request message.
+                 * @param notification Notification message.
+                 * @return Channel that was used for request.
+                 * @throw IgniteError on error.
+                 */
+                template<typename ReqT, typename NotT>
+                SP_DataChannel SyncMessageWithNotification(const ReqT& req, NotT& notification)
+                {
+                    SP_DataChannel channel = GetRandomChannel();
+
+                    if (!channel.IsValid())
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                                          "Can not connect to any available cluster node. Please restart client");
+                    }
+
+                    int32_t metaVer = typeMgr.GetVersion();
+
+                    try
+                    {
+                        channel.Get()->SyncMessageWithNotification(req, notification, ioTimeout);
+                    }
+                    catch (IgniteError& err)
+                    {
+                        InvalidateChannel(channel);
+
+                        std::string msg("Connection failure during command processing. Please re-run command. Cause: ");
+                        msg += err.GetText();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
+                    }
+
+                    ProcessMeta(metaVer);
+
+                    return channel;
                 }
 
                 /**
@@ -182,13 +230,13 @@ namespace ignite
                 void RefreshAffinityMapping(const std::vector<int32_t>& cacheIds);
 
                 /**
-                 * Checked whether affinity awareness enabled.
+                 * Checked whether partition awareness enabled.
                  *
-                 * @return @c true if affinity awareness enabled.
+                 * @return @c true if partition awareness enabled.
                  */
-                bool IsAffinityAwarenessEnabled() const
+                bool IsPartitionAwarenessEnabled() const
                 {
-                    return config.IsAffinityAwareness();
+                    return config.IsPartitionAwareness();
                 }
 
                 /**
@@ -198,6 +246,16 @@ namespace ignite
                  * @return Mapping.
                  */
                 affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId) const;
+
+                /**
+                 * Get IO timeout.
+                 *
+                 * @return IO timeout.
+                 */
+                int32_t GetIoTimeout()
+                {
+                    return ioTimeout;
+                }
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
@@ -235,15 +293,14 @@ namespace ignite
                     {
                         channel.Get()->SyncMessage(req, rsp, ioTimeout);
                     }
-                    catch (IgniteError&)
+                    catch (IgniteError& err)
                     {
                         InvalidateChannel(channel);
-                    }
 
-                    if (!channel.IsValid())
-                    {
-                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Connection failure during command processing. Please re-run command");
+                        std::string msg("Connection failure during command processing. Please re-run command. Cause: ");
+                        msg += err.GetText();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
                     }
 
                     CheckAffinity(rsp);

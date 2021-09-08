@@ -56,7 +56,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
 
             @Override public Object call() throws Exception {
                 if (log instanceof GridLoggerProxy) {
-                    Object category = U.field(log,  "ctgr");
+                    Object category = U.field(log, "ctgr");
 
                     assertTrue("Logger created for the wrong category.",
                         category.toString().contains(GridLoggerInjectionSelfTest.class.getName()));
@@ -82,7 +82,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
             @LoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
-                    Object category = U.field(log,  "ctgr");
+                    Object category = U.field(log, "ctgr");
 
                     assertTrue("Logger created for the wrong category.",
                         category.toString().contains(GridLoggerInjectionSelfTest.class.getName()));
@@ -110,7 +110,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
             @LoggerResource(categoryName = "GridLoggerInjectionSelfTest")
             private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
-                    Object category = U.field(log,  "ctgr");
+                    Object category = U.field(log, "ctgr");
 
                     assertTrue("Logger created for the wrong category.",
                         "GridLoggerInjectionSelfTest".equals(category.toString()));

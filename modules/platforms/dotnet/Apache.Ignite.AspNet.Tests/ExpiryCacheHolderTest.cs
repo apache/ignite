@@ -471,6 +471,11 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
+            public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<int, int> qry, SqlFieldsQuery initialQry)
+            {
+                throw new NotImplementedException();
+            }
+
             public IEnumerable<ICacheEntry<int, int>> GetLocalEntries(params CachePeekMode[] peekModes)
             {
                 throw new NotImplementedException();
@@ -522,6 +527,16 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICacheMetrics GetLocalMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void EnableStatistics(bool enabled)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ClearStatistics()
             {
                 throw new NotImplementedException();
             }

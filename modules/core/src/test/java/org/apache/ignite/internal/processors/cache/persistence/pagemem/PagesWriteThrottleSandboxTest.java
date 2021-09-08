@@ -33,9 +33,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -114,7 +113,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
             final AtomicBoolean run = new AtomicBoolean(true);
 
-            final HitRateMetrics getRate = new HitRateMetrics(5000, 5);
+            final HitRateMetric getRate = new HitRateMetric("getRate", "", 5000, 5);
 
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -125,14 +124,14 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         ignite(0).cache(CACHE_NAME).get(key);
 
-                        getRate.onHit();
+                        getRate.increment();
                     }
 
                     return null;
                 }
             }, 2, "read-loader");
 
-            final HitRateMetrics putRate = new HitRateMetrics(1000, 5);
+            final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -147,20 +146,21 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         long cpWrittenPages;
 
-                        AtomicInteger cntr = ((CheckpointWriteProgressSupplier)(((IgniteEx)ignite(0))
-                            .context().cache().context().database())).writtenPagesCounter();
+                        AtomicInteger cntr = ((GridCacheDatabaseSharedManager)((ignite(0))
+                            .context().cache().context().database())).getCheckpointer().currentProgress().writtenPagesCounter();
 
                         cpWrittenPages = cntr == null ? 0 : cntr.get();
 
                         try {
-                            cpBufPages = ((PageMemoryImpl)((IgniteEx)ignite(0)).context().cache().context().database()
+                            cpBufPages = ((ignite(0)).context().cache().context().database()
                                 .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {
                             e.printStackTrace();
                         }
 
-                        System.out.println("@@@ putsPerSec=," + (putRate.getRate()) + ", getsPerSec=," + (getRate.getRate()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
+                        System.out.println("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=,"
+                            + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
 
                         try {
                             Thread.sleep(1000);
@@ -179,7 +179,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                     ds.addData(ThreadLocalRandom.current().nextInt(keyCnt), new TestValue(ThreadLocalRandom.current().nextInt(),
                         ThreadLocalRandom.current().nextInt()));
 
-                    putRate.onHit();
+                    putRate.increment();
                 }
             }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.router.impl;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
 import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
 import static org.apache.ignite.internal.client.util.GridClientUtils.restAvailable;
@@ -77,7 +77,7 @@ public class GridRouterClientImpl implements GridClient {
 
         this.cliCfg = cliCfg;
 
-        clientImpl = new GridClientImpl(id, cliCfg, true);
+        clientImpl = new GridClientImpl(id, cliCfg, true, false);
 
         if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
@@ -176,11 +176,6 @@ public class GridRouterClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientData data() throws GridClientException {
-        return clientImpl.data();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientData data(String cacheName) throws GridClientException {
         return clientImpl.data(cacheName);
     }
@@ -221,7 +216,7 @@ public class GridRouterClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public void throwLastError() throws GridClientException {
-        clientImpl.throwLastError();
+    @Override public GridClientException checkLastError() {
+        return clientImpl.checkLastError();
     }
 }

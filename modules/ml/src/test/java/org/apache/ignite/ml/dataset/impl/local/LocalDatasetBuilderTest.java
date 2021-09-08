@@ -69,7 +69,7 @@ public class LocalDatasetBuilderTest {
         for (int i = 0; i < 100; i++)
             data.put(i, i);
 
-        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, (k, v) -> k % 2 == 0,10);
+        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, (k, v) -> k % 2 == 0, 10);
 
         LocalDataset<Serializable, TestPartitionData> dataset = buildDataset(builder);
 
@@ -108,7 +108,8 @@ public class LocalDatasetBuilderTest {
         return builder.build(
             TestUtils.testEnvBuilder(),
             partCtxBuilder.andThen(x -> null),
-            partDataBuilder.andThen((x, y) -> x)
+            partDataBuilder.andThen((x, y) -> x),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
     }
 

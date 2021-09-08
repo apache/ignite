@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -63,16 +62,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * Constructor used when message is created after cache rebalance finished.
      *
      * @param topVer Topology version.
-     * @param assignmentChange Assignment change.
      * @param cacheDeploymentIds Cache deployment ID.
      */
-    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
-        Map<Integer, IgniteUuid> cacheDeploymentIds) {
-        assert !F.isEmpty(assignmentChange) : assignmentChange;
-
+    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer, Map<Integer, IgniteUuid> cacheDeploymentIds) {
         this.topVer = topVer;
-        this.assignmentChange = assignmentChange;
         this.cacheDeploymentIds = cacheDeploymentIds;
     }
 
@@ -152,11 +145,6 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
         return false;
     }
 

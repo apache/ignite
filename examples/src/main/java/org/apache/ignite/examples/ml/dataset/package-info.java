@@ -16,7 +16,7 @@
  */
 
 /**
- * <!-- Package description. -->
- * Machine learning dataset examples.
+ * <!-- Package description. --> Machine learning dataset examples.
  */
+
 package org.apache.ignite.examples.ml.dataset;

@@ -40,7 +40,7 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();;
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
     @GridToStringInclude
@@ -169,11 +169,6 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
         return false;
     }
 

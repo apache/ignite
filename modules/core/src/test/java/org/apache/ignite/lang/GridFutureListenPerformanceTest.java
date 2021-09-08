@@ -67,7 +67,7 @@ public class GridFutureListenPerformanceTest {
 
         statThread.start();
 
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors() ; i++) {
+        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
             pool.submit(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new Random();

@@ -51,7 +51,6 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
 
         assert tblName != null;
         assert cols != null;
-        assert indexes != null;
     }
 
     /**
@@ -73,8 +72,8 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param cols Columns.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
-        this(tblName, desc, ctx, new String[] {} , cols);
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column... cols) {
+        this(tblName, desc, ctx, new String[] {}, cols);
     }
 
     /**

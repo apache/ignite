@@ -58,12 +58,9 @@ namespace Apache.Ignite.Core.Datastream
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public void Receive(ICache<TK, TV> cache, ICollection<ICacheEntry<TK, TV>> entries)
         {
-            var keys = new List<TK>(entries.Count);
-
+            // Don't use InvokeAll because semantics is different, e.g. duplicate keys are ignored.
             foreach (var entry in entries)
-                keys.Add(entry.Key);
-
-            cache.InvokeAll(keys, _proc, default(TArg));
+                cache.Invoke(entry.Key, _proc, default(TArg));
         }
 
         /** <inheritdoc /> */

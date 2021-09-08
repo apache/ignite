@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.primitives.matrix;
 
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.SingularMatrixException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.copy;
@@ -44,13 +44,16 @@ public class LUDecomposition implements AutoCloseable {
 
     /** Parity of the permutation associated with the LU decomposition. */
     private boolean even;
+
     /** Singularity indicator. */
     private boolean singular;
 
     /** Cached value of L. */
     private Matrix cachedL;
+
     /** Cached value of U. */
     private Matrix cachedU;
+
     /** Cached value of P. */
     private Matrix cachedP;
 

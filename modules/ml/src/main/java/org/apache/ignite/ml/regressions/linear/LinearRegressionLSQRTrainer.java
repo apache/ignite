@@ -38,7 +38,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> LinearRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                       Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
@@ -61,21 +61,22 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
                                                                  DatasetBuilder<K, V> datasetBuilder,
                                                                  Preprocessor<K, V> extractor) {
-
         LSQRResult res;
 
-        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor =
+            new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder, envBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(patchedPreprocessor))) {
+            new SimpleLabeledDatasetDataBuilder<>(patchedPreprocessor),
+            learningEnvironment())) {
 
             double[] x0 = null;
             if (mdl != null) {
-                int x0Size = mdl.getWeights().size() + 1;
-                Vector weights = mdl.getWeights().like(x0Size);
-                mdl.getWeights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
-                weights.set(weights.size() - 1, mdl.getIntercept());
+                int x0Size = mdl.weights().size() + 1;
+                Vector weights = mdl.weights().like(x0Size);
+                mdl.weights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
+                weights.set(weights.size() - 1, mdl.intercept());
                 x0 = weights.asArray();
             }
             res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);

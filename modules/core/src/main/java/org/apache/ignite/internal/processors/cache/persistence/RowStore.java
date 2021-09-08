@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -25,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data store for H2 rows.
@@ -47,7 +51,10 @@ public class RowStore {
     private final boolean persistenceEnabled;
 
     /** Row cache cleaner. */
-    private GridQueryRowCacheCleaner rowCacheCleaner;
+    private volatile Supplier<GridQueryRowCacheCleaner> rowCacheCleaner = () -> null;
+
+    /** */
+    protected final CacheGroupContext grp;
 
     /**
      * @param grp Cache group.
@@ -57,6 +64,7 @@ public class RowStore {
         assert grp != null;
         assert freeList != null;
 
+        this.grp = grp;
         this.freeList = freeList;
 
         ctx = grp.shared();
@@ -73,8 +81,10 @@ public class RowStore {
     public void removeRow(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 
-        if (rowCacheCleaner != null)
-            rowCacheCleaner.remove(link);
+        GridQueryRowCacheCleaner rowCacheCleaner0 = rowCacheCleaner.get();
+
+        if (rowCacheCleaner0 != null)
+            rowCacheCleaner0.remove(link);
 
         if (!persistenceEnabled)
             freeList.removeDataRowByLink(link, statHolder);
@@ -95,8 +105,11 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (!persistenceEnabled)
+        if (!persistenceEnabled) {
+            ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), row.size());
+
             freeList.insertDataRow(row, statHolder);
+        }
         else {
             ctx.database().checkpointReadLock();
 
@@ -109,6 +122,22 @@ public class RowStore {
                 ctx.database().checkpointReadUnlock();
             }
         }
+
+        assert row.key().partition() == PageIdUtils.partId(row.link()) :
+            "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
+                ", link=" + U.hexLong(row.link()) + ']';
+    }
+
+    /**
+     * @param rows Rows.
+     * @param statHolder Statistics holder to track IO operations.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addRows(Collection<? extends CacheDataRow> rows,
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        assert ctx.database().checkpointLockIsHeldByThread();
+
+        freeList.insertDataRows(rows, statHolder);
     }
 
     /**
@@ -120,8 +149,10 @@ public class RowStore {
     public boolean updateRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
-        if (rowCacheCleaner != null)
-            rowCacheCleaner.remove(link);
+        GridQueryRowCacheCleaner rowCacheCleaner0 = rowCacheCleaner.get();
+
+        if (rowCacheCleaner0 != null)
+            rowCacheCleaner0.remove(link);
 
         return freeList.updateDataRow(link, row, statHolder);
     }
@@ -162,7 +193,9 @@ public class RowStore {
      *
      * @param rowCacheCleaner Rows cache cleaner.
      */
-    public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+    public void setRowCacheCleaner(Supplier<GridQueryRowCacheCleaner> rowCacheCleaner) {
+        assert rowCacheCleaner != null;
+
         this.rowCacheCleaner = rowCacheCleaner;
     }
 }

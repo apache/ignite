@@ -33,6 +33,14 @@ public interface GridCacheSharedManager<K, V> {
     public void start(GridCacheSharedContext<K, V> cctx) throws IgniteCheckedException;
 
     /**
+     * Callback that notifies that kernal has successfully started,
+     * including all managers and processors.
+     *
+     * @param active Cluster active flag.
+     */
+    public void onKernalStart(boolean active);
+
+    /**
      * Stops manager.
      *
      * @param cancel Cancel flag.

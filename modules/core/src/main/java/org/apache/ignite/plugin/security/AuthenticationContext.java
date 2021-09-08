@@ -18,10 +18,12 @@
 package org.apache.ignite.plugin.security;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Authentication context.
@@ -42,11 +44,11 @@ public class AuthenticationContext {
     /** */
     private Map<String, Object> nodeAttrs;
 
-    /** Authorization context. */
-    private AuthorizationContext athrCtx;
-
     /** True if this is a client node context. */
     private boolean client;
+
+    /** Client SSL certificates. */
+    private Certificate[] certs;
 
     /**
      * Gets subject type.
@@ -126,7 +128,7 @@ public class AuthenticationContext {
      * @return Node attributes or empty map for {@link SecuritySubjectType#REMOTE_CLIENT}.
      */
     public Map<String, Object> nodeAttributes() {
-        return nodeAttrs != null ? nodeAttrs : Collections.<String, Object>emptyMap();
+        return nodeAttrs != null ? nodeAttrs : Collections.emptyMap();
     }
 
     /**
@@ -134,23 +136,23 @@ public class AuthenticationContext {
      *
      * @param nodeAttrs Node attributes.
      */
-    public void nodeAttributes(Map<String, Object> nodeAttrs) {
-        this.nodeAttrs = nodeAttrs;
+    public void nodeAttributes(Map<String, ?> nodeAttrs) {
+        this.nodeAttrs = F.isEmpty(nodeAttrs) ? null : new HashMap<>(nodeAttrs);
     }
 
     /**
-     * @return Native Apache Ignite authorization context acquired after authentication or {@code null} if native
-     * Ignite authentication is not used.
+     * @return Client SSL certificates.
      */
-    public AuthorizationContext authorizationContext(){
-        return athrCtx;
+    public Certificate[] certificates() {
+        return certs;
     }
 
     /**
-     * Set authorization context acquired after native Apache Ignite authentication.
+     * Set client SSL certificates.
+     * @param certs Client SSL certificates.
      */
-    public AuthenticationContext authorizationContext(AuthorizationContext newVal) {
-        athrCtx = newVal;
+    public AuthenticationContext certificates(Certificate[] certs) {
+        this.certs = certs;
 
         return this;
     }

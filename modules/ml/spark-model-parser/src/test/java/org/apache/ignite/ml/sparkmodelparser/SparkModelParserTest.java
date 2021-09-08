@@ -17,12 +17,15 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
+import java.io.File;
+import java.net.URL;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.File;
-import java.net.URL;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertTrue;
@@ -31,6 +34,12 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link SparkModelParser}.
  */
 public class SparkModelParserTest {
+    /** Learning environment. */
+    LearningEnvironment env =
+        LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+            .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
+
+    /** Expected exception. */
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
@@ -42,8 +51,6 @@ public class SparkModelParserTest {
      */
     @Test
     public void failOnNullDirectory() {
-        URL url = getClass().getClassLoader().getResource(SPARK_MDL_PATH);
-
         try {
             SparkModelParser.parse(
                 "incorrectPath", SupportedSparkModels.LINEAR_REGRESSION
@@ -64,7 +71,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + "empty", SupportedSparkModels.LINEAR_REGRESSION
+                url.getPath() + "empty", SupportedSparkModels.LINEAR_REGRESSION, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -82,7 +89,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "nodatafolder", SupportedSparkModels.LINEAR_REGRESSION
+                url.getPath() + File.separator + "nodatafolder", SupportedSparkModels.LINEAR_REGRESSION, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -100,7 +107,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "nometadatafolder", SupportedSparkModels.LINEAR_REGRESSION
+                url.getPath() + File.separator + "nometadatafolder", SupportedSparkModels.LINEAR_REGRESSION, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -118,7 +125,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "nomodelfilefolder", SupportedSparkModels.LINEAR_REGRESSION
+                url.getPath() + File.separator + "nomodelfilefolder", SupportedSparkModels.LINEAR_REGRESSION, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -136,7 +143,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "twomodelfilefolder", SupportedSparkModels.LINEAR_REGRESSION
+                url.getPath() + File.separator + "twomodelfilefolder", SupportedSparkModels.LINEAR_REGRESSION, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -154,7 +161,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "nometadatafilefolder", SupportedSparkModels.LINEAR_REGRESSION
+                url.getPath() + File.separator + "nometadatafilefolder", SupportedSparkModels.LINEAR_REGRESSION, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -172,7 +179,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "notreesmetadatafolder", SupportedSparkModels.GRADIENT_BOOSTED_TREES
+                url.getPath() + File.separator + "notreesmetadatafolder", SupportedSparkModels.GRADIENT_BOOSTED_TREES, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -190,7 +197,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "notreesmetadatafile", SupportedSparkModels.GRADIENT_BOOSTED_TREES
+                url.getPath() + File.separator + "notreesmetadatafile", SupportedSparkModels.GRADIENT_BOOSTED_TREES, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -208,7 +215,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "twotreesmetadatafiles", SupportedSparkModels.GRADIENT_BOOSTED_TREES
+                url.getPath() + File.separator + "twotreesmetadatafiles", SupportedSparkModels.GRADIENT_BOOSTED_TREES, env
             );
             fail("Expected IllegalArgumentException exception");
         }
@@ -228,7 +235,7 @@ public class SparkModelParserTest {
 
         try {
             SparkModelParser.parse(
-                url.getPath() + File.separator + "gbt", SupportedSparkModels.DECISION_TREE
+                url.getPath() + File.separator + "gbt", SupportedSparkModels.DECISION_TREE, env
             );
             fail("Expected IllegalArgumentException exception");
         } catch (IllegalArgumentException e) {

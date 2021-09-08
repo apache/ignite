@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
+import static org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable.DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.internal.util.GridUnsafe.getInt;
 import static org.apache.ignite.internal.util.GridUnsafe.getLong;
 import static org.apache.ignite.internal.util.GridUnsafe.putInt;
@@ -47,7 +48,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.putLong;
  */
 public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /** Load factor. */
-    private static final float LOAD_FACTOR = getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, 2.5f);
+    private static final float LOAD_FACTOR =
+        getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR);
 
     /** Size of count of entries (value returned by size() method). */
     private static final int MAPSIZE_SIZE = 4;
@@ -201,7 +203,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         long pageIdToInsert = pageId;
         long valToInsert = val;
         int verToInsert = ver;
-        long idxIdealToInsert = idxInit;
+        int idxIdealToInsert = idxInit;
 
         for (int i = 0; i < numBuckets; i++) {
             int idxCurr = (idxInit + i) % numBuckets;
@@ -478,10 +480,10 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param base Entry base, address in buffer of the entry start.
      * @param idxIdeal number of ideal bucket (cell) to insert this value.
      */
-    private void setIdealBucket(long base, long idxIdeal) {
+    private void setIdealBucket(long base, int idxIdeal) {
         assert idxIdeal >= 0 && idxIdeal < numBuckets;
 
-        putLong(base + IDEAL_BUCKET_OFFSET, idxIdeal);
+        putInt(base + IDEAL_BUCKET_OFFSET, idxIdeal);
     }
 
     /**
@@ -541,7 +543,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param val Entry value associated with key.
      * @param ver Entry version.
      */
-    private void setCellValue(long base, long idealBucket, int grpId, long pageId, long val, int ver) {
+    private void setCellValue(long base, int idealBucket, int grpId, long pageId, long val, int ver) {
         setIdealBucket(base, idealBucket);
         setGrpId(base, grpId);
         setPageId(base, pageId);

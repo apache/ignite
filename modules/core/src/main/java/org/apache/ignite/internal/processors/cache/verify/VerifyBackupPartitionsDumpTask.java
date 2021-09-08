@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -38,15 +39,13 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 
 /**
  * Task for collection checksums primary and backup partitions of specified caches. <br> Argument: Set of cache names,
@@ -80,7 +79,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         VisorIdleVerifyTaskArg arg
     ) throws IgniteException {
@@ -141,7 +140,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
      * @return {@code true} if this records should be add to result and {@code false} otherwise.
      */
     private boolean needToAdd(List<PartitionHashRecordV2> records) {
-        if (records.isEmpty() || (taskArg != null && !taskArg.isSkipZeros()))
+        if (records.isEmpty() || (taskArg != null && !taskArg.skipZeros()))
             return true;
 
         PartitionHashRecordV2 record = records.get(0);
@@ -179,14 +178,16 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         File out = new File(workDir, IDLE_DUMP_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
-        ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
+        if (ignite.log().isInfoEnabled())
+            ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
             writeResult(partitions, conflictRes, skippedRecords, writer);
 
             writer.flush();
 
-            ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
+            if (ignite.log().isInfoEnabled())
+                ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
         }
         catch (IOException | IgniteException e) {
             ignite.log().error("Failed to write dump file: " + out.getAbsolutePath(), e);
@@ -219,16 +220,16 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             int size = exceptions.size();
 
-            writer.write("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+            writer.write("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
             if (noMatchingCaches)
                 writer.write("There are no caches matching given filter options.");
         }
 
         if (!partitions.isEmpty())
-            writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
+            writer.write("The check procedure has finished, found " + partitions.size() + " partitions\n");
 
-        writer.write("idle_verify task was executed with the following args: " + taskArgsAsCmd() + "\n");
+        logParsedArgs(taskArg, writer::write);
 
         if (skippedRecords > 0)
             writer.write(skippedRecords + " partitions was skipped\n");
@@ -244,42 +245,8 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             writer.write("\n\n-----------------------------------\n\n");
 
-            conflictRes.print(writer::write);
+            conflictRes.print(writer::write, true);
         }
-    }
-
-    /**
-     * Method that builds command line string from the taskArg field.
-     *
-     * @return command line argument string
-     */
-    private String taskArgsAsCmd() {
-        StringBuilder result = new StringBuilder();
-
-        if (!F.isEmpty(taskArg.getCaches())) {
-            for (String cache : taskArg.getCaches()) {
-                result.append(cache);
-                result.append(" ");
-            }
-        }
-
-        if (taskArg.getCacheFilterEnum() != null && taskArg.getCacheFilterEnum() != CacheFilterEnum.DEFAULT) {
-            result.append(CACHE_FILTER);
-            result.append(" ");
-            result.append(taskArg.getCacheFilterEnum());
-            result.append(" ");
-        }
-
-        if (!F.isEmpty(taskArg.getExcludeCaches())) {
-            result.append(EXCLUDE_CACHES + " ");
-
-            for (String excluded : taskArg.getExcludeCaches()) {
-                result.append(excluded);
-                result.append(" ");
-            }
-        }
-
-        return result.toString();
     }
 
     /**
@@ -308,5 +275,27 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             return Integer.compare(o1.partitionId(), o2.partitionId());
         };
+    }
+
+    /**
+     * Passes idle_verify parsed arguments to given log consumer.
+     *
+     * @param args idle_verify arguments.
+     * @param logConsumer Logger.
+     */
+    public static void logParsedArgs(VisorIdleVerifyTaskArg args, Consumer<String> logConsumer) {
+        SB options = new SB("The check procedure task was executed with the following args: ");
+
+        options
+            .a("caches=[")
+            .a(args.caches() == null ? "" : String.join(", ", args.caches()))
+            .a("], excluded=[")
+            .a(args.excludeCaches() == null ? "" : String.join(", ", args.excludeCaches()))
+            .a("]")
+            .a(", cacheFilter=[")
+            .a(args.cacheFilterEnum().toString())
+            .a("]\n");
+
+        logConsumer.accept(options.toString());
     }
 }

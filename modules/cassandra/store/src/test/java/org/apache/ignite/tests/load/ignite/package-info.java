@@ -18,4 +18,5 @@
 /**
  * Contains load tests workers implementation for Ignite-Cassandra cluster
  */
+
 package org.apache.ignite.tests.load.ignite;

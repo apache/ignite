@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains classes for working with SSL.
  */
+
 package org.apache.ignite.ssl;

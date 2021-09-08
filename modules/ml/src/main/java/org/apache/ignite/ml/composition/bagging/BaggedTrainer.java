@@ -126,8 +126,8 @@ public class BaggedTrainer<L> extends
             .map(CompositionUtils::unsafeCoerce)
             .collect(Collectors.toList());
 
-        AdaptableDatasetTrainer<Vector, Double, Vector, List<Double>, IgniteModel<Vector, List<Double>>, L> finalTrainer = AdaptableDatasetTrainer.of(
-            new TrainersParallelComposition<>(
+        AdaptableDatasetTrainer<Vector, Double, Vector, List<Double>, IgniteModel<Vector, List<Double>>, L> finalTrainer =
+            AdaptableDatasetTrainer.of(new TrainersParallelComposition<>(
                 subspaceTrainers)).afterTrainedModel(l -> aggregator.apply(l.stream().mapToDouble(Double::valueOf).toArray()));
 
         return CompositionUtils.unsafeCoerce(finalTrainer);
@@ -148,7 +148,7 @@ public class BaggedTrainer<L> extends
 
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> BaggedModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
         IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, preprocessor);
         return new BaggedModel(fit);
@@ -157,6 +157,8 @@ public class BaggedTrainer<L> extends
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
+        learningEnvironment().initDeployingContext(preprocessor);
+
         IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, preprocessor);
         return new BaggedModel(updated);
     }
@@ -168,7 +170,6 @@ public class BaggedTrainer<L> extends
 
     /**
      * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable} and
      * {@link DatasetTrainer#updateModel}
      * in this class we explicitly override update method.
      *

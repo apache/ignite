@@ -151,6 +151,48 @@ public class BinaryClassDescriptor {
         boolean metaDataEnabled,
         boolean registered
     ) throws BinaryObjectException {
+        this(
+            ctx,
+            cls,
+            userType,
+            typeId,
+            typeName,
+            affKeyFieldName,
+            mapper,
+            serializer,
+            metaDataEnabled,
+            registered,
+            MarshallerExclusions.isExcluded(cls)
+        );
+    }
+
+    /**
+     * @param ctx Context.
+     * @param cls Class.
+     * @param userType User type flag.
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
+     * @param mapper Mapper.
+     * @param serializer Serializer.
+     * @param metaDataEnabled Metadata enabled flag.
+     * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
+     * @param excluded If true class values are explicitly excluded from marshalling, otherwise false.
+     * @throws BinaryObjectException In case of error.
+     */
+    BinaryClassDescriptor(
+        BinaryContext ctx,
+        Class<?> cls,
+        boolean userType,
+        int typeId,
+        String typeName,
+        @Nullable String affKeyFieldName,
+        @Nullable BinaryInternalMapper mapper,
+        @Nullable BinarySerializer serializer,
+        boolean metaDataEnabled,
+        boolean registered,
+        boolean excluded
+    ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
         assert mapper != null;
@@ -176,7 +218,7 @@ public class BinaryClassDescriptor {
 
         schemaReg = ctx.schemaRegistry(typeId);
 
-        excluded = MarshallerExclusions.isExcluded(cls);
+        this.excluded = excluded;
 
         if (excluded)
             mode = BinaryWriteMode.EXCLUSION;
@@ -402,6 +444,20 @@ public class BinaryClassDescriptor {
      */
     boolean isEnum() {
         return mode == BinaryWriteMode.ENUM;
+    }
+
+    /**
+     * @return {@code True} if the type is registered as an OBJECT.
+     */
+    boolean isObject() {
+        return mode == BinaryWriteMode.OBJECT;
+    }
+
+    /**
+     * @return {@code True} if the type is registered as a BINARY object.
+     */
+    boolean isBinary() {
+        return mode == BinaryWriteMode.BINARY;
     }
 
     /**
@@ -771,12 +827,14 @@ public class BinaryClassDescriptor {
 
                                     BinarySchema newSchema = collector.schema();
 
-                                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                        affKeyFieldName, Collections.singleton(newSchema), false, null);
-
-                                    ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
-
                                     schemaReg.addSchema(newSchema.schemaId(), newSchema);
+
+                                    if (userType) {
+                                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
+                                            affKeyFieldName, Collections.singleton(newSchema), false, null);
+
+                                        ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
+                                    }
                                 }
                             }
 
@@ -829,7 +887,7 @@ public class BinaryClassDescriptor {
         catch (Exception e) {
             String msg;
 
-            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+            if (S.includeSensitive() && !F.isEmpty(typeName))
                 msg = "Failed to serialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to serialize object [typeId=" + typeId + ']';
@@ -903,7 +961,7 @@ public class BinaryClassDescriptor {
         catch (Exception e) {
             String msg;
 
-            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+            if (S.includeSensitive() && !F.isEmpty(typeName))
                 msg = "Failed to deserialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to deserialize object [typeId=" + typeId + ']';
@@ -912,6 +970,56 @@ public class BinaryClassDescriptor {
 
             throw new BinaryObjectException(msg, e);
         }
+    }
+
+    /**
+     * @return A copy of this {@code BinaryClassDescriptor} marked as registered.
+     */
+    BinaryClassDescriptor makeRegistered() {
+        if (registered)
+            return this;
+        else
+            return new BinaryClassDescriptor(ctx,
+                cls,
+                userType,
+                typeId,
+                typeName,
+                affKeyFieldName,
+                mapper,
+                initialSerializer,
+                stableFieldsMeta != null,
+                true);
+    }
+
+    /**
+     * @return Instance of {@link BinaryMetadata} for this type.
+     */
+    BinaryMetadata metadata(boolean includeSchema) {
+        return new BinaryMetadata(
+            typeId,
+            typeName,
+            stableFieldsMeta,
+            affKeyFieldName,
+            includeSchema ? (stableSchema == null ? null : Collections.singleton(stableSchema)) : null,
+            isEnum(),
+            cls.isEnum() ? enumMap(cls) : null);
+    }
+
+    /**
+     * @param cls Enum class.
+     * @return Enum name to ordinal mapping.
+     */
+    private static Map<String, Integer> enumMap(Class<?> cls) {
+        assert cls.isEnum();
+
+        Object[] enumVals = cls.getEnumConstants();
+
+        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+        for (Object enumVal : enumVals)
+            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
+
+        return enumMap;
     }
 
     /**

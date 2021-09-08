@@ -24,7 +24,7 @@ public final class ClientStatus {
     /**
      * No-op constructor to prevent instantiation.
      */
-    private ClientStatus (){
+    private ClientStatus() {
         // No-op.
     }
 
@@ -36,6 +36,12 @@ public final class ClientStatus {
 
     /** Invalid op code. */
     public static final int INVALID_OP_CODE = 2;
+
+    /** Invalid node status. */
+    public static final int INVALID_NODE_STATE = 10;
+
+    /** Functionality is disabled. */
+    public static final int FUNCTIONALITY_DISABLED = 100;
 
     /** Cache does not exist. */
     public static final int CACHE_DOES_NOT_EXIST = 1000;
@@ -51,6 +57,15 @@ public final class ClientStatus {
 
     /** Authorization failure. */
     public static final int SECURITY_VIOLATION = 1012;
+
+    /** Active transactions per connection limit exceeded. */
+    public static final int TX_LIMIT_EXCEEDED = 1020;
+
+    /** Transaction not found. */
+    public static final int TX_NOT_FOUND = 1021;
+
+    /** Too many compute tasks. */
+    public static final int TOO_MANY_COMPUTE_TASKS = 1030;
 
     /** Authentication failed. */
     public static final int AUTH_FAILED = 2000;

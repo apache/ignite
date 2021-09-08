@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Root package for classification metrics.
+ * <!-- Package description. --> Package for classification metrics.
  */
 package org.apache.ignite.ml.selection.scoring.metric.classification;

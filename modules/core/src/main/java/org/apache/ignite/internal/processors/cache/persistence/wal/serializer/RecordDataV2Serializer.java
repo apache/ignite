@@ -38,10 +38,12 @@ import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -50,7 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
@@ -83,20 +85,15 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
-
-                assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                    "Invalid WAL record: " + cpRec;
-
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
-
-                FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
+                WALPointer walPtr = cpRec.checkpointMark();
 
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
             case MVCC_DATA_RECORD:
                 return 4/*entry count*/ + 8/*timestamp*/ + dataSize((DataRecord)rec);
 
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 return super.plainSize(rec) + 8/*timestamp*/;
 
             case SNAPSHOT:
@@ -110,6 +107,12 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case MVCC_TX_RECORD:
                 return txRecordSerializer.size((MvccTxRecord)rec);
+
+            case ROLLBACK_TX_RECORD:
+                return 4 + 4 + 8 + 8;
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                return 4 + 8;
 
             default:
                 return super.plainSize(rec);
@@ -146,7 +149,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
                 boolean end = in.readByte() != 0;
 
-                FileWALPointer walPtr = hasPtr ? new FileWALPointer(idx0, off, len) : null;
+                WALPointer walPtr = hasPtr ? new WALPointer(idx0, off, len) : null;
 
                 CheckpointRecord cpRec = new CheckpointRecord(new UUID(msb, lsb), walPtr, end);
 
@@ -155,13 +158,14 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 return cpRec;
 
             case DATA_RECORD:
+            case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
                 long timeStamp = in.readLong();
 
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in));
+                    entries.add(readPlainDataEntry(in, type));
 
                 return new DataRecord(entries, timeStamp);
 
@@ -177,13 +181,15 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 return new MvccDataRecord(entries, timeStamp);
 
             case ENCRYPTED_DATA_RECORD:
+            case ENCRYPTED_DATA_RECORD_V2:
+            case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
                 timeStamp = in.readLong();
 
                 entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in));
+                    entries.add(readEncryptedDataEntry(in, type));
 
                 return new DataRecord(entries, timeStamp);
 
@@ -206,6 +212,20 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case MVCC_TX_RECORD:
                 return txRecordSerializer.readMvccTx(in);
 
+            case ROLLBACK_TX_RECORD:
+                int grpId = in.readInt();
+                int partId = in.readInt();
+                long start = in.readLong();
+                long range = in.readLong();
+
+                return new RollbackRecord(grpId, partId, start, range);
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                return new TrackingPageRepairDeltaRecord(cacheId, pageId);
+
             default:
                 return super.readPlainRecord(type, in, encrypted, recordSize);
         }
@@ -219,11 +239,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
         switch (rec.type()) {
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
-
-                assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                    "Invalid WAL record: " + cpRec;
-
-                FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
+                WALPointer walPtr = cpRec.checkpointMark();
                 UUID cpId = cpRec.checkpointId();
 
                 buf.putLong(cpId.getMostSignificantBits());
@@ -244,7 +260,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 break;
 
             case MVCC_DATA_RECORD:
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());
@@ -285,6 +301,24 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case MVCC_TX_RECORD:
                 txRecordSerializer.write((MvccTxRecord)rec, buf);
+
+                break;
+
+            case ROLLBACK_TX_RECORD:
+                RollbackRecord rb = (RollbackRecord)rec;
+
+                buf.putInt(rb.groupId());
+                buf.putInt(rb.partitionId());
+                buf.putLong(rb.start());
+                buf.putLong(rb.range());
+
+                break;
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                TrackingPageRepairDeltaRecord tprDelta = (TrackingPageRepairDeltaRecord)rec;
+
+                buf.putInt(tprDelta.groupId());
+                buf.putLong(tprDelta.pageId());
 
                 break;
 

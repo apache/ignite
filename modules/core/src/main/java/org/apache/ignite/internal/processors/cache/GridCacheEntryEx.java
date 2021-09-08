@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteUuid;
@@ -263,7 +262,6 @@ public interface GridCacheEntryEx {
      * @param readThrough Flag indicating whether to read through.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
@@ -277,7 +275,6 @@ public interface GridCacheEntryEx {
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -289,7 +286,6 @@ public interface GridCacheEntryEx {
      * @param tx Cache transaction.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
@@ -304,7 +300,6 @@ public interface GridCacheEntryEx {
         IgniteInternalTx tx,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -315,7 +310,6 @@ public interface GridCacheEntryEx {
     /**
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param subjId Subject ID initiated this read.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
@@ -326,7 +320,6 @@ public interface GridCacheEntryEx {
      */
     public EntryGetResult innerGetAndReserveForLoad(boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
@@ -436,7 +429,6 @@ public interface GridCacheEntryEx {
      * @param drType DR type.
      * @param drExpireTime DR expire time (if any).
      * @param explicitVer Explicit version (if any).
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param dhtVer Dht version for near cache entry.
      * @param updateCntr Update counter.
@@ -463,7 +455,6 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -483,7 +474,6 @@ public interface GridCacheEntryEx {
      * @param filter Filter.
      * @param drType DR type.
      * @param explicitVer Explicit version (if any).
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param dhtVer Dht version for near cache entry.
      * @return Tuple containing success flag and old value. If success is {@code false},
@@ -505,7 +495,6 @@ public interface GridCacheEntryEx {
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -535,7 +524,6 @@ public interface GridCacheEntryEx {
      * @param conflictVer DR version (if any).
      * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @param intercept If {@code true} then calls cache interceptor.
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param updateCntr Update counter.
      * @param fut Dht atomic future.
@@ -572,7 +560,6 @@ public interface GridCacheEntryEx {
         @Nullable GridCacheVersion conflictVer,
         boolean conflictResolve,
         boolean intercept,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
@@ -595,7 +582,6 @@ public interface GridCacheEntryEx {
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
      * @param intercept If {@code true} then calls cache interceptor.
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param transformOp {@code True} if transform operation caused update.
      * @return Tuple containing success flag, old value and result for invoke operation.
@@ -616,7 +602,6 @@ public interface GridCacheEntryEx {
         boolean metrics,
         @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
-        @Nullable UUID subjId,
         String taskName,
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
@@ -757,6 +742,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param drType DR type.
      * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -768,9 +754,10 @@ public interface GridCacheEntryEx {
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean fromStore,
+        boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
-            ttl, expireTime, preload, topVer, drType, fromStore);
+            ttl, expireTime, preload, topVer, drType, fromStore, primary);
     }
 
     /**
@@ -788,6 +775,45 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param drType DR type.
      * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
+     * @return {@code True} if initial value was set.
+     * @throws IgniteCheckedException In case of error.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    default boolean initialValue(CacheObject val,
+        GridCacheVersion ver,
+        @Nullable MvccVersion mvccVer,
+        @Nullable MvccVersion newMvccVer,
+        byte mvccTxState,
+        byte newMvccTxState,
+        long ttl,
+        long expireTime,
+        boolean preload,
+        AffinityTopologyVersion topVer,
+        GridDrType drType,
+        boolean fromStore,
+        boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
+            ttl, expireTime, preload, topVer, drType, fromStore, primary, null);
+    }
+
+    /**
+     * Sets new value if current version is <tt>0</tt>
+     *
+     * @param val New value.
+     * @param ver Version to use.
+     * @param mvccVer Mvcc version.
+     * @param newMvccVer New mvcc version.
+     * @param mvccTxState Tx state hint for mvcc version.
+     * @param newMvccTxState Tx state hint for new mvcc version.
+     * @param ttl Time to live.
+     * @param expireTime Expiration time.
+     * @param preload Flag indicating whether entry is being preloaded.
+     * @param topVer Topology version.
+     * @param drType DR type.
+     * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
+     * @param row Pre-created data row, associated with this cache entry.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -803,7 +829,9 @@ public interface GridCacheEntryEx {
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean fromStore,
+        boolean primary,
+        @Nullable CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Create versioned entry for this cache entry.
@@ -1002,13 +1030,13 @@ public interface GridCacheEntryEx {
     /**
      * Update index from within entry lock, passing key, value, and expiration time to provided closure.
      *
-     * @param filter Row filter.
      * @param clo Closure to apply to key, value, and expiration time.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
+    public void updateIndex(
+        SchemaIndexCacheVisitorClosure clo
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.
@@ -1166,6 +1194,17 @@ public interface GridCacheEntryEx {
      * Unlocks entry previously locked by {@link GridCacheEntryEx#lockEntry()}.
      */
     public void unlockEntry();
+
+    /**
+     * Locks entry to protect from concurrent access. Intended to be used instead of inherent java synchronization. This
+     * allows to separate locking from unlocking in time and/or code units.
+     *
+     * @param timeout period of waiting in millis;
+     * @return {@code true} if the lock was free and was acquired by the current thread, or the lock was already held by
+     * the current thread; and {@code false} if the waiting time elapsed before the lock could be acquired
+     * @see GridCacheEntryEx#unlockEntry().
+     */
+    public boolean tryLockEntry(long timeout);
 
     /**
      * Tests whether the entry is locked currently.

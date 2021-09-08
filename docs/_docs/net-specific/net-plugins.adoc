@@ -1,0 +1,169 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Extending Ignite.NET With Custom Plugins
+
+== Overview
+
+The Ignite.NET plugin system allows you to extend the core Ignite.NET functionality with custom plugins. The best way to
+explain how Ignite plugins work is by looking at the life cycle of plugins.
+
+== IgniteConfiguration.PluginConfigurations
+
+First, an Apache Ignite plugin has to be registered via the `IgniteConfiguration.PluginConfigurations` property which is
+a collection of the `IPluginConfiguration` implementations. From a user's perspective, this is a manual process - a
+plugin's assembly has to be referenced and configured explicitly.
+
+The `IPluginConfiguration` interface has two members that interact with the Java part of Apache Ignite.NET. This is
+described in the next section. Besides those two members, `IPluginConfiguration` implementation should contain all the
+other plugin-specific configuration properties.
+
+Another part of an `IPluginConfiguration` implementation is the mandatory `[PluginProviderType]` attribute that tethers a
+plugin configuration with a plugin implementation. For example:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+[PluginProviderType(typeof(MyPluginProvider))]
+    public class MyPluginConfiguration : IPluginConfiguration
+    {
+        public string MyProperty { get; set; }  // Plugin-specific property
+
+        public int? PluginConfigurationClosureFactoryId
+        {
+            get { return null; }  // No Java part
+        }
+
+        public void WriteBinary(IBinaryRawWriter writer)
+        {
+            // No-op.
+        }
+    }
+----
+--
+
+To recap, this is how plugins are added and initialized:
+
+* You add the `IPluginConfiguration` implementation instance to `IgniteConfiguration`.
+* You start an Ignite node with the prepared configuration.
+* Before the Ignite node initialization is finished, the Ignite plugin engine examines the `IPluginConfiguration` implementation
+for the `[PluginProviderType]` attribute and instantiates the specified class.
+
+== IPluginProvider
+
+The `IPluginProvider` implementation is the work-horse of the newly added plugin. It deals with the Ignite node life cycle
+by processing the calls to the `OnIgniteStart` and `OnIgniteStop` methods. In addition, it can provide an optional API
+to be used by an end user via the `GetPlugin<T>()` method.
+
+The first method to be invoked on the `IPluginProvider` implementation by the Ignite.NET engine is
+`Start(IPluginContext<TestIgnitePluginConfiguration> context)`. `IPluginContext` provides an access to an initial plugin
+configuration and all means to interact with Ignite.
+
+When Ignite is being stopped, the `Stop` and `OnIgniteStop` methods are executed sequentially so that the plugin
+implementation can accomplish all cleanup and shutdown-related​ tasks.
+
+== IIgnite.GetPlugin
+
+Plugins can expose user-facing API which is accessed via the `IIgnite.GetPlugin(string name)` method. The Ignite engine
+will search for `IPluginProvider` with the passed name and call `GetPlugin` on it.
+
+== Interacting With Java
+
+The Ignite.NET plugin can interact with an Ignite Java plugin via the `PlatformTarget` & `IPlatformTarget` interface pair.
+
+=== Java-Specific Logic
+
+. Implement the `PlatformTarget` interface, which is a communication point with .NET:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+class MyPluginTarget implements PlatformTarget {
+  @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    if (type == 1)
+        return val + 1;
+    else
+      return val - 1;
+  }
+  ...  // Other methods here.
+}
+----
+--
+
+* Implement the `PlatformPluginExtension` interface:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+public class MyPluginExtension implements PlatformPluginExtension {
+  @Override public int id() {
+    return 42;  // Unique id to be used from .NET side.
+  }
+
+  @Override public PlatformTarget createTarget() {
+    return new MyPluginTarget();  // Return target from previous step.
+  }
+}
+----
+--
+
+* Implement the `PluginProvider.initExtensions` method and register the `PlatformPluginExtension` class:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+  registry.registerExtension(PlatformPluginExtension.class, new MyPluginExtension());
+}
+----
+--
+
+=== .NET-specific Logic
+
+Call `IPluginContext.GetExtension` with a corresponding id. This will invoke the `createTarget` call on the Java side:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+IPlatformTarget extension = pluginContext.GetExtension(42);
+
+long result = extension.InLongOutLong(1, 2);  // processInLongOutLong is called in Java
+----
+--
+
+Other `IPlatformTarget` methods provide an efficient way to exchange any kind of data between Java and .NET code.
+
+=== Callbacks from Java
+
+.NET \-> Java call mechanism is described above; you can also do Java \-> .NET calls:
+
+* Register callback handler with some ID on the .NET side via the `IPluginContext.RegisterCallback` method.
+* Call `PlatformCallbackGateway.pluginCallback` with that ID on the Java side.
+
+[NOTE]
+====
+[discrete]
+=== Complete Example
+A detailed walk-through plugin example can be found in https://ptupitsyn.github.io/Ignite-Plugin/[this blog post, window=_blank].
+====

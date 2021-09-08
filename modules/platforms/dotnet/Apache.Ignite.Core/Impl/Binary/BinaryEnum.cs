@@ -51,7 +51,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             _marsh = marsh;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type id.
+        /// </summary>
         public int TypeId
         {
             get { return _typeId; }

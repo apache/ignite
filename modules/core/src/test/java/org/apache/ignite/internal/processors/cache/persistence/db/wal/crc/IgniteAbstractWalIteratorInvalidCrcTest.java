@@ -33,10 +33,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -191,19 +190,19 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
         FileDescriptor corruptedDesc = descPicker.apply(archiveDescs, descs);
 
-        FileWALPointer beforeCorruptedPtr = WalTestUtils.corruptWalSegmentFile(
+        WALPointer beforeCorruptedPtr = WalTestUtils.corruptWalSegmentFile(
             corruptedDesc,
             iterFactory,
             random
         );
 
         if (shouldFail) {
-            FileWALPointer[] lastReadPtrRef = new FileWALPointer[1];
+            WALPointer[] lastReadPtrRef = new WALPointer[1];
 
             IgniteException igniteException = (IgniteException) GridTestUtils.assertThrows(log, () -> {
                 try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
                     for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
-                        FileWALPointer ptr = (FileWALPointer)tuple.get1();
+                        WALPointer ptr = tuple.get1();
                         lastReadPtrRef[0] = ptr;
                     }
                 }
@@ -213,12 +212,12 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
             assertTrue(igniteException.hasCause(IgniteDataIntegrityViolationException.class));
 
-            FileWALPointer lastReadPtr = lastReadPtrRef[0];
+            WALPointer lastReadPtr = lastReadPtrRef[0];
             assertNotNull(lastReadPtr);
 
             // WAL iterator advances to the next record and only then returns current one,
             // so next record has to be valid as well.
-            assertEquals(lastReadPtr.next(), beforeCorruptedPtr);
+            assertEquals(lastReadPtr, beforeCorruptedPtr);
         }
         else
             try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {

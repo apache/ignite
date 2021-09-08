@@ -23,11 +23,15 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Predictions aggregator returning weighted plus of predictions.
  * result(p1, ..., pn) = bias + p1*w1 + ... + pn*wn
  */
-public class WeightedPredictionsAggregator implements PredictionsAggregator {
+public final class WeightedPredictionsAggregator implements PredictionsAggregator {
     /** Weights for predictions. */
-    private final double[] weights;
+    private double[] weights;
+
     /** Bias. */
-    private final double bias;
+    private double bias;
+
+    public WeightedPredictionsAggregator() {
+    }
 
     /**
      * Constructs WeightedPredictionsAggregator instance.
@@ -57,7 +61,7 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
 
         double res = bias;
 
-        for(int i = 0; i< answers.length; i++)
+        for (int i = 0; i < answers.length; i++)
             res += weights[i] * answers[i];
 
         return res;
@@ -71,11 +75,11 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         String clsName = getClass().getSimpleName();
-        if(!pretty)
+        if (!pretty)
             return clsName;
 
         StringBuilder builder = new StringBuilder(clsName).append(" [");
-        for(int i = 0; i < weights.length; i++) {
+        for (int i = 0; i < weights.length; i++) {
             final String SIGN = weights[i] > 0 ? " + " : " - ";
             builder
                 .append(i > 0 || weights[i] < 0 ? SIGN : "")

@@ -24,8 +24,11 @@ namespace Apache.Ignite.Core.Client
     using System.Linq;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Ignite thin client configuration.
@@ -52,6 +55,11 @@ namespace Apache.Ignite.Core.Client
         public const bool DefaultTcpNoDelay = true;
 
         /// <summary>
+        /// Default value of <see cref="EnablePartitionAwareness" /> property.
+        /// </summary>
+        public const bool DefaultEnablePartitionAwareness = true;
+
+        /// <summary>
         /// Default socket timeout.
         /// </summary>
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
@@ -68,6 +76,8 @@ namespace Apache.Ignite.Core.Client
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             TcpNoDelay = DefaultTcpNoDelay;
             SocketTimeout = DefaultSocketTimeout;
+            Logger = new ConsoleLogger();
+            EnablePartitionAwareness = DefaultEnablePartitionAwareness;
         }
 
         /// <summary>
@@ -113,6 +123,14 @@ namespace Apache.Ignite.Core.Client
             Password = cfg.Password;
             Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
+            EnablePartitionAwareness = cfg.EnablePartitionAwareness;
+            Logger = cfg.Logger;
+            ProtocolVersion = cfg.ProtocolVersion;
+
+            if (cfg.TransactionConfiguration != null)
+            {
+                TransactionConfiguration = new TransactionClientConfiguration(cfg.TransactionConfiguration);
+            }
         }
 
         /// <summary>
@@ -133,10 +151,10 @@ namespace Apache.Ignite.Core.Client
         /// Examples of supported formats:
         ///  * 192.168.1.25 (default port is used, see <see cref="DefaultPort"/>).
         ///  * 192.168.1.25:780 (custom port)
-        ///  * 192.168.1.25:780-787 (custom port range)
+        ///  * 192.168.1.25:780..787 (custom port range)
         ///  * my-host.com (default port is used, see <see cref="DefaultPort"/>).
         ///  * my-host.com:780 (custom port)
-        ///  * my-host.com:780-787 (custom port range)
+        ///  * my-host.com:780..787 (custom port range)
         /// <para />
         /// When multiple endpoints are specified, failover and load-balancing mechanism is enabled:
         /// * Ignite picks random endpoint and connects to it.
@@ -203,9 +221,38 @@ namespace Apache.Ignite.Core.Client
         public string Password { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether partition awareness should be enabled.
+        /// <para />
+        /// Default is true: for cache operations, Ignite client attempts to send the request directly to
+        /// the primary node for the given cache key.
+        /// To do so, connection is established to every known server node at all times.
+        /// <para />
+        /// When false: only one connection is established at a given moment to a random server node.
+        /// </summary>
+        [DefaultValue(DefaultEnablePartitionAwareness)]
+        public bool EnablePartitionAwareness { get; set; }
+
+        /// <summary>
+        /// Gets or sets the logger.
+        /// Default is <see cref="ConsoleLogger"/>. Set to <c>null</c> to disable logging.
+        /// </summary>
+        public ILogger Logger { get; set; }
+
+        /// <summary>
+        /// Gets or sets the transaction configuration.
+        /// See <see cref="ITransactionsClient"/>, <see cref="IIgniteClient.GetTransactions"/>.
+        /// </summary>
+        public TransactionClientConfiguration TransactionConfiguration { get; set; }
+
+        /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.
         /// </summary>
         internal IBinaryProcessor BinaryProcessor { get; set; }
+
+        /// <summary>
+        /// Gets or sets protocol version. Internal property for tests.
+        /// </summary>
+        internal ClientProtocolVersion? ProtocolVersion { get; set; }
 
         /// <summary>
         /// Serializes this instance to the specified XML writer.
@@ -232,6 +279,8 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Deserialized instance.</returns>
         public static IgniteClientConfiguration FromXml(XmlReader reader)
         {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
             return IgniteConfigurationXmlSerializer.Deserialize<IgniteClientConfiguration>(reader);
         }
 

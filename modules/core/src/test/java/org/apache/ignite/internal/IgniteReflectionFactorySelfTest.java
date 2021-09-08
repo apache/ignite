@@ -32,13 +32,13 @@ public class IgniteReflectionFactorySelfTest {
     /** */
     @Test
     public void testByteMethod() {
-        byte    expByteVal    = 42;
-        short   expShortVal   = 42;
-        int     expIntVal     = 42;
-        long    expLongVal    = 42L;
-        float   expFloatVal   = 42.0f;
-        double  expDoubleVal  = 42.0d;
-        char    expCharVal    = 'z';
+        byte expByteVal = 42;
+        short expShortVal = 42;
+        int expIntVal = 42;
+        long expLongVal = 42L;
+        float expFloatVal = 42.0f;
+        double expDoubleVal = 42.0d;
+        char expCharVal = 'z';
         boolean expBooleanVal = true;
 
         Map<String, Serializable> props = new HashMap<>();
@@ -74,18 +74,25 @@ public class IgniteReflectionFactorySelfTest {
     public static class TestClass {
         /** */
         private byte byteField;
+
         /** */
         private short shortField;
+
         /** */
         private int iField;
+
         /** */
         private long longField;
+
         /** */
         private float floatField;
+
         /** */
         private double doubleField;
+
         /** */
         private char cField;
+
         /** */
         private boolean booleanField;
 

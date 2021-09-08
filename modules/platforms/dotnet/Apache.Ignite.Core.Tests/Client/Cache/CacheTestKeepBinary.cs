@@ -460,7 +460,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests the RemoveAll with a set of keys.
         /// </summary>
         [Test]
-        public void TestRemoveReys()
+        public void TestRemoveKeys()
         {
             var cache = GetBinaryKeyCache();
 

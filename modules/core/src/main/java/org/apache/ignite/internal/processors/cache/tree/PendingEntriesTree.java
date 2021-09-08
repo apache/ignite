@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -42,6 +43,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
      * @param initNew Initialize new index.
+     * @param pageLockTrackerManager Page lock tracker manager.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public PendingEntriesTree(
@@ -50,10 +53,14 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         PageMemory pageMem,
         long metaPageId,
         ReuseList reuseList,
-        boolean initNew)
-        throws IgniteCheckedException {
-        super(name,
+        boolean initNew,
+        PageLockTrackerManager pageLockTrackerManager,
+        byte pageFlag
+    ) throws IgniteCheckedException {
+        super(
+            name,
             grp.groupId(),
+            grp.name(),
             pageMem,
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),
@@ -61,11 +68,14 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
-            grp.shared().kernalContext().failure());
+            pageFlag,
+            grp.shared().kernalContext().failure(),
+            pageLockTrackerManager
+        );
 
         this.grp = grp;
 
-        assert !grp.dataRegion().config().isPersistenceEnabled()  || grp.shared().database().checkpointLockIsHeldByThread();
+        assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
 
         initTree(initNew);
     }
@@ -86,7 +96,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
                 return cmp;
 
             if (row.expireTime == 0 && row.link == 0) {
-                // A search row with a cach ID only is used as a cache bound.
+                // A search row with a cache ID only is used as a cache bound.
                 // The found position will be shifted until the exact cache bound is found;
                 // See for details:
                 // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()

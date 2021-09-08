@@ -21,10 +21,22 @@ import javax.cache.management.CacheMXBean;
 import javax.cache.management.CacheStatisticsMXBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This interface defines JMX view on {@link IgniteCache}.
+ *
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cache.{cache_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to cache descriptor.")
 public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, CacheMetrics {
     /** {@inheritDoc} */
@@ -272,11 +284,39 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public boolean isStoreByValue();
 
     /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated number of keys to be rebalanced on current node.")
+    public long getKeysToRebalanceLeft();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated rebalancing speed in bytes.")
+    public long getRebalancingBytesRate();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated rebalancing speed in keys.")
+    public long getRebalancingKeysRate();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Number of currently rebalancing partitions on current node.")
+    public int getRebalancingPartitionsCount();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Rebalancing start time.")
+    public long getRebalancingStartTime();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Total number of partitions on current node.")
+    public int getTotalPartitionsCount();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated rebalancing finish time.")
+    public long getEstimatedRebalancingFinishTime();
+
+    /** {@inheritDoc} */
     @Override @MXBeanDescription("True if statistics collection is enabled.")
     public boolean isStatisticsEnabled();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True if management is enabled.")
+    @Override @MXBeanDescription("Checks whether management is enabled on this cache.")
     public boolean isManagementEnabled();
 
     /** {@inheritDoc} */
@@ -284,16 +324,21 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public boolean isReadThrough();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True when a cache is in write-through mode.")
-    public boolean isWriteThrough();
+    @MXBeanDescription("True when a cache is in write-through mode.")
+    @Override public boolean isWriteThrough();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True when a cache topology is valid for read operations.")
-    public boolean isValidForReading();
+    @MXBeanDescription("True when a cache topology is valid for read operations.")
+    @Override public boolean isValidForReading();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True when a cache topology is valid for write operations.")
-    public boolean isValidForWriting();
+    @MXBeanDescription("True when a cache topology is valid for write operations.")
+    @Override public boolean isValidForWriting();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Tx key collisions. Show key and appropriate collisions queue size for the last " +
+        "IGNITE_DUMP_TX_COLLISIONS_INTERVAL.")
+    @Override public String getTxKeyCollisions();
 
     /**
      * Enable statistic collection for the cache.
@@ -306,4 +351,69 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
      */
     @MXBeanDescription("Disable statistic collection for the cache.")
     public void disableStatistics();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("True if index rebuilding in progress.")
+    @Override public boolean isIndexRebuildInProgress();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of keys processed during index rebuilding. To get remaining number of keys for " +
+        "rebuilding, subtract current value from cache size.")
+    @Override public long getIndexRebuildKeysProcessed();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of already rebalanced keys.")
+    @Override public long getRebalancedKeys();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Estimated total number of keys to rebalance.")
+    @Override public long getEstimatedRebalancingKeys();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The number of partitions to be cleared before actual rebalance starts.")
+    @Override public long getRebalanceClearingPartitionsLeft();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The mean time to execute cache invokes (time in µs).")
+    @Override public float getEntryProcessorAverageInvocationTime();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The percentage of invocations on keys which exist in the cache.")
+    @Override public float getEntryProcessorHitPercentage();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total number of invocations on keys which exist in the cache.")
+    @Override public long getEntryProcessorHits();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total number of cache invocations.")
+    @Override public long getEntryProcessorInvocations();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("So far, the maximum time to execute cache invokes (time in µs).")
+    @Override public float getEntryProcessorMaxInvocationTime();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("So far, the minimum time to execute cache invokes (time in µs).")
+    @Override public float getEntryProcessorMinInvocationTime();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total number of invocations on keys which don't exist in the cache.")
+    @Override public long getEntryProcessorMisses();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The percentage of invocations on keys which don't exist in the cache.")
+    @Override public float getEntryProcessorMissPercentage();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total number of cache invocations which caused an update.")
+    @Override public long getEntryProcessorPuts();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total number of cache invocations which caused no updates.")
+    @Override public long getEntryProcessorReadOnlyInvocations();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total number of cache invocations which caused a removal.")
+    @Override public long getEntryProcessorRemovals();
 }

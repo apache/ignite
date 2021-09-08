@@ -1206,7 +1206,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         this.totalNodes = totalNodes;
     }
 
-
     /**
      * Sets execution duration for current partition map exchange.
      *

@@ -46,10 +46,13 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 public class DisappearedCacheWasNotFoundMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 
@@ -79,15 +82,15 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends AbstractIndexing
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
-        cfg.setCommunicationSpi(new TcpCommunicationSpi(){
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
                 assert msg != null;
 
-                if ( GridIoMessage.class.isAssignableFrom(msg.getClass())){
+                if (GridIoMessage.class.isAssignableFrom(msg.getClass())) {
                     GridIoMessage gridMsg = (GridIoMessage)msg;
 
-                    if ( GridH2QueryRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
+                    if (GridH2QueryRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
                         GridH2QueryRequest req = (GridH2QueryRequest) (gridMsg.message());
 
                         req.requestId();

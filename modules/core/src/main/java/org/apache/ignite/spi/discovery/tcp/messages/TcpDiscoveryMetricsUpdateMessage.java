@@ -219,11 +219,6 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /** {@inheritDoc} */
-    @Override public boolean highPriority() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryMetricsUpdateMessage.class, this, "super", super.toString());
     }

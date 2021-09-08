@@ -85,7 +85,8 @@ namespace ignite
                 << config::ConnectionInfo::InfoTypeToString(type) << "), "
                 << std::hex << reinterpret_cast<size_t>(buf) << ", "
                 << buflen << ", "
-                << std::hex << reinterpret_cast<size_t>(reslen));
+                << std::hex << reinterpret_cast<size_t>(reslen)
+                << std::dec);
 
             IGNITE_ODBC_API_CALL(InternalGetInfo(type, buf, buflen, reslen));
         }
@@ -119,7 +120,7 @@ namespace ignite
             {
                 std::string dsn = config.GetDsn();
 
-                ReadDsnConfiguration(dsn.c_str(), config);
+                ReadDsnConfiguration(dsn.c_str(), config, &GetDiagnosticRecords());
             }
 
             return InternalEstablish(config);
@@ -149,8 +150,7 @@ namespace ignite
             {
                 LOG_MSG("Can not load OpenSSL library: " << err.GetText());
 
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
-                                "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
+                AddStatusRecord("Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?)");
 
                 return SqlResult::AI_ERROR;
             }
@@ -176,7 +176,7 @@ namespace ignite
 
             if (!config.IsHostSet() && config.IsAddressesSet() && config.GetAddresses().empty())
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "No valid address to connect.");
+                AddStatusRecord("No valid address to connect.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -211,7 +211,9 @@ namespace ignite
             {
                 AddStatusRecord(SqlState::S08003_NOT_CONNECTED, "Connection is not open.");
 
-                return SqlResult::AI_ERROR;
+                // It is important to return SUCCESS_WITH_INFO and not ERROR here, as if we return an error, Windows
+                // Driver Manager may decide that connection is not valid anymore which results in memory leak.
+                return SqlResult::AI_SUCCESS_WITH_INFO;
             }
 
             Close();
@@ -430,7 +432,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -471,7 +473,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -484,7 +486,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
         }
 
-        SqlResult::Type Connection::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        SqlResult::Type Connection::InternalGetAttribute(int attr, void* buf, SQLINTEGER, SQLINTEGER* valueLen)
         {
             if (!buf)
             {
@@ -560,7 +562,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
         }
 
-        SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER)
         {
             switch (attr)
             {
@@ -681,7 +683,7 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current version of the protocol, used by the server node is " 
+                constructor << "Current version of the protocol, used by the server node is "
                             << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version "
                             << protocolVersion.ToString() << ".";

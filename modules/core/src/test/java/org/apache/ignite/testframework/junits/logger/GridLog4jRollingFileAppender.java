@@ -23,14 +23,15 @@ import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.log4j.Layout;
 import org.apache.log4j.RollingFileAppender;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Log4J {@link org.apache.log4j.RollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerNodeIdAware {
+public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerNodeIdAndApplicationAware {
     /** Node ID. */
     private UUID nodeId;
 
@@ -79,8 +80,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    @Override public synchronized void setNodeId(UUID nodeId) {
+    @Override public synchronized void setApplicationAndNode(@Nullable String application, UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;

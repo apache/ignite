@@ -30,7 +30,6 @@ import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC thin DataSource implementation.
@@ -52,7 +51,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
 
     /** {@inheritDoc} */
     @Override public Connection getConnection(String username, String pwd) throws SQLException {
-        Properties props =  this.props.storeToProperties();
+        Properties props = this.props.storeToProperties();
 
         if (!F.isEmpty(username))
             props.put("user", username);
@@ -127,7 +126,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
         if (addrs == null)
             return null;
 
-        String [] addrsStr = new String[addrs.length];
+        String[] addrsStr = new String[addrs.length];
 
         for (int i = 0; i < addrs.length; ++i)
             addrsStr[i] = addrs[i].toString();
@@ -387,6 +386,26 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
+     * Gets cipher suites.
+     *
+     * @return SSL cipher suites.
+     */
+    public String getCipherSuites() {
+        return props.getSslCipherSuites();
+    }
+
+    /**
+     * Override default cipher suites.
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
+     * @param cipherSuites SSL cipher suites.
+     */
+    public void setCipherSuites(String cipherSuites) {
+        props.setSslCipherSuites(cipherSuites);
+    }
+
+    /**
      * Gets algorithm that will be used to create a key manager.
      *
      * @return Key manager algorithm.
@@ -610,21 +629,5 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
      */
     public String getPassword() {
         return props.getPassword();
-    }
-
-    /**
-     * @return {@code True} if data page scan support is enabled for this connection, {@code false} if it's disabled and
-     * {@code null} for server default.
-     */
-    @Nullable public Boolean isDataPageScanEnabled() {
-        return props.isDataPageScanEnabled();
-    }
-
-    /**
-     * @param dataPageScan if {@code True} then data page scan support is enabled for this connection, if {@code false}
-     * then it's disabled, if {@code null} then server should use its default settings.
-     */
-    public void setDataPageScanEnabled(@Nullable Boolean dataPageScan) {
-        props.setDataPageScanEnabled(dataPageScan);
     }
 }

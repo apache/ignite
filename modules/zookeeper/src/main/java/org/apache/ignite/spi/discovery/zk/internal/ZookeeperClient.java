@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT;
+import static org.apache.zookeeper.client.ZKClientConfig.SECURE_CLIENT;
 
 /**
  * Zookeeper Client.
@@ -52,10 +53,6 @@ public class ZookeeperClient implements Watcher {
 
     /** */
     private static final int DFLT_MAX_RETRY_COUNT = 10;
-
-    /** */
-    private static final boolean PINGER_ENABLED =
-        IgniteSystemProperties.getBoolean("IGNITE_ZOOKEEPER_DISCOVERY_PINGER_ENABLED", false);
 
     /** */
     private final AtomicInteger retryCount = new AtomicInteger();
@@ -98,9 +95,6 @@ public class ZookeeperClient implements Watcher {
 
     /** */
     private volatile boolean closing;
-
-    /** */
-    private volatile ZkPinger pinger;
 
     /**
      * @param log Logger.
@@ -169,13 +163,6 @@ public class ZookeeperClient implements Watcher {
         synchronized (stateMux) {
             return state == ConnectionState.Connected;
         }
-    }
-
-    /**
-     * @return {@code True} if pinger is enabled
-     */
-    boolean pingerEnabled() {
-        return PINGER_ENABLED;
     }
 
     /** */
@@ -451,6 +438,32 @@ public class ZookeeperClient implements Watcher {
             catch (Exception e) {
                 onZookeeperError(connStartTime, e);
             }
+        }
+    }
+
+    /**
+     * @param path Path.
+     * @param data Data.
+     * @param createMode Create mode.
+     * @return Created path.
+     * @throws KeeperException In case of zookeeper error.
+     * @throws InterruptedException If interrupted.
+     */
+    String createIfNeededNoRetry(String path, byte[] data, CreateMode createMode)
+        throws KeeperException, InterruptedException {
+        assert !createMode.isSequential() : createMode;
+
+        if (data == null)
+            data = EMPTY_BYTES;
+
+        try {
+            return zk.create(path, data, ZK_ACL, createMode);
+        }
+        catch (KeeperException.NodeExistsException e) {
+            if (log.isDebugEnabled())
+                log.debug("Node already exists: " + path);
+
+            return path;
         }
     }
 
@@ -824,13 +837,6 @@ public class ZookeeperClient implements Watcher {
      *
      */
     public void close() {
-        if (PINGER_ENABLED) {
-            ZkPinger pinger0 = pinger;
-
-            if (pinger0 != null)
-                pinger0.stop();
-        }
-
         closeClient();
     }
 
@@ -854,7 +860,11 @@ public class ZookeeperClient implements Watcher {
             if (state == ConnectionState.Lost) {
                 U.error(log, "Operation failed with unexpected error, connection lost: " + e, e);
 
-                throw new ZookeeperClientFailedException(e);
+                Boolean sslEnabled = Boolean.valueOf(zk().getClientConfig().getProperty(SECURE_CLIENT));
+
+                String msg = "Connection lost, check" + (sslEnabled ? " SSL " : ' ') + "connection configuration.";
+
+                throw new ZookeeperClientFailedException(msg, e);
             }
 
             boolean retry = (e instanceof KeeperException) && needRetry(((KeeperException)e).code().intValue());
@@ -963,14 +973,6 @@ public class ZookeeperClient implements Watcher {
         assert state == ConnectionState.Disconnected : state;
 
         connTimer.schedule(new ConnectionTimeoutTask(connStartTime), connLossTimeout);
-    }
-
-    /**
-     * @param pinger Pinger.
-     */
-    void attachPinger(ZkPinger pinger) {
-        if (PINGER_ENABLED)
-            this.pinger = pinger;
     }
 
     /**

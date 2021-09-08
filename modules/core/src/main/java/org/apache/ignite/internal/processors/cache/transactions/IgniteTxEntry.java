@@ -30,8 +30,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -99,13 +102,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Owning transaction. */
     @GridToStringExclude
     @GridDirectTransient
-    private IgniteInternalTx tx;
+    public IgniteInternalTx tx;
 
     /** Cache key. */
-    @GridToStringInclude
+    @GridToStringExclude
     private KeyCacheObject key;
 
     /** Cache ID. */
+    @GridToStringExclude
     private int cacheId;
 
     /** Transient tx key. */
@@ -211,6 +215,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** */
     private GridCacheVersion serReadVer;
+
+    /** */
+    @GridDirectTransient
+    @GridToStringExclude
+    private transient @Nullable GridAbsClosureX cqNotifyC;
 
     /**
      * Required by {@link Externalizable}
@@ -661,7 +670,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return {@code True} if has previous value explicitly set.
      */
-    boolean hasPreviousValue() {
+    public boolean hasPreviousValue() {
         return prevVal.hasValue();
     }
 
@@ -929,13 +938,18 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near,
-        ClassLoader clsLdr) throws IgniteCheckedException {
+    public void unmarshal(
+        GridCacheSharedContext<?, ?> ctx,
+        boolean near,
+        ClassLoader clsLdr
+    ) throws IgniteCheckedException {
+
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
-            assert cacheCtx != null : "Failed to find cache context [cacheId=" + cacheId +
-                ", readyTopVer=" + ctx.exchange().readyAffinityVersion() + ']';
+            if (cacheCtx == null)
+                throw new CacheInvalidStateException(
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 
             if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
@@ -944,6 +958,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
             this.ctx = cacheCtx;
         }
+
+        CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
+
+        if (coctx == null)
+            throw new CacheInvalidStateException(
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
@@ -954,13 +974,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         else {
             for (CacheEntryPredicate p : filters) {
                 if (p != null)
-                    p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
+                    p.finishUnmarshal(this.ctx, clsLdr);
             }
         }
 
-        key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
+        key.finishUnmarshal(coctx, clsLdr);
 
-        val.unmarshal(this.ctx, clsLdr);
+        val.unmarshal(coctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
@@ -1010,7 +1030,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ver Entry version.
      */
     public void entryReadVersion(GridCacheVersion ver) {
-        assert this.serReadVer == null: "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
+        assert this.serReadVer == null : "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
         assert ver != null;
 
         this.serReadVer = ver;
@@ -1260,6 +1280,19 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         // First of all check classes that may be loaded by class loader other than application one.
         return key != null && !clsLdr.equals(key.getClass().getClassLoader()) ?
             key.getClass() : val != null ? val.getClass() : getClass();
+    }
+
+    /**
+     */
+    public GridAbsClosureX cqNotifyClosure() {
+        return cqNotifyC;
+    }
+
+    /**
+     * @param clo Clo.
+     */
+    public void cqNotifyClosure(GridAbsClosureX clo) {
+        cqNotifyC = clo;
     }
 
     /** {@inheritDoc} */

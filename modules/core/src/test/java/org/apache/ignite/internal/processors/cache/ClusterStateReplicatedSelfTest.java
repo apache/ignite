@@ -18,25 +18,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  *
  */
-public class ClusterStateReplicatedSelfTest extends ClusterStateAbstractTest {
+public class ClusterStateReplicatedSelfTest extends ClusterStateServerAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
-
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-
-        return ccfg;
+        return ClusterStateTestUtils.replicatedCache(cacheName);
     }
 }

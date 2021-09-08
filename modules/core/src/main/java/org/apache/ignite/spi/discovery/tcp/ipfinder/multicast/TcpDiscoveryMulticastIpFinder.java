@@ -253,8 +253,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * socket is bound to this interface. If local address is not set or is any local address then IP finder
      * creates multicast sockets for all found non-loopback addresses.
      * <p>
-     * If not provided then this property is initialized by the local address set in {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
-     * configuration.
+     * If not provided then this property is initialized by the local address set in
+     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} configuration.
      *
      * @param locAddr Local host address.
      * @see org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi#setLocalAddress(String)
@@ -464,7 +464,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         try {
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IOException e) {
             throw new IgniteSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 
@@ -605,10 +605,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                         continue;
                     }
 
-                    long rcvEnd = U.currentTimeMillis() + resWaitTime;
+                    long rcvStartNanos = System.nanoTime();
 
                     try {
-                        while (U.currentTimeMillis() < rcvEnd) { // Try to receive multiple responses.
+                        while (U.millisSinceNanos(rcvStartNanos) < resWaitTime) { // Try to receive multiple responses.
                             sock.receive(resPckt);
 
                             byte[] data = resPckt.getData();

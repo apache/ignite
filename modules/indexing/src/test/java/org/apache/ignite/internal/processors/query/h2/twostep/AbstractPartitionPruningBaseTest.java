@@ -82,7 +82,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         startGrid(getConfiguration("srv2"));
         startGrid(getConfiguration("srv3"));
 
-        startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+        startClientGrid(getConfiguration(CLI_NAME));
 
         client().cluster().active(true);
     }
@@ -477,7 +477,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                             INTERCEPTED_PARTS.add(part);
                     }
                 }
-                else if(msg0.message() instanceof GridNearTxQueryEnlistRequest) {
+                else if (msg0.message() instanceof GridNearTxQueryEnlistRequest) {
                     INTERCEPTED_NODES.add(node);
                     INTERCEPTED_REQS.incrementAndGet();
 

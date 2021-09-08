@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -149,7 +150,9 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 grp.dataRegion().pageMemory(),
                 pendingRootPage.pageId().pageId(),
                 ((GridCacheOffheapManager)grp.offheap()).reuseListForIndex(null),
-                false
+                false,
+                grp.shared().diagnostic().pageLockTracker(),
+                PageIdAllocator.FLAG_IDX
             );
         }
         finally {
@@ -302,7 +305,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 assert PageIO.getVersion(pageAddr) != 0;
 
                 IgniteCacheOffheapManager.CacheDataStore store =
-                    ((GridCacheOffheapManager)grp.offheap()).dataStore(partition);
+                    grp.offheap().dataStore(grp.isLocal() ? null : grp.topology().localPartition(partition));
 
                 if (store == null) {
                     log.warning("Failed to move old-version pending entry " +

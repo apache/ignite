@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static javax.cache.Cache.Entry;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.includeSensitive;
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
@@ -221,7 +222,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     public void setFlushThreadCount(int flushThreadCnt) {
         this.flushThreadCnt = flushThreadCnt;
-        this.flushThreadCntIsPowerOfTwo = (flushThreadCnt & (flushThreadCnt - 1)) == 0;
+        this.flushThreadCntIsPowerOfTwo = U.isPow2(flushThreadCnt);
     }
 
     /**
@@ -659,20 +660,29 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /**
-     * Return flusher by by key.
+     * Return flusher by key.
      *
      * @param key Key for search.
      * @return flusher.
      */
     private Flusher flusher(K key) {
-        int h, idx;
+        return flushThreads[resolveFlusherByKeyHash(key.hashCode())];
+    }
 
-        if (flushThreadCntIsPowerOfTwo)
-            idx = ((h = key.hashCode()) ^ (h >>> 16)) & (flushThreadCnt - 1);
-        else
-            idx = ((h = key.hashCode()) ^ (h >>> 16)) % flushThreadCnt;
+    /**
+     * Lookup flusher index by provided key hash using
+     * approach similar to {@link HashMap#hash(Object)}. In case
+     * <code>size</code> is not a power of 2 we fallback to modulo operation.
+     *
+     * @param hash Object hash.
+     * @return Calculated flucher index [0..flushThreadCnt).
+     */
+    int resolveFlusherByKeyHash(int hash) {
+        int h = (hash ^ (hash >>> 16));
 
-        return flushThreads[idx];
+        return flushThreadCntIsPowerOfTwo
+            ? h & (flushThreadCnt - 1)
+            : U.hashToIndex(h, flushThreadCnt);
     }
 
     /**
@@ -848,7 +858,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private boolean updateStore(
         StoreOperation operation,
-        Map<K, Entry<? extends K, ? extends  V>> vals,
+        Map<K, Entry<? extends K, ? extends V>> vals,
         boolean initSes,
         Flusher flusher
     ) {
@@ -890,7 +900,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
         }
         catch (Exception e) {
-            LT.error(log, e, "Unable to update underlying store: " + store);
+            LT.warn(log, e, "Unable to update underlying store: " + store, false, false);
 
             boolean overflow;
 
@@ -900,12 +910,13 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 overflow = flusher.isOverflowed() || stopping.get();
 
             if (overflow) {
-                for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
+                for (Map.Entry<K, Entry<? extends K, ? extends V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
-                    log.warning("Failed to update store (value will be lost as current buffer size is greater " +
-                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
-                        entry.getKey() + ", val=" + val + ", op=" + operation + "]");
+                    log.error("Failed to update store (value will be lost as current buffer size is greater " +
+                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [" +
+                        (includeSensitive() ? "key=" + entry.getKey() + ", val=" + val + ", " : "") +
+                        "op=" + operation + "]");
                 }
 
                 return true;
@@ -934,10 +945,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private class Flusher extends GridWorker {
         /** Queue to flush. */
-        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
+        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K, V>>> queue;
 
         /** Flusher write map. */
-        private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
+        private final ConcurrentHashMap<K, StatefulValue<K, V>> flusherWriteMap;
 
         /** Critical size of flusher local queue. */
         private final int flusherCacheCriticalSize;
@@ -963,7 +974,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteLogger log) {
             super(igniteInstanceName, name, log);
 
-            flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+            flusherCacheCriticalSize = cacheCriticalSize / flushThreadCnt;
 
             assert flusherCacheCriticalSize > batchSize;
 
@@ -1216,7 +1227,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteBiTuple<K, StatefulValue<K, V>> tuple;
             boolean applied;
 
-            while(!queue.isEmpty()) {
+            while (!queue.isEmpty()) {
                 pending = U.newLinkedHashMap(batchSize);
                 prevOperation = null;
                 boolean needNewBatch = false;
@@ -1265,7 +1276,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
                 else {
                     // Return values to queue
-                    ArrayList<Map.Entry<K, StatefulValue<K,V>>> pendingList = new ArrayList(pending.entrySet());
+                    ArrayList<Map.Entry<K, StatefulValue<K, V>>> pendingList = new ArrayList(pending.entrySet());
 
                     for (int i = pendingList.size() - 1; i >= 0; i--)
                         queue.addFirst(F.t(pendingList.get(i).getKey(), pendingList.get(i).getValue()));
@@ -1337,10 +1348,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @return Flusher maps for the underlying store operations.
      */
-    Map<K, StatefulValue<K,V>>[] flusherMaps() {
-        Map<K, StatefulValue<K,V>>[] result = new Map[flushThreadCnt];
+    Map<K, StatefulValue<K, V>>[] flusherMaps() {
+        Map<K, StatefulValue<K, V>>[] result = new Map[flushThreadCnt];
 
-        for (int i=0; i < flushThreadCnt; i++)
+        for (int i = 0; i < flushThreadCnt; i++)
             result[i] = flushThreads[i].flusherWriteMap;
 
         return result;

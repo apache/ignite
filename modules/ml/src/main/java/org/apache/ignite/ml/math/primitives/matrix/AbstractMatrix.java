@@ -28,9 +28,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Blas;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.ColumnIndexException;
-import org.apache.ignite.ml.math.exceptions.RowIndexException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.ColumnIndexException;
+import org.apache.ignite.ml.math.exceptions.math.RowIndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -40,7 +40,6 @@ import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * This class provides a helper implementation of the {@link Matrix}
@@ -52,17 +51,21 @@ public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
     /** */
     private static final double Z95 = 1.959964;
+
     /** */
     private static final double Z80 = 1.281552;
+
     /** */
     private static final int MAX_SAMPLES = 500;
+
     /** */
     private static final int MIN_SAMPLES = 15;
 
     /** Cached minimum element. */
     private Element minElm;
+
     /** Cached maximum element. */
-    private Element maxElm = null;
+    private Element maxElm;
 
     /** Matrix storage implementation. */
     private MatrixStorage sto;
@@ -253,11 +256,6 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return sto.isDistributed();
     }
 
     /** {@inheritDoc} */
@@ -696,10 +694,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res;
 
-        if (isDistributed())
-            res = MatrixUtil.likeVector(this, rowSize());
-        else
-            res = new DenseVector(rowSize());
+        res = new DenseVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));

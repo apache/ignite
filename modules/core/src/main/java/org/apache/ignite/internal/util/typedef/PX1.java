@@ -21,9 +21,10 @@ import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 
 /**
- * Defines {@code alias} for {@link org.apache.ignite.internal.util.lang.IgnitePredicateX} by extending it. Since Java doesn't provide type aliases
- * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.internal.util.lang.IgnitePredicateX}.
+ * Defines {@code alias} for {@link org.apache.ignite.internal.util.lang.IgnitePredicateX} by extending it.
+ * Since Java doesn't provide type aliases (like Scala, for example) we resort to these types of measures.
+ * This is intended to provide for more concise code in cases when readability won't be sacrificed.
+ * For more information see {@link org.apache.ignite.internal.util.lang.IgnitePredicateX}.
  * @param <E1> Type of the free variable, i.e. the element the predicate is called on.
  * @see GridFunc
  * @see org.apache.ignite.internal.util.lang.IgnitePredicateX
@@ -31,4 +32,4 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 public abstract class PX1<E1> extends IgnitePredicateX<E1> {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

@@ -288,7 +288,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     fail("We should not get there.");
                 }
             }
-            catch (CacheException ex){
+            catch (CacheException ex) {
                 IgniteSQLException cause = X.cause(ex, IgniteSQLException.class);
 
                 assertNotNull(cause);
@@ -1669,7 +1669,10 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
             assertTrue(cache0.query(qry.setSql("SELECT _key, _val FROM Integer")).getAll().isEmpty());
 
-            assertEquals(3L, cache0.query(qry.setSql("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)")).getAll().iterator().next().get(0));
+            assertEquals(
+                3L,
+                cache0.query(qry.setSql("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)")).getAll().iterator().next().get(0)
+            );
 
             tx.commit();
         }
@@ -1801,7 +1804,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         cache.putAll(vals);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1,2);
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1, 2);
 
         List<List<?>> all = cache.query(qry).getAll();
 
@@ -1848,7 +1851,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         cache.putAll(vals);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1,2);
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1, 2);
 
         List<List<?>> all = cache.query(qry).getAll();
 
@@ -1895,7 +1898,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         startGrid(getConfiguration("grid").setMvccVacuumFrequency(Integer.MAX_VALUE));
 
-        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid(getConfiguration("client"));
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -1970,7 +1973,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         node.cluster().active(true);
 
-        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid(getConfiguration("client"));
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 

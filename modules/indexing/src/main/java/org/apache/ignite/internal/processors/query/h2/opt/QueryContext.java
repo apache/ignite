@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.Objects;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
@@ -28,6 +29,12 @@ import org.jetbrains.annotations.Nullable;
  * Thread local SQL query context which is intended to be accessible from everywhere.
  */
 public class QueryContext {
+    /**
+     * Thread local query context is used for API that doesn't support h2 Session:
+     * distributed join and rowCount.
+     */
+    private static final ThreadLocal<QueryContext> qctxThreaded = new ThreadLocal<>();
+
     /** Segment ID. */
     private final int segment;
 
@@ -43,6 +50,9 @@ public class QueryContext {
     /** */
     private final PartitionReservation reservations;
 
+    /** {@code True} for local queries, {@code false} for distributed ones. */
+    private final boolean loc;
+
     /**
      * Constructor.
      *
@@ -50,6 +60,7 @@ public class QueryContext {
      * @param filter Filter.
      * @param distributedJoinCtx Distributed join context.
      * @param mvccSnapshot MVCC snapshot.
+     * @param loc {@code True} for local queries, {@code false} for distributed ones.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryContext(
@@ -57,13 +68,30 @@ public class QueryContext {
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
         @Nullable MvccSnapshot mvccSnapshot,
-        @Nullable PartitionReservation reservations
+        @Nullable PartitionReservation reservations,
+        boolean loc
     ) {
         this.segment = segment;
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;
         this.mvccSnapshot = mvccSnapshot;
         this.reservations = reservations;
+        this.loc = loc;
+    }
+
+    /**
+     * @param filter Filter.
+     * @param local Local query flag.
+     * @return Context for parsing.
+     */
+    public static QueryContext parseContext(@Nullable IndexingQueryFilter filter, boolean local) {
+        return new QueryContext(
+            0,
+            filter,
+            null,
+            null,
+            null,
+            local);
     }
 
     /**
@@ -106,8 +134,39 @@ public class QueryContext {
         return filter;
     }
 
+    /**
+     * @return {@code True} for local queries, {@code false} for distributed ones.
+     */
+    public boolean local() {
+        return loc;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryContext.class, this);
+    }
+
+    /**
+     * Hack with thread local context is used only for H2 methods that is called without Session object.
+     *  e.g. GridH2Table.getRowCountApproximation (used only on optimization phase, after parse).
+     *
+     * @param qctx Context.
+     */
+    public static void threadLocal(QueryContext qctx) {
+        qctxThreaded.set(qctx);
+    }
+
+    /**
+     * Hack with thread local context is used only for H2 methods that is called without Session object.
+     *  e.g. GridH2Table.getRowCountApproximation (used only on optimization phase, after parse).
+     *
+     * @return Thread local context.
+     */
+    public static QueryContext threadLocal() {
+        QueryContext qctx = qctxThreaded.get();
+
+        assert Objects.nonNull(qctx);
+
+        return qctx;
     }
 }

@@ -23,9 +23,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -37,8 +36,8 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 
 /**
- * Change classification algorithm that was used in {@link Step_5_Scaling} from decision tree to kNN
- * ({@link KNNClassificationTrainer}) because sometimes this can be beneficial.
+ * Change classification algorithm that was used in {@link Step_5_Scaling} from decision tree to kNN ({@link
+ * KNNClassificationTrainer}) because sometimes this can be beneficial.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
@@ -50,7 +49,9 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_6_KNN {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 6 (kNN) example started.");
@@ -93,14 +94,16 @@ public class Step_6_KNN {
                         minMaxScalerPreprocessor
                     );
 
-                KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+                KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+                    .withK(1)
+                    .withWeighted(true);
 
                 // Train decision tree model.
-                NNClassificationModel mdl = trainer.fit(
+                KNNClassificationModel mdl = trainer.fit(
                     ignite,
                     dataCache,
                     normalizationPreprocessor
-                ).withK(1).withStrategy(NNStrategy.WEIGHTED);
+                );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
@@ -119,6 +122,9 @@ public class Step_6_KNN {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

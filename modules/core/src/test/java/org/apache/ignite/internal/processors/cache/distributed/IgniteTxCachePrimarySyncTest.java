@@ -83,14 +83,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = SRVS + CLIENTS;
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -112,17 +107,10 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        try {
-            for (int i = 0; i < CLIENTS; i++) {
-                clientMode = true;
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite client = startClientGrid(SRVS + i);
 
-                Ignite client = startGrid(SRVS + i);
-
-                assertTrue(client.configuration().isClientMode());
-            }
-        }
-        finally {
-            clientMode = false;
+            assertTrue(client.configuration().isClientMode());
         }
     }
 

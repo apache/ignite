@@ -93,10 +93,10 @@ public class HibernateL2CacheExample {
         Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
     /** Caches' names. */
-    private static final String UPDATE_TIMESTAMPS_CACHE_NAME = "org.hibernate.cache.spi.UpdateTimestampsCache";
-    private static final String STANDART_QUERY_CACHE_NAME = "org.hibernate.cache.internal.StandardQueryCache";
     private static final String USER_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User";
+
     private static final String USER_POSTS_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User.posts";
+
     private static final String POST_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.Post";
 
     /**
@@ -117,8 +117,8 @@ public class HibernateL2CacheExample {
             // Auto-close cache at the end of the example.
             try (
                 // Create all required caches.
-                IgniteCache c1 = createCache(UPDATE_TIMESTAMPS_CACHE_NAME, ATOMIC);
-                IgniteCache c2 = createCache(STANDART_QUERY_CACHE_NAME, ATOMIC);
+                IgniteCache c1 = createCache(timestampsCacheName(), ATOMIC);
+                IgniteCache c2 = createCache(queryResultsCacheName(), ATOMIC);
                 IgniteCache c3 = createCache(USER_CACHE_NAME, TRANSACTIONAL);
                 IgniteCache c4 = createCache(USER_POSTS_CACHE_NAME, TRANSACTIONAL);
                 IgniteCache c5 = createCache(POST_CACHE_NAME, TRANSACTIONAL)
@@ -193,8 +193,8 @@ public class HibernateL2CacheExample {
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(UPDATE_TIMESTAMPS_CACHE_NAME);
-                ignite.destroyCache(STANDART_QUERY_CACHE_NAME);
+                ignite.destroyCache(timestampsCacheName());
+                ignite.destroyCache(queryResultsCacheName());
                 ignite.destroyCache(USER_CACHE_NAME);
                 ignite.destroyCache(USER_POSTS_CACHE_NAME);
                 ignite.destroyCache(POST_CACHE_NAME);
@@ -257,5 +257,47 @@ public class HibernateL2CacheExample {
         }
 
         System.out.println("=====================================");
+    }
+
+    /**
+     * Returns the name of the timestamps cache to a specific version of apache-hibernate.
+     *
+     * @return Name of the update timestamps cache.
+     */
+    private static String timestampsCacheName() {
+        return isIgniteHibernate51orBelowEnabled() ?
+            // Represents the name of timestamps region specific to hibernate 5.1 {@see HibernateTimestampsRegion}.
+            "org.hibernate.cache.spi.UpdateTimestampsCache" :
+            // Represents the name of timestamps region specific to hibernate 5.3 {@see IgniteTimestampsRegion}.
+            "default-update-timestamps-region";
+    }
+
+    /**
+     * Returns the name of the query results cache to a specific version of apache-hibernate.
+     *
+     * @return Name of the update timestamps cache.
+     */
+    private static String queryResultsCacheName() {
+        return isIgniteHibernate51orBelowEnabled() ?
+            // Represents the name of query results region specific to hibernate 5.1 {@see HibernateQueryResultsRegion}.
+            "org.hibernate.cache.internal.StandardQueryCache" :
+            // Represents the name of query results region specific to hibernate 5.3 {@see IgniteQueryResultsRegion}.
+            "default-query-results-region";
+    }
+
+    /**
+     * Returns {@code true} if ignite-hibernate 5.1 is enabled.
+     *
+     * @return {@code true} if ignite-hibernate 5.1 is enabled.
+     */
+    private static boolean isIgniteHibernate51orBelowEnabled() {
+        try {
+            Class.forName("org.apache.ignite.cache.hibernate.HibernateTimestampsRegion");
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
     }
 }

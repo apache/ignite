@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Dataload
 {
     using System;
+    using System.IO;
     using System.Threading;
     using NUnit.Framework;
 
@@ -36,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             var cacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config\cache-local-node.xml",
+                SpringConfigUrl = Path.Combine("Config", "cache-local-node.xml"),
                 IgniteInstanceName = "cacheGrid"
             };
 
@@ -48,55 +49,22 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 var streamer = gridNoCache.GetDataStreamer<int, int>(cacheName);
 
-                streamer.AddData(1, 2);
+                streamer.Add(1, 2);
                 streamer.Flush();
 
                 Ignition.Stop(gridWithCache.Name, true);
 
                 Thread.Sleep(500);  // Wait for node to stop
 
-                var task = streamer.AddData(2, 3);
-                streamer.Flush();
+                streamer.Add(2, 3);
 
-                var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
+                var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).GetBaseException();
 
                 Assert.IsNotNull(ex);
 
                 Assert.AreEqual("Java exception occurred [class=org.apache.ignite.cache." +
                                 "CacheServerNotFoundException, message=Failed to find server node for cache " +
                                 "(all affinity nodes have left the grid or cache was stopped): cache]", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Streamer test with destroyed cache.
-        /// </summary>
-        [Test]
-        public void TestDestroyCache()
-        {
-            const string cacheName = "cache";
-
-            using (var grid = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                grid.CreateCache<int, int>(cacheName);
-
-                var streamer = grid.GetDataStreamer<int, int>(cacheName);
-
-                var task = streamer.AddData(1, 2);
-                streamer.Flush();
-                task.Wait();
-
-                grid.DestroyCache(cacheName);
-
-                task = streamer.AddData(2, 3);
-                streamer.Flush();
-
-                var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
-
-                Assert.IsNotNull(ex);
-
-                Assert.AreEqual("class org.apache.ignite.IgniteCheckedException: DataStreamer data loading failed.", 
-                    ex.Message);
             }
         }
     }

@@ -57,6 +57,7 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -65,6 +66,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
  */
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. Random to cover external stores possible problems. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
@@ -572,6 +575,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     public static class HugeIndexedObject {
         /** Data. */
         private byte[] data;
+
         /** */
         @QuerySqlField(index = true)
         private int iVal;

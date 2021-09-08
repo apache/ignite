@@ -32,18 +32,18 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
+import static java.lang.Long.MAX_VALUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -56,32 +56,41 @@ import static org.apache.ignite.internal.util.IgniteUtils.sleep;
  */
 public class FileHandleManagerImpl implements FileHandleManager {
     /** Default wal segment sync timeout. */
-    private static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
+    public static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
 
     /** WAL writer worker. */
     private final WALWriter walWriter;
+
     /** Wal segment sync worker. */
     private final WalSegmentSyncer walSegmentSyncWorker;
+
     /** Context. */
     protected final GridCacheSharedContext cctx;
+
     /** Logger. */
     private final IgniteLogger log;
+
     /** */
     private final WALMode mode;
+
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
+
     /** Use mapped byte buffer. */
     private final boolean mmap;
-    /** Last WAL pointer. */
-    private final Supplier<WALPointer> lastWALPtr;
+
     /** */
     private final RecordSerializer serializer;
+
     /** Current handle supplier. */
     private final Supplier<FileWriteHandle> currentHandleSupplier;
+
     /** WAL buffer size. */
     private final int walBufferSize;
+
     /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
+
     /** Fsync delay. */
     private final long fsyncDelay;
 
@@ -89,7 +98,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
      * @param cctx Context.
      * @param metrics Data storage metrics.
      * @param mmap Mmap.
-     * @param lastWALPtr Last WAL pointer.
      * @param serializer Serializer.
      * @param currentHandleSupplier Current handle supplier.
      * @param mode WAL mode.
@@ -101,19 +109,18 @@ public class FileHandleManagerImpl implements FileHandleManager {
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         boolean mmap,
-        Supplier<WALPointer> lastWALPtr,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currentHandleSupplier,
         WALMode mode,
         int walBufferSize,
         long maxWalSegmentSize,
-        long fsyncDelay) {
+        long fsyncDelay
+    ) {
         this.cctx = cctx;
         log = cctx.logger(FileHandleManagerImpl.class);
         this.mode = mode;
         this.metrics = metrics;
         this.mmap = mmap;
-        this.lastWALPtr = lastWALPtr;
         this.serializer = serializer;
         this.currentHandleSupplier = currentHandleSupplier;
         this.walBufferSize = walBufferSize;
@@ -199,18 +206,21 @@ public class FileHandleManagerImpl implements FileHandleManager {
     @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
-        if (mode == WALMode.BACKGROUND) {
+        try {
+            if (mode == WALMode.BACKGROUND) {
+                if (currHnd != null)
+                    currHnd.flush(null);
+            }
+
             if (currHnd != null)
-                currHnd.flush(null);
+                currHnd.close(false);
         }
+        finally {
+            if (walSegmentSyncWorker != null)
+                walSegmentSyncWorker.shutdown();
 
-        if (currHnd != null)
-            currHnd.close(false);
-
-        if (walSegmentSyncWorker != null)
-            walSegmentSyncWorker.shutdown();
-
-        walWriter.shutdown();
+            walWriter.shutdown();
+        }
     }
 
     /** {@inheritDoc} */
@@ -226,29 +236,39 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
-            return;
+            return null;
 
         FileWriteHandleImpl cur = currentHandle();
 
         // WAL manager was not started (client node).
         if (cur == null)
-            return;
+            return null;
 
-        FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
+        WALPointer filePtr;
+
+        if (ptr == null) {
+            long pos = cur.buf.tail();
+
+            filePtr = new WALPointer(cur.getSegmentId(), (int)pos, 0);
+        }
+        else
+            filePtr = ptr;
 
         if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);
 
         if (!explicitFsync && mode != WALMode.FSYNC)
-            return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
+            return filePtr; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
 
         // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
-            return;
+        if (!cur.needFsync(filePtr))
+            return filePtr;
 
         cur.fsync(filePtr);
+
+        return filePtr;
     }
 
     /**
@@ -310,7 +330,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
                             }
                         }
                         else {
-                            unparkWaiters(Long.MAX_VALUE);
+                            unparkWaiters(MAX_VALUE);
 
                             return;
                         }
@@ -341,7 +361,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                             err = e;
 
-                            unparkWaiters(Long.MAX_VALUE);
+                            unparkWaiters(MAX_VALUE);
 
                             return;
                         }
@@ -375,7 +395,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
                         finally {
                             seg.release();
 
-                            long p = pos <= UNCONDITIONAL_FLUSH || err != null ? Long.MAX_VALUE : currentHandle().written;
+                            boolean unparkAll = (pos == UNCONDITIONAL_FLUSH || pos == FILE_CLOSE) || err != null;
+
+                            long p = unparkAll ? MAX_VALUE : currentHandle().written;
 
                             unparkWaiters(p);
                         }
@@ -386,7 +408,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
                 err = t;
             }
             finally {
-                unparkWaiters(Long.MAX_VALUE);
+                this.err = err;
+
+                unparkWaiters(MAX_VALUE);
 
                 if (err == null && !isCancelled)
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
@@ -552,6 +576,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
+                err = e;
+
                 StorageException se = new StorageException("Failed to write buffer.", e);
 
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
@@ -604,13 +630,17 @@ public class FileHandleManagerImpl implements FileHandleManager {
             }
         }
 
-        /** Shutted down the worker. */
-        private void shutdown() {
+        /**
+         * Shutted down the worker.
+         *
+         * @throws IgniteInterruptedCheckedException If the worker was interrupted while waiting for shutting down.
+         */
+        private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
                 U.cancel(this);
             }
 
-            U.join(this, log);
+            U.join(runner());
         }
 
         /**

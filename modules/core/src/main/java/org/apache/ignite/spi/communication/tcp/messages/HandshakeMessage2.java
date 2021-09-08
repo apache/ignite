@@ -100,6 +100,6 @@ public class HandshakeMessage2 extends HandshakeMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HandshakeMessage2.class, this);
+        return S.toString(HandshakeMessage2.class, this, super.toString());
     }
 }

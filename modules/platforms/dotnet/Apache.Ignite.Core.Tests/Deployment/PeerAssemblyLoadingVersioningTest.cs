@@ -24,8 +24,6 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
-    using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
     /// </summary>
     public class PeerAssemblyLoadingVersioningTest
     {
-        private static readonly string TempDir = IgniteUtils.GetTempDirectoryName();
+        private static readonly string TempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Sets up the test.
@@ -98,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
             var proc = Process.Start(procStart);
             Assert.IsNotNull(proc);
 
-            IgniteProcess.AttachProcessConsoleReader(proc);
+            proc.AttachProcessConsoleReader();
 
             Assert.IsTrue(proc.WaitForExit(30000));
             Assert.AreEqual(0, proc.ExitCode);

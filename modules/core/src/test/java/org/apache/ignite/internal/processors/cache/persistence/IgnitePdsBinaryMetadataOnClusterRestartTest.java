@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -64,9 +65,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     private static final String CUSTOM_WORK_DIR_NAME_PATTERN = "node%s_workDir";
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private String customWorkSubDir;
 
     /** {@inheritDoc} */
@@ -77,8 +75,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         if (customWorkSubDir != null)
             cfg.setWorkDirectory(Paths.get(U.defaultWorkDirectory(), customWorkSubDir).toString());
-
-        cfg.setClientMode(clientMode);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -115,7 +111,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /**
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testUpdatedBinaryMetadataIsPreservedOnJoinToOldCoordinator() throws Exception {
@@ -169,7 +166,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /**
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNewBinaryMetadataIsWrittenOnOldCoordinator() throws Exception {
@@ -224,7 +222,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * after full cluster restart it starts second (so it doesn't take the role of coordinator)
      * but metadata update is propagated to it anyway.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNewBinaryMetadataIsPropagatedToAllOutOfDataNodes() throws Exception {
@@ -292,7 +291,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * If joining node has incompatible BinaryMetadata (e.g. when user manually copies binary_meta file),
      * coordinator detects it and fails the node providing information about conflict.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNodeWithIncompatibleMetadataIsProhibitedToJoinTheCluster() throws Exception {
@@ -311,6 +311,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
             .builder(DYNAMIC_TYPE_NAME).setField(decimalFieldName, 10).build();
 
         cache.put(0, bObj);
+
+        int createdTypeId = igniteA.binary().type(DYNAMIC_TYPE_NAME).typeId();
 
         stopAllGrids();
 
@@ -334,24 +336,30 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         startGridInASeparateWorkDir("A");
 
-        boolean exceptedExceptionThrown = false;
-        try {
-            startGridInASeparateWorkDir("B");
-        }
-        catch (Exception e) {
-            if (e.getCause() != null && e.getCause().getCause() != null) {
-                if (e.getCause().getCause().getMessage().contains(
-                        String.format("[typeName=%s, fieldName=%s, fieldTypeName1=int, fieldTypeName2=long]",
-                            DYNAMIC_TYPE_NAME,
-                            decimalFieldName)
-                ))
-                    exceptedExceptionThrown = true;
-            }
-            else
-                throw e;
-        }
+        String expectedMsg = String.format(
+            "Type '%s' with typeId %d has a different/incorrect type for field '%s'. Expected 'int' but 'long' was " +
+                "provided. The type of an existing field can not be changed. Use a different field name or follow " +
+                "this procedure to reuse the current name:\n" +
+                "- Delete data records that use the old field type;\n" +
+                "- Remove metadata by the command: 'control.sh --meta remove --typeId %d'.",
+            DYNAMIC_TYPE_NAME,
+            createdTypeId,
+            decimalFieldName,
+            createdTypeId);
 
-        assertTrue(exceptedExceptionThrown);
+        Throwable thrown = GridTestUtils.assertThrows(
+            log,
+            () -> startGridInASeparateWorkDir("B"),
+            Exception.class,
+            null);
+
+        assertNotNull(thrown.getCause());
+        assertNotNull(thrown.getCause().getCause());
+
+        String actualMsg = thrown.getCause().getCause().getMessage();
+
+        assertTrue("Cause is not correct [expected='" + expectedMsg + "', actual='" + actualMsg + "'].",
+            actualMsg.contains(expectedMsg));
     }
 
     /** */
@@ -363,8 +371,10 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        Path fromFile = Paths.get(workDir, fromWorkDir, "binary_meta", fromConsId, fileName);
-        Path toFile = Paths.get(workDir, toWorkDir, "binary_meta", toConsId, fileName);
+        Path fromFile = Paths.get(workDir, fromWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            fromConsId, fileName);
+        Path toFile = Paths.get(workDir, toWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            toConsId, fileName);
 
         Files.copy(fromFile, toFile, StandardCopyOption.REPLACE_EXISTING);
     }
@@ -375,8 +385,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testStaticMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
-
         startGrids(2);
 
         Ignite ignite0 = grid(0);
@@ -451,7 +459,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testDynamicMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
         //1: start two nodes, add single BinaryObject
         startGrids(2);
 
@@ -518,8 +525,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testBinaryEnumMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
-
         Ignite ignite0 = startGrids(2);
 
         ignite0.active(true);
@@ -546,9 +551,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0.active(true);
 
-        clientMode = true;
-
-        startGrid(3);
+        startClientGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -560,8 +563,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testMixedMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
-
         //1: starts 4 nodes one by one and adds java classes and classless BinaryObjects
         // to the same replicated cache from different nodes.
         // Examines all objects in cache (field values and metadata).
@@ -611,9 +612,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         examineDynamicMetadata(4, contentExaminer0, contentExaminer1, structureExaminer1);
 
         //2: starts up client node and performs the same set of checks from all nodes including client
-        clientMode = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         examineStaticMetadata(5);
 

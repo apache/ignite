@@ -302,8 +302,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     private Map<ClusterNode, Set<KeyCacheObject>> map(KeyCacheObject key,
         @Nullable Map<ClusterNode, Set<KeyCacheObject>> mappings,
-        Collection<ClusterNode> exc)
-    {
+        Collection<ClusterNode> exc) {
         ClusterNode loc = cctx.localNode();
 
         GridCacheEntryEx e = cctx.dht().peekEx(key);
@@ -407,8 +406,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /**
-     * Mini-future for get operations. Mini-futures are only waiting on a single
-     * node as opposed to multiple nodes.
+     * Mini-future for get operations. Mini-futures are only waiting on a single node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
         /** Mini-future ID. */
@@ -549,12 +547,13 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             true,
                             topVer,
                             replicate ? DR_PRELOAD : DR_NONE,
+                            false,
                             false
                         )) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                     null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null, false);
+                                    false, null, null, false);
                         }
                     }
                     catch (IgniteCheckedException e) {

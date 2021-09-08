@@ -35,7 +35,7 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
  * @param <C> Type of a partition <tt>context</tt>.
  */
 public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializable>
-    implements PartitionDataBuilder<K, V, C, LabeledVectorSet<Double, LabeledVector>> {
+    implements PartitionDataBuilder<K, V, C, LabeledVectorSet<LabeledVector>> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
@@ -52,7 +52,7 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
     }
 
     /** {@inheritDoc} */
-    @Override public LabeledVectorSet<Double, LabeledVector> build(
+    @Override public LabeledVectorSet<LabeledVector> build(
         LearningEnvironment env,
         Iterator<UpstreamEntry<K, V>> upstreamData,
         long upstreamDataSize, C ctx) {

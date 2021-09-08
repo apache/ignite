@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary builder implementation.
@@ -123,8 +124,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetField<T>(string fieldName, T val)
         {
-            return SetField0(fieldName,
-                new BinaryBuilderField(typeof (T), val, BinaryTypeId.GetTypeId(typeof (T))));
+            // typeof(T) is used instead of val.GetType():
+            // it works for nulls, and generic parameter is supposed to clearly show the intent of the user.
+            // When boxed values are being passed, the overload below should be used.
+            return SetField(fieldName, val, typeof(T));
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryObjectBuilder SetField<T>(string fieldName, T val, Type valType)
+        {
+            IgniteArgumentCheck.NotNull(valType, "valType");
+            
+            return SetField0(fieldName, new BinaryBuilderField(valType, val, BinaryTypeId.GetTypeId(valType)));
         }
 
         /** <inheritDoc /> */

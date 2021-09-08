@@ -40,13 +40,15 @@ import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and normalize features.</p>
  * <p>
- * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
- * various statistical metrics of the data.</p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output various
+ * statistical metrics of the data.</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class BinarizationExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Binarization example started.");
@@ -68,13 +70,19 @@ public class BinarizationExample {
                 }
 
                 System.out.println(">>> Binarization example completed.");
-            } finally {
+            }
+            finally {
                 data.destroy();
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
@@ -83,10 +91,10 @@ public class BinarizationExample {
 
         IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
-        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
-        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
-        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
+        persons.put(1, new DenseVector(new Serializable[] {"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[] {"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[] {"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[] {"Karl", 24, 70000}));
 
         return persons;
     }

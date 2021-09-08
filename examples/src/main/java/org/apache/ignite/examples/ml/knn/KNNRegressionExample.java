@@ -17,21 +17,21 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
+import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Rmse;
 
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
@@ -42,15 +42,17 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> regression algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
- * You can change the test data used in this example or trainer object settings and re-run it to explore
- * this algorithm further.</p>
+ * You can change the test data used in this example or trainer object settings and re-run it to explore this algorithm
+ * further.</p>
  */
 public class KNNRegressionExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN regression over cached dataset usage example started.");
         // Start ignite grid.
@@ -61,27 +63,33 @@ public class KNNRegressionExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
 
-                KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+                KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+                    .withK(5)
+                    .withDistanceMeasure(new ManhattanDistance())
+                    .withIdxType(SpatialIndexType.BALL_TREE)
+                    .withWeighted(true);
 
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer)
-                    .withK(5)
-                    .withDistanceMeasure(new ManhattanDistance())
-                    .withStrategy(NNStrategy.WEIGHTED);
+                KNNRegressionModel knnMdl = trainer.fit(ignite, dataCache, vectorizer);
 
                 double rmse = Evaluator.evaluate(
                     dataCache,
                     knnMdl,
                     vectorizer,
-                    new RegressionMetrics()
+                    new Rmse()
                 );
 
                 System.out.println("\n>>> Rmse = " + rmse);
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

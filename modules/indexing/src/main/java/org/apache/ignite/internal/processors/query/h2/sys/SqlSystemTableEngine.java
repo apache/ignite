@@ -55,6 +55,6 @@ public class SqlSystemTableEngine implements TableEngine {
 
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
-        return new SqlSystemTable(data, curView);
+        return new SystemViewH2Adapter(data, curView);
     }
 }

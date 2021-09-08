@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -26,14 +29,12 @@ import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Rss;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
+import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class RegressionEvaluatorTest extends TrainerTest {
     /**
-     * Test evalutor and trainer.
+     * Test evaluator and trainer.
      */
     @Test
     public void testEvaluatorWithoutFilter() {
@@ -63,26 +64,21 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(13, VectorUtils.of(69331, 115.7, 518173, 4806, 2572, 127852, 1961));
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
-        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer().withK(3).withDistanceMeasure(new EuclideanDistance());
 
-        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+            .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-        KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
-            vectorizer
-        ).withK(3)
-            .withDistanceMeasure(new EuclideanDistance());
+        LocalDatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        KNNRegressionModel mdl = trainer.fit(datasetBuilder, vectorizer);
 
-        double score = Evaluator.evaluate(data, mdl, vectorizer,
-            new RegressionMetrics()
-                .withMetric(RegressionMetricValues::rss)
-        );
+        double score = Evaluator.evaluate(data, mdl, vectorizer, MetricName.RSS);
 
-        assertEquals(1068809.6666666653, score, 1e-4);
+        assertEquals(5581012.666666679, score, 1e-4);
     }
 
     /**
-     * Test evalutor and trainer with test-train splitting.
+     * Test evaluator and trainer with test-train splitting.
      */
     @Test
     public void testEvaluatorWithFilter() {
@@ -103,25 +99,23 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(13, VectorUtils.of(69331, 115.7, 518173, 4806, 2572, 127852, 1961));
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
-        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer().withK(3).withDistanceMeasure(new EuclideanDistance());
 
-
-        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>(new SHA256UniformMapper<>(new Random(0)))
             .split(0.5);
 
-        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
-        KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+            .labeled(Vectorizer.LabelCoordinate.FIRST);
+        KNNRegressionModel mdl = trainer.fit(
             data,
             split.getTestFilter(),
             parts,
             vectorizer
-        ).withK(3)
-            .withDistanceMeasure(new EuclideanDistance());
-
-        double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, vectorizer,
-            new RegressionMetrics()
-                .withMetric(RegressionMetricValues::rss)
         );
+
+        double score = Evaluator.evaluate(new LocalDatasetBuilder<>(data, split.getTrainFilter(), parts),
+            mdl, vectorizer, new Rss()
+        ).getSingle();
 
         assertEquals(4800164.444444457, score, 1e-4);
     }

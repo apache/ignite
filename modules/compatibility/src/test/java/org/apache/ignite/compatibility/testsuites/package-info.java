@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains test-suites which contains compatibility tests.
  */
+
 package org.apache.ignite.compatibility.testsuites;

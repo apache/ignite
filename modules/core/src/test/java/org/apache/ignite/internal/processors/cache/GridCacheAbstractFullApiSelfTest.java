@@ -68,7 +68,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -118,6 +117,7 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -186,7 +186,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** */
     @Before
-    public void beforeGridCacheAbstractFullApiSelfTest()  {
+    public void beforeGridCacheAbstractFullApiSelfTest() {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
     }
 
@@ -215,20 +215,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        int[] evtTypes = cfg.getIncludeEventTypes();
-
-        if (evtTypes == null || evtTypes.length == 0)
-            cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_READ);
-        else {
-            for (int evtType : evtTypes) {
-                if (evtType == EventType.EVT_CACHE_OBJECT_READ)
-                    return cfg;
-            }
-
-            int[] updatedEvtTypes = Arrays.copyOf(evtTypes, evtTypes.length + 1);
-
-            updatedEvtTypes[updatedEvtTypes.length - 1] = EventType.EVT_CACHE_OBJECT_READ;
-        }
+        cfg.setIncludeEventTypes(
+            EVT_CACHE_OBJECT_READ,
+            EVT_CACHE_OBJECT_LOCKED,
+            EVT_CACHE_OBJECT_UNLOCKED);
 
         return cfg;
     }
@@ -2481,7 +2471,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cache = jcache();
 
-
         try {
             IgniteFuture<Integer> fut1 = cache.getAndPutIfAbsentAsync("key", 1);
 
@@ -3969,7 +3958,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (async) {
-            if(oldAsync) {
+            if (oldAsync) {
                 IgniteCache<String, Integer> asyncCache = jcache().withAsync();
 
                 asyncCache.clear();
@@ -4320,7 +4309,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        int ttl = 1000;
+        int ttl = 4000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
@@ -6147,7 +6136,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testTransformResourceInjection() throws Exception {
         ClusterGroup servers = grid(0).cluster().forServers();
 
-        if(F.isEmpty(servers.nodes()))
+        if (F.isEmpty(servers.nodes()))
             return;
 
         grid(0).services( grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
@@ -6205,7 +6194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteEvents evts = ignite.events(ignite.cluster());
 
-        UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
+        UUID opId = evts.remoteListen(lsnr, null, EVT_CACHE_OBJECT_READ);
 
         try {
             checkResourceInjectionOnInvoke(cache, required, async, oldAsync);
@@ -6638,7 +6627,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (!entry.isNear())
                 entry.context().cache().removeEntry(entry);
 
-            return  pair;
+            return pair;
         }
     }
 

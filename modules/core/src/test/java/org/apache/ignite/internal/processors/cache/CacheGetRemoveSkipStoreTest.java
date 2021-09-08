@@ -29,7 +29,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -50,16 +49,6 @@ public class CacheGetRemoveSkipStoreTest extends GridCommonAbstractTest {
 
     /** Read semaphore to delay read-through. */
     private static volatile Semaphore readSemaphore;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.contains("client"))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
 
     /**
      * Creates cache configuration with the given atomicity mode and number of backups.
@@ -107,7 +96,7 @@ public class CacheGetRemoveSkipStoreTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(GRID_CNT);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /**

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Delta record for page-list meta count reset
  */
-public class PageListMetaResetCountRecord extends PageDeltaRecord  {
+public class PageListMetaResetCountRecord extends PageDeltaRecord {
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -81,6 +80,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private String clause;
 
     /** */
+    private int limit;
+
+    /** */
     private String clsName;
 
     /** */
@@ -128,9 +130,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** */
     private boolean keepBinary;
-
-    /** */
-    private UUID subjId;
 
     /** */
     private int taskHash;
@@ -190,7 +189,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
      * @param keepBinary Whether to keep binary.
-     * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
@@ -205,7 +203,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         boolean fields,
         boolean all,
         boolean keepBinary,
-        UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
         boolean addDepInfo,
@@ -219,7 +216,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.fields = fields;
         this.all = all;
         this.keepBinary = keepBinary;
-        this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
@@ -234,6 +230,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param type Query type.
      * @param fields {@code true} if query returns fields.
      * @param clause Query clause.
+     * @param limit Response limit. Set to 0 for no limits.
      * @param clsName Query class name.
      * @param keyValFilter Key-value filter.
      * @param part Partition.
@@ -244,7 +241,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param args Query arguments.
      * @param incMeta Include meta data or not.
      * @param keepBinary Keep binary flag.
-     * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
      * @param mvccSnapshot Mvcc snapshot.
@@ -257,6 +253,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         GridCacheQueryType type,
         boolean fields,
         String clause,
+        int limit,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
         @Nullable Integer part,
@@ -267,7 +264,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         Object[] args,
         boolean incMeta,
         boolean keepBinary,
-        UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot,
@@ -284,6 +280,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.type = type;
         this.fields = fields;
         this.clause = clause;
+        this.limit = limit;
         this.clsName = clsName;
         this.keyValFilter = keyValFilter;
         this.part = part == null ? -1 : part;
@@ -294,7 +291,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.args = args;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
-        this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
@@ -433,6 +429,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
+     * @return Query limit.
+     */
+    public int limit() {
+        return limit;
+    }
+
+    /**
      * @return Query clause.
      */
     public String clause() {
@@ -514,13 +517,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     public boolean keepBinary() {
         return keepBinary;
-    }
-
-    /**
-     * @return Security subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -670,7 +666,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeInt("limit", limit))
                     return false;
 
                 writer.incrementState();
@@ -852,7 +848,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 21:
-                subjId = reader.readUuid("subjId");
+                limit = reader.readInt("limit");
 
                 if (!reader.isLastRead())
                     return false;

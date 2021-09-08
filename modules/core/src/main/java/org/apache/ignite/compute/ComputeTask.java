@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -244,7 +245,7 @@ public interface ComputeTask<T, R> extends Serializable {
      * @throws IgniteException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
+    @NotNull public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is

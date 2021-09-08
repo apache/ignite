@@ -37,8 +37,10 @@ import static org.junit.Assert.assertTrue;
 public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     /** Feature 1 meta. */
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta("", 0, true));
+
     /** Feature 2 meta. */
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta("", 1, false));
+
     /** Feature 3 meta. */
     private BucketMeta feature3Meta = new BucketMeta(new FeatureMeta("", 2, true));
 
@@ -151,12 +153,12 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         List<GiniHistogram> partitions2 = new ArrayList<>();
         int cntOfPartitions = rnd.nextInt(1000);
         for (int i = 0; i < cntOfPartitions; i++) {
-            partitions1.add(new GiniHistogram(sampleId,lblMapping, bucketMeta1));
-            partitions2.add(new GiniHistogram(sampleId,lblMapping, bucketMeta2));
+            partitions1.add(new GiniHistogram(sampleId, lblMapping, bucketMeta1));
+            partitions2.add(new GiniHistogram(sampleId, lblMapping, bucketMeta2));
         }
 
         int datasetSize = rnd.nextInt(10000);
-        for(int i = 0; i < datasetSize; i++) {
+        for (int i = 0; i < datasetSize; i++) {
             BootstrappedVector vec = randomVector(true);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);
 

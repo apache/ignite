@@ -41,7 +41,6 @@ public interface JdbcTypesTransformer extends Serializable {
     public final List<Integer> NUMERIC_TYPES =
         U.sealList(TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, NUMERIC, DECIMAL);
 
-
     /**
      * Retrieves the value of the designated column in the current row of this <code>ResultSet</code> object and
      * will convert to the requested Java data type.

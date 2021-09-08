@@ -20,9 +20,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
 
 import static java.lang.Thread.sleep;
@@ -53,7 +59,14 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration();
 
-        memMetrics = new DataRegionMetricsImpl(plcCfg);
+        IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
+
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+
+        ctx.add(new GridMetricManager(ctx));
+        ctx.add(new PerformanceStatisticsProcessor(ctx));
+
+        memMetrics = new DataRegionMetricsImpl(plcCfg, ctx);
 
         memMetrics.enableMetrics();
     }
@@ -185,7 +198,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * As rate metrics {@link HitRateMetrics implementation} is tied to absolute time ticks
+     * As rate metrics {@link HitRateMetric implementation} is tied to absolute time ticks
      * (not related to the first hit) all tests need to align start time with this sequence of ticks.
      *
      * @param rateTimeInterval Rate time interval.
@@ -289,7 +302,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
                 startLatch.await();
 
                 for (int i = 0; i < iterationsCnt; i++) {
-                    memMetrics.updateTotalAllocatedPages(1);
+                    memMetrics.pageMetrics().totalPages().increment();
 
                     sleep(delay);
                 }

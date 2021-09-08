@@ -44,7 +44,6 @@ public class TrackingPageIOTest {
     /** Page size. */
     public static final int PAGE_SIZE = 4096;
 
-
     /** */
     private final TrackingPageIO io = TrackingPageIO.VERSIONS.latest();
 
@@ -61,7 +60,7 @@ public class TrackingPageIOTest {
 
         assertFalse(io.wasChanged(buf, 1, 0, -1, PAGE_SIZE));
         assertFalse(io.wasChanged(buf, 3, 0, -1, PAGE_SIZE));
-        assertFalse(io.wasChanged(buf, 2, 1,  0, PAGE_SIZE));
+        assertFalse(io.wasChanged(buf, 2, 1, 0, PAGE_SIZE));
     }
 
     /**
@@ -120,7 +119,7 @@ public class TrackingPageIOTest {
 
         try {
             for (long i = basePageId; i < basePageId + track; i++) {
-                boolean changed =  (i == basePageId || rand.nextDouble() < 0.5) && i < maxId;
+                boolean changed = (i == basePageId || rand.nextDouble() < 0.5) && i < maxId;
 
                 map.put(i, changed);
 
@@ -131,7 +130,7 @@ public class TrackingPageIOTest {
                 }
 
                 assertEquals(basePageId, PageIO.getPageId(buf));
-                assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId,  PAGE_SIZE));
+                assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId, PAGE_SIZE));
             }
 
             assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId, PAGE_SIZE));
@@ -139,7 +138,7 @@ public class TrackingPageIOTest {
             for (Map.Entry<Long, Boolean> e : map.entrySet())
                 assertEquals(
                     e.getValue().booleanValue(),
-                    io.wasChanged(buf, e.getKey(), backupId, backupId -1, PAGE_SIZE));
+                    io.wasChanged(buf, e.getKey(), backupId, backupId - 1, PAGE_SIZE));
         }
         catch (Throwable e) {
             System.out.println("snapshotId = " + backupId + ", basePageId = " + basePageId);
@@ -178,7 +177,7 @@ public class TrackingPageIOTest {
         try {
             TreeSet<Long> setIdx = new TreeSet<>();
 
-            generateMarking(buf, track, basePageId, maxId, setIdx, backupId, backupId -1);
+            generateMarking(buf, track, basePageId, maxId, setIdx, backupId, backupId - 1);
 
             for (long pageId = basePageId; pageId < basePageId + track; pageId++) {
                 Long foundNextChangedPage = io.findNextChangedPage(buf, pageId, backupId, backupId - 1, PAGE_SIZE);
@@ -341,7 +340,7 @@ public class TrackingPageIOTest {
 
                 fail();
             }
-            catch (TrackingPageIsCorruptedException e) {
+            catch (TrackingPageIsCorruptedException ignore) {
                 //ignore
             }
         }

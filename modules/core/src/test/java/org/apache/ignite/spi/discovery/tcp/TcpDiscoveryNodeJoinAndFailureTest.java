@@ -103,7 +103,8 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
      * If whole ring fails but two server nodes both in CONNECTING state remain alive they should not hang
      * indefinitely sending join requests to each other.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-11621">IGNITE-11621</a> with comments provides detailed description of this corner case.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-11621">IGNITE-11621</a>
+     * with comments provides detailed description of this corner case.
      *
      * @throws Exception If failed.
      */
@@ -186,7 +187,6 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                     }
                 }
 
-
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     TcpDiscoveryJoinRequestMessage joinReq = (TcpDiscoveryJoinRequestMessage)msg;
 
@@ -215,7 +215,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         specialIpFinder0 = new TcpDiscoveryVmIpFinder(false);
 
-        ((TcpDiscoveryVmIpFinder)specialIpFinder0).setAddresses(Arrays.asList("127.0.0.1:47501","127.0.0.1:47503"));
+        ((TcpDiscoveryVmIpFinder)specialIpFinder0).setAddresses(Arrays.asList("127.0.0.1:47501", "127.0.0.1:47503"));
 
         specialIpFinder1 = new TcpDiscoveryVmIpFinder(false);
 
@@ -241,7 +241,10 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
             String errorMsg = cause1.getMessage();
 
-            assertTrue("Expected error message was not found: " + errorMsg, errorMsg.contains("Failed to connect to any address from IP finder"));
+            assertTrue(
+                "Expected error message was not found: " + errorMsg,
+                errorMsg.contains("Failed to connect to any address from IP finder")
+            );
 
             expectedExceptionThrown = true;
         }

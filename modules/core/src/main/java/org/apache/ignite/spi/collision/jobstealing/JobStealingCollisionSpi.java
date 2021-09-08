@@ -87,8 +87,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Note that this SPI must always be used in conjunction with
  * {@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi JobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
- * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency() IgniteConfiguration#getMetricsUpdateFrequency()}
- * should be set to positive value).
+ * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()
+ * IgniteConfiguration#getMetricsUpdateFrequency()} should be set to positive value).
  * The responsibility of Job Stealing Failover SPI is to properly route <b>stolen</b>
  * jobs to the nodes that initially requested (<b>stole</b>) these jobs. The
  * SPI maintains a counter of how many times a jobs was stolen and
@@ -1116,7 +1116,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         private int jobsToSteal;
 
         /** */
-        private long ts = U.currentTimeMillis();
+        private long ts = System.nanoTime();
 
         /**
          * @return Job to steal.
@@ -1133,7 +1133,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         boolean expired() {
             assert Thread.holdsLock(this);
 
-            return jobsToSteal > 0 && U.currentTimeMillis() - ts >= msgExpireTime;
+            return jobsToSteal > 0 && U.millisSinceNanos(ts) >= msgExpireTime;
         }
 
         /**
@@ -1144,7 +1144,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
             this.jobsToSteal = jobsToSteal;
 
-            ts = U.currentTimeMillis();
+            ts = System.nanoTime();
         }
 
         /** {@inheritDoc} */

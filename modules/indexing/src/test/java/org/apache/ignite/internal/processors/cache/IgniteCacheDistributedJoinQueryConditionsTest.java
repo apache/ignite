@@ -30,7 +30,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -49,19 +48,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
     private static final String ORG_CACHE = "org";
 
     /** */
-    private boolean client;
-
-    /** */
     private int total;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -69,9 +56,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /**

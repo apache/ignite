@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains development utilities for Ignite useful for PDS artifacts analysis.
  */
+
 package org.apache.ignite.development.utils;

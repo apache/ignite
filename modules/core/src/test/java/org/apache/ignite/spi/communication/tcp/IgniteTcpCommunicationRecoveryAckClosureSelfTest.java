@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -36,16 +37,19 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -59,7 +63,7 @@ import org.junit.Test;
  *
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends CommunicationSpi>
+public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends CommunicationSpi<Message>>
     extends GridSpiAbstractTest<T> {
     /** */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
@@ -77,17 +81,6 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     private static GridTimeoutProcessor timeoutProcessor;
 
     /**
-     *
-     */
-    static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
-    }
-
-    /**
      * Disable SPI auto-start.
      */
     public IgniteTcpCommunicationRecoveryAckClosureSelfTest() {
@@ -95,7 +88,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     }
 
     /** */
-    private class TestListener implements CommunicationListener<Message> {
+    private static class TestListener implements CommunicationListener<Message> {
         /** */
         private GridConcurrentHashSet<Long> msgIds = new GridConcurrentHashSet<>();
 
@@ -194,7 +187,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                 final long totAcked0 = totAcked;
 
                 for (TcpCommunicationSpi spi : spis) {
-                    GridNioServer srv = U.field(spi, "nioSrvr");
+                    GridNioServer<?> srv = ((GridNioServerWrapper)U.field(spi, "nioSrvWrapper")).nio();
 
                     Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 
@@ -306,7 +299,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         // Check that session will not be closed by idle timeout because expected close by queue overflow.
         assertTrue(spi0.getIdleConnectionTimeout() > awaitTime);
 
-        final GridNioServer srv1 = U.field(spi1, "nioSrvr");
+        final GridNioServer<?> srv1 = ((GridNioServerWrapper)U.field(spi1, "nioSrvWrapper")).nio();
 
         // For prevent session close by write timeout.
         srv1.writeTimeout(60_000);
@@ -392,7 +385,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private GridNioSession communicationSession(TcpCommunicationSpi spi) throws Exception {
-        final GridNioServer srv = U.field(spi, "nioSrvr");
+        final GridNioServer<?> srv = ((GridNioServerWrapper)U.field(spi, "nioSrvWrapper")).nio();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -459,6 +452,16 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             GridSpiTestContext ctx = initSpiContext();
 
+            MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                }
+            };
+
+            ctx.messageFactory(new IgniteMessageFactoryImpl(
+                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+            );
+
             ctx.setLocalNode(node);
 
             ctx.timeoutProcessor(timeoutProcessor);
@@ -469,13 +472,13 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             spi.setListener(new TestListener());
 
-            node.setAttributes(spi.getNodeAttributes());
-
             node.order(i);
 
             nodes.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
+
+            node.setAttributes(spi.getNodeAttributes());
 
             spis.add(spi);
 

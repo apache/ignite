@@ -59,11 +59,6 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean exchange() {
         return false;
     }
