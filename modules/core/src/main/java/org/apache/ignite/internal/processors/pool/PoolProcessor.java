@@ -535,10 +535,8 @@ public class PoolProcessor extends GridProcessorAdapter {
         stopExecutors(log);
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        super.onKernalStart(active);
-
+    /** Registers thread pools metrics and system views. */
+    public void registerMetrics() {
         monitorExecutor("GridUtilityCacheExecutor", utilityCacheExecSvc);
         monitorExecutor("GridExecutionExecutor", execSvc);
         monitorExecutor("GridServicesExecutor", svcExecSvc);

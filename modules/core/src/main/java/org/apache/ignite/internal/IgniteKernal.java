@@ -1323,6 +1323,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startTimer.finishGlobalStage("Await transition");
 
+            ctx.pools().registerMetrics();
+
             registerMetrics();
 
             ctx.cluster().registerMetrics();
