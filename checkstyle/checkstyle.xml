@@ -149,7 +149,7 @@
            See: https://checkstyle.sourceforge.io/config_javadoc.html#JavadocMethod
         -->
         <module name="JavadocMethod">
-            <property name="scope" value="public"/>
+            <property name="accessModifiers" value="public"/>
         </module>
 
         <!--
