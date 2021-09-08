@@ -377,20 +377,31 @@ public class ExchangeActions {
      * @param grpDesc Group descriptor.
      * @param destroy Destroy flag.
      */
-    public void addCacheGroupToStop(CacheGroupDescriptor grpDesc, boolean destroy) {
+    public void addCacheGroupToStop(CacheGroupDescriptor grpDesc, boolean destroy, @Nullable UUID ownerId) {
         assert grpDesc != null;
 
         if (cacheGrpsToStop == null)
             cacheGrpsToStop = new ArrayList<>();
 
-        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy, null));
+        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy, ownerId));
     }
 
     /**
      * @return Cache groups to start.
      */
     public List<CacheGroupActionData> cacheGroupsToStop() {
-        return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupActionData>emptyList();
+        return cacheGroupsToStop((ccfg, uuid) -> true);
+    }
+
+    /**
+     * @param filter Filtering predicate for starting cache groups.
+     * @return Cache groups to start.
+     */
+    public List<CacheGroupActionData> cacheGroupsToStop(BiPredicate<CacheConfiguration<?, ?>, @Nullable UUID> filter) {
+        if (cacheGrpsToStop == null)
+            return Collections.emptyList();
+
+        return cacheGrpsToStop.stream().filter(d -> filter.test(d.desc.config(), d.ownerId)).collect(Collectors.toList());
     }
 
     /**

@@ -95,6 +95,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -137,15 +138,18 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  8. Check the partition reservation during the restore if a next exchange occurs (see message:
  *  Cache groups were not reserved [[[grpId=-903566235, grpName=shared], reason=Checkpoint was marked
  *  as inapplicable for historical rebalancing]])
- *  9. Add cache destroy rollback procedure if loading was unsuccessful.
- *  10. Crash-recovery when node crashes with started, but not loaded caches.
+ *  (done) 9. Add cache destroy rollback procedure if loading was unsuccessful.
+ *  (done) 10. Crash-recovery when node crashes with started, but not loaded caches.
  *  (?) 11. Do not allow schema changes during the restore procedure.
  *  12. Restore busy lock should throw exception if a lock acquire fails.
- *  13. Should we clean the 'dirty' flag prior to markCheckpointBegin, so pages won't be collected by the checkpoint?
+ *  (?) 13. Should we clean the 'dirty' flag prior to markCheckpointBegin, so pages won't be collected by the checkpoint?
  *  (?) 14. cancelOrWaitPartitionDestroy should we wait for partition destroying.
  *  (done) 15. prevent page store initialization on write if tag has been incremented.
- *  16. Register snapshot task by request id not by snapshot name.
- *  17. Does waitRebInfo need to be cleaned on DynamicCacheChangeFailureMessage occurs for restored caches?
+ *  (?) 16. Register snapshot task by request id not by snapshot name.
+ *  (?) 17. Does waitRebInfo need to be cleaned on DynamicCacheChangeFailureMessage occurs for restored caches?
+ *  (?) 18. Do we need to remove cache from the waitInfo rebalance groups prior to cache actually rollback fired?
+ *  19. Exclude partitions for restoring caches from PME.
+ *  20. Make the CacheGroupActionData private inner class.
  *
  * Other strategies to be memento to:
  *
@@ -476,20 +480,28 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
      * to the initial {@link GridDhtPartitionState#MOVING} state.
      */
     public boolean requirePartitionLoad(CacheConfiguration<?, ?> ccfg, UUID restoreId) {
+        return requirePartitionLoad(ccfg, restoreId, opCtx);
+    }
+
+    /**
+     * @param restoreId Process owner id.
+     * @param opCtx Snapshot restore context.
+     * @return {@code true} if partition states of given cache groups must be reset
+     * to the initial {@link GridDhtPartitionState#MOVING} state.
+     */
+    private boolean requirePartitionLoad(CacheConfiguration<?, ?> ccfg, UUID restoreId, SnapshotRestoreContext opCtx) {
         if (restoreId == null)
             return false;
 
-        SnapshotRestoreContext opCtx0 = opCtx;
-
-        if (!restoreId.equals(restoringId(opCtx0)))
+        if (!restoreId.equals(restoringId(opCtx)))
             return false;
 
-        if (!isRestoring(ccfg, opCtx0))
+        if (!isRestoring(ccfg, opCtx))
             return false;
 
         // Called from the discovery thread. It's safe to call all the methods reading
         // the snapshot context, since the context changed only through the discovery thread also.
-        return !opCtx0.sameTop;
+        return !opCtx.sameTop;
     }
 
     /**
@@ -1104,8 +1116,14 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         GridCompoundFuture<Boolean, Boolean> awaitBoth = new GridCompoundFuture<>();
 
         // TODO Exclude resending partitions if restore is in progress.
-        awaitBoth.add(ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, true,
-            IgniteUuid.fromUuid(reqId)));
+        IgniteInternalFuture<Boolean> cacheStartFut = ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true,
+            true, true, IgniteUuid.fromUuid(reqId));
+
+        // This is required for the rollback procedure to execute the cache groups stop operation.
+        cacheStartFut.listen(f -> opCtx0.isLocNodeStartedCaches = (f.error() == null));
+
+        // Convert exception to the RestoreCacheStartException to propagate to other nodes over the distributed process.
+        awaitBoth.add(chainCacheStartException(cacheStartFut));
         awaitBoth.add(opCtx0.cacheRebalanceFut);
 
         awaitBoth.markInitialized();
@@ -1140,6 +1158,28 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        // This will be called after the processCacheStopRequestOnExchangeDone happens.
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (ctx.clientNode() || fut == null || fut.exchangeActions() == null || opCtx0 == null)
+            return;
+
+        Set<String> grpNamesToStop = fut.exchangeActions().cacheGroupsToStop((ccfg, uuid) ->
+                requirePartitionLoad(ccfg, uuid, opCtx0))
+            .stream()
+            .map(g -> g.descriptor().cacheOrGroupName())
+            .collect(Collectors.toSet());
+
+        if (F.isEmpty(grpNamesToStop))
+            return;
+
+        assert grpNamesToStop.size() == opCtx0.dirs.size() : grpNamesToStop;
+
+        opCtx0.locStopCachesCompleteFut.onDone((Void)null);
+    }
+
     /**
      * @param reqId Request ID.
      * @param res Results.
@@ -1166,7 +1206,11 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
 
         opCtx0.err.compareAndSet(null, failure);
 
-        // TODO Do we need to remove cache from the waitInfo rebalance groups prior to cache actually rollback fired?
+        ClusterNode crd = U.oldest(ctx.discovery().aliveServerNodes(), null);
+
+        // Caches were not even been started and rollback already occurred during PME, so they are not even stared.
+        if (X.hasCause(errs.get(crd.id()), RestoreCacheStartException.class))
+            opCtx0.locStopCachesCompleteFut.onDone((Void)null);
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
             rollbackRestoreProc.start(reqId, reqId);
@@ -1473,8 +1517,21 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
 
         synchronized (this) {
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+        }
 
-            try {
+        IgniteInternalFuture<Void> stopRqOnCrdFut = opCtx0.isLocNodeStartedCaches ?
+            ctx.cache().dynamicDestroyCaches(opCtx0.cfgs.values().stream().map(scd -> scd.config().getName())
+                    .collect(Collectors.toList()),
+                true, IgniteUuid.fromUuid(reqId), true) :
+            new GridFinishedFuture<>();
+
+        try {
+            GridCompoundFuture<Void, Void> awaitStopCachesComplete = new GridCompoundFuture<>();
+
+            awaitStopCachesComplete.add(stopRqOnCrdFut);
+            awaitStopCachesComplete.add(opCtx0.locStopCachesCompleteFut);
+
+            awaitStopCachesComplete.markInitialized().listen(f -> {
                 ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
                     if (log.isInfoEnabled()) {
                         log.info("Removing restored cache directories [reqId=" + reqId +
@@ -1506,16 +1563,14 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                     else
                         retFut.onDone(true);
                 });
-            }
-            catch (RejectedExecutionException e) {
-                log.error("Unable to perform rollback routine, task has been rejected " +
-                    "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ']');
-
-                retFut.onDone(e);
-            }
+            });
         }
+        catch (RejectedExecutionException e) {
+            log.error("Unable to perform rollback routine, task has been rejected " +
+                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ']');
 
-        updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
+            retFut.onDone(e);
+        }
 
         return retFut;
     }
@@ -1544,6 +1599,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
             log.warning("Some of the nodes left the cluster and were unable to complete the rollback" +
                 " operation [reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", node(s)=" + leftNodes + ']');
         }
+
+        updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
 
         finishProcess(reqId, opCtx0.err.get());
     }
@@ -1643,6 +1700,24 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
     }
 
     /**
+     * @param cacheStartFut The cache started future to wrap exception if need.
+     * @param <T> Result future type.
+     * @return Future which completes with wrapped exception if it occurred.
+     */
+    private static <T> IgniteInternalFuture<T> chainCacheStartException(IgniteInternalFuture<T> cacheStartFut) {
+        GridFutureAdapter<T> out = new GridFutureAdapter<>();
+
+        cacheStartFut.listen(f -> {
+            if (f.error() == null)
+                out.onDone(f.result());
+            else
+                out.onDone(new RestoreCacheStartException(f.error()));
+        });
+
+        return out;
+    }
+
+    /**
      * @param lcs Collection of partition context.
      * @param partId Partition id to find.
      * @return Load future.
@@ -1662,7 +1737,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         if (fut == null || fut.exchangeActions() == null || ctx == null)
             return Collections.emptySet();
 
-        return fut.exchangeActions().cacheGroupsToStart(this::requirePartitionLoad)
+        return fut.exchangeActions().cacheGroupsToStart((ccfg, uuid) -> requirePartitionLoad(ccfg, uuid, ctx))
             .stream()
             .map(g -> g.descriptor().groupId())
             .collect(Collectors.toSet());
@@ -1770,6 +1845,16 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         /** Progress of processing cache group partitions on the local node.*/
         private final Map<CacheRestoreLifecycleFuture, Set<PartitionRestoreLifecycleFuture>> locProgress = new HashMap<>();
 
+        /**
+         * The stop future responsible for stopping cache groups during the rollback phase. Will be completed when the rollback
+         * process executes and all the cache group stop actions completes (the processCacheStopRequestOnExchangeDone finishes
+         * successfully and all the data deleted from disk).
+         */
+        private final GridFutureAdapter<Void> locStopCachesCompleteFut = new GridFutureAdapter<>();
+
+        /** {@code true} if caches successfully started on coordinator node during the restore procedure. */
+        private volatile boolean isLocNodeStartedCaches;
+
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
 
@@ -1800,8 +1885,18 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
             this.dirs = dirs;
             this.cfgs = cfgs;
 
-            metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>())
-                .addAll(locMetas);
+            metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
+        }
+    }
+
+    /** */
+    private static class RestoreCacheStartException extends IgniteCheckedException {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** @param cause Error. */
+        public RestoreCacheStartException(Throwable cause) {
+            super(cause);
         }
     }
 

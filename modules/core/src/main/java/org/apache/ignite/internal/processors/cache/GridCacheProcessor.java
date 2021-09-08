@@ -3915,6 +3915,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean destroy
     ) {
+        return dynamicDestroyCaches(cacheNames, checkThreadTx, null, destroy);
+    }
+
+    /**
+     * @param cacheNames Collection of cache names to destroy.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @param restartId Restart requester id (it'll allow to destroy this cache only him).
+     * @param destroy Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data
+     * @return Future that will be completed when cache is destroyed.
+     */
+    public IgniteInternalFuture<Void> dynamicDestroyCaches(
+        Collection<String> cacheNames,
+        boolean checkThreadTx,
+        @Nullable IgniteUuid restartId,
+        boolean destroy
+    ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(
                 () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicDestroyCaches"));
@@ -3924,7 +3940,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             checkReadOnlyState("dynamic destroy caches", null, cacheNames::toString);
 
         return dynamicChangeCaches(
-            cacheNames.stream().map(cacheName -> createStopRequest(cacheName, false, null, destroy))
+            cacheNames.stream().map(cacheName -> createStopRequest(cacheName, false, restartId, destroy))
                 .collect(toList())
         );
     }
@@ -3955,7 +3971,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param reqs cache stop requests.
      * @return compound future.
      */
-    @NotNull public IgniteInternalFuture<?> dynamicChangeCaches(List<DynamicCacheChangeRequest> reqs) {
+    @NotNull public IgniteInternalFuture<Void> dynamicChangeCaches(List<DynamicCacheChangeRequest> reqs) {
         return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture());
     }
 

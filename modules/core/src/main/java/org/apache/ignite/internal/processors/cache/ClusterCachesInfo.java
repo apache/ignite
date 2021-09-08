@@ -872,7 +872,7 @@ public class ClusterCachesInfo {
 
             ctx.discovery().removeCacheGroup(grpDesc);
 
-            exchangeActions.addCacheGroupToStop(grpDesc, req.destroy());
+            exchangeActions.addCacheGroupToStop(grpDesc, req.destroy(), req.restartId() == null ? null : req.restartId().globalId());
 
             assert exchangeActions.checkStopRequestConsistency(grpDesc.groupId());
 
@@ -1889,7 +1889,7 @@ public class ClusterCachesInfo {
             }
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
-                exchangeActions.addCacheGroupToStop(grpDesc, false);
+                exchangeActions.addCacheGroupToStop(grpDesc, false, null);
         }
 
         return exchangeActions;
