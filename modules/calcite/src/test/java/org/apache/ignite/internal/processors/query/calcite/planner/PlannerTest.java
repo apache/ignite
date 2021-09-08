@@ -168,12 +168,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-            new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -277,12 +276,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-            new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -503,12 +501,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-            new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -721,12 +718,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -805,12 +801,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -886,12 +881,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -969,12 +963,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-            new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -1046,12 +1039,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-            new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 

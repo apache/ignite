@@ -15,21 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.calcite.schema.SchemaPlus;
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface SchemaHolder extends Service {
+public interface QueryRegistry extends Service {
     /**
-     * @return Schema.
+     * Register the query or return the exists query with the same identifier.
+     *
+     * @param qry Query to register.
+     * @return registered query.
      */
-    SchemaPlus schema();
+    Query register(Query qry);
+
+    /**
+     * Lookup query by identifier.
+     *
+     * @param id Query identified.
+     * @return registered query or {@code null} if the query with specified identifier isn't found.
+     */
+    Query query(UUID id);
+
+    /**
+     * Unregister query by identifier.
+     *
+     * @param id Query identifier.
+     */
+    void unregister(UUID id);
 
     /** */
-    public SchemaPlus getDefaultSchema(String schema);
-
+    Collection<Query> runningQueries();
 }

@@ -94,7 +94,7 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
+    protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
         return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
     }
 }

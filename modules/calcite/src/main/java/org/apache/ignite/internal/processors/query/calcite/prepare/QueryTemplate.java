@@ -37,18 +37,13 @@ import org.jetbrains.annotations.NotNull;
 /** */
 public class QueryTemplate {
     /** */
-    private final MappingService mappingService;
-
-    /** */
     private final ImmutableList<Fragment> fragments;
 
     /** */
     private final AtomicReference<ExecutionPlan> executionPlan = new AtomicReference<>();
 
     /** */
-    public QueryTemplate(MappingService mappingService, List<Fragment> fragments) {
-        this.mappingService = mappingService;
-
+    public QueryTemplate(List<Fragment> fragments) {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
         for (Fragment fragment : fragments)
             b.add(fragment.copy());
@@ -57,7 +52,7 @@ public class QueryTemplate {
     }
 
     /** */
-    public ExecutionPlan map(MappingQueryContext ctx) {
+    public ExecutionPlan map(MappingService mappingService, MappingQueryContext ctx) {
         ExecutionPlan executionPlan = this.executionPlan.get();
 
         if (executionPlan != null && Objects.equals(executionPlan.topologyVersion(), ctx.topologyVersion()))
@@ -70,7 +65,7 @@ public class QueryTemplate {
 
         for (int i = 0; i < 3; i++) {
             try {
-                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(fragments, ctx, mq));
+                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(mappingService, fragments, ctx, mq));
 
                 if (executionPlan == null || executionPlan.topologyVersion().before(executionPlan0.topologyVersion()))
                     this.executionPlan.compareAndSet(executionPlan, executionPlan0);
@@ -91,7 +86,7 @@ public class QueryTemplate {
     }
 
     /** */
-    @NotNull private List<Fragment> map(List<Fragment> fragments, MappingQueryContext ctx, RelMetadataQuery mq) {
+    @NotNull private List<Fragment> map(MappingService mappingService, List<Fragment> fragments, MappingQueryContext ctx, RelMetadataQuery mq) {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
 
         for (Fragment fragment : fragments)

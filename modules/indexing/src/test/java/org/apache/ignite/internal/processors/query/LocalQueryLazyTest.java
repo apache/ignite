@@ -147,6 +147,24 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
     /** */
     @Test
+    public void testDbg() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        List<FieldsQueryCursor<List<?>>> rs = sqlMs(grid(0),
+            "CREATE TABLE TBL0 (id INT PRIMARY KEY, name VARCHAR);\n" +
+                "INSERT INTO TBL0 (id, name) VALUES (0, 'val0');\n" +
+                "INSERT INTO TBL0 (id, name) VALUES (1, 'val1');\n" +
+                "SELECT * FROM TBL0;\n"
+//                + "DROP TABLE TBL0;"
+        );
+
+        rs.forEach(cur -> System.out.println(cur.getAll()));
+    }
+
+    /** */
+    @Test
     public void testDropTableWithOpenCursor() throws Exception {
         startGrid(0);
 
@@ -228,5 +246,18 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
             .setLazy(true)
             .setSchema("TEST")
             .setArgs(args), false);
+    }
+
+    /**
+     * @param ign Node.
+     * @param sql SQL query.
+     * @param args Query parameters.
+     * @return Results cursor.
+     */
+    private List<FieldsQueryCursor<List<?>>> sqlMs(IgniteEx ign, String sql, Object... args) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setArgs(args), false, false);
     }
 }

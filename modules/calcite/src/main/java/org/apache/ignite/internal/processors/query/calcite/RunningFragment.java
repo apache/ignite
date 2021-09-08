@@ -15,38 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.util.Objects;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 
 /** */
-public class DdlPlan implements QueryPlan {
+public class RunningFragment {
     /** */
-    private final DdlCommand cmd;
+    private final FragmentPlan fragmentPlan;
 
     /** */
-    public DdlPlan(DdlCommand cmd) {
-        this.cmd = cmd;
-    }
+    private final ExecutionContext ectx;
 
     /** */
-    public DdlCommand command() {
-        return cmd;
+    public RunningFragment(FragmentPlan fragmentPlan, ExecutionContext ectx) {
+        this.fragmentPlan = fragmentPlan;
+        this.ectx = ectx;
     }
 
     /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.DDL;
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RunningFragment fragment = (RunningFragment)o;
+
+        return Objects.equals(ectx, fragment.ectx);
     }
 
     /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return cmd.toString();
+    @Override public int hashCode() {
+        return Objects.hash(ectx);
     }
 }

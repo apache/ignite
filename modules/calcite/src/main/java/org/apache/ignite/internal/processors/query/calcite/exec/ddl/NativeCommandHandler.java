@@ -44,11 +44,10 @@ public class NativeCommandHandler {
     /**
      * @param qryId Query id.
      * @param cmd   Native command.
-     * @param pctx  Planning context.
      */
-    public FieldsQueryCursor<List<?>> handle(UUID qryId, NativeCommandWrapper cmd, PlanningContext pctx) {
+    public FieldsQueryCursor<List<?>> handle(UUID qryId, NativeCommandWrapper cmd) {
         assert proc.isCommandSupported(cmd.command()) : cmd.command();
 
-        return proc.runCommand(pctx.query(), cmd.command(), pctx.unwrap(SqlClientContext.class));
+        return proc.runCommand(cmd.command());
     }
 }

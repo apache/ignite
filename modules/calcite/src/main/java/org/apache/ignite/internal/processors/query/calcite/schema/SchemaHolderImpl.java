@@ -269,6 +269,10 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         rebuild();
     }
 
+    public SchemaPlus getDefaultSchema(String schema) {
+        return schema != null ? schema().getSubSchema(schema) : schema();
+    }
+
     /** */
     private void rebuild() {
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);

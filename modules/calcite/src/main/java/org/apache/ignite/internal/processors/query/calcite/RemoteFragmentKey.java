@@ -15,38 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.util.UUID;
 
 /** */
-public class DdlPlan implements QueryPlan {
+final class RemoteFragmentKey {
     /** */
-    private final DdlCommand cmd;
+    private final UUID nodeId;
 
     /** */
-    public DdlPlan(DdlCommand cmd) {
-        this.cmd = cmd;
-    }
+    private final long fragmentId;
 
     /** */
-    public DdlCommand command() {
-        return cmd;
+    RemoteFragmentKey(UUID nodeId, long fragmentId) {
+        this.nodeId = nodeId;
+        this.fragmentId = fragmentId;
     }
 
     /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.DDL;
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RemoteFragmentKey that = (RemoteFragmentKey) o;
+
+        if (fragmentId != that.fragmentId)
+            return false;
+        return nodeId.equals(that.nodeId);
     }
 
     /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return cmd.toString();
+    @Override public int hashCode() {
+        int res = nodeId.hashCode();
+        res = 31 * res + (int) (fragmentId ^ (fragmentId >>> 32));
+        return res;
     }
 }

@@ -90,15 +90,13 @@ public class SqlCommandProcessor {
      *
      * @param sql SQL.
      * @param cmdNative Native command.
-     * @param cliCtx Client context.
      * @return Result.
      */
-    @Nullable public FieldsQueryCursor<List<?>> runCommand(String sql, SqlCommand cmdNative,
-        @Nullable SqlClientContext cliCtx) {
+    @Nullable public FieldsQueryCursor<List<?>> runCommand(SqlCommand cmdNative) {
         assert cmdNative != null;
 
         if (isDdl(cmdNative))
-            runCommandNativeDdl(sql, cmdNative);
+            runCommandNativeDdl(cmdNative);
         else if (cmdNative instanceof SqlKillComputeTaskCommand)
             processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
         else if (cmdNative instanceof SqlKillTransactionCommand)
@@ -192,10 +190,9 @@ public class SqlCommandProcessor {
     /**
      * Run DDL statement.
      *
-     * @param sql Original SQL.
      * @param cmd Command.
      */
-    private void runCommandNativeDdl(String sql, SqlCommand cmd) {
+    private void runCommandNativeDdl(SqlCommand cmd) {
         IgniteInternalFuture<?> fut = null;
 
         try {
@@ -306,7 +303,7 @@ public class SqlCommandProcessor {
                 ctx.security().dropUser(dropCmd.userName());
             }
             else
-                throw new IgniteSQLException("Unsupported DDL operation: " + sql,
+                throw new IgniteSQLException("Unsupported DDL operation: " + cmd,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (fut != null)

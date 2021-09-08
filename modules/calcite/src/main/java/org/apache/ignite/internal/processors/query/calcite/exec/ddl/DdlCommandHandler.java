@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DropTable
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
@@ -95,27 +96,27 @@ public class DdlCommandHandler {
     }
 
     /** */
-    public void handle(UUID qryId, DdlCommand cmd, PlanningContext pctx) throws IgniteCheckedException {
+    public void handle(UUID qryId, DdlCommand cmd) throws IgniteCheckedException {
         try {
             if (cmd instanceof CreateTableCommand)
-                handle0(pctx, (CreateTableCommand)cmd);
+                handle0((CreateTableCommand)cmd);
 
             else if (cmd instanceof DropTableCommand)
-                handle0(pctx, (DropTableCommand)cmd);
+                handle0((DropTableCommand)cmd);
 
             else if (cmd instanceof AlterTableAddCommand)
-                handle0(pctx, (AlterTableAddCommand)cmd);
+                handle0((AlterTableAddCommand)cmd);
 
             else if (cmd instanceof AlterTableDropCommand)
-                handle0(pctx, (AlterTableDropCommand)cmd);
+                handle0((AlterTableDropCommand)cmd);
 
             else if (cmd instanceof NativeCommandWrapper)
-                nativeCmdHnd.handle(qryId, (NativeCommandWrapper)cmd, pctx);
+                nativeCmdHnd.handle(qryId, (NativeCommandWrapper)cmd);
 
             else {
                 throw new IgniteSQLException("Unsupported DDL operation [" +
                     "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
-                    "querySql=\"" + pctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    "cmd=\"" + cmd + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
         }
         catch (SchemaOperationException e) {
@@ -124,7 +125,7 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private void handle0(PlanningContext pctx, CreateTableCommand cmd) throws IgniteCheckedException {
+    private void handle0(CreateTableCommand cmd) throws IgniteCheckedException {
         security.authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
 
         isDdlOnSchemaSupported(cmd.schemaName());
@@ -138,7 +139,7 @@ public class DdlCommandHandler {
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
 
-        QueryEntity e = toQueryEntity(cmd, pctx);
+        QueryEntity e = toQueryEntity(cmd);
 
         ccfg.setQueryEntities(Collections.singleton(e));
         ccfg.setSqlSchema(cmd.schemaName());
@@ -178,7 +179,7 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private void handle0(PlanningContext pctx, DropTableCommand cmd) throws IgniteCheckedException {
+    private void handle0(DropTableCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
         Table tbl = schemaSupp.get().getSubSchema(cmd.schemaName()).getTable(cmd.tableName());
@@ -198,7 +199,7 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private void handle0(PlanningContext pctx, AlterTableAddCommand cmd) throws IgniteCheckedException {
+    private void handle0(AlterTableAddCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
         GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd.schemaName(), cmd.tableName());
@@ -225,7 +226,7 @@ public class DdlCommandHandler {
                         continue;
                 }
 
-                Type javaType = pctx.typeFactory().getResultClass(col.type());
+                Type javaType = Commons.typeFactory().getResultClass(col.type());
 
                 String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
 
@@ -256,7 +257,7 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private void handle0(PlanningContext pctx, AlterTableDropCommand cmd) throws IgniteCheckedException {
+    private void handle0(AlterTableDropCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
         GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd.schemaName(), cmd.tableName());
@@ -308,7 +309,7 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private QueryEntity toQueryEntity(CreateTableCommand cmd, PlanningContext pctx) {
+    private QueryEntity toQueryEntity(CreateTableCommand cmd) {
         QueryEntity res = new QueryEntity();
 
         res.setTableName(cmd.tableName());
@@ -320,7 +321,7 @@ public class DdlCommandHandler {
         Map<String, Integer> precision = new HashMap<>();
         Map<String, Integer> scale = new HashMap<>();
 
-        IgniteTypeFactory tf = pctx.typeFactory();
+        IgniteTypeFactory tf = Commons.typeFactory();
 
         for (ColumnDefinition col : cmd.columns()) {
             String name = col.name();
