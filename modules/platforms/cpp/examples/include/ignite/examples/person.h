@@ -136,6 +136,11 @@ namespace ignite
                 dst = "PersonKey";
             }
 
+            static void GetAffinityFieldName(std::string& dst)
+            {
+                dst = "orgIdAff";
+            }
+
             static void Write(BinaryWriter& writer, const examples::PersonKey& obj)
             {
                 writer.WriteInt64("id", obj.id);

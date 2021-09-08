@@ -17,11 +17,15 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "ignite/ignition.h"
-#include "ignite/test_utils.h"
+#include <ignite/ignition.h>
 
-using namespace ignite;
-using namespace cache;
+#include <ignite/thin/ignite_client_configuration.h>
+#include <ignite/thin/ignite_client.h>
+
+#include <ignite/complex_type.h>
+#include <test_utils.h>
+
+using namespace ignite::thin;
 using namespace boost::unit_test;
 
 namespace
@@ -33,17 +37,33 @@ namespace
 class InteropTestSuiteFixture
 {
 public:
+    static ignite::Ignite StartNode(const char* name)
+    {
+        return ignite_test::StartCrossPlatformServerNode("interop.xml", name);
+    }
+
     InteropTestSuiteFixture()
     {
-        // No-op.
+        serverNode = StartNode("ServerNode");
+
+        IgniteClientConfiguration cfg;
+        cfg.SetEndPoints("127.0.0.1:11110");
+
+        client = IgniteClient::Start(cfg);
     }
 
     ~InteropTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
     }
-};
 
+protected:
+    /** Server node. */
+    ignite::Ignite serverNode;
+
+    /** Client. */
+    IgniteClient client;
+};
 
 /**
  * Affinity key class.
@@ -113,99 +133,14 @@ namespace ignite
 
 BOOST_FIXTURE_TEST_SUITE(InteropTestSuite, InteropTestSuiteFixture)
 
-#ifdef ENABLE_STRING_SERIALIZATION_VER_2_TESTS
-
-BOOST_AUTO_TEST_CASE(StringUtfInvalidSequence)
-{
-    Ignite ignite = ignite_test::StartNode("cache-test.xml");
-
-    Cache<std::string, std::string> cache = ignite.CreateCache<std::string, std::string>("Test");
-
-    std::string initialValue;
-
-    initialValue.push_back(static_cast<unsigned char>(0xD8));
-    initialValue.push_back(static_cast<unsigned char>(0x00));
-
-    try
-    {
-        cache.Put("key", initialValue);
-
-        std::string cachedValue = cache.Get("key");
-
-        BOOST_ERROR("Exception is expected due to invalid format.");
-    }
-    catch (const IgniteError&)
-    {
-        // Expected in this mode.
-    }
-
-    Ignition::StopAll(false);
-}
-
-BOOST_AUTO_TEST_CASE(StringUtfInvalidCodePoint)
-{
-    putenv("IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2=true");
-
-    Ignite ignite = ignite_test::StartNode("cache-test.xml");
-
-    Cache<std::string, std::string> cache = ignite.CreateCache<std::string, std::string>("Test");
-
-    std::string initialValue;
-
-    //    1110xxxx 10xxxxxx 10xxxxxx |
-    // <=          11011000 00000000 | U+D8
-    //  = 11101101 10100000 10000000 | ED A0 80
-    initialValue.push_back(static_cast<unsigned char>(0xED));
-    initialValue.push_back(static_cast<unsigned char>(0xA0));
-    initialValue.push_back(static_cast<unsigned char>(0x80));
-
-    cache.Put("key", initialValue);
-    std::string cachedValue = cache.Get("key");
-
-    // This is a valid case. Invalid code points are supported in this mode.
-    BOOST_CHECK_EQUAL(initialValue, cachedValue);
-
-    Ignition::StopAll(false);
-}
-
-#endif
-
-BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
-{
-    Ignite ignite = ignite_test::StartPlatformNode("cache-test.xml", "ServerNode");
-
-    Cache<std::string, std::string> cache = ignite.CreateCache<std::string, std::string>("Test");
-
-    std::string initialValue;
-
-    //    11110xxx 10xxxxxx 10xxxxxx 10xxxxxx |
-    // <=             00001 00000001 01001011 | U+1014B
-    // <=      000   010000   000101   001011 | U+1014B
-    //  = 11110000 10010000 10000101 10001011 | F0 90 85 8B
-    initialValue.push_back(static_cast<unsigned char>(0xF0));
-    initialValue.push_back(static_cast<unsigned char>(0x90));
-    initialValue.push_back(static_cast<unsigned char>(0x85));
-    initialValue.push_back(static_cast<unsigned char>(0x8B));
-
-    cache.Put("key", initialValue);
-    std::string cachedValue = cache.Get("key");
-
-    // This is a valid UTF-8 code point. Should be supported in default mode.
-    BOOST_CHECK_EQUAL(initialValue, cachedValue);
-
-    Ignition::StopAll(false);
-}
-
 BOOST_AUTO_TEST_CASE(PutObjectByCppThenByJava)
 {
-    Ignite ignite = ignite_test::StartPlatformNode("interop.xml", "ServerNode");
-
-    cache::Cache<AffinityKey, AffinityKey> cache = ignite.GetOrCreateCache<AffinityKey, AffinityKey>("default");
+    cache::CacheClient<AffinityKey, AffinityKey> cache = client.GetOrCreateCache<AffinityKey, AffinityKey>("default");
 
     AffinityKey key1(2, 3);
     cache.Put(key1, key1);
 
-    compute::Compute compute = ignite.GetCompute();
+    compute::ComputeClient compute = client.GetCompute();
 
     compute.ExecuteJavaTask<int*>(TEST_PUT_AFFINITY_KEY_TASK);
 
@@ -218,17 +153,15 @@ BOOST_AUTO_TEST_CASE(PutObjectByCppThenByJava)
 
 BOOST_AUTO_TEST_CASE(PutObjectPointerByCppThenByJava)
 {
-    Ignite ignite = ignite_test::StartPlatformNode("interop.xml", "ServerNode");
-
-    cache::Cache<AffinityKey*, AffinityKey*> cache =
-            ignite.GetOrCreateCache<AffinityKey*, AffinityKey*>("default");
+    cache::CacheClient<AffinityKey*, AffinityKey*> cache =
+        client.GetOrCreateCache<AffinityKey*, AffinityKey*>("default");
 
     AffinityKey* key1 = new AffinityKey(2, 3);
     cache.Put(key1, key1);
 
     delete key1;
 
-    compute::Compute compute = ignite.GetCompute();
+    compute::ComputeClient compute = client.GetCompute();
 
     compute.ExecuteJavaTask<int*>(TEST_PUT_AFFINITY_KEY_TASK);
 
