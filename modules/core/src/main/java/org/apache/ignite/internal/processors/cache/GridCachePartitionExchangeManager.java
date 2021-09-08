@@ -3312,7 +3312,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (fut.topologyVersion().equals(lastAffChangedVer))
                                     exchFut = fut;
                                 else if (lastAffChangedVer.after(exchId.topologyVersion())) {
-                                    if (lastFut.exchangeType() == ALL) {
+                                    if (lastFut.exchangeType() == ALL && !exchFut.rebalanced()) {
                                         // There is a new exchange which should trigger rebalancing.
                                         // This reassignment request can be skipped.
                                         if (log.isInfoEnabled()) {
