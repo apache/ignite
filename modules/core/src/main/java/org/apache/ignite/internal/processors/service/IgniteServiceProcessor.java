@@ -981,6 +981,23 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
+        if (hasLocalNode(prj)) {
+            ServiceContextImpl ctx = serviceContext(name);
+
+            if (ctx != null && !ctx.statisticsEnabled()) {
+                Service srvc = ctx.service();
+
+                if (srvc != null) {
+                    if (srvcCls.isAssignableFrom(srvc.getClass()))
+                        return (T)srvc;
+                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
+                        throw new IgniteException("Service does not implement specified interface [srvcCls="
+                            + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
+                    }
+                }
+            }
+        }
+
         return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
     }
 

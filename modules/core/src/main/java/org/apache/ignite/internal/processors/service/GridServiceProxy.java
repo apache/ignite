@@ -194,8 +194,9 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null)
-                                return svcCtx.statisticsEnabled() ? measureServiceMethod(ctx.service(), svcCtx.service(), name, mtd, args) :
-                                    mtd.invoke(svcCtx.service(), args);
+                                return svcCtx.statisticsEnabled() ? measureCall(ctx.service(),
+                                    () -> callServiceLocally(svc, mtd, args), name, mtd.getName(), mtd.getParameterTypes()) :
+                                    callServiceLocally(svc, mtd, args);
                         }
                     }
                     else {
@@ -387,27 +388,16 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Calls service method, measures and registers its duration.
-     *
-     * @param srvcProc Current service processor.
-     * @param svc      The service object.
-     * @param srvcName The service name.
-     * @param mtd      Method to call.
-     * @param args     Arguments for {@code mtd}.
+     * @param svc Service to be called.
+     * @param mtd Method to call.
+     * @param args Method args.
+     * @return Invocation result.
      */
-    private static Object measureServiceMethod(
-        ServiceProcessorAdapter srvcProc,
-        Service svc,
-        String srvcName,
-        Method mtd,
-        Object[] args
-    ) throws Exception {
-        return measureCall(srvcProc, () -> {
-            if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
-                return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
-            else
-                return mtd.invoke(svc, args);
-        }, srvcName, mtd.getName(), mtd.getParameterTypes());
+    private static Object callServiceLocally(Service svc, Method mtd, Object[] args) throws Exception {
+        if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
+            return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
+        else
+            return mtd.invoke(svc, args);
     }
 
     /**
@@ -537,8 +527,10 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                if (svcCtx.statisticsEnabled())
-                    return measureServiceMethod(ignite.context().service(), svcCtx.service(), svcCtx.name(), mtd, args);
+                if (svcCtx.statisticsEnabled()) {
+                    return measureCall(ignite.context().service(), () -> mtd.invoke(svcCtx.service(), args),
+                        svcCtx.name(), mtd.getName(), mtd.getParameterTypes());
+                }
                 else
                     return mtd.invoke(svcCtx.service(), args);
             }
