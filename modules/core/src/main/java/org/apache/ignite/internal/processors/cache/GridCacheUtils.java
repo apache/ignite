@@ -1166,21 +1166,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets subject ID by transaction.
-     *
-     * @param tx Transaction.
-     * @return Subject ID.
-     */
-    public static <K, V> UUID subjectId(IgniteInternalTx tx, GridCacheSharedContext<K, V> ctx) {
-        if (tx == null)
-            return ctx.localNodeId();
-
-        UUID subjId = tx.subjectId();
-
-        return subjId != null ? subjId : tx.originatingNodeId();
-    }
-
-    /**
      * Invalidate entry in cache.
      *
      * @param cache Cache.

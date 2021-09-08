@@ -947,7 +947,7 @@ public class GridDhtPartitionDemander {
                 if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                     cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
-                        false, null, null, null, true);
+                        false, null, null, true);
 
                 return true;
             }
@@ -1016,7 +1016,7 @@ public class GridDhtPartitionDemander {
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
                                 null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, null, true, null,
-                                false, null, null, null, true);
+                                false, null, null, true);
                     }
                     else {
                         cached.touch(); // Start tracking.
