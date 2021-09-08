@@ -69,7 +69,7 @@ tab:C#/.NET[]
 include::{dotnetSourceFile}[tag=affinityCollocation,indent=0]
 ----
 tab:C++[]
-[source,csharp]
+[source,cpp]
 ----
 include::{cppSourceFile}[tag=affinity-collocation,indent=0]
 ----
