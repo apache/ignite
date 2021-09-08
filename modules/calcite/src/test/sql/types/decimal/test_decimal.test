@@ -5,6 +5,12 @@
 statement ok
 PRAGMA enable_verification
 
+# default decimal type is (32767, 0), see IgniteTypeSystem.getMaxNumericPrecision
+query I
+SELECT typeof('0.1'::DECIMAL);
+----
+DECIMAL(32767, 0)
+
 # test basic string conversions
 query II
 SELECT '0.1'::DECIMAL::VARCHAR, '922337203685478.758'::DECIMAL::VARCHAR;

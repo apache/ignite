@@ -22,6 +22,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.function.LongFunction;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -138,8 +139,7 @@ public class FunctionsTest extends GridCommonAbstractTest {
         assertEquals(0, qryEngine.query(null, "PUBLIC",
             "SELECT * FROM table(system_range(null, 1))").get(0).getAll().size());
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> qryEngine.query(null, "PUBLIC",
-            "SELECT * FROM table(system_range(1, 1, 0))").get(0).getAll(), IllegalArgumentException.class,
+        assertThrows("SELECT * FROM table(system_range(1, 1, 0))", IllegalArgumentException.class,
             "Increment can't be 0");
     }
 
@@ -229,6 +229,30 @@ public class FunctionsTest extends GridCommonAbstractTest {
     public void testMonthnameDayname() {
         checkQuery("SELECT MONTHNAME(DATE '2021-01-01')").returns("January").check();
         checkQuery("SELECT DAYNAME(DATE '2021-01-01')").returns("Friday").check();
+    }
+
+    /** */
+    @Test
+    public void testTypeOf() {
+        checkQuery("SELECT TYPEOF(1)").returns("INTEGER").check();
+        checkQuery("SELECT TYPEOF(1.1::DOUBLE)").returns("DOUBLE").check();
+        checkQuery("SELECT TYPEOF(1.1::DECIMAL(3, 2))").returns("DECIMAL(3, 2)").check();
+        checkQuery("SELECT TYPEOF('a')").returns("CHAR(1)").check();
+        checkQuery("SELECT TYPEOF('a'::varchar(1))").returns("VARCHAR(1)").check();
+        checkQuery("SELECT TYPEOF(NULL)").returns("NULL").check();
+        checkQuery("SELECT TYPEOF(NULL::VARCHAR(100))").returns("VARCHAR(100)").check();
+        assertThrows("SELECT TYPEOF()", SqlValidatorException.class, "Invalid number of arguments");
+        assertThrows("SELECT TYPEOF(1, 2)", SqlValidatorException.class, "Invalid number of arguments");
+    }
+
+    /** */
+    private void assertThrows(String qry, Class<? extends Throwable> cls, String msg) {
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> qryEngine.query(null, "PUBLIC", qry).get(0).getAll(),
+            cls,
+            msg
+        );
     }
 
     /** */
