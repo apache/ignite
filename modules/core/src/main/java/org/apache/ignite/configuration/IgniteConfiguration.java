@@ -1681,7 +1681,7 @@ public class IgniteConfiguration {
      * @param netCompressionLevel Compression level for internal network messages.
      * <p>
      * If not provided, then default value
-     * {@link Deflater.BEST_SPEED} is used.
+     * {@link Deflater#BEST_SPEED} is used.
      *
      */
     public void setNetworkCompressionLevel(int netCompressionLevel) {

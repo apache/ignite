@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 @FunctionalInterface
 public interface IgniteProducer<T> {
     /**
-     * @return Produce value.
+     * @return Produced value.
      */
     public T produce() throws IgniteCheckedException;
 
