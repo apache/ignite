@@ -49,7 +49,7 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 /**
  *
  */
-public class Accumulators<Row> {
+public class Accumulators {
     /** */
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         RowHandler<Row> hnd = ctx.rowHandler();
