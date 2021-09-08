@@ -3957,7 +3957,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     assert next == null : next;
 
-                    checkOutgoingConnection();
+                    // Segment local node if ring connection failed while incoming traffic is present.
+                    if (firstRingMsgSendFailedTime > 0 &&
+                        lastRingMsgReceivedTime > firstRingMsgSendFailedTime + U.millisToNanos(connCheckInterval)) {
+                        synchronized (mux) {
+                            if (spiState == CONNECTED && !failedNodes.isEmpty() &&
+                                failedNodes.size() == ring.serverNodes(Collections.singletonList(locNode)).size())
+                                segmentLocalNodeOnSendFail(failedNodes);
+                        }
+                    }
 
                     if (log.isDebugEnabled())
                         log.debug("Pending messages will be resent to local node");
@@ -6519,19 +6527,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Segment local node if ring connection failed while incoming traffic is present.
-     */
-    private void checkOutgoingConnection() {
-        if (firstRingMsgSendFailedTime > 0 && lastRingMsgReceivedTime > firstRingMsgSendFailedTime +
-            U.millisToNanos(connCheckInterval)) {
-            synchronized (mux) {
-                if (spiState == CONNECTED)
-                    segmentLocalNodeOnSendFail(failedNodes.keySet());
-            }
-        }
-    }
-
-    /**
      * Segment local node on failed message send.
      */
     private void segmentLocalNodeOnSendFail(Collection<TcpDiscoveryNode> failedNodes) {
@@ -7420,8 +7415,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
-
-            checkOutgoingConnection();
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */

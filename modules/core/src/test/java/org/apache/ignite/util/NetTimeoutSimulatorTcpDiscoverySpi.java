@@ -28,12 +28,11 @@ import java.net.SocketTimeoutException;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Tcp Discovery able to simulate network failure.
  */
-public class NetFailureTcpDiscoverySpi extends TcpDiscoverySpi {
+public class NetTimeoutSimulatorTcpDiscoverySpi extends TcpDiscoverySpi {
     /**
      * If not {@code null}, enables network timeout simulation. First value switches traffic droppage: negative for all
      * incoming, positive for all outgoing, 0 for both.
@@ -106,14 +105,14 @@ public class NetFailureTcpDiscoverySpi extends TcpDiscoverySpi {
 
             return new OutputStream() {
                 /** {@inheritDoc} */
-                @Override public void write(@NotNull byte[] b) throws IOException {
+                @Override public void write(byte[] b) throws IOException {
                     simulateTimeout(delegate);
 
                     src.write(b);
                 }
 
                 /** {@inheritDoc} */
-                @Override public void write(@NotNull byte[] b, int off, int len) throws IOException {
+                @Override public void write(byte[] b, int off, int len) throws IOException {
                     simulateTimeout(delegate);
 
                     src.write(b, off, len);
@@ -145,13 +144,13 @@ public class NetFailureTcpDiscoverySpi extends TcpDiscoverySpi {
             InputStream src = delegate.getInputStream();
 
             return new InputStream() {
-                @Override public int read(@NotNull byte[] b) throws IOException {
+                @Override public int read(byte[] b) throws IOException {
                     simulateTimeout(delegate);
 
                     return src.read(b);
                 }
 
-                @Override public int read(@NotNull byte[] b, int off, int len) throws IOException {
+                @Override public int read(byte[] b, int off, int len) throws IOException {
                     simulateTimeout(delegate);
 
                     return src.read(b, off, len);

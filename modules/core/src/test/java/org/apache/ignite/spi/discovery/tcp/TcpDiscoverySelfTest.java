@@ -93,7 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.util.NetFailureTcpDiscoverySpi;
+import org.apache.ignite.util.NetTimeoutSimulatorTcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -430,29 +430,29 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrids(gridCnt - 1);
 
-            nodeSpi.set(new NetFailureTcpDiscoverySpi());
+            nodeSpi.set(new NetTimeoutSimulatorTcpDiscoverySpi());
 
             startGrid(gridCnt - 1);
 
             UUID failingNodeId = grid(gridCnt - 1).localNode().id();
 
-            CountDownLatch testWaiter = new CountDownLatch(gridCnt - 1);
+            CountDownLatch latch = new CountDownLatch(gridCnt - 1);
 
-            for (int i = 0; i < gridCnt - 1; ++i) {
-                grid(0).events().localListen(new IgnitePredicate<Event>() {
+            Ignition.allGrids().forEach(ig -> {
+                ig.events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
                         if (evt.type() == EventType.EVT_NODE_FAILED
                             && failingNodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
-                            testWaiter.countDown();
+                            latch.countDown();
 
                         return false;
                     }
                 }, EVT_NODE_FAILED);
-            }
+            });
 
-            U.sleep(failureDetectionTimeout * 2);
+            U.sleep(failureDetectionTimeout * 2L);
 
-            NetFailureTcpDiscoverySpi failSpi = ((NetFailureTcpDiscoverySpi)grid(gridCnt - 1)
+            NetTimeoutSimulatorTcpDiscoverySpi failSpi = ((NetTimeoutSimulatorTcpDiscoverySpi)grid(gridCnt - 1)
                 .configuration().getDiscoverySpi());
 
             long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
@@ -460,9 +460,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             failSpi.setNetworkTimeout(1, (int)simulatedNetDelay);
 
-            testWaiter.await(failureDetectionTimeout * 3, MILLISECONDS);
+            latch.await(failureDetectionTimeout * 3, MILLISECONDS);
 
-            for (int i = 0; i < gridCnt - 1; ++i)
+            for (int i = 0; i < gridCnt - 1; i++)
                 assert grid(i).cluster().nodes().size() == gridCnt - 1;
         }
         finally {
