@@ -17,18 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
@@ -39,11 +45,12 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /** */
-public class RootQuery<Row> extends Query {
+public class RootQuery<Row> extends Query<Row> {
     /** SQL query. */
     private final String sql;
 
@@ -76,14 +83,14 @@ public class RootQuery<Row> extends Query {
 
     /** */
     public RootQuery(
-        QueryRegistry reg,
         String sql,
         SchemaPlus schema,
         Object[] params,
         QueryContext qryCtx,
+        Consumer<Query> unregister,
         IgniteLogger log
     ) {
-        super(reg, UUID.randomUUID(), qryCtx != null? qryCtx.unwrap(GridQueryCancel.class) : null);
+        super(UUID.randomUUID(), qryCtx != null? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
 
         this.sql = sql;
         this.schema = schema;
@@ -117,9 +124,16 @@ public class RootQuery<Row> extends Query {
     }
 
     /** */
+    public Object[] parameters() {
+        return params;
+    }
+
+    /** */
     public void run(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
         RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
         rootNode.register(root);
+
+        addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));
 
         this.root = rootNode;
 
@@ -159,7 +173,7 @@ public class RootQuery<Row> extends Query {
 
         if (state0 == QueryState.CLOSED) {
             // 2) unregister runing query
-            //running.remove(ctx.queryId());
+            unregister.accept(this);
 
             IgniteException wrpEx = null;
 
@@ -177,6 +191,9 @@ public class RootQuery<Row> extends Query {
             }
 
             // 4) Cancel local fragment
+
+            fragments.forEach(f -> f.context().execute(f.context()::cancel, f.root()::onError));
+
 //            root.context().execute(ctx::cancel, root::onError);
 
             if (wrpEx != null)
@@ -192,9 +209,72 @@ public class RootQuery<Row> extends Query {
                 .query(sql)
                 .parameters(params)
                 .build();
+
+            try {
+                cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
+            }
+            catch (QueryCancelledException e) {
+                throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED, e);
+            }
         }
 
         return pctx;
+    }
+
+    /** */
+    public Iterator<Row> iterator() {
+        return root;
+    }
+
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        List<RemoteFragmentKey> fragments = null;
+
+        synchronized (this) {
+            for (RemoteFragmentKey fragment : waiting) {
+                if (!fragment.nodeId().equals(nodeId))
+                    continue;
+
+                if (fragments == null)
+                    fragments = new ArrayList<>();
+
+                fragments.add(fragment);
+            }
+        }
+
+        if (!F.isEmpty(fragments)) {
+            ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException(
+                "Failed to start query, node left. nodeId=" + nodeId);
+
+            for (RemoteFragmentKey fragment : fragments)
+                onResponse(fragment, ex);
+        }
+    }
+
+    /** */
+    public void onResponse(UUID nodeId, long fragmentId, Throwable error) {
+        onResponse(new RemoteFragmentKey(nodeId, fragmentId), error);
+    }
+
+    /** */
+    private void onResponse(RemoteFragmentKey fragment, Throwable error) {
+        QueryState state;
+        synchronized (this) {
+            waiting.remove(fragment);
+            state = this.state;
+        }
+
+        if (error != null)
+            onError(error);
+        else if (state == QueryState.CLOSING)
+            tryClose();
+    }
+
+    /** */
+    public void onError(Throwable error) {
+        root.onError(error);
+
+        tryClose();
     }
 
     /** */

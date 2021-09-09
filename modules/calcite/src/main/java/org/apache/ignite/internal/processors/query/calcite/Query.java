@@ -21,41 +21,40 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.calcite.plan.Context;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /** */
-public class Query {
-    /** */
-    private final QueryRegistry reg;
-
+public class Query<Row> {
     /** */
     private final UUID id;
 
     /** */
-    private final Set<RunningFragment> fragments;
+    protected final Set<RunningFragment<Row>> fragments;
+
+    /** */
+    protected final GridQueryCancel cancel;
+
+    /** */
+    protected final Consumer<Query> unregister;
 
     /** */
     protected volatile QueryState state;
 
     /** */
-    private final GridQueryCancel cancel;
-
-    /** */
-    public Query(QueryRegistry reg, UUID id, GridQueryCancel cancel) {
+    public Query(UUID id, GridQueryCancel cancel, Consumer<Query> unregister) {
         this.id = id;
-        this.reg = reg;
+        this.unregister = unregister;
+
         this.cancel = cancel != null ? cancel : new GridQueryCancel();
 
         fragments = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -80,6 +79,16 @@ public class Query {
     }
 
     /** */
+    public void cancel() {
+        cancel.cancel();
+    }
+
+    /** */
+    public void addFragment(RunningFragment f) {
+        fragments.add(f);
+    }
+
+    /** */
     public enum QueryState {
         /** */
         INIT,
@@ -99,5 +108,4 @@ public class Query {
         /** */
         CLOSED
     }
-
 }

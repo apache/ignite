@@ -288,6 +288,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             qryPlanCache,
             exchangeSvc
         );
+
+        runningQrys.clear();
     }
 
     /** {@inheritDoc} */
@@ -297,13 +299,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         if (plan != null) {
             RootQuery<Object[]> qry = new RootQuery<>(
-                this,
                 sql,
                 schemaHolder.getDefaultSchema(schemaName),
                 params,
                 qryCtx,
+                (q) -> unregister(q.id()),
                 log
             );
+
+            register(qry);
 
             return Collections.singletonList(executionSvc.executePlan(
                 qry,
@@ -317,13 +321,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         for (final SqlNode sqlNode: qryList) {
             RootQuery<Object[]> qry = new RootQuery<>(
-                this,
                 sqlNode.toString(),
                 schemaHolder.getDefaultSchema(schemaName),
                 params,
                 qryCtx,
+                (q) -> unregister(q.id()),
                 log
             );
+
+            register(qry);
 
             if (qryList.size() == 1) {
                 plan = queryPlanCache().queryPlan(
@@ -357,7 +363,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** {@inheritDoc} */
     @Override public Query register(Query qry) {
-        return runningQrys.putIfAbsent(qry.id(), qry);
+        Query old = runningQrys.putIfAbsent(qry.id(), qry);
+
+        return old != null ? old : qry;
     }
 
     /** {@inheritDoc} */
@@ -373,5 +381,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public Collection<Query> runningQueries() {
         return runningQrys.values();
+    }
+
+    /** */
+    public QueryRegistry queryRegistry() {
+        return this;
     }
 }

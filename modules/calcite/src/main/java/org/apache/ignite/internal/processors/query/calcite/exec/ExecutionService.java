@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public interface ExecutionService extends Service {
+public interface ExecutionService<Row> extends Service {
     /**
      * Cancels a running query.
      *
@@ -43,5 +43,5 @@ public interface ExecutionService extends Service {
     void cancelQuery(UUID queryId);
 
     /** */
-    FieldsQueryCursor<List<?>> executePlan(RootQuery qry, QueryPlan plan, Object[] params);
+    FieldsQueryCursor<List<?>> executePlan(RootQuery<Row> qry, QueryPlan plan, Object[] params);
 }

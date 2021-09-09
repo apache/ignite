@@ -33,6 +33,16 @@ final class RemoteFragmentKey {
         this.fragmentId = fragmentId;
     }
 
+    /** */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /** */
+    public long fragmentId() {
+        return fragmentId;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)

@@ -19,20 +19,44 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Objects;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Downstream;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
-public class RunningFragment {
+public class RunningFragment<Row> {
     /** */
-    private final FragmentPlan fragmentPlan;
+    private final IgniteRel rootRel;
 
     /** */
-    private final ExecutionContext ectx;
+    private final Downstream<Row> root;
 
     /** */
-    public RunningFragment(FragmentPlan fragmentPlan, ExecutionContext ectx) {
-        this.fragmentPlan = fragmentPlan;
+    private final ExecutionContext<Row> ectx;
+
+    /** */
+    public RunningFragment(
+        IgniteRel rootRel,
+        Downstream<Row> root,
+        ExecutionContext<Row> ectx) {
+        this.rootRel = rootRel;
+        this.root = root;
         this.ectx = ectx;
+    }
+
+    /** */
+    public ExecutionContext<Row> context() {
+        return ectx;
+    }
+
+    /** */
+    public IgniteRel rootRel() {
+        return rootRel;
+    }
+
+    /** */
+    public Downstream<Row> root() {
+        return root;
     }
 
     /** {@inheritDoc} */
@@ -50,5 +74,10 @@ public class RunningFragment {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(ectx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RunningFragment.class, this);
     }
 }

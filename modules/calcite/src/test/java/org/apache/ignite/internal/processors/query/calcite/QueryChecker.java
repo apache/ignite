@@ -485,6 +485,6 @@ public abstract class QueryChecker {
         }, PART_RELEASE_TIMEOUT);
 
         for (GridDhtLocalPartition p : parts)
-            assertEquals("Partition is reserved: " + p, 0, p.reservations());
+            assertEquals("Partition is reserved: [node=" + node.name() + ", part=" + p, 0, p.reservations());
     }
 }
