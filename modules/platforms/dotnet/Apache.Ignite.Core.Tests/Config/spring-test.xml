@@ -47,5 +47,9 @@
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
         </property>
+
+        <property name="asyncContinuationExecutor">
+            <bean class="org.apache.ignite.platform.PlatformTestExecutor"/>
+        </property>
     </bean>
 </beans>

@@ -547,12 +547,13 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             true,
                             topVer,
                             replicate ? DR_PRELOAD : DR_NONE,
+                            false,
                             false
                         )) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                     null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null, false);
+                                    false, null, null, false);
                         }
                     }
                     catch (IgniteCheckedException e) {

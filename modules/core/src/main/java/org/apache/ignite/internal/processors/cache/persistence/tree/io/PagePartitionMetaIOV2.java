@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -30,7 +31,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     private static final int PENDING_TREE_ROOT_OFF = PagePartitionMetaIO.END_OF_PARTITION_PAGE_META;
 
     /** */
-    private static final int PART_META_REUSE_LIST_ROOT_OFF = PENDING_TREE_ROOT_OFF + 8;
+    public static final int PART_META_REUSE_LIST_ROOT_OFF = PENDING_TREE_ROOT_OFF + 8;
 
     /** */
     protected static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
@@ -43,8 +44,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setPendingTreeRoot(pageAddr, 0L);
         setPartitionMetaStoreReuseListRoot(pageAddr, 0L);

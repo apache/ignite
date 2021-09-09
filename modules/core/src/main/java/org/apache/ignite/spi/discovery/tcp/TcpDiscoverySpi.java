@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
@@ -318,6 +319,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** IP finder. */
     protected TcpDiscoveryIpFinder ipFinder;
+
+    /** Address filter */
+    private IgnitePredicate<InetSocketAddress> addressFilter;
 
     /** Socket operations timeout. */
     private long sockTimeout; // Must be initialized in the constructor of child class.
@@ -926,6 +930,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Sets filter for IP addresses. Each address found by {@link TcpDiscoveryIpFinder} will be checked against
+     * this filter and only passing addresses will be used for discovery.
+     * <p>
+     * If not specified or null, all found addresses are used.
+     *
+     * @param addressFilter Address filter to use
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setAddressFilter(IgnitePredicate<InetSocketAddress> addressFilter) {
+        this.addressFilter = addressFilter;
+
+        return this;
+    }
+
+    /**
      * Sets socket operations timeout. This timeout is used to limit connection time and
      * write-to-socket time.
      * <p>
@@ -1477,6 +1497,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         stats.registerMetrics(discoReg);
 
+        discoReg.register("SslEnabled", this::isSslEnabled, "Whether SSL is enabled.");
+
         discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
             "Message worker queue current size");
 
@@ -1949,9 +1971,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
-        List<InetSocketAddress> res = new ArrayList<>();
+        // Time when resolution process started.
+        long resolutionStartNanos = System.nanoTime();
 
+        List<InetSocketAddress> res = new ArrayList<>();
         Collection<InetSocketAddress> addrs;
+
+        long timeout = isClientMode() && impl.getSpiState().equalsIgnoreCase("connected")
+                ? netTimeout
+                : joinTimeout;
 
         // Get consistent addresses collection.
         while (true) {
@@ -1961,12 +1989,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 break;
             }
             catch (IgniteSpiException e) {
-                LT.error(log, e, "Failed to get registered addresses from IP finder on start " +
-                    "(retrying every " + getReconnectDelay() + "ms; change 'reconnectDelay' to configure " +
-                    "the frequency of retries).");
+                LT.error(log, e, "Failed to get registered addresses from IP finder " +
+                        "(retrying every " + getReconnectDelay() + "ms;" +
+                        " change 'reconnectDelay' to configure the frequency of retries) " +
+                        "[maxTimeout=" + timeout + "]", true);
             }
 
             try {
+                if (timeout > 0 && U.millisSinceNanos(resolutionStartNanos) > timeout) {
+                    LT.warn(log, "Unable to get registered addresses from IP finder, timeout is reached " +
+                            "(consider increasing 'joinTimeout' for join process or 'netTimeout' for reconnection) " +
+                            "[joinTimeout=" + joinTimeout + ", netTimeout=" + netTimeout + "]");
+
+                    addrs = res;
+                    break;
+                }
+
                 U.sleep(getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
@@ -1978,8 +2016,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             assert addr != null;
 
             try {
+                if (addressFilter != null && !addressFilter.apply(addr))
+                    continue;
+
                 InetSocketAddress resolved = addr.isUnresolved() ?
-                    new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
+                        new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
 
                 if (locNodeAddrs == null || !locNodeAddrs.contains(resolved))
                     res.add(resolved);

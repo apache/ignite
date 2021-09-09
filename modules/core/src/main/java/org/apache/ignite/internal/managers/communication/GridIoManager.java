@@ -34,11 +34,10 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,6 +109,7 @@ import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -847,8 +847,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        SimpleDateFormat dateFmt = new SimpleDateFormat("HH:mm:ss,SSS");
-
         StringBuilder b = new StringBuilder(U.nl())
             .append("IO test results (round-trip count per each latency bin).")
             .append(U.nl());
@@ -894,25 +892,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 .append(String.format("%15d", e.getValue().totalLatency)).append(U.nl());
 
             b.append(U.nl()).append("Max latencies (ns):").append(U.nl());
-            format(b, e.getValue().maxLatency, dateFmt);
+            format(b, e.getValue().maxLatency);
 
             b.append(U.nl()).append("Max request send queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxReqSendQueueTime, dateFmt);
+            format(b, e.getValue().maxReqSendQueueTime);
 
             b.append(U.nl()).append("Max request receive queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxReqRcvQueueTime, dateFmt);
+            format(b, e.getValue().maxReqRcvQueueTime);
 
             b.append(U.nl()).append("Max response send queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxResSendQueueTime, dateFmt);
+            format(b, e.getValue().maxResSendQueueTime);
 
             b.append(U.nl()).append("Max response receive queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxResRcvQueueTime, dateFmt);
+            format(b, e.getValue().maxResRcvQueueTime);
 
             b.append(U.nl()).append("Max request wire times (millis):").append(U.nl());
-            format(b, e.getValue().maxReqWireTimeMillis, dateFmt);
+            format(b, e.getValue().maxReqWireTimeMillis);
 
             b.append(U.nl()).append("Max response wire times (millis):").append(U.nl());
-            format(b, e.getValue().maxResWireTimeMillis, dateFmt);
+            format(b, e.getValue().maxResWireTimeMillis);
 
             b.append(U.nl());
         }
@@ -924,12 +922,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param b Builder.
      * @param pairs Pairs to format.
-     * @param dateFmt Formatter.
      */
-    private void format(StringBuilder b, Collection<IgnitePair<Long>> pairs, SimpleDateFormat dateFmt) {
+    private static void format(StringBuilder b, Collection<IgnitePair<Long>> pairs) {
         for (IgnitePair<Long> p : pairs) {
-            b.append(String.format("%15d", p.get1())).append(" ")
-                .append(dateFmt.format(new Date(p.get2()))).append(U.nl());
+            b.append(String.format("%15d", p.get1()))
+                .append(" ")
+                .append(IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(p.get2())))
+                .append(U.nl());
         }
     }
 
@@ -1388,7 +1387,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            pools.p2pPool().execute(c);
+            pools.getPeerClassLoadingExecutorService().execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
@@ -1441,7 +1440,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (msg0.processFromNioThread())
                 c.run();
             else
-                ctx.getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -1452,7 +1451,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             /*if (msg0.processedFromNioThread())
                 c.run();
             else*/
-                ctx.getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -1460,13 +1459,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final int part = msg.partition(); // Store partition to avoid possible recalculation.
 
         if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getStripedExecutorService().execute(part, c);
+            ctx.pools().getStripedExecutorService().execute(part, c);
 
             return;
         }
 
         if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getDataStreamerExecutorService().execute(part, c);
+            ctx.pools().getDataStreamerExecutorService().execute(part, c);
 
             return;
         }
@@ -2139,10 +2138,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ctx.security().enabled()) {
             UUID secSubjId = null;
 
-            UUID curSecSubjId = ctx.security().securityContext().subject().id();
-
-            if (!locNodeId.equals(curSecSubjId))
-                secSubjId = curSecSubjId;
+            if (!ctx.security().isDefaultContext())
+                secSubjId = ctx.security().securityContext().subject().id();
 
             return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
         }
@@ -3669,7 +3666,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Resource injection.
                     if (dep != null)
-                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()), msgBody);
+                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()).get1(), msgBody);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal user message [node=" + nodeId + ", message=" +

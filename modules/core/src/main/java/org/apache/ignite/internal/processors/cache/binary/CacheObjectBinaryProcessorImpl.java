@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BooleanSupplier;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,9 +56,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -993,6 +996,42 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
+        if (!metadataDir.exists())
+            return;
+
+        try {
+            ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
+
+            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir)
+                .restoreMetadata();
+
+            Collection<BinaryMetadata> metadata = F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
+
+            // Check the compatibility of the binary metadata.
+            for (BinaryMetadata newMeta : metadata) {
+                BinaryMetadata oldMeta = binaryMetadata(newMeta.typeId());
+
+                if (oldMeta != null)
+                    BinaryUtils.mergeMetadata(oldMeta, newMeta, null);
+            }
+
+            // Update cluster metadata.
+            for (BinaryMetadata newMeta : metadata) {
+                if (stopChecker.getAsBoolean())
+                    return;
+
+                if (Thread.interrupted())
+                    throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
+
+                addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
+            }
+        } catch (BinaryObjectException e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException {
         A.notNullOrEmpty(typeName, "enum type name");
 
@@ -1622,6 +1661,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             throw new BinaryObjectException("Failed to remove metadata for type: " + typeId, ex);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
+        BinaryClassDescriptor clsDesc = binaryCtx.registerClass(cls, true, false);
+
+        return metadata(clsDesc.typeId());
     }
 
     /** */

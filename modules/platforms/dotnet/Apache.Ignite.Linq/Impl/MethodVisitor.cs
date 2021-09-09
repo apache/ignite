@@ -77,6 +77,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
             GetStringMethod("PadRight", "rpad", typeof (int)),
             GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
+            GetStringMethod("Compare", new[] { typeof(string), typeof(string) }, (e, v) => VisitStringCompare(e, v, false)),
+            GetStringMethod("Compare", new[] { typeof(string), typeof(string), typeof(bool) }, (e, v) => VisitStringCompare(e, v, GetStringCompareIgnoreCaseParameter(e.Arguments[2]))),
 
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string)),
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string),
@@ -215,7 +217,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string func, string suffix, params int[] adjust)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            visitor.ResultBuilder.Append(func).Append('(');
 
             var isInstanceMethod = expression.Object != null;
 
@@ -234,7 +236,7 @@ namespace Apache.Ignite.Linq.Impl
                 AppendAdjustment(visitor, adjust, i + 1);
             }
 
-            visitor.ResultBuilder.Append(suffix).Append(")");
+            visitor.ResultBuilder.Append(suffix).Append(')');
 
             AppendAdjustment(visitor, adjust, 0);
         }
@@ -245,7 +247,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitParameterizedTrimFunc(MethodCallExpression expression,
             CacheQueryExpressionVisitor visitor, string func)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            visitor.ResultBuilder.Append(func).Append('(');
 
             visitor.Visit(expression.Object);
 
@@ -289,7 +291,7 @@ namespace Apache.Ignite.Linq.Impl
                 }
             }
 
-            visitor.ResultBuilder.Append(")");
+            visitor.ResultBuilder.Append(')');
         }
 
         /// <summary>
@@ -314,7 +316,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitSqlLike(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string likeFormat)
         {
-            visitor.ResultBuilder.Append("(");
+            visitor.ResultBuilder.Append('(');
 
             visitor.Visit(expression.Object);
 
@@ -327,6 +329,58 @@ namespace Apache.Ignite.Linq.Impl
                 : ExpressionWalker.EvaluateExpression<object>(expression.Arguments[0]);
 
             visitor.Parameters.Add(paramValue);
+        }
+
+        /// <summary>
+        /// Get IgnoreCase parameter for string.Compare method
+        /// </summary>
+        private static bool GetStringCompareIgnoreCaseParameter(Expression expression)
+        {
+            var constant = expression as ConstantExpression;
+            if (constant != null)
+            {
+                if (constant.Value is bool)
+                {
+                    return (bool)constant.Value;
+                }
+            }
+
+            throw new NotSupportedException(
+                "Parameter 'ignoreCase' from 'string.Compare method should be specified as a constant expression");
+        }
+
+        /// <summary>
+        /// Visits string.Compare method
+        /// </summary>
+        private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, bool ignoreCase)
+        {
+            // Ex: nvl2(?, casewhen(_T0.NAME = ?, 0, casewhen(_T0.NAME >= ?, 1, -1)), 1)
+            visitor.ResultBuilder.Append("nvl2(");
+            visitor.Visit(expression.Arguments[1]);
+            visitor.ResultBuilder.Append(", casewhen(");
+            VisitArg(visitor, expression, 0, ignoreCase);
+            visitor.ResultBuilder.Append(" = ");
+            VisitArg(visitor, expression, 1, ignoreCase);
+            visitor.ResultBuilder.Append(", 0, casewhen(");
+            VisitArg(visitor, expression, 0, ignoreCase);
+            visitor.ResultBuilder.Append(" >= ");
+            VisitArg(visitor, expression, 1, ignoreCase);
+            visitor.ResultBuilder.Append(", 1, -1)), 1)");
+        }
+
+        /// <summary>
+        /// Visits member expression argument.
+        /// </summary>
+        private static void VisitArg(CacheQueryExpressionVisitor visitor, MethodCallExpression expression, int idx,
+            bool lower)
+        {
+            if (lower)
+                visitor.ResultBuilder.Append("lower(");
+
+            visitor.Visit(expression.Arguments[idx]);
+
+            if (lower)
+                visitor.ResultBuilder.Append(')');
         }
 
         /// <summary>
@@ -388,7 +442,7 @@ namespace Apache.Ignite.Linq.Impl
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 #endif
-        
+
         /// <summary>
         /// Gets the math method.
         /// </summary>

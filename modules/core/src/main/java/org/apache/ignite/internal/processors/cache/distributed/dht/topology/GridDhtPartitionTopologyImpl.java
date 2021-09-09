@@ -820,7 +820,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (grp.rebalanceEnabled()) {
                                     Collection<ClusterNode> owners = owners(p);
 
-                                    // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
+                                    // If an owner node left during exchange,
+                                    // then new exchange should be started with detecting lost partitions.
                                     if (!F.isEmpty(owners)) {
                                         if (log.isDebugEnabled())
                                             log.debug("Will not own partition (there are owners to rebalance from) " +
@@ -924,16 +925,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             // Create a partition in lost state.
             if (lostParts != null && lostParts.contains(p))
                 loc.markLost();
-
-            if (ctx.pageStore() != null) {
-                try {
-                    ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-                }
-                catch (IgniteCheckedException e) {
-                    // TODO ignite-db
-                    throw new IgniteException(e);
-                }
-            }
         }
 
         return loc;
@@ -1052,16 +1043,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
         finally {
             ctx.database().checkpointReadUnlock();
-        }
-
-        if (created && ctx.pageStore() != null) {
-            try {
-                ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-            }
-            catch (IgniteCheckedException e) {
-                // TODO ignite-db
-                throw new IgniteException(e);
-            }
         }
 
         return loc;
@@ -2523,6 +2504,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         if (part.state() != MOVING)
             part.moving();
+        else
+            part.updateClearVersion();
 
         if (clear)
             exchFut.addClearingPartition(grp, part.id());
@@ -2607,7 +2590,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             if (stateChanged && log.isDebugEnabled()) {
                                 log.debug("Partition has been scheduled for eviction (this node is oldest non-affinity node) " +
-                                    "[grp=" + grp.cacheOrGroupName() + ", p=" + part.id() + ", prevState=" + state0 + ", state=" + part.state() + "]");
+                                    "[grp=" + grp.cacheOrGroupName() + ", p=" + part.id() + ", prevState=" + state0 +
+                                    ", state=" + part.state() + "]");
                             }
 
                             break;

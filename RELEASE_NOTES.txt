@@ -1,6 +1,109 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Distributed Database 2.11.0
+-----------------------------------------------------------
+
+Ignite:
+
+* Added the ability to restore cache groups from a snapshot on an active cluster by using the Java API or command line control script.
+* Added the check snapshot procedure that validates snapshot consistency or individual cache groups.
+* Added cluster metastorage to process of creating a snapshot.
+* Added command to control.(sh|bin) that makes possible performance statistics management.
+* Added clock and Segmented-LRU page replacement modes.
+* Added node attribute collocated affinity backup filter.
+* Added system views for data structures.
+* Added system view for baseline node attributes.
+* Added metrics for monitoring the number of memory pages related to SQL indexes. These metrics can be made available via JMX and viewed as part of data region and cache group properties under the name `InMemoryIndexPages`.
+* Added metrics for the number of written and compressed bytes for WAL.
+* Added SSL connection metrics.
+* Added list of indices that will not be rebuilt forcibly to control.sh utility output.
+* Added the argument "pages" to the IgniteWalConverter for searching pages in the WAL.
+* Added support for IGNITE_ENABLE_FORCIBLE_NODE_KILL flag in inverse connection protocol.
+* Added property `checkpoint.deviation` for randomization of checkpoint interval. It sets the checkpoint frequency in per cent via control.sh utility: `control.sh --property set --name checkpoint.deviation --val 25`.
+* Added support of Spring Data repositories initialisation with Spring Boot auto-starter.
+* Fixed incorrect values of cache, cache group, data region metrics after cluster re-activation.
+* Fixed error with nodes fallabck. Now nodes will  properly fallback to full rebalance if historical rebalance fails.
+* Fixed possible deadlock in concurrent cache data store initialization, exchange initialization and start of checkpoint.
+* Fixed potential JVM crash due to integer overflow in binary streams.
+* Fixed node fail due to deleting DurableBackgroundTask's at the end of a checkpoint when stopping a node.
+* Fixed an issue causing omitting of NOT NULL constraint validation for columns that are part of compound primary key.
+* Fixed an issue causing an error on modification binary object that contains reference to its own inner collection (binary HANDLE to collection).
+* Fixed an issue where exception in static initializer during remote filter deployment could lead to the server node failure.
+* Fixed deploying of continuous queries. They won't be deployed to the client nodes, since the clients don't store any data.
+* Fixed behaviour while  writing to Distributed Metastorage. Now exception is thrown on client if client is not connected to topology.
+* Fixed node failure when a class was not found by UriDeploymentSpi.
+* Fixed an issue causing corruption of PK index tree in case the table was created via SQL API and the PK has several fields in order different from those specified in thr field list.
+* Fixed failure to connect to node leading to freezing connection future if paired connections are used.
+* Fixed possible index partition corruption after drop index with failed checkpoint scenario.
+* Fixed cache group re-encryption after cluster secondary activation.
+* Fixed an issue that led to the fact that baseline auto adjustment was not triggered under certain conditions.
+* Fixed the race between auto rollover segments and WAL deactivation.
+* Fixed an issue when Data Streamer flushing could freeze due to a connectivity problem.
+* Fixed an issue that prevented a node from startup in case it can't obtain IP addresses to connect to.
+* Fixed the ability to force rebuild indexes for caches.
+* Fixed rebuilding indexes. Synchronously stop rebuilding indexes when the cache is stopped to avoid a node fail.
+* Fixed a corner case when a node could ignore an OutOfMemoryError and fail to stop.
+* Fixed merge query with no unique colons for the Oracle dialect.
+* Fixed an issue when connection closed by the one node could lead to infinite connection attempts on the other node.
+* Fixed (decreased) an exclusive checkpoint lock time.
+* Fixed issue, when CPU checkpoint pool size is not initialized.
+* Fixed NullPointerException when run out automatic segment archiving after last record logging.
+* Fixed possible cluster fail when the socket read freezes during establishing a new communication connection.
+* Fixed node not joining baseline topology after auto adjustment is enabled.
+* Fixed inconsistent WAL mode state when changing the state on unstable topology.
+* Fixed Allocated RAM metric for in-memory data regions on persistent node.
+* Fixed safe restart of node with switching from disabled to enabled WAL archiving.
+* Fixed sync-free switch on node(s) fail. Cellular switch's Multi-cell transaction's recovery HB of node(s) fail fixed.
+* Fixed an issue that led to JVM crash during index removal on a deactivated cluster.
+* Fixed bug when messaging-related metrics were updated before full initialization of Tcp Communication SPI.
+* Fixed partitions validator behaiviour. It checks sizes even if update counters are different and prints information about all copies, if partition is in inconsistent state.
+* Fixed restart rebuild indexes, if they were not rebuilt, on node restart / reactivation.
+* Fixed an exception that may happen when a thick client reconnects.
+* Changed IO discovery metric names. Now they are starting with the metric registry name.
+* Implemented asynchronous execution of durable background tasks.
+* Migrated Spring Cache integration to the Ignite extensions.
+* Migrated Spring-transactions module to ignite-extensions.
+* Optimized collection of rebalance statistics. This has positive influence on rebalance time.
+* Removed diagnostics at a node stop due to an CorruptedTreeException.
+* Removed delay from node ping.
+* Removed Ignite bean name requirement for Spring Data Repository.
+
+.Net:
+
+* Added string.Compare support to LINQ provider.
+* Added thin client DataStreamer API.
+* Added an automated check that client binary configuration is compatible to server binary configuration on client start.
+* Added services exceptions interoperability between java and .NET.
+* Added examples reworked to .NET Core, can be run from CLI or any IDE, on any OS. Examples can be downloaded from NuGet with dotnet-new command.
+* Fixed binary type handling when NamespaceToLower or NamespacePrefix is specified.
+* Fixed race condition in Events example.
+* Fixed inferred SQL table name when query entity value type is generic.
+* Fixed arrays and collections deserialization when elements share a reference to the same object.
+* Fixed SQL type name for generic query types.
+* Fixed DllNotFoundException in single file deployment on .NET 5.
+* Fixed string and array cache keys handling when partition awareness is enabled.
+* Removed the requirement to have bash installed on Linux and macOS systems.
+* Improved DataStreamer API - added FlushAsync, deprecated and replaced confusing methods and properties, fixed resource cleanup.
+* Extended ConfigurationManager dependency version range.
+
+Java thin-client:
+
+* Added continuous queries support.
+* Added containsKeys, clearKey, clearKeys and getAndPutIfAbsent.
+* Added Ignite thin client Spring bean.
+
+Thin-clients:
+
+* Partition awareness is enabled by default (Java, .NET, C++).
+
+SQL:
+
+* Added a new field INITIATOR_ID to the LOCAL_SQL_RUNNING_QUERIES system view. This field indicates the originator of the query: thin client, JDBC/ODBC, compute task.
+* Added support of alter/drop/create user SQL commands for security plugins.
+* Added tag sql.query.id' for SQL tracing.
+* Fixed SQL Constant hidden from logs and views when in IGNITE_TO_STRING_INCLUDE_SENSITIVE=false mode.
+
 
 Apache Ignite In-Memory Distributed Database 2.10.0
 -----------------------------------------------------------
@@ -173,7 +276,6 @@ JDBC/ODBC:
 Java thin-client:
 * Added non-blocking socket IO usage
 * Added support for IPv6 addresses
-* Added thin Client Continuous Query
 * Added thin client Java API - async API
 * Added thin client Kubernetes discovery
 * Fixed unnecessary CHM get/remove on each request to server
@@ -194,6 +296,7 @@ Ignite .NET:
 * Added Partitions and UpdateBatchSize to SqlFieldsQuery
 * Added RendezvousAffinityFunction.BackupFilter
 * Added includeExpired to ContinuousQuery
+* Added thin client continuous query
 * Added thin client service invocation
 * Added thin client transactions
 * Fixed CachePartialUpdateException: failed to update keys (using Cache.PutAsync)
@@ -206,7 +309,7 @@ Ignite .NET:
 * Fixed binary configuration of Ignite Java service params and result when calling it from Ignite.NET
 * Fixed child processes became zombies when persistence was used with direct-io on Linux
 * Fixed client should have peerClassLoading property in the IgniteConfiguration class
-* Fixed dispose hangs when continuous query was active on .NET Core 3.x
+* Fixed dispose freezes when continuous query was active on .NET Core 3.x
 * Fixed incorrect GetTotalPhysicalMemory result in Docker
 * Fixed interoperable DateTime
 * Fixed misleading LINQ exception when expression could not be translated

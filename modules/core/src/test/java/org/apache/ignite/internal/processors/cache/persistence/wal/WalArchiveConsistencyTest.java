@@ -28,15 +28,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -44,7 +41,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Class for testing cases when WAL archive configuration was changed and the node was able to start.
  */
 @RunWith(Parameterized.class)
-@WithSystemProperty(key = IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, value = "0.0")
 public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
     /**
      * WAL mode.
@@ -88,6 +84,7 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
                     .setWalSegments(10)
                     .setWalSegmentSize((int)U.MB)
                     .setMaxWalArchiveSize(10 * U.MB)
+                    .setMinWalArchiveSize(1)
                     .setWalMode(walMode)
                     .setWalFsyncDelayNanos(100)
                     .setDefaultDataRegionConfiguration(
@@ -270,25 +267,5 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
             log.info("Fill [keys=" + i + ", totalKeys=" + key.get() +
                 ", segNum=" + segments + ", currSeg=" + walMgr(n).currentSegment() + ']');
         }
-    }
-
-    /**
-     * Getting WAL manager of node.
-     *
-     * @param n Node.
-     * @return WAL manager.
-     */
-    private FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
-    }
-
-    /**
-     * Getting db manager of node.
-     *
-     * @param n Node.
-     * @return Db manager.
-     */
-    private GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
-        return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
     }
 }

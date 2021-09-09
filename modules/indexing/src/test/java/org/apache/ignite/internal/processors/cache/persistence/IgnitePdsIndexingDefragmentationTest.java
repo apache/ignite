@@ -38,11 +38,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -264,6 +266,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
 
+        forceCheckpoint();
+
         // Restart first time.
         stopGrid(0);
 
@@ -308,8 +312,12 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         private boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuild(GridCacheContext cctx) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx);
+        @Override @Nullable public IgniteInternalFuture<?> rebuild(
+            GridCacheContext cctx,
+            boolean force,
+            IndexRebuildCancelToken cancelTok
+        ) {
+            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
             rebuiltIndexes = future != null;
 
             return future;

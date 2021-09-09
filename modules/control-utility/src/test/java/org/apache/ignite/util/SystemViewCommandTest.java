@@ -85,8 +85,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
@@ -105,6 +103,8 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
@@ -132,9 +132,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
     /** Latch that indicates number of compute jobs to be blocked.*/
     private static final CountDownLatch COMPUTE_JOB_BLOCK_LATCH = new CountDownLatch(5);
-    
+
     /** Name of the test data region. */
-    private static final String DATA_REGION_NAME = "in-memory"; 
+    private static final String DATA_REGION_NAME = "in-memory";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -426,6 +426,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
@@ -444,7 +445,10 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "PARTITION_STATES",
             "BINARY_METADATA",
             "METASTORAGE",
-            "DISTRIBUTED_METASTORAGE"
+            "DISTRIBUTED_METASTORAGE",
+            "STATISTICS_CONFIGURATION",
+            "STATISTICS_PARTITION_DATA",
+            "STATISTICS_LOCAL_DATA"
         ));
 
         Set<String> viewNames = new HashSet<>();
@@ -761,7 +765,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
     }
@@ -769,7 +773,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testStreamerExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
     }

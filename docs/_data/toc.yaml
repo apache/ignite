@@ -129,6 +129,8 @@
       url: memory-configuration/data-regions
     - title: Eviction Policies
       url: memory-configuration/eviction-policies        
+    - title: Replacement Policies
+      url: memory-configuration/replacement-policies
 - title: Configuring Persistence
   items:
     - title: Ignite Persistence
@@ -193,8 +195,6 @@
       url: SQL/sql-api
     - title: Distributed Joins
       url: SQL/distributed-joins
-    - title: SQL Transactions
-      url: SQL/sql-transactions
     - title: Custom SQL Functions
       url: SQL/custom-sql-func
     - title: JDBC Driver
@@ -380,6 +380,8 @@
       url: net-specific/net-deployment-options
     - title: Standalone Nodes
       url: net-specific/net-standalone-nodes
+    - title: Asynchronous APIs
+      url: net-specific/net-async
     - title: Logging
       url: net-specific/net-logging
     - title: LINQ

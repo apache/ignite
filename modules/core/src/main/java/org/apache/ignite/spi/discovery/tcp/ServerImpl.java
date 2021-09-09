@@ -183,7 +183,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
@@ -1254,21 +1256,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If any error occurs.
      */
     private void localAuthentication(SecurityCredentials locCred) {
-        assert spi.nodeAuth != null;
-        assert locCred != null;
-
         try {
-            SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
-
-            if (subj == null)
-                throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
-
-            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
-
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-
-            locNode.setAttributes(attrs);
-
+            locNode.setAttributes(withSecurityContext(
+                authenticateLocalNode(locNode, locCred, spi.nodeAuth),
+                locNode.attributes(),
+                spi.marshaller()
+            ));
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
@@ -2751,14 +2744,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     PendingMessage pm = new PendingMessage(msg);
 
                     this.msgs.add(pm);
-
-                    if (pm.customMsg && pm.id.equals(customDiscardId))
-                        this.customDiscardId = customDiscardId;
-
-                    if (!pm.customMsg && pm.id.equals(discardId))
-                        this.discardId = discardId;
                 }
             }
+
+            this.discardId = discardId;
+            this.customDiscardId = customDiscardId;
         }
 
         /**
@@ -3542,7 +3532,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                // We should take previousNodeAlive flag into account only if we received the response from the correct node.
+                                // We should take previousNodeAlive flag into account
+                                // only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
                                     sndState.checkTimeout();
 
@@ -4368,11 +4359,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             // Stick in authentication subject to node (use security-safe attributes for copy).
-                            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-
-                            node.setAttributes(attrs);
+                            node.setAttributes(withSecurityContext(subj, node.getAttributes(), spi.marshaller()));
                         }
                     }
                     catch (IgniteException | IgniteCheckedException e) {
@@ -6227,32 +6214,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
-                boolean delayMsg;
-
-                assert ring.minimumNodeVersion() != null : ring;
-
-                boolean joiningEmpty;
-
-                synchronized (mux) {
-                    joiningEmpty = joiningNodes.isEmpty();
-                }
-
-                delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
-
-                if (delayMsg) {
-                    if (log.isDebugEnabled()) {
-                        synchronized (mux) {
-                            log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
-                                ", joiningNodes=" + joiningNodes + ']');
-                        }
-                    }
-
-                    synchronized (mux) {
-                        pendingCustomMsgs.add(msg);
-                    }
-
+                if (posponeUndeliveredMessages(msg))
                     return;
-                }
 
                 if (!msg.verified()) {
                     msg.verify(getLocalNodeId());
@@ -6334,6 +6297,36 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
             }
+        }
+
+        /**
+         * If new node is in the progress of being added we must store and resend undelivered messages.
+         *
+         * @param msg Processed message.
+         * @return {@code true} If message was appended to pending queue.
+         */
+        private boolean posponeUndeliveredMessages(final TcpDiscoveryCustomEventMessage msg) {
+            boolean joiningEmpty;
+
+            synchronized (mux) {
+                joiningEmpty = joiningNodes.isEmpty();
+
+                if (log.isDebugEnabled())
+                    log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
+                        ", joiningNodes=" + joiningNodes + ']');
+            }
+
+            boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
+
+            if (delayMsg) {
+                synchronized (mux) {
+                    pendingCustomMsgs.add(msg);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /**
@@ -7016,10 +7009,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
                         LT.warn(log, "Failed to initialize connection " +
                             "(missing SSL configuration on remote node?) " +
                             "[rmtAddr=" + sock.getInetAddress() + ']', true);
+
+                        spi.stats.onSslConnectionRejected();
+                    }
                     else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
                         && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))

@@ -107,6 +107,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -668,6 +670,20 @@ public class ZookeeperDiscoveryImpl {
     public void sendCustomMessage(DiscoverySpiCustomMessage msg) {
         assert msg != null;
 
+        List<ClusterNode> nodes = rtState.top.topologySnapshot();
+
+        boolean hasServerNode = false;
+
+        for (int i = 0, size = nodes.size(); i < size; i++) {
+            ClusterNode node = nodes.get(i);
+
+            if (!node.isClient())
+                hasServerNode = true;
+        }
+
+        if (!hasServerNode)
+            throw new IgniteException("Failed to send custom message: no server nodes in topology.");
+
         byte[] msgBytes;
 
         try {
@@ -1098,24 +1114,12 @@ public class ZookeeperDiscoveryImpl {
      * @throws IgniteSpiException If any error occurs.
      */
     private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred) {
-        assert nodeAuth != null;
-        assert locCred != null;
-
         try {
-            SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
-
-            // Note: exception message is checked in tests.
-            if (subj == null)
-                throw new IgniteSpiException("Authentication failed for local node.");
-
-            if (!(subj instanceof Serializable))
-                throw new IgniteSpiException("Authentication subject is not Serializable.");
-
-            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
-
-            attrs.put(ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
-
-            locNode.setAttributes(attrs);
+            locNode.setAttributes(withSecurityContext(
+                authenticateLocalNode(locNode, locCred, nodeAuth),
+                locNode.attributes(),
+                marsh
+            ));
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
@@ -2146,11 +2150,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             secSubjZipBytes = marshalZip(subj);
 
-            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-            attrs.put(ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
-
-            node.setAttributes(attrs);
+            node.setAttributes(withSecurityContext(subj, node.getAttributes(), marsh));
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal node security subject: " + e, e);

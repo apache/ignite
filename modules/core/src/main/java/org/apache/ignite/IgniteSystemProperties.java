@@ -37,6 +37,7 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -87,8 +88,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable.DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.DFLT_DELAYED_REPLACED_PAGE_WRITE;
@@ -97,7 +98,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.pagemem.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.DFLT_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.DFLT_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.DFLT_WAL_MMAP;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManagerImpl.DFLT_WAL_SEGMENT_SYNC_TIMEOUT;
@@ -125,6 +125,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FILE_MAX_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker.DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
@@ -692,8 +693,8 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_DIR = "IGNITE_LOG_DIR";
 
     /**
-     * Environment variable to set work directory. The property {@link org.apache.ignite.configuration.IgniteConfiguration#setWorkDirectory} has higher
-     * priority.
+     * Environment variable to set work directory.
+     * The property {@link org.apache.ignite.configuration.IgniteConfiguration#setWorkDirectory} has higher priority.
      */
     @SystemProperty(value = "Work directory. The property IgniteConfiguration.setWorkDirectory has higher priority",
         type = String.class)
@@ -1013,9 +1014,8 @@ public final class IgniteSystemProperties {
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
      * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
+     * NOTICE: Should be the default in Apache Ignite 3.0
      */
-    @Deprecated
     @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used")
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
@@ -1057,7 +1057,7 @@ public final class IgniteSystemProperties {
      * Defaults to {@code 0}, meaning that inline index store is disabled.
      */
     @SystemProperty(value = "Maximum payload size in bytes for H2TreeIndex. " +
-        "0 means that inline index store is disabled", type = Integer.class, defaults = "10")
+        "0 means that inline index store is disabled", type = Integer.class, defaults = "64")
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**
@@ -1113,7 +1113,9 @@ public final class IgniteSystemProperties {
 
     /**
      * WAL rebalance threshold.
+     * @deprecated use Distributed MetaStorage property {@code historical.rebalance.threshold}.
      */
+    @Deprecated
     @SystemProperty(value = "WAL rebalance threshold", type = Integer.class,
         defaults = "" + DFLT_PDS_WAL_REBALANCE_THRESHOLD)
     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
@@ -1203,16 +1205,6 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "If this property is set, then Ignite will use Async File IO factory by default",
         defaults = "" + DFLT_USE_ASYNC_FILE_IO_FACTORY)
     public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
-
-    /**
-     * If the property is set {@link org.apache.ignite.internal.pagemem.wal.record.TxRecord} records
-     * will be logged to WAL.
-     *
-     * Default value is {@code false}.
-     */
-    @SystemProperty("If the property is set org.apache.ignite.internal.pagemem.wal.record.TxRecord records " +
-        "will be logged to WAL")
-    public static final String IGNITE_WAL_LOG_TX_RECORDS = "IGNITE_WAL_LOG_TX_RECORDS";
 
     /** Max amount of remembered errors for {@link GridLogThrottle}. */
     @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
@@ -1365,13 +1357,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
-     * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
-     * Default value is 0.5
+     * Property for setup percentage of WAL archive size to calculate
+     * threshold since which removing of old archive should be started.
+     *
+     * @deprecated Use {@link DataStorageConfiguration#setMinWalArchiveSize}.
      */
-    @SystemProperty(value = "Percentage of WAL archive size to calculate threshold " +
-        "since which removing of old archive should be started", type = Double.class,
-        defaults = "" + DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE)
-    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
+    @SystemProperty(value = "Property for setup percentage of WAL archive size to calculate threshold since which " +
+        "removing of old archive should be started", type = Double.class)
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
+        "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
      * Threshold time (in millis) to print warning to log if waiting for next wal segment took longer than the threshold.
@@ -1449,7 +1443,8 @@ public final class IgniteSystemProperties {
     @SystemProperty("When property is set false each next exchange will try to compare with previous. " +
         "If last rebalance is equivalent with new possible one, new rebalance does not trigger. " +
         "Set the property true and each exchange will try to trigger new rebalance")
-    public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION = "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
+    public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION =
+        "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
 
     /**
      * Sets timeout for TCP client recovery descriptor reservation.
@@ -1620,7 +1615,8 @@ public final class IgniteSystemProperties {
      * Default is {@code false}.
      */
     @SystemProperty("Disables cache interceptor triggering in case of conflicts")
-    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT =
+        "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
 
     /**
      * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
@@ -2010,6 +2006,14 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Maximum performance statistics cached strings threshold. String caching is " +
         "stopped when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
+
+    /**
+     * Count of rows, being processed within a single checkpoint lock when indexes are rebuilt.
+     * The default value is {@link SchemaIndexCachePartitionWorker#DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE}.
+     */
+    @SystemProperty(value = "Count of rows, being processed within a single checkpoint lock when indexes are rebuilt",
+        type = Integer.class, defaults = "" + DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE)
+    public static final String IGNITE_INDEX_REBUILD_BATCH_SIZE = "IGNITE_INDEX_REBUILD_BATCH_SIZE";
 
     /**
      * Enforces singleton.

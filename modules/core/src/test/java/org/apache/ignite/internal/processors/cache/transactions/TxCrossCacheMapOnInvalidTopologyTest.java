@@ -142,7 +142,10 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      */
-    private void doTestCrossCacheTxMapOnInvalidTopology(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+    private void doTestCrossCacheTxMapOnInvalidTopology(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation
+    ) throws Exception {
         try {
             IgniteEx crd = startGrid(0);
             IgniteEx g1 = startGrid(1);

@@ -50,7 +50,7 @@ public class ClientIndexFactory implements IndexFactory {
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
 
-        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, def.getCfgInlineSize(), def.getMaxInlineSize());
+        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, keyDefs, def.getCfgInlineSize(), def.getMaxInlineSize());
 
         return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
     }

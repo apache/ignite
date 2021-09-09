@@ -349,11 +349,10 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected Object readThrough(IgniteInternalTx tx, KeyCacheObject key, boolean reload,
-        UUID subjId, String taskName) throws IgniteCheckedException {
+        String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
             /*force primary*/false,
-            subjId,
             taskName,
             true,
             /*recovery should have already been checked*/
@@ -375,7 +374,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param expireTime Expiration time.
      * @param evt Event flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -389,8 +387,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long expireTime,
         boolean evt,
         boolean keepBinary,
-        AffinityTopologyVersion topVer,
-        UUID subjId)
+        AffinityTopologyVersion topVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert dhtVer != null;
 
@@ -444,7 +441,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     val != null,
                     old,
                     hasVal,
-                    subjId,
                     null,
                     null,
                     keepBinary);
@@ -472,13 +468,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime,
-        long updCntr, AffinityTopologyVersion topVer) {
+        long updCntr, boolean primary) {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
-        AffinityTopologyVersion topVer) {
+    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr) {
         return null;
     }
 

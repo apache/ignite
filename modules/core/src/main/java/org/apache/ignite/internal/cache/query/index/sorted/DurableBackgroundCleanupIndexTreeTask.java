@@ -17,34 +17,42 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
  * Tasks that cleans up index tree.
+ *
+ * @deprecated Use {@link DurableBackgroundCleanupIndexTreeTaskV2}.
  */
 public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundTask {
     /** */
@@ -54,10 +62,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private List<Long> rootPages;
 
     /** */
-    private transient List<InlineIndexTree> trees;
-
-    /** */
-    private transient volatile boolean completed;
+    private transient volatile List<InlineIndexTree> trees;
 
     /** */
     private String cacheGrpName;
@@ -77,6 +82,12 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     /** */
     private final String id;
 
+    /** Logger. */
+    @Nullable private transient volatile IgniteLogger log;
+
+    /** Worker tasks. */
+    @Nullable private transient volatile GridWorker worker;
+
     /** */
     public DurableBackgroundCleanupIndexTreeTask(
         List<Long> rootPages,
@@ -88,7 +99,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     ) {
         this.rootPages = rootPages;
         this.trees = trees;
-        this.completed = false;
         this.cacheGrpName = cacheGrpName;
         this.cacheName = cacheName;
         this.id = UUID.randomUUID().toString();
@@ -98,12 +108,51 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public String shortName() {
+    @Override public String name() {
         return "DROP_SQL_INDEX-" + schemaName + "." + idxName + "-" + id;
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(GridKernalContext ctx) {
+    @Override public IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx) {
+        log = ctx.log(this.getClass());
+
+        assert worker == null;
+
+        GridFutureAdapter<DurableBackgroundTaskResult> fut = new GridFutureAdapter<>();
+
+        worker = new GridWorker(
+            ctx.igniteInstanceName(),
+            "async-durable-background-task-executor-" + name(),
+            log
+        ) {
+            /** {@inheritDoc} */
+            @Override protected void body() {
+                try {
+                    execute(ctx);
+
+                    worker = null;
+
+                    fut.onDone(DurableBackgroundTaskResult.complete(null));
+                }
+                catch (Throwable t) {
+                    worker = null;
+
+                    fut.onDone(DurableBackgroundTaskResult.restart(t));
+                }
+            }
+        };
+
+        new IgniteThread(worker).start();
+
+        return fut;
+    }
+
+    /**
+     * Task execution.
+     *
+     * @param ctx Kernal context.
+     */
+    private void execute(GridKernalContext ctx) {
         List<InlineIndexTree> trees0 = trees;
 
         if (trees0 == null) {
@@ -173,12 +222,12 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                 // Below we create a fake index tree using it's root page, stubbing some parameters,
                 // because we just going to free memory pages that are occupied by tree structure.
                 try {
-                    String treeName = "deletedTree_" + i + "_" + shortName();
+                    String treeName = "deletedTree_" + i + "_" + name();
 
                     InlineIndexTree tree = new InlineIndexTree(
-                        null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
+                        null, grpCtx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
                         cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, new IndexKeyTypeSettings(), null,
+                        rootPage, false, 0, 0, new IndexKeyTypeSettings(), null,
                         stats, new NoopRowHandlerFactory(), null);
 
                     trees0.add(tree);
@@ -226,7 +275,8 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     return pageAddr == 0;
                 }
                 finally {
-                    pageMem.readUnlock(grpId, rootPageId, page);
+                    if (pageAddr != 0)
+                        pageMem.readUnlock(grpId, rootPageId, page);
                 }
             }
             finally {
@@ -239,64 +289,33 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public void complete() {
-        completed = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isCompleted() {
-        return completed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onCancel() {
+    @Override public void cancel() {
         trees = null;
+
+        GridWorker w = worker;
+
+        if (w != null) {
+            worker = null;
+
+            U.awaitForWorkersStop(singleton(w), true, log);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
+        return new DurableBackgroundCleanupIndexTreeTaskV2(
+            cacheGrpName,
+            cacheName,
+            idxName,
+            treeName,
+            UUID.randomUUID().toString(),
+            rootPages.size(),
+            null
+        );
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
-    }
-
-    /** */
-    private static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
-        /** {@inheritDoc} */
-        @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
-            return new InlineIndexRowHandler() {
-                /** {@inheritDoc} */
-                @Override public IndexKey indexKey(int idx, CacheDataRow row) {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public List<InlineIndexKeyType> inlineIndexKeyTypes() {
-                    return Collections.emptyList();
-                }
-
-                /** {@inheritDoc} */
-                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
-                    return Collections.emptyList();
-                }
-
-                @Override public IndexKeyTypeSettings indexKeyTypeSettings() {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public int partition(CacheDataRow row) {
-                    return 0;
-                }
-
-                /** {@inheritDoc} */
-                @Override public Object cacheKey(CacheDataRow row) {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public Object cacheValue(CacheDataRow row) {
-                    return null;
-                }
-            };
-        }
     }
 }

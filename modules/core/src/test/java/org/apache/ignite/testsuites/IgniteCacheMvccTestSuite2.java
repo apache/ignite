@@ -203,7 +203,8 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedTxSingleThreadedSelfTest.class); // See GridCachePartitionedMvccTxSingleThreadedSelfTest
         ignoredTests.add(GridCacheColocatedTxSingleThreadedSelfTest.class); // See GridCacheColocatedMvccTxSingleThreadedSelfTest
         ignoredTests.add(GridCachePartitionedTxMultiThreadedSelfTest.class); // See GridCachePartitionedMvccTxMultiThreadedSelfTest
-        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class); // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class);
         ignoredTests.add(GridCachePartitionedTxTimeoutSelfTest.class); // See GridCachePartitionedMvccTxTimeoutSelfTest
 
         ignoredTests.add(GridCacheColocatedDebugTest.class);

@@ -197,7 +197,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @return Keys for which {@code MiniFuture} isn't completed.
      */
     public Set<IgniteTxKey> requestedKeys() {
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             for (int i = 0; i < size; i++) {
@@ -217,6 +219,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
         }
+        finally {
+            compoundsReadUnlock();
+        }
 
         return null;
     }
@@ -229,7 +234,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -248,6 +255,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -518,7 +528,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.needReturnValue() && tx.implicit(),
                     tx.implicitSingle(),
                     m.explicitLock(),
-                    tx.subjectId(),
                     tx.taskNameHash(),
                     m.clientFirst(),
                     txMapping.transactionNodes().size() == 1,
@@ -718,7 +727,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 if (keyLockFut != null)
                     keys = new HashSet<>(keyLockFut.lockKeys);
                 else {
-                    synchronized (this) {
+                    compoundsReadLock();
+
+                    try {
                         int size = futuresCountNoLock();
 
                         for (int i = 0; i < size; i++) {
@@ -738,6 +749,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                             }
                         }
                     }
+                    finally {
+                        compoundsReadUnlock();
+                    }
                 }
 
                 add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, Object>() {
@@ -749,7 +763,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                                 "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                 deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
 
-                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e) && err instanceof IgniteTxTimeoutCheckedException) {
+                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e)
+                                && err instanceof IgniteTxTimeoutCheckedException) {
                                 err = e;
                             }
                         }

@@ -23,16 +23,17 @@ import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerPostfixAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.log4j.Layout;
 import org.apache.log4j.RollingFileAppender;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Log4J {@link org.apache.log4j.RollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerPostfixAware {
-    /** Postfix. */
-    private String postfix;
+public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerNodeIdAndApplicationAware {
+    /** Node ID. */
+    private UUID nodeId;
 
     /** Basic log file name. */
     private String baseFileName;
@@ -79,22 +80,16 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
     }
 
     /** {@inheritDoc} */
-    @Override public void setNodeId(UUID nodeId) {
-        setPostfix(U.id8(nodeId));
-    }
+    @Override public synchronized void setApplicationAndNode(@Nullable String application, UUID nodeId) {
+        A.notNull(nodeId, "nodeId");
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    @Override public synchronized void setPostfix(String postfix) {
-        A.notNull(postfix, "postfix");
-
-        this.postfix = postfix;
+        this.nodeId = nodeId;
 
         if (fileName != null) { // fileName could be null if IGNITE_HOME is not defined.
             if (baseFileName == null)
                 baseFileName = fileName;
 
-            fileName = U.logFileName(postfix, baseFileName);
+            fileName = U.nodeIdLogFileName(nodeId, baseFileName);
         }
         else {
             String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
@@ -102,20 +97,20 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
             if (tmpDir != null) {
                 baseFileName = new File(tmpDir, "ignite.log").getAbsolutePath();
 
-                fileName = U.logFileName(postfix, baseFileName);
+                fileName = U.nodeIdLogFileName(nodeId, baseFileName);
             }
         }
     }
 
     /** {@inheritDoc} */
     @Override public synchronized UUID getNodeId() {
-        throw new UnsupportedOperationException("getNodeId");
+        return nodeId;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
         throws IOException {
-        if (postfix != null)
+        if (nodeId != null)
             super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 }

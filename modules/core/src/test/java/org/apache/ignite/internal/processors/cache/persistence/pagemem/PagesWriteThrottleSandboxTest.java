@@ -159,7 +159,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                             e.printStackTrace();
                         }
 
-                        System.out.println("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
+                        System.out.println("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=,"
+                            + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
 
                         try {
                             Thread.sleep(1000);

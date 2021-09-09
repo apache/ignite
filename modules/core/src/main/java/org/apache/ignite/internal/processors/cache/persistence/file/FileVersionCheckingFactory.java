@@ -129,7 +129,7 @@ public class FileVersionCheckingFactory {
 
         try {
             latestVer = Integer.parseInt(System.getProperty(LATEST_VERSION_OVERRIDE_PROPERTY));
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignore) {
             // No override.
         }
 
@@ -159,7 +159,9 @@ public class FileVersionCheckingFactory {
                 return new FilePageStoreV2(type, pathProvider, fileIOFactory, pageSize, allocatedTracker);
 
             default:
-                throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + pathProvider.apply().toAbsolutePath() + "]");
+                throw new IllegalArgumentException(
+                    "Unknown version of file page store: " + ver + " for file [" + pathProvider.apply().toAbsolutePath() + "]"
+                );
         }
     }
 

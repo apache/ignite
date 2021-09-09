@@ -22,18 +22,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -46,12 +42,12 @@ public class LinkMap {
     public static final int META_PAGE_IDX = 2;
 
     /** */
-    public static final IOVersions<? extends BPlusLeafIO<?>> LEAF_IO_VERSIONS = new IOVersions<>(
+    public static final IOVersions<? extends BPlusLeafIO<LinkMapping>> LEAF_IO_VERSIONS = new IOVersions<>(
         new LinkMappingLeafIO()
     );
 
     /** */
-    public static final IOVersions<? extends BPlusInnerIO<?>> INNER_IO_VERSIONS = new IOVersions<>(
+    public static final IOVersions<? extends BPlusInnerIO<LinkMapping>> INNER_IO_VERSIONS = new IOVersions<>(
         new LinkMappingInnerIO()
     );
 
@@ -70,7 +66,7 @@ public class LinkMap {
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        this(ctx.groupId(), ctx.name(), pageMem, metaPageId, initNew);
+        this(ctx.groupId(), ctx.name(), pageMem, metaPageId, initNew, ctx.shared().diagnostic().pageLockTracker());
     }
 
     /**
@@ -79,27 +75,22 @@ public class LinkMap {
      * @param pageMem Page memory.
      * @param metaPageId Meta page id.
      * @param initNew If tree should be (re)created.
+     * @param pageLockTrackerManager Page lock tracker manager.
      */
     public LinkMap(
         int grpId,
         String grpName,
         PageMemory pageMem,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        PageLockTrackerManager pageLockTrackerManager
     ) throws IgniteCheckedException {
         tree = new LinkTree(
-            "link-map",
             grpId,
             grpName,
             pageMem,
-            null,
-            new AtomicLong(),
             metaPageId,
-            null,
-            (IOVersions<LinkMappingInnerIO>)INNER_IO_VERSIONS,
-            (IOVersions<LinkMappingLeafIO>)LEAF_IO_VERSIONS,
-            null,
-            null,
+            pageLockTrackerManager,
             initNew
         );
     }
@@ -126,40 +117,48 @@ public class LinkMap {
         return found.getNewLink();
     }
 
+    /**
+     * Frees the internal allocated resources.
+     */
+    public void close() {
+        tree.close();
+    }
+
     /** */
     private static class LinkTree extends BPlusTree<LinkMapping, LinkMapping> {
         /**
-         * @param name Tree name.
          * @param cacheGrpId Cache group ID.
          * @param cacheGrpName Cache group name.
          * @param pageMem Page memory.
-         * @param wal Write ahead log manager.
-         * @param globalRmvId Remove ID.
          * @param metaPageId Meta page ID.
-         * @param reuseList Reuse list.
-         * @param innerIos Inner IO versions.
-         * @param leafIos Leaf IO versions.
-         * @param failureProcessor if the tree is corrupted.
+         * @param pageLockTrackerManager Page lock tracker manager.
          * @param initNew If tree should be (re)created.
          *
          * @throws IgniteCheckedException If failed.
          */
-        protected LinkTree(
-           String name,
-           int cacheGrpId,
-           String cacheGrpName,
-           PageMemory pageMem,
-           IgniteWriteAheadLogManager wal,
-           AtomicLong globalRmvId,
-           long metaPageId,
-           ReuseList reuseList,
-           IOVersions<? extends BPlusInnerIO<LinkMapping>> innerIos,
-           IOVersions<? extends BPlusLeafIO<LinkMapping>> leafIos,
-           @Nullable FailureProcessor failureProcessor,
-           @Nullable PageLockListener lockLsnr,
-           boolean initNew
+        LinkTree(
+            int cacheGrpId,
+            String cacheGrpName,
+            PageMemory pageMem,
+            long metaPageId,
+            PageLockTrackerManager pageLockTrackerManager,
+            boolean initNew
         ) throws IgniteCheckedException {
-            super(name, cacheGrpId, cacheGrpName, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, FLAG_AUX, failureProcessor, lockLsnr);
+            super(
+                "link-map",
+                cacheGrpId,
+                cacheGrpName,
+                pageMem,
+                null,
+                new AtomicLong(),
+                metaPageId,
+                null,
+                INNER_IO_VERSIONS,
+                LEAF_IO_VERSIONS,
+                FLAG_AUX,
+                null,
+                pageLockTrackerManager
+            );
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
@@ -198,7 +197,7 @@ public class LinkMap {
          * @param oldLink Old link.
          * @param newLink New link.
          */
-        public LinkMapping(long oldLink, long newLink) {
+        LinkMapping(long oldLink, long newLink) {
             this.oldLink = oldLink;
             this.newLink = newLink;
         }
@@ -217,7 +216,7 @@ public class LinkMap {
     /** */
     private static class LinkMappingInnerIO extends BPlusInnerIO<LinkMapping> {
         /** */
-        protected LinkMappingInnerIO() {
+        LinkMappingInnerIO() {
             super(PageIO.T_DEFRAG_LINK_MAPPING_INNER, 1, true, Long.BYTES * 2);
         }
 
@@ -247,7 +246,7 @@ public class LinkMap {
     /** */
     private static class LinkMappingLeafIO extends BPlusLeafIO<LinkMapping> {
         /** */
-        protected LinkMappingLeafIO() {
+        LinkMappingLeafIO() {
             super(PageIO.T_DEFRAG_LINK_MAPPING_LEAF, 1, Long.BYTES * 2);
         }
 

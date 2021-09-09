@@ -48,7 +48,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
      * @param partCnt Partition counter.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
      * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
-     * @param primary {@code True} if node is primary for partition in the moment of logging.
+     * @param flags Flags.
      */
     public UnwrapDataEntry(
         final int cacheId,
@@ -62,8 +62,8 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary,
-        final boolean primary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, primary);
+        final byte flags) {
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }

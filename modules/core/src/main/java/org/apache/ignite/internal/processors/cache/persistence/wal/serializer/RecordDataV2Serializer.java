@@ -93,7 +93,6 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case MVCC_DATA_RECORD:
                 return 4/*entry count*/ + 8/*timestamp*/ + dataSize((DataRecord)rec);
 
-            case DATA_RECORD:
             case DATA_RECORD_V2:
                 return super.plainSize(rec) + 8/*timestamp*/;
 
@@ -261,7 +260,6 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 break;
 
             case MVCC_DATA_RECORD:
-            case DATA_RECORD:
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 

@@ -426,8 +426,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
-        if ((prop.notNull() && !prop.key() && !prop.name().equals(VAL_FIELD_NAME)) || prop.precision() != -1 ||
-            coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
+        if ((prop.notNull() && !prop.name().equals(KEY_FIELD_NAME) && !prop.name().equals(VAL_FIELD_NAME))
+            || prop.precision() != -1 || coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 
@@ -646,11 +646,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             if (propVal == null || prop.precision() == -1)
                 continue;
 
-            if (String.class == propVal.getClass() &&
-                ((String)propVal).length() > prop.precision()) {
-                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
-                    "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
-                    isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+            if (String.class == propVal.getClass() || byte[].class == propVal.getClass()) {
+                int propValLen = String.class == propVal.getClass() ? ((String)propVal).length()
+                    : ((byte[])propVal).length;
+
+                if (propValLen > prop.precision()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " +
+                        "Maximum length: " + prop.precision() + ", actual length: " + propValLen,
+                        isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+                }
             }
             else if (BigDecimal.class == propVal.getClass()) {
                 BigDecimal dec = (BigDecimal)propVal;

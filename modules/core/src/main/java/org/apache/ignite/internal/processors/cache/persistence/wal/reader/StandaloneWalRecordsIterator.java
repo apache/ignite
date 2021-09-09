@@ -161,7 +161,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @throws IgniteCheckedException if failed
      */
-    private static void strictCheck(List<FileDescriptor> walFiles, WALPointer lowBound, WALPointer highBound) throws IgniteCheckedException {
+    private static void strictCheck(
+        List<FileDescriptor> walFiles,
+        WALPointer lowBound,
+        WALPointer highBound
+    ) throws IgniteCheckedException {
         int idx = 0;
 
         if (lowBound.index() > Long.MIN_VALUE) {
@@ -501,7 +505,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionCounter(),
                 coCtx,
                 keepBinary,
-                dataEntry.primary());
+                dataEntry.flags());
     }
 
     /** {@inheritDoc} */
@@ -513,8 +517,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
-
-        sharedCtx.kernalContext().cacheObjects().stop(true);
     }
 
     /** {@inheritDoc} */

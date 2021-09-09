@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -33,6 +32,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 
 /**
  * ODBC Connection Context.
@@ -72,10 +73,10 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     private final int maxCursors;
 
     /** Message parser. */
-    private OdbcMessageParser parser = null;
+    private OdbcMessageParser parser;
 
     /** Request handler. */
-    private OdbcRequestHandler handler = null;
+    private OdbcRequestHandler handler;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -93,17 +94,23 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses Client's NIO session.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
-        super(ctx, connId);
+    public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, ses, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
         log = ctx.log(getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte clientType() {
+        return ODBC_CLIENT;
     }
 
     /** {@inheritDoc} */
@@ -153,7 +160,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
-        AuthorizationContext actx = authenticate(ses, user, passwd);
+        authenticate(ses, user, passwd);
 
         ClientListenerResponseSender sender = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
@@ -166,8 +173,10 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
+        initClientDescriptor("odbc");
+
         handler = new OdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx, nestedTxMode, ver);
+            replicatedOnly, collocated, lazy, skipReducerOnUpdate, nestedTxMode, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);
 

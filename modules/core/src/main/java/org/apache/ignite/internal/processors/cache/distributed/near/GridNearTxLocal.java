@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -146,10 +145,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  */
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
-    /** */
-    private static final ThreadLocal<SimpleDateFormat> TIME_FORMAT =
-        ThreadLocal.withInitial(() -> new SimpleDateFormat("HH:mm:ss.SSS"));
-
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
@@ -163,7 +158,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         "SQL queries and cache operations may not be used in the same transaction.";
 
     /** DHT mappings. */
-    private IgniteTxMappings mappings;
+    private final IgniteTxMappings mappings;
 
     /** Prepare future. */
     @GridToStringExclude
@@ -227,7 +222,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     @GridToStringExclude
-    private IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
+    private final IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
 
     /** */
     @GridToStringExclude
@@ -238,7 +233,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private TransactionProxyImpl rollbackOnlyProxy;
 
     /** Tx label. */
-    @Nullable private String lb;
+    @Nullable private final String lb;
 
     /** Whether this is Mvcc transaction or not.<p>
      * {@code null} means there haven't been any calls made on this transaction, and first operation will give this
@@ -827,7 +822,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, Object>>() {
 
-                private Iterator<Map.Entry<KeyCacheObject, Object>> it = enlisted.entrySet().iterator();
+                private final Iterator<Map.Entry<KeyCacheObject, Object>> it = enlisted.entrySet().iterator();
 
                 @Override public EnlistOperation operation() {
                     return transform ? EnlistOperation.TRANSFORM : EnlistOperation.UPSERT;
@@ -1443,7 +1438,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             this,
                                             /*metrics*/retval,
                                             /*events*/retval,
-                                            CU.subjectId(this, cctx),
                                             entryProcessor,
                                             resolveTaskName(),
                                             null,
@@ -1470,7 +1464,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read through*/false,
                                         /*metrics*/retval,
                                         /*events*/retval,
-                                        CU.subjectId(this, cctx),
                                         entryProcessor,
                                         resolveTaskName(),
                                         null,
@@ -1587,9 +1580,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 assert !implicit() || !transform : this;
                                 assert txEntry.op() != TRANSFORM : txEntry;
 
-                                if (retval)
-                                    ret.set(cacheCtx, null, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
-                                else
+                                if (retval) {
+                                    ret.set(
+                                        cacheCtx,
+                                        null,
+                                        true,
+                                        keepBinary,
+                                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                                    );
+                                } else
                                     ret.success(true);
                             }
                         }
@@ -1925,22 +1924,30 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 // with prepare response, if required.
                 assert loadFut.isDone();
 
-                return nonInterruptable(commitNearTxLocalAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
-                    @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
-                        throws IgniteCheckedException {
-                        try {
-                            txFut.get();
+                return nonInterruptable(commitNearTxLocalAsync().chain(
+                    new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
+                            throws IgniteCheckedException {
+                            try {
+                                txFut.get();
 
-                            return new GridCacheReturn(cacheCtx, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
-                                implicitRes.value(), implicitRes.success());
-                        }
-                        catch (IgniteCheckedException | RuntimeException e) {
-                            rollbackNearTxLocalAsync();
+                                return new GridCacheReturn(
+                                    cacheCtx,
+                                    true,
+                                    keepBinary,
+                                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                                    implicitRes.value(),
+                                    implicitRes.success()
+                                );
+                            }
+                            catch (IgniteCheckedException | RuntimeException e) {
+                                rollbackNearTxLocalAsync();
 
-                            throw e;
+                                throw e;
+                            }
                         }
                     }
-                }));
+                ));
             }
             else {
                 return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Void>, GridCacheReturn>() {
@@ -2020,7 +2027,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         return updateAsync(cacheCtx, new UpdateSourceIterator<KeyCacheObject>() {
 
-            private Iterator<KeyCacheObject> it = enlisted.iterator();
+            private final Iterator<KeyCacheObject> it = enlisted.iterator();
 
             @Override public EnlistOperation operation() {
                 return EnlistOperation.DELETE;
@@ -2154,7 +2161,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         val = cacheCtx.unwrapInvokeResult((Map)val, keepBinary);
                     }
 
-                    return new GridCacheReturn(cacheCtx, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId), val, futRes.success());
+                    return new GridCacheReturn(
+                        cacheCtx,
+                        true,
+                        keepBinary,
+                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                        val,
+                        futRes.success()
+                    );
                 }
             }));
         }
@@ -2352,7 +2366,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             GridNearTxLocal.this,
                                             /*update-metrics*/true,
                                             /*event*/!skipVals,
-                                            CU.subjectId(GridNearTxLocal.this, cctx),
                                             transformClo,
                                             resolveTaskName(),
                                             null,
@@ -2371,7 +2384,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             /*read through*/false,
                                             /*metrics*/true,
                                             /*events*/!skipVals,
-                                            CU.subjectId(GridNearTxLocal.this, cctx),
                                             transformClo,
                                             resolveTaskName(),
                                             null,
@@ -2716,7 +2728,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         this,
                                         /*update-metrics*/true,
                                         /*event*/!skipVals,
-                                        CU.subjectId(this, cctx),
                                         transformClo,
                                         resolveTaskName(),
                                         null,
@@ -2735,7 +2746,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read-through*/false,
                                         /*metrics*/true,
                                         /*event*/!skipVals,
-                                        CU.subjectId(this, cctx),
                                         transformClo,
                                         resolveTaskName(),
                                         null,
@@ -2803,7 +2813,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             this,
                                             /*metrics*/true,
                                             /*event*/true,
-                                            CU.subjectId(this, cctx),
                                             null,
                                             resolveTaskName(),
                                             accessPlc,
@@ -2822,7 +2831,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read-through*/false,
                                         /*metrics*/true,
                                         /*event*/!skipVals,
-                                        CU.subjectId(this, cctx),
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
@@ -2994,7 +3002,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             else
                                 success = true;
 
-                            ret.set(cacheCtx, cacheVal, success, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            ret.set(
+                                cacheCtx,
+                                cacheVal,
+                                success,
+                                keepBinary,
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                            );
                         }
                     }
                 }
@@ -3055,7 +3069,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 res = cacheCtx.unwrapInvokeResult((Map)res, keepBinary);
                             }
 
-                            return new GridCacheReturn(cacheCtx, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId), res, implicitRes.success());
+                            return new GridCacheReturn(
+                                cacheCtx,
+                                true,
+                                keepBinary,
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                                res,
+                                implicitRes.success()
+                            );
                         }
                         catch (IgniteCheckedException | RuntimeException e) {
                             if (!(e instanceof NodeStoppingException))
@@ -3199,7 +3220,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readThrough,
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
-                    CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
                     expiryPlc0,
@@ -3232,7 +3252,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readThrough,
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
-                    CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
                     recovery,
@@ -3333,7 +3352,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             this,
                             /*update-metrics*/!skipVals,
                             /*event*/!skipVals,
-                            CU.subjectId(this, cctx),
                             null,
                             resolveTaskName(),
                             expiryPlc0,
@@ -4011,7 +4029,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         GridStringBuilder warning = new GridStringBuilder(isLong ? "Long transaction time dump " : "Transaction time dump ")
             .a("[startTime=")
-            .a(TIME_FORMAT.get().format(new Date(startTime)))
+            .a(IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(startTime)))
             .a(", totalTime=")
             .a(systemTimeMillis + userTimeMillis)
             .a(", systemTime=")

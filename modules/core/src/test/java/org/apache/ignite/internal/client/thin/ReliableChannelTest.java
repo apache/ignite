@@ -173,7 +173,9 @@ public class ReliableChannelTest {
      */
     @Test
     public void testNodeChannelsAreNotCleaned() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
+        ClientConfiguration ccfg = new ClientConfiguration()
+                .setAddresses(dfltAddrs)
+                .setPartitionAwarenessEnabled(false);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
@@ -236,7 +238,9 @@ public class ReliableChannelTest {
             .nextAddresesResponse(dfltAddrs)
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804");
 
-        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
+        ClientConfiguration ccfg = new ClientConfiguration()
+                .setAddressesFinder(finder)
+                .setPartitionAwarenessEnabled(false);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
@@ -319,7 +323,7 @@ public class ReliableChannelTest {
         ClientBinaryMarshaller marsh = mock(ClientBinaryMarshaller.class);
         TcpClientTransactions transactions = mock(TcpClientTransactions.class);
 
-        TcpClientCache cache = new TcpClientCache("", rc, marsh, transactions, false, null);
+        TcpClientCache cache = new TcpClientCache("", rc, marsh, transactions, null, false, null);
 
         GridTestUtils.assertThrowsWithCause(() -> op.accept(cache), TestChannelException.class);
     }
@@ -366,7 +370,13 @@ public class ReliableChannelTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void addNotificationListener(NotificationListener lsnr) {
+        @Override public void addNotificationListener(ClientNotificationType type, Long rsrcId,
+            NotificationListener lsnr) {
+            /* No-op */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ClientNotificationType type, Long rsrcId) {
             /* No-op */
         }
 

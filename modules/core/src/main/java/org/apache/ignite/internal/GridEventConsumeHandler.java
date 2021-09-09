@@ -200,7 +200,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                         notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
                         if (!notificationInProgress) {
-                            ctx.getSystemExecutorService().execute(new Runnable() {
+                            ctx.pools().getSystemExecutorService().execute(new Runnable() {
                                 @Override public void run() {
                                     if (!ctx.continuous().lockStopping())
                                         return;
@@ -425,6 +425,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
 
                 throw e;
+            }
+            catch (ExceptionInInitializerError e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
             }
         }
     }

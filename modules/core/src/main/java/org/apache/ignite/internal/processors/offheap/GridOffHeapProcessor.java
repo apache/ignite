@@ -238,7 +238,12 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] remove(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
+    @Nullable public byte[] remove(
+        @Nullable String spaceName,
+        int part,
+        KeyCacheObject key,
+        byte[] keyBytes
+    ) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         if (log.isTraceEnabled())

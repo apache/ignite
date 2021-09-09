@@ -200,11 +200,14 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(boolean.class, GridBinaryMarshaller.BOOLEAN);
 
         for (byte b : new byte[] {
-            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE,
-            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
-            GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
-            GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
-            GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
+            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG,
+            GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN,
+            GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE,
+            GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME, GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR,
+            GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR,
+            GridBinaryMarshaller.TIME_ARR, GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR,
+            GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR,
+            GridBinaryMarshaller.TIMESTAMP_ARR, GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
 
             PLAIN_TYPE_FLAG[b] = true;
         }

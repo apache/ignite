@@ -263,11 +263,17 @@ public abstract class WALRecord {
         /** Index meta page delta record includes encryption status data. */
         INDEX_META_PAGE_DELTA_RECORD(68, PHYSICAL),
 
+        /** IGNITE-11704 placeholder: Partition meta page delta record includes tombstones count. */
+        PARTITION_META_PAGE_DELTA_RECORD_V4(69, PHYSICAL),
+
         /** Data record V2. */
-        DATA_RECORD_V2(69, LOGICAL),
+        DATA_RECORD_V2(70, LOGICAL),
 
         /** Ecnrypted data record. */
-        ENCRYPTED_DATA_RECORD_V3(70, LOGICAL);
+        ENCRYPTED_DATA_RECORD_V3(71, LOGICAL),
+
+        /** Record for renaming the index root pages. */
+        INDEX_ROOT_PAGE_RENAME_RECORD(72, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;
@@ -352,12 +358,14 @@ public abstract class WALRecord {
         INTERNAL,
         /**
          * Physical records are needed for correct recovering physical state of {@link org.apache.ignite.internal.pagemem.PageMemory}.
-         * {@link org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager#restoreBinaryMemory(org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate)}.
+         * {@link org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager#restoreBinaryMemory(
+         * org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate)}.
          */
         PHYSICAL,
         /**
          * Logical records are needed to replay logical updates since last checkpoint.
-         * {@link GridCacheDatabaseSharedManager#applyLogicalUpdates(CheckpointStatus, org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate, boolean)}
+         * {@link GridCacheDatabaseSharedManager#applyLogicalUpdates(CheckpointStatus, org.apache.ignite.lang.IgnitePredicate,
+         * org.apache.ignite.lang.IgniteBiPredicate, boolean)}
          */
         LOGICAL,
         /**

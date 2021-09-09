@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerPostfixAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
@@ -77,7 +77,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger implements IgniteLogger, LoggerPostfixAware {
+public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -102,9 +102,9 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerPostfixAware {
     /** Quiet flag. */
     private final boolean quiet;
 
-    /** Postfix. */
+    /** Node ID. */
     @GridToStringExclude
-    private String postfix;
+    private UUID nodeId;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -406,19 +406,14 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerPostfixAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void setNodeId(UUID nodeId) {
-        setPostfix(U.id8(nodeId));
-    }
+    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
+        A.notNull(nodeId, "nodeId");
 
-    /** {@inheritDoc} */
-    @Override public void setPostfix(String postfix) {
-        A.notNull(postfix, "postfix");
-
-        this.postfix = postfix;
+        this.nodeId = nodeId;
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof LoggerPostfixAware) {
-                ((LoggerPostfixAware)a).setPostfix(postfix);
+            if (a instanceof LoggerNodeIdAndApplicationAware) {
+                ((LoggerNodeIdAndApplicationAware)a).setApplicationAndNode(application, nodeId);
 
                 a.activateOptions();
             }
@@ -427,7 +422,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerPostfixAware {
 
     /** {@inheritDoc} */
     @Override public UUID getNodeId() {
-        throw new UnsupportedOperationException("getNodeId");
+        return nodeId;
     }
 
     /**

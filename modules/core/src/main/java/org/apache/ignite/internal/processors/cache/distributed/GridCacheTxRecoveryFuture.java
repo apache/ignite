@@ -260,7 +260,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         for (Map.Entry<UUID, Collection<UUID>> entry : txNodes.entrySet()) {
             UUID nodeId = entry.getKey();
 
-            // Skip left nodes and local node.
+            // Skipping iteration when local node is one of tx's primary.
             if (!nodes.containsKey(nodeId) && nodeId.equals(cctx.localNodeId()))
                 continue;
 
@@ -417,7 +417,9 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      */
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -436,6 +438,9 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;

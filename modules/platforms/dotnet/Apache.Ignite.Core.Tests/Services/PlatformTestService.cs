@@ -314,6 +314,7 @@ namespace Apache.Ignite.Core.Tests.Services
             if (x == null || x.Length != 1)
                 throw new Exception("Expected array of length 1");
 
+            // ReSharper disable once PossibleInvalidOperationException
             return new DateTime?[] {test((DateTime) x[0])};
         }
 
@@ -395,6 +396,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x)
         {
+            // ReSharper disable once CoVariantArrayConversion
             return (ServicesTest.PlatformComputeBinarizable[])testBinarizableArrayOfObjects(x);
         }
 

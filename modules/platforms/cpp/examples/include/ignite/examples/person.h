@@ -71,7 +71,7 @@ namespace ignite
         // 2) collocation column info (orgId). This is required because of constraint : affinity key must be part of the
         // key.
         struct PersonKey {
-            PersonKey(int64_t _id, int64_t _orgId) : id(_id), orgIdAff(_id)
+            PersonKey(int64_t id, int64_t orgId) : id(id), orgIdAff(orgId)
             {
                 // No-op.
             }
@@ -134,6 +134,11 @@ namespace ignite
             static void GetTypeName(std::string& dst)
             {
                 dst = "PersonKey";
+            }
+
+            static void GetAffinityFieldName(std::string& dst)
+            {
+                dst = "orgIdAff";
             }
 
             static void Write(BinaryWriter& writer, const examples::PersonKey& obj)

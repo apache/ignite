@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
@@ -564,6 +565,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case REENCRYPTION_START_RECORD:
                 return ((ReencryptionStartRecord)record).dataSize();
+
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                return ((IndexRenameRootPageRecord) record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1269,6 +1273,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                res = new IndexRenameRootPageRecord(in);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1356,7 +1365,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case DATA_RECORD:
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
@@ -1897,6 +1905,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                ((IndexRenameRootPageRecord)rec).writeRecord(buf);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + rec.type());
         }
@@ -1964,7 +1977,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putLong(entry.expireTime());
 
         if (!(entry instanceof MvccDataEntry))
-            buf.put(entry.primary() ? (byte)1 : 0);
+            buf.put(entry.flags());
     }
 
     /**
@@ -2073,7 +2086,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
-        boolean primary = type == DATA_RECORD_V2 && in.readByte() == (byte)1;
+        byte flags = type == DATA_RECORD_V2 ? in.readByte() : (byte)0;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2097,7 +2110,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     expireTime,
                     partId,
                     partCntr,
-                    primary
+                    flags
             );
         }
         else
@@ -2114,7 +2127,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     expireTime,
                     partId,
                     partCntr,
-                    primary
+                    flags
             );
     }
 
@@ -2285,7 +2298,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0, false);
+            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
         }
     }
 }
