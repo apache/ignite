@@ -8972,15 +8972,15 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Attaches postfix to log file name.
+     * Attaches node ID to log file name.
      *
-     * @param postfix Postfix.
+     * @param nodeId Node ID.
      * @param fileName File name.
-     * @return File name with postfix.
+     * @return File name with node ID.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public static String logFileName(String postfix, String fileName) {
-        assert postfix != null;
+    public static String nodeIdLogFileName(UUID nodeId, String fileName) {
+        assert nodeId != null;
         assert fileName != null;
 
         fileName = GridFilenameUtils.separatorsToSystem(fileName);
@@ -8988,9 +8988,9 @@ public abstract class IgniteUtils {
         int dot = fileName.lastIndexOf('.');
 
         if (dot < 0 || dot == fileName.length() - 1)
-            return fileName + '-' + postfix;
+            return fileName + '-' + U.id8(nodeId);
         else
-            return fileName.substring(0, dot) + '-' + postfix + fileName.substring(dot);
+            return fileName.substring(0, dot) + '-' + U.id8(nodeId) + fileName.substring(dot);
     }
 
     /**

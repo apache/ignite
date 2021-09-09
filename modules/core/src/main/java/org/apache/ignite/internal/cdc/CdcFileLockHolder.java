@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.cdc;
 
 import java.lang.management.ManagementFactory;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.FileLockHolder;
 
 /**
- * Lock file holder for Change Data Capture application.
+ * Lock file holder for CDC application.
  *
  * @see CdcMain
  * @see CdcConsumerState

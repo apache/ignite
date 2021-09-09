@@ -40,10 +40,10 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     private static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
 
     /** DR center ID shift. */
-    public static final int DR_ID_SHIFT = 27;
+    private static final int DR_ID_SHIFT = 27;
 
     /** DR center ID mask. */
-    public static final int DR_ID_MASK = 0x1F;
+    private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
     private int topVer;
