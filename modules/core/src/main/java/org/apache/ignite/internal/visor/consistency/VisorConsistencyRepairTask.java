@@ -116,59 +116,57 @@ public class VisorConsistencyRepairTask extends VisorMultiNodeTask<VisorConsiste
 
             GridDhtLocalPartition part = grpCtx.topology().localPartition(p);
 
-            if (part != null) {
-                part.reserve();
+            if (part == null)
+                return null; // Partition does not belong to the node.
+
+            part.reserve();
+
+            try {
+                IgnitePredicate<CacheConsistencyViolationEvent> lsnr = new CacheConsistencyViolationEventListener();
+
+                ignite.events().localListen(lsnr, EVT_CONSISTENCY_VIOLATION);
 
                 try {
-                    IgnitePredicate<CacheConsistencyViolationEvent> lsnr = new CacheConsistencyViolationEventListener();
+                    Set<Object> keys = new HashSet<>();
 
-                    ignite.events().localListen(lsnr, EVT_CONSISTENCY_VIOLATION);
+                    GridCursor<? extends CacheDataRow> cursor = grpCtx.offheap().dataStore(part).cursor(cctx.cacheId());
 
-                    try {
-                        Set<Object> keys = new HashSet<>();
+                    IgniteCache<Object, Object> cache = ignite.cache(cacheName).withReadRepair();
 
-                        GridCursor<? extends CacheDataRow> cursor =
-                            grpCtx.offheap().dataStore(part).cursor(cctx.cacheId());
+                    do {
+                        keys.clear();
 
-                        IgniteCache<Object, Object> cache = ignite.cache(cacheName).withReadRepair();
+                        for (int i = 0; i < batchSize && cursor.next(); i++) {
+                            CacheDataRow row = cursor.get();
 
-                        do {
-                            keys.clear();
-
-                            for (int i = 0; i < batchSize && cursor.next(); i++) {
-                                CacheDataRow row = cursor.get();
-
-                                keys.add(row.key());
-                            }
-
-                            try {
-                                cache.getAll(keys); // Repair.
-                            }
-                            catch (CacheException e) {
-                                if (!(e.getCause() instanceof IgniteConsistencyViolationException))
-                                    throw new IgniteException("Read repair attempt failed.", e);
-                            }
+                            keys.add(row.key());
                         }
-                        while (!keys.isEmpty());
+
+                        try {
+                            cache.getAll(keys); // Repair.
+                        }
+                        catch (CacheException e) {
+                            if (!(e.getCause() instanceof IgniteConsistencyViolationException))
+                                throw new IgniteException("Read repair attempt failed.", e);
+                        }
                     }
-                    finally {
-                        ignite.events().stopLocalListen(lsnr);
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Partition repair attempt failed.", e);
+                    while (!keys.isEmpty());
                 }
                 finally {
-                    part.release();
+                    ignite.events().stopLocalListen(lsnr);
                 }
-
-                if (!evts.isEmpty())
-                    return processEvents(cctx, p);
-                else
-                    return NOTHING_FOUND;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Partition repair attempt failed.", e);
+            }
+            finally {
+                part.release();
             }
 
-            return null; // Partition does not belong to the node.
+            if (!evts.isEmpty())
+                return processEvents(cctx, p);
+            else
+                return NOTHING_FOUND;
         }
 
         /**
