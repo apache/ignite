@@ -119,6 +119,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        stopAllGrids();
         cleanPersistenceDir();
 
         srv = startGrids(2);
@@ -164,7 +165,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        cache.query(new SqlFieldsQuery("drop table if exists " + SQL_TABLE));
+        if (cache != null)
+            cache.query(new SqlFieldsQuery("drop table if exists " + SQL_TABLE));
     }
 
     /** @throws Exception If failed. */

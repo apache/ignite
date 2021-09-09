@@ -168,7 +168,13 @@ namespace ignite
                     OP_TX_START = 4000,
 
                     /** Commit transaction. */
-                    OP_TX_END = 4001
+                    OP_TX_END = 4001,
+
+                    /** Execute compute task. */
+                    COMPUTE_TASK_EXECUTE = 6000,
+
+                    /** Compute task completion notification. */
+                    COMPUTE_TASK_FINISHED = 6001,
                 };
             };
 
@@ -363,7 +369,8 @@ namespace ignite
                 CacheRequest(int32_t cacheId, bool binary) :
                     cacheId(cacheId),
                     binary(binary),
-                    actTx(false)
+                    actTx(false),
+                    txId(0)
                 {
                     // No-op.
                 }
@@ -536,15 +543,6 @@ namespace ignite
                 }
 
                 /**
-                 * Sets transaction active flag and appropriate txId.
-                 * @param active Transaction activity flag.
-                 * @param id Transaction id.
-                 */
-                void activeTx(bool active, int32_t id) {
-                    CacheRequest<OpCode>::activeTx(active, id);
-                }
-
-                /**
                  * Write request using provided writer.
                  * @param writer Writer.
                  * @param ver Version.
@@ -691,11 +689,11 @@ namespace ignite
                  * Constructor.
                  *
                  * @param id Transaction id.
-                 * @param comm Need to commit flag.
+                 * @param commit Need to commit flag.
                  */
-                TxEndRequest(int32_t id, bool comm) :
+                TxEndRequest(int32_t id, bool commit) :
                     txId(id),
-                    commited(comm)
+                    commited(commit)
                 {
                     // No-op.
                 }
@@ -869,6 +867,59 @@ namespace ignite
             private:
                 /** Cursor ID. */
                 const int64_t cursorId;
+            };
+
+            /**
+             * Compute task execute request.
+             */
+            class ComputeTaskExecuteRequest : public Request<RequestType::COMPUTE_TASK_EXECUTE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param flags Flags.
+                 * @param timeout Timeout in milliseconds.
+                 * @param taskName Task name.
+                 * @param arg Argument.
+                 */
+                ComputeTaskExecuteRequest(int8_t flags, int64_t timeout, const std::string& taskName,
+                    const Writable& arg) :
+                    flags(flags),
+                    timeout(timeout),
+                    taskName(taskName),
+                    arg(arg)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskExecuteRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Flags. */
+                const int8_t flags;
+
+                /** Timeout in milliseconds. */
+                const int64_t timeout;
+
+                /** Task name. */
+                const std::string& taskName;
+
+                /** Argument. */
+                const Writable& arg;
             };
 
             /**
@@ -1397,6 +1448,113 @@ namespace ignite
             private:
                 /** Cursor Page. */
                 cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Compute task execute response.
+             */
+            class ComputeTaskExecuteResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ComputeTaskExecuteResponse() :
+                    taskId(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskExecuteResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get Notification ID.
+                 * @return Notification ID.
+                 */
+                int64_t GetNotificationId() const
+                {
+                    return taskId;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Task ID. */
+                int64_t taskId;
+            };
+
+            /**
+             * Compute task finished notification.
+             */
+            class ComputeTaskFinishedNotification
+            {
+            public:
+                typedef ComputeTaskExecuteResponse ResponseType;
+
+                /**
+                 * Constructor.
+                 */
+                ComputeTaskFinishedNotification(Readable& result) :
+                    status(0),
+                    errorMessage(),
+                    result(result)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskFinishedNotification()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Check if the message is failure.
+                 * @return @c true on failure.
+                 */
+                bool IsFailure() const
+                {
+                    return !errorMessage.empty();
+                }
+
+                /**
+                 * Get error message.
+                 * @return Error message.
+                 */
+                const std::string& GetErrorMessage() const
+                {
+                    return errorMessage;
+                }
+
+                /**
+                 * Read response using provided reader.
+                 * @param reader Reader.
+                 * @param ver Protocol version.
+                 */
+                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+
+            private:
+                /** Status. */
+                int32_t status;
+
+                /** Error message. */
+                std::string errorMessage;
+
+                /** Result. */
+                Readable& result;
             };
         }
     }

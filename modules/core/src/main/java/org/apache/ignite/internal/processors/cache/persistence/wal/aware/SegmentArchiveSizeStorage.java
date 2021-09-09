@@ -17,65 +17,140 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import java.util.Map;
+import java.util.TreeMap;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 
 /**
  * Storage WAL archive size.
  * Allows to track the exceeding of the maximum archive size.
  */
 class SegmentArchiveSizeStorage {
-    /** Current WAL archive size in bytes. */
-    private long curr;
+    /** Logger. */
+    private final IgniteLogger log;
 
-    /** Reserved WAL archive size in bytes. */
-    private long reserved;
+    /** Current WAL archive size in bytes. Guarded by {@code this}. */
+    private long walArchiveSize;
 
-    /** Flag of interrupt waiting on this object. */
-    private volatile boolean interrupted;
+    /** Flag of interrupt waiting on this object. Guarded by {@code this}. */
+    private boolean interrupted;
+
+    /** Minimum size of the WAL archive in bytes. */
+    private final long minWalArchiveSize;
+
+    /** Maximum size of the WAL archive in bytes. */
+    private final long maxWalArchiveSize;
+
+    /** WAL archive size unlimited. */
+    private final boolean walArchiveUnlimited;
+
+    /** Automatically release segments. Guarded by {@code this}. */
+    private boolean autoRelease;
 
     /**
-     * Adding current WAL archive size in bytes.
-     *
-     * @param size Size in bytes.
+     * Segment sizes. Mapping: segment idx -> size in bytes. Guarded by {@code this}.
+     * {@code null} if {@link #walArchiveUnlimited} == {@code true}.
      */
-    synchronized void addCurrentSize(long size) {
-        curr += size;
+    @Nullable private final Map<Long, Long> segmentSizes;
 
-        if (size > 0)
-            notifyAll();
+    /**
+     * Segment reservations storage.
+     * {@code null} if {@link #walArchiveUnlimited} == {@code true}.
+     */
+    @Nullable private final SegmentReservationStorage reservationStorage;
+
+    /**
+     * Constructor.
+     *
+     * @param minWalArchiveSize Minimum size of the WAL archive in bytes.
+     * @param maxWalArchiveSize Maximum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * @param reservationStorage Segment reservations storage.
+     */
+    public SegmentArchiveSizeStorage(
+        IgniteLogger log,
+        long minWalArchiveSize,
+        long maxWalArchiveSize,
+        SegmentReservationStorage reservationStorage
+    ) {
+        this.log = log;
+
+        this.minWalArchiveSize = minWalArchiveSize;
+        this.maxWalArchiveSize = maxWalArchiveSize;
+
+        if (maxWalArchiveSize != UNLIMITED_WAL_ARCHIVE) {
+            walArchiveUnlimited = false;
+
+            segmentSizes = new TreeMap<>();
+            this.reservationStorage = reservationStorage;
+        }
+        else {
+            walArchiveUnlimited = true;
+
+            segmentSizes = null;
+            this.reservationStorage = null;
+        }
     }
 
     /**
-     * Adding reserved WAL archive size in bytes.
-     * Defines a hint to determine if the maximum size is exceeded before a new segment is archived.
+     * Adds or updates information about size of a WAL segment in archive.
      *
-     * @param size Size in bytes.
+     * @param idx Absolut segment index.
+     * @param sizeChange Segment size in bytes. Could be positive (if segment is added to the archive)
+     *                   or negative (e.g. when it is removed from the archive).
      */
-    synchronized void addReservedSize(long size) {
-        reserved += size;
+    void changeSize(long idx, long sizeChange) {
+        T2<Long, Integer> forceReleaseSegments = null;
 
-        if (size > 0)
-            notifyAll();
+        synchronized (this) {
+            walArchiveSize += sizeChange;
+
+            if (!walArchiveUnlimited) {
+                segmentSizes.compute(idx, (i, size) -> {
+                    long res = (size == null ? 0 : size) + sizeChange;
+
+                    return res == 0 ? null : res;
+                });
+            }
+
+            if (sizeChange > 0) {
+                forceReleaseSegments = calcForceReleaseSegments();
+
+                notifyAll();
+            }
+        }
+
+        if (forceReleaseSegments != null)
+            forceReleaseSegments(forceReleaseSegments.get1(), forceReleaseSegments.get2());
     }
 
     /**
      * Reset the current and reserved WAL archive sizes.
      */
     synchronized void resetSizes() {
-        curr = 0;
-        reserved = 0;
+        walArchiveSize = 0;
+
+        if (!walArchiveUnlimited)
+            segmentSizes.clear();
     }
 
     /**
      * Waiting for exceeding the maximum WAL archive size.
-     * To track size of WAL archive, need to use {@link #addCurrentSize} and {@link #addReservedSize}.
+     * To track size of WAL archive, need to use {@link #changeSize}.
      *
      * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.
      */
     synchronized void awaitExceedMaxSize(long max) throws IgniteInterruptedCheckedException {
         try {
-            while (max - (curr + reserved) > 0 && !interrupted)
+            while (max - walArchiveSize > 0 && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -98,7 +173,91 @@ class SegmentArchiveSizeStorage {
     /**
      * Reset interrupted flag.
      */
-    void reset() {
+    synchronized void reset() {
         interrupted = false;
+    }
+
+    /**
+     * Getting current WAL archive size in bytes.
+     *
+     * @return Size in bytes.
+     */
+    synchronized long currentSize() {
+        return walArchiveSize;
+    }
+
+    /**
+     * Getting the size of the WAL segment of the archive in bytes.
+     *
+     * @return Size in bytes or {@code null} if the segment is absent or the archive is unlimited.
+     */
+    @Nullable Long segmentSize(long idx) {
+        if (walArchiveUnlimited)
+            return null;
+        else {
+            synchronized (this) {
+                return segmentSizes.get(idx);
+            }
+        }
+    }
+
+    /**
+     * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
+     */
+    void startAutoReleaseSegments() {
+        if (!walArchiveUnlimited) {
+            T2<Long, Integer> forceReleaseSegments = null;
+
+            synchronized (this) {
+                autoRelease = true;
+
+                forceReleaseSegments = calcForceReleaseSegments();
+            }
+
+            if (forceReleaseSegments != null)
+                forceReleaseSegments(forceReleaseSegments.get1(), forceReleaseSegments.get2());
+        }
+    }
+
+    /**
+     * Calculation of the segments for which the forced release of the segments will be performed.
+     *
+     * @return Pair: Absolute segment index up (and including) to which the segments will be released, segment count.
+     */
+    @Nullable private synchronized T2<Long, Integer> calcForceReleaseSegments() {
+        if (!walArchiveUnlimited && autoRelease && walArchiveSize >= maxWalArchiveSize) {
+            long releaseIdx = -1;
+            int releaseCnt = 0;
+
+            long size = 0;
+
+            for (Map.Entry<Long, Long> e : segmentSizes.entrySet()) {
+                releaseIdx = e.getKey();
+                releaseCnt++;
+
+                if (walArchiveSize - (size += e.getValue()) < minWalArchiveSize)
+                    break;
+            }
+
+            return releaseIdx == -1 ? null : new T2<>(releaseIdx, releaseCnt);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Forces the release of reserved segments.
+     *
+     * @param absIdx Absolute segment index up (and including) to which the segments will be released.
+     * @param cnt Segment count.
+     */
+    private void forceReleaseSegments(long absIdx, int cnt) {
+        if (log.isInfoEnabled()) {
+            log.info("Maximum size of the WAL archive exceeded, the segments will be forcibly released [" +
+                "maxWalArchiveSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ", releasedSegmentCnt=" +
+                cnt + ", lastReleasedSegmentIdx=" + absIdx + ']');
+        }
+
+        reservationStorage.forceRelease(absIdx);
     }
 }

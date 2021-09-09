@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -179,7 +178,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Collection<CacheEntry<Object,Object>>> getEntriesAsync(
+    @Override public IgniteInternalFuture<Collection<CacheEntry<Object, Object>>> getEntriesAsync(
         @Nullable Collection keys
     ) {
         return delegate.get().getEntriesAsync(transform(keys));
@@ -572,11 +571,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalCache forSubjectId(UUID subjId) {
-        return delegate.get().forSubjectId(subjId);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Object getForcePrimary(Object key) throws IgniteCheckedException {
         return delegate.get().getForcePrimary(keyTransformer.transform(key));
     }
@@ -706,7 +700,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Cache.Entry<Object,Object>> scanIterator(
+    @Override public Iterator<Cache.Entry<Object, Object>> scanIterator(
         boolean keepBinary,
         @Nullable IgniteBiPredicate p
     ) throws IgniteCheckedException {

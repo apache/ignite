@@ -917,8 +917,10 @@ public class VisorMimeTypes {
 
         if (c1 == '<') {
             if (c2 == '!' ||
-                ((c2 == 'h' && (c3 == 't' && c4 == 'm' && c5 == 'l' || c3 == 'e' && c4 == 'a' && c5 == 'd') || (c2 == 'b' && c3 == 'o' && c4 == 'd' && c5 == 'y'))) ||
-                ((c2 == 'H' && (c3 == 'T' && c4 == 'M' && c5 == 'L' || c3 == 'E' && c4 == 'A' && c5 == 'D') || (c2 == 'B' && c3 == 'O' && c4 == 'D' && c5 == 'Y'))))
+                ((c2 == 'h' && (c3 == 't' && c4 == 'm' && c5 == 'l' || c3 == 'e' && c4 == 'a' && c5 == 'd') ||
+                    (c2 == 'b' && c3 == 'o' && c4 == 'd' && c5 == 'y'))) ||
+                ((c2 == 'H' && (c3 == 'T' && c4 == 'M' && c5 == 'L' || c3 == 'E' && c4 == 'A' && c5 == 'D') ||
+                    (c2 == 'B' && c3 == 'O' && c4 == 'D' && c5 == 'Y'))))
                 return "text/html";
 
             if (c2 == '?' && c3 == 'x' && c4 == 'm' && c5 == 'l' && c6 == ' ')
@@ -961,7 +963,8 @@ public class VisorMimeTypes {
             if (c4 == 0xE0)
                 return "image/jpeg";
 
-            // File format used by digital cameras to store images. Exif Format can be read by any application supporting JPEG. Exif Spec can be found at:
+            // File format used by digital cameras to store images.
+            // Exif Format can be read by any application supporting JPEG. Exif Spec can be found at:
             // http://www.pima.net/standards/it10/PIMA15740/Exif_2-1.PDF
             if ((c4 == 0xE1) && (c7 == 'E' && c8 == 'x' && c9 == 'i' && c10 == 'f' && c11 == 0))
                 return "image/jpeg";

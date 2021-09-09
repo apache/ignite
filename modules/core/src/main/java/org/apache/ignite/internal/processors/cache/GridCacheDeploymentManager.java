@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -556,7 +557,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
                     // If current deployment is either system loader or GG loader,
                     // then we don't check it, as new loader is most likely wider.
-                    if (!curLdr.equals(U.gridClassLoader()) && dep.deployedClass(cls.getName()) != null)
+                    if (!curLdr.equals(U.gridClassLoader()) && dep.deployedClass(cls.getName()).get1() != null)
                         // Local deployment can load this class already, so no reason
                         // to look for another class loader.
                         break;
@@ -567,7 +568,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (newDep != null) {
                     if (dep != null) {
                         // Check new deployment.
-                        if (newDep.deployedClass(dep.sampleClassName()) != null) {
+                        if (newDep.deployedClass(dep.sampleClassName()).get1() != null) {
                             if (locDep.compareAndSet(dep, newDep))
                                 break; // While loop.
                         }
@@ -603,14 +604,15 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (locDep0 != null) {
                     // Will copy sequence number to bean.
                     dep = new GridDeploymentInfoBean(locDep0);
+
+                    checkDeploymentIsCorrect(dep, deployable, false);
                 }
             }
+            else
+                checkDeploymentIsCorrect(dep, deployable, true);
 
-            if (dep != null) {
-                checkDeploymentIsCorrect(dep, deployable);
-
+            if (dep != null)
                 deployable.prepare(dep);
-            }
 
             if (log.isDebugEnabled())
                 log.debug("Prepared grid cache deployable [dep=" + dep + ", deployable=" + deployable + ']');
@@ -622,16 +624,22 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param deployment Deployment.
      * @param deployable Deployable message.
+     * @param failIfNotCorrect Flag determining whether to throw exception or just warn.
      * @throws IgnitePeerToPeerClassLoadingException If deployment is incorrect.
      */
-    private void checkDeploymentIsCorrect(GridDeploymentInfoBean deployment, GridCacheDeployable deployable)
+    private void checkDeploymentIsCorrect(GridDeploymentInfoBean deployment, GridCacheDeployable deployable,
+        boolean failIfNotCorrect)
         throws IgnitePeerToPeerClassLoadingException {
         if (deployment.participants() == null
             && !cctx.localNode().id().equals(deployment.classLoaderId().globalId())) {
-            throw new IgnitePeerToPeerClassLoadingException("Failed to use deployment to prepare deployable, " +
-                "because local node id does not correspond with class loader id, and there are no more participants " +
-                "[localNodeId=" + cctx.localNode().id() + ", deployment=" + deployment + ", deployable=" + deployable +
-                ", locDep=" + locDep.get() + "]");
+            String msg = "Should not use deployment to prepare deployable, because local node id does not correspond " +
+                "with class loader id, and there are no more participants [locNodeId=" + cctx.localNode().id() +
+                ", deployment=" + deployment + ", deployable=" + deployable + ", locDep=" + locDep.get() + "]";
+
+            if (failIfNotCorrect)
+                throw new IgnitePeerToPeerClassLoadingException(msg);
+
+            log.warning(msg);
         }
     }
 
@@ -767,7 +775,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 GridDeployment d = cctx.gridDeploy().getLocalDeployment(name);
 
                 if (d != null) {
-                    Class cls = d.deployedClass(name);
+                    Class cls = d.deployedClass(name).get1();
 
                     if (cls != null)
                         return cls;
@@ -776,29 +784,43 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             IgniteUuid curLdrId = localLdrId.get();
 
+            Throwable err = null;
+
             if (curLdrId != null) {
                 CachedDeploymentInfo<K, V> t = deps.get(curLdrId);
 
                 if (t != null) {
-                    Class<?> cls = tryToloadClassFromCacheDep(name, t);
+                    IgniteBiTuple<Class<?>, Throwable> cls = tryToloadClassFromCacheDep(name, t);
 
-                    if (cls != null)
-                        return cls;
+                    if (cls != null) {
+                        if (cls.get1() != null)
+                            return cls.get1();
+                        else
+                            err = cls.get2();
+                    }
                 }
             }
 
             for (CachedDeploymentInfo<K, V> t : deps.values()) {
-                Class<?> cls = tryToloadClassFromCacheDep(name, t);
-                if (cls != null)
-                    return cls;
+                IgniteBiTuple<Class<?>, Throwable> cls = tryToloadClassFromCacheDep(name, t);
+
+                if (cls != null) {
+                    if (cls.get1() != null)
+                        return cls.get1();
+                    else if (err == null)
+                        err = cls.get2();
+                }
             }
 
-            Class cls = getParent().loadClass(name);
+            try {
+                return getParent().loadClass(name);
+            }
+            catch (ClassNotFoundException e) {
+                if (err instanceof LinkageError)
+                    U.warn(log, "Failed to load class [name=" + name + ']', err);
 
-            if (cls != null)
-                return cls;
-
-            throw new ClassNotFoundException("Failed to load class [name=" + name + ", ctx=" + deps + ']');
+                throw e;
+            }
         }
 
         /**
@@ -806,7 +828,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * @param deploymentInfo Grid cached deployment info.
          * @return Class if can to load resource with the <code>name</code> or {@code null} otherwise.
          */
-        @Nullable private Class<?> tryToloadClassFromCacheDep(String name, CachedDeploymentInfo<K, V> deploymentInfo) {
+        @Nullable private IgniteBiTuple<Class<?>, Throwable> tryToloadClassFromCacheDep(
+            String name,
+            CachedDeploymentInfo<K, V> deploymentInfo
+        ) {
             UUID sndId = deploymentInfo.senderId();
             IgniteUuid ldrId = deploymentInfo.loaderId();
             String userVer = deploymentInfo.userVersion();
@@ -823,9 +848,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 participants,
                 F.<ClusterNode>alwaysTrue());
 
-            Class cls = d != null ? d.deployedClass(name) : null;
-
-            return cls;
+            return d != null ? d.deployedClass(name) : null;
         }
 
         /**

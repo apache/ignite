@@ -31,18 +31,20 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -107,7 +109,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /**
@@ -153,15 +155,15 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
-        GridQueryProcessor.idxCls = CaptureRebuildGridQueryIndexing.class;
+        IndexProcessor.idxRebuildCls = CaptureRebuildGridQueryIndexing.class;
 
         IgniteEx node = startGrid(0);
 
         awaitPartitionMapExchange();
 
-        CaptureRebuildGridQueryIndexing indexing = (CaptureRebuildGridQueryIndexing) node.context().query().getIndexing();
+        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexProcessor().idxRebuild();
 
-        assertFalse(indexing.didRebuildIndexes());
+        assertFalse(idxRebuild.didRebuildIndexes());
 
         IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
@@ -264,6 +266,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
 
+        forceCheckpoint();
+
         // Restart first time.
         stopGrid(0);
 
@@ -301,16 +305,21 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     /**
      * IgniteH2Indexing that captures index rebuild operations.
      */
-    public static class CaptureRebuildGridQueryIndexing extends IgniteH2Indexing {
+    public static class CaptureRebuildGridQueryIndexing extends IndexesRebuildTask {
         /**
          * Whether index rebuild happened.
          */
         private boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-            IgniteInternalFuture<?> future = super.rebuildIndexesFromHash(cctx);
+        @Override @Nullable public IgniteInternalFuture<?> rebuild(
+            GridCacheContext cctx,
+            boolean force,
+            IndexRebuildCancelToken cancelTok
+        ) {
+            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
             rebuiltIndexes = future != null;
+
             return future;
         }
 

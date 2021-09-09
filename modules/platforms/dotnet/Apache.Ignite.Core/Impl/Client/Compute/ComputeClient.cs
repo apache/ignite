@@ -86,11 +86,11 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
                 ctx => WriteJavaTaskRequest(ctx, taskName, taskArg),
-                ctx => ReadJavaTaskResponse(ctx, tcs, cancellationToken, keepBinary));
+                ctx => ReadJavaTaskResponse(ctx, tcs, keepBinary, cancellationToken));
 
             // ReSharper disable once AssignNullToNotNullAttribute (t.Exception won't be null).
-            task.ContinueWith(t => tcs.TrySetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-            task.ContinueWith(t => tcs.TrySetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
+            task.ContWith(t => tcs.TrySetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            task.ContWith(t => tcs.TrySetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
 
             return tcs.Task;
         }
@@ -173,8 +173,11 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// Reads java task execution response.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static object ReadJavaTaskResponse<TRes>(ClientResponseContext ctx, TaskCompletionSource<TRes> tcs,
-            CancellationToken cancellationToken, bool keepBinary)
+        private static object ReadJavaTaskResponse<TRes>(
+            ClientResponseContext ctx,
+            TaskCompletionSource<TRes> tcs,
+            bool keepBinary,
+            CancellationToken cancellationToken)
         {
             var taskId = ctx.Stream.ReadLong();
 

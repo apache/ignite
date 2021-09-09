@@ -196,7 +196,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      * @param keys Number of keys.
      * @return Running thread.
      */
-    private Thread runCacheOperations(final IgniteInternalCache<Object,Object> cache, final int keys) {
+    private Thread runCacheOperations(final IgniteInternalCache<Object, Object> cache, final int keys) {
         Thread t = new Thread() {
             @Override public void run() {
                 while (run) {

@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.11.0-SNAPSHOT</version>
+    <version>2.12.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -67,6 +67,7 @@
         <module>modules/jcl</module>
         <module>modules/codegen</module>
         <module>modules/gce</module>
+        <module>modules/azure</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/yarn</module>
@@ -96,6 +97,7 @@
                 <module>examples</module>
                 <module>modules/benchmarks</module>
                 <module>modules/compatibility</module>
+                <module>modules/ducktests</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
@@ -121,6 +123,13 @@
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
+            </modules>
+        </profile>
+
+        <profile>
+            <id>ducktests</id>
+            <modules>
+                <module>modules/ducktests</module>
             </modules>
         </profile>
 
@@ -192,7 +201,7 @@
                             <execution>
                                 <id>core-javadoc</id>
                                 <goals>
-                                    <goal>aggregate</goal>
+                                    <goal>aggregate-no-fork</goal>
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
@@ -752,10 +761,86 @@
                                                 <include name="**/build.gradle" />
                                             </fileset>
                                         </replaceregexp>
+
+                                        <echo message="Update ignite.version in ducktests" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(__version__ = ).*$"/>
+                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="modules/ducktests/tests/ignitetest/__init__.py" />
+                                            </fileset>
+                                        </replaceregexp>
                                     </target>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <!--
+            This profile is used to provide a check that all tests are defined in at least one suite.
+
+            Some Ignite tests can be declared within one maven module but ran in a suite declared in a different module.
+            Then it's impossible to create an isolated check for every module. We should aggregate info from all modules
+            and make a final decision on the aggregation result.
+
+            The maven project apache-ignite:pom is the last that is built for the maven reactor.
+            We leverage on that and provide clean and assertion tasks here.
+            -->
+            <id>check-test-suites</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- Clean up custom surefire test provider. -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <delete>
+                                            <fileset dir="${basedir}/modules/tools/target/classes/META-INF/services" />
+                                        </delete>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <!-- Check final list of orphaned tests. -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.3.2</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <mainClass>org.apache.ignite.tools.surefire.testsuites.AssertOnOrphanedTests</mainClass>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

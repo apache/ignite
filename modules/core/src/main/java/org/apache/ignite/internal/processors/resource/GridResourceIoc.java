@@ -106,7 +106,7 @@ public class GridResourceIoc {
      * @return {@code True} if resource was injected.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
-    boolean inject(Object target,
+    public boolean inject(Object target,
         Class<? extends Annotation> annCls,
         GridResourceInjector injector,
         @Nullable GridDeployment dep,

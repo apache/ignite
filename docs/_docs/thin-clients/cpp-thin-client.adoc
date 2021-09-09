@@ -115,3 +115,60 @@ Configure link:security/authentication[authentication on the cluster side] and p
 include::code-snippets/cpp/src/thin_authentication.cpp[tag=thin-authentication,indent=0]
 ----
 
+=== Transactions
+
+
+Client transactions are supported for caches with `AtomicityMode.TRANSACTIONAL` mode.
+
+
+==== Executing Transactions
+
+
+To start a transaction, obtain the `ClientTransactions` object from `IgniteClient`.
+`ClientTransactions` has a number of `txStart(...)` methods, each of which starts a new transaction and returns an object (`ClientTransaction`) that represents the transaction.
+Use this object to commit or rollback the transaction.
+
+
+[source, cpp]
+----
+cache::CacheClient<int, int> cache = client.GetCache<int, int>("my_transactional_cache");
+
+transactions::ClientTransactions transactions = client.ClientTransactions();
+
+transactions::ClientTransaction tx = transactions.TxStart();
+
+cache.Put(2, 20);
+
+tx.Commit();
+----
+
+
+==== Transaction Configuration
+
+
+Client transactions can have different concurrency modes, isolation levels, and execution timeout, which can be set for all transactions or on a per transaction basis.
+
+You can specify the concurrency mode, isolation level, and timeout when starting an individual transaction. In this case, the provided values override the default settings.
+
+
+[source, cpp]
+----
+transactions::ClientTransactions transactions = client.ClientTransactions();
+
+const uint32_t TX_TIMEOUT = 200;
+
+transactions::ClientTransaction tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+
+cache.Put(1, 20);
+
+tx.Commit();
+----
+
+You can also perform transactions with labels:
+
+[source, cpp]
+----
+transactions::ClientTransaction tx = transactions.withLabel(label).TxStart();
+
+transactions::ClientTransaction tx = transactions.withLabel(label).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+----

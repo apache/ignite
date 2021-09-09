@@ -25,7 +25,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -44,8 +46,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -134,7 +138,10 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         assertTrue("At least one WAL file must be opened!", CountedFileIO.getCountOpenedWalFiles() > 0);
 
-        assertTrue("All WAL files must be closed at least ones!", CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles());
+        assertTrue(
+            "All WAL files must be closed at least ones!",
+            CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles()
+        );
     }
 
     /**
@@ -192,6 +199,35 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
             return 0;
         }, IgniteCheckedException.class, null);
+    }
+
+    /**
+     * Checks if binary-metadata-writer thread is not hung after standalone iterator is closed.
+     *
+     * @throws Exception if test failed.
+     */
+    @Test
+    public void testBinaryMetadataWriterStopped() throws Exception {
+        String dir = createWalFiles();
+
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
+
+        IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
+            new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(dir)
+                .pageSize(4096);
+
+        try (WALIterator stIt = factory.iterator(iterParametersBuilder)) {
+        }
+
+        boolean binaryMetadataWriterStopped = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Set<String> threadNames = Thread.getAllStackTraces().keySet().stream().map(Thread::getName).collect(Collectors.toSet());
+
+                return threadNames.stream().noneMatch(t -> t.startsWith("binary-metadata-writer"));
+            }
+        }, 10_000L);
+
+        assertTrue(binaryMetadataWriterStopped);
     }
 
     /**

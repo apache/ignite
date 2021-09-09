@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * Base class for data transfer objects.
  */
 public abstract class IgniteDataTransferObject implements Externalizable {
-    /** */
+    /** Serial version UUID. */
     private static final long serialVersionUID = 0L;
 
     /** Magic number to detect correct transfer objects. */

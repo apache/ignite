@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -175,11 +174,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks the correctness of {@link CacheMetrics#getRebalancingKeysRate}.
+     *
      * @throws Exception If failed.
      */
     @Test
     public void testRebalance() throws Exception {
-        Ignite ignite = startGrids(4);
+        Ignite ignite = startGrid(0);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
         IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
@@ -191,45 +192,22 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 cache2.put(i, CACHE2 + "-" + i);
         }
 
-        final CountDownLatch l1 = new CountDownLatch(1);
-        final CountDownLatch l2 = new CountDownLatch(1);
+        ignite = startGrid(1);
 
-        startGrid(4).events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                l1.countDown();
-
-                try {
-                    assertTrue(l2.await(5, TimeUnit.SECONDS));
-                }
-                catch (InterruptedException e) {
-                    throw new AssertionError();
-                }
-
-                return false;
-            }
-        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
-
-        assertTrue(l1.await(5, TimeUnit.SECONDS));
-
-        ignite = ignite(4);
+        awaitPartitionMapExchange(true, true, null, true);
 
         CacheMetrics metrics1 = ignite.cache(CACHE1).localMetrics();
         CacheMetrics metrics2 = ignite.cache(CACHE2).localMetrics();
-
-        l2.countDown();
 
         long rate1 = metrics1.getRebalancingKeysRate();
         long rate2 = metrics2.getRebalancingKeysRate();
 
         assertTrue(rate1 > 0);
         assertTrue(rate2 > 0);
+        assertTrue(rate1 > rate2);
 
-        // rate1 has to be roughly the same as rate2
-        double ratio = ((double)rate2 / rate1);
-
-        log.info("Ratio: " + ratio);
-
-        assertTrue(ratio > 0.9 && ratio < 1.1);
+        assertEquals(metrics1.getRebalancedKeys(), rate1);
+        assertEquals(metrics2.getRebalancedKeys(), rate2);
     }
 
     /**
@@ -239,7 +217,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     public void testCacheGroupRebalance() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
+        List<String> cacheNames = Arrays.asList(CACHE4, CACHE5);
 
         int allKeysCount = 0;
 
@@ -364,7 +342,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrid(0);
 
-        List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
+        List<String> cacheNames = Arrays.asList(CACHE4, CACHE5);
 
         for (String cacheName : cacheNames) {
             ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).distinct().boxed()

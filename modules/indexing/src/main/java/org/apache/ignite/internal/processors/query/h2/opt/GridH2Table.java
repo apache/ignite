@@ -38,11 +38,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -50,14 +52,14 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
+import org.apache.ignite.internal.processors.query.stat.ObjectStatistics;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -176,6 +178,13 @@ public class GridH2Table extends TableBase {
     @GridToStringExclude
     private IgniteLogger log;
 
+    /** Index manager. */
+    @GridToStringExclude
+    private IndexProcessor idxMgr;
+
+    /** Table name. Use it to persist table name for destroy index after destroying table. */
+    private String tableName;
+
     /**
      * Creates table.
      *
@@ -189,7 +198,8 @@ public class GridH2Table extends TableBase {
         CreateTableData createTblData,
         GridH2RowDescriptor desc,
         H2TableDescriptor tblDesc,
-        GridCacheContextInfo cacheInfo
+        GridCacheContextInfo cacheInfo,
+        IndexProcessor idxMgr
     ) {
         super(createTblData);
 
@@ -197,6 +207,9 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cacheInfo = cacheInfo;
+        this.idxMgr = idxMgr;
+
+        this.tableName = createTblData.tableName;
 
         affKeyCol = calculateAffinityKeyColumn();
         affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());
@@ -472,6 +485,22 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Get actual table statistics if exists.
+     *
+     * @return Table statistics or {@code null} if there is no statistics available.
+     */
+    public ObjectStatistics tableStatistics() {
+        GridCacheContext cacheContext = cacheInfo.cacheContext();
+
+        if (cacheContext == null)
+            return null;
+
+        IgniteH2Indexing indexing = (IgniteH2Indexing)cacheContext.kernalContext().query().getIndexing();
+
+        return indexing.statsManager().getLocalStatistics(new StatisticsKey(identifier.schema(), identifier.table()));
+    }
+
+    /**
      * @return Cache context.
      */
     @Nullable public GridCacheContext cacheContext() {
@@ -663,8 +692,7 @@ public class GridH2Table extends TableBase {
                     database.removeSchemaObject(ses, idx);
 
                     // We have to call destroy here if we are who has removed this index from the table.
-                    if (idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).destroy(rmIndex);
+                    destroyIndex(idx);
                 }
             }
 
@@ -697,11 +725,32 @@ public class GridH2Table extends TableBase {
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
-                if (idxs.get(i) instanceof GridH2IndexBase)
-                    index(i).destroy(rmIndex);
+                destroyIndex(idxs.get(i));
         }
         finally {
             unlock(true);
+        }
+    }
+
+    /**
+     * Destroy index with GridIndexManager.
+     */
+    private void destroyIndex(Index idx) {
+        if (idx instanceof GridH2IndexBase) {
+            GridH2IndexBase h2idx = (GridH2IndexBase) idx;
+
+            // Destroy underlying Ignite index.
+            IndexDefinition deleteDef = new IndexDefinition() {
+                /** {@inheritDoc} */
+                @Override public IndexName idxName() {
+                    return new IndexName(cacheName(), getSchema().getName(), tableName, idx.getName());
+                }
+            };
+
+            idxMgr.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
+
+            // Call it too, if H2 index stores some state.
+            h2idx.destroy(rmIndex);
         }
     }
 
@@ -739,163 +788,24 @@ public class GridH2Table extends TableBase {
      *
      * @param row Row to be updated.
      * @param prevRow Previous row.
-     * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
-        assert desc != null;
-
-        H2CacheRow row0 = desc.createRow(row);
-        H2CacheRow prevRow0 = prevRow != null ? desc.createRow(prevRow) : null;
-
-        row0.prepareValuesCache();
-
-        if (prevRow0 != null)
-            prevRow0.prepareValuesCache();
-
-        IgniteCheckedException err = null;
-
-        try {
-            lock(false);
-
-            try {
-                ensureNotDestroyed();
-
-                boolean replaced;
-
-                if (prevRowAvailable && rebuildFromHashInProgress == FALSE)
-                    replaced = pk().putx(row0);
-                else {
-                    prevRow0 = pk().put(row0);
-
-                    replaced = prevRow0 != null;
-                }
-
-                if (!replaced)
-                    size.increment();
-
-                for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
-                    Index idx = idxs.get(i);
-
-                    if (idx instanceof GridH2IndexBase)
-                        err = addToIndex((GridH2IndexBase)idx, row0, prevRow0, err);
-                }
-
-                if (!tmpIdxs.isEmpty()) {
-                    for (GridH2IndexBase idx : tmpIdxs.values())
-                        err = addToIndex(idx, row0, prevRow0, err);
-                }
-            }
-            finally {
-                unlock(false);
-            }
-        }
-        finally {
-            row0.clearValuesCache();
-
-            if (prevRow0 != null)
-                prevRow0.clearValuesCache();
-        }
-
-        if (err != null)
-            throw err;
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow) {
+        // Size of a table bases on PK index size. PK index key equals to a cache key, so we can rely on this condition.
+        // Table size shows approximate count of rows.
+        if (prevRow == null)
+            size.increment();
     }
 
     /**
      * Remove row.
      *
      * @param row Row.
-     * @return {@code True} if was removed.
-     * @throws IgniteCheckedException If failed.
      */
-    public boolean remove(CacheDataRow row) throws IgniteCheckedException {
-        H2CacheRow row0 = desc.createRow(row);
-
-        lock(false);
-
-        try {
-            ensureNotDestroyed();
-
-            boolean rmv = pk().removex(row0);
-
-            if (rmv) {
-                for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
-                    Index idx = idxs.get(i);
-
-                    if (idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).removex(row0);
-                }
-
-                if (!tmpIdxs.isEmpty()) {
-                    for (GridH2IndexBase idx : tmpIdxs.values())
-                        idx.removex(row0);
-                }
-
-                size.decrement();
-            }
-
-            return rmv;
-        }
-        finally {
-            unlock(false);
-        }
-    }
-
-    /**
-     * Add row to index.
-     * @param idx Index to add row to.
-     * @param row Row to add to index.
-     * @param prevRow Previous row state, if any.
-     * @param prevErr Error on index add.
-     */
-    private IgniteCheckedException addToIndex(
-        GridH2IndexBase idx,
-        H2CacheRow row,
-        H2CacheRow prevRow,
-        IgniteCheckedException prevErr
-    ) {
-        try {
-            boolean replaced = idx.putx(row);
-
-            // Row was not replaced, need to remove manually.
-            if (!replaced && prevRow != null)
-                idx.removex(prevRow);
-
-            return prevErr;
-        }
-        catch (Throwable t) {
-            IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
-
-            if (ex != null && ex.statusCode() == IgniteQueryErrorCode.FIELD_TYPE_MISMATCH) {
-                if (prevErr != null) {
-                    prevErr.addSuppressed(t);
-
-                    return prevErr;
-                }
-                else
-                    return new IgniteCheckedException("Error on add row to index '" + getName() + '\'', t);
-            }
-            else
-                throw t;
-        }
-    }
-
-    /**
-     * Collect indexes for rebuild.
-     *
-     * @param clo Closure.
-     */
-    public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
-        for (int i = 0; i < idxs.size(); i++) {
-            Index idx = idxs.get(i);
-
-            if (idx instanceof H2TreeIndex) {
-                H2TreeIndex idx0 = (H2TreeIndex)idx;
-
-                if (idx0.rebuildRequired())
-                    clo.addIndex(this, idx0);
-            }
-        }
+    public void remove(CacheDataRow row) {
+        // Size of a table bases on PK index size. PK index key equals to a cache key, so we can rely on this condition.
+        // Table size shows approximate count of rows.
+        size.decrement();
     }
 
     /**
@@ -1127,10 +1037,8 @@ public class GridH2Table extends TableBase {
                         idx.getSchema().findIndex(session, idx.getName()) != null)
                         database.removeSchemaObject(session, idx);
 
-                    GridCacheContext cctx0 = cacheInfo.cacheContext();
-
-                    if (cctx0 != null && idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).destroy(rmIndex);
+                    if (idx instanceof GridH2IndexBase)
+                        destroyIndex(idx);
 
                     continue;
                 }

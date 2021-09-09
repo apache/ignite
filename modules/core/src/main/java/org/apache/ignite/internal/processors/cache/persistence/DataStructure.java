@@ -28,13 +28,17 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -50,6 +54,12 @@ public abstract class DataStructure {
     public static Random rnd;
 
     /** */
+    private final String name;
+
+    /** */
+    private final PageLockListener lockLsnr;
+
+    /** */
     protected final int grpId;
 
     /** */
@@ -59,10 +69,8 @@ public abstract class DataStructure {
     protected final PageMemory pageMem;
 
     /** */
+    @Nullable
     protected final IgniteWriteAheadLogManager wal;
-
-    /** */
-    protected final PageLockListener lockLsnr;
 
     /** */
     protected ReuseList reuseList;
@@ -73,33 +81,48 @@ public abstract class DataStructure {
     /** */
     protected final byte pageFlag;
 
+    /** */
+    protected final PageMetrics metrics;
+
     /**
-     * @param cacheGrpId Cache group ID.
-     * @param grpName Cache group name.
+     * @param name Structure name (for debugging purposes).
+     * @param cacheGrpId Cache group id.
+     * @param grpName Group name.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
-     * @param lockLsnr Page lock listener.
+     * @param pageLockTrackerManager Page lock tracker manager.
      * @param pageIoRslvr Page IO resolver.
      * @param pageFlag Default flag value for allocated pages.
      */
     public DataStructure(
+        String name,
         int cacheGrpId,
-        String grpName,
+        @Nullable String grpName,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal,
-        PageLockListener lockLsnr,
+        @Nullable IgniteWriteAheadLogManager wal,
+        PageLockTrackerManager pageLockTrackerManager,
         PageIoResolver pageIoRslvr,
         byte pageFlag
     ) {
+        assert !F.isEmpty(name);
         assert pageMem != null;
 
+        this.name = name;
         this.grpId = cacheGrpId;
         this.grpName = grpName;
         this.pageMem = pageMem;
         this.wal = wal;
-        this.lockLsnr = lockLsnr == null ? NOOP_LSNR : lockLsnr;
+        this.lockLsnr = pageLockTrackerManager.createPageLockTracker(name);
         this.pageIoRslvr = pageIoRslvr;
         this.pageFlag = pageFlag;
+        this.metrics = pageMem.metrics().cacheGrpPageMetrics(cacheGrpId);
+    }
+
+    /**
+     * @return Tree name.
+     */
+    public final String name() {
+        return name;
     }
 
     /**
@@ -442,6 +465,9 @@ public abstract class DataStructure {
         if (needWalDeltaRecord)
             wal.log(new RecycleRecord(grpId, pageId, recycled));
 
+        if (PageIO.isIndexPage(PageIO.getType(pageAddr)))
+            metrics.indexPages().decrement();
+
         return recycled;
     }
 
@@ -452,30 +478,10 @@ public abstract class DataStructure {
         return pageMem.realPageSize(grpId);
     }
 
-    /** No-op page lock listener. */
-    public static final PageLockListener NOOP_LSNR = new PageLockListener() {
-        @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
-            // No-op.
-        }
-
-        @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-
-        @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-
-        @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
-            // No-op.
-        }
-
-        @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-
-        @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-    };
+    /**
+     * Frees the resources allocated by this structure.
+     */
+    public void close() {
+        lockLsnr.close();
+    }
 }

@@ -157,7 +157,7 @@ To start a transaction, obtain the `ClientTransactions` object from `IgniteClien
 `ClientTransactions` has a number of  `txStart(...)` methods, each of which starts a new transaction and returns an object (`ClientTransaction`) that represents the transaction.
 Use this object to commit or rollback the transaction.
 
-[source, ruby]
+[source, java]
 ----
 include::{sourceCodeFile}[tags=tx,indent=0]
 ----
@@ -196,6 +196,29 @@ include::{sourceCodeFile}[tag=binary-example,indent=0]
 -------------------------------------------------------------------------------
 
 Refer to the link:key-value-api/binary-objects[Working with Binary Objects] page for detailed information.
+
+=== Cache Entry Listening
+
+When a cache is modified (an entry is inserted, updated, deleted, or expired), an event can be sent to notify the client.
+To listen to these events, you can use one of the following approaches:
+
+* Continuous queries
+* Cache `registerCacheEntryListener` methods
+
+Both approaches require a local listener to be provided, which is triggered on every cache modification event.
+
+For both approaches you can also specify a remote filter to narrow down the range of entries that are monitored for updates. This filter is executed for each updated entry on the server-side and evaluates whether the event should be propagated to the client's local listener.
+
+NOTE: The classes of the remote filter factory must be available on the server nodes of the cluster.
+
+Refer to the link:key-value-api/continuous-queries[thick client continuous queries] page for more information about continuous queries.
+
+In case of connection to server failure, a thin client cannot silently reconnect with guarantees that no events are lost, so continuous queries and registered cache event listeners are closed after the server disconnection. There are also several methods with the additional parameter: disconnect listener. This listener allows to catch server disconnection events and react appropriately.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=continuous-queries,indent=0]
+-------------------------------------------------------------------------------
 
 == Executing SQL Statements
 
@@ -291,6 +314,8 @@ The example below shows how to invoke the service named `MyService`:
 include::{sourceCodeFile}[tag=client-services,indent=0]
 -------------------------------------------------------------------------------
 
+The deployed service can be implemented using Java or .NET.
+
 == Handling Exceptions
 
 === Handling Node Failures
@@ -342,3 +367,16 @@ Configure link:security/authentication[authentication on the cluster side] and p
 include::{sourceCodeFile}[tag=client-authentication,indent=0]
 -------------------------------------------------------------------------------
 
+
+== Async APIs
+
+Most network-bound thin client APIs have an async counterpart, for example, `ClientCache.get` and `ClientCache.getAsync`.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=async-api,indent=0]
+-------------------------------------------------------------------------------
+
+* Async methods do not block the calling thread
+* Async methods return `IgniteClientFuture<T>` which is a combination of `Future<T>` and `CompletionStage<T>`.
+* Async continuations are executed using `ClientConfiguration.AsyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool()`. For example, `cache.getAsync(1).thenAccept(val -> System.out.println(val))` will execute the `println` call using a thread from the `commonPool`.

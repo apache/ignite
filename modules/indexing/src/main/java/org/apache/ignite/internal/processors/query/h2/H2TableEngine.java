@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.api.TableEngine;
@@ -40,6 +41,9 @@ public class H2TableEngine implements TableEngine {
     /** */
     private static GridH2Table resTbl0;
 
+    /** */
+    private static IndexProcessor idxMgr0;
+
     /**
      * Creates table using given connection, DDL clause for given type descriptor and list of indexes.
      *
@@ -54,11 +58,13 @@ public class H2TableEngine implements TableEngine {
         Connection conn,
         String sql,
         GridH2RowDescriptor rowDesc,
-        H2TableDescriptor tblDesc
+        H2TableDescriptor tblDesc,
+        IndexProcessor idxMgr
     )
         throws SQLException {
         rowDesc0 = rowDesc;
         tblDesc0 = tblDesc;
+        idxMgr0 = idxMgr;
 
         try {
             try (Statement s = conn.createStatement()) {
@@ -73,12 +79,13 @@ public class H2TableEngine implements TableEngine {
             resTbl0 = null;
             tblDesc0 = null;
             rowDesc0 = null;
+            idxMgr0 = idxMgr;
         }
     }
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, tblDesc0, tblDesc0.cacheInfo());
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, tblDesc0, tblDesc0.cacheInfo(), idxMgr0);
 
         return resTbl0;
     }

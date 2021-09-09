@@ -72,7 +72,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param forcePrimary If {@code true} get will be performed on primary node even if
      *      called on backup node.
      * @param tx Transaction.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -86,7 +85,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean readThrough,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx tx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -100,7 +98,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             keys,
             readThrough,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             expiryPlc,
@@ -242,7 +239,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         false,
                         readThrough,
                         topVer,
-                        subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
@@ -356,7 +352,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             /*update-metrics*/true,
                             /*event*/!skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -375,7 +370,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             /*read-through*/false,
                             /*metrics*/true,
                             /*events*/!skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -415,7 +409,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal() && !isNear)
                         cache().metrics0().onRead(false);
 
-                    if (!checkRetryPermits(key,affNode,mapped))
+                    if (!checkRetryPermits(key, affNode, mapped))
                         return saved;
 
                     if (!affNodes.contains(cctx.localNode())) {
@@ -503,7 +497,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             /*update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -522,7 +515,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             /*read-through*/false,
                             /*update-metrics*/false,
                             /*events*/!nearRead && !skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -658,8 +650,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.expireTime(),
                             true,
                             !deserializeBinary,
-                            topVer,
-                            subjId);
+                            topVer);
                     }
 
                     CacheObject val = info.value();
@@ -756,7 +747,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 keys,
                 readThrough,
                 topVer,
-                subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,

@@ -51,11 +51,11 @@ include::includes/starting-node.adoc[]
 
 
 Once the cluster is started, you can use the Ignite Node.js thin client to perform cache operations.
-Your Ignite installation includes several ready-to-run Node.JS examples in the `{ignite_nodejs_dir}/platforms/nodejs/examples` directory. For example,
+Your Ignite installation includes several ready-to-run Node.JS examples in the `{client_dir}/examples` directory. For example,
 
 [source,shell]
 ----
-cd {IGNITE_HOME}/platforms/nodejs/examples
+cd {client_dir}/examples
 node CachePutGetExample.js
 ----
 
@@ -100,5 +100,5 @@ performCacheKeyValueOperations();
 From here, you may want to:
 
 * Read more about using Ignite Node.js Thin Client link:thin-clients/nodejs-thin-client[here]
-//* Explore the link:https://github.com/gridgain/nodejs-thin-client/tree/master/examples[additional examples] included with Ignite
+* Explore the link:https://github.com/apache/ignite-nodejs-thin-client/tree/master/examples[additional examples]
 

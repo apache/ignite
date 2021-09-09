@@ -63,7 +63,8 @@ public class GeneticAlgorithmTest {
         }
 
         ga = new GeneticAlgorithm(rawData);
-        BiFunction<Integer, Double, Double> mutator = (integer, aDouble) -> rnd.nextDouble() > 0.5 ? aDouble + (rnd.nextDouble() / 100) : aDouble - (rnd.nextDouble() / 100);
+        BiFunction<Integer, Double, Double> mutator =
+            (integer, aDouble) -> rnd.nextDouble() > 0.5 ? aDouble + (rnd.nextDouble() / 100) : aDouble - (rnd.nextDouble() / 100);
 
         ga.withFitnessFunction(fitnessFunction)
             .withMutationOperator(mutator)

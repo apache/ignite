@@ -302,6 +302,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Add Interop node attributes.
         ctx.addNodeAttribute(PlatformUtils.ATTR_PLATFORM, interopCfg.platform());
+
+        // Register query entity meta.
+        ctx.query().registerMetadataForRegisteredCaches(true);
     }
 
     /** {@inheritDoc} */
@@ -573,7 +576,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInStreamOutStream(
+        int type,
+        BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer
+    ) throws IgniteCheckedException {
         if (type == OP_GET_CACHE_CONFIG) {
             int cacheId = reader.readInt();
             CacheConfiguration cfg = ctx.cache().cacheDescriptor(cacheId).cacheConfiguration();

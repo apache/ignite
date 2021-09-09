@@ -776,7 +776,7 @@ namespace ignite
                 template<typename T>
                 void WriteTopObject(const T& obj)
                 {
-                    ignite::binary::WriteHelper<T>::Write(*this, obj);
+                    WriteHelper<T>::Write(*this, obj);
                 }
 
                 /**
@@ -800,8 +800,11 @@ namespace ignite
                         std::string typeName;
                         BType::GetTypeName(typeName);
 
+                        std::string affField;
+                        GetAffinityFieldName<T>(affField);
+
                         if (metaMgr)
-                            metaHnd = metaMgr->GetHandler(typeName, idRslvr.GetTypeId());
+                            metaHnd = metaMgr->GetHandler(typeName, affField, idRslvr.GetTypeId());
 
                         int32_t pos = stream->Position();
 
@@ -815,7 +818,7 @@ namespace ignite
 
                         int32_t hashPos = stream->Reserve(4);
 
-                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
+                        // Reserve space for the Object Length, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
                         BType::Write(writer, obj);

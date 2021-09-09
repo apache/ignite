@@ -109,7 +109,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(@NotNull String name) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(PARTITIONED);
@@ -321,6 +321,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testGetAllView() throws Exception {
         Set<String> expViews = new HashSet<>(Arrays.asList(
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "CACHES",
             "CACHE_GROUPS",
             "INDEXES",
@@ -348,7 +349,19 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "PARTITION_STATES",
             "BINARY_METADATA",
             "DISTRIBUTED_METASTORAGE",
-            "METRICS"
+            "METRICS",
+            "DS_QUEUES",
+            "DS_SETS",
+            "DS_ATOMICSEQUENCES",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_COUNTDOWNLATCHES",
+            "DS_SEMAPHORES",
+            "DS_REENTRANTLOCKS",
+            "STATISTICS_CONFIGURATION",
+            "STATISTICS_PARTITION_DATA",
+            "STATISTICS_LOCAL_DATA"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -744,7 +757,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "SYS", "PREDEFINED_CLIENT_SCHEMA"));
+            Set<String> expectedSchemas =
+                new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "SYS", "PREDEFINED_CLIENT_SCHEMA"));
 
             Set<String> schemas = new HashSet<>();
 

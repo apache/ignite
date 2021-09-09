@@ -37,11 +37,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientServerError;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -53,6 +56,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * High Availability tests.
  */
 public class ReliabilityTest extends AbstractThinClientTest {
+    /** Service name. */
+    private static final String SERVICE_NAME = "svc";
+
     /**
      * Thin clint failover.
      */
@@ -373,6 +379,69 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Test that client can invoke service method with externalizable parameter after
+     * cluster failover.
+     */
+    @Test
+    public void testServiceMethodInvocationAfterFailover() throws Exception {
+        PersonExternalizable person = new PersonExternalizable("Person 1");
+
+        ServiceConfiguration testServiceConfig = new ServiceConfiguration();
+        testServiceConfig.setName(SERVICE_NAME);
+        testServiceConfig.setService(new TestService());
+        testServiceConfig.setTotalCount(1);
+
+        Ignite ignite = null;
+        IgniteClient client = null;
+        try {
+            // Initialize cluster and client
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            client = startClient(ignite);
+            TestServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, TestServiceInterface.class);
+
+            // Invoke the service method with Externalizable parameter for the first time.
+            // This triggers registration of the PersonExternalizable type in the cluter.
+            String result = svc.testMethod(person);
+            assertEquals("testMethod(PersonExternalizable person): " + person, result);
+
+            // Kill the cluster node, clean up the working directory (with cached types)
+            // and drop the client connection.
+            ignite.close();
+            U.delete(U.resolveWorkDirectory(
+                    U.defaultWorkDirectory(),
+                    DataStorageConfiguration.DFLT_MARSHALLER_PATH,
+                    false));
+            dropAllThinClientConnections();
+
+            // Invoke the service.
+            GridTestUtils.assertThrowsWithCause(() -> svc.testMethod(person), ClientConnectionException.class);
+
+            // Restore the cluster and redeploy the service.
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+
+            // Invoke the service method with Externalizable parameter once again.
+            // This should restore the client connection and trigger registration of the
+            // PersonExternalizable once again.
+            result = svc.testMethod(person);
+            assertEquals("testMethod(PersonExternalizable person): " + person, result);
+        } finally {
+            if (ignite != null) {
+                try {
+                    ignite.close();
+                } catch (Throwable ignore) {
+                }
+            }
+
+            if (client != null) {
+                try {
+                    client.close();
+                } catch (Throwable ignore) {
+                }
+            }
+        }
+    }
+
+    /**
      * Performs cache put.
      *
      * @param cache Cache.
@@ -383,18 +452,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
         cache.put(key, val);
-    }
-
-    /**
-     * Drop all thin client connections on given Ignite instance.
-     *
-     * @param ignite Ignite.
-     */
-    private void dropAllThinClientConnections(Ignite ignite) {
-        ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-            ClientListenerProcessor.class, ClientProcessorMXBean.class);
-
-        mxBean.dropAllConnections();
     }
 
     /**
@@ -440,5 +497,36 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     protected boolean isPartitionAware() {
         return false;
+    }
+
+    /** */
+    public static interface TestServiceInterface {
+        /** */
+        public String testMethod(PersonExternalizable person);
+    }
+
+    /**
+     * Implementation of TestServiceInterface.
+     */
+    public static class TestService implements Service, TestServiceInterface {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public String testMethod(PersonExternalizable person) {
+            return "testMethod(PersonExternalizable person): " + person;
+        }
     }
 }

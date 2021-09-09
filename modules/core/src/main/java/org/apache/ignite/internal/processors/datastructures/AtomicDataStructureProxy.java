@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Represents base class for atomic data structures.
  */
 public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValue>
-    implements GridCacheRemovable,IgniteChangeGlobalStateSupport {
+    implements GridCacheRemovable, IgniteChangeGlobalStateSupport {
     /** Logger. */
     protected IgniteLogger log;
 
@@ -157,7 +157,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         try {
             checkRemoved();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // The original exception should be returned.
         }
 

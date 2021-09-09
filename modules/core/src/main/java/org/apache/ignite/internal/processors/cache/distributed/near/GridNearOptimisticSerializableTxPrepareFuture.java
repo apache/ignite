@@ -237,7 +237,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      */
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (GridNearOptimisticSerializableTxPrepareFuture.this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -256,6 +258,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -562,7 +567,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
             m.explicitLock(),
-            tx.subjectId(),
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
@@ -927,14 +931,18 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                 parent.remapFut = null;
                                             }
 
-                                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
-                                                @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
-                                                    if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
-                                                        return;
+                                            parent.cctx.time().waitAsync(
+                                                affFut,
+                                                parent.tx.remainingTime(),
+                                                new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
+                                                    @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
+                                                        if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                                            return;
 
-                                                    remap(res);
+                                                        remap(res);
+                                                    }
                                                 }
-                                            });
+                                            );
                                         }
                                         else {
                                             ClusterTopologyCheckedException err0 = new ClusterTopologyCheckedException(

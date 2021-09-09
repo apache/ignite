@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.AbstractPageLockTest;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot.LogEntry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
@@ -30,12 +29,10 @@ import org.junit.Test;
 import static java.lang.System.out;
 import static java.time.Duration.ofMinutes;
 import static java.util.stream.IntStream.range;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.BEFORE_READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.READ_UNLOCK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DEFAULT_CAPACITY;
 
 /** */
 public abstract class PageLockLogTest extends AbstractPageLockTest {
@@ -425,7 +422,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
         checkLogEntry(logDump.locklog.get(2), pageId3, READ_LOCK, STRUCTURE_ID, 3);
-        checkNextOp(logDump, 0,0, 0);
+        checkNextOp(logDump, 0, 0, 0);
 
         lockLog.onReadUnlock(STRUCTURE_ID, pageId2, page2, pageAddr2);
 
@@ -436,7 +433,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
         checkLogEntry(logDump.locklog.get(2), pageId3, READ_LOCK, STRUCTURE_ID, 3);
         checkLogEntry(logDump.locklog.get(3), pageId2, READ_UNLOCK, STRUCTURE_ID, 2);
-        checkNextOp(logDump, 0,0, 0);
+        checkNextOp(logDump, 0, 0, 0);
 
         lockLog.onReadUnlock(STRUCTURE_ID, pageId3, page3, pageAddr3);
 
@@ -448,7 +445,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         checkLogEntry(logDump.locklog.get(2), pageId3, READ_LOCK, STRUCTURE_ID, 3);
         checkLogEntry(logDump.locklog.get(3), pageId2, READ_UNLOCK, STRUCTURE_ID, 2);
         checkLogEntry(logDump.locklog.get(4), pageId3, READ_UNLOCK, STRUCTURE_ID, 1);
-        checkNextOp(logDump, 0,0, 0);
+        checkNextOp(logDump, 0, 0, 0);
 
         lockLog.onReadUnlock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 

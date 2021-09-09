@@ -136,7 +136,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        try (FieldsQueryCursor cur = sql(g0,"SELECT * FROM test")) {
+        try (FieldsQueryCursor cur = sql(g0, "SELECT * FROM test")) {
             Iterator<List<?>> it = cur.iterator();
 
             it.next();

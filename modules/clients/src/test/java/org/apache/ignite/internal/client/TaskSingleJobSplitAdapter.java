@@ -68,7 +68,8 @@ public abstract class TaskSingleJobSplitAdapter<T, R> extends ComputeTaskSplitAd
      * @param arg Task execution argument. Can be {@code null}.
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link org.apache.ignite.compute.ComputeJobResult#getData()} method passed into
-     *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
+     *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)}
+     *      method into task on caller node.
      */
     protected abstract Object executeJob(int gridSize, T arg);
 }

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipC
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -597,7 +598,6 @@ public class CacheGroupContext {
                     hasOldVal,
                     null,
                     null,
-                    null,
                     keepBinary);
     }
 
@@ -1027,7 +1027,7 @@ public class CacheGroupContext {
         final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
 
         if (procC != null) {
-            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     for (Runnable c : procC)
                         c.run();
@@ -1304,12 +1304,14 @@ public class CacheGroupContext {
 
     /**
      * Removes statistics metrics registries.
+     *
+     * @param destroy Group destroy flag.
      */
-    public void removeIOStatistic() {
+    public void removeIOStatistic(boolean destroy) {
         if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName(), destroy);
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
     }
 }

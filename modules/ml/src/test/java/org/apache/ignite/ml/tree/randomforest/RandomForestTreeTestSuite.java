@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
+import org.apache.ignite.ml.tree.randomforest.data.TreeNodeTest;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniFeatureHistogramTest;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogramTest;
 import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistributionStatisticsComputerTest;
@@ -34,7 +35,8 @@ import org.junit.runners.Suite;
     MSEHistogramTest.class,
     NormalDistributionStatisticsComputerTest.class,
     RandomForestTest.class,
-    RandomForestIntegrationTest.class
+    RandomForestIntegrationTest.class,
+    TreeNodeTest.class
 })
 public class RandomForestTreeTestSuite {
 }

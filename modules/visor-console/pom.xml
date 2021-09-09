@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-visor-console</artifactId>
-    <version>2.11.0-SNAPSHOT</version>
+    <version>2.12.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -131,10 +131,12 @@
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>doc</goal>
+                            <goal>doc-jar</goal>
                         </goals>
                         <configuration>
                             <doctitle>Ignite Console Visor</doctitle>
                             <windowtitle>Ignite Console Visor</windowtitle>
+                            <skip>${maven.javadoc.skip}</skip>
                         </configuration>
                     </execution>
                 </executions>

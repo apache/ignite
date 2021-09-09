@@ -78,8 +78,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -113,6 +111,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH_REQ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH_RESP;
@@ -180,7 +179,10 @@ public class IgniteTxHandler {
      * @param nearNode Sender node.
      * @param req Request.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
+    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(
+        ClusterNode nearNode,
+        GridNearTxPrepareRequest req
+    ) {
         IgniteInternalFuture<GridNearTxPrepareResponse> fut;
 
         if (req.firstClientRequest() && req.allowWaitTopologyFuture()) {
@@ -280,20 +282,6 @@ public class IgniteTxHandler {
             new CI2<UUID, GridCacheTxRecoveryResponse>() {
                 @Override public void apply(UUID nodeId, GridCacheTxRecoveryResponse res) {
                     processCheckPreparedTxResponse(nodeId, res);
-                }
-            });
-
-        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastRequest.class,
-            new CI2<UUID, PartitionCountersNeighborcastRequest>() {
-                @Override public void apply(UUID nodeId, PartitionCountersNeighborcastRequest req) {
-                    processPartitionCountersRequest(nodeId, req);
-                }
-            });
-
-        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastResponse.class,
-            new CI2<UUID, PartitionCountersNeighborcastResponse>() {
-                @Override public void apply(UUID nodeId, PartitionCountersNeighborcastResponse res) {
-                    processPartitionCountersResponse(nodeId, res);
                 }
             });
     }
@@ -546,7 +534,7 @@ public class IgniteTxHandler {
                     req.onePhaseCommit(),
                     req.txSize(),
                     req.transactionNodes(),
-                    req.subjectId(),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel(),
                     originTx
@@ -1487,7 +1475,7 @@ public class IgniteTxHandler {
                 tx.rollbackRemoteTx();
             }
         }
-        catch (IgniteTxHeuristicCheckedException e) {
+        catch (IgniteTxHeuristicCheckedException ignore) {
             // Already uncommitted.
         }
         catch (Throwable e) {
@@ -1733,7 +1721,7 @@ public class IgniteTxHandler {
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
-                    req.subjectId(),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     single,
                     req.storeWriteThrough(),
@@ -1850,7 +1838,6 @@ public class IgniteTxHandler {
                                                 /*readThrough*/false,
                                                 /*updateMetrics*/false,
                                                 /*evt*/false,
-                                                tx.subjectId(),
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
@@ -2122,7 +2109,7 @@ public class IgniteTxHandler {
                     req.timeout(),
                     req.nearWrites(),
                     req.txSize(),
-                    req.subjectId(),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel()
                 );
@@ -2264,47 +2251,6 @@ public class IgniteTxHandler {
             res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param req Request.
-     */
-    private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
-        try {
-            applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
-        try {
-            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId(), req.topologyVersion()), SYSTEM_POOL);
-        }
-        catch (ClusterTopologyCheckedException ignored) {
-            if (txRecoveryMsgLog.isDebugEnabled())
-                txRecoveryMsgLog.debug("Failed to send partition counters response, node left [node=" + nodeId + ']');
-        }
-        catch (IgniteCheckedException e) {
-            U.error(txRecoveryMsgLog, "Failed to send partition counters response [node=" + nodeId + ']', e);
-        }
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param res Response.
-     */
-    private void processPartitionCountersResponse(UUID nodeId, PartitionCountersNeighborcastResponse res) {
-        PartitionCountersNeighborcastFuture fut = ((PartitionCountersNeighborcastFuture)ctx.mvcc().future(res.futId()));
-
-        if (fut == null) {
-            log.warning("Failed to find future for partition counters response [futId=" + res.futId() +
-                ", node=" + nodeId + ']');
-
-            return;
-        }
-
-        fut.onResult(nodeId);
     }
 
     /**

@@ -149,6 +149,31 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Check snapshot:
+    control.(sh|bat) --snapshot check snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Restore snapshot:
+    control.(sh|bat) --snapshot restore snapshot_name --start [group1,...groupN]
+
+    Parameters:
+      snapshot_name     - Snapshot name.
+      group1,...groupN  - Cache group names.
+
+  Snapshot restore operation status:
+    control.(sh|bat) --snapshot restore snapshot_name --status
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Cancel snapshot restore operation:
+    control.(sh|bat) --snapshot restore snapshot_name --cancel
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 
@@ -250,6 +275,18 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
 
   Cancel scheduled or active PDS defragmentation on underlying node:
     control.(sh|bat) --defragmentation cancel
+
+  Start collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics start
+
+  Stop collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics stop
+
+  Rotate collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics rotate
+
+  Get status of collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics status
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

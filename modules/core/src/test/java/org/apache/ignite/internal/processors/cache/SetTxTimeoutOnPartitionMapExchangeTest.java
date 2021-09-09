@@ -245,7 +245,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
                 try {
                     startGrid(idx);
                 }
-                catch (Exception e) {
+                catch (Exception ignore) {
                     // no-op.
                 }
             }

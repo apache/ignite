@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -52,9 +51,10 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.META_STORAGE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  *
@@ -247,7 +247,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-            .context().group().dataRegion().memoryMetrics();
+            .context().group().dataRegion().metrics();
 
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
@@ -265,7 +265,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-            .context().group().dataRegion().memoryMetrics();
+            .context().group().dataRegion().metrics();
 
         Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
         Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());
@@ -336,7 +336,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
         boolean txLog = TX_LOG_CACHE_NAME.equals(cacheName);
 
-        File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), META_STORAGE_NAME) :
+        File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), METASTORAGE_DIR_NAME) :
             txLog ? new File(pageStoreMgr.workDir(), TX_LOG_CACHE_NAME) :
             pageStoreMgr.cacheWorkDir(node.cachex(cacheName).configuration());
 
@@ -349,7 +349,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                 File file = path.toFile();
 
                 FilePageStore store = (FilePageStore)pageStoreMgr.getStore(metaStore ?
-                    METASTORAGE_CACHE_ID : CU.cacheId(cacheName), partId(file));
+                    METASTORAGE_CACHE_ID : CU.cacheId(cacheName), partId(file.getName()));
 
                 int pageSize = store.getPageSize();
                 long storeSize = path.toFile().length() - store.headerSize();
@@ -371,20 +371,5 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         assertEquals("Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]",
             totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
-    }
-
-    /**
-     * @param partFile Partition file.
-     */
-    private static int partId(File partFile) {
-        String name = partFile.getName();
-
-        if (name.equals(FilePageStoreManager.INDEX_FILE_NAME))
-            return PageIdAllocator.INDEX_PARTITION;
-
-        if (name.startsWith(FilePageStoreManager.PART_FILE_PREFIX))
-            return Integer.parseInt(name.substring(FilePageStoreManager.PART_FILE_PREFIX.length(), name.indexOf('.')));
-
-        throw new IllegalStateException("Illegal partition file name: " + name);
     }
 }

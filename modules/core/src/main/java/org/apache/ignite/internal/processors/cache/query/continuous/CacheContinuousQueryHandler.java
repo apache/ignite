@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -382,9 +383,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     fut.get();
 
                     initRemoteFilter(getEventFilter0(), ctx);
+
+                    IgniteClosure trans = getTransformer0();
+
+                    if (trans != null)
+                        ctx.resource().injectGeneric(trans);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to initialize a remote filter.", e);
+                catch (IgniteCheckedException | ExceptionInInitializerError e) {
+                    throw new IgniteException("Failed to initialize a continuous query.", e);
                 }
 
                 return null;
@@ -467,7 +473,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         recordIgniteEvt,
                         fut);
 
-                    ctx.asyncCallbackPool().execute(clsr, evt.partitionId());
+                    ctx.pools().asyncCallbackPool().execute(clsr, evt.partitionId());
                 }
                 else {
                     final boolean notify = filter(evt);
@@ -576,16 +582,26 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     if (!evts.isEmpty()) {
                         if (asyncCb) {
-                            ctx.asyncCallbackPool().execute(new Runnable() {
+                            ctx.pools().asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
-                                    notifyLocalListener(evts, getTransformer());
+                                    try {
+                                        notifyLocalListener(evts, getTransformer());
+                                    } catch (IgniteCheckedException ex) {
+                                        U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
+                                            "Failed to notify local listener.", ex);
+                                    }
                                 }
                             }, part);
                         }
                         else
                             skipCtx.addProcessClosure(new Runnable() {
                                 @Override public void run() {
-                                    notifyLocalListener(evts, getTransformer());
+                                    try {
+                                        notifyLocalListener(evts, getTransformer());
+                                    } catch (IgniteCheckedException ex) {
+                                        U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
+                                            "Failed to notify local listener.", ex);
+                                    }
                                 }
                             });
                     }
@@ -794,7 +810,16 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @return Cache entry event transformer.
      */
-    @Nullable public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+    @Nullable public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() throws IgniteCheckedException {
+        initFut.get();
+
+        return getTransformer0();
+    }
+
+    /**
+     * @return Cache entry event transformer.
+     */
+    public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer0() {
         return null;
     }
 
@@ -877,7 +902,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (asyncCb) {
             final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
 
-            IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
+            IgniteStripedThreadPoolExecutor asyncPool = ctx.pools().asyncCallbackPool();
 
             int threadId = asyncPool.threadId(entries.get(0).partition());
 
@@ -1315,6 +1340,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 throw e;
             }
+            catch (ExceptionInInitializerError e) {
+                IgniteCheckedException err = new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(err);
+
+                throw err;
+            }
         }
         else
             return null;
@@ -1341,7 +1373,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         final UUID routineId,
         final GridKernalContext ctx) {
         if (t != null) {
-            ctx.closure().runLocalSafe(new Runnable() {
+            ctx.closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     GridCacheContext<K, V> cctx = cacheContext(ctx);
 
@@ -1511,7 +1543,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             if (f.error() != null)
                                 evt.entry().markFiltered();
 
-                            ctx.asyncCallbackPool().execute(new Runnable() {
+                            ctx.pools().asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
                                     onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
                                 }
