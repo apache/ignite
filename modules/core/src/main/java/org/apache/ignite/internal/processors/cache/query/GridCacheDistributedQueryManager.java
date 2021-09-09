@@ -735,15 +735,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
-    private static final Comparator<CacheEntryWithPayload<?, ?, Float>> textResultComparator = (c1, c2) -> {
-        if (c1.payload() == null)
-            return -1;
-
-        if (c2.payload() == null)
-            return 1;
-
-        return Float.compare(c2.payload(), c1.payload());
-    };
+    private static final Comparator<ScoredCacheEntry<?, ?>> textResultComparator = (c1, c2) ->
+        Float.compare(c2.score(), c1.score());
 
     /**
      * Gets topic for ordered response messages.

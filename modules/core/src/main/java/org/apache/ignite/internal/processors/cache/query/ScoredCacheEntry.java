@@ -23,46 +23,46 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-/** Represents cache key-value pair and additional payload to compare cache entity by custom rule. */
-public class CacheEntryWithPayload<K, V, P> extends IgniteBiTuple<K, V> {
+/** Represents cache key-value pair and score to compare cache entry by custom rule. */
+public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private P payload;
+    private float score;
 
     /** */
-    public CacheEntryWithPayload() {}
+    public ScoredCacheEntry() {}
 
     /** */
-    public CacheEntryWithPayload(K key, V val, P payload) {
+    public ScoredCacheEntry(K key, V val, float score) {
         super(key, val);
 
-        this.payload = payload;
+        this.score = score;
     }
 
     /** */
-    public P payload() {
-        return payload;
+    public float score() {
+        return score;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeObject(payload);
+        out.writeObject(score);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        payload = (P)in.readObject();
+        score = (float)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheEntryWithPayload.class, this);
+        return S.toString(ScoredCacheEntry.class, this);
     }
 }
 

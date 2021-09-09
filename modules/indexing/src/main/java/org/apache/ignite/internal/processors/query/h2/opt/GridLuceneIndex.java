@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.query.CacheEntryWithPayload;
+import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -404,7 +404,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
                 assert v != null;
 
-                curr = new CacheEntryWithPayload(k, v, score);
+                curr = new ScoredCacheEntry(k, v, score);
 
                 break;
             }
