@@ -298,9 +298,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
-    /** If {@code true}, we've lost connection to the ring. Keeps additional info to make decision whether this node must fail. */
-    private volatile boolean leftAlone;
-
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
         true; //assume that local node supports this feature
@@ -396,8 +393,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         lastRingMsgReceivedTime = 0;
 
         lastRingMsgSentTime = 0;
-
-        leftAlone = false;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3953,11 +3948,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     assert next == null : next;
 
-                    synchronized (mux) {
-                        if (spiState == CONNECTED && failedNodes.size() == ring.serverNodes().size() - 1)
-                            leftAlone = true;
-                    }
-
                     if (log.isDebugEnabled())
                         log.debug("Pending messages will be resent to local node");
 
@@ -6572,8 +6562,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        leftAlone = false;
-
         lastRingMsgSentTime = System.nanoTime();
     }
 
@@ -7398,8 +7386,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
 
-            if (leftAlone)
-                segmentLocalNodeOnSendFail(null);
+            // We left alone but established server connection pings us. This means we lost all outgoing connections and can't find
+            // a node to connect to. But previous node kees connection to us and sucessfully pings and sends messages. This means the ring
+            // is OK in point of view of previous node and there is nothing to worry about. But current node is blocking any ring traffic.
+            if (spiState == CONNECTED && ring.serverNodes().size() == 1) {
+                synchronized (mux) {
+                    if (spiState == CONNECTED && ring.serverNodes().size() == 1 && ring.coordinator().equals(spi.locNode))
+                        segmentLocalNodeOnSendFail(null);
+                }
+            }
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
