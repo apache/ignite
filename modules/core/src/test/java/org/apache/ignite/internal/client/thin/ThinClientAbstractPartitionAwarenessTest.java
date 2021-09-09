@@ -163,6 +163,13 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
         UUID nodeId = nodes.iterator().next().id();
 
+        return nodeChannel(nodeId);
+    }
+
+    /**
+     * Calculates channel for node.
+     */
+    protected TestTcpClientChannel nodeChannel(UUID nodeId) {
         for (int i = 0; i < channels.length; i++) {
             if (channels[i] != null && nodeId.equals(channels[i].serverNodeId()))
                 return channels[i];

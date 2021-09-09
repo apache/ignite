@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -304,14 +305,12 @@ public class CacheEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this cache event, if available. This property is available only for
-     * {@link EventType#EVT_CACHE_OBJECT_PUT}, {@link EventType#EVT_CACHE_OBJECT_REMOVED} and
-     * {@link EventType#EVT_CACHE_OBJECT_READ} cache events.
-     * <p>
-     * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated
-     * cache update or read.
+     * Gets security subject ID initiated this cache event, if security is enabled. This property is not available for
+     * {@link EventType#EVT_CACHE_NODES_LEFT}, {@link EventType#EVT_CACHE_ENTRY_EVICTED} and {@link
+     * EventType#EVT_CACHE_OBJECT_EXPIRED} cache events.
      *
-     * @return Subject ID.
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
      */
     public UUID subjectId() {
         return subjId;

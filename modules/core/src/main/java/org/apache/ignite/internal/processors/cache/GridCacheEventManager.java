@@ -31,9 +31,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_NODES_LEFT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Cache event manager.
@@ -66,7 +70,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param tx Possible surrounding transaction.
      * @param txLbl Possible lable of possible surrounding transaction.
      * @param val Read value.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param keepBinary Keep binary flag.
      */
@@ -74,7 +77,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         @Nullable IgniteInternalTx tx,
         @Nullable String txLbl,
         @Nullable CacheObject val,
-        @Nullable UUID subjId,
         @Nullable String taskName,
         boolean keepBinary) {
         if (isRecordable(EVT_CACHE_OBJECT_READ)) {
@@ -89,7 +91,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 val != null,
                 val,
                 val != null,
-                subjId,
                 null,
                 taskName,
                 keepBinary);
@@ -106,7 +107,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
@@ -119,7 +119,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         @Nullable CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         String cloClsName,
         String taskName,
         boolean keepBinary)
@@ -134,7 +133,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasNewVal,
             oldVal,
             hasOldVal,
-            subjId,
             cloClsName,
             taskName,
             keepBinary);
@@ -158,7 +156,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             false,
             null,
             null,
-            null,
             false);
     }
 
@@ -173,7 +170,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
@@ -187,7 +183,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         String cloClsName,
         String taskName,
         boolean keepBinary)
@@ -203,7 +198,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasNewVal,
             oldVal,
             hasOldVal,
-            subjId,
             cloClsName,
             taskName,
             keepBinary);
@@ -219,7 +213,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
@@ -232,7 +225,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         String cloClsName,
         String taskName,
         boolean keepBinary)
@@ -250,7 +242,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasNewVal,
             oldVal,
             hasOldVal,
-            subjId,
             cloClsName,
             taskName,
             keepBinary);
@@ -268,7 +259,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
-     * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      * @param taskName Task class name.
      */
@@ -284,7 +274,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasNewVal,
         @Nullable CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
         @Nullable String cloClsName,
         @Nullable String taskName,
         boolean keepBinary
@@ -354,10 +343,18 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 hasNewVal,
                 oldVal0,
                 hasOldVal,
-                subjId,
+                cacheEventSubjectId(type),
                 cloClsName,
                 taskName));
         }
+    }
+
+    /** @return The ID of security subject that was an initiator of the event with the specified type. */
+    private UUID cacheEventSubjectId(int type) {
+        return type == EVT_CACHE_NODES_LEFT ||
+            type == EVT_CACHE_ENTRY_EVICTED ||
+            type == EVT_CACHE_OBJECT_EXPIRED
+            ? null : securitySubjectId(cctx);
     }
 
     /**

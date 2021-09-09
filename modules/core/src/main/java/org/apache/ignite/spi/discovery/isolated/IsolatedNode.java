@@ -150,4 +150,9 @@ public class IsolatedNode implements IgniteClusterNode {
     @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
     }
+
+    /** */
+    public void setAttributes(Map<String, Object> attrs) {
+        this.attrs = U.sealMap(attrs);
+    }
 }
