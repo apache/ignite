@@ -147,7 +147,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  (?) 16. Register snapshot task by request id not by snapshot name.
  *  (?) 17. Does waitRebInfo need to be cleaned on DynamicCacheChangeFailureMessage occurs for restored caches?
  *  (?) 18. Do we need to remove cache from the waitInfo rebalance groups prior to cache actually rollback fired?
- *  19. Exclude partitions for restoring caches from PME.
+ *  (?) 19. Exclude partitions for restoring caches from PME.
  *  20. Make the CacheGroupActionData private inner class.
  *
  * Other strategies to be memento to:
