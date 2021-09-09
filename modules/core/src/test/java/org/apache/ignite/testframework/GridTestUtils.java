@@ -2021,10 +2021,12 @@ public final class GridTestUtils {
         return factory;
     }
 
+    /** */
     public static String keyStorePassword() {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
+    /** */
     @NotNull public static String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
@@ -2125,7 +2127,9 @@ public final class GridTestUtils {
     public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
         final AtomicBoolean stop = new AtomicBoolean();
 
+        /** */
         class Stopper extends TimerTask {
+            /** {@inheritDoc} */
             @Override public void run() {
                 stop.set(true);
             }

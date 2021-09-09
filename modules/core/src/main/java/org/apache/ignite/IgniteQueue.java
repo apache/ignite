@@ -201,6 +201,8 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * This is not supported for non-collocated queues.
      *
      * @param job Job which will be co-located with the queue.
+     * @param <R> Type of the job result.
+     * @return Job result.
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
@@ -209,6 +211,7 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * Returns queue that will operate with binary objects. This is similar to {@link IgniteCache#withKeepBinary()} but
      * for queues.
      *
+     * @param <V1> Type of the queued binary objects.
      * @return New queue instance for binary objects.
      */
     public <V1> IgniteQueue<V1> withKeepBinary();

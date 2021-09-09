@@ -110,6 +110,7 @@ public class TcpDiscoveryMetricsWarnLogTest extends GridCommonAbstractTest {
         assertTrue(logLsnr2.check());
     }
 
+    /** */
     @Test
     @WithSystemProperty(key = IGNITE_DISCOVERY_METRICS_QNT_WARN, value = "0")
     public void testMetricsWarningLog0() throws Exception {

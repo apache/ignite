@@ -47,6 +47,7 @@ public class PlatformComputePutAffinityKeyTask extends ComputeTaskAdapter<Object
 
     /** Job. */
     private static class PutJob extends ComputeJobAdapter {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 

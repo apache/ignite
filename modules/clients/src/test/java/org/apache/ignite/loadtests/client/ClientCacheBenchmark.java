@@ -168,7 +168,7 @@ public class ClientCacheBenchmark {
      * Test thread.
      */
     private class TestThread extends Thread {
-        /* Thread private random generator. */
+        /** Thread private random generator. */
         private final Random rnd = new Random();
 
         /** Number of iterations to perform. */

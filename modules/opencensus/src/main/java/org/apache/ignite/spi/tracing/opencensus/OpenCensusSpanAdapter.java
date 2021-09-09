@@ -38,7 +38,7 @@ public class OpenCensusSpanAdapter implements SpiSpecificSpan {
         this.span = span;
     }
 
-    /** Implementation object. */
+    /** @return Implementation object. */
     public io.opencensus.trace.Span impl() {
         return span;
     }

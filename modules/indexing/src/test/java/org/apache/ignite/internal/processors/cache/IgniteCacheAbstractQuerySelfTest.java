@@ -2426,6 +2426,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return store;
         }

@@ -24,8 +24,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteAzureTestSuite;
 
+/** */
 public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
         extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryAzureBlobStoreIpFinder> {
+    /** */
     private static String containerName;
 
     /**

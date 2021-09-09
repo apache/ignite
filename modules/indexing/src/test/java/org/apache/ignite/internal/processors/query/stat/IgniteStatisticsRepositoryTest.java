@@ -59,9 +59,11 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
     /** */
     public static final StatisticsTarget T2_TARGET = new StatisticsTarget(T2_KEY, "t22");
 
+    /** */
     @Parameterized.Parameter(value = 0)
     public boolean persist;
 
+    /** */
     @Parameterized.Parameter(value = 1)
     public IgniteStatisticsRepository repo;
 

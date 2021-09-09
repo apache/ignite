@@ -62,7 +62,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /** Partitioned with custom affinity cache name. */
     protected static final String PART_CUSTOM_AFFINITY_CACHE_NAME = "partitioned_custom_affinity_cache";
 
-    /* Name of a partitioned cache with 0 backups. */
+    /** Name of a partitioned cache with 0 backups. */
     protected static final String PART_CACHE_0_BACKUPS_NAME = "partitioned_0_backup_cache";
 
     /** Name of a partitioned cache with 1 backups. */

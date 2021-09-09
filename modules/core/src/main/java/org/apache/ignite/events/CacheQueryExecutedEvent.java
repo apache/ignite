@@ -108,6 +108,8 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      * @param scanQryFilter Scan query filter.
      * @param args Query arguments.
      * @param subjId Security subject ID.
+     * @param contQryFilter Continuous query filter.
+     * @param taskName Name of the task if event was caused by an operation initiated within task execution.
      */
     public CacheQueryExecutedEvent(
         ClusterNode node,
