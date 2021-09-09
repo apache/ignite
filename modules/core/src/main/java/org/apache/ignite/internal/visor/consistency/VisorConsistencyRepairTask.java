@@ -62,7 +62,6 @@ public class VisorConsistencyRepairTask extends VisorMultiNodeTask<VisorConsiste
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorConsistencyRepairTaskArg, String> job(VisorConsistencyRepairTaskArg arg) {
         return new VisorConsistencyRepairJob(arg, debug);
-
     }
 
     /** {@inheritDoc} */
