@@ -348,8 +348,20 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager stopped.");
     }
 
-    /** */
+    /**
+     * Iterate though local meta storage statistics keys and correct it to match specified topology version partitions
+     * distribution.
+     *
+     * @param topVer Target topology version to match with.
+     */
     private void scanAndCheckLocalStatistics(AffinityTopologyVersion topVer) {
+        if (topVer == null) {
+            if (log.isDebugEnabled())
+                log.debug("Can't check local statistics due to lack of ready topology");
+
+            return;
+        }
+
         mgmtPool.submit(() -> {
             Map<StatisticsObjectConfiguration, Set<Integer>> res = new HashMap<>();
 
@@ -698,11 +710,11 @@ public class IgniteStatisticsConfigurationManager {
 
             if (!F.isEmpty(diff.dropCols())) {
                 dropColumnsOnLocalStatistics(newCfg, diff.dropCols());
-                globalStatMgr.clearGlobalStatistics(oldCfg.key(), diff.dropCols(), false);
+                globalStatMgr.clearGlobalStatistics(oldCfg.key(), diff.dropCols());
             }
 
             if (!F.isEmpty(diff.updateCols())) {
-                globalStatMgr.clearGlobalStatistics(newCfg.key(), diff.updateCols().keySet(), true);
+                globalStatMgr.clearGlobalStatistics(newCfg.key(), diff.updateCols().keySet());
 
                 GridH2Table tbl = schemaMgr.dataTable(newCfg.key().schema(), newCfg.key().obj());
 
@@ -719,13 +731,28 @@ public class IgniteStatisticsConfigurationManager {
                 AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
                 Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
 
-                LocalStatisticsGatheringContext ctx = gatherLocalStatistics(newCfg, tbl, parts, parts, diff.updateCols(),
-                    topVer);
+                if (parts.isEmpty()) {
+                    if (log.isDebugEnabled())
+                        log.debug("No local partition for key " + newCfg.key() +
+                            ". Skipping local statistics collection.");
 
-                ctx.futureAggregate().thenAccept(stat -> globalStatMgr.onLocalStatisticsAggregated(newCfg.key(), stat,
-                    topVer));
+                    // Check no local statistics left in local meta storage.
+                    repo.clearLocalStatistics(newCfg.key());
+                    repo.clearLocalPartitionsStatistics(newCfg.key(), null);
+                } else {
+                    if (log.isDebugEnabled())
+                        log.debug("Scheduling local statistics collection for key " + newCfg.key());
+
+                    LocalStatisticsGatheringContext ctx = gatherLocalStatistics(newCfg, tbl, parts, parts, diff.updateCols(),
+                        topVer);
+
+                    ctx.futureAggregate().thenAccept(stat -> globalStatMgr.onLocalStatisticsAggregated(newCfg.key(), stat,
+                        topVer));
+                }
             }
         }
+
+        globalStatMgr.onConfigChanged(newCfg);
     }
 
     /** */
@@ -801,7 +828,7 @@ public class IgniteStatisticsConfigurationManager {
             catch (Throwable e) {
                 if (!X.hasCause(e, NodeStoppingException.class)) {
                     log.error("Error on aggregate statistic on finish local statistics collection" +
-                        " [key=" + key + ", parts=" + partsToAggregate, e);
+                        " [key=" + key + ", parts=" + partsToAggregate + " due to node stop.", e);
                 }
 
                 return null;

@@ -370,8 +370,12 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         curCollections.put(statCfg.key(), gatCtx);
 
-        for (StatisticsAddressedRequest addReq : locRequests)
+        for (StatisticsAddressedRequest addReq : locRequests) {
+            if (log.isDebugEnabled())
+                log.debug("Sending local request " + addReq.req().reqId() + " to node " + addReq.nodeId());
+
             send(addReq.nodeId(), addReq.req());
+        }
     }
 
     /** {@inheritDoc} */
@@ -419,7 +423,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
                     log.warning("Unknown msg " + msg + " in statistics topic " + GridTopic.TOPIC_STATISTICS +
                         " from node " + nodeId);
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 if (log.isInfoEnabled())
                     log.info("Unable to process statistics message: " + e);
             }
@@ -647,10 +651,12 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
        if (cfg.columns().isEmpty())
            globalStatistics.remove(key);
        else {
-           CacheEntry<ObjectStatisticsImpl> oldStatEntry = globalStatistics.get(key);
+           globalStatistics.computeIfPresent(key, (k, v) -> {
+               if (v != null)
+                   mgmtPool.submit(() -> collectGlobalStatistics(key));
 
-           if (oldStatEntry != null)
-               mgmtPool.submit(() -> collectGlobalStatistics(key));
+               return v;
+           });
        }
     }
 
@@ -659,15 +665,11 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      *
      * @param key Object key to clear blobal statistics by.
      * @param colNames Only statistics by specified columns will be cleared.
-     * @param updated If {@code true} - recollect existing global statistics.
      */
-    public void clearGlobalStatistics(StatisticsKey key, Set<String> colNames, boolean updated) {
+    public void clearGlobalStatistics(StatisticsKey key, Set<String> colNames) {
         globalStatistics.computeIfPresent(key, (k, v) -> {
             ObjectStatisticsImpl globStatOld = v.object();
             ObjectStatisticsImpl globStatNew = (globStatOld == null) ? null : globStatOld.subtract(colNames);
-
-            if (updated)
-                mgmtPool.submit(() -> collectGlobalStatistics(key));
 
             return (globStatNew == null || globStatNew.columnsStatistics().isEmpty()) ? null :
                 new CacheEntry<>(v.cachedAt(), globStatNew);

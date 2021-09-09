@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnOverrides;
@@ -94,7 +93,6 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         //grid(0).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("ANALYZE " + name)).getAll();
         collectStatistics(StatisticsType.GLOBAL, name);
 
-
         // 3) Check statistics configuration presence.
         List<List<Object>> config = new ArrayList<>();
         config.add(Arrays.asList(SCHEMA, "TABLE", name, "A", (byte)15, null, null, null, null, 1L));
@@ -108,7 +106,6 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         statisticsMgr(0).statisticConfiguration().dropStatistics(
             Collections.singletonList(new StatisticsTarget(SCHEMA, name, "A")), true);
 
-
         // 5) Check statistics configuration without dropped column.
         List<Object> removed = config.remove(0);
         checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where NAME = '" + name + "'", null,
@@ -119,7 +116,6 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         //grid(0).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("DROP STATISTICS " + name)).getAll();
         statisticsMgr(0).statisticConfiguration().dropStatistics(
             Collections.singletonList(new StatisticsTarget(SCHEMA, name)), true);
-
 
         // 7) Check statistics configuration without it.
         checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where NAME = '" + name + "'", null, List::isEmpty);

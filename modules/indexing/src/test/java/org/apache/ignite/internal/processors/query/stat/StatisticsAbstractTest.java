@@ -488,7 +488,8 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
             statisticsMgr(ign), "gatherer", "gatheringInProgress"
         );
 
-        assertTrue(currColls.toString(), currColls.isEmpty());
+        assertTrue("Has statistics collection tasks on node " + ign.localNode().id() + ":" + currColls.toString(),
+            currColls.isEmpty());
 
         IgniteThreadPoolExecutor mgmtPool = GridTestUtils.getFieldValue(statisticsMgr(ign), "mgmtPool");
 

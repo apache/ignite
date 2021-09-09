@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -30,7 +31,7 @@ import org.junit.Test;
  */
 public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         super.beforeTestsStarted();
         cleanPersistenceDir();
 
@@ -41,6 +42,53 @@ public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
         collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /**
+     * Start additional node and try to collect statistics without adding it into baseline topology.
+     * Check that statistics awailable, but no local statistics exists and no additional gathering tasks
+     * stick in such node.
+     *
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void testStatisticsCollectionOutsideBaseline() throws Exception {
+        List<List<Object>> partLines = Arrays.asList(
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", (long)SMALL_SIZE, (long)SMALL_SIZE, 0L, 100L, 4, null, null),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", (long)SMALL_SIZE, (long)SMALL_SIZE, 0L, 100L, 4, null, null),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", (long)SMALL_SIZE, 10L, 0L, 100L, 4, null, null)
+        );
+
+        checkSqlResult("select * from SYS.STATISTICS_GLOBAL_DATA where NAME = 'SMALL'", null, act -> {
+            checkContains(partLines, act);
+
+            return true;
+        });
+
+        ignite(0).cluster().baselineAutoAdjustEnabled(false);
+
+        IgniteEx ign2 = startGrid(2);
+        awaitPartitionMapExchange();
+
+        requestGlobalStatistics(SMALL_KEY);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(ign2).getGlobalStatistics(SMALL_KEY) != null,
+            TIMEOUT));
+
+        checkSqlResult("select * from SYS.STATISTICS_GLOBAL_DATA where NAME = 'SMALL'", null, act -> {
+            checkContains(partLines, act);
+
+            return true;
+        });
+
+        stopGrid(2);
     }
 
     /**
@@ -73,6 +121,17 @@ public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
         checkSqlResult("select * from SYS.STATISTICS_GLOBAL_DATA where NAME = 'SMALL' and VERSION >= " + minVer,
             null, list -> !list.isEmpty());
 
+        ignite(0).cluster().baselineAutoAdjustEnabled(false);
+        ignite(0).cluster().setBaselineTopology(ignite(1).cluster().topologyVersion());
+        awaitPartitionMapExchange(true, true, null);
+
+        for (Ignite ign : G.allGrids()) {
+
+            System.out.println("node = " + ign.cluster().localNode().id() +
+                " is Server = " + !((IgniteEx)ign).localNode().isClient() + " local stat = " +
+                statisticsMgr((IgniteEx)ign).getLocalStatistics(SMALL_KEY));
+        }
+
         collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         minVer++;
@@ -83,6 +142,7 @@ public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
             return true;
         });
 
+        stopGrid(2);
     }
 
     /**
