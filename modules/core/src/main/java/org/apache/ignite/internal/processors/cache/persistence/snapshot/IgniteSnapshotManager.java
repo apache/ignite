@@ -1775,6 +1775,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         rmtSndrFactory = factory;
     }
 
+    /**
+     * @param rqId Request id.
+     * @param nodeId Node id.
+     * @return Snapshot sender related to given node id.
+     */
     RemoteSnapshotSender remoteSnapshotSenderFactory(String rqId, UUID nodeId) {
         return new RemoteSnapshotSender(log,
             snpRunner,
