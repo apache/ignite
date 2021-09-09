@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -919,7 +918,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         if (!clusterBlts.containsAll(snpBlts))
             return false;
 
-        // Each node must have it's own local copy of a snapshot.
+        // Each node must have its own local copy of a snapshot.
         for (Map.Entry<UUID, ArrayList<SnapshotMetadata>> e : metas.entrySet()) {
             String consId = ctx.discovery().node(e.getKey()).consistentId().toString();
 
@@ -952,7 +951,10 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                 throw new NodeStoppingException("Node is stopping: " + ctx.localNodeId());
 
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
-            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+
+            synchronized (this) {
+                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+            }
 
             CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
                 CompletableFuture.runAsync(
@@ -965,12 +967,12 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
                         }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
+                        catch (Throwable t) {
+                            log.error("Unable to perform metadata update operation for the cache groups restore process", t);
+
+                            opCtx0.errHnd.accept(t);
                         }
-                    }, snpMgr.snapshotExecutorService())
-                    .whenComplete((r, t) -> opCtx0.errHnd.accept(t)) :
-                CompletableFuture.completedFuture(null);
+                    }, snpMgr.snapshotExecutorService()) : CompletableFuture.completedFuture(null);
 
             CompletableFuture<Void> partFut = CompletableFuture.completedFuture(null);
 
@@ -1014,28 +1016,28 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                             for (File src : opCtx0.dirs)
                                 Files.move(formatTmpDirName(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
                         }
-                        catch (IOException e) {
-                            throw new IgniteException(e);
+                        catch (Throwable e) {
+                            opCtx0.errHnd.accept(e);
                         }
                     }, snpMgr.snapshotExecutorService())
-                    .whenComplete((r, t) -> opCtx0.errHnd.accept(t))
                     // Complete the local rebalance cache future, since the data is loaded.
                     .thenAccept(r -> opCtx0.cacheRebalanceFut.onDone(true));
             }
 
-            CompletableFuture.allOf(metaFut, partFut)
+            allOfFailFast(Arrays.asList(metaFut, partFut))
                 .whenComplete((res, t) -> {
-                    if (t == null) {
+                    Throwable t0 = ofNullable(opCtx0.err.get()).orElse(t);
+
+                    if (t0 == null) {
                         retFut.onDone(true);
                     }
                     else {
                         log.error("Unable to restore cache group(s) from a snapshot " +
-                            "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', t);
+                            "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', t0);
 
-                        retFut.onDone(t);
+                        retFut.onDone(t0);
                     }
                 });
-
         }
         catch (Exception ex) {
             opCtx0.errHnd.accept(ex);
@@ -1074,6 +1076,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         // Context has been created - should rollback changes cluster-wide.
         if (failure != null) {
             opCtx0.errHnd.accept(failure);
+            opCtx0.locStopCachesCompleteFut.onDone((Void)null);
 
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 rollbackRestoreProc.start(reqId, reqId);
@@ -1115,9 +1118,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         // the cluster during the cache startup, the whole procedure will be rolled back.
         GridCompoundFuture<Boolean, Boolean> awaitBoth = new GridCompoundFuture<>();
 
-        // TODO Exclude resending partitions if restore is in progress.
         IgniteInternalFuture<Boolean> cacheStartFut = ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true,
-            true, true, IgniteUuid.fromUuid(reqId));
+            true, !opCtx0.sameTop, IgniteUuid.fromUuid(reqId));
 
         // This is required for the rollback procedure to execute the cache groups stop operation.
         cacheStartFut.listen(f -> opCtx0.isLocNodeStartedCaches = (f.error() == null));
@@ -1199,7 +1201,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
 
             updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
 
-            ctx.cache().restartProxies();
+            if (!opCtx0.sameTop)
+                ctx.cache().restartProxies();
 
             return;
         }
@@ -1524,6 +1527,8 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                     .collect(Collectors.toList()),
                 true, IgniteUuid.fromUuid(reqId), true) :
             new GridFinishedFuture<>();
+
+        stopRqOnCrdFut.listen(f -> System.out.println(">>>>> stopRqOnCrdFut"));
 
         try {
             GridCompoundFuture<Void, Void> awaitStopCachesComplete = new GridCompoundFuture<>();

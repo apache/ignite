@@ -23,18 +23,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,6 +54,12 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
 
     /** */
     private static final String SECOND_CLUSTER_PREFIX = "two_";
+
+    /** {@code true} if snapshot parts has been initialized on test-class startup. */
+    private static boolean inited;
+
+    /** Snapshot parts on dedicated cluster. Each part has its own local directory. */
+    private static final Set<Path> snpParts = new HashSet<>();
 
     /** */
     private static final Function<String, BiFunction<Integer, IgniteConfiguration, String>> CLUSTER_DIR =
@@ -70,56 +80,55 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
 
     /** @throws Exception If fails. */
     @Before
-    public void beforeSwitchSnapshot() throws Exception {
+    public void prepareDedicatedSnapshot() throws Exception {
+        if (!inited) {
+            cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
+
+            CacheConfiguration<Integer, Object> cacheCfg1 =
+                txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
+
+            CacheConfiguration<Integer, Object> cacheCfg2 =
+                txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
+
+            IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, 6, CACHE_KEYS_RANGE, valBuilder,
+                dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
+
+            ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+            awaitPartitionMapExchange();
+            stopAllGrids();
+
+            snpParts.addAll(findSnapshotParts(FIRST_CLUSTER_PREFIX, SNAPSHOT_NAME));
+
+            inited = true;
+        }
+
         beforeTestSnapshot();
-        cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX, SECOND_CLUSTER_PREFIX);
+        cleanupDedicatedPersistenceDirs(SECOND_CLUSTER_PREFIX);
     }
 
     /** @throws Exception If fails. */
     @After
     public void afterSwitchSnapshot() throws Exception {
         afterTestSnapshot();
-        cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX, SECOND_CLUSTER_PREFIX);
+        cleanupDedicatedPersistenceDirs(SECOND_CLUSTER_PREFIX);
+    }
+
+    /** */
+    @AfterClass
+    public static void cleanupSnapshot() {
+        snpParts.forEach(U::delete);
+        cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
     }
 
     // TODO add test when force affinity reassignment occurs during the restore procedure.
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
-        CacheConfiguration<Integer, Object> cacheCfg1 =
-            txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
-
-        CacheConfiguration<Integer, Object> cacheCfg2 =
-            txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
-
-        IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, 6, CACHE_KEYS_RANGE, valBuilder,
-            dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        awaitPartitionMapExchange();
-        stopAllGrids();
-
-        Set<Path> snpParts = resolveSnapshotParts(FIRST_CLUSTER_PREFIX, SNAPSHOT_NAME);
-
-        // TODO map resolved snapshot randomly to a newer cluster.
-
         IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
         scc.cluster().state(ClusterState.ACTIVE);
 
-        snpParts.forEach(p -> {
-            try {
-                IgniteEx loc = grid(ThreadLocalRandom.current().nextInt(2));
-                String snpName = p.getFileName().toString();
-
-                U.copy(p.toFile(),
-                    Paths.get(resolveSnapshotWorkDirectory(loc.configuration()).getAbsolutePath(), snpName).toFile(),
-                    false);
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
-            }
-        });
+        copyAndShuffle(snpParts, G.allGrids());
 
         grid(0).cache(DEFAULT_CACHE_NAME).destroy();
 
@@ -135,10 +144,42 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
 
+    /** */
+    @Test
+    public void testSnapshotCachesStoppedIfLoadingFail() throws Exception {
+
+    }
+
+    /** */
+    @Test
+    public void testSnapshotCachesStoppedIfNodeCrashed() throws Exception {
+
+    }
+
+    /**
+     * @param snpParts Snapshot parts.
+     * @param toNodes List of toNodes to copy parts to.
+     */
+    private static void copyAndShuffle(Set<Path> snpParts, List<Ignite> toNodes) {
+        snpParts.forEach(p -> {
+            try {
+                IgniteEx loc = (IgniteEx)toNodes.get(ThreadLocalRandom.current().nextInt(toNodes.size()));
+                String snpName = p.getFileName().toString();
+
+                U.copy(p.toFile(),
+                    Paths.get(resolveSnapshotWorkDirectory(loc.configuration()).getAbsolutePath(), snpName).toFile(),
+                    false);
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+        });
+    }
+
     /**
      * @param clusterPrefix Array of prefixes to cleanup directories.
      */
-    private void cleanupDedicatedPersistenceDirs(String... clusterPrefix) {
+    private static void cleanupDedicatedPersistenceDirs(String... clusterPrefix) {
         for (String prefix : clusterPrefix) {
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(defaultWorkDirectory(),
                 path -> Files.isDirectory(path) && path.getFileName().toString().toLowerCase().startsWith(prefix))
@@ -155,7 +196,7 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
     /**
      * @return Collection of dedicated snapshot paths located in Ignite working directory.
      */
-    private static Set<Path> resolveSnapshotParts(String prefix, String snpName) {
+    private static Set<Path> findSnapshotParts(String prefix, String snpName) {
         Set<Path> snpPaths = new HashSet<>();
 
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(defaultWorkDirectory(),
