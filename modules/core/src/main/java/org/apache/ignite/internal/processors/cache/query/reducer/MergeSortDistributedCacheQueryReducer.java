@@ -92,7 +92,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     private void fillWithPage(UUID nodeId) throws IgniteCheckedException {
         NodePage<R> page = streams.get(nodeId).nextPage();
 
-        if (page == null || !page.hasNext())
+        if (!page.hasNext())
             streams.remove(nodeId);
         else
             nodePages.offer(page);

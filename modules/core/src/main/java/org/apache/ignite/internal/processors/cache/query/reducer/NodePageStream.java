@@ -26,7 +26,6 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This class provides an interface {@link #nextPage()} that returns a {@link NodePage} of cache query result
@@ -53,7 +52,7 @@ class NodePageStream<R> {
     private final Object queueLock;
 
     /** Query info. */
-    private final GridCacheQueryAdapter qry;
+    private final GridCacheQueryAdapter<?> qry;
 
     /** Timestamp when a query fails with timeout. */
     private final long timeoutTime;
@@ -65,7 +64,7 @@ class NodePageStream<R> {
     private boolean noMorePages;
 
     /** */
-    NodePageStream(GridCacheQueryAdapter qry, Object queueLock, long timeoutTime,
+    NodePageStream(GridCacheQueryAdapter<?> qry, Object queueLock, long timeoutTime,
         UUID nodeId, BiConsumer<Collection<UUID>, Boolean> reqPages) {
 
         this.queueLock = queueLock;
@@ -77,13 +76,13 @@ class NodePageStream<R> {
     }
 
     /**
-     * Returns iterator over a query result page. Load new pages after polling a queue.
-     * Wait for new page if currently there is no any.
+     * Returns query result page. Load new pages after polling a queue.
+     * Wait for new page if currently there is no available any.
      *
-     * @return Iterator over a query result page.
+     * @return Query result page.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable NodePage<R> nextPage() throws IgniteCheckedException {
+    NodePage<R> nextPage() throws IgniteCheckedException {
         NodePage<R> page = null;
 
         while (page == null || !page.hasNext()) {
@@ -128,6 +127,9 @@ class NodePageStream<R> {
                 }
             }
         }
+
+        if (page == null)
+            page = new NodePage<>(nodeId, Collections.emptyList());
 
         return page;
     }

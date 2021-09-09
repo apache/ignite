@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,15 +27,15 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class is responsible for sending request for query result pages to remote nodes.
  */
 public class CacheQueryPageRequester {
     /** Cache context. */
-    private final GridCacheContext cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Ignite logger. */
     private final IgniteLogger log;
@@ -46,10 +47,11 @@ public class CacheQueryPageRequester {
      * @param cctx Cache context.
      * @param sendLoc Local handler of cache query request.
      */
-    CacheQueryPageRequester(final GridCacheContext cctx, Consumer<GridCacheQueryRequest> sendLoc) {
+    CacheQueryPageRequester(GridCacheContext<?, ?> cctx, Consumer<GridCacheQueryRequest> sendLoc) {
         this.cctx = cctx;
-        this.log = cctx.kernalContext().config().getGridLogger();
         this.sendLoc = sendLoc;
+
+        log = cctx.kernalContext().config().getGridLogger();
     }
 
     /**
@@ -59,10 +61,10 @@ public class CacheQueryPageRequester {
      * @param fut Cache query future, contains query info.
      * @param nodes Collection of nodes to send a request.
      */
-    public void initRequestPages(long reqId, GridCacheDistributedQueryFuture fut,
+    public void initRequestPages(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         GridCacheQueryBean bean = fut.query();
-        GridCacheQueryAdapter qry = bean.query();
+        GridCacheQueryAdapter<?> qry = bean.query();
 
         boolean deployFilterOrTransformer = (qry.scanFilter() != null || qry.transform() != null)
             && cctx.gridDeploy().enabled();
@@ -92,7 +94,12 @@ public class CacheQueryPageRequester {
             cctx.deploymentEnabled() || deployFilterOrTransformer,
             qry.isDataPageScanEnabled());
 
-        sendRequest(fut, req, nodes);
+        List<UUID> sendNodes = new ArrayList<>();
+
+        for (ClusterNode n: nodes)
+            sendNodes.add(n.id());
+
+        sendRequest(fut, req, sendNodes);
     }
 
     /**
@@ -102,8 +109,8 @@ public class CacheQueryPageRequester {
      * @param nodes Collection of nodes to send a request.
      * @param all If {@code true} then request for all pages, otherwise for single only.
      */
-    public void requestPages(long reqId, GridCacheQueryFutureAdapter fut, Collection<UUID> nodes, boolean all) {
-        GridCacheQueryAdapter qry = fut.query().query();
+    public void requestPages(long reqId, GridCacheQueryFutureAdapter<?, ?, ?> fut, Collection<UUID> nodes, boolean all) {
+        GridCacheQueryAdapter<?> qry = fut.query().query();
 
         GridCacheQueryRequest req = new GridCacheQueryRequest(
             cctx.cacheId(),
@@ -121,11 +128,7 @@ public class CacheQueryPageRequester {
             qry.isDataPageScanEnabled());
 
         try {
-            Collection<ClusterNode> n = new ArrayList<>();
-            for (UUID id: nodes)
-                n.add(cctx.node(id));
-
-            sendRequest(fut, req, n);
+            sendRequest(fut, req, nodes);
 
         } catch (IgniteCheckedException e) {
             fut.onDone(e);
@@ -141,36 +144,18 @@ public class CacheQueryPageRequester {
      *
      */
     public void cancelQuery(long reqId, Collection<UUID> nodes, boolean fieldsQry) {
-        final GridCacheQueryManager qryMgr = cctx.queries();
+        GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
         assert qryMgr != null;
 
         try {
-            final GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(),
+            GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(),
                 reqId,
                 fieldsQry,
                 cctx.startTopologyVersion(),
                 cctx.deploymentEnabled());
 
-            for (UUID node : nodes) {
-                try {
-                    if (cctx.localNodeId().equals(node)) {
-                        sendLoc.accept(req);
-
-                        continue;
-                    }
-
-                    cctx.io().send(node, req, GridIoPolicy.QUERY_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    if (cctx.io().checkNodeLeft(node, e, false)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send cancel request, node failed: " + node);
-                    }
-                    else
-                        U.error(log, "Failed to send cancel request [node=" + node + ']', e);
-                }
-            }
+            sendRequest(null, req, nodes);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send cancel request (will cancel query in any case).", e);
@@ -180,57 +165,71 @@ public class CacheQueryPageRequester {
     /**
      * Sends query request.
      *
+     * @param fut Cache query future. {@code null} in case of cancel request.
      * @param req Request.
      * @param nodes Nodes.
      * @throws IgniteCheckedException In case of error.
      */
     private void sendRequest(
-        final GridCacheQueryFutureAdapter fut,
-        final GridCacheQueryRequest req,
-        Collection<ClusterNode> nodes
+        @Nullable GridCacheQueryFutureAdapter<?, ?, ?> fut,
+        GridCacheQueryRequest req,
+        Collection<UUID> nodes
     ) throws IgniteCheckedException {
         assert req != null;
         assert nodes != null;
 
-        final UUID locNodeId = cctx.localNodeId();
+        UUID locNodeId = cctx.localNodeId();
 
-        ClusterNode locNode = null;
+        boolean loc = false;
 
-        Collection<ClusterNode> rmtNodes = null;
-
-        for (ClusterNode n : nodes) {
-            if (n.id().equals(locNodeId))
-                locNode = n;
+        for (UUID nodeId : nodes) {
+            if (nodeId.equals(locNodeId))
+                loc = true;
             else {
-                if (rmtNodes == null)
-                    rmtNodes = new ArrayList<>(nodes.size());
-
-                rmtNodes.add(n);
+                if (req.cancel())
+                    sendNodeCancelRequest(nodeId, req);
+                else if (!sendNodePageRequest(nodeId, req, fut))
+                    return;
             }
         }
 
-        // Request should be sent to remote nodes before the query is processed on the local node.
-        // For example, a remote reducer has a state, we should not serialize and then send
-        // the reducer changed by the local node.
-        if (!F.isEmpty(rmtNodes)) {
-            for (ClusterNode node : rmtNodes) {
-                try {
-                    cctx.io().send(node, req, GridIoPolicy.QUERY_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    if (cctx.io().checkNodeLeft(node.id(), e, true)) {
-                        fut.onNodeLeft(node.id());
-
-                        if (fut.isDone())
-                            return;
-                    }
-                    else
-                        throw e;
-                }
-            }
-        }
-
-        if (locNode != null)
+        if (loc)
             sendLoc.accept(req);
+    }
+
+    /** */
+    private void sendNodeCancelRequest(UUID nodeId, GridCacheQueryRequest req) throws IgniteCheckedException {
+        try {
+            cctx.io().send(nodeId, req, GridIoPolicy.QUERY_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            if (cctx.io().checkNodeLeft(nodeId, e, false)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send cancel request, node failed: " + nodeId);
+            }
+            else
+                U.error(log, "Failed to send cancel request [node=" + nodeId + ']', e);
+        }
+    }
+
+    /**
+     * @return {@code true} if succeed to send request, {@code false} otherwise.
+     */
+    private boolean sendNodePageRequest(UUID nodeId, GridCacheQueryRequest req, GridCacheQueryFutureAdapter<?, ?, ?> fut)
+        throws IgniteCheckedException {
+        try {
+            cctx.io().send(nodeId, req, GridIoPolicy.QUERY_POOL);
+
+            return true;
+        }
+        catch (IgniteCheckedException e) {
+            if (cctx.io().checkNodeLeft(nodeId, e, true)) {
+                fut.onNodeLeft(nodeId);
+
+                return false;
+            }
+            else
+                throw e;
+        }
     }
 }

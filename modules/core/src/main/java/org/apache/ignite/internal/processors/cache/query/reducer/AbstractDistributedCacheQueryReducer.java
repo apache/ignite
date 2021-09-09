@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
 import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -42,7 +42,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     private final Map<UUID, NodePageStream<R>> remoteStreams;
 
     /** Set of nodes that deliver their first page. */
-    private Set<UUID> rcvdFirstPage = new GridConcurrentHashSet<>();
+    private Set<UUID> rcvdFirstPage = new HashSet<>();
 
     /** Collection of streams. */
     protected final Map<UUID, NodePageStream<R>> streams;
@@ -51,7 +51,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     private final long reqId;
 
     /** Query future. */
-    private final GridCacheQueryFutureAdapter fut;
+    private final GridCacheQueryFutureAdapter<?, ?, ?> fut;
 
     /** Cache query page requester. */
     private final CacheQueryPageRequester pageRequester;
@@ -61,6 +61,9 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
      */
     private final CountDownLatch firstPageLatch = new CountDownLatch(1);
 
+    /** Guards {@link #rcvdFirstPage}. */
+    private final Object pagesLock;
+
     /**
      * @param fut Cache query future.
      * @param reqId Cache query request ID.
@@ -68,11 +71,13 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
      * @param queueLock Lock object that is shared between GridCacheQueryFuture and reducer.
      * @param nodes Collection of nodes this query applies to.
      */
-    protected AbstractDistributedCacheQueryReducer(GridCacheQueryFutureAdapter fut, long reqId,
+    protected AbstractDistributedCacheQueryReducer(GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId,
         CacheQueryPageRequester pageRequester, Object queueLock, Collection<ClusterNode> nodes) {
         this.fut = fut;
         this.reqId = reqId;
         this.pageRequester = pageRequester;
+
+        pagesLock = queueLock;
 
         streams = new HashMap<>(nodes.size());
 
@@ -115,7 +120,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
 
     /** {@inheritDoc} */
     @Override public void onError() {
-        for (NodePageStream<R> s: streams.values())
+        for (NodePageStream<R> s: remoteStreams.values())
             s.onError();
     }
 
@@ -130,13 +135,14 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
         }
 
         remoteStreams.clear();
-        streams.clear();
 
         pageRequester.cancelQuery(reqId, nodes, fut.fields());
     }
 
     /** {@inheritDoc} */
     @Override public boolean onPage(UUID nodeId, Collection<R> data, boolean last) {
+        assert Thread.holdsLock(pagesLock);
+
         if (rcvdFirstPage != null) {
             rcvdFirstPage.add(nodeId);
 

@@ -41,7 +41,7 @@ public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
         if (page == null)
             page = pageStream.nextPage();
 
-        return page != null && page.hasNext();
+        return page.hasNext();
     }
 
     /** {@inheritDoc} */

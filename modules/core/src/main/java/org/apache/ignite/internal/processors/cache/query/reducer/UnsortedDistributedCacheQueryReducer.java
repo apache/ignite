@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
@@ -39,7 +39,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
      * @param nodes Collection of nodes this query applies to.
      */
     public UnsortedDistributedCacheQueryReducer(
-        GridCacheQueryFutureAdapter fut, long reqId, CacheQueryPageRequester pageRequester,
+        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, CacheQueryPageRequester pageRequester,
         Object queueLock, Collection<ClusterNode> nodes) {
         super(fut, reqId, pageRequester, queueLock, nodes);
     }
@@ -49,15 +49,15 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
         if (page != null && page.hasNext())
             return true;
 
-        Collection<NodePageStream<R>> streams = new ArrayList<>(this.streams.values());
+        Iterator<NodePageStream<R>> it = streams.values().iterator();
 
-        for (NodePageStream<R> s: streams) {
-            page = s.nextPage();
+        while (it.hasNext()) {
+            page = it.next().nextPage();
 
-            if (page != null && page.hasNext())
+            if (page.hasNext())
                 return true;
 
-            this.streams.remove(s.nodeId());
+            it.remove();
         }
 
         return false;
