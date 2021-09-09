@@ -2832,6 +2832,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
+    /** */
     private CacheGroupNoAffOrFilteredHolder createHolder(
         GridCacheSharedContext cctx,
         CacheGroupDescriptor grpDesc,

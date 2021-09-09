@@ -32,12 +32,15 @@ public class JensenShannonDistance implements DistanceMeasure {
    */
   private static final long serialVersionUID = 1771556549784040093L;
 
+  /** */
   private final Double base;
 
+  /** */
   public JensenShannonDistance() {
     base = Math.E;
   }
 
+  /** */
   public JensenShannonDistance(Double base) {
     this.base = base;
   }
@@ -60,6 +63,7 @@ public class JensenShannonDistance implements DistanceMeasure {
     return Math.sqrt(js / 2d);
   }
 
+  /** */
   private double relativeEntropy(double x, double y) {
     if (x > 0 && y > 0) {
       return x * Math.log(x / y);

@@ -151,6 +151,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1864,6 +1865,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public CheckpointProgress forceCheckpoint(String reason) {
         return checkpointManager.forceCheckpoint(reason, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> CheckpointProgress forceNewCheckpoint(String reason,
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        return checkpointManager.forceCheckpoint(reason, lsnr);
     }
 
     /** {@inheritDoc} */

@@ -56,7 +56,7 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
         params.put(INACTIVE.toString(), "Deactivate cluster.");
         params.put(ACTIVE_READ_ONLY.toString(), "Activate cluster. Cache updates are denied.");
 
-        Command.usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
+        usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
             optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 

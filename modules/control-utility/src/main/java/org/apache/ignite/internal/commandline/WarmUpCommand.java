@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 public class WarmUpCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Stop warm-up:", WARM_UP, WarmUpCommandArg.STOP.argName());
+        usage(logger, "Stop warm-up:", WARM_UP, WarmUpCommandArg.STOP.argName());
     }
 
     /** {@inheritDoc} */

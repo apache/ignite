@@ -263,6 +263,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
     private <T> List<T> getResultsList(Session ses, Class<T> entityClass) {
         CriteriaBuilder builder = ses.getCriteriaBuilder();
         CriteriaQuery<T> query = builder.createQuery(entityClass);

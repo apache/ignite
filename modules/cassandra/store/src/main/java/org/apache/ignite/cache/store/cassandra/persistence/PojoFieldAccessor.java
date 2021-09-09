@@ -91,6 +91,7 @@ public class PojoFieldAccessor {
     /**
      * Returns POJO field annotation.
      *
+     * @param clazz Class of the annotation to get.
      * @return annotation.
      */
     public Annotation getAnnotation(Class clazz) {

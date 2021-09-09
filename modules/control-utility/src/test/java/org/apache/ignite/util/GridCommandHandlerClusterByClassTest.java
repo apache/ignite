@@ -94,6 +94,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
+import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.CommandList.METADATA;
 import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
@@ -498,7 +499,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(log, testOut.toString(), "found 2 conflict partitions");
+        assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
     }
 
     /**
@@ -853,7 +854,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             resReport = testOut.toString();
         }
 
-        assertContains(log, resReport, "found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]");
+        assertContains(log, resReport, "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
     }
 
     /**
@@ -913,8 +914,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             U.log(log, dumpWithConflicts);
 
-            assertContains(log, dumpWithConflicts, "found 4 conflict partitions: [counterConflicts=2, " +
-                "hashConflicts=2]");
+            // Non-persistent caches do not have counter conflicts
+            assertContains(log, dumpWithConflicts, "conflict partitions has been found: [counterConflicts=2, " +
+                "hashConflicts=4]");
         }
         else
             fail("Should be found dump with conflicts");
@@ -1540,11 +1542,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testContainsWarnInsteadExecExperimentalCmdWhenEnableExperimentalFalse() {
         injectTestSystemOut();
 
-        Map<CommandList, Collection<String>> cmdArgs = new EnumMap<>(CommandList.class);
+        Map<CommandList, Collection<String[]>> cmdArgs = new EnumMap<>(CommandList.class);
 
-        cmdArgs.put(WAL, asList("print", "delete"));
-        cmdArgs.put(METADATA, asList("help", "list"));
-        cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList("get_all"));
+        cmdArgs.put(WAL, asList(new String[] {"print"}, new String[] {"delete"}));
+        cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
+        cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList(new String[] {"get_all"}));
+        cmdArgs.put(CONSISTENCY, Collections.singletonList(new String[] {"repair", "cache", "0"}));
 
         String warning = String.format(
             "To use experimental command add --enable-experimental parameter for %s",
@@ -1554,7 +1557,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
             .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
             .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
-                assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd.text(), cmdArg));
+                List<String> args = new ArrayList<>();
+
+                args.add(cmd.text());
+                args.addAll(Arrays.asList(cmdArg));
+
+                assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(args));
 
                 assertContains(log, testOut.toString(), warning);
             }));

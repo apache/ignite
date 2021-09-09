@@ -316,7 +316,14 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
         if (withMetaStorage) {
             try {
+                long start = U.currentTimeMillis();
+
                 U.get(((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush());
+
+                if (log.isInfoEnabled()) {
+                    log.info("Finished waiting for all the concurrent operations over the metadata store before snapshot " +
+                        "[snpName=" + snpName + ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                }
             }
             catch (IgniteCheckedException ignore) {
                 // Flushing may be cancelled or interrupted due to the local node stopping.
@@ -374,16 +381,16 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (!missed.isEmpty()) {
                         throw new IgniteCheckedException("Snapshot operation cancelled due to " +
                             "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
-                            ", missed" + missed + ']');
+                            ", missed=" + S.compact(missed) + ']');
                     }
                 }
                 else {
-                    // Partitions has not been provided for snapshot task and all partitions have
+                    // Partitions have not been provided for snapshot task and all partitions have
                     // OWNING state, so index partition must be included into snapshot.
                     if (!missed.isEmpty()) {
                         log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
                             "Partitions which have different states skipped. Index partitions has also been skipped " +
-                            "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + missed + ']');
+                            "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + S.compact(missed) + ']');
                     }
                     else if (affNode && missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
                         owning.add(INDEX_PARTITION);
@@ -440,8 +447,11 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();
 
-        if (log.isDebugEnabled())
-            log.debug("Submit partition processing tasks with partition allocated lengths: " + partFileLengths);
+        if (log.isInfoEnabled()) {
+            log.info("Submit partition processing tasks to the snapshot execution pool " +
+                "[map=" + compactGroupPartitions(partFileLengths.keySet()) +
+                ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
+        }
 
         Collection<BinaryType> binTypesCopy = cctx.kernalContext()
             .cacheObjects()
@@ -602,6 +612,20 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         }
 
         return true;
+    }
+
+    /**
+     * @param grps List of processing pairs.
+     * @return Map of cache group id their partitions compacted by {@link S#compact(Collection)}.
+     */
+    private static Map<Integer, String> compactGroupPartitions(Collection<GroupPartitionId> grps) {
+        return grps.stream()
+            .collect(Collectors.groupingBy(GroupPartitionId::getGroupId,
+                Collectors.mapping(GroupPartitionId::getPartitionId,
+                    Collectors.toSet())))
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.compact(e.getValue())));
     }
 
     /** {@inheritDoc} */

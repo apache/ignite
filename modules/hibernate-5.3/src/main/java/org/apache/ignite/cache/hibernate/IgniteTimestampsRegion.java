@@ -31,6 +31,7 @@ public class IgniteTimestampsRegion extends IgniteGeneralDataRegion implements T
      * @param factory Region factory.
      * @param regionName Region name.
      * @param cache Region cache.
+     * @param ignite Ignite instance.
      */
     public IgniteTimestampsRegion(RegionFactory factory, String regionName, Ignite ignite, HibernateCacheProxy cache) {
         super(factory, regionName, ignite, cache);

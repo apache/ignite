@@ -56,7 +56,11 @@ public class CassandraHelper {
     private static final String PREP_STATEMENT_CLUSTER_INSTANCE_ERROR = "You may have used a PreparedStatement that " +
         "was created with another Cluster instance";
 
-    /** Closes Cassandra driver session. */
+    /**
+     * Closes Cassandra driver session.
+     *
+     * @param driverSes Session to close.
+     */
     public static void closeSession(Session driverSes) {
         if (driverSes == null)
             return;

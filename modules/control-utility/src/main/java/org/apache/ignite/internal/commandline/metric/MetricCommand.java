@@ -139,7 +139,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
         params.put("name", "Name of the metric which value should be printed." +
             " If name of the metric registry is specified, value of all its metrics will be printed.");
 
-        Command.usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
+        usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
             "name");
     }
 

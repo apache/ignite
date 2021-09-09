@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+/** */
 public class GridCacheAtomicOnheapMultiNodeFullApiSelfTest extends GridCacheAtomicOnheapFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

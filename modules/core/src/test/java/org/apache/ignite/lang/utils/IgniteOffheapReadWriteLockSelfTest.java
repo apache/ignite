@@ -482,6 +482,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class Pair {
         /** */
         private int a;
