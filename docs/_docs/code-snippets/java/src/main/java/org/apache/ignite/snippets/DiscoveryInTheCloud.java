@@ -148,28 +148,4 @@ public class DiscoveryInTheCloud {
         Ignition.start(cfg);
         //end::google[]
     }
-
-    public static void azureBlobStorageExample() {
-        //tag::azureBlobStorage[]
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        TcpDiscoveryAzureBlobStorageIpFinder ipFinder = new TcpDiscoveryGoogleStorageIpFinder();
-
-        finder.setAccountName("yourAccountName");
-        finder.setAccountKey("yourAccountKey");
-        finder.setAccountEndpoint("yourEndpoint");
-
-        finder.setContainerName("yourContainerName");
-
-        spi.setIpFinder(ipFinder);
-
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        // Override default discovery SPI.
-        cfg.setDiscoverySpi(spi);
-
-        // Start the node.
-        Ignition.start(cfg);
-        //end::azureBlobStorage[]
-    }
 }

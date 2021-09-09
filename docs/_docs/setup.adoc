@@ -203,7 +203,6 @@ adding @Gridify annotation to it.
 
 |ignite-aws |Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
 
-|ignite-azure| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
 
 |ignite-cassandra-serializers | The Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The module could be used as in conjunction with the Ignite Cassandra Store module.
 
