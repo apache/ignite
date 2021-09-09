@@ -980,6 +980,12 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
             updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, false);
 
             if (opCtx0.sameTop) {
+                if (log.isInfoEnabled()) {
+                    log.info("The snapshot was taken on the same cluster topology. It may by copied prior to starting cache groups " +
+                        "[snpName=" + opCtx0.snpName +
+                        ", dirs=" + opCtx0.dirs.stream().map(File::getName).collect(Collectors.toList()) + ']');
+                }
+
                 List<CompletableFuture<Path>> futs = new ArrayList<>();
                 String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
 
