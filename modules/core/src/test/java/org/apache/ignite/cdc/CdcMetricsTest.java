@@ -19,5 +19,5 @@ package org.apache.ignite.cdc;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class CDCMetricsTest extends GridCommonAbstractTest {
+public class CdcMetricsTest extends GridCommonAbstractTest {
 }
