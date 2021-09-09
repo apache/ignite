@@ -20,7 +20,8 @@ package org.apache.ignite.spark.impl
 import org.apache.ignite.cache.query.Query
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.IgniteContext
-import org.apache.spark.{TaskContext, Partition}
+import org.apache.spark.util.TaskCompletionListener
+import org.apache.spark.{Partition, TaskContext}
 
 import scala.reflect.ClassTag
 
@@ -36,7 +37,9 @@ class IgniteSqlRDD[R: ClassTag, T, K, V](
     override def compute(split: Partition, context: TaskContext): Iterator[R] = {
         val cur = ensureCache().query(qry)
 
-        TaskContext.get().addTaskCompletionListener((_) ⇒ cur.close())
+        val listener: TaskCompletionListener = (_) ⇒ cur.close()
+
+        TaskContext.get().addTaskCompletionListener(listener)
 
         new IgniteQueryIterator[T, R](cur.iterator(), conv)
     }

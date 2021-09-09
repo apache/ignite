@@ -33,8 +33,8 @@
     </parent>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
 
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -120,7 +120,7 @@
         <postgres.connector.version>42.2.23</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
-        <scala.library.version>2.11.12</scala.library.version>
+        <scala.library.version>2.12.12</scala.library.version>
         <scala.test.version>2.2.6</scala.test.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
@@ -261,7 +261,7 @@
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.3.2</version>
+                    <version>4.4.0</version>
                     <configuration>
                         <jvmArgs>
                             <jvmArg>-Xms512m</jvmArg>
@@ -300,6 +300,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <source>8</source>
                         <taglets>
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
@@ -318,7 +319,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <additionalOptions>${javadoc.opts}</additionalOptions>
+                        <doclint>none</doclint>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>

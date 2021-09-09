@@ -30,6 +30,7 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
+import org.apache.spark.util.TaskCompletionListener
 
 import scala.collection.JavaConversions._
 
@@ -62,7 +63,9 @@ class IgniteRDD[K, V] (
 
         val cur = cache.query(qry)
 
-        TaskContext.get().addTaskCompletionListener((_) ⇒ cur.close())
+        val listener: TaskCompletionListener = (_) ⇒ cur.close()
+
+        TaskContext.get().addTaskCompletionListener(listener)
 
         new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](cur.iterator(), entry ⇒ {
             (entry.getKey, entry.getValue)

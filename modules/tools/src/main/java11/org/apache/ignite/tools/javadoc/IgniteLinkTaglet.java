@@ -72,12 +72,12 @@ public class IgniteLinkTaglet implements Taglet {
      * <p>
      * Input: org.apache.ignite.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])
      * <p>
-     * Output: &lt;a href="../../../../../org/apache/ignite/grid/spi/indexing/h2/GridH2IndexingSpi.html#
-     * setIndexCustomFunctionClasses(java.lang.Class...)"&gt;
-     * &lt;code&gt;GridH2IndexingSpi.setIndexCustomFunctionClasses(java.lang.Class[])&lt;/code&gt;&lt;/a&gt;
+     * Output: {@code <a href="../../../../../org/apache/ignite/grid/spi/indexing/h2/GridH2IndexingSpi.html#
+     * setIndexCustomFunctionClasses(java.lang.Class...)">
+     * <code>GridH2IndexingSpi.setIndexCustomFunctionClasses(java.lang.Class[])</code></a>}
      *
-     * @param tags <code>DocTree</code> representation of this custom tag.
-     * @param element The element to which the enclosing comment belongs.
+     * @param tag <code>DocTree</code> representation of this custom tag.
+     * @return Stringified tag.
      */
     @Override public String toString(List<? extends DocTree> tags, Element element) {
         for (DocTree tag : tags) {

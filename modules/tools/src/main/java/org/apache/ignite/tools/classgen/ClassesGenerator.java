@@ -200,6 +200,7 @@ public class ClassesGenerator {
      * Returns URLs of class loader
      *
      * @param clsLdr Class loader.
+     * @return Array of URLs of class loader.
      */
     public static URL[] classLoaderUrls(ClassLoader clsLdr) {
         if (clsLdr == null)
