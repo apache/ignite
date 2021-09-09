@@ -3260,6 +3260,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return true;
         }
 
+        /** */
         Result init(long pageId, long page, long fwdId) throws IgniteCheckedException {
             // Init args.
             this.pageId = pageId;
@@ -3435,6 +3436,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             doVisit(this); // restart from last read row
         }
 
+        /** */
         private void unlock(long pageId, long page, long pageAddr) {
             if (writing) {
                 writeUnlock(pageId, page, pageAddr, dirty);
@@ -3445,6 +3447,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 readUnlock(pageId, page, pageAddr);
         }
 
+        /** */
         private long lock(long pageId, long page) {
             if (writing = ((p.state() & TreeVisitorClosure.CAN_WRITE) != 0))
                 return writeLock(pageId, page);

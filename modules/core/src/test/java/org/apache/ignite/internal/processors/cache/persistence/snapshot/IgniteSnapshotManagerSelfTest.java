@@ -643,6 +643,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
     /** */
     private static class ZeroPartitionAffinityFunction extends RendezvousAffinityFunction {
+        /** {@inheritDoc} */
         @Override public int partition(Object key) {
             return 0;
         }

@@ -43,6 +43,7 @@ public class StatusMatchTable {
 
     /**
      * @param spanStatus Span status.
+     * @return Opencensus analog ot the specified span status.
      */
     public static io.opencensus.trace.Status match(SpanStatus spanStatus) {
         io.opencensus.trace.Status res = table.get(spanStatus);

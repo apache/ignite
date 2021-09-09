@@ -2465,6 +2465,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    /** */
     public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
         addUserMessageListener(topic, p, ctx.localNodeId());
     }

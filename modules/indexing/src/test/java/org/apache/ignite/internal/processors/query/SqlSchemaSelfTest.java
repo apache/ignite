@@ -343,6 +343,7 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
      * Person key.
      */
     public static class PersonKey {
+        /** */
         @QuerySqlField
         public long id;
 

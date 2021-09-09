@@ -62,6 +62,7 @@ public final class MvccCacheIdAwareDataInnerIO extends AbstractDataInnerIO {
         return PageUtils.getLong(pageAddr, offset(idx) + 24);
     }
 
+    /** {@inheritDoc} */
     @Override public int getMvccOperationCounter(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 32);
     }

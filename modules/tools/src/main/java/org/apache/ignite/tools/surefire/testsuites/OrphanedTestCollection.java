@@ -42,7 +42,7 @@ public class OrphanedTestCollection {
     /** File to persist orphaned tests. */
     private final Path path = initPath();
 
-    /** */
+    /** @return {@link Set} of orphaned test names. */
     public Set<String> getOrphanedTests() throws Exception {
         if (Files.notExists(path))
             return new HashSet<>();
@@ -87,7 +87,7 @@ public class OrphanedTestCollection {
         }
     }
 
-    /** */
+    /** @return Path of the file to persist orphaned tests into. */
     public Path getPath() {
         return path;
     }

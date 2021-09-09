@@ -2700,7 +2700,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param <V> Value type.
      * @return Internal cache instance.
      */
-    /*@java.test.only*/
     public <K, V> GridCacheAdapter<K, V> internalCache(String name) {
         CU.validateCacheName(name);
         checkClusterState();

@@ -29,6 +29,7 @@ public interface DiscoverySpiDataExchange {
      * nodes and on all existing nodes to transfer their data to new node.
      *
      * @param dataBag {@link DiscoveryDataBag} object managing discovery data during node joining process.
+     * @return Collected discovery data.
      */
     public DiscoveryDataBag collect(DiscoveryDataBag dataBag);
 

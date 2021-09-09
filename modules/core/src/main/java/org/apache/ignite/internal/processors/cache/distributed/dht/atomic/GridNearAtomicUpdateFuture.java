@@ -467,6 +467,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             completeFuture(opRes0, err0, res.futureId());
     }
 
+    /** */
     private void waitAndRemap(AffinityTopologyVersion remapTopVer) {
         assert remapTopVer != null;
 
@@ -831,6 +832,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             checkDhtNodes(futId);
     }
 
+    /** */
     private void checkDhtNodes(long futId) {
         GridCacheReturn opRes0 = null;
         CachePartialUpdateCheckedException err0 = null;

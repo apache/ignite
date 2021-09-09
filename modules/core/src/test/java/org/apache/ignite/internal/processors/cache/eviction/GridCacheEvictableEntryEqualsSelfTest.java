@@ -50,9 +50,12 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
     private static class TestEvictionPolicy implements EvictionPolicy<TestKey, String>, Serializable {
+        /** */
         private final Collection<EvictableEntry> entries = new ArrayList<>();
 
+        /** {@inheritDoc} */
         @Override public synchronized void onEntryAccessed(boolean rmv, EvictableEntry<TestKey, String> e) {
             for (EvictableEntry e0 : entries)
                 assertTrue(e0.equals(e));
@@ -61,13 +64,17 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
     private static class TestKey {
+        /** */
         private final int key;
 
+        /** */
         public TestKey(int key) {
             this.key = key;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object other) {
             if (this == other)
                 return true;
@@ -81,6 +88,7 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
 
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return key;
         }
