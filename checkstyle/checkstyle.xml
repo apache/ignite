@@ -181,7 +181,7 @@
        -->
         <module name="SuppressionXpathSingleFilter">
             <property name="checks" value="Javadoc"/>
-            <property name="files" value="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
+            <property name="files" value="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
         </module>
     </module>
 

@@ -97,7 +97,7 @@ public class BigEndianAscendingWordSerializer implements IWordSerializer {
         wordsWritten = 0;
     }
 
-    /**
+    /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IWordSerializer#writeWord(long)
      * @throws RuntimeException if the number of words written is greater than the
      *         <code>wordCount</code> parameter in the constructor.
@@ -156,7 +156,7 @@ public class BigEndianAscendingWordSerializer implements IWordSerializer {
         wordsWritten++;
     }
 
-    /**
+    /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IWordSerializer#getBytes()
      * @throws RuntimeException if the number of words written is fewer than the
      *         <code>wordCount</code> parameter in the constructor.
