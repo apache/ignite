@@ -1140,23 +1140,27 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             true, true, false).get(getTestTimeout());
         crd.countDownLatch("structure", 1, true, true);
 
-        long intCachesCnt = crd.context().cache().cacheDescriptors().values().stream().filter(
+        long internalCachesCnt = crd.context().cache().cacheDescriptors().values().stream().filter(
             desc -> desc.cacheType() == CacheType.INTERNAL || desc.cacheType() == CacheType.DATA_STRUCTURES).count();
-        assertTrue("Caches count: " + intCachesCnt, intCachesCnt >= 2);
+        assertTrue("Caches count: " + internalCachesCnt, internalCachesCnt >= 2);
+
+        autoConfirmation = false;
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "delete", CacheDelete.DELETE_ALL_ARG));
+        assertContains(log, testOut.toString(), CacheDelete.NOOP_MSG);
 
         // Create user caches.
         cacheNames.addAll(createCaches(0, 10, null));
         cacheNames.addAll(createCaches(10, 5, "shared1"));
         cacheNames.addAll(createCaches(15, 5, "shared2"));
 
-        autoConfirmation = false;
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
         String expConfirmation = String.format(CacheDelete.CONFIRM_MSG, cacheNames.size(),
             "temp-user-cache-00, temp-user-cache-01, temp-user-cache-02, temp-user-cache-03,... temp-user-cache-19");
         Supplier<Collection<String>> userCaches = () -> F.viewReadOnly(crd.context().cache().cacheDescriptors().values(),
             DynamicCacheDescriptor::cacheName, v -> v.cacheType().userCache());
+
+        injectTestSystemIn(CONFIRM_MSG);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "delete", CacheDelete.DELETE_ALL_ARG));
         assertContains(log, testOut.toString(), expConfirmation);
@@ -1184,9 +1188,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", "delete", CacheDelete.DELETE_ALL_ARG));
         assertContains(log, testOut.toString(), String.format(CacheDelete.RESULT_MSG, "sql-cache"));
         assertTrue("Caches must be destroyed." + userCaches.get().toString(), userCaches.get().isEmpty());
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "delete", CacheDelete.DELETE_ALL_ARG));
-        assertContains(log, testOut.toString(), CacheDelete.NOOP_MSG);
     }
 
     /**

@@ -125,6 +125,9 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
+        if (F.isEmpty(args.cacheNames()))
+            return null;
+
         // Limit the number of cache names displayed to the user.
         SortedSet<String> cacheNames = new TreeSet<>(args.cacheNames());
         SB buf = new SB();
