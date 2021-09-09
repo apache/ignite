@@ -61,7 +61,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -299,8 +298,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
-    /** Time of first failed message sending in the sequence of failed messages. */
-    private volatile long firstRingMsgSendFailedTime;
+    /** If {@code true}, we've lost connection to the ring. Keeps additional info to make decision whether this node must fail. */
+    private volatile boolean leftAlone;
 
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
@@ -398,7 +397,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        firstRingMsgSendFailedTime = 0;
+        leftAlone = false;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3876,11 +3875,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
-                        firstRingMsgSendFailedTime = System.nanoTime();
-
-                        sndState = new CrossRingMessageSendState(firstRingMsgSendFailedTime);
-                    }
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                        sndState = new CrossRingMessageSendState(System.nanoTime());
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -3957,14 +3953,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     assert next == null : next;
 
-                    // Segment local node if ring connection failed while incoming traffic is present.
-                    if (firstRingMsgSendFailedTime > 0 &&
-                        lastRingMsgReceivedTime > firstRingMsgSendFailedTime + U.millisToNanos(connCheckInterval)) {
-                        synchronized (mux) {
-                            if (spiState == CONNECTED && !failedNodes.isEmpty() &&
-                                failedNodes.size() == ring.serverNodes(Collections.singletonList(locNode)).size())
-                                segmentLocalNodeOnSendFail(failedNodes);
-                        }
+                    synchronized (mux) {
+                        if (spiState == CONNECTED && failedNodes.size() == ring.serverNodes().size() - 1)
+                            leftAlone = true;
                     }
 
                     if (log.isDebugEnabled())
@@ -6581,7 +6572,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        firstRingMsgSendFailedTime = 0;
+        leftAlone = false;
 
         lastRingMsgSentTime = System.nanoTime();
     }
@@ -6633,16 +6624,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled()) {
-                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
-                            .createServerSocket(port, 0, spi.locHost);
-
-                        sslSock.setNeedClientAuth(true);
-
-                        srvrSock = sslSock;
-                    }
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvrSock = spi.openServerSocket(port);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -7415,6 +7397,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
+
+            if (leftAlone)
+                segmentLocalNodeOnSendFail(null);
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */

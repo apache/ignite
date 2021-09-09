@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
@@ -1584,6 +1586,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
         throws IOException, IgniteSpiOperationTimeoutException {
         return openSocket(createSocket(), sockAddr, timeoutHelper);
+    }
+
+    /**
+     * Creates server socket.
+     *
+     * @param port Port to listen to.
+     */
+    protected ServerSocket openServerSocket(int port) throws IOException {
+        if (isSslEnabled()) {
+            SSLServerSocket sslSock = (SSLServerSocket)sslSrvSockFactory.createServerSocket(port, 0, locHost);
+
+            sslSock.setNeedClientAuth(true);
+
+            return sslSock;
+        }
+        else
+            return new ServerSocket(port, 0, locHost);
     }
 
     /**

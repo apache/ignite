@@ -93,9 +93,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.util.NetTimeoutSimulatorTcpDiscoverySpi;
+import org.apache.ignite.util.TestTimeoutOnClientTcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -423,51 +424,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOutgoingConnectionsFailure() throws Exception {
-        try {
-            final int gridCnt = 4;
+        checkNodeGetSegmentedOnPartOfNetMalfunction(true);
+    }
 
-            failureDetectionTimeout = 2000;
-
-            startGrids(gridCnt - 1);
-
-            nodeSpi.set(new NetTimeoutSimulatorTcpDiscoverySpi());
-
-            startGrid(gridCnt - 1);
-
-            UUID failingNodeId = grid(gridCnt - 1).localNode().id();
-
-            CountDownLatch latch = new CountDownLatch(gridCnt - 1);
-
-            Ignition.allGrids().forEach(ig -> {
-                ig.events().localListen(new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        if (evt.type() == EventType.EVT_NODE_FAILED
-                            && failingNodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
-                            latch.countDown();
-
-                        return false;
-                    }
-                }, EVT_NODE_FAILED);
-            });
-
-            U.sleep(failureDetectionTimeout * 2L);
-
-            NetTimeoutSimulatorTcpDiscoverySpi failSpi = ((NetTimeoutSimulatorTcpDiscoverySpi)grid(gridCnt - 1)
-                .configuration().getDiscoverySpi());
-
-            long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
-                .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / gridCnt;
-
-            failSpi.setNetworkTimeout(1, (int)simulatedNetDelay);
-
-            latch.await(failureDetectionTimeout * 3, MILLISECONDS);
-
-            for (int i = 0; i < gridCnt - 1; i++)
-                assert grid(i).cluster().nodes().size() == gridCnt - 1;
-        }
-        finally {
-            stopAllGrids();
-        }
+    /**
+     * Checks that node leaves the cluster after lose of incoming connections.
+     *
+     * @throws Exception If any error occurs.
+     */
+    @Test
+    public void testIncomingConnectionsFailure() throws Exception {
+        checkNodeGetSegmentedOnPartOfNetMalfunction(false);
     }
 
     /**
@@ -2319,6 +2286,63 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             discoverySpi.impl.checkRingLatency(hops);
 
             assertTrue("Check ring latency message wasn't discarded", lsnr.check(1000));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Checks node correctly fails when only incoming or outgoing traffic is lost.
+     *
+     * @param outgoing {@code True} to simulate failure of outgoing traffic. {@code False} for incoming.
+     */
+    private void checkNodeGetSegmentedOnPartOfNetMalfunction(boolean outgoing) throws Exception {
+        try {
+            final int gridCnt = 4;
+
+            failureDetectionTimeout = 2000;
+
+            startGrids(gridCnt - 1);
+
+            nodeSpi.set(new TestTimeoutOnClientTcpDiscoverySpi());
+
+            startGrid(gridCnt - 1);
+
+            UUID failingNodeId = grid(gridCnt - 1).localNode().id();
+
+            CountDownLatch latch = new CountDownLatch(gridCnt - 1);
+
+            Ignition.allGrids().forEach(ig -> {
+                ig.events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (evt.type() == EventType.EVT_NODE_FAILED
+                            && failingNodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
+                            latch.countDown();
+
+                        return false;
+                    }
+                }, EVT_NODE_FAILED);
+            });
+
+            U.sleep(failureDetectionTimeout * 2L);
+
+            TestTimeoutOnClientTcpDiscoverySpi failSpi = ((TestTimeoutOnClientTcpDiscoverySpi)grid(gridCnt - 1)
+                .configuration().getDiscoverySpi());
+
+            long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
+                .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / gridCnt;
+
+            failSpi.setNetworkTimeout(outgoing ? 1 : -1, (int)simulatedNetDelay);
+
+            latch.await(failureDetectionTimeout * 3L, MILLISECONDS);
+
+            for (int i = 0; i < gridCnt - 1; i++) {
+                int aliveNodes = grid(i).cluster().nodes().size();
+
+                Assert.assertEquals("Node " + i + " sees wrong number of alive nodes: " + aliveNodes, gridCnt - 1,
+                    aliveNodes);
+            }
         }
         finally {
             stopAllGrids();
