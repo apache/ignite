@@ -28,7 +28,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -104,7 +103,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
             IndexKey key = r.key(i);
 
-            if (key == NullIndexKey.INSTANCE)
+            if (key.type() == IndexKeyTypes.NULL)
                 return false;
 
             int type = PageUtils.getByte(pageAddr, off + fieldOff);

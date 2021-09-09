@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Map;
+import org.apache.ignite.cache.IndexFieldOrder;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.h2.command.Parser;
@@ -105,13 +106,18 @@ public class GridSqlCreateIndex extends GridSqlStatement {
 
         boolean first = true;
 
-        for (Map.Entry<String, Boolean> e : idx.getFields().entrySet()) {
+        for (Map.Entry<String, IndexFieldOrder> e : idx.getFieldsOrder().entrySet()) {
             if (first)
                 first = false;
             else
                 sb.append(", ");
 
-            sb.append(Parser.quoteIdentifier(e.getKey())).append(e.getValue() ? " ASC" : " DESC");
+            IndexFieldOrder o = e.getValue();
+
+            sb
+                .append(Parser.quoteIdentifier(e.getKey()))
+                .append(o.isAscending() ? " ASC " : " DESC ")
+                .append(o.isNullsFirst() ? "NULLS FIRST" : o.isNullsLast() ? "NULLS LAST" : "");
         }
 
         sb.append(')');

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.IndexFieldOrder;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -337,7 +338,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (fullTextIdx == null)
             fullTextIdx = new QueryIndexDescriptorImpl(this, null, QueryIndexType.FULLTEXT, 0);
 
-        fullTextIdx.addField(field, 0, false);
+        if (!hasField(field))
+            throw new IgniteCheckedException("Field not found: " + field);
+
+        fullTextIdx.addField(field, 0, new IndexFieldOrder(true));
     }
 
     /** {@inheritDoc} */

@@ -25,6 +25,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    ComplexIndexNullsOrderTest.class,
+    IndexNullsOrderTest.class,
     IndexQueryAllTypesTest.class,
     IndexQueryFailoverTest.class,
     IndexQueryKeepBinaryTest.class,

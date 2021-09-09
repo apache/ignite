@@ -497,12 +497,6 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertParseThrows("create primary key hash on Person (name)",
             IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
-
-        assertParseThrows("create index on Person (name nulls first)",
-            IgniteSQLException.class, "NULLS FIRST and NULLS LAST modifiers are not supported for index columns");
-
-        assertParseThrows("create index on Person (name desc nulls last)",
-            IgniteSQLException.class, "NULLS FIRST and NULLS LAST modifiers are not supported for index columns");
     }
 
     /**

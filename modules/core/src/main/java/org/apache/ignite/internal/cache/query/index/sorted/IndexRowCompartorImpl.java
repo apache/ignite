@@ -18,9 +18,9 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
@@ -36,20 +36,19 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
     /** Key type settings for this index. */
     protected final IndexKeyTypeSettings keyTypeSettings;
 
+    /** Index key definitions. Sets after initialization of comparator. */
+    protected List<IndexKeyDefinition> keyDefs;
+
     /** */
     public IndexRowCompartorImpl(IndexKeyTypeSettings keyTypeSettings) {
         this.keyTypeSettings = keyTypeSettings;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
+    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType, int keyIdx) {
         if (curType == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        if (key == NullIndexKey.INSTANCE)
-            return 1;
-
-        // Check that types are different before that.
         return COMPARE_UNSUPPORTED;
     }
 
@@ -58,14 +57,21 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
         IndexKey lkey = left.key(idx);
         IndexKey rkey = right.key(idx);
 
-        if (lkey == NullIndexKey.INSTANCE)
-            return lkey.compare(rkey);
-        else if (rkey == NullIndexKey.INSTANCE)
-            return 1;
+        if (lkey.type() == IndexKeyTypes.NULL && rkey.type() == IndexKeyTypes.NULL)
+            return 0;
+        else if (lkey.type() == IndexKeyTypes.NULL)
+            return keyDefs.get(idx).order().compareWithNull(true);
+        else if (rkey.type() == IndexKeyTypes.NULL)
+            return keyDefs.get(idx).order().compareWithNull(false);
 
         if (lkey.type() == rkey.type())
             return lkey.compare(rkey);
 
         return COMPARE_UNSUPPORTED;
+    }
+
+    /** */
+    public void setKeyDefinitions(List<IndexKeyDefinition> keyDefs) {
+        this.keyDefs = keyDefs;
     }
 }

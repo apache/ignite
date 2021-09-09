@@ -43,7 +43,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimeInli
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimestampInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.UuidInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 
 /**
  * Provide mapping for java types and {@link IndexKeyTypes} that supports inlining.
@@ -117,7 +116,7 @@ public class InlineIndexKeyTypeRegistry {
      * @param keyTypeSettings Index key type settings.
      */
     public static InlineIndexKeyType get(IndexKey key, int expType, IndexKeyTypeSettings keyTypeSettings) {
-        return key == NullIndexKey.INSTANCE ?
+        return key.type() == IndexKeyTypes.NULL ?
             type(expType, keyTypeSettings) :
             type(key.type(), keyTypeSettings);
     }

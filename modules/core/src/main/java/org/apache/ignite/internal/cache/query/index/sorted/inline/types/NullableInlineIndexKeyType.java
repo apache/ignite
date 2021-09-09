@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
+import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
@@ -80,7 +81,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
     /** {@inheritDoc} */
     @Override public int inlineSize(IndexKey key) {
-        if (key == NullIndexKey.INSTANCE)
+        if (key.type() == IndexKeyTypes.NULL)
             return 1;
 
         ensureKeyType(key);
@@ -88,15 +89,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
         return inlineSize0((T) key);
     }
 
-    /**
-     * Restores value from inline, if possible.
-     *
-     * @param pageAddr Address of the page.
-     * @param off Offset on the page.
-     * @param maxSize Max size to read.
-     *
-     * @return Restored value or {@code null} if value can't be restored.
-     */
+    /** {@inheritDoc} */
     @Override public IndexKey get(long pageAddr, int off, int maxSize) {
         if (keySize > 0 && keySize + 1 > maxSize)
             return null;
@@ -134,7 +127,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
             return 0;
         }
 
-        if (key == NullIndexKey.INSTANCE) {
+        if (key.type() == IndexKeyTypes.NULL) {
             PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.NULL);
             return 1;
         }
@@ -173,7 +166,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(long pageAddr, int off, int maxSize, IndexKey key) {
+    @Override public int compare(long pageAddr, int off, int maxSize, IndexKey key, Order order) {
         int type;
 
         if ((keySize > 0 && keySize + 1 > maxSize)
@@ -181,20 +174,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
             || (type = PageUtils.getByte(pageAddr, off)) == (byte) IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        if (type == IndexKeyTypes.NULL) {
-            if (key == NullIndexKey.INSTANCE)
-                return 0;
-            else
-                return -1;
-        }
-
-        if (type() != type)
-            return COMPARE_UNSUPPORTED;
-
-        if (key == NullIndexKey.INSTANCE)
-            return 1;
-
-        return compare0(pageAddr, off, (T) key);
+        return compareNullable(type, pageAddr, off, key, order);
     }
 
     /**
@@ -209,7 +189,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * Checks whether specified val corresponds to this key type.
      */
     private void ensureKeyType(IndexKey key) {
-        if (key != NullIndexKey.INSTANCE && type != key.type())
+        if (key.type() != IndexKeyTypes.NULL && type != key.type())
             throw new UnsupportedOperationException(key.type() + " cannot be used for inline type " + type());
     }
 
@@ -225,7 +205,25 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * is not enough to compare, or {@link #COMPARE_UNSUPPORTED} if given value
      * can't be compared with inlined part at all.
      */
-    public abstract int compare0(long pageAddr, int off, T v);
+    protected abstract int compare0(long pageAddr, int off, T v);
+
+    /** */
+    private int compareNullable(int type, long pageAddr, int off, IndexKey key, Order order) {
+        if (type == IndexKeyTypes.NULL) {
+            if (key.type() == IndexKeyTypes.NULL)
+                return 0;
+            else
+                return order.compareWithNull(true);
+        }
+
+        if (type() != type)
+            return COMPARE_UNSUPPORTED;
+
+        if (key.type() == IndexKeyTypes.NULL)
+            return order.compareWithNull(false);
+
+        return compare0(pageAddr, off, (T) key);
+    }
 
     /** Return inlined size for specified key. */
     protected abstract int inlineSize0(T key);

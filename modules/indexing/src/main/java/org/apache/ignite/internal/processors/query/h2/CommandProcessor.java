@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.IndexFieldOrder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -793,12 +794,12 @@ public class CommandProcessor {
 
                 newIdx.setIndexType(cmd.index().getIndexType());
 
-                LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
+                LinkedHashMap<String, IndexFieldOrder> flds = new LinkedHashMap<>();
 
                 // Let's replace H2's table and property names by those operated by GridQueryProcessor.
                 GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
 
-                for (Map.Entry<String, Boolean> e : cmd.index().getFields().entrySet()) {
+                for (Map.Entry<String, IndexFieldOrder> e : cmd.index().getFieldsOrder().entrySet()) {
                     GridQueryProperty prop = typeDesc.property(e.getKey());
 
                     if (prop == null)
@@ -807,7 +808,7 @@ public class CommandProcessor {
                     flds.put(prop.name(), e.getValue());
                 }
 
-                newIdx.setFields(flds);
+                newIdx.setFieldsOrder(flds);
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd.ifNotExists(), 0);

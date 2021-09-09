@@ -17,9 +17,9 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,7 +48,7 @@ public class QueryIndex implements Serializable {
 
     /** */
     @GridToStringInclude
-    private LinkedHashMap<String, Boolean> fields;
+    private LinkedHashMap<String, IndexFieldOrder> fields;
 
     /** */
     private QueryIndexType type = DFLT_IDX_TYP;
@@ -90,9 +90,7 @@ public class QueryIndex implements Serializable {
      * @param name Index name.
      */
     public QueryIndex(String field, boolean asc, String name) {
-        this(field, QueryIndexType.SORTED, asc);
-
-        this.name = name;
+        this(field, QueryIndexType.SORTED, asc, name);
     }
 
     /**
@@ -105,7 +103,7 @@ public class QueryIndex implements Serializable {
      * @param type Index type.
      */
     public QueryIndex(String field, QueryIndexType type) {
-        this(Arrays.asList(field), type);
+        this(field, type, true);
     }
 
     /**
@@ -116,10 +114,7 @@ public class QueryIndex implements Serializable {
      * @param asc Ascending flag.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc) {
-        fields = new LinkedHashMap<>();
-        fields.put(field, asc);
-
-        this.type = type;
+        this(field, type, new IndexFieldOrder(asc), null);
     }
 
     /**
@@ -131,8 +126,32 @@ public class QueryIndex implements Serializable {
      * @param name Index name.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc, String name) {
+        this(field, type, new IndexFieldOrder(asc), name);
+    }
+
+    /**
+     * Creates index for one field. The last boolean parameter is ignored for non-sorted indexes.
+     *
+     * @param field Field name.
+     * @param type Index type.
+     * @param order Field order.
+     */
+    public QueryIndex(String field, QueryIndexType type, IndexFieldOrder order) {
+        this(field, type, order, null);
+    }
+
+    /**
+     * Creates index for one field. The last boolean parameter is ignored for non-sorted indexes.
+     *
+     * @param field Field name.
+     * @param type Index type.
+     * @param order Field order.
+     * @param name Index name.
+     */
+    public QueryIndex(String field, QueryIndexType type, IndexFieldOrder order, String name) {
         fields = new LinkedHashMap<>();
-        fields.put(field, asc);
+
+        fields.put(field, order);
 
         this.type = type;
         this.name = name;
@@ -149,7 +168,7 @@ public class QueryIndex implements Serializable {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
-            this.fields.put(field, true);
+            this.fields.put(field, new IndexFieldOrder());
 
         this.type = type;
     }
@@ -162,7 +181,8 @@ public class QueryIndex implements Serializable {
      * @param type Index type.
      */
     public QueryIndex(LinkedHashMap<String, Boolean> fields, QueryIndexType type) {
-        this.fields = fields;
+        setFields(fields);
+
         this.type = type;
     }
 
@@ -191,9 +211,42 @@ public class QueryIndex implements Serializable {
      * Gets fields included in the index.
      *
      * @return Collection of index fields.
+     * @deprecated Use {@link #getFieldsOrder()} instead.
      */
+    @Deprecated
     public LinkedHashMap<String, Boolean> getFields() {
-        return fields;
+        LinkedHashMap<String, Boolean> ret = new LinkedHashMap<>();
+
+        for (Map.Entry<String, IndexFieldOrder> f: fields.entrySet())
+            ret.put(f.getKey(), f.getValue().isAscending());
+
+        return ret;
+    }
+
+    /**
+     * Gets fields included in the index.
+     *
+     * @return Collection of index fields.
+     */
+    public LinkedHashMap<String, IndexFieldOrder> getFieldsOrder() {
+        return new LinkedHashMap<>(fields);
+    }
+
+    /**
+     * Sets fields included in the index.
+     *
+     * @param fields Collection of index fields.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link #setFieldsOrder(LinkedHashMap)} instead.
+     */
+    @Deprecated
+    public QueryIndex setFields(LinkedHashMap<String, Boolean> fields) {
+        this.fields = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Boolean> f: fields.entrySet())
+            this.fields.put(f.getKey(), new IndexFieldOrder(f.getValue()));
+
+        return this;
     }
 
     /**
@@ -202,8 +255,23 @@ public class QueryIndex implements Serializable {
      * @param fields Collection of index fields.
      * @return {@code this} for chaining.
      */
-    public QueryIndex setFields(LinkedHashMap<String, Boolean> fields) {
-        this.fields = fields;
+    public QueryIndex setFieldsOrder(LinkedHashMap<String, IndexFieldOrder> fields) {
+        this.fields = new LinkedHashMap<>(fields);
+
+        return this;
+    }
+
+    /**
+     * Sets fields included in the index.
+     *
+     * @param field Index field.
+     * @return {@code this} for chaining.
+     */
+    public QueryIndex addField(String field, IndexFieldOrder order) {
+        if (fields == null)
+            fields = new LinkedHashMap<>();
+
+        fields.put(field, order);
 
         return this;
     }
@@ -222,12 +290,31 @@ public class QueryIndex implements Serializable {
      * @param fields Collection of fields.
      * @param asc Ascending flag.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setFieldNames(Collection, IndexFieldOrder)} instead.
      */
+    @Deprecated
     public QueryIndex setFieldNames(Collection<String> fields, boolean asc) {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
-            this.fields.put(field, asc);
+            this.fields.put(field, new IndexFieldOrder(asc));
+
+        return this;
+    }
+
+    /**
+     * Sets a collection of field names altogether with the field sorting direction. Sorting direction will be
+     * ignored for non-sorted indexes.
+     *
+     * @param fields Collection of fields.
+     * @param order Order.
+     * @return {@code this} for chaining.
+     */
+    public QueryIndex setFieldNames(Collection<String> fields, IndexFieldOrder order) {
+        this.fields = new LinkedHashMap<>();
+
+        for (String field : fields)
+            this.fields.put(field, order);
 
         return this;
     }
@@ -304,12 +391,12 @@ public class QueryIndex implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryIndex index = (QueryIndex)o;
+        QueryIndex idx = (QueryIndex)o;
 
-        return inlineSize == index.inlineSize &&
-            F.eq(name, index.name) &&
-            F.eq(fields, index.fields) &&
-            type == index.type;
+        return inlineSize == idx.inlineSize &&
+            F.eq(name, idx.name) &&
+            F.eq(fields, idx.fields) &&
+            type == idx.type;
     }
 
     /** {@inheritDoc} */

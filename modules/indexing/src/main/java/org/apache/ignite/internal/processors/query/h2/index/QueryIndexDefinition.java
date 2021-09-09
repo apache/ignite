@@ -172,6 +172,8 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
                 h2UnwrappedCols = null;
                 keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).keyDefinitions();
             }
+
+            rowComparator.setKeyDefinitions(keyDefs);
         }
     }
 

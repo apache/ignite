@@ -19,7 +19,6 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 
 /**
  * Defines a signle index key.
@@ -74,7 +73,7 @@ public class IndexKeyDefinition {
      * @return {@code true} if specified key's type matches to the current type, otherwise {@code false}.
      */
     public boolean validate(IndexKey key) {
-        if (key == NullIndexKey.INSTANCE)
+        if (key.type() == IndexKeyTypes.NULL)
             return true;
 
         return idxType == key.type();

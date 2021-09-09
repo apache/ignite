@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.IndexFieldOrder;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1079,22 +1080,15 @@ public class GridSqlQueryParser {
         idx.setName(CREATE_INDEX_NAME.get(createIdx));
         idx.setIndexType(CREATE_INDEX_SPATIAL.get(createIdx) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-        IndexColumn[] cols = CREATE_INDEX_COLUMNS.get(createIdx);
-
-        LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
-
         for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx)) {
             int sortType = INDEX_COLUMN_SORT_TYPE.get(col);
 
-            if ((sortType & SortOrder.NULLS_FIRST) != 0 || (sortType & SortOrder.NULLS_LAST) != 0) {
-                throw new IgniteSQLException("NULLS FIRST and NULLS LAST modifiers are not supported for index columns",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
+            boolean asc = (sortType & SortOrder.DESCENDING) == 0;
+            boolean nullsFirst = (sortType & SortOrder.NULLS_FIRST) > 0;
+            boolean nullsLast = (sortType & SortOrder.NULLS_LAST) > 0;
 
-            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+            idx.addField(INDEX_COLUMN_NAME.get(col), new IndexFieldOrder(asc, nullsFirst, nullsLast));
         }
-
-        idx.setFields(flds);
 
         res.index(idx);
 

@@ -300,7 +300,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 // By default do not compare different types.
                 if (keyDef.validate(row.key(keyIdx))) {
                     if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported()) {
-                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.key(keyIdx));
+                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyDef.order());
 
                         fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
                     }
@@ -313,10 +313,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 if (cmp == CANT_BE_COMPARE)
                     break;
 
-                // Try compare stored values for inlined keys with different approach?
+                // Try compare stored values for inlined keys with different approach.
                 if (cmp == COMPARE_UNSUPPORTED)
                     cmp = def.rowComparator().compareKey(
-                        pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType.type());
+                        pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType.type(), keyIdx);
 
                 if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED)
                     break;

@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
+import org.apache.ignite.cache.IndexFieldOrder;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -52,7 +53,7 @@ public class QueryEntityTypeDescriptor {
 
     /** */
     @GridToStringInclude
-    private final Map<String, QueryEntityIndexDescriptor> indexes = new HashMap<>();
+    private final Map<String, GridQueryIndexDescriptor> indexes = new HashMap<>();
 
     /** */
     private Set<String> notNullFields = new HashSet<>();
@@ -64,7 +65,7 @@ public class QueryEntityTypeDescriptor {
     private Map<String, Integer> fieldsScale = new HashMap<>();
 
     /** */
-    private QueryEntityIndexDescriptor fullTextIdx;
+    private GridQueryIndexDescriptor fullTextIdx;
 
     /** */
     private final Class<?> keyCls;
@@ -101,11 +102,11 @@ public class QueryEntityTypeDescriptor {
      * @param inlineSize Inline size.
      * @return Index descriptor.
      */
-    public QueryEntityIndexDescriptor addIndex(String idxName, QueryIndexType type, int inlineSize) {
+    public GridQueryIndexDescriptor addIndex(String idxName, QueryIndexType type, int inlineSize) {
         if (inlineSize < 0 && inlineSize != QueryIndex.DFLT_INLINE_SIZE)
             throw new CacheException("Illegal inline size [idxName=" + idxName + ", inlineSize=" + inlineSize + ']');
 
-        QueryEntityIndexDescriptor idx = new QueryEntityIndexDescriptor(type, inlineSize);
+        GridQueryIndexDescriptor idx = new GridQueryIndexDescriptor(idxName, type, inlineSize);
 
         if (indexes.put(idxName, idx) != null)
             throw new CacheException("Index with name '" + idxName + "' already exists.");
@@ -119,16 +120,15 @@ public class QueryEntityTypeDescriptor {
      * @param idxName Index name.
      * @param field Field name.
      * @param orderNum Fields order number in index.
-     * @param descending Sorting order.
+     * @param order Index field order.
      */
-    public void addFieldToIndex(String idxName, String field, int orderNum,
-        boolean descending) {
-        QueryEntityIndexDescriptor desc = indexes.get(idxName);
+    public void addFieldToIndex(String idxName, String field, int orderNum, IndexFieldOrder order) {
+        GridQueryIndexDescriptor desc = indexes.get(idxName);
 
         if (desc == null)
             desc = addIndex(idxName, QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
-        desc.addField(field, orderNum, descending);
+        desc.addField(field, orderNum, order);
     }
 
     /**
@@ -138,12 +138,12 @@ public class QueryEntityTypeDescriptor {
      */
     public void addFieldToTextIndex(String field) {
         if (fullTextIdx == null) {
-            fullTextIdx = new QueryEntityIndexDescriptor(QueryIndexType.FULLTEXT);
+            fullTextIdx = new GridQueryIndexDescriptor(null, QueryIndexType.FULLTEXT, -1);
 
             indexes.put(null, fullTextIdx);
         }
 
-        fullTextIdx.addField(field, 0, false);
+        fullTextIdx.addField(field, 0, new IndexFieldOrder(true));
     }
 
     /**

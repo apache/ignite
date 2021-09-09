@@ -69,11 +69,16 @@ public class QueryIndexKeyDefinitionProvider {
             c.columnName, c.column.getType(), sortOrder(c.sortType), c.column.getPrecision());
     }
 
-    /** Maps H2 column order to Ignite index order. */
+    /** Maps H2 column order to an Ignite's field order. */
     private Order sortOrder(int sortType) {
         SortOrder sortOrder = (sortType & 1) != 0 ? SortOrder.DESC : SortOrder.ASC;
 
-        NullsOrder nullsOrder = (sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : NullsOrder.NULLS_LAST;
+        NullsOrder nullsOrder = null;
+
+        if ((sortType & 2) != 0)
+            nullsOrder = NullsOrder.NULLS_FIRST;
+        else if ((sortType & 4) != 0)
+            nullsOrder = NullsOrder.NULLS_LAST;
 
         return new Order(sortOrder, nullsOrder);
     }

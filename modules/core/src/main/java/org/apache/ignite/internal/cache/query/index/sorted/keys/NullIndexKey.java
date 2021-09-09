@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /**
@@ -31,7 +32,7 @@ public class NullIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return o == INSTANCE ? 0 : -1;
+        throw new IgniteException("Nulls should be compared with Order.compareWithNulls");
     }
 
     /** {@inheritDoc} */

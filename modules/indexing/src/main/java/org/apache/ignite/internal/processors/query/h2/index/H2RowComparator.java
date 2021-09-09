@@ -23,7 +23,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -59,8 +58,8 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
-        int cmp = super.compareKey(pageAddr, off, maxSize, key, curType);
+    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType, int keyIdx) {
+        int cmp = super.compareKey(pageAddr, off, maxSize, key, curType, keyIdx);
 
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;
@@ -79,8 +78,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
 
             InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
 
-            // The only way to invoke inline comparation again.
-            return ((NullableInlineIndexKeyType) highType).compare0(pageAddr, off, objHighOrder);
+            return highType.compare(pageAddr, off, maxSize, objHighOrder, keyDefs.get(keyIdx).order());
         }
 
         return COMPARE_UNSUPPORTED;
