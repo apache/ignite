@@ -34,7 +34,7 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     private String cacheName;
 
     /** Partition. */
-    private Integer part;
+    private int part;
 
     /**
      * Default constructor.
@@ -46,7 +46,7 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
      * @param cacheName Cache name.
      * @param part Part.
      */
-    public VisorConsistencyRepairTaskArg(String cacheName, Integer part) {
+    public VisorConsistencyRepairTaskArg(String cacheName, int part) {
         this.cacheName = cacheName;
         this.part = part;
     }
@@ -74,7 +74,7 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     /**
      *
      */
-    public Integer part() {
+    public int part() {
         return part;
     }
 }
