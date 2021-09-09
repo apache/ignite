@@ -547,6 +547,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
                 collectGlobalStatistics(new StatisticsKey(req.key().schema(), req.key().obj()));
             }
+
             objectStatisticsEntry = globalStatistics.get(key);
 
             if (objectStatisticsEntry != null && objectStatisticsEntry.object() != null
@@ -674,6 +675,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             return (globStatNew == null || globStatNew.columnsStatistics().isEmpty()) ? null :
                 new CacheEntry<>(v.cachedAt(), globStatNew);
         });
+
         outGlobalStatisticsRequests.remove(key);
     }
 
