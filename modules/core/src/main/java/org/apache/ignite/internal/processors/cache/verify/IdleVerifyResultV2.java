@@ -283,9 +283,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         int cntrConflictsSize = counterConflicts().size();
         int hashConflictsSize = hashConflicts().size();
 
-        printer.accept("The check procedure has finished, found " + (cntrConflictsSize + hashConflictsSize) +
-            " conflict partitions: [counterConflicts=" + cntrConflictsSize + ", hashConflicts=" +
-            hashConflictsSize + "]\n");
+        printer.accept("The check procedure has finished, conflict partitions has been found: " +
+            "[counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize + "]\n");
 
         if (!F.isEmpty(counterConflicts())) {
             printer.accept("Update counter conflicts:\n");
