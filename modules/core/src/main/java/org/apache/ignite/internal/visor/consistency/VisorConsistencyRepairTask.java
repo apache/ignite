@@ -131,7 +131,7 @@ public class VisorConsistencyRepairTask extends VisorMultiNodeTask<VisorConsiste
 
                     GridCursor<? extends CacheDataRow> cursor = grpCtx.offheap().dataStore(part).cursor(cctx.cacheId());
 
-                    IgniteCache<Object, Object> cache = ignite.cache(cacheName).withReadRepair();
+                    IgniteCache<Object, Object> cache = ignite.cache(cacheName).withKeepBinary().withReadRepair();
 
                     do {
                         keys.clear();
