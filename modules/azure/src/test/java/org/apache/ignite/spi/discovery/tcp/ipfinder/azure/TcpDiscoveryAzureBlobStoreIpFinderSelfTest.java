@@ -15,11 +15,14 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.lang.reflect.Method;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.common.StorageSharedKeyCredential;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteAzureTestSuite;
@@ -47,13 +50,17 @@ public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         try {
-            Method method = TcpDiscoveryAzureBlobStoreIpFinder.class.getDeclaredMethod("removeContainer", String.class);
+            BlobContainerClient container =
+                new BlobServiceClientBuilder().endpoint(IgniteAzureTestSuite.getEndpoint()).credential(
+                    new StorageSharedKeyCredential(IgniteAzureTestSuite.getAccountName(),
+                        IgniteAzureTestSuite.getAccountKey())).buildClient().getBlobContainerClient(containerName);
 
-            method.setAccessible(true);
-
-            method.invoke(finder, containerName);
+            if (container.exists())
+                container.delete();
         }
         catch (Exception e) {
             log.warning("Failed to remove bucket on Azure [containerName=" + containerName + ", mes=" + e.getMessage() + ']');
