@@ -359,6 +359,7 @@ public class JoinQueryEntityPartitionPruningSelfTest extends AbstractPartitionPr
      * Custom node filter.
      */
     private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
             return true;
         }

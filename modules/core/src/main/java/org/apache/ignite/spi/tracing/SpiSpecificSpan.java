@@ -27,6 +27,7 @@ public interface SpiSpecificSpan {
      *
      * @param tagName Tag name.
      * @param tagVal Tag value.
+     * @return {@code this} for chaining.
      */
     SpiSpecificSpan addTag(String tagName, String tagVal);
 
@@ -34,6 +35,7 @@ public interface SpiSpecificSpan {
      * Logs work to span.
      *
      * @param logDesc Log description.
+     * @return {@code this} for chaining.
      */
     SpiSpecificSpan addLog(String logDesc);
 
@@ -41,11 +43,14 @@ public interface SpiSpecificSpan {
      * Explicitly set status for span.
      *
      * @param spanStatus Status.
+     * @return {@code this} for chaining.
      */
     SpiSpecificSpan setStatus(SpanStatus spanStatus);
 
     /**
      * Ends span. This action sets default status if not set and mark the span as ready to be exported.
+     *
+     * @return {@code this} for chaining.
      */
     SpiSpecificSpan end();
 

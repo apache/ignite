@@ -169,6 +169,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      *
      */
     private static final class IsInterruptedAssertionCallable implements Callable<Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
             return Thread.currentThread().isInterrupted();
         }
@@ -178,6 +179,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      *
      */
     private static final class InterruptingRunnable implements Runnable {
+        /** {@inheritDoc} */
         @Override public void run() {
             Thread.currentThread().interrupt();
         }
@@ -187,6 +189,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      *
      */
     private final class TestRunnable implements Runnable {
+        /** {@inheritDoc} */
         @Override public void run() {
             try {
                 Thread.sleep(1000);

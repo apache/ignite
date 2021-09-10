@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,8 +33,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Dummy discovery message which is not really sent via ring, it is just added in local discovery worker queue.
  */
-public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMessage,
-    CachePartitionExchangeWorkerTask {
+public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartitionExchangeWorkerTask
+    implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,15 +49,19 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
     private final Set<String> cachesToClose;
 
     /**
+     * @param secCtx Security context in which current task must be executed.
      * @param reqId Start request ID.
      * @param startReqs Caches start requests.
      * @param cachesToClose Cache to close.
      */
     public ClientCacheChangeDummyDiscoveryMessage(
+        SecurityContext secCtx,
         UUID reqId,
         @Nullable Map<String, DynamicCacheChangeRequest> startReqs,
         @Nullable Set<String> cachesToClose
     ) {
+        super(secCtx);
+
         assert reqId != null;
         assert startReqs != null ^ cachesToClose != null;
 

@@ -49,6 +49,7 @@ public abstract class JSONModel {
         this.modelClass = modelClass;
     }
 
+    /** */
     @JsonCreator
     public JSONModel() {
     }

@@ -1843,19 +1843,25 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
         private final int attemptsBeforeException;
 
+        /** */
         private volatile int attempts;
 
+        /** */
         public CustomNodeFilter(int attemptsBeforeException) {
             this.attemptsBeforeException = attemptsBeforeException;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             if (attempts++ > attemptsBeforeException)
                 throw new NullPointerException("Oops... incorrect customer realization.");

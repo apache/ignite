@@ -545,6 +545,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * TCP communication SPI which will track outgoing query requests.
      */
     private static class TrackingTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;

@@ -34,7 +34,11 @@ import org.apache.ignite.examples.model.Address;
  * </p>
  */
 public class ClientPutGetExample {
-    /** Entry point. */
+    /**
+     * Entry point.
+     *
+     * @param args Command line arguments.
+     */
     public static void main(String[] args) {
         ClientConfiguration cfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
 
