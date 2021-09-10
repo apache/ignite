@@ -77,7 +77,7 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
             DELETE,
             "Permanently delete specified caches.",
             F.asMap(DELETE_ALL_ARG, "permanently delete all user-created caches.",
-                SKIP_EXISTENCE_ARG, "disable check for cache existence, otherwise the command will fail " +
+                SKIP_EXISTENCE_ARG, "disable check for cache existence, otherwise, the command will fail " +
                                     "if at least one of the specified caches does not exist."),
             optional("cacheName1,...,cacheNameN"),
             optional(DELETE_ALL_ARG),
