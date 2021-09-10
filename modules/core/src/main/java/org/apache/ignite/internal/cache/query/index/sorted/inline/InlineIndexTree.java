@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -683,5 +684,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             return c;
 
         return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String lockRetryErrorMessage(String op) {
+        IndexName idxName = def.idxName();
+
+        return super.lockRetryErrorMessage(op) + " Problem with the index [cacheName=" + idxName.cacheName() +
+            ", schemaName=" + idxName.schemaName() + ", tblName=" + idxName.tableName() + ", idxName=" +
+            idxName.idxName() + ']';
     }
 }
