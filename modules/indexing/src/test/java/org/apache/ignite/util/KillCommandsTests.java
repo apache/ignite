@@ -155,6 +155,8 @@ class KillCommandsTests {
             assertNotNull(iter2.next());
 
         checkScanQueryResources(cli, srvs, qryId);
+
+        qry2.close();
     }
 
     /**
@@ -171,11 +173,11 @@ class KillCommandsTests {
 
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setFilter((o, o2) -> {
+        QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(new ScanQuery<>().setFilter((o, o2) -> {
             try {
                 filterLatch.countDown();
 
-                cancelLatch.await();
+                cancelLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }
             catch (Exception ignored) {
                 // No-op.
@@ -184,7 +186,9 @@ class KillCommandsTests {
             return true;
         }));
 
-        Iterator<Cache.Entry<Object, Object>> iter1 = qry1.iterator();
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)() -> qry.iterator().next());
+
+        assertTrue(filterLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
         List<List<?>> scanQries0 = execute(srvs.get(0),
             "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
@@ -194,10 +198,6 @@ class KillCommandsTests {
         UUID originNodeId = (UUID)scanQries0.get(0).get(0);
         String cacheName = (String)scanQries0.get(0).get(1);
         long qryId = (Long)scanQries0.get(0).get(2);
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)iter1::next);
-
-        assertTrue(filterLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
         qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
 
