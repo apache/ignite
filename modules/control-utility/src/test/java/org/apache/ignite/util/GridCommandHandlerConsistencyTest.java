@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -227,6 +228,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             Collections.shuffle(nodes);
 
             int val = key;
+            Object obj;
 
             for (Ignite node : nodes) {
                 IgniteInternalCache cache = ((IgniteEx)node).cachex(name);
@@ -235,8 +237,20 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
                 GridCacheEntryEx entry = adapter.entryEx(key);
 
+                val = incVal ? ++val : val;
+
+                if (binaryCache()) {
+                    BinaryObjectBuilder builder = node.binary().builder("org.apache.ignite.TestValue");
+
+                    builder.setField("val", val);
+
+                    obj = builder.build();
+                }
+                else
+                    obj = val;
+
                 boolean init = entry.initialValue(
-                    new CacheObjectImpl(incVal ? ++val : val, null), // Incremental or same value.
+                    new CacheObjectImpl(obj, null), // Incremental or same value.
                     mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
                     0,
                     0,
@@ -249,5 +263,12 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                 assertTrue("iterableKey " + key + " already inited", init);
             }
         }
+    }
+
+    /**
+     * Cache should be filled with binary objects.
+     */
+    protected boolean binaryCache() {
+        return false;
     }
 }

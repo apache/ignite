@@ -105,7 +105,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                 KeyCacheObject curKey = entry.getKey();
                 EntryGetResult curRes = entry.getValue();
 
-                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), false, false, null);
+                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), !deserializeBinary, false, null);
 
                 T2<Object, CacheEntryVersion> prev = prevMap.get(curKey);
 
