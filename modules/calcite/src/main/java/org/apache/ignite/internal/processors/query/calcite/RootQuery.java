@@ -37,18 +37,18 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
-import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
@@ -74,9 +74,6 @@ public class RootQuery<Row> extends Query<Row> {
 
     /** */
     private volatile RootNode<Row> root;
-
-    /** */
-    private volatile QueryState state;
 
     /** */
     private volatile PlanningContext pctx;
@@ -155,7 +152,7 @@ public class RootQuery<Row> extends Query<Row> {
                 waiting.add(new RemoteFragmentKey(node, fragment.fragmentId()));
         }
 
-        state = QueryState.RUNNING;
+        state = QueryState.EXECUTION;
     }
 
     /**
@@ -169,7 +166,7 @@ public class RootQuery<Row> extends Query<Row> {
             if (state == QueryState.CLOSED)
                 return;
 
-            if (state == QueryState.RUNNING)
+            if (state == QueryState.EXECUTION)
                 state0 = state = QueryState.CLOSING;
 
             // 1) close local fragment
@@ -198,17 +195,24 @@ public class RootQuery<Row> extends Query<Row> {
                 }
             }
 
-            // 4) Cancel local fragments
-            cancel();
+            // 4) Cancel local fragment
+            root.context().execute(root.context()::cancel, root::onError);
 
             if (wrpEx != null)
                 throw wrpEx;
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        cancel.cancel();
+    }
+
     /** */
     public PlanningContext planningContext() {
         if (pctx == null) {
+            state = QueryState.PLANNING;
+
             pctx = PlanningContext.builder()
                 .parentContext(ctx)
                 .query(sql)
@@ -289,5 +293,10 @@ public class RootQuery<Row> extends Query<Row> {
             .query(qry)
             .parameters(params)
             .build();
+    }
+
+    /** */
+    @Override public String toString() {
+        return S.toString(RootQuery.class, this);
     }
 }

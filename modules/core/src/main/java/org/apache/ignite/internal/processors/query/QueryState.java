@@ -17,28 +17,23 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.GridProcessor;
-import org.jetbrains.annotations.Nullable;
-
-/**
- *
- */
-public interface QueryEngine extends GridProcessor {
-    /**
-     * @param ctx Query context, may be null.
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param params Optional query parameters.
-     * @return Query cursor.
-     * @throws IgniteSQLException If failed.
-     */
-    List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String qry, Object... params)
-        throws IgniteSQLException;
+/** */
+public enum QueryState {
+    /** */
+    INIT,
 
     /** */
-    Collection<? extends RunningQuery> runningQueries();
+    PLANNING,
+
+    /** */
+    MAPPING,
+
+    /** */
+    EXECUTION,
+
+    /** */
+    CLOSING,
+
+    /** */
+    CLOSED
 }

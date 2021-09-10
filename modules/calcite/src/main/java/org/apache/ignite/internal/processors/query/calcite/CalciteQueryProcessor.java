@@ -30,6 +30,7 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.Aggregate;
@@ -45,8 +46,10 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -332,16 +335,25 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             );
 
             register(qry);
+            try {
+                if (qryList.size() == 1) {
+                    plan = queryPlanCache().queryPlan(
+                        new CacheKey(schemaName, qry.sql()),
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext()));
+                }
+                else
+                    plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
-            if (qryList.size() == 1) {
-                plan = queryPlanCache().queryPlan(
-                    new CacheKey(schemaName, qry.sql()),
-                    () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext()));
+                cursors.add(executionSvc.executePlan(qry, plan, params));
             }
-            else
-                plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
+            catch (Exception e) {
+                unregister(qry.id());
 
-            cursors.add(executionSvc.executePlan(qry, plan, params));
+                log.warning("+++", e);
+
+                if (qry.isCancelled())
+                    throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
+            }
         }
 
         return cursors;

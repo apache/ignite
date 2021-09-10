@@ -465,6 +465,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
                 ", err=" + e.getMessage() + ']', e);
         }
+        finally {
+            qryReg.unregister(qry.id());
+        }
 
         return H2Utils.zeroCursor();
     }

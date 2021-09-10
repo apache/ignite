@@ -22,19 +22,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.QueryState;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /** */
-public class Query<Row> {
+public class Query<Row> implements RunningQuery {
     /** */
     private final UUID id;
 
@@ -48,7 +50,7 @@ public class Query<Row> {
     protected final Consumer<Query> unregister;
 
     /** */
-    protected volatile QueryState state;
+    protected volatile QueryState state = QueryState.INIT;
 
     /** */
     public Query(UUID id, GridQueryCancel cancel, Consumer<Query> unregister) {
@@ -61,8 +63,13 @@ public class Query<Row> {
     }
 
     /** */
-    public UUID id() {
+    @Override public UUID id() {
         return id;
+    }
+
+    /** */
+    @Override public QueryState state() {
+        return state;
     }
 
     /** */
@@ -78,11 +85,9 @@ public class Query<Row> {
             .build();
     }
 
-    /** */
-    public void cancel() {
-        cancel.cancel();
-
-        fragments.forEach(f -> f.context().execute(f.context()::cancel, f.root()::onError));
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        // TODO
     }
 
     /** */
@@ -91,23 +96,7 @@ public class Query<Row> {
     }
 
     /** */
-    public enum QueryState {
-        /** */
-        INIT,
-
-        /** */
-        PLANNING,
-
-        /** */
-        MAPPING,
-
-        /** */
-        RUNNING,
-
-        /** */
-        CLOSING,
-
-        /** */
-        CLOSED
+    public boolean isCancelled() {
+        return cancel.isCanceled();
     }
 }

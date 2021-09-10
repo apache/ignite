@@ -415,11 +415,4 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(2, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
     }
-
-    /** */
-    private List<List<?>> sql(String sql) throws IgniteInterruptedCheckedException {
-        QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
-
-        return engine.query(null, "PUBLIC", sql).get(0).getAll();
-    }
 }

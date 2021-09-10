@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -36,6 +37,11 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String query,
         Object... params) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
+
+    /** */
+    @Override public Collection<? extends RunningQuery> runningQueries() {
         return Collections.emptyList();
     }
 }

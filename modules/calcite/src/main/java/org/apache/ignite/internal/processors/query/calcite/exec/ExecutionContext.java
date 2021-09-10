@@ -237,13 +237,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         return unwrap(BaseQueryContext.class).typeFactory();
     }
 
-    /**
-     * @return Query cancel.
-     */
-    public GridQueryCancel queryCancel() {
-        return unwrap(BaseQueryContext.class).queryCancel();
-    }
-
     /** {@inheritDoc} */
     @Override public QueryProvider getQueryProvider() {
         return null; // TODO

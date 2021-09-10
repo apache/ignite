@@ -25,14 +25,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 
 /** */
-public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
+public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String CLIENT_NODE_NAME = "client";
 
@@ -77,24 +74,5 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     @After
     public void cleanUp() {
         client.destroyCaches(client.cacheNames());
-    }
-
-    /** */
-    protected List<List<?>> executeSql(String sql) {
-        return executeSql(client, sql);
-    }
-
-    /** */
-    protected List<List<?>> executeSql(IgniteEx ignite, String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql);
-
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
-        }
-    }
-
-    /** */
-    protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
-        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
     }
 }
