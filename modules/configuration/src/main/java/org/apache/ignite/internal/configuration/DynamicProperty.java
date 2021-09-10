@@ -42,7 +42,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
-        ConfigurationChanger changer
+        DynamicConfigurationChanger changer
     ) {
         super(prefix, key, rootKey, changer);
     }

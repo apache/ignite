@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.to
 /**
  * Class that handles configuration changes, by validating them, passing to storage and listening to storage updates.
  */
-public abstract class ConfigurationChanger {
+public abstract class ConfigurationChanger implements DynamicConfigurationChanger {
     /** Thread pool. */
     private final ForkJoinPool pool = new ForkJoinPool(2);
 
@@ -237,13 +237,8 @@ public abstract class ConfigurationChanger {
         }
     }
 
-    /**
-     * Changes the configuration.
-     *
-     * @param source Configuration source to create patch from.
-     * @return Future that is completed on change completion.
-     */
-    public CompletableFuture<Void> change(ConfigurationSource source) {
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<Void> change(ConfigurationSource source) {
         return changeInternally(source);
     }
 
@@ -257,13 +252,8 @@ public abstract class ConfigurationChanger {
             roots.changeFuture.completeExceptionally(new NodeStoppingException());
     }
 
-    /**
-     * Get root node by root key. Subject to revisiting.
-     *
-     * @param rootKey Root key.
-     * @return Root node.
-     */
-    public InnerNode getRootNode(RootKey<?, ?> rootKey) {
+    /** {@inheritDoc} */
+    @Override public InnerNode getRootNode(RootKey<?, ?> rootKey) {
         return storageRoots.roots.getRoot(rootKey);
     }
 

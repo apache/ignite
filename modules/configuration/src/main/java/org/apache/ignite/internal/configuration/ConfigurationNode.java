@@ -46,7 +46,7 @@ public abstract class ConfigurationNode<VIEW, CHANGE> implements ConfigurationPr
     protected final RootKey<?, ?> rootKey;
 
     /** Configuration changer instance to get latest value of the root. */
-    protected final ConfigurationChanger changer;
+    protected final DynamicConfigurationChanger changer;
 
     /**
      * Cached value of current trees root. Useful to determine whether you have the latest configuration value or not.
@@ -70,7 +70,7 @@ public abstract class ConfigurationNode<VIEW, CHANGE> implements ConfigurationPr
      * @param rootKey Root key.
      * @param changer Configuration changer.
      */
-    protected ConfigurationNode(List<String> prefix, String key, RootKey<?, ?> rootKey, ConfigurationChanger changer) {
+    protected ConfigurationNode(List<String> prefix, String key, RootKey<?, ?> rootKey, DynamicConfigurationChanger changer) {
         this.keys = ConfigurationUtil.appendKey(prefix, key);
         this.key = key;
         this.rootKey = rootKey;

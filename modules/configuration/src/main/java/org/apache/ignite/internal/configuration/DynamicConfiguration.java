@@ -52,7 +52,7 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
-        ConfigurationChanger changer
+        DynamicConfigurationChanger changer
     ) {
         super(prefix, key, rootKey, changer);
     }

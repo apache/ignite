@@ -54,7 +54,7 @@ import static java.util.stream.Collectors.toList;
 /** */
 public class ConfigurationUtil {
     /** Configuration source that copies values without modifying tham. */
-    private static final ConfigurationSource EMPTY_CFG_SRC = new ConfigurationSource() {};
+    static final ConfigurationSource EMPTY_CFG_SRC = new ConfigurationSource() {};
 
     /**
      * Replaces all {@code .} and {@code \} characters with {@code \.} and {@code \\} respectively.

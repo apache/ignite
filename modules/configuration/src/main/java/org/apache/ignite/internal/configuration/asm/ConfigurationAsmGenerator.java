@@ -61,8 +61,8 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.internal.configuration.ConfigurationChanger;
 import org.apache.ignite.internal.configuration.DynamicConfiguration;
+import org.apache.ignite.internal.configuration.DynamicConfigurationChanger;
 import org.apache.ignite.internal.configuration.DynamicProperty;
 import org.apache.ignite.internal.configuration.NamedListConfiguration;
 import org.apache.ignite.internal.configuration.TypeUtils;
@@ -141,7 +141,7 @@ public class ConfigurationAsmGenerator {
     /** {@link ConstructableTreeNode#copy()} */
     private static final Method COPY;
 
-    /** {@link DynamicConfiguration#DynamicConfiguration(List, String, RootKey, ConfigurationChanger)} */
+    /** {@link DynamicConfiguration#DynamicConfiguration(List, String, RootKey, DynamicConfigurationChanger)} */
     private static final Constructor DYNAMIC_CONFIGURATION_CTOR;
 
     /** {@link DynamicConfiguration#add(ConfigurationProperty)} */
@@ -180,7 +180,7 @@ public class ConfigurationAsmGenerator {
                 List.class,
                 String.class,
                 RootKey.class,
-                ConfigurationChanger.class
+                DynamicConfigurationChanger.class
             );
 
             DYNAMIC_CONFIGURATION_ADD = DynamicConfiguration.class.getDeclaredMethod(
@@ -231,7 +231,7 @@ public class ConfigurationAsmGenerator {
      */
     public synchronized DynamicConfiguration<?, ?> instantiateCfg(
         RootKey<?, ?> rootKey,
-        ConfigurationChanger changer
+        DynamicConfigurationChanger changer
     ) {
         SchemaClassesInfo info = schemasInfo.get(rootKey.schemaClass());
 
@@ -242,7 +242,7 @@ public class ConfigurationAsmGenerator {
                 List.class,
                 String.class,
                 RootKey.class,
-                ConfigurationChanger.class
+                DynamicConfigurationChanger.class
             );
 
             assert constructor.canAccess(null);
@@ -994,7 +994,7 @@ public class ConfigurationAsmGenerator {
             arg("prefix", List.class),
             arg("key", String.class),
             arg("rootKey", RootKey.class),
-            arg("changer", ConfigurationChanger.class)
+            arg("changer", DynamicConfigurationChanger.class)
         );
 
         BytecodeBlock ctorBody = ctor.getBody()
@@ -1044,7 +1044,7 @@ public class ConfigurationAsmGenerator {
                         "$new$" + newIdx++,
                         typeFromJavaClassName(fieldInfo.cfgClassName),
                         arg("rootKey", RootKey.class),
-                        arg("changer", ConfigurationChanger.class),
+                        arg("changer", DynamicConfigurationChanger.class),
                         arg("prefix", List.class),
                         arg("key", String.class)
                     );

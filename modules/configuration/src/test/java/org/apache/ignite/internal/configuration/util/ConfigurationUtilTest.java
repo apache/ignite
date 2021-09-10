@@ -36,7 +36,6 @@ import org.apache.ignite.internal.configuration.RootInnerNode;
 import org.apache.ignite.internal.configuration.SuperRoot;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
-import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConverterToMapVisitor;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
@@ -52,6 +51,7 @@ import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL
 import static org.apache.ignite.internal.configuration.tree.NamedListNode.NAME;
 import static org.apache.ignite.internal.configuration.tree.NamedListNode.ORDER_IDX;
 import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.EMPTY_CFG_SRC;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.addDefaults;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.collectSchemas;
@@ -642,7 +642,7 @@ public class ConfigurationUtilTest {
         SuperRoot originalSuperRoot = superRoot.copy();
 
         // Make a copy of the root insode of the superRoot. This copy will be used for further patching.
-        superRoot.construct(ParentConfiguration.KEY.key(), new ConfigurationSource() {}, true);
+        superRoot.construct(ParentConfiguration.KEY.key(), EMPTY_CFG_SRC, true);
 
         // Patch root node.
         patch.accept((ParentChange)superRoot.getRoot(ParentConfiguration.KEY));

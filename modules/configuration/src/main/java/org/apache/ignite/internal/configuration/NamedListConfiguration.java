@@ -58,7 +58,7 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
-        ConfigurationChanger changer,
+        DynamicConfigurationChanger changer,
         BiFunction<List<String>, String, T> creator
     ) {
         super(prefix, key, rootKey, changer);
