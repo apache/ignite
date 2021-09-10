@@ -93,7 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.util.TestTimeoutOnClientTcpDiscoverySpi;
+import org.apache.ignite.util.TestFailureSimulatorTcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -1738,7 +1738,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             waitNodeStop(ignite0.name());
 
-            tryCreateCache(2);
+            tryCreateCache(Collections.singletonList(ignite0));
         }
         finally {
             stopAllGrids();
@@ -1795,7 +1795,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             waitNodeStop(ignite0.name());
 
-            tryCreateCache(4);
+            tryCreateCache(Collections.singletonList(ignite0));
         }
         finally {
             stopAllGrids();
@@ -1828,7 +1828,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertEquals(2, ignite1.cluster().nodes().size());
 
-            tryCreateCache(2);
+            tryCreateCache(Collections.singletonList(ignite0));
         }
         finally {
             stopAllGrids();
@@ -1873,7 +1873,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertEquals(2, ignite1.cluster().nodes().size());
             assertEquals(2, ignite3.cluster().nodes().size());
 
-            tryCreateCache(2);
+            tryCreateCache(Arrays.asList(ignite2, ignite0));
         }
         finally {
             stopAllGrids();
@@ -1929,7 +1929,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 assertEquals(NODES, newNode.cluster().nodes().size());
 
-                tryCreateCache(NODES);
+                tryCreateCache(Collections.singletonList(failingNode));
 
                 stopAllGrids();
             }
@@ -2305,7 +2305,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrids(gridCnt - 1);
 
-            nodeSpi.set(new TestTimeoutOnClientTcpDiscoverySpi());
+            nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
 
             startGrid(gridCnt - 1);
 
@@ -2327,7 +2327,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             U.sleep(failureDetectionTimeout * 2L);
 
-            TestTimeoutOnClientTcpDiscoverySpi failSpi = ((TestTimeoutOnClientTcpDiscoverySpi)grid(gridCnt - 1)
+            TestFailureSimulatorTcpDiscoverySpi failSpi = ((TestFailureSimulatorTcpDiscoverySpi)grid(gridCnt - 1)
                 .configuration().getDiscoverySpi());
 
             long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
@@ -2356,14 +2356,31 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private void waitNodeStop(final String nodeName) throws Exception {
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                try {
-                    Ignition.ignite(nodeName);
+                Ignite failedNode;
 
-                    return false;
+                try {
+                    failedNode = Ignition.ignite(nodeName);
                 }
                 catch (IgniteIllegalStateException ignored) {
                     return true;
                 }
+
+                assert failedNode != null;
+
+                List<Ignite> allNodes = G.allGrids();
+
+                int outOfClusterCnt = 0;
+
+                for (Ignite ig : allNodes) {
+                    if (ig == failedNode)
+                        continue;
+
+                    if (ig.cluster().nodes().size() == allNodes.size() - 1 &&
+                        ig.cluster().nodes().stream().noneMatch(n -> n.id().equals(failedNode.cluster().id())))
+                        outOfClusterCnt++;
+                }
+
+                return outOfClusterCnt == allNodes.size() - 1;
             }
         }, 30_000);
 
@@ -2374,16 +2391,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param expNodes Expected nodes number.
+     * @param failedNodes Nodes to exclude.
      */
-    private void tryCreateCache(int expNodes) {
-        List<Ignite> allNodes = G.allGrids();
+    private void tryCreateCache(Collection<Ignite> failedNodes) {
+        List<Ignite> nodes = new ArrayList<>(G.allGrids());
 
-        assertEquals(expNodes, allNodes.size());
+        nodes.removeAll(failedNodes);
 
         int cntr = 0;
 
-        for (Ignite ignite : allNodes) {
+        for (Ignite ignite : nodes) {
             CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-" + cntr++);

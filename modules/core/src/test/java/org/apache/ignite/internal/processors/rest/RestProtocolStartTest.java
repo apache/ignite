@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -33,7 +38,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -42,9 +47,6 @@ import org.junit.Test;
  * Test of start rest protocol and stop node.
  */
 public class RestProtocolStartTest extends GridCommonAbstractTest {
-    /** Failure detection timeout. */
-    private static final int FAILURE_DETECTION_TIMEOUT = 2_000;
-
     /** Node local host. */
     private static final String HOST = "127.0.0.1";
 
@@ -52,18 +54,17 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
     private static final int BINARY_PORT = 11212;
 
     /** Recording communication spi. */
-    private TestRecordingCommunicationSpi recordingCommunicationSpi = new TestRecordingCommunicationSpi();
+    private TestRecordingCommunicationSpi testBlockingCommunicationSpi = new TestRecordingCommunicationSpi();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
             .setSystemWorkerBlockedTimeout(10_000)
-            .setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT)
-            .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 8)))
+            .setFailureDetectionTimeout(2_000)
+            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
             .setCommunicationSpi(igniteInstanceName.equals(getTestIgniteInstanceName(0))
-                ? recordingCommunicationSpi :
+                ? testBlockingCommunicationSpi :
                 new TestRecordingCommunicationSpi())
             .setLocalHost(HOST)
             .setConnectorConfiguration(
@@ -72,23 +73,39 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
                     .setPort(BINARY_PORT) : null);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         Ignite ignite = startGrids(2);
 
-        recordingCommunicationSpi.blockMessages(GridDhtPartitionSupplyMessage.class, getTestIgniteInstanceName(1));
+        testBlockingCommunicationSpi.blockMessages(GridDhtPartitionSupplyMessage.class, getTestIgniteInstanceName(1));
 
         info("Bock supply messages.");
 
         ignite(1).close();
 
-        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < 100; i++)
                 streamer.addData(i, i);
         }
+
+        AtomicReference<UUID> ign1IDHolder = new AtomicReference<>();
+
+        CountDownLatch proceed = new CountDownLatch(1);
+
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                DiscoveryEvent devt = ((DiscoveryEvent)evt);
+
+                if (!devt.eventNode().isClient()) {
+                    assertTrue("Only one server node is expedted.", ign1IDHolder.compareAndSet(null, devt.eventNode().id()));
+
+                    proceed.countDown();
+                }
+
+                return true;
+            }
+        }, EventType.EVT_NODE_JOINED);
 
         IgniteInternalFuture startFut = GridTestUtils.runAsync(() -> {
             try {
@@ -103,13 +120,16 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
 
         assertTrue("Is active " + ignite.cluster().active(), ignite.cluster().active());
 
-        GridClient gridClient = client();
+        client();
 
-        ((TcpDiscoverySpi)ignite.configuration().getDiscoverySpi()).brakeConnection();
+        // Wait for the second node 1 joins again and for it's ID available.
+        proceed.await();
 
-        doSleep(FAILURE_DETECTION_TIMEOUT);
+        ignite.configuration().getDiscoverySpi().failNode(ign1IDHolder.get(), "Test failure.");
 
-        recordingCommunicationSpi.stopBlock();
+        doSleep(ignite.configuration().getFailureDetectionTimeout());
+
+        testBlockingCommunicationSpi.stopBlock();
 
         try {
             startFut.get(10_000);

@@ -31,7 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 /**
  * Tcp Discovery able to simulate network failure on client socket.
  */
-public class TestTimeoutOnClientTcpDiscoverySpi extends TcpDiscoverySpi {
+public class TestFailureSimulatorTcpDiscoverySpi extends TcpDiscoverySpi {
     /**
      * If not {@code null}, enables network timeout simulation. Controls direction of traffic droppage:
      * negative incoming (read(...)), positive for outgoing (write(...)), 0 for both.

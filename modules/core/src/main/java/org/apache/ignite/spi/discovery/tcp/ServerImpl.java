@@ -61,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -3876,7 +3877,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
-                        sndState = new CrossRingMessageSendState(System.nanoTime());
+                        sndState = new CrossRingMessageSendState();
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -6624,7 +6625,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    srvrSock = spi.openServerSocket(port);
+                    if (spi.isSslEnabled()) {
+                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
+                            .createServerSocket(port, 0, spi.locHost);
+
+                        sslSock.setNeedClientAuth(true);
+
+                        srvrSock = sslSock;
+                    }
+                    else
+                        srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -7398,8 +7408,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
 
-            if (leftAlone)
-                segmentLocalNodeOnSendFail(null);
+            if (leftAlone) {
+                synchronized (mux) {
+                    if (leftAlone)
+                        segmentLocalNodeOnSendFail(failedNodes.keySet());
+                }
+            }
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
@@ -8232,10 +8246,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final long absoluteTimeout;
 
         /**
-         * @param failTime Time of the failure in nanos.
+         *
          */
-        CrossRingMessageSendState(long failTime) {
-            absoluteTimeout = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + failTime;
+        CrossRingMessageSendState() {
+            absoluteTimeout = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
         }
 
         /**
