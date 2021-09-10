@@ -28,6 +28,7 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.CancelFlag;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -36,10 +37,12 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
@@ -82,11 +85,15 @@ public class RootQuery<Row> extends Query<Row> {
     private final BaseQueryContext ctx;
 
     /** */
+    private final ExchangeService exch;
+
+    /** */
     public RootQuery(
         String sql,
         SchemaPlus schema,
         Object[] params,
         QueryContext qryCtx,
+        ExchangeService exch,
         Consumer<Query> unregister,
         IgniteLogger log
     ) {
@@ -95,6 +102,7 @@ public class RootQuery<Row> extends Query<Row> {
         this.sql = sql;
         this.schema = schema;
         this.params = params;
+        this.exch = exch;
         this.log = log;
 
         remotes = new HashSet<>();
@@ -152,7 +160,7 @@ public class RootQuery<Row> extends Query<Row> {
 
     /**
      * Can be called multiple times after receive each error
-     * at {@link ExecutionServiceImpl#onResponse(ExecutionServiceImpl.RemoteFragmentKey, Throwable)}.
+     * at {@link #onResponse(RemoteFragmentKey, Throwable)}.
      */
     private void tryClose() {
         QueryState state0 = null;
@@ -179,22 +187,19 @@ public class RootQuery<Row> extends Query<Row> {
 
             // 3) close remote fragments
             for (UUID nodeId : remotes) {
-//                try {
-//                    exchangeService().closeOutbox(nodeId, ctx.queryId(), -1, -1);
-//                }
-//                catch (IgniteCheckedException e) {
-//                    if (wrpEx == null)
-//                        wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + nodeId + ']', e);
-//                    else
-//                        wrpEx.addSuppressed(e);
-//                }
+                try {
+                    exch.closeOutbox(nodeId, id(), -1, -1);
+                }
+                catch (IgniteCheckedException e) {
+                    if (wrpEx == null)
+                        wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + nodeId + ']', e);
+                    else
+                        wrpEx.addSuppressed(e);
+                }
             }
 
-            // 4) Cancel local fragment
-
-            fragments.forEach(f -> f.context().execute(f.context()::cancel, f.root()::onError));
-
-//            root.context().execute(ctx::cancel, root::onError);
+            // 4) Cancel local fragments
+            cancel();
 
             if (wrpEx != null)
                 throw wrpEx;

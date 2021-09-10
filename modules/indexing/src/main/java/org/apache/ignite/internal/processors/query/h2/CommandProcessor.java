@@ -442,7 +442,7 @@ public class CommandProcessor extends SqlCommandProcessor {
     public FieldsQueryCursor<List<?>> runNativeCommand(String sql, SqlCommand cmdNative,
         QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
         if (super.isCommandSupported(cmdNative))
-            return runCommand(sql, cmdNative, cliCtx);
+            return runCommand(cmdNative);
 
         if (cmdNative instanceof SqlBulkLoadCommand)
             return processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);

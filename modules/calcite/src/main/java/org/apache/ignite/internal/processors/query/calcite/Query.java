@@ -81,6 +81,8 @@ public class Query<Row> {
     /** */
     public void cancel() {
         cancel.cancel();
+
+        fragments.forEach(f -> f.context().execute(f.context()::cancel, f.root()::onError));
     }
 
     /** */

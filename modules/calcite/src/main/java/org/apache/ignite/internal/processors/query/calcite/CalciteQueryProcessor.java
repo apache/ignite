@@ -303,6 +303,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 schemaHolder.getDefaultSchema(schemaName),
                 params,
                 qryCtx,
+                exchangeSvc,
                 (q) -> unregister(q.id()),
                 log
             );
@@ -325,6 +326,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 schemaHolder.getDefaultSchema(schemaName),
                 params,
                 qryCtx,
+                exchangeSvc,
                 (q) -> unregister(q.id()),
                 log
             );
