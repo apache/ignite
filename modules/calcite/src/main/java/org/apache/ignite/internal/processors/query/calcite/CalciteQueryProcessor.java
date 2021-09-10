@@ -66,7 +66,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
-import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
@@ -106,14 +107,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withDefaultNullCollation(NullCollation.LOW)
             .withSqlConformance(IgniteSqlConformance.INSTANCE))
         // Dialects support.
-        .operatorTable(SqlOperatorTables.chain(
-            SqlLibraryOperatorTableFactory.INSTANCE
-                .getOperatorTable(
-                    SqlLibrary.STANDARD,
-                    SqlLibrary.POSTGRESQL,
-                    SqlLibrary.ORACLE,
-                    SqlLibrary.MYSQL),
-            IgniteSqlOperatorTable.instance()))
+        .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
         .context(Contexts.empty())
         // Custom cost factory to use during optimization

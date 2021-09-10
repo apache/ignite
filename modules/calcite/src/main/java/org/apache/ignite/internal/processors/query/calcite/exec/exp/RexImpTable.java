@@ -250,9 +250,9 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.USER;
-import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable.LENGTH;
-import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable.SYSTEM_RANGE;
-import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable.TYPEOF;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LENGTH;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
 
 /**
  * Contains implementations of Rex operators as Java code.
@@ -295,12 +295,12 @@ public class RexImpTable {
         defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
         defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
         defineMethod(CHR, "chr", NullPolicy.STRICT);
-        defineMethod(CHARACTER_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT);
+        //defineMethod(CHARACTER_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT);
         defineMethod(CHAR_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT);
         defineMethod(LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT);
         defineMethod(CONCAT, BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT);
         defineMethod(CONCAT_FUNCTION, BuiltInMethod.MULTI_STRING_CONCAT.method, NullPolicy.STRICT);
-        defineMethod(CONCAT2, BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT);
+        //defineMethod(CONCAT2, BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT);
         defineMethod(OVERLAY, BuiltInMethod.OVERLAY.method, NullPolicy.STRICT);
         defineMethod(POSITION, BuiltInMethod.POSITION.method, NullPolicy.STRICT);
         defineMethod(ASCII, BuiltInMethod.ASCII.method, NullPolicy.STRICT);

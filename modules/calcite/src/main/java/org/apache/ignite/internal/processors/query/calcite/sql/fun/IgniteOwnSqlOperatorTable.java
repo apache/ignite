@@ -24,13 +24,16 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 
 /**
- * Operator table that contains only Ignite-specific functions and operators.
+ * Operator table that contains Ignite own functions and operators.
+ *
+ * Implementors for operators should be added to
+ * {@link org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable}
  */
-public class IgniteSqlOperatorTable extends ReflectiveSqlOperatorTable {
+public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * The table of contains Ignite-specific operators.
      */
-    private static IgniteSqlOperatorTable instance;
+    private static IgniteOwnSqlOperatorTable instance;
 
     /**
      *
@@ -64,12 +67,12 @@ public class IgniteSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * Returns the Ignite operator table, creating it if necessary.
      */
-    public static synchronized IgniteSqlOperatorTable instance() {
+    public static synchronized IgniteOwnSqlOperatorTable instance() {
         if (instance == null) {
             // Creates and initializes the standard operator table.
             // Uses two-phase construction, because we can't initialize the
             // table until the constructor of the sub-class has completed.
-            instance = new IgniteSqlOperatorTable();
+            instance = new IgniteOwnSqlOperatorTable();
             instance.init();
         }
         return instance;
