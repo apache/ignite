@@ -104,9 +104,14 @@ public class StatisticsGatherer {
         if (inProgressCtx == null) {
             CompletableFuture<ObjectStatisticsImpl> f = CompletableFuture.supplyAsync(
                 () -> {
-                    if (!gatheringLock.enterBusy() || !active) {
+                    boolean entered;
+                    if (!(entered = gatheringLock.enterBusy()) || !active) {
+                        if (entered)
+                            gatheringLock.leaveBusy();
+
                         if (log.isDebugEnabled())
                             log.debug("Can't aggregate statistics by key " + key + " due to inactive state.");
+
                         gatheringInProgress.remove(key, ctx);
                         ctx.cancel();
 
